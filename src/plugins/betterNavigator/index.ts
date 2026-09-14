@@ -321,7 +321,7 @@ function jump(item: NavItem, index: number, ticks: HTMLButtonElement[]) {
     window.setTimeout(() => flash(item.el), 180);
 }
 
-function stepResponse(dir: -1 | 1) {
+function stepResponse(dir: -1 | 1): boolean {
     const native = nativeStepBtn(dir);
     const nextIdx = nextResponseIdx(activeIdx, dir);
     if (native) {
@@ -333,11 +333,12 @@ function stepResponse(dir: -1 | 1) {
         }
         native.click();
         if (nextIdx != null) window.setTimeout(() => flash(lastNav[nextIdx].el), 180);
-        return;
+        return true;
     }
-    if (nextIdx == null) return;
+    if (nextIdx == null) return false;
     jump(lastNav[nextIdx], nextIdx, []);
     alignMenu(nextIdx);
+    return true;
 }
 
 function markAim(index: number) {
@@ -520,10 +521,6 @@ function setOpen(on: boolean) {
     if (!on) markAim(-1);
 }
 
-function railHovered(): boolean {
-    return !!host?.matches(":hover") || !!rail?.matches(":hover") || !!host?.classList.contains("void-bn-open");
-}
-
 function onPointerOver(e: Event) {
     const t = e.target;
     if (!(t instanceof Element)) return;
@@ -539,7 +536,7 @@ function onPointerOver(e: Event) {
 
 function onKeyDown(e: KeyboardEvent) {
     if (!lastNav.length || !host?.isConnected) return;
-    if (isTypingTarget(e.target)) return;
+    if (isTypingTarget(e.target) || isTypingTarget(document.activeElement)) return;
     if (e.key === "Escape") {
         if (host.classList.contains("void-bn-open") || rail?.classList.contains("void-bn-open")) {
             e.preventDefault();
@@ -550,18 +547,17 @@ function onKeyDown(e: KeyboardEvent) {
     const homeEnd = e.key === "Home" || e.key === "End";
     const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
     if (!homeEnd && !arrow) return;
-    if (!e.altKey && !railHovered()) return;
-    e.preventDefault();
-    setOpen(true);
     if (homeEnd) {
         const asst = responseIdxs();
         if (!asst.length) return;
+        e.preventDefault();
         const idx = e.key === "Home" ? asst[0] : asst[asst.length - 1];
         jump(lastNav[idx], idx, nativeTicks());
         alignMenu(idx);
         return;
     }
-    stepResponse(e.key === "ArrowUp" ? -1 : 1);
+    if (!stepResponse(e.key === "ArrowUp" ? -1 : 1)) return;
+    e.preventDefault();
 }
 
 function onPointerDown(e: PointerEvent) {
