@@ -37,6 +37,10 @@ const MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']
 const TIME_TOKEN = /(?:^|\s)\d{1,2}:\d{2}\s*(?:am|pm)\b/gi;
 const STATUS_TOKEN = /\b(?:connected to computer|continuing the(?: task)?|worked for \d+\s*m(?:\s*\d+\s*s)?|worked for \d+\s*s)\b/gi;
 const COUNT_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => ({ label: String(n), value: n, default: n === 5 }));
+const FOLDER_D = "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z";
+const SPIN_D = "M21 12a9 9 0 1 1-6.219-8.56";
+const PATH_OK = /^[MmLlHhVvCcSsQqTtAaZzeE0-9.,+\s-]+$/;
+const ICON_SKIP = ".void-cls,[data-sidebar='menu-action'],[data-sidebar='menu-badge']";
 
 const settings = definePluginSettings({
     maxRecent: {
@@ -54,6 +58,7 @@ const settings = definePluginSettings({
     titles: Record<string, string>;
     workspaceByConv: Record<string, string>;
     projectNames: Record<string, string>;
+    projectIcons: Record<string, string>;
     pages: Record<string, string>;
 }>();
 
@@ -70,17 +75,20 @@ interface PageSnap {
 
 const thumbs = new Map<string, PageSnap>();
 const wsNames: Record<string, string> = {};
+const wsIcons: Record<string, string> = {};
 
 interface Topic {
     id: string;
     title: string;
     project: string;
+    ws: string;
 }
 
 interface SidebarIndex {
     wsByConv: Record<string, string>;
     nameByWs: Record<string, string>;
     nameByConv: Record<string, string>;
+    iconByWs: Record<string, string>;
 }
 
 let open = false;
@@ -162,7 +170,7 @@ function sameRecord(a: Record<string, string> | undefined, b: Record<string, str
     return keys.every(k => src[k] === b[k]);
 }
 
-function assignRecord(key: "titles" | "workspaceByConv" | "projectNames" | "pages", next: Record<string, string>) {
+function assignRecord(key: "titles" | "workspaceByConv" | "projectNames" | "projectIcons" | "pages", next: Record<string, string>) {
     if (sameRecord(settings.plain[key], next)) return false;
     settings.store[key] = next;
     return true;
@@ -190,12 +198,17 @@ function writeVisits(next: string[]) {
             workspaceByConv[id] = ws;
         }
         const keepProjects: Record<string, string> = {};
+        const keepIcons: Record<string, string> = {};
         const idx = sidebarIndex();
         for (const [id, name] of Object.entries(settings.plain.projectNames ?? {})) {
             const n = usableName(name);
             if (!usedWs.has(id) || !n) continue;
             if (isBrandLabel(n) && usableName(idx.nameByWs[id] || "") !== n) continue;
             keepProjects[id] = n;
+        }
+        for (const [id, snap] of Object.entries(settings.plain.projectIcons ?? {})) {
+            if (!usedWs.has(id) || !snap) continue;
+            keepIcons[id] = snap;
         }
         let changed = false;
         if (!sameList(readVisits(), visits)) {
@@ -211,6 +224,7 @@ function writeVisits(next: string[]) {
         if (assignRecord("workspaceByConv", workspaceByConv)) changed = true;
         if (assignRecord("pages", pages)) changed = true;
         if (assignRecord("projectNames", keepProjects)) changed = true;
+        if (assignRecord("projectIcons", keepIcons)) changed = true;
         if (changed && open) paint();
     } finally {
         writing = false;
@@ -449,9 +463,79 @@ function shortOwnText(el: Element): string {
     return out.length >= 2 && out.length <= 64 ? out : "";
 }
 
+function isProjectHomeEl(el: Element): boolean {
+    const own = hrefParts(el.getAttribute("href"));
+    if (own.ws && !own.chat) return true;
+    if (own.chat) return false;
+    let found = false;
+    for (const a of el.querySelectorAll("a[href]")) {
+        const p = hrefParts(a.getAttribute("href"));
+        if (p.chat) return false;
+        if (p.ws) found = true;
+    }
+    return found;
+}
+
 function folderLabel(el: Element): string {
-    if (!el.querySelector("svg")) return "";
+    if (!isProjectHomeEl(el)) return "";
     return usableName(shortOwnText(el));
+}
+
+function pathDs(svg: SVGSVGElement): string[] {
+    const out: string[] = [];
+    for (const p of svg.querySelectorAll("path")) {
+        const d = (p.getAttribute("d") || "").trim();
+        if (!d || d === SPIN_D || !PATH_OK.test(d)) continue;
+        out.push(d);
+    }
+    return out;
+}
+
+function encodeIcon(svg: SVGSVGElement | null): string {
+    if (!svg) return "";
+    const ds = pathDs(svg);
+    let len = 0;
+    for (const d of ds) len += d.length;
+    return len < 24 ? "" : ds.join("\n");
+}
+
+function pickProjectSvg(el: Element): SVGSVGElement | null {
+    let best: SVGSVGElement | null = null;
+    let bestLen = 0;
+    for (const svg of el.querySelectorAll<SVGSVGElement>("svg")) {
+        if (svg.closest(ICON_SKIP)) continue;
+        const ds = pathDs(svg);
+        let len = 0;
+        for (const d of ds) len += d.length;
+        if (len < 24 || len <= bestLen) continue;
+        best = svg;
+        bestLen = len;
+    }
+    return best;
+}
+
+function liveIconSnap(ws: string): string {
+    if (!ws) return "";
+    const fromIdx = sidebarIndex().iconByWs[ws];
+    if (fromIdx) return fromIdx;
+    try {
+        for (const a of document.querySelectorAll<HTMLAnchorElement>(`a[href^="/project/${ws}"]`)) {
+            const { chat } = hrefParts(a.getAttribute("href"));
+            if (chat) continue;
+            const snap = encodeIcon(pickProjectSvg(a));
+            if (snap) return snap;
+        }
+    } catch {}
+    return "";
+}
+
+function rememberProjectIcon(ws: string) {
+    if (!ws) return;
+    const snap = liveIconSnap(ws);
+    if (!snap) return;
+    wsIcons[ws] = snap;
+    const prev = settings.plain.projectIcons ?? {};
+    if (prev[ws] !== snap) settings.store.projectIcons = { ...prev, [ws]: snap };
 }
 
 function projectNameFromAncestors(el: Element): string {
@@ -474,13 +558,15 @@ function invalidateSidebar() {
 }
 
 function sidebarIndex(): SidebarIndex {
-    const empty: SidebarIndex = { wsByConv: {}, nameByWs: {}, nameByConv: {} };
+    const empty: SidebarIndex = { wsByConv: {}, nameByWs: {}, nameByConv: {}, iconByWs: {} };
     const sidebar = document.querySelector("[data-sidebar=sidebar]");
     if (!sidebar) return empty;
-    const key = `${sidebar.childElementCount}:${(sidebar.textContent ?? "").length}`;
+    let iconSig = 0;
+    for (const p of sidebar.querySelectorAll("svg path")) iconSig += (p.getAttribute("d") || "").length;
+    const key = `${sidebar.childElementCount}:${(sidebar.textContent ?? "").length}:${iconSig}`;
     if (sidebarSnap?.key === key) return sidebarSnap.index;
 
-    const index: SidebarIndex = { wsByConv: {}, nameByWs: {}, nameByConv: {} };
+    const index: SidebarIndex = { wsByConv: {}, nameByWs: {}, nameByConv: {}, iconByWs: {} };
     let currentName = "";
 
     const assignConv = (chat: string, ws: string, name: string) => {
@@ -527,6 +613,13 @@ function sidebarIndex(): SidebarIndex {
 
         const folder = folderLabel(el);
         if (folder) currentName = folder;
+    }
+
+    for (const a of sidebar.querySelectorAll<HTMLAnchorElement>("a[href^='/project/']")) {
+        const { ws, chat } = hrefParts(a.getAttribute("href"));
+        if (!ws || chat) continue;
+        const snap = encodeIcon(pickProjectSvg(a));
+        if (snap) index.iconByWs[ws] = snap;
     }
 
     sidebarSnap = { key, index };
@@ -620,6 +713,7 @@ function rememberProject(id: string) {
     const fallback = !isBrandLabel(liveName) ? usableName(liveName) : "";
     const stored = !isBrandLabel(cached) ? cached : "";
     const name = sidebarName || fallback || stored;
+    rememberProjectIcon(ws);
     if (!name) return;
     wsNames[ws] = name;
     const prevNames = settings.plain.projectNames ?? {};
@@ -630,8 +724,10 @@ function reconcileSidebarCache() {
     const idx = sidebarIndex();
     const prevWs = { ...settings.plain.workspaceByConv };
     const prevNames = { ...settings.plain.projectNames };
+    const prevIcons = { ...settings.plain.projectIcons };
     let wsChanged = false;
     let namesChanged = false;
+    let iconsChanged = false;
 
     for (const [conv, ws] of Object.entries(idx.wsByConv)) {
         if (prevWs[conv] !== ws) {
@@ -648,6 +744,14 @@ function reconcileSidebarCache() {
             namesChanged = true;
         }
     }
+    for (const [ws, snap] of Object.entries(idx.iconByWs)) {
+        if (!snap) continue;
+        wsIcons[ws] = snap;
+        if (prevIcons[ws] !== snap) {
+            prevIcons[ws] = snap;
+            iconsChanged = true;
+        }
+    }
     for (const [ws, name] of Object.entries(prevNames)) {
         if (usableName(name)) continue;
         delete prevNames[ws];
@@ -657,6 +761,7 @@ function reconcileSidebarCache() {
 
     if (wsChanged) settings.store.workspaceByConv = prevWs;
     if (namesChanged) settings.store.projectNames = prevNames;
+    if (iconsChanged) settings.store.projectIcons = prevIcons;
 }
 
 function requestWorkspace(id: string) {
@@ -895,7 +1000,7 @@ function walkThread(startId: string | undefined): GrokResponse[] {
         let id: string | undefined = startId;
         while (id && !seen.has(id) && out.length < 50) {
             seen.add(id);
-            const r = byId[id];
+            const r: GrokResponse | undefined = byId[id];
             if (!r) break;
             out.unshift(r);
             id = r.parentResponseId;
@@ -1170,6 +1275,7 @@ function topics(): Topic[] {
         id,
         title: titleOf(id),
         project: projectNameOf(id),
+        ws: workspaceOf(id),
     }));
 }
 
@@ -1219,9 +1325,6 @@ function navigateTo(id: string) {
         const href = hrefFor(id, workspaceId);
         const parsed = parseHref(href);
 
-        // Mirror Grok's useGrokRouter.routeToConversation:
-        // workspace chats MUST be { page:"workspace", workspaceId:STRING, tab:"conversations", conversationId }.
-        // page:"workspaces" (plural) is the /project list — never push that for a chat.
         const dest: GrokRoute = workspaceId
             ? {
                 page: "workspace",
@@ -1265,7 +1368,6 @@ function navigateTo(id: string) {
         routing.push(dest);
         applyChatPage(id, asWorkspaceId(dest.workspaceId));
 
-        // Same upgrade Grok does: if we had to open /c/{id}, fetch workspace and replace.
         if (dest.page !== "workspace") {
             try {
                 const { fetchGetConversationWithWorkspaces, fetchGetConversation } = ConversationStore.useConversationStore.getState();
@@ -1508,9 +1610,31 @@ function folderIcon(): SVGSVGElement {
     svg.setAttribute("stroke-linejoin", "round");
     svg.setAttribute("aria-hidden", "true");
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z");
+    path.setAttribute("d", FOLDER_D);
     svg.append(path);
     return svg;
+}
+
+function iconFromSnap(snap: string): SVGSVGElement {
+    const svg = folderIcon();
+    const ds = snap.split("\n").map(s => s.trim()).filter(d => d && PATH_OK.test(d) && d !== SPIN_D);
+    if (!ds.length) return svg;
+    svg.replaceChildren();
+    for (const d of ds) {
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", d);
+        svg.append(path);
+    }
+    return svg;
+}
+
+function projectIconOf(ws: string): SVGSVGElement {
+    const snap = ws ? (wsIcons[ws] || settings.plain.projectIcons?.[ws] || liveIconSnap(ws) || "") : "";
+    if (snap) {
+        wsIcons[ws] = snap;
+        return iconFromSnap(snap);
+    }
+    return folderIcon();
 }
 
 function applyTheme(panel: HTMLElement) {
@@ -1574,7 +1698,7 @@ function renderList(items: Topic[]) {
         meta.append(node("span", cl("name"), topic.title));
         if (topic.project) {
             const proj = node("span", cl("host"));
-            proj.append(folderIcon(), node("span", cl("host-name"), topic.project));
+            proj.append(projectIconOf(topic.ws), node("span", cl("host-name"), topic.project));
             meta.append(proj);
         }
 
