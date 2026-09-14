@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.12] v1.0.0
+// @version      [20260914.13] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -30,7 +30,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.12] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.13] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7347,9 +7347,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"40fc559"}`
-    }, `(${"40fc559"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2d174ad"}`
+    }, `(${"2d174ad"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11369,6 +11369,8 @@ html.void-rt-open [data-sidebar="gap"] {
   var PATH_OK = /^[MmLlHhVvCcSsQqTtAaZzeE0-9.,+\s-]+$/;
   var ICON_SKIP = ".void-cls,[data-sidebar='menu-action'],[data-sidebar='menu-badge']";
   var DENIED_MAX = 40;
+  var DENIED_HOLD_MS = 60000;
+  var SETTLE_MS = 200;
   var settings14 = definePluginSettings({
     maxRecent: {
       type: 4 /* SELECT */,
@@ -11490,85 +11492,97 @@ html.void-rt-open [data-sidebar="gap"] {
     return true;
   }
   var writing = false;
+  var pendingVisits = null;
+  var bumpTimer = 0;
   function writeVisits(next) {
+    pendingVisits = next;
     if (writing)
       return;
     writing = true;
     try {
-      const visits = capVisits(next);
-      const rawWs = pruneRecord(settings14.plain.workspaceByConv, visits);
-      const workspaceByConv = {};
-      for (const [id, value] of Object.entries(rawWs)) {
-        if (id === HOME_KEY)
-          continue;
-        const ws = asWorkspaceId(value);
-        if (ws)
-          workspaceByConv[id] = ws;
+      while (pendingVisits) {
+        const input = pendingVisits;
+        pendingVisits = null;
+        commitVisits(input);
       }
-      const pages = pruneRecord(settings14.plain.pages, visits);
-      const usedWs = new Set(Object.values(workspaceByConv));
-      for (const id of visits) {
-        const ws = workspaceFromHomeId(id);
-        if (!ws)
-          continue;
-        usedWs.add(ws);
-        workspaceByConv[id] = ws;
-      }
-      const keepProjects = {};
-      const keepIcons = {};
-      const idx = sidebarIndex();
-      for (const [id, name] of Object.entries(settings14.plain.projectNames ?? {})) {
-        const n = usableName(name);
-        if (!usedWs.has(id) || !n)
-          continue;
-        const side = usableName(idx.nameByWs[id] || "");
-        if (isBrandLabel(n) && side && side !== n)
-          continue;
-        keepProjects[id] = n;
-      }
-      for (const [id, snap] of Object.entries(settings14.plain.projectIcons ?? {})) {
-        if (!usedWs.has(id) || !snap || isChromeSnap(snap))
-          continue;
-        keepIcons[id] = snap;
-      }
-      let changed = false;
-      if (!sameList(readVisits(), visits)) {
-        settings14.store.visits = visits;
-        changed = true;
-      }
-      const titles = {};
-      for (const [id, name] of Object.entries(pruneRecord(settings14.plain.titles, visits))) {
-        const t = usableTitle(name);
-        if (t)
-          titles[id] = t;
-      }
-      if (assignRecord("titles", titles))
-        changed = true;
-      if (assignRecord("workspaceByConv", workspaceByConv))
-        changed = true;
-      if (assignRecord("pages", pages))
-        changed = true;
-      if (assignRecord("projectNames", keepProjects))
-        changed = true;
-      if (assignRecord("projectIcons", keepIcons))
-        changed = true;
-      if (changed && open2)
-        paint();
     } finally {
       writing = false;
     }
   }
+  function commitVisits(next) {
+    const visits = capVisits(next);
+    const rawWs = pruneRecord(settings14.plain.workspaceByConv, visits);
+    const workspaceByConv = {};
+    for (const [id, value] of Object.entries(rawWs)) {
+      if (id === HOME_KEY)
+        continue;
+      const ws = asWorkspaceId(value);
+      if (ws)
+        workspaceByConv[id] = ws;
+    }
+    const pages = pruneRecord(settings14.plain.pages, visits);
+    const usedWs = new Set(Object.values(workspaceByConv));
+    for (const id of visits) {
+      const ws = workspaceFromHomeId(id);
+      if (!ws)
+        continue;
+      usedWs.add(ws);
+      workspaceByConv[id] = ws;
+    }
+    const keepProjects = {};
+    const keepIcons = {};
+    const idx = sidebarIndex();
+    for (const [id, name] of Object.entries(settings14.plain.projectNames ?? {})) {
+      const n = usableName(name);
+      if (!usedWs.has(id) || !n)
+        continue;
+      const side = usableName(idx.nameByWs[id] || "");
+      if (isBrandLabel(n) && side && side !== n)
+        continue;
+      keepProjects[id] = n;
+    }
+    for (const [id, snap] of Object.entries(settings14.plain.projectIcons ?? {})) {
+      if (!usedWs.has(id) || !snap || isChromeSnap(snap))
+        continue;
+      keepIcons[id] = snap;
+    }
+    let changed = false;
+    if (!sameList(readVisits(), visits)) {
+      settings14.store.visits = visits;
+      changed = true;
+    }
+    const titles = {};
+    for (const [id, name] of Object.entries(pruneRecord(settings14.plain.titles, visits))) {
+      const t = usableTitle(name);
+      if (t)
+        titles[id] = t;
+    }
+    if (assignRecord("titles", titles))
+      changed = true;
+    if (assignRecord("workspaceByConv", workspaceByConv))
+      changed = true;
+    if (assignRecord("pages", pages))
+      changed = true;
+    if (assignRecord("projectNames", keepProjects))
+      changed = true;
+    if (assignRecord("projectIcons", keepIcons))
+      changed = true;
+    if (changed && open2)
+      paint();
+  }
   function rememberTitle(id, title) {
     const t = usableTitle(title);
-    if (!id || isHomeId(id) || !t)
+    if (!id || isHomeId(id) || !t || isDenied(id))
       return;
-    if (usableTitle(lookup(id)?.title) !== t)
+    const fromStore = usableTitle(lookup(id)?.title);
+    if (!fromStore || fromStore !== t)
+      return;
+    if (id === chatIdFromUrl() && isAccessDeniedPage())
       return;
     const prev = settings14.plain.titles ?? {};
-    if (prev[id] !== t)
-      settings14.store.titles = { ...prev, [id]: t };
-    if (isDenied(id))
-      revive(id);
+    if (prev[id] === t)
+      return;
+    settings14.store.titles = { ...prev, [id]: t };
   }
   function isHomeId(id) {
     return id === HOME_KEY || id.startsWith(HOME_SEP);
@@ -11695,12 +11709,10 @@ html.void-rt-open [data-sidebar="gap"] {
   function pageTitle() {
     return usableTitle(document.title.replace(TITLE_TAIL, ""));
   }
-  function isAccessDeniedPage() {
+  function accessWallText() {
     try {
-      if (!chatIdFromUrl())
-        return false;
       const root = document.querySelector("main") ?? document.body;
-      if (!root || root.querySelector(MSG_SEL))
+      if (!root)
         return false;
       const text = (root.textContent || "").slice(0, 4000);
       return ACCESS_NEED.test(text) && ACCESS_HINT.test(text);
@@ -11708,8 +11720,50 @@ html.void-rt-open [data-sidebar="gap"] {
       return false;
     }
   }
+  function pageHasOwnMessages(id) {
+    if (!id || isHomeId(id) || id !== chatIdFromUrl())
+      return false;
+    try {
+      if (linesFromStore(id).length)
+        return true;
+    } catch {}
+    try {
+      if (responsesOf(id).some((r) => r && !r.isControl))
+        return true;
+    } catch {}
+    return false;
+  }
+  function routeAligned(id) {
+    if (!id)
+      return false;
+    if (isHomeId(id))
+      return !chatIdFromUrl();
+    if (chatIdFromUrl() !== id)
+      return false;
+    try {
+      const routeId = routeConvId(RoutingStore.useRoutingStore.getState().route);
+      if (routeId && !isHomeId(routeId) && routeId !== id)
+        return false;
+    } catch {}
+    try {
+      const conv = ChatPageStore.useChatPageStore.getState().conversationId;
+      if (conv && conv !== id)
+        return false;
+    } catch {}
+    return true;
+  }
+  function isAccessDeniedPage() {
+    try {
+      const id = chatIdFromUrl();
+      if (!id || !accessWallText())
+        return false;
+      return !pageHasOwnMessages(id);
+    } catch {
+      return false;
+    }
+  }
   function titleFromPage(id) {
-    if (!id || id !== chatIdFromUrl() || isAccessDeniedPage())
+    if (!id || isDenied(id) || id !== chatIdFromUrl() || isAccessDeniedPage())
       return "";
     const fromStore = usableTitle(lookup(id)?.title);
     if (!fromStore)
@@ -11731,6 +11785,8 @@ html.void-rt-open [data-sidebar="gap"] {
   function titleOf(id) {
     if (!id || isHomeId(id))
       return "New chat";
+    if (isDenied(id))
+      return usableTitle(settings14.plain.titles?.[id]) || "Untitled";
     const conv = lookup(id);
     return usableTitle(conv?.title) || usableTitle(settings14.plain.titles?.[id]) || titleFromPage(id) || "Untitled";
   }
@@ -12717,16 +12773,30 @@ html.void-rt-open [data-sidebar="gap"] {
   function isDenied(id) {
     return !!id && !isHomeId(id) && readDenied().includes(id);
   }
+  function deniedFresh(id) {
+    const n = Number(settings14.plain.deniedAt?.[id] || "");
+    return Number.isFinite(n) && n > 0 && Date.now() - n < DENIED_HOLD_MS;
+  }
   function writeDenied(ids) {
     const next = unique(ids.filter((id) => id && !isHomeId(id))).slice(0, DENIED_MAX);
-    if (sameList(readDenied(), next))
-      return;
-    settings14.store.deniedIds = next;
+    const prevAt = settings14.plain.deniedAt ?? {};
+    const at = {};
+    for (const id of next) {
+      if (prevAt[id])
+        at[id] = prevAt[id];
+    }
+    if (!sameList(readDenied(), next))
+      settings14.store.deniedIds = next;
+    if (!sameRecord(prevAt, at))
+      settings14.store.deniedAt = at;
   }
   function tombstone(id) {
     if (!id || isHomeId(id))
       return;
     writeDenied([id, ...readDenied()]);
+    const at = { ...settings14.plain.deniedAt, [id]: String(Date.now()) };
+    if (!sameRecord(settings14.plain.deniedAt, at))
+      settings14.store.deniedAt = at;
     forgetPage(id);
   }
   function revive(id) {
@@ -12736,6 +12806,12 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function reviveIfAlive(id) {
     if (!id || isHomeId(id) || !isDenied(id))
+      return false;
+    if (id !== chatIdFromUrl() || !routeAligned(id) || accessWallText())
+      return false;
+    if (deniedFresh(id))
+      return false;
+    if (!pageHasOwnMessages(id))
       return false;
     if (!usableTitle(lookup(id)?.title))
       return false;
@@ -12747,6 +12823,18 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     tombstone(id);
     writeVisits(readVisits().filter((x) => x !== id));
+  }
+  function scheduleBump() {
+    if (bumpTimer)
+      window.clearTimeout(bumpTimer);
+    bumpTimer = window.setTimeout(() => {
+      bumpTimer = 0;
+      const current = currentVisit();
+      if (current == null || !routeAligned(current))
+        return;
+      bump(current);
+      scheduleCapture();
+    }, SETTLE_MS);
   }
   function bump(id) {
     if (!id)
@@ -13407,6 +13495,10 @@ html.void-rt-open [data-sidebar="gap"] {
       }
     },
     stop() {
+      if (bumpTimer) {
+        window.clearTimeout(bumpTimer);
+        bumpTimer = 0;
+      }
       keys2?.abort();
       keys2 = null;
       open2 = false;
@@ -13433,8 +13525,7 @@ html.void-rt-open [data-sidebar="gap"] {
             return;
           if (id && isHomeId(current) && !isHomeId(id))
             return;
-          bump(current);
-          scheduleCapture();
+          scheduleBump();
         }
       },
       ChatPageStore: {
@@ -13445,8 +13536,7 @@ html.void-rt-open [data-sidebar="gap"] {
           const id = currentVisit();
           if (id == null)
             return;
-          bump(id);
-          scheduleCapture();
+          scheduleBump();
         }
       },
       ResponseStore: {
@@ -13461,6 +13551,9 @@ html.void-rt-open [data-sidebar="gap"] {
         handler() {
           if (open2)
             return;
+          const id = currentVisit();
+          if (id && isDenied(id))
+            scheduleBump();
           scheduleCapture();
         }
       }
@@ -19104,7 +19197,7 @@ div:has(> #grok-bot-nav-button) {
   streamerMode_default.updatedAt = 0;
   inputHistory_default.updatedAt = 1789266420000;
   downloadTTS_default.updatedAt = 0;
-  recentTopics_default.updatedAt = 1789388781000;
+  recentTopics_default.updatedAt = 1789389281000;
   betterLinks_default.updatedAt = 0;
   experiments_default.updatedAt = 0;
   customInstructions_default.updatedAt = 0;

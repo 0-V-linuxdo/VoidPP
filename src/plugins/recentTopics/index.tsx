@@ -45,6 +45,8 @@ const SPIN_D = "M21 12a9 9 0 1 1-6.219-8.56";
 const PATH_OK = /^[MmLlHhVvCcSsQqTtAaZzeE0-9.,+\s-]+$/;
 const ICON_SKIP = ".void-cls,[data-sidebar='menu-action'],[data-sidebar='menu-badge']";
 const DENIED_MAX = 40;
+const DENIED_HOLD_MS = 60_000;
+const SETTLE_MS = 200;
 
 const settings = definePluginSettings({
     maxRecent: {
@@ -60,6 +62,7 @@ const settings = definePluginSettings({
 }).withPrivateSettings<{
     visits: string[];
     deniedIds: string[];
+    deniedAt: Record<string, string>;
     titles: Record<string, string>;
     workspaceByConv: Record<string, string>;
     projectNames: Record<string, string>;
@@ -200,69 +203,82 @@ function assignRecord(key: "titles" | "workspaceByConv" | "projectNames" | "proj
 }
 
 let writing = false;
+let pendingVisits: string[] | null = null;
+let bumpTimer = 0;
 
 function writeVisits(next: string[]) {
+    pendingVisits = next;
     if (writing) return;
     writing = true;
     try {
-        const visits = capVisits(next);
-        const rawWs = pruneRecord(settings.plain.workspaceByConv, visits);
-        const workspaceByConv: Record<string, string> = {};
-        for (const [id, value] of Object.entries(rawWs)) {
-            if (id === HOME_KEY) continue;
-            const ws = asWorkspaceId(value);
-            if (ws) workspaceByConv[id] = ws;
+        while (pendingVisits) {
+            const input = pendingVisits;
+            pendingVisits = null;
+            commitVisits(input);
         }
-        const pages = pruneRecord(settings.plain.pages, visits);
-        const usedWs = new Set(Object.values(workspaceByConv));
-        for (const id of visits) {
-            const ws = workspaceFromHomeId(id);
-            if (!ws) continue;
-            usedWs.add(ws);
-            workspaceByConv[id] = ws;
-        }
-        const keepProjects: Record<string, string> = {};
-        const keepIcons: Record<string, string> = {};
-        const idx = sidebarIndex();
-        for (const [id, name] of Object.entries(settings.plain.projectNames ?? {})) {
-            const n = usableName(name);
-            if (!usedWs.has(id) || !n) continue;
-            const side = usableName(idx.nameByWs[id] || "");
-            if (isBrandLabel(n) && side && side !== n) continue;
-            keepProjects[id] = n;
-        }
-        for (const [id, snap] of Object.entries(settings.plain.projectIcons ?? {})) {
-            if (!usedWs.has(id) || !snap || isChromeSnap(snap)) continue;
-            keepIcons[id] = snap;
-        }
-        let changed = false;
-        if (!sameList(readVisits(), visits)) {
-            settings.store.visits = visits;
-            changed = true;
-        }
-        const titles: Record<string, string> = {};
-        for (const [id, name] of Object.entries(pruneRecord(settings.plain.titles, visits))) {
-            const t = usableTitle(name);
-            if (t) titles[id] = t;
-        }
-        if (assignRecord("titles", titles)) changed = true;
-        if (assignRecord("workspaceByConv", workspaceByConv)) changed = true;
-        if (assignRecord("pages", pages)) changed = true;
-        if (assignRecord("projectNames", keepProjects)) changed = true;
-        if (assignRecord("projectIcons", keepIcons)) changed = true;
-        if (changed && open) paint();
     } finally {
         writing = false;
     }
 }
 
+function commitVisits(next: string[]) {
+    const visits = capVisits(next);
+    const rawWs = pruneRecord(settings.plain.workspaceByConv, visits);
+    const workspaceByConv: Record<string, string> = {};
+    for (const [id, value] of Object.entries(rawWs)) {
+        if (id === HOME_KEY) continue;
+        const ws = asWorkspaceId(value);
+        if (ws) workspaceByConv[id] = ws;
+    }
+    const pages = pruneRecord(settings.plain.pages, visits);
+    const usedWs = new Set(Object.values(workspaceByConv));
+    for (const id of visits) {
+        const ws = workspaceFromHomeId(id);
+        if (!ws) continue;
+        usedWs.add(ws);
+        workspaceByConv[id] = ws;
+    }
+    const keepProjects: Record<string, string> = {};
+    const keepIcons: Record<string, string> = {};
+    const idx = sidebarIndex();
+    for (const [id, name] of Object.entries(settings.plain.projectNames ?? {})) {
+        const n = usableName(name);
+        if (!usedWs.has(id) || !n) continue;
+        const side = usableName(idx.nameByWs[id] || "");
+        if (isBrandLabel(n) && side && side !== n) continue;
+        keepProjects[id] = n;
+    }
+    for (const [id, snap] of Object.entries(settings.plain.projectIcons ?? {})) {
+        if (!usedWs.has(id) || !snap || isChromeSnap(snap)) continue;
+        keepIcons[id] = snap;
+    }
+    let changed = false;
+    if (!sameList(readVisits(), visits)) {
+        settings.store.visits = visits;
+        changed = true;
+    }
+    const titles: Record<string, string> = {};
+    for (const [id, name] of Object.entries(pruneRecord(settings.plain.titles, visits))) {
+        const t = usableTitle(name);
+        if (t) titles[id] = t;
+    }
+    if (assignRecord("titles", titles)) changed = true;
+    if (assignRecord("workspaceByConv", workspaceByConv)) changed = true;
+    if (assignRecord("pages", pages)) changed = true;
+    if (assignRecord("projectNames", keepProjects)) changed = true;
+    if (assignRecord("projectIcons", keepIcons)) changed = true;
+    if (changed && open) paint();
+}
+
 function rememberTitle(id: string, title?: string) {
     const t = usableTitle(title);
-    if (!id || isHomeId(id) || !t) return;
-    if (usableTitle(lookup(id)?.title) !== t) return;
+    if (!id || isHomeId(id) || !t || isDenied(id)) return;
+    const fromStore = usableTitle(lookup(id)?.title);
+    if (!fromStore || fromStore !== t) return;
+    if (id === chatIdFromUrl() && isAccessDeniedPage()) return;
     const prev = settings.plain.titles ?? {};
-    if (prev[id] !== t) settings.store.titles = { ...prev, [id]: t };
-    if (isDenied(id)) revive(id);
+    if (prev[id] === t) return;
+    settings.store.titles = { ...prev, [id]: t };
 }
 
 function isHomeId(id: string) {
@@ -388,11 +404,10 @@ function pageTitle(): string {
     return usableTitle(document.title.replace(TITLE_TAIL, ""));
 }
 
-function isAccessDeniedPage(): boolean {
+function accessWallText(): boolean {
     try {
-        if (!chatIdFromUrl()) return false;
         const root = document.querySelector("main") ?? document.body;
-        if (!root || root.querySelector(MSG_SEL)) return false;
+        if (!root) return false;
         const text = (root.textContent || "").slice(0, 4000);
         return ACCESS_NEED.test(text) && ACCESS_HINT.test(text);
     } catch {
@@ -400,8 +415,44 @@ function isAccessDeniedPage(): boolean {
     }
 }
 
+function pageHasOwnMessages(id: string): boolean {
+    if (!id || isHomeId(id) || id !== chatIdFromUrl()) return false;
+    try {
+        if (linesFromStore(id).length) return true;
+    } catch { /* ignore */ }
+    try {
+        if (responsesOf(id).some(r => r && !r.isControl)) return true;
+    } catch { /* ignore */ }
+    return false;
+}
+
+function routeAligned(id: string): boolean {
+    if (!id) return false;
+    if (isHomeId(id)) return !chatIdFromUrl();
+    if (chatIdFromUrl() !== id) return false;
+    try {
+        const routeId = routeConvId(RoutingStore.useRoutingStore.getState().route);
+        if (routeId && !isHomeId(routeId) && routeId !== id) return false;
+    } catch { /* ignore */ }
+    try {
+        const conv = ChatPageStore.useChatPageStore.getState().conversationId;
+        if (conv && conv !== id) return false;
+    } catch { /* ignore */ }
+    return true;
+}
+
+function isAccessDeniedPage(): boolean {
+    try {
+        const id = chatIdFromUrl();
+        if (!id || !accessWallText()) return false;
+        return !pageHasOwnMessages(id);
+    } catch {
+        return false;
+    }
+}
+
 function titleFromPage(id: string): string {
-    if (!id || id !== chatIdFromUrl() || isAccessDeniedPage()) return "";
+    if (!id || isDenied(id) || id !== chatIdFromUrl() || isAccessDeniedPage()) return "";
     const fromStore = usableTitle(lookup(id)?.title);
     if (!fromStore) return "";
     const fromDoc = pageTitle();
@@ -421,6 +472,7 @@ function lookup(id: string): GrokConversation | undefined {
 
 function titleOf(id: string): string {
     if (!id || isHomeId(id)) return "New chat";
+    if (isDenied(id)) return usableTitle(settings.plain.titles?.[id]) || "Untitled";
     const conv = lookup(id);
     return usableTitle(conv?.title)
         || usableTitle(settings.plain.titles?.[id])
@@ -1351,15 +1403,27 @@ function isDenied(id: string): boolean {
     return !!id && !isHomeId(id) && readDenied().includes(id);
 }
 
+function deniedFresh(id: string): boolean {
+    const n = Number(settings.plain.deniedAt?.[id] || "");
+    return Number.isFinite(n) && n > 0 && Date.now() - n < DENIED_HOLD_MS;
+}
+
 function writeDenied(ids: string[]) {
     const next = unique(ids.filter(id => id && !isHomeId(id))).slice(0, DENIED_MAX);
-    if (sameList(readDenied(), next)) return;
-    settings.store.deniedIds = next;
+    const prevAt = settings.plain.deniedAt ?? {};
+    const at: Record<string, string> = {};
+    for (const id of next) {
+        if (prevAt[id]) at[id] = prevAt[id];
+    }
+    if (!sameList(readDenied(), next)) settings.store.deniedIds = next;
+    if (!sameRecord(prevAt, at)) settings.store.deniedAt = at;
 }
 
 function tombstone(id: string) {
     if (!id || isHomeId(id)) return;
     writeDenied([id, ...readDenied()]);
+    const at = { ...settings.plain.deniedAt, [id]: String(Date.now()) };
+    if (!sameRecord(settings.plain.deniedAt, at)) settings.store.deniedAt = at;
     forgetPage(id);
 }
 
@@ -1370,6 +1434,9 @@ function revive(id: string) {
 
 function reviveIfAlive(id: string): boolean {
     if (!id || isHomeId(id) || !isDenied(id)) return false;
+    if (id !== chatIdFromUrl() || !routeAligned(id) || accessWallText()) return false;
+    if (deniedFresh(id)) return false;
+    if (!pageHasOwnMessages(id)) return false;
     if (!usableTitle(lookup(id)?.title)) return false;
     revive(id);
     return true;
@@ -1379,6 +1446,17 @@ function dropVisit(id: string) {
     if (!id || isHomeId(id)) return;
     tombstone(id);
     writeVisits(readVisits().filter(x => x !== id));
+}
+
+function scheduleBump() {
+    if (bumpTimer) window.clearTimeout(bumpTimer);
+    bumpTimer = window.setTimeout(() => {
+        bumpTimer = 0;
+        const current = currentVisit();
+        if (current == null || !routeAligned(current)) return;
+        bump(current);
+        scheduleCapture();
+    }, SETTLE_MS);
 }
 
 function bump(id: string) {
@@ -2047,6 +2125,10 @@ export default definePlugin({
     },
 
     stop() {
+        if (bumpTimer) {
+            window.clearTimeout(bumpTimer);
+            bumpTimer = 0;
+        }
         keys?.abort();
         keys = null;
         open = false;
@@ -2072,8 +2154,7 @@ export default definePlugin({
                 const current = currentVisit();
                 if (current == null) return;
                 if (id && isHomeId(current) && !isHomeId(id)) return;
-                bump(current);
-                scheduleCapture();
+                scheduleBump();
             },
         },
         ChatPageStore: {
@@ -2082,8 +2163,7 @@ export default definePlugin({
                 if (open) return;
                 const id = currentVisit();
                 if (id == null) return;
-                bump(id);
-                scheduleCapture();
+                scheduleBump();
             },
         },
         ResponseStore: {
@@ -2096,6 +2176,8 @@ export default definePlugin({
             },
             handler() {
                 if (open) return;
+                const id = currentVisit();
+                if (id && isDenied(id)) scheduleBump();
                 scheduleCapture();
             },
         },
