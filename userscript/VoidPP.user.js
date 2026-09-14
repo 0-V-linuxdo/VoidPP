@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.7] v1.0.0
+// @version      [20260914.8] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -30,7 +30,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.7] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7366,9 +7366,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"115ddee"}`
-    }, `(${"115ddee"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"bcf9dbb"}`
+    }, `(${"bcf9dbb"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14743,7 +14743,8 @@ html.void-rt-open [data-sidebar="gap"] {
         const n = usableName(name);
         if (!usedWs.has(id) || !n)
           continue;
-        if (isBrandLabel(n) && usableName(idx.nameByWs[id] || "") !== n)
+        const side = usableName(idx.nameByWs[id] || "");
+        if (isBrandLabel(n) && side && side !== n)
           continue;
         keepProjects[id] = n;
       }
@@ -15018,24 +15019,11 @@ html.void-rt-open [data-sidebar="gap"] {
     const out = parts.join(" ").replaceAll(/\s+/g, " ").trim();
     return out.length >= 2 && out.length <= 64 ? out : "";
   }
-  function isProjectHomeEl(el) {
-    const own = hrefParts(el.getAttribute("href"));
-    if (own.ws && !own.chat)
-      return true;
-    if (own.chat)
-      return false;
-    let found = false;
-    for (const a of el.querySelectorAll("a[href]")) {
-      const p = hrefParts(a.getAttribute("href"));
-      if (p.chat)
-        return false;
-      if (p.ws)
-        found = true;
-    }
-    return found;
-  }
   function folderLabel(el) {
-    if (!isProjectHomeEl(el))
+    if (!el.querySelector("svg"))
+      return "";
+    const { chat } = hrefParts(el.getAttribute("href"));
+    if (chat)
       return "";
     return usableName(shortOwnText(el));
   }
@@ -15083,9 +15071,9 @@ html.void-rt-open [data-sidebar="gap"] {
     if (fromIdx)
       return fromIdx;
     try {
-      for (const a of document.querySelectorAll(`a[href^="/project/${ws}"]`)) {
-        const { chat } = hrefParts(a.getAttribute("href"));
-        if (chat)
+      for (const a of document.querySelectorAll("a[href]")) {
+        const p = hrefParts(a.getAttribute("href"));
+        if (p.ws !== ws || p.chat)
           continue;
         const snap = encodeIcon(pickProjectSvg(a));
         if (snap)
@@ -15136,6 +15124,7 @@ html.void-rt-open [data-sidebar="gap"] {
       return sidebarSnap.index;
     const index = { wsByConv: {}, nameByWs: {}, nameByConv: {}, iconByWs: {} };
     let currentName = "";
+    let pendingIcon = "";
     const assignConv = (chat, ws, name) => {
       if (!chat || !ws)
         return;
@@ -15150,6 +15139,8 @@ html.void-rt-open [data-sidebar="gap"] {
       const { ws, chat } = hrefParts(el.getAttribute("href"));
       if (chat) {
         assignConv(chat, ws, currentName);
+        if (ws && pendingIcon)
+          index.iconByWs[ws] ??= pendingIcon;
         if (ws && !index.nameByConv[chat]) {
           const up = usableName(projectNameFromAncestors(el));
           if (up) {
@@ -15173,13 +15164,18 @@ html.void-rt-open [data-sidebar="gap"] {
         } else if (isSkipLabel(label)) {
           currentName = index.nameByWs[ws] || "";
         }
+        const snap = encodeIcon(pickProjectSvg(el)) || pendingIcon;
+        if (snap)
+          index.iconByWs[ws] = snap;
         continue;
       }
       const folder = folderLabel(el);
-      if (folder)
+      if (folder) {
         currentName = folder;
+        pendingIcon = encodeIcon(pickProjectSvg(el));
+      }
     }
-    for (const a of sidebar.querySelectorAll("a[href^='/project/']")) {
+    for (const a of sidebar.querySelectorAll("a[href]")) {
       const { ws, chat } = hrefParts(a.getAttribute("href"));
       if (!ws || chat)
         continue;
@@ -15288,8 +15284,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const liveName = ws === liveWorkspaceId() ? readOpenProjectName() : "";
     const cached = usableName(wsNames[ws] || settings21.plain.projectNames?.[ws] || "");
     const fallback = !isBrandLabel(liveName) ? usableName(liveName) : "";
-    const stored = !isBrandLabel(cached) ? cached : "";
-    const name = sidebarName || fallback || stored;
+    const name = sidebarName || fallback || cached;
     rememberProjectIcon(ws);
     if (!name)
       return;
@@ -18899,7 +18894,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   oneko_default.updatedAt = 1787870966000;
   placeholder_default.updatedAt = 1789207633000;
   pluginsFlyout_default.updatedAt = 1788051053000;
-  recentTopics_default.updatedAt = 1789385630000;
+  recentTopics_default.updatedAt = 1789386480000;
   responseNotification_default.updatedAt = 1789246749000;
   settingsFlyout_default.updatedAt = 1788095208000;
   stableComposer_default.updatedAt = 1789125421000;

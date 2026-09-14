@@ -203,7 +203,8 @@ function writeVisits(next: string[]) {
         for (const [id, name] of Object.entries(settings.plain.projectNames ?? {})) {
             const n = usableName(name);
             if (!usedWs.has(id) || !n) continue;
-            if (isBrandLabel(n) && usableName(idx.nameByWs[id] || "") !== n) continue;
+            const side = usableName(idx.nameByWs[id] || "");
+            if (isBrandLabel(n) && side && side !== n) continue;
             keepProjects[id] = n;
         }
         for (const [id, snap] of Object.entries(settings.plain.projectIcons ?? {})) {
@@ -463,21 +464,10 @@ function shortOwnText(el: Element): string {
     return out.length >= 2 && out.length <= 64 ? out : "";
 }
 
-function isProjectHomeEl(el: Element): boolean {
-    const own = hrefParts(el.getAttribute("href"));
-    if (own.ws && !own.chat) return true;
-    if (own.chat) return false;
-    let found = false;
-    for (const a of el.querySelectorAll("a[href]")) {
-        const p = hrefParts(a.getAttribute("href"));
-        if (p.chat) return false;
-        if (p.ws) found = true;
-    }
-    return found;
-}
-
 function folderLabel(el: Element): string {
-    if (!isProjectHomeEl(el)) return "";
+    if (!el.querySelector("svg")) return "";
+    const { chat } = hrefParts(el.getAttribute("href"));
+    if (chat) return "";
     return usableName(shortOwnText(el));
 }
 
@@ -519,9 +509,9 @@ function liveIconSnap(ws: string): string {
     const fromIdx = sidebarIndex().iconByWs[ws];
     if (fromIdx) return fromIdx;
     try {
-        for (const a of document.querySelectorAll<HTMLAnchorElement>(`a[href^="/project/${ws}"]`)) {
-            const { chat } = hrefParts(a.getAttribute("href"));
-            if (chat) continue;
+        for (const a of document.querySelectorAll<HTMLAnchorElement>("a[href]")) {
+            const p = hrefParts(a.getAttribute("href"));
+            if (p.ws !== ws || p.chat) continue;
             const snap = encodeIcon(pickProjectSvg(a));
             if (snap) return snap;
         }
@@ -568,6 +558,7 @@ function sidebarIndex(): SidebarIndex {
 
     const index: SidebarIndex = { wsByConv: {}, nameByWs: {}, nameByConv: {}, iconByWs: {} };
     let currentName = "";
+    let pendingIcon = "";
 
     const assignConv = (chat: string, ws: string, name: string) => {
         if (!chat || !ws) return;
@@ -583,6 +574,7 @@ function sidebarIndex(): SidebarIndex {
         const { ws, chat } = hrefParts(el.getAttribute("href"));
         if (chat) {
             assignConv(chat, ws, currentName);
+            if (ws && pendingIcon) index.iconByWs[ws] ??= pendingIcon;
             if (ws && !index.nameByConv[chat]) {
                 const up = usableName(projectNameFromAncestors(el));
                 if (up) {
@@ -608,14 +600,19 @@ function sidebarIndex(): SidebarIndex {
             } else if (isSkipLabel(label)) {
                 currentName = index.nameByWs[ws] || "";
             }
+            const snap = encodeIcon(pickProjectSvg(el)) || pendingIcon;
+            if (snap) index.iconByWs[ws] = snap;
             continue;
         }
 
         const folder = folderLabel(el);
-        if (folder) currentName = folder;
+        if (folder) {
+            currentName = folder;
+            pendingIcon = encodeIcon(pickProjectSvg(el));
+        }
     }
 
-    for (const a of sidebar.querySelectorAll<HTMLAnchorElement>("a[href^='/project/']")) {
+    for (const a of sidebar.querySelectorAll<HTMLAnchorElement>("a[href]")) {
         const { ws, chat } = hrefParts(a.getAttribute("href"));
         if (!ws || chat) continue;
         const snap = encodeIcon(pickProjectSvg(a));
@@ -711,8 +708,7 @@ function rememberProject(id: string) {
     const liveName = ws === liveWorkspaceId() ? readOpenProjectName() : "";
     const cached = usableName(wsNames[ws] || settings.plain.projectNames?.[ws] || "");
     const fallback = !isBrandLabel(liveName) ? usableName(liveName) : "";
-    const stored = !isBrandLabel(cached) ? cached : "";
-    const name = sidebarName || fallback || stored;
+    const name = sidebarName || fallback || cached;
     rememberProjectIcon(ws);
     if (!name) return;
     wsNames[ws] = name;
