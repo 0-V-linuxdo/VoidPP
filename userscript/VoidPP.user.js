@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.1] v1.0.0
+// @version      [20260914.2] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -30,7 +30,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.1] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.2] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7366,9 +7366,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"442adc8"}`
-    }, `(${"442adc8"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"da3be3c"}`
+    }, `(${"da3be3c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14604,7 +14604,9 @@ html.void-rt-open [data-sidebar="gap"] {
   var TRIGGER_CODES = new Set(["Backquote", "IntlBackslash"]);
   var TRIGGER_KEYS = new Set(["`", "~", "·", "｀", "～", "Dead", "Process"]);
   var TITLE_TAIL = /\s*[·|—–-]\s*Grok.*$/i;
-  var SKIP_LABEL = /^(more|history|today|yesterday|projects|new chat|new conversation|see all(?: chats| conversations)?|show all(?: chats| conversations)?|view all(?: chats| conversations)?|all chats|all conversations|查看全部|显示全部|查看所有|全部会话|所有对话)$/i;
+  var SKIP_PHRASE = "see all(?: chats| conversations)?|show all(?: chats| conversations)?|view all(?: chats| conversations)?|all chats|all conversations|new conversation|new chat|more|history|today|yesterday|projects|查看全部|显示全部|查看所有|全部会话|所有对话|新聊天|新对话";
+  var SKIP_LABEL = new RegExp(`^(?:${SKIP_PHRASE})$`, "i");
+  var SKIP_LABEL_G = new RegExp(`\\b(?:${SKIP_PHRASE})\\b`, "gi");
   var SKIP_NOISE = /^(copy|share|retry|edit|more|thinking|analyzing|searching|continue from here|what can i help with\??|files|add files for grok to use in this project)$/i;
   var FILES_CHROME = /add files for grok to use in this project/i;
   var PANE_SKIP = "[data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
@@ -14640,11 +14642,20 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!t)
       return false;
     SKIP_LABEL.lastIndex = 0;
-    return SKIP_LABEL.test(t);
+    if (SKIP_LABEL.test(t))
+      return true;
+    SKIP_LABEL_G.lastIndex = 0;
+    return !t.replace(SKIP_LABEL_G, " ").replaceAll(/\s+/g, " ").trim();
   }
   function usableName(name) {
     const t = name.replaceAll(/\s+/g, " ").trim();
     return t && !isSkipLabel(t) ? t : "";
+  }
+  function usableTitle(name) {
+    const t = (name ?? "").replaceAll(/\s+/g, " ").trim();
+    if (!t || /^grok$/i.test(t) || /^void\+\+$/i.test(t) || isSkipLabel(t))
+      return "";
+    return t;
   }
   function unique(ids) {
     const seen = new Set;
@@ -14728,7 +14739,13 @@ html.void-rt-open [data-sidebar="gap"] {
         settings21.store.visits = visits;
         changed = true;
       }
-      if (assignRecord("titles", pruneRecord(settings21.plain.titles, visits)))
+      const titles = {};
+      for (const [id, name] of Object.entries(pruneRecord(settings21.plain.titles, visits))) {
+        const t = usableTitle(name);
+        if (t)
+          titles[id] = t;
+      }
+      if (assignRecord("titles", titles))
         changed = true;
       if (assignRecord("workspaceByConv", workspaceByConv))
         changed = true;
@@ -14743,7 +14760,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function rememberTitle(id, title) {
-    const t = title?.trim();
+    const t = usableTitle(title);
     if (!id || isHomeId(id) || !t)
       return;
     const prev = settings21.plain.titles ?? {};
@@ -14875,10 +14892,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function pageTitle() {
-    const raw = document.title.replace(TITLE_TAIL, "").trim();
-    if (!raw || /^grok$/i.test(raw))
-      return "";
-    return raw;
+    return usableTitle(document.title.replace(TITLE_TAIL, ""));
   }
   function lookup(id) {
     try {
@@ -14893,14 +14907,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!id || isHomeId(id))
       return "New chat";
     const conv = lookup(id);
-    if (conv?.title?.trim())
-      return conv.title.trim();
-    const cached = settings21.plain.titles?.[id];
-    if (cached)
-      return cached;
-    if (id === currentVisit())
-      return pageTitle() || "Untitled";
-    return "Untitled";
+    return usableTitle(conv?.title) || usableTitle(settings21.plain.titles?.[id]) || (id === currentVisit() ? pageTitle() : "") || "Untitled";
   }
   function liveWorkspaceId() {
     try {
@@ -18721,7 +18728,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   oneko_default.updatedAt = 1787870966000;
   placeholder_default.updatedAt = 1789207633000;
   pluginsFlyout_default.updatedAt = 1788051053000;
-  recentTopics_default.updatedAt = 1788966070000;
+  recentTopics_default.updatedAt = 1789383275000;
   responseNotification_default.updatedAt = 1789246749000;
   settingsFlyout_default.updatedAt = 1788095208000;
   stableComposer_default.updatedAt = 1789125421000;

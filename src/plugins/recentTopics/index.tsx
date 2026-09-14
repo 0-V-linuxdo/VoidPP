@@ -27,7 +27,9 @@ const HOME_SEP = "home:";
 const TRIGGER_CODES = new Set(["Backquote", "IntlBackslash"]);
 const TRIGGER_KEYS = new Set(["`", "~", "·", "｀", "～", "Dead", "Process"]);
 const TITLE_TAIL = /\s*[·|—–-]\s*Grok.*$/i;
-const SKIP_LABEL = /^(more|history|today|yesterday|projects|new chat|new conversation|see all(?: chats| conversations)?|show all(?: chats| conversations)?|view all(?: chats| conversations)?|all chats|all conversations|查看全部|显示全部|查看所有|全部会话|所有对话)$/i;
+const SKIP_PHRASE = "see all(?: chats| conversations)?|show all(?: chats| conversations)?|view all(?: chats| conversations)?|all chats|all conversations|new conversation|new chat|more|history|today|yesterday|projects|查看全部|显示全部|查看所有|全部会话|所有对话|新聊天|新对话";
+const SKIP_LABEL = new RegExp(`^(?:${SKIP_PHRASE})$`, "i");
+const SKIP_LABEL_G = new RegExp(`\\b(?:${SKIP_PHRASE})\\b`, "gi");
 const SKIP_NOISE = /^(copy|share|retry|edit|more|thinking|analyzing|searching|continue from here|what can i help with\??|files|add files for grok to use in this project)$/i;
 const FILES_CHROME = /add files for grok to use in this project/i;
 const PANE_SKIP = "[data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
@@ -95,12 +97,20 @@ function isSkipLabel(name: string): boolean {
     const t = name.replaceAll(/\s+/g, " ").trim();
     if (!t) return false;
     SKIP_LABEL.lastIndex = 0;
-    return SKIP_LABEL.test(t);
+    if (SKIP_LABEL.test(t)) return true;
+    SKIP_LABEL_G.lastIndex = 0;
+    return !t.replace(SKIP_LABEL_G, " ").replaceAll(/\s+/g, " ").trim();
 }
 
 function usableName(name: string): string {
     const t = name.replaceAll(/\s+/g, " ").trim();
     return t && !isSkipLabel(t) ? t : "";
+}
+
+function usableTitle(name: string | undefined): string {
+    const t = (name ?? "").replaceAll(/\s+/g, " ").trim();
+    if (!t || /^grok$/i.test(t) || /^void\+\+$/i.test(t) || isSkipLabel(t)) return "";
+    return t;
 }
 
 function unique(ids: string[]): string[] {
@@ -185,7 +195,12 @@ function writeVisits(next: string[]) {
             settings.store.visits = visits;
             changed = true;
         }
-        if (assignRecord("titles", pruneRecord(settings.plain.titles, visits))) changed = true;
+        const titles: Record<string, string> = {};
+        for (const [id, name] of Object.entries(pruneRecord(settings.plain.titles, visits))) {
+            const t = usableTitle(name);
+            if (t) titles[id] = t;
+        }
+        if (assignRecord("titles", titles)) changed = true;
         if (assignRecord("workspaceByConv", workspaceByConv)) changed = true;
         if (assignRecord("pages", pages)) changed = true;
         if (assignRecord("projectNames", keepProjects)) changed = true;
@@ -196,7 +211,7 @@ function writeVisits(next: string[]) {
 }
 
 function rememberTitle(id: string, title?: string) {
-    const t = title?.trim();
+    const t = usableTitle(title);
     if (!id || isHomeId(id) || !t) return;
     const prev = settings.plain.titles ?? {};
     if (prev[id] === t) return;
@@ -327,9 +342,7 @@ function idsFromHistory(): string[] {
 }
 
 function pageTitle(): string {
-    const raw = document.title.replace(TITLE_TAIL, "").trim();
-    if (!raw || /^grok$/i.test(raw)) return "";
-    return raw;
+    return usableTitle(document.title.replace(TITLE_TAIL, ""));
 }
 
 function lookup(id: string): GrokConversation | undefined {
@@ -345,11 +358,10 @@ function lookup(id: string): GrokConversation | undefined {
 function titleOf(id: string): string {
     if (!id || isHomeId(id)) return "New chat";
     const conv = lookup(id);
-    if (conv?.title?.trim()) return conv.title.trim();
-    const cached = settings.plain.titles?.[id];
-    if (cached) return cached;
-    if (id === currentVisit()) return pageTitle() || "Untitled";
-    return "Untitled";
+    return usableTitle(conv?.title)
+        || usableTitle(settings.plain.titles?.[id])
+        || (id === currentVisit() ? pageTitle() : "")
+        || "Untitled";
 }
 
 function liveWorkspaceId(): string {
