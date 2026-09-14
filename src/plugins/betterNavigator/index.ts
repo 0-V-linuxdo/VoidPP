@@ -24,7 +24,6 @@ const FLASH_MS = 2000;
 const THRESHOLD = 0.4;
 const OFFSET_PX = 72;
 const SLOT_CLASS = "void-bn-rail";
-const ZH = /^zh\b/i;
 
 const settings = definePluginSettings({
     showAssistant: {
@@ -131,12 +130,6 @@ function chatColumn(): HTMLElement | null {
     return pane.parentElement;
 }
 
-function roleLabel(role: Role): string {
-    const zh = ZH.test(document.documentElement.lang) || ZH.test(navigator.language);
-    if (role === "user") return zh ? "你" : "You";
-    return "Grok";
-}
-
 function summarize(el: HTMLElement): string {
     const clone = el.cloneNode(true) as HTMLElement;
     clone.querySelectorAll("button, svg, nav, time, .void-timestamp").forEach(n => n.remove());
@@ -224,13 +217,13 @@ function menuEl(nav: NavItem[], ticks: HTMLButtonElement[]): HTMLElement {
         btn.type = "button";
         btn.className = cl("item");
         btn.dataset.voidBnI = String(i);
-        const role = document.createElement("span");
-        role.className = cl("role");
-        role.textContent = roleLabel(item.role);
+        const emoji = document.createElement("span");
+        emoji.className = cl("emoji");
+        emoji.textContent = item.role === "user" ? "❓" : "🤖";
         const label = document.createElement("span");
         label.className = cl("label");
         label.textContent = item.text;
-        btn.append(role, label);
+        btn.append(emoji, label);
         btn.addEventListener("click", e => {
             e.preventDefault();
             e.stopPropagation();

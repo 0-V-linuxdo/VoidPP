@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.21] v1.0.0
+// @version      [20260914.22] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.21] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.22] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7349,9 +7349,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f27d33c"}`
-    }, `(${"f27d33c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"16359a8"}`
+    }, `(${"16359a8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7787,15 +7787,14 @@ button .void-info-hint {
 
 .void-bn-item {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.125rem;
+    align-items: center;
+    gap: 0.375rem;
     width: 100%;
-    padding: 0.5rem 0.625rem;
+    padding: 0.4rem 0.5rem;
     border: 0;
     border-radius: 0.75rem;
     background: transparent;
-    color: hsl(var(--fg-primary));
+    color: hsl(var(--fg-secondary));
     font: inherit;
     font-size: 0.875rem;
     line-height: 1.4;
@@ -7811,12 +7810,10 @@ button .void-info-hint {
     color: hsl(var(--fg-primary));
 }
 
-.void-bn-role {
+.void-bn-emoji {
     flex: none;
-    color: hsl(var(--fg-secondary));
-    font-size: 0.75rem;
-    line-height: 1.4;
-    letter-spacing: -0.2px;
+    font-size: 1rem;
+    line-height: 1;
 }
 
 .void-bn-label {
@@ -7871,7 +7868,6 @@ html.void-bn-hidetip:is(
   var THRESHOLD = 0.4;
   var OFFSET_PX = 72;
   var SLOT_CLASS = "void-bn-rail";
-  var ZH = /^zh\b/i;
   var settings6 = definePluginSettings({
     showAssistant: {
       type: 3 /* BOOLEAN */,
@@ -7969,12 +7965,6 @@ html.void-bn-hidetip:is(
     }
     return pane.parentElement;
   }
-  function roleLabel(role) {
-    const zh = ZH.test(document.documentElement.lang) || ZH.test(navigator.language);
-    if (role === "user")
-      return zh ? "你" : "You";
-    return "Grok";
-  }
   function summarize(el) {
     const clone = el.cloneNode(true);
     clone.querySelectorAll("button, svg, nav, time, .void-timestamp").forEach((n) => n.remove());
@@ -8066,13 +8056,13 @@ html.void-bn-hidetip:is(
       btn.type = "button";
       btn.className = cl17("item");
       btn.dataset.voidBnI = String(i);
-      const role = document.createElement("span");
-      role.className = cl17("role");
-      role.textContent = roleLabel(item.role);
+      const emoji = document.createElement("span");
+      emoji.className = cl17("emoji");
+      emoji.textContent = item.role === "user" ? "❓" : "\uD83E\uDD16";
       const label = document.createElement("span");
       label.className = cl17("label");
       label.textContent = item.text;
-      btn.append(role, label);
+      btn.append(emoji, label);
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -20004,7 +19994,7 @@ div:has(> #grok-bot-nav-button) {
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1781101259000;
   contextMenu_default.updatedAt = 1781702684000;
-  betterNavigator_default.updatedAt = 1789400304000;
+  betterNavigator_default.updatedAt = 1789401109000;
   noSidebarIdentity_default.updatedAt = 1788577403000;
   cleaner_default.updatedAt = 1789246749000;
   betterSidebar_default.updatedAt = 1789254776000;
