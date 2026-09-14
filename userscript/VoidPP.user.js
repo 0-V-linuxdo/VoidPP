@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.5] v1.0.0
+// @version      [20260914.6] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -30,7 +30,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.5] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.6] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7347,9 +7347,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"139a122"}`
-    }, `(${"139a122"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"294cb87"}`
+    }, `(${"294cb87"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11394,13 +11394,16 @@ html.void-rt-open [data-sidebar="gap"] {
     SKIP_LABEL_G.lastIndex = 0;
     return !t.replace(SKIP_LABEL_G, " ").replaceAll(/\s+/g, " ").trim();
   }
+  function isBrandLabel(name) {
+    return /^grok$/i.test(name) || /^void\+\+$/i.test(name);
+  }
   function usableName(name) {
     const t = name.replaceAll(/\s+/g, " ").trim();
     return t && !isSkipLabel(t) ? t : "";
   }
   function usableTitle(name) {
     const t = (name ?? "").replaceAll(/\s+/g, " ").trim();
-    if (!t || /^grok$/i.test(t) || /^void\+\+$/i.test(t) || isSkipLabel(t))
+    if (!t || isBrandLabel(t) || isSkipLabel(t))
       return "";
     return t;
   }
@@ -11424,23 +11427,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function capVisits(ids) {
     const allowHome = settings14.store.includeHome;
-    const urlWs = projectIdFromUrl();
-    const preferredHome = urlWs ? homeId(urlWs) : HOME_KEY;
-    const seen = new Set;
-    const out = [];
-    for (const id of ids) {
-      if (!id || seen.has(id))
-        continue;
-      if (isHomeId(id)) {
-        if (!allowHome || id !== preferredHome)
-          continue;
-      }
-      seen.add(id);
-      out.push(id);
-      if (out.length >= maxCount())
-        break;
-    }
-    return out;
+    return unique(ids).filter((id) => isHomeId(id) ? allowHome && (id === HOME_KEY || !!workspaceFromHomeId(id)) : !!id).slice(0, maxCount());
   }
   function pruneRecord(source, ids) {
     const keep = {};
@@ -11492,10 +11479,14 @@ html.void-rt-open [data-sidebar="gap"] {
         workspaceByConv[id] = ws;
       }
       const keepProjects = {};
+      const idx = sidebarIndex();
       for (const [id, name] of Object.entries(settings14.plain.projectNames ?? {})) {
         const n = usableName(name);
-        if (usedWs.has(id) && n)
-          keepProjects[id] = n;
+        if (!usedWs.has(id) || !n)
+          continue;
+        if (isBrandLabel(n) && usableName(idx.nameByWs[id] || "") !== n)
+          continue;
+        keepProjects[id] = n;
       }
       let changed = false;
       if (!sameList(readVisits(), visits)) {
@@ -11617,24 +11608,22 @@ html.void-rt-open [data-sidebar="gap"] {
     const urlChat = chatIdFromUrl();
     if (urlChat)
       return urlChat;
+    const ws = projectIdFromUrl();
+    if (ws)
+      return homeId(ws);
     try {
-      const { conversationId, optimisticConversationId } = ChatPageStore.useChatPageStore.getState();
-      if (conversationId)
-        return conversationId;
-      if (optimisticConversationId)
-        return optimisticConversationId;
-    } catch (e) {
-      logger23.debug("ChatPageStore unavailable:", e);
-    }
+      const path = location.pathname.replace(/\/+$/, "") || "/";
+      if (path === "/")
+        return HOME_KEY;
+    } catch {}
     try {
       const fromRoute = routeConvId(RoutingStore.useRoutingStore.getState().route);
-      if (fromRoute != null)
+      if (fromRoute != null && isHomeId(fromRoute))
         return fromRoute;
     } catch (e) {
       logger23.debug("RoutingStore unavailable:", e);
     }
-    const ws = projectIdFromUrl();
-    return ws ? homeId(ws) : null;
+    return null;
   }
   function idsFromHistory() {
     try {
@@ -11657,6 +11646,9 @@ html.void-rt-open [data-sidebar="gap"] {
   function pageTitle() {
     return usableTitle(document.title.replace(TITLE_TAIL, ""));
   }
+  function titleFromPage(id) {
+    return id && id === chatIdFromUrl() ? pageTitle() : "";
+  }
   function lookup(id) {
     try {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
@@ -11670,21 +11662,24 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!id || isHomeId(id))
       return "New chat";
     const conv = lookup(id);
-    return usableTitle(conv?.title) || usableTitle(settings14.plain.titles?.[id]) || (id === currentVisit() ? pageTitle() : "") || "Untitled";
+    return usableTitle(conv?.title) || usableTitle(settings14.plain.titles?.[id]) || titleFromPage(id) || "Untitled";
   }
   function liveWorkspaceId() {
-    try {
-      const pid = asWorkspaceId(ChatPageStore.useChatPageStore.getState().projectId);
-      if (pid)
-        return pid;
-    } catch {}
+    const fromUrl = asWorkspaceId(projectIdFromUrl());
+    if (fromUrl)
+      return fromUrl;
+    if (!chatIdFromUrl())
+      return "";
     try {
       const { workspaceId } = RoutingStore.useRoutingStore.getState().route;
       const id = asWorkspaceId(workspaceId);
       if (id)
         return id;
     } catch {}
-    return asWorkspaceId(projectIdFromUrl());
+    try {
+      return asWorkspaceId(ChatPageStore.useChatPageStore.getState().projectId);
+    } catch {}
+    return "";
   }
   function workspaceFromHistory(id) {
     try {
@@ -11930,9 +11925,12 @@ html.void-rt-open [data-sidebar="gap"] {
     if (prevWs[id] !== ws)
       settings14.store.workspaceByConv = { ...prevWs, [id]: ws };
     const idx = sidebarIndex();
-    const sidebarName = idx.nameByConv[id] || idx.nameByWs[ws] || "";
+    const sidebarName = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || "");
     const liveName = ws === liveWorkspaceId() ? readOpenProjectName() : "";
-    const name = usableName(sidebarName || wsNames[ws] || liveName || settings14.plain.projectNames?.[ws] || "");
+    const cached = usableName(wsNames[ws] || settings14.plain.projectNames?.[ws] || "");
+    const fallback = !isBrandLabel(liveName) ? usableName(liveName) : "";
+    const stored = !isBrandLabel(cached) ? cached : "";
+    const name = sidebarName || fallback || stored;
     if (!name)
       return;
     wsNames[ws] = name;
@@ -12279,13 +12277,21 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function betterLines(store, dom) {
-    const storePair = store.some((l) => l.role === "user") && store.some((l) => l.role === "assistant");
-    if (storePair)
-      return store;
-    const domPair = dom.some((l) => l.role === "user") && dom.some((l) => l.role === "assistant");
-    if (domPair)
+    const sr = linesRank(store);
+    const dr = linesRank(dom);
+    if (dr > sr)
       return dom;
-    return store.length ? store : dom;
+    if (sr > 0)
+      return store;
+    return dom;
+  }
+  function linesRank(lines) {
+    let n = 0;
+    if (lines.some((l) => l.role === "user"))
+      n += 2;
+    if (lines.some((l) => l.role === "assistant"))
+      n += 1;
+    return n;
   }
   function parseSnap(raw) {
     if (!raw)
@@ -12404,6 +12410,14 @@ html.void-rt-open [data-sidebar="gap"] {
     const lines = lastRound(betterLines(fromStore, fromDom));
     if (!lines.length)
       return;
+    const prev = thumbs.get(id) ?? parseSnap(settings14.plain.pages?.[id]);
+    const prevLines = prev ? lastRound(prev.lines) : [];
+    const nextRank = linesRank(lines);
+    const prevRank = linesRank(prevLines);
+    if (prevRank && nextRank < prevRank)
+      return;
+    if (prevRank && nextRank === prevRank && nextRank < 3 && id !== chatIdFromUrl())
+      return;
     const snap = {
       title: titleOf(id),
       theme: detectTheme(),
@@ -12453,7 +12467,7 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     }
     const conv = lookup(id);
-    rememberTitle(id, conv?.title || (id === currentVisit() ? pageTitle() : undefined));
+    rememberTitle(id, conv?.title || titleFromPage(id) || undefined);
     if (shouldRememberProject(id))
       rememberProject(id);
   }
@@ -12470,7 +12484,7 @@ html.void-rt-open [data-sidebar="gap"] {
     writeVisits(capVisits(merged));
     reconcileSidebarCache();
     if (current) {
-      rememberTitle(current, lookup(current)?.title || pageTitle());
+      rememberTitle(current, lookup(current)?.title || titleFromPage(current));
       if (shouldRememberProject(current))
         rememberProject(current);
     }
@@ -18724,7 +18738,7 @@ div:has(> #grok-bot-nav-button) {
   streamerMode_default.updatedAt = 0;
   inputHistory_default.updatedAt = 1789266420000;
   downloadTTS_default.updatedAt = 0;
-  recentTopics_default.updatedAt = 1789384986000;
+  recentTopics_default.updatedAt = 1789385499000;
   betterLinks_default.updatedAt = 0;
   experiments_default.updatedAt = 0;
   customInstructions_default.updatedAt = 0;

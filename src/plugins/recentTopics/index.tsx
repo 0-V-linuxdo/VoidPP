@@ -102,6 +102,10 @@ function isSkipLabel(name: string): boolean {
     return !t.replace(SKIP_LABEL_G, " ").replaceAll(/\s+/g, " ").trim();
 }
 
+function isBrandLabel(name: string): boolean {
+    return /^grok$/i.test(name) || /^void\+\+$/i.test(name);
+}
+
 function usableName(name: string): string {
     const t = name.replaceAll(/\s+/g, " ").trim();
     return t && !isSkipLabel(t) ? t : "";
@@ -109,7 +113,7 @@ function usableName(name: string): string {
 
 function usableTitle(name: string | undefined): string {
     const t = (name ?? "").replaceAll(/\s+/g, " ").trim();
-    if (!t || /^grok$/i.test(t) || /^void\+\+$/i.test(t) || isSkipLabel(t)) return "";
+    if (!t || isBrandLabel(t) || isSkipLabel(t)) return "";
     return t;
 }
 
@@ -135,20 +139,7 @@ function maxCount(): number {
 
 function capVisits(ids: string[]): string[] {
     const allowHome = settings.store.includeHome;
-    const urlWs = projectIdFromUrl();
-    const preferredHome = urlWs ? homeId(urlWs) : HOME_KEY;
-    const seen = new Set<string>();
-    const out: string[] = [];
-    for (const id of ids) {
-        if (!id || seen.has(id)) continue;
-        if (isHomeId(id)) {
-            if (!allowHome || id !== preferredHome) continue;
-        }
-        seen.add(id);
-        out.push(id);
-        if (out.length >= maxCount()) break;
-    }
-    return out;
+    return unique(ids).filter(id => isHomeId(id) ? allowHome && (id === HOME_KEY || !!workspaceFromHomeId(id)) : !!id).slice(0, maxCount());
 }
 
 function pruneRecord(source: Record<string, string> | undefined, ids: string[]): Record<string, string> {
@@ -199,9 +190,12 @@ function writeVisits(next: string[]) {
             workspaceByConv[id] = ws;
         }
         const keepProjects: Record<string, string> = {};
+        const idx = sidebarIndex();
         for (const [id, name] of Object.entries(settings.plain.projectNames ?? {})) {
             const n = usableName(name);
-            if (usedWs.has(id) && n) keepProjects[id] = n;
+            if (!usedWs.has(id) || !n) continue;
+            if (isBrandLabel(n) && usableName(idx.nameByWs[id] || "") !== n) continue;
+            keepProjects[id] = n;
         }
         let changed = false;
         if (!sameList(readVisits(), visits)) {
@@ -317,24 +311,19 @@ function hrefParts(href: string | null | undefined): { ws: string; chat: string;
 function currentVisit(): string | null {
     const urlChat = chatIdFromUrl();
     if (urlChat) return urlChat;
-
+    const ws = projectIdFromUrl();
+    if (ws) return homeId(ws);
     try {
-        const { conversationId, optimisticConversationId } = ChatPageStore.useChatPageStore.getState();
-        if (conversationId) return conversationId;
-        if (optimisticConversationId) return optimisticConversationId;
-    } catch (e) {
-        logger.debug("ChatPageStore unavailable:", e);
-    }
-
+        const path = location.pathname.replace(/\/+$/, "") || "/";
+        if (path === "/") return HOME_KEY;
+    } catch {}
     try {
         const fromRoute = routeConvId(RoutingStore.useRoutingStore.getState().route);
-        if (fromRoute != null) return fromRoute;
+        if (fromRoute != null && isHomeId(fromRoute)) return fromRoute;
     } catch (e) {
         logger.debug("RoutingStore unavailable:", e);
     }
-
-    const ws = projectIdFromUrl();
-    return ws ? homeId(ws) : null;
+    return null;
 }
 
 function idsFromHistory(): string[] {
@@ -358,6 +347,10 @@ function pageTitle(): string {
     return usableTitle(document.title.replace(TITLE_TAIL, ""));
 }
 
+function titleFromPage(id: string): string {
+    return id && id === chatIdFromUrl() ? pageTitle() : "";
+}
+
 function lookup(id: string): GrokConversation | undefined {
     try {
         const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
@@ -373,21 +366,23 @@ function titleOf(id: string): string {
     const conv = lookup(id);
     return usableTitle(conv?.title)
         || usableTitle(settings.plain.titles?.[id])
-        || (id === currentVisit() ? pageTitle() : "")
+        || titleFromPage(id)
         || "Untitled";
 }
 
 function liveWorkspaceId(): string {
-    try {
-        const pid = asWorkspaceId(ChatPageStore.useChatPageStore.getState().projectId);
-        if (pid) return pid;
-    } catch {}
+    const fromUrl = asWorkspaceId(projectIdFromUrl());
+    if (fromUrl) return fromUrl;
+    if (!chatIdFromUrl()) return "";
     try {
         const { workspaceId } = RoutingStore.useRoutingStore.getState().route;
         const id = asWorkspaceId(workspaceId);
         if (id) return id;
     } catch {}
-    return asWorkspaceId(projectIdFromUrl());
+    try {
+        return asWorkspaceId(ChatPageStore.useChatPageStore.getState().projectId);
+    } catch {}
+    return "";
 }
 
 function workspaceFromHistory(id: string): string {
@@ -619,9 +614,12 @@ function rememberProject(id: string) {
     if (prevWs[id] !== ws) settings.store.workspaceByConv = { ...prevWs, [id]: ws };
 
     const idx = sidebarIndex();
-    const sidebarName = idx.nameByConv[id] || idx.nameByWs[ws] || "";
+    const sidebarName = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || "");
     const liveName = ws === liveWorkspaceId() ? readOpenProjectName() : "";
-    const name = usableName(sidebarName || wsNames[ws] || liveName || settings.plain.projectNames?.[ws] || "");
+    const cached = usableName(wsNames[ws] || settings.plain.projectNames?.[ws] || "");
+    const fallback = !isBrandLabel(liveName) ? usableName(liveName) : "";
+    const stored = !isBrandLabel(cached) ? cached : "";
+    const name = sidebarName || fallback || stored;
     if (!name) return;
     wsNames[ws] = name;
     const prevNames = settings.plain.projectNames ?? {};
@@ -961,11 +959,18 @@ function linesFromStore(id: string): PageLine[] {
 }
 
 function betterLines(store: PageLine[], dom: PageLine[]): PageLine[] {
-    const storePair = store.some(l => l.role === "user") && store.some(l => l.role === "assistant");
-    if (storePair) return store;
-    const domPair = dom.some(l => l.role === "user") && dom.some(l => l.role === "assistant");
-    if (domPair) return dom;
-    return store.length ? store : dom;
+    const sr = linesRank(store);
+    const dr = linesRank(dom);
+    if (dr > sr) return dom;
+    if (sr > 0) return store;
+    return dom;
+}
+
+function linesRank(lines: PageLine[]): number {
+    let n = 0;
+    if (lines.some(l => l.role === "user")) n += 2;
+    if (lines.some(l => l.role === "assistant")) n += 1;
+    return n;
 }
 
 function parseSnap(raw: string | undefined): PageSnap | null {
@@ -1082,6 +1087,12 @@ function captureId(id: string) {
     }
     const lines = lastRound(betterLines(fromStore, fromDom));
     if (!lines.length) return;
+    const prev = thumbs.get(id) ?? parseSnap(settings.plain.pages?.[id]);
+    const prevLines = prev ? lastRound(prev.lines) : [];
+    const nextRank = linesRank(lines);
+    const prevRank = linesRank(prevLines);
+    if (prevRank && nextRank < prevRank) return;
+    if (prevRank && nextRank === prevRank && nextRank < 3 && id !== chatIdFromUrl()) return;
     const snap: PageSnap = {
         title: titleOf(id),
         theme: detectTheme(),
@@ -1127,7 +1138,7 @@ function bump(id: string) {
         return;
     }
     const conv = lookup(id);
-    rememberTitle(id, conv?.title || (id === currentVisit() ? pageTitle() : undefined));
+    rememberTitle(id, conv?.title || titleFromPage(id) || undefined);
     if (shouldRememberProject(id)) rememberProject(id);
 }
 
@@ -1146,7 +1157,7 @@ function hydrate() {
     writeVisits(capVisits(merged));
     reconcileSidebarCache();
     if (current) {
-        rememberTitle(current, lookup(current)?.title || pageTitle());
+        rememberTitle(current, lookup(current)?.title || titleFromPage(current));
         if (shouldRememberProject(current)) rememberProject(current);
     }
     for (const id of capVisits(readVisits())) {
