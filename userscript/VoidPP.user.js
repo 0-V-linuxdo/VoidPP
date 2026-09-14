@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.26] v1.0.0
+// @version      [20260914.27] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.26] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.27] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7349,9 +7349,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.26] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4734abf"}`
-    }, `(${"4734abf"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4f0e1ff"}`
+    }, `(${"4f0e1ff"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7898,7 +7898,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var FLASH_REDUCED_MS = 1000;
   var THRESHOLD = 0.4;
   var OFFSET_PX = 72;
-  var LOCK_MS = 800;
+  var LOCK_MS = 1000;
   var LOCK_FAST_MS = 280;
   var FAR_VIEWPORTS = 2.5;
   var DENSE_N = 16;
@@ -7969,12 +7969,6 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   }
   function nativeTicks() {
     return [...document.querySelectorAll(TICK_SEL)].filter(isVisible);
-  }
-  function nativeStepBtn(dir) {
-    const btn = document.querySelector(dir < 0 ? PREV_SEL : NEXT_SEL);
-    if (!btn || !isVisible(btn) || btn.disabled)
-      return null;
-    return btn;
   }
   function nativeSlot() {
     const tick = document.querySelector(TICK_SEL);
@@ -8099,21 +8093,20 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     return out;
   }
-  function nextResponseIdx(from, dir) {
-    const asst = responseIdxs();
-    if (!asst.length)
-      return null;
-    if (dir < 0) {
-      let best = -1;
-      for (const i of asst)
-        if (i < from)
-          best = i;
-      return best >= 0 ? best : null;
+  function responseOrdinal(index) {
+    let k = 0;
+    for (let i = 0;i <= index && i < lastNav.length; i++) {
+      if (lastNav[i].role === "assistant")
+        k++;
     }
-    for (const i of asst)
-      if (i > from)
-        return i;
-    return null;
+    return k;
+  }
+  function labelOrdinal(btn) {
+    const m = btn.getAttribute("aria-label")?.match(/Go to response (\d+)/i);
+    if (!m)
+      return null;
+    const n = Number(m[1]);
+    return Number.isFinite(n) && n > 0 ? n : null;
   }
   function metaLabel(index) {
     const n = lastNav.length;
@@ -8148,22 +8141,27 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     flashTimer = window.setTimeout(clearFlash, reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
   }
   function nativeTickFor(item, index, ticks) {
-    if (!ticks.length)
-      return;
-    if (ticks.length === lastNav.length)
-      return ticks[index];
     if (item.role !== "assistant")
       return;
-    let seen = -1;
-    for (let i = 0;i <= index; i++) {
-      if (lastNav[i]?.role === "assistant")
-        seen++;
-    }
-    return ticks[seen];
+    const list = ticks?.length ? ticks : nativeTicks();
+    if (!list.length)
+      return;
+    const k = responseOrdinal(index);
+    const hit = list.find((t) => labelOrdinal(t) === k);
+    return hit ?? list[k - 1];
   }
-  function navIndexFromTick(tickIndex) {
-    if (nativeTicks().length === lastNav.length)
-      return tickIndex;
+  function navIndexFromTick(tick, tickIndex) {
+    const n = labelOrdinal(tick);
+    if (n != null) {
+      let seen = 0;
+      for (let i = 0;i < lastNav.length; i++) {
+        if (lastNav[i].role !== "assistant")
+          continue;
+        seen++;
+        if (seen === n)
+          return i;
+      }
+    }
     let seen = 0;
     for (let i = 0;i < lastNav.length; i++) {
       if (lastNav[i].role !== "assistant")
@@ -8180,41 +8178,31 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const top = pane?.getBoundingClientRect().top ?? 0;
     return Math.abs(el.getBoundingClientRect().top - top) > vh * FAR_VIEWPORTS;
   }
-  function jump(item, index, ticks) {
-    const far = isFar(item.el);
-    lockIdx = index;
-    lockUntil = performance.now() + (far || reduceMotion() ? LOCK_FAST_MS : LOCK_MS);
-    applyActive(index);
-    const tick = nativeTickFor(item, index, ticks);
-    if (tick) {
-      tick.click();
-      window.setTimeout(() => flash(item.el), 180);
+  function scrollToItem(el, behavior) {
+    el.style.scrollMarginTop = `${OFFSET_PX}px`;
+    const pane = chatPane();
+    if (pane && pane.contains(el)) {
+      const pr = pane.getBoundingClientRect();
+      const er = el.getBoundingClientRect();
+      pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - OFFSET_PX, behavior });
       return;
     }
-    item.el.style.scrollMarginTop = `${OFFSET_PX}px`;
-    const behavior = far || reduceMotion() ? "auto" : "smooth";
-    item.el.scrollIntoView({ behavior, block: "start" });
+    el.scrollIntoView({ behavior, block: "start" });
+  }
+  function jump(item, index) {
+    const instant = isFar(item.el) || reduceMotion();
+    lockIdx = index;
+    lockUntil = performance.now() + (instant ? LOCK_FAST_MS : LOCK_MS);
+    applyActive(index);
+    scrollToItem(item.el, instant ? "auto" : "smooth");
     window.setTimeout(() => flash(item.el), 180);
   }
-  function stepResponse(dir) {
-    const native = nativeStepBtn(dir);
-    const nextIdx = nextResponseIdx(activeIdx, dir);
-    if (native) {
-      if (nextIdx != null) {
-        lockIdx = nextIdx;
-        lockUntil = performance.now() + LOCK_FAST_MS;
-        applyActive(nextIdx);
-        alignMenu(nextIdx);
-      }
-      native.click();
-      if (nextIdx != null)
-        window.setTimeout(() => flash(lastNav[nextIdx].el), 180);
-      return true;
-    }
-    if (nextIdx == null)
+  function stepItem(dir) {
+    const next = activeIdx + dir;
+    if (next < 0 || next >= lastNav.length)
       return false;
-    jump(lastNav[nextIdx], nextIdx, []);
-    alignMenu(nextIdx);
+    jump(lastNav[next], next);
+    alignMenu(next);
     return true;
   }
   function markAim(index) {
@@ -8267,7 +8255,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const origin = rail ?? host;
     const selfTick = host.querySelectorAll(".void-bn-tick")[index];
     const ticks = nativeTicks();
-    const native = ticks.length === lastNav.length ? ticks[index] : nativeTickFor(lastNav[index], index, ticks);
+    const native = lastNav[index] ? nativeTickFor(lastNav[index], index, ticks) : undefined;
     const tick = selfTick ?? native;
     const row = menu.querySelector(`.void-bn-item[data-void-bn-i="${index}"]`);
     row?.scrollIntoView({ block: "nearest" });
@@ -8311,7 +8299,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         node.textContent = nav[i].text;
     });
   }
-  function menuEl(nav, ticks) {
+  function menuEl(nav) {
     const menu = document.createElement("div");
     menu.className = cl17("menu");
     menu.addEventListener("pointerenter", () => {
@@ -8341,7 +8329,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        jump(item, i, ticks);
+        jump(item, i);
       });
       li.appendChild(btn);
       ul.appendChild(li);
@@ -8361,7 +8349,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       tick.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        jump(item, i, []);
+        jump(item, i);
       });
       tick.addEventListener("pointerenter", () => alignMenu(i));
       wrap.appendChild(tick);
@@ -8410,7 +8398,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     if (native) {
       const idx = nativeTicks().indexOf(native);
       if (idx >= 0)
-        alignMenu(navIndexFromTick(idx));
+        alignMenu(navIndexFromTick(native, idx));
       return;
     }
     const self = t.closest(".void-bn-tick");
@@ -8434,16 +8422,13 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     if (!homeEnd && !arrow)
       return;
     if (homeEnd) {
-      const asst = responseIdxs();
-      if (!asst.length)
-        return;
       e.preventDefault();
-      const idx = e.key === "Home" ? asst[0] : asst[asst.length - 1];
-      jump(lastNav[idx], idx, nativeTicks());
+      const idx = e.key === "Home" ? 0 : lastNav.length - 1;
+      jump(lastNav[idx], idx);
       alignMenu(idx);
       return;
     }
-    if (!stepResponse(e.key === "ArrowUp" ? -1 : 1))
+    if (!stepItem(e.key === "ArrowUp" ? -1 : 1))
       return;
     e.preventDefault();
   }
@@ -8506,12 +8491,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     box.className = `${cl17("host")} ${cl17(mode)}`;
     if (mode === "native" && slot) {
       slot.classList.add(SLOT_CLASS);
-      box.appendChild(menuEl(nav, ticks));
+      box.appendChild(menuEl(nav));
       slot.appendChild(box);
       rail = slot;
     } else if (mode === "fill" && slot) {
       slot.classList.add(SLOT_CLASS);
-      box.append(tickRail(nav), menuEl(nav, []));
+      box.append(tickRail(nav), menuEl(nav));
       slot.appendChild(box);
       rail = slot;
     } else {
@@ -8520,7 +8505,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         return;
       pinFrame(frame);
       box.classList.add(SLOT_CLASS);
-      box.append(tickRail(nav), menuEl(nav, []));
+      box.append(tickRail(nav), menuEl(nav));
       frame.appendChild(box);
     }
     host = box;

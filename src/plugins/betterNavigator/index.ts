@@ -31,7 +31,7 @@ const FLASH_MS = 2000;
 const FLASH_REDUCED_MS = 1000;
 const THRESHOLD = 0.4;
 const OFFSET_PX = 72;
-const LOCK_MS = 800;
+const LOCK_MS = 1000;
 const LOCK_FAST_MS = 280;
 const FAR_VIEWPORTS = 2.5;
 const DENSE_N = 16;
@@ -115,12 +115,6 @@ function chatPath(): string {
 
 function nativeTicks(): HTMLButtonElement[] {
     return [...document.querySelectorAll<HTMLButtonElement>(TICK_SEL)].filter(isVisible);
-}
-
-function nativeStepBtn(dir: -1 | 1): HTMLButtonElement | null {
-    const btn = document.querySelector<HTMLButtonElement>(dir < 0 ? PREV_SEL : NEXT_SEL);
-    if (!btn || !isVisible(btn) || btn.disabled) return null;
-    return btn;
 }
 
 function nativeSlot(): HTMLElement | null {
@@ -235,16 +229,19 @@ function responseIdxs(): number[] {
     return out;
 }
 
-function nextResponseIdx(from: number, dir: -1 | 1): number | null {
-    const asst = responseIdxs();
-    if (!asst.length) return null;
-    if (dir < 0) {
-        let best = -1;
-        for (const i of asst) if (i < from) best = i;
-        return best >= 0 ? best : null;
+function responseOrdinal(index: number): number {
+    let k = 0;
+    for (let i = 0; i <= index && i < lastNav.length; i++) {
+        if (lastNav[i].role === "assistant") k++;
     }
-    for (const i of asst) if (i > from) return i;
-    return null;
+    return k;
+}
+
+function labelOrdinal(btn: HTMLButtonElement): number | null {
+    const m = btn.getAttribute("aria-label")?.match(/Go to response (\d+)/i);
+    if (!m) return null;
+    const n = Number(m[1]);
+    return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 function metaLabel(index: number): string {
@@ -275,19 +272,25 @@ function flash(el: HTMLElement) {
     flashTimer = window.setTimeout(clearFlash, reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
 }
 
-function nativeTickFor(item: NavItem, index: number, ticks: HTMLButtonElement[]): HTMLButtonElement | undefined {
-    if (!ticks.length) return;
-    if (ticks.length === lastNav.length) return ticks[index];
+function nativeTickFor(item: NavItem, index: number, ticks?: HTMLButtonElement[]): HTMLButtonElement | undefined {
     if (item.role !== "assistant") return;
-    let seen = -1;
-    for (let i = 0; i <= index; i++) {
-        if (lastNav[i]?.role === "assistant") seen++;
-    }
-    return ticks[seen];
+    const list = ticks?.length ? ticks : nativeTicks();
+    if (!list.length) return;
+    const k = responseOrdinal(index);
+    const hit = list.find(t => labelOrdinal(t) === k);
+    return hit ?? list[k - 1];
 }
 
-function navIndexFromTick(tickIndex: number): number {
-    if (nativeTicks().length === lastNav.length) return tickIndex;
+function navIndexFromTick(tick: HTMLButtonElement, tickIndex: number): number {
+    const n = labelOrdinal(tick);
+    if (n != null) {
+        let seen = 0;
+        for (let i = 0; i < lastNav.length; i++) {
+            if (lastNav[i].role !== "assistant") continue;
+            seen++;
+            if (seen === n) return i;
+        }
+    }
     let seen = 0;
     for (let i = 0; i < lastNav.length; i++) {
         if (lastNav[i].role !== "assistant") continue;
@@ -304,40 +307,32 @@ function isFar(el: HTMLElement): boolean {
     return Math.abs(el.getBoundingClientRect().top - top) > vh * FAR_VIEWPORTS;
 }
 
-function jump(item: NavItem, index: number, ticks: HTMLButtonElement[]) {
-    const far = isFar(item.el);
-    lockIdx = index;
-    lockUntil = performance.now() + (far || reduceMotion() ? LOCK_FAST_MS : LOCK_MS);
-    applyActive(index);
-    const tick = nativeTickFor(item, index, ticks);
-    if (tick) {
-        tick.click();
-        window.setTimeout(() => flash(item.el), 180);
+function scrollToItem(el: HTMLElement, behavior: ScrollBehavior) {
+    el.style.scrollMarginTop = `${OFFSET_PX}px`;
+    const pane = chatPane();
+    if (pane && pane.contains(el)) {
+        const pr = pane.getBoundingClientRect();
+        const er = el.getBoundingClientRect();
+        pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - OFFSET_PX, behavior });
         return;
     }
-    item.el.style.scrollMarginTop = `${OFFSET_PX}px`;
-    const behavior: ScrollBehavior = far || reduceMotion() ? "auto" : "smooth";
-    item.el.scrollIntoView({ behavior, block: "start" });
+    el.scrollIntoView({ behavior, block: "start" });
+}
+
+function jump(item: NavItem, index: number) {
+    const instant = isFar(item.el) || reduceMotion();
+    lockIdx = index;
+    lockUntil = performance.now() + (instant ? LOCK_FAST_MS : LOCK_MS);
+    applyActive(index);
+    scrollToItem(item.el, instant ? "auto" : "smooth");
     window.setTimeout(() => flash(item.el), 180);
 }
 
-function stepResponse(dir: -1 | 1): boolean {
-    const native = nativeStepBtn(dir);
-    const nextIdx = nextResponseIdx(activeIdx, dir);
-    if (native) {
-        if (nextIdx != null) {
-            lockIdx = nextIdx;
-            lockUntil = performance.now() + LOCK_FAST_MS;
-            applyActive(nextIdx);
-            alignMenu(nextIdx);
-        }
-        native.click();
-        if (nextIdx != null) window.setTimeout(() => flash(lastNav[nextIdx].el), 180);
-        return true;
-    }
-    if (nextIdx == null) return false;
-    jump(lastNav[nextIdx], nextIdx, []);
-    alignMenu(nextIdx);
+function stepItem(dir: -1 | 1): boolean {
+    const next = activeIdx + dir;
+    if (next < 0 || next >= lastNav.length) return false;
+    jump(lastNav[next], next);
+    alignMenu(next);
     return true;
 }
 
@@ -389,7 +384,7 @@ function alignMenu(index: number) {
     const origin = rail ?? host;
     const selfTick = host.querySelectorAll<HTMLElement>(".void-bn-tick")[index];
     const ticks = nativeTicks();
-    const native = ticks.length === lastNav.length ? ticks[index] : nativeTickFor(lastNav[index], index, ticks);
+    const native = lastNav[index] ? nativeTickFor(lastNav[index], index, ticks) : undefined;
     const tick = selfTick ?? native;
     const row = menu.querySelector<HTMLElement>(`.void-bn-item[data-void-bn-i="${index}"]`);
     row?.scrollIntoView({ block: "nearest" });
@@ -431,7 +426,7 @@ function patchLabels(nav: NavItem[]) {
     });
 }
 
-function menuEl(nav: NavItem[], ticks: HTMLButtonElement[]): HTMLElement {
+function menuEl(nav: NavItem[]): HTMLElement {
     const menu = document.createElement("div");
     menu.className = cl("menu");
     menu.addEventListener("pointerenter", () => { overMenu = true; });
@@ -457,7 +452,7 @@ function menuEl(nav: NavItem[], ticks: HTMLButtonElement[]): HTMLElement {
         btn.addEventListener("click", e => {
             e.preventDefault();
             e.stopPropagation();
-            jump(item, i, ticks);
+            jump(item, i);
         });
         li.appendChild(btn);
         ul.appendChild(li);
@@ -478,7 +473,7 @@ function tickRail(nav: NavItem[]): HTMLElement {
         tick.addEventListener("click", e => {
             e.preventDefault();
             e.stopPropagation();
-            jump(item, i, []);
+            jump(item, i);
         });
         tick.addEventListener("pointerenter", () => alignMenu(i));
         wrap.appendChild(tick);
@@ -527,7 +522,7 @@ function onPointerOver(e: Event) {
     const native = t.closest<HTMLButtonElement>(TICK_SEL);
     if (native) {
         const idx = nativeTicks().indexOf(native);
-        if (idx >= 0) alignMenu(navIndexFromTick(idx));
+        if (idx >= 0) alignMenu(navIndexFromTick(native, idx));
         return;
     }
     const self = t.closest<HTMLElement>(".void-bn-tick");
@@ -548,15 +543,13 @@ function onKeyDown(e: KeyboardEvent) {
     const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
     if (!homeEnd && !arrow) return;
     if (homeEnd) {
-        const asst = responseIdxs();
-        if (!asst.length) return;
         e.preventDefault();
-        const idx = e.key === "Home" ? asst[0] : asst[asst.length - 1];
-        jump(lastNav[idx], idx, nativeTicks());
+        const idx = e.key === "Home" ? 0 : lastNav.length - 1;
+        jump(lastNav[idx], idx);
         alignMenu(idx);
         return;
     }
-    if (!stepResponse(e.key === "ArrowUp" ? -1 : 1)) return;
+    if (!stepItem(e.key === "ArrowUp" ? -1 : 1)) return;
     e.preventDefault();
 }
 
@@ -624,12 +617,12 @@ function paint() {
 
     if (mode === "native" && slot) {
         slot.classList.add(SLOT_CLASS);
-        box.appendChild(menuEl(nav, ticks));
+        box.appendChild(menuEl(nav));
         slot.appendChild(box);
         rail = slot;
     } else if (mode === "fill" && slot) {
         slot.classList.add(SLOT_CLASS);
-        box.append(tickRail(nav), menuEl(nav, []));
+        box.append(tickRail(nav), menuEl(nav));
         slot.appendChild(box);
         rail = slot;
     } else {
@@ -637,7 +630,7 @@ function paint() {
         if (!frame) return;
         pinFrame(frame);
         box.classList.add(SLOT_CLASS);
-        box.append(tickRail(nav), menuEl(nav, []));
+        box.append(tickRail(nav), menuEl(nav));
         frame.appendChild(box);
     }
 
