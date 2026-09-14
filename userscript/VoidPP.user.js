@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.28] v1.0.0
+// @version      [20260914.29] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.28] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.29] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7368,9 +7368,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"7281219"}`
-    }, `(${"7281219"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.29] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9b1c21a"}`
+    }, `(${"9b1c21a"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10424,7 +10424,21 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       collectConvIds(child, out, depth + 1);
     }
   }
+  function onBotPage() {
+    try {
+      if (RoutingStore.useRoutingStore.getState().route.page === "bot")
+        return true;
+    } catch {}
+    try {
+      const path = location.pathname.replace(/\/+$/, "") || "/";
+      if (path === "/bot" || path.startsWith("/bot/"))
+        return true;
+    } catch {}
+    return false;
+  }
   function currentIds() {
+    if (onBotPage())
+      return [];
     const ids = [];
     const add = (value) => {
       if (isConvId(value) && !ids.includes(value))
@@ -10544,10 +10558,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       if (found.size) {
         for (const id of found)
           ids.add(id);
-        continue;
       }
-      for (const id of currentIds())
-        ids.add(id);
     }
   }
   function liveIds() {
@@ -10684,6 +10695,8 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const path = new URL(href, location.origin).pathname.replace(/\/+$/, "") || "/";
       if (CONV_PATH.test(path))
         return false;
+      if (path === "/bot" || path.startsWith("/bot/"))
+        return true;
       return PRIMARY_PATH.has(path);
     } catch {
       return false;
@@ -20324,7 +20337,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterLinks_default.updatedAt = 1787870966000;
   betterNavigator_default.updatedAt = 1789404663000;
   betterSidebar_default.updatedAt = 1789254776000;
-  chatListStatus_default.updatedAt = 1789403832000;
+  chatListStatus_default.updatedAt = 1789405718000;
   chatStateFavicons_default.updatedAt = 1787789817000;
   cleaner_default.updatedAt = 1789246749000;
   cloneChats_default.updatedAt = 1787870966000;

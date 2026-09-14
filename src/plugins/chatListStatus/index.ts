@@ -119,7 +119,19 @@ function collectConvIds(value: unknown, out: Set<string>, depth = 0) {
     }
 }
 
+function onBotPage(): boolean {
+    try {
+        if (RoutingStore.useRoutingStore.getState().route.page === "bot") return true;
+    } catch { /* route not ready */ }
+    try {
+        const path = location.pathname.replace(/\/+$/, "") || "/";
+        if (path === "/bot" || path.startsWith("/bot/")) return true;
+    } catch { /* */ }
+    return false;
+}
+
 function currentIds(): string[] {
+    if (onBotPage()) return [];
     const ids: string[] = [];
     const add = (value: unknown) => {
         if (isConvId(value) && !ids.includes(value)) ids.push(value);
@@ -226,9 +238,7 @@ function extraLiveIds(ids: Set<string>) {
         collectConvIds(state, found);
         if (found.size) {
             for (const id of found) ids.add(id);
-            continue;
         }
-        for (const id of currentIds()) ids.add(id);
     }
 }
 
@@ -362,6 +372,7 @@ function isPrimaryNav(el: Element): boolean {
     try {
         const path = new URL(href, location.origin).pathname.replace(/\/+$/, "") || "/";
         if (CONV_PATH.test(path)) return false;
+        if (path === "/bot" || path.startsWith("/bot/")) return true;
         return PRIMARY_PATH.has(path);
     } catch {
         return false;
