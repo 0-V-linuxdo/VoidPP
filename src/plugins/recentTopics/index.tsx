@@ -147,7 +147,24 @@ function maxCount(): number {
 
 function capVisits(ids: string[]): string[] {
     const allowHome = settings.store.includeHome;
-    return unique(ids).filter(id => isHomeId(id) ? allowHome && (id === HOME_KEY || !!workspaceFromHomeId(id)) : !!id).slice(0, maxCount());
+    const current = currentVisit();
+    const dirtyGlobalWs = asWorkspaceId(settings.plain.workspaceByConv?.[HOME_KEY]);
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const raw of ids) {
+        if (!raw) continue;
+        let id = raw;
+        if (id === HOME_KEY && dirtyGlobalWs && current !== HOME_KEY) id = homeId(dirtyGlobalWs);
+        if (seen.has(id)) continue;
+        if (isHomeId(id)) {
+            if (!allowHome) continue;
+            if (id !== HOME_KEY && !workspaceFromHomeId(id)) continue;
+        }
+        seen.add(id);
+        out.push(id);
+        if (out.length >= maxCount()) break;
+    }
+    return out;
 }
 
 function pruneRecord(source: Record<string, string> | undefined, ids: string[]): Record<string, string> {
@@ -186,6 +203,7 @@ function writeVisits(next: string[]) {
         const rawWs = pruneRecord(settings.plain.workspaceByConv, visits);
         const workspaceByConv: Record<string, string> = {};
         for (const [id, value] of Object.entries(rawWs)) {
+            if (id === HOME_KEY) continue;
             const ws = asWorkspaceId(value);
             if (ws) workspaceByConv[id] = ws;
         }
@@ -718,11 +736,7 @@ function dropWorkspace(id: string) {
 
 function workspaceOf(id: string): string {
     if (!id) return "";
-    if (isHomeId(id)) {
-        const fromKey = workspaceFromHomeId(id);
-        if (fromKey) return fromKey;
-        return id === currentVisit() ? liveWorkspaceId() : asWorkspaceId(settings.plain.workspaceByConv?.[id]);
-    }
+    if (isHomeId(id)) return workspaceFromHomeId(id);
     const fromConv = convWorkspaceId(id);
     if (fromConv) return fromConv;
     if (workspaceFetchedEmpty(id)) return "";
@@ -763,7 +777,7 @@ function projectNameOf(id: string): string {
 }
 
 function rememberProject(id: string) {
-    if (!id) return;
+    if (!id || id === HOME_KEY) return;
     const ws = workspaceOf(id);
     if (!ws) return;
     const prevWs = settings.plain.workspaceByConv ?? {};

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.9] v1.0.0
+// @version      [20260914.10] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -30,7 +30,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.9] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.10] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7347,9 +7347,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"94f62fe"}`
-    }, `(${"94f62fe"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1040200"}`
+    }, `(${"1040200"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11432,7 +11432,30 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function capVisits(ids) {
     const allowHome = settings14.store.includeHome;
-    return unique(ids).filter((id) => isHomeId(id) ? allowHome && (id === HOME_KEY || !!workspaceFromHomeId(id)) : !!id).slice(0, maxCount());
+    const current = currentVisit();
+    const dirtyGlobalWs = asWorkspaceId(settings14.plain.workspaceByConv?.[HOME_KEY]);
+    const seen = new Set;
+    const out = [];
+    for (const raw of ids) {
+      if (!raw)
+        continue;
+      let id = raw;
+      if (id === HOME_KEY && dirtyGlobalWs && current !== HOME_KEY)
+        id = homeId(dirtyGlobalWs);
+      if (seen.has(id))
+        continue;
+      if (isHomeId(id)) {
+        if (!allowHome)
+          continue;
+        if (id !== HOME_KEY && !workspaceFromHomeId(id))
+          continue;
+      }
+      seen.add(id);
+      out.push(id);
+      if (out.length >= maxCount())
+        break;
+    }
+    return out;
   }
   function pruneRecord(source, ids) {
     const keep = {};
@@ -11470,6 +11493,8 @@ html.void-rt-open [data-sidebar="gap"] {
       const rawWs = pruneRecord(settings14.plain.workspaceByConv, visits);
       const workspaceByConv = {};
       for (const [id, value] of Object.entries(rawWs)) {
+        if (id === HOME_KEY)
+          continue;
         const ws = asWorkspaceId(value);
         if (ws)
           workspaceByConv[id] = ws;
@@ -12041,12 +12066,8 @@ html.void-rt-open [data-sidebar="gap"] {
   function workspaceOf(id) {
     if (!id)
       return "";
-    if (isHomeId(id)) {
-      const fromKey = workspaceFromHomeId(id);
-      if (fromKey)
-        return fromKey;
-      return id === currentVisit() ? liveWorkspaceId() : asWorkspaceId(settings14.plain.workspaceByConv?.[id]);
-    }
+    if (isHomeId(id))
+      return workspaceFromHomeId(id);
     const fromConv = convWorkspaceId(id);
     if (fromConv)
       return fromConv;
@@ -12096,7 +12117,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return named;
   }
   function rememberProject(id) {
-    if (!id)
+    if (!id || id === HOME_KEY)
       return;
     const ws = workspaceOf(id);
     if (!ws)
@@ -19003,7 +19024,7 @@ div:has(> #grok-bot-nav-button) {
   streamerMode_default.updatedAt = 0;
   inputHistory_default.updatedAt = 1789266420000;
   downloadTTS_default.updatedAt = 0;
-  recentTopics_default.updatedAt = 1789386879000;
+  recentTopics_default.updatedAt = 1789387550000;
   betterLinks_default.updatedAt = 0;
   experiments_default.updatedAt = 0;
   customInstructions_default.updatedAt = 0;
