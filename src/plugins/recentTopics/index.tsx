@@ -208,7 +208,7 @@ function writeVisits(next: string[]) {
             keepProjects[id] = n;
         }
         for (const [id, snap] of Object.entries(settings.plain.projectIcons ?? {})) {
-            if (!usedWs.has(id) || !snap) continue;
+            if (!usedWs.has(id) || !snap || isChromeSnap(snap)) continue;
             keepIcons[id] = snap;
         }
         let changed = false;
@@ -471,61 +471,131 @@ function folderLabel(el: Element): string {
     return usableName(shortOwnText(el));
 }
 
-function pathDs(svg: SVGSVGElement): string[] {
-    const out: string[] = [];
+function pathSpan(d: string): number {
+    let min = Infinity;
+    let max = -Infinity;
+    const re = /-?\d*\.?\d+/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(d))) {
+        const n = Number(m[0]);
+        if (n < min) min = n;
+        if (n > max) max = n;
+    }
+    return Number.isFinite(min) ? max - min : 0;
+}
+
+function isDotPath(d: string): boolean {
+    return /h\s*\.0?1\b|v\s*\.0?1\b/i.test(d);
+}
+
+function isChromeSnap(snap: string): boolean {
+    if (!snap) return true;
+    const lines = snap.split("\n").map(s => s.trim()).filter(Boolean);
+    if (!lines.length) return true;
+    const circles = lines.filter(s => /^c:/i.test(s));
+    const paths = lines.filter(s => !/^[cly]:/i.test(s));
+    const body = paths.filter(d => d !== SPIN_D && !isDotPath(d) && d.length >= 24 && pathSpan(d) >= 10);
+    if (body.length) return false;
+    if (circles.length === 3 || circles.length === 6) return true;
+    if (paths.length >= 2 && paths.every(d => isDotPath(d) || pathSpan(d) < 10)) return true;
+    if (paths.length === 1 && paths[0].length < 32) return true;
+    if (!paths.length && circles.length > 0 && circles.every(c => Number(c.split(",")[2]) <= 1.5)) return true;
+    return false;
+}
+
+function isChromeSvg(svg: SVGSVGElement): boolean {
+    if (svg.closest(ICON_SKIP)) return true;
+    const ds: string[] = [];
     for (const p of svg.querySelectorAll("path")) {
         const d = (p.getAttribute("d") || "").trim();
-        if (!d || d === SPIN_D || !PATH_OK.test(d)) continue;
-        out.push(d);
+        if (d) ds.push(d);
     }
-    return out;
+    if (ds.some(d => d === SPIN_D) && !ds.some(d => d !== SPIN_D && d.length >= 24)) return true;
+    const nCircle = svg.querySelectorAll("circle").length;
+    const body = ds.filter(d => d !== SPIN_D && !isDotPath(d) && d.length >= 24 && pathSpan(d) >= 10);
+    if (body.length) return false;
+    if ((nCircle === 3 || nCircle === 6) && !body.length) return true;
+    if (ds.length >= 2 && ds.every(d => isDotPath(d) || pathSpan(d) < 10)) return true;
+    if (ds.length === 1 && ds[0].length < 32 && nCircle === 0) return true;
+    return false;
+}
+
+function attrNum(el: Element, name: string): string {
+    const t = (el.getAttribute(name) || "").trim();
+    return /^-?\d*\.?\d+(e[+-]?\d+)?$/i.test(t) ? t : "";
 }
 
 function encodeIcon(svg: SVGSVGElement | null): string {
-    if (!svg) return "";
-    const ds = pathDs(svg);
-    let len = 0;
-    for (const d of ds) len += d.length;
-    return len < 24 ? "" : ds.join("\n");
+    if (!svg || isChromeSvg(svg)) return "";
+    const parts: string[] = [];
+    for (const node of svg.querySelectorAll("path, circle, line, polyline")) {
+        const tag = node.localName;
+        if (tag === "path") {
+            const d = (node.getAttribute("d") || "").trim();
+            if (!d || d === SPIN_D || !PATH_OK.test(d) || isDotPath(d)) continue;
+            parts.push(d);
+            continue;
+        }
+        if (tag === "circle") {
+            const cx = attrNum(node, "cx");
+            const cy = attrNum(node, "cy");
+            const r = attrNum(node, "r");
+            if (!cx || !cy || !r || Number(r) <= 1.5) continue;
+            parts.push(`c:${cx},${cy},${r}`);
+            continue;
+        }
+        if (tag === "line") {
+            const x1 = attrNum(node, "x1");
+            const y1 = attrNum(node, "y1");
+            const x2 = attrNum(node, "x2");
+            const y2 = attrNum(node, "y2");
+            if (!x1 || !y1 || !x2 || !y2) continue;
+            parts.push(`l:${x1},${y1},${x2},${y2}`);
+            continue;
+        }
+        const pts = (node.getAttribute("points") || "").trim();
+        if (pts && /^[\d.,\s+-]+$/.test(pts) && pts.length <= 240) parts.push(`y:${pts}`);
+    }
+    if (isChromeSnap(parts.join("\n"))) return "";
+    const hasPath = parts.some(p => !/^[cly]:/i.test(p) && p.length >= 24);
+    const hasBody = parts.some(p => p.startsWith("c:") && Number(p.split(",")[2]) > 1.5);
+    const extras = parts.filter(p => /^[ly]:/i.test(p)).length;
+    return hasPath || hasBody || extras >= 2 ? parts.join("\n") : "";
 }
 
 function pickProjectSvg(el: Element): SVGSVGElement | null {
-    let best: SVGSVGElement | null = null;
-    let bestLen = 0;
     for (const svg of el.querySelectorAll<SVGSVGElement>("svg")) {
-        if (svg.closest(ICON_SKIP)) continue;
-        const ds = pathDs(svg);
-        let len = 0;
-        for (const d of ds) len += d.length;
-        if (len < 24 || len <= bestLen) continue;
-        best = svg;
-        bestLen = len;
+        const host = svg.closest("a[href]");
+        if (host && host !== el) {
+            const { chat } = hrefParts(host.getAttribute("href"));
+            if (chat) continue;
+        }
+        if (encodeIcon(svg)) return svg;
     }
-    return best;
+    return null;
 }
 
 function liveIconSnap(ws: string): string {
     if (!ws) return "";
-    const fromIdx = sidebarIndex().iconByWs[ws];
-    if (fromIdx) return fromIdx;
-    try {
-        for (const a of document.querySelectorAll<HTMLAnchorElement>("a[href]")) {
-            const p = hrefParts(a.getAttribute("href"));
-            if (p.ws !== ws || p.chat) continue;
-            const snap = encodeIcon(pickProjectSvg(a));
-            if (snap) return snap;
-        }
-    } catch {}
-    return "";
+    const snap = sidebarIndex().iconByWs[ws] || "";
+    return snap && !isChromeSnap(snap) ? snap : "";
 }
 
 function rememberProjectIcon(ws: string) {
     if (!ws) return;
     const snap = liveIconSnap(ws);
-    if (!snap) return;
-    wsIcons[ws] = snap;
     const prev = settings.plain.projectIcons ?? {};
-    if (prev[ws] !== snap) settings.store.projectIcons = { ...prev, [ws]: snap };
+    if (snap) {
+        wsIcons[ws] = snap;
+        if (prev[ws] !== snap) settings.store.projectIcons = { ...prev, [ws]: snap };
+        return;
+    }
+    if (prev[ws] && isChromeSnap(prev[ws])) {
+        const next = { ...prev };
+        delete next[ws];
+        delete wsIcons[ws];
+        settings.store.projectIcons = next;
+    }
 }
 
 function projectNameFromAncestors(el: Element): string {
@@ -553,6 +623,7 @@ function sidebarIndex(): SidebarIndex {
     if (!sidebar) return empty;
     let iconSig = 0;
     for (const p of sidebar.querySelectorAll("svg path")) iconSig += (p.getAttribute("d") || "").length;
+    iconSig += sidebar.querySelectorAll("svg circle").length * 17;
     const key = `${sidebar.childElementCount}:${(sidebar.textContent ?? "").length}:${iconSig}`;
     if (sidebarSnap?.key === key) return sidebarSnap.index;
 
@@ -589,6 +660,7 @@ function sidebarIndex(): SidebarIndex {
         const label = shortOwnText(el) || folderLabel(el);
         if (isSkipLabel(label) && !ws) {
             currentName = "";
+            pendingIcon = "";
             continue;
         }
 
@@ -600,8 +672,9 @@ function sidebarIndex(): SidebarIndex {
             } else if (isSkipLabel(label)) {
                 currentName = index.nameByWs[ws] || "";
             }
-            const snap = encodeIcon(pickProjectSvg(el)) || pendingIcon;
-            if (snap) index.iconByWs[ws] = snap;
+            const snap = encodeIcon(pickProjectSvg(el));
+            if (snap) index.iconByWs[ws] ??= snap;
+            else if (pendingIcon) index.iconByWs[ws] ??= pendingIcon;
             continue;
         }
 
@@ -610,13 +683,6 @@ function sidebarIndex(): SidebarIndex {
             currentName = folder;
             pendingIcon = encodeIcon(pickProjectSvg(el));
         }
-    }
-
-    for (const a of sidebar.querySelectorAll<HTMLAnchorElement>("a[href]")) {
-        const { ws, chat } = hrefParts(a.getAttribute("href"));
-        if (!ws || chat) continue;
-        const snap = encodeIcon(pickProjectSvg(a));
-        if (snap) index.iconByWs[ws] = snap;
     }
 
     sidebarSnap = { key, index };
@@ -741,12 +807,18 @@ function reconcileSidebarCache() {
         }
     }
     for (const [ws, snap] of Object.entries(idx.iconByWs)) {
-        if (!snap) continue;
+        if (!snap || isChromeSnap(snap)) continue;
         wsIcons[ws] = snap;
         if (prevIcons[ws] !== snap) {
             prevIcons[ws] = snap;
             iconsChanged = true;
         }
+    }
+    for (const [ws, snap] of Object.entries(prevIcons)) {
+        if (!snap || !isChromeSnap(snap)) continue;
+        delete prevIcons[ws];
+        delete wsIcons[ws];
+        iconsChanged = true;
     }
     for (const [ws, name] of Object.entries(prevNames)) {
         if (usableName(name)) continue;
@@ -1613,19 +1685,54 @@ function folderIcon(): SVGSVGElement {
 
 function iconFromSnap(snap: string): SVGSVGElement {
     const svg = folderIcon();
-    const ds = snap.split("\n").map(s => s.trim()).filter(d => d && PATH_OK.test(d) && d !== SPIN_D);
-    if (!ds.length) return svg;
-    svg.replaceChildren();
-    for (const d of ds) {
+    if (!snap || isChromeSnap(snap)) return svg;
+    const kids: SVGElement[] = [];
+    for (const raw of snap.split("\n")) {
+        const line = raw.trim();
+        if (!line) continue;
+        if (line.startsWith("c:")) {
+            const [cx, cy, r] = line.slice(2).split(",");
+            if (!cx || !cy || !r || Number(r) <= 1.5) continue;
+            if (![cx, cy, r].every(v => /^-?\d*\.?\d+(e[+-]?\d+)?$/i.test(v))) continue;
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", cx);
+            circle.setAttribute("cy", cy);
+            circle.setAttribute("r", r);
+            kids.push(circle);
+            continue;
+        }
+        if (line.startsWith("l:")) {
+            const [x1, y1, x2, y2] = line.slice(2).split(",");
+            if (![x1, y1, x2, y2].every(v => v && /^-?\d*\.?\d+(e[+-]?\d+)?$/i.test(v))) continue;
+            const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            ln.setAttribute("x1", x1);
+            ln.setAttribute("y1", y1);
+            ln.setAttribute("x2", x2);
+            ln.setAttribute("y2", y2);
+            kids.push(ln);
+            continue;
+        }
+        if (line.startsWith("y:")) {
+            const pts = line.slice(2);
+            if (!pts || !/^[\d.,\s+-]+$/.test(pts)) continue;
+            const poly = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+            poly.setAttribute("points", pts);
+            kids.push(poly);
+            continue;
+        }
+        if (!PATH_OK.test(line) || line === SPIN_D || isDotPath(line)) continue;
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("d", d);
-        svg.append(path);
+        path.setAttribute("d", line);
+        kids.push(path);
     }
+    if (!kids.length) return svg;
+    svg.replaceChildren(...kids);
     return svg;
 }
 
 function projectIconOf(ws: string): SVGSVGElement {
-    const snap = ws ? (wsIcons[ws] || settings.plain.projectIcons?.[ws] || liveIconSnap(ws) || "") : "";
+    const raw = ws ? (wsIcons[ws] || settings.plain.projectIcons?.[ws] || liveIconSnap(ws) || "") : "";
+    const snap = raw && !isChromeSnap(raw) ? raw : "";
     if (snap) {
         wsIcons[ws] = snap;
         return iconFromSnap(snap);
