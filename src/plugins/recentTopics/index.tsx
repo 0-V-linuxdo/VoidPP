@@ -47,6 +47,7 @@ const ICON_SKIP = ".void-cls,[data-sidebar='menu-action'],[data-sidebar='menu-ba
 const DENIED_MAX = 40;
 const DENIED_HOLD_MS = 60_000;
 const SETTLE_MS = 200;
+const HOVER_ARM_PX = 4;
 const EFFECT_GM_KEY = "VoidPP.rt.effect";
 const EFFECT_LS_KEY = "voidpp.rt.v1";
 
@@ -115,7 +116,13 @@ let held = false;
 let ctrlHeld = false;
 let keys: AbortController | null = null;
 let host: HTMLDivElement | null = null;
-let paintedKey = "";
+let paintedIds = "";
+let paintedMeta = "";
+let hoverArmed = false;
+let hoverOrigin = false;
+let hoverX = 0;
+let hoverY = 0;
+let suspendPaint = false;
 let sidebarSnap: { key: string; index: SidebarIndex; } | null = null;
 const pendingWs = new Set<string>();
 
@@ -350,7 +357,7 @@ function onRemoteEffect(raw: unknown) {
         effect.deniedAt = keepAt;
         effect.visits = capVisits(unique([currentVisit() ?? "", ...snap.visits, ...effect.visits]));
         effect.ts = Math.max(effect.ts, snap.ts);
-        if (open) paint();
+        maybePaint();
     } finally {
         applyingRemote = false;
     }
@@ -473,7 +480,7 @@ function commitVisits(next: string[]) {
     if (assignRecord("pages", pages)) changed = true;
     if (assignRecord("projectNames", keepProjects)) changed = true;
     if (assignRecord("projectIcons", keepIcons)) changed = true;
-    if (changed && open) paint();
+    if (changed) maybePaint();
 }
 
 function rememberTitle(id: string, title?: string) {
@@ -1151,7 +1158,7 @@ function requestWorkspace(id: string) {
                 || asWorkspaceId(conv?.workspaces);
             if (!ws) {
                 dropWorkspace(id);
-                if (open) paint();
+                maybePaint();
                 return;
             }
             const prev = settings.plain.workspaceByConv ?? {};
@@ -1165,7 +1172,7 @@ function requestWorkspace(id: string) {
                 settings.store.projectNames = next;
                 delete wsNames[ws];
             }
-            if (open) paint();
+            maybePaint();
         }).catch(e => logger.debug("workspace fetch failed:", e)).finally(() => {
             pendingWs.delete(id);
         });
@@ -1859,6 +1866,9 @@ function begin(reverse: boolean, fromHold: boolean) {
     captureCurrent();
     open = true;
     selected = 0;
+    hoverArmed = false;
+    hoverOrigin = false;
+    suspendPaint = true;
     try {
         hydrate();
         const current = currentVisit();
@@ -1866,6 +1876,8 @@ function begin(reverse: boolean, fromHold: boolean) {
         if (topics().length > 1) selected = reverse ? topics().length - 1 : 1;
     } catch (e) {
         logger.error("Failed to open switcher:", e);
+    } finally {
+        suspendPaint = false;
     }
     paint();
 }
@@ -2126,6 +2138,7 @@ function buildHost(): HTMLDivElement {
     root.id = "void-rt-host";
     root.setAttribute("role", "presentation");
     root.addEventListener("click", cancel);
+    root.addEventListener("pointermove", onHoverMove, { passive: true });
 
     const panel = node("div", cl("panel"));
     panel.setAttribute("role", "listbox");
@@ -2134,6 +2147,29 @@ function buildHost(): HTMLDivElement {
     panel.append(node("div", cl("list")));
     root.append(panel);
     return root;
+}
+
+function maybePaint() {
+    if (open && !suspendPaint) paint();
+}
+
+function onHoverMove(e: PointerEvent) {
+    if (!open || hoverArmed) return;
+    if (!hoverOrigin) {
+        hoverX = e.clientX;
+        hoverY = e.clientY;
+        hoverOrigin = true;
+    }
+    const dx = e.clientX - hoverX;
+    const dy = e.clientY - hoverY;
+    if (Math.abs(dx) < HOVER_ARM_PX && Math.abs(dy) < HOVER_ARM_PX) return;
+    hoverArmed = true;
+}
+
+function selectCard(index: number) {
+    if (!hoverArmed || selected === index) return;
+    selected = index;
+    syncActive();
 }
 
 function renderList(items: Topic[]) {
@@ -2156,16 +2192,8 @@ function renderList(items: Topic[]) {
         btn.setAttribute("role", "option");
         btn.setAttribute("aria-label", topic.project ? `${topic.title}, ${topic.project}` : topic.title);
         btn.style.setProperty("--void-rt-card-accent", accentOf(topic.id));
-        btn.addEventListener("pointerenter", () => {
-            if (selected === i) return;
-            selected = i;
-            syncActive();
-        });
-        btn.addEventListener("focus", () => {
-            if (selected === i) return;
-            selected = i;
-            syncActive();
-        });
+        btn.addEventListener("pointerenter", () => selectCard(i));
+        btn.addEventListener("focus", () => selectCard(i));
         btn.addEventListener("click", () => pick(i));
 
         const shot = node("span", cl("thumb"));
@@ -2182,6 +2210,41 @@ function renderList(items: Topic[]) {
 
         btn.append(shot, meta);
         list!.append(btn);
+    });
+}
+
+function patchList(items: Topic[]) {
+    if (!host) return;
+    const cards = [...host.querySelectorAll<HTMLElement>(`.${cl("card")}`)];
+    if (cards.length !== items.length) {
+        renderList(items);
+        return;
+    }
+    items.forEach((topic, i) => {
+        const card = cards[i];
+        card.setAttribute("aria-label", topic.project ? `${topic.title}, ${topic.project}` : topic.title);
+        card.style.setProperty("--void-rt-card-accent", accentOf(topic.id));
+        const name = card.querySelector(`.${cl("name")}`);
+        if (name) name.textContent = topic.title;
+        const meta = card.querySelector(`.${cl("meta")}`) as HTMLElement | null;
+        if (!meta) return;
+        let row = meta.querySelector(`.${cl("host")}`) as HTMLElement | null;
+        if (!topic.project) {
+            row?.remove();
+            return;
+        }
+        if (!row) {
+            row = node("span", cl("host"));
+            row.append(projectIconOf(topic.ws), node("span", cl("host-name"), topic.project));
+            meta.append(row);
+            return;
+        }
+        const label = row.querySelector(`.${cl("host-name")}`);
+        if (label) label.textContent = topic.project;
+        const next = projectIconOf(topic.ws);
+        const prev = row.querySelector("svg");
+        if (prev) prev.replaceWith(next);
+        else row.prepend(next);
     });
 }
 
@@ -2207,7 +2270,9 @@ function paint() {
     }
 
     const items = topics();
-    const key = items.map(t => `${t.id}\0${t.title}\0${t.project}`).join("|") || "__empty__";
+    const keepId = items[selected]?.id ?? "";
+    const ids = items.map(t => t.id).join("|") || "__empty__";
+    const meta = items.map(t => `${t.title}\0${t.project}`).join("|");
 
     if (!host) {
         host = buildHost();
@@ -2221,30 +2286,42 @@ function paint() {
     panel.style.setProperty("--void-rt-count", String(Math.max(1, items.length)));
 
     if (!items.length) {
-        if (paintedKey !== "__empty__") {
+        if (paintedIds !== "__empty__") {
             panel.replaceChildren(node("div", cl("empty"), "Open a few chats, then hold Ctrl+` to switch."));
-            paintedKey = "__empty__";
+            paintedIds = "__empty__";
+            paintedMeta = "";
         }
         requestAnimationFrame(() => panel.setAttribute("data-visible", "true"));
         return;
     }
 
-    if (paintedKey === "__empty__" || !panel.querySelector(`.${cl("list")}`)) {
+    if (paintedIds === "__empty__" || !panel.querySelector(`.${cl("list")}`)) {
         panel.replaceChildren(node("div", cl("list")));
-        paintedKey = "";
+        paintedIds = "";
+        paintedMeta = "";
     }
 
-    if (paintedKey !== key) {
+    if (paintedIds !== ids) {
         renderList(items);
-        paintedKey = key;
+        paintedIds = ids;
+        paintedMeta = meta;
+    } else if (paintedMeta !== meta) {
+        patchList(items);
+        paintedMeta = meta;
     }
+
+    const idx = keepId ? items.findIndex(t => t.id === keepId) : -1;
+    selected = idx >= 0 ? idx : Math.min(selected, items.length - 1);
     syncActive();
     requestAnimationFrame(() => panel.setAttribute("data-visible", "true"));
 }
 
 function detachHost() {
     document.documentElement.classList.remove("void-rt-open");
-    paintedKey = "";
+    paintedIds = "";
+    paintedMeta = "";
+    hoverArmed = false;
+    hoverOrigin = false;
     if (host) {
         try { host.hidePopover(); } catch {}
         host.remove();
