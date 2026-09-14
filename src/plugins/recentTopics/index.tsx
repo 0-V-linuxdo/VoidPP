@@ -550,10 +550,10 @@ function asWorkspaceId(value: unknown): string {
 function hrefFor(id: string, workspaceId?: string): string {
     if (isHomeId(id)) {
         const ws = workspaceFromHomeId(id) || asWorkspaceId(workspaceId);
-        return ws ? `/project/${ws}` : "/";
+        return ws ? `/project/${ws}?tab=conversations` : "/";
     }
     const ws = asWorkspaceId(workspaceId);
-    if (!id) return ws ? `/project/${ws}` : "/";
+    if (!id) return ws ? `/project/${ws}?tab=conversations` : "/";
     if (ws) return `/project/${ws}?chat=${encodeURIComponent(id)}`;
     return `/c/${encodeURIComponent(id)}`;
 }
@@ -1727,6 +1727,7 @@ function applyChatPage(id: string, workspaceId?: string) {
     try {
         const chat = ChatPageStore.useChatPageStore.getState();
         chat.setConversationId(id || undefined);
+        if (!id) chat.setOptimisticConversationId(undefined);
         chat.setProjectId(asWorkspaceId(workspaceId) || undefined);
     } catch (e) {
         logger.debug("ChatPageStore update failed:", e);
@@ -1744,13 +1745,22 @@ function navigateTo(id: string) {
             const hereChat = route.conversationId || chatIdFromUrl();
             if (!ws) {
                 if (!hereChat && (route.page === "main" || !hereWs)) return;
-                routing.push({ page: "main", teamId });
+                routing.push({ page: "main", conversationId: null, teamId });
                 applyChatPage("");
                 return;
             }
             if (!hereChat && hereWs === ws) return;
-            routing.push({ page: "workspace", workspaceId: ws, tab: "conversations", teamId });
+            const dest: GrokRoute = {
+                page: "workspace",
+                workspaceId: ws,
+                tab: "conversations",
+                conversationId: null,
+                teamId,
+            };
+            if (hereChat && hereWs === ws) routing.replace(dest);
+            else routing.push(dest);
             applyChatPage("", ws);
+            if (chatIdFromUrl()) location.assign(hrefFor(homeId(ws), ws));
             return;
         }
 
