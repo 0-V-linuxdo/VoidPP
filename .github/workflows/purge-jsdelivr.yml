@@ -1,0 +1,18 @@
+name: Purge jsDelivr
+
+on:
+  push:
+    branches: [voidpp]
+    paths:
+      - userscript/VoidPP.user.js
+
+permissions:
+  contents: read
+
+jobs:
+  purge:
+    name: Purge install badge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Purge jsDelivr @heads/voidpp userscript
+        run: curl -fsS "https://purge.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp/userscript/VoidPP.user.js"
