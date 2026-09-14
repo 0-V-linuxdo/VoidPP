@@ -16,24 +16,20 @@
     max-height: 2.25rem;
     padding: 0;
     box-sizing: border-box;
-    background: transparent;
-    box-shadow: none;
-}
-
-.void-cms-pin:is(:hover, :focus-visible) {
-    background: unset;
-    box-shadow: unset;
 }
 
 .query-bar .void-cms-on {
     color: #ff7a17;
+}
+
+.query-bar .void-cms-on:not(:hover):not(:focus-visible) {
     background: transparent !important;
     box-shadow: none !important;
 }
 
+.void-cms-pin:is(:hover, :focus-visible),
 .query-bar .void-cms-on:is(:hover, :focus-visible) {
-    background: unset !important;
-    box-shadow: unset !important;
+    background: hsl(var(--button-ghost-hover));
 }
 
 .void-cms-label {

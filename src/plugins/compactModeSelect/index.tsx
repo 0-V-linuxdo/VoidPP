@@ -532,7 +532,7 @@ function PinnedModes() {
                     icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels} />}
                     tooltip={m.label}
                     onClick={onPin(m.id)}
-                    className={classes(cl("pin"), selectedModeId === m.id && cl("on"), showLabels && cl("labeled"))}
+                    className={classes(cl("pin"), selectedModeId === m.id && cl("on"), showLabels && cl("labeled"), "hover:bg-button-ghost-hover")}
                     aria-label={m.label}
                 />
             ))}
