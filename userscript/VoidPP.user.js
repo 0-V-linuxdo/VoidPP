@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.10] v1.0.0
+// @version      [20260914.11] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -30,7 +30,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.10] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7347,9 +7347,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1040200"}`
-    }, `(${"1040200"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"aadca2f"}`
+    }, `(${"aadca2f"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11351,6 +11351,9 @@ html.void-rt-open [data-sidebar="gap"] {
   var TRIGGER_CODES = new Set(["Backquote", "IntlBackslash"]);
   var TRIGGER_KEYS = new Set(["`", "~", "·", "｀", "～", "Dead", "Process"]);
   var TITLE_TAIL = /\s*[·|—–-]\s*Grok.*$/i;
+  var ACCESS_TITLE = /you need access|private conversation|request access|需要访问|需要存取|访问权|非公开|非公開|アクセスが必要|アクセスをリクエスト/i;
+  var ACCESS_NEED = /you need access|需要访问|需要存取|访问权|アクセスが必要/i;
+  var ACCESS_HINT = /private conversation|request access|非公开|非公開|请求访问|请求存取|アクセスをリクエスト/i;
   var SKIP_PHRASE = "see all(?: chats| conversations)?|show all(?: chats| conversations)?|view all(?: chats| conversations)?|all chats|all conversations|new conversation|new chat|more|history|today|yesterday|projects|查看全部|显示全部|查看所有|全部会话|所有对话|新聊天|新对话";
   var SKIP_LABEL = new RegExp(`^(?:${SKIP_PHRASE})$`, "i");
   var SKIP_LABEL_G = new RegExp(`\\b(?:${SKIP_PHRASE})\\b`, "gi");
@@ -11408,7 +11411,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function usableTitle(name) {
     const t = (name ?? "").replaceAll(/\s+/g, " ").trim();
-    if (!t || isBrandLabel(t) || isSkipLabel(t))
+    if (!t || isBrandLabel(t) || isSkipLabel(t) || ACCESS_TITLE.test(t))
       return "";
     return t;
   }
@@ -11556,6 +11559,8 @@ html.void-rt-open [data-sidebar="gap"] {
     const t = usableTitle(title);
     if (!id || isHomeId(id) || !t)
       return;
+    if (usableTitle(lookup(id)?.title) !== t)
+      return;
     const prev = settings14.plain.titles ?? {};
     if (prev[id] === t)
       return;
@@ -11685,8 +11690,29 @@ html.void-rt-open [data-sidebar="gap"] {
   function pageTitle() {
     return usableTitle(document.title.replace(TITLE_TAIL, ""));
   }
+  function isAccessDeniedPage() {
+    try {
+      if (!chatIdFromUrl())
+        return false;
+      const root = document.querySelector("main") ?? document.body;
+      if (!root || root.querySelector(MSG_SEL))
+        return false;
+      const text = (root.textContent || "").slice(0, 4000);
+      return ACCESS_NEED.test(text) && ACCESS_HINT.test(text);
+    } catch {
+      return false;
+    }
+  }
   function titleFromPage(id) {
-    return id && id === chatIdFromUrl() ? pageTitle() : "";
+    if (!id || id !== chatIdFromUrl() || isAccessDeniedPage())
+      return "";
+    const fromStore = usableTitle(lookup(id)?.title);
+    if (!fromStore)
+      return "";
+    const fromDoc = pageTitle();
+    if (fromDoc && fromDoc !== fromStore)
+      return "";
+    return fromDoc || fromStore;
   }
   function lookup(id) {
     try {
@@ -12620,6 +12646,8 @@ html.void-rt-open [data-sidebar="gap"] {
       forgetPage(id);
       return;
     }
+    if (isAccessDeniedPage() && id === chatIdFromUrl())
+      return;
     const fromStore = linesFromStore(id);
     const live = id === chatIdFromUrl();
     let fromDom = [];
@@ -12676,19 +12704,28 @@ html.void-rt-open [data-sidebar="gap"] {
       });
     });
   }
+  function dropVisit(id) {
+    if (!id || isHomeId(id))
+      return;
+    forgetPage(id);
+    writeVisits(readVisits().filter((x) => x !== id));
+  }
   function bump(id) {
     if (!id)
       return;
     if (isHomeId(id) && !settings14.store.includeHome)
       return;
+    if (!isHomeId(id) && id === chatIdFromUrl() && isAccessDeniedPage()) {
+      dropVisit(id);
+      return;
+    }
     writeVisits(capVisits([id, ...readVisits()]));
     if (isHomeId(id)) {
       if (shouldRememberProject(id))
         rememberProject(id);
       return;
     }
-    const conv = lookup(id);
-    rememberTitle(id, conv?.title || titleFromPage(id) || undefined);
+    rememberTitle(id, lookup(id)?.title);
     if (shouldRememberProject(id))
       rememberProject(id);
   }
@@ -12701,11 +12738,14 @@ html.void-rt-open [data-sidebar="gap"] {
     invalidateSidebar();
     prunePages();
     const current = currentVisit();
-    const merged = current == null ? [...idsFromHistory(), ...readVisits()] : [current, ...idsFromHistory(), ...readVisits()];
-    writeVisits(capVisits(merged));
+    const denied = !!current && !isHomeId(current) && current === chatIdFromUrl() && isAccessDeniedPage();
+    if (denied && current)
+      forgetPage(current);
+    const merged = current == null || denied ? [...idsFromHistory(), ...readVisits()] : [current, ...idsFromHistory(), ...readVisits()];
+    writeVisits(capVisits(denied && current ? merged.filter((id) => id !== current) : merged));
     reconcileSidebarCache();
-    if (current) {
-      rememberTitle(current, lookup(current)?.title || titleFromPage(current));
+    if (current && !denied) {
+      rememberTitle(current, lookup(current)?.title);
       if (shouldRememberProject(current))
         rememberProject(current);
     }
@@ -19024,7 +19064,7 @@ div:has(> #grok-bot-nav-button) {
   streamerMode_default.updatedAt = 0;
   inputHistory_default.updatedAt = 1789266420000;
   downloadTTS_default.updatedAt = 0;
-  recentTopics_default.updatedAt = 1789387550000;
+  recentTopics_default.updatedAt = 1789387995000;
   betterLinks_default.updatedAt = 0;
   experiments_default.updatedAt = 0;
   customInstructions_default.updatedAt = 0;

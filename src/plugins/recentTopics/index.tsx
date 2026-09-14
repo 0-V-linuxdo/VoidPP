@@ -27,6 +27,9 @@ const HOME_SEP = "home:";
 const TRIGGER_CODES = new Set(["Backquote", "IntlBackslash"]);
 const TRIGGER_KEYS = new Set(["`", "~", "·", "｀", "～", "Dead", "Process"]);
 const TITLE_TAIL = /\s*[·|—–-]\s*Grok.*$/i;
+const ACCESS_TITLE = /you need access|private conversation|request access|需要访问|需要存取|访问权|非公开|非公開|アクセスが必要|アクセスをリクエスト/i;
+const ACCESS_NEED = /you need access|需要访问|需要存取|访问权|アクセスが必要/i;
+const ACCESS_HINT = /private conversation|request access|非公开|非公開|请求访问|请求存取|アクセスをリクエスト/i;
 const SKIP_PHRASE = "see all(?: chats| conversations)?|show all(?: chats| conversations)?|view all(?: chats| conversations)?|all chats|all conversations|new conversation|new chat|more|history|today|yesterday|projects|查看全部|显示全部|查看所有|全部会话|所有对话|新聊天|新对话";
 const SKIP_LABEL = new RegExp(`^(?:${SKIP_PHRASE})$`, "i");
 const SKIP_LABEL_G = new RegExp(`\\b(?:${SKIP_PHRASE})\\b`, "gi");
@@ -121,7 +124,7 @@ function usableName(name: string): string {
 
 function usableTitle(name: string | undefined): string {
     const t = (name ?? "").replaceAll(/\s+/g, " ").trim();
-    if (!t || isBrandLabel(t) || isSkipLabel(t)) return "";
+    if (!t || isBrandLabel(t) || isSkipLabel(t) || ACCESS_TITLE.test(t)) return "";
     return t;
 }
 
@@ -253,6 +256,7 @@ function writeVisits(next: string[]) {
 function rememberTitle(id: string, title?: string) {
     const t = usableTitle(title);
     if (!id || isHomeId(id) || !t) return;
+    if (usableTitle(lookup(id)?.title) !== t) return;
     const prev = settings.plain.titles ?? {};
     if (prev[id] === t) return;
     settings.store.titles = { ...prev, [id]: t };
@@ -380,8 +384,25 @@ function pageTitle(): string {
     return usableTitle(document.title.replace(TITLE_TAIL, ""));
 }
 
+function isAccessDeniedPage(): boolean {
+    try {
+        if (!chatIdFromUrl()) return false;
+        const root = document.querySelector("main") ?? document.body;
+        if (!root || root.querySelector(MSG_SEL)) return false;
+        const text = (root.textContent || "").slice(0, 4000);
+        return ACCESS_NEED.test(text) && ACCESS_HINT.test(text);
+    } catch {
+        return false;
+    }
+}
+
 function titleFromPage(id: string): string {
-    return id && id === chatIdFromUrl() ? pageTitle() : "";
+    if (!id || id !== chatIdFromUrl() || isAccessDeniedPage()) return "";
+    const fromStore = usableTitle(lookup(id)?.title);
+    if (!fromStore) return "";
+    const fromDoc = pageTitle();
+    if (fromDoc && fromDoc !== fromStore) return "";
+    return fromDoc || fromStore;
 }
 
 function lookup(id: string): GrokConversation | undefined {
@@ -1265,6 +1286,7 @@ function captureId(id: string) {
         forgetPage(id);
         return;
     }
+    if (isAccessDeniedPage() && id === chatIdFromUrl()) return;
     const fromStore = linesFromStore(id);
     const live = id === chatIdFromUrl();
     let fromDom: PageLine[] = [];
@@ -1316,16 +1338,25 @@ function scheduleCapture() {
     });
 }
 
+function dropVisit(id: string) {
+    if (!id || isHomeId(id)) return;
+    forgetPage(id);
+    writeVisits(readVisits().filter(x => x !== id));
+}
+
 function bump(id: string) {
     if (!id) return;
     if (isHomeId(id) && !settings.store.includeHome) return;
+    if (!isHomeId(id) && id === chatIdFromUrl() && isAccessDeniedPage()) {
+        dropVisit(id);
+        return;
+    }
     writeVisits(capVisits([id, ...readVisits()]));
     if (isHomeId(id)) {
         if (shouldRememberProject(id)) rememberProject(id);
         return;
     }
-    const conv = lookup(id);
-    rememberTitle(id, conv?.title || titleFromPage(id) || undefined);
+    rememberTitle(id, lookup(id)?.title);
     if (shouldRememberProject(id)) rememberProject(id);
 }
 
@@ -1338,13 +1369,15 @@ function hydrate() {
     invalidateSidebar();
     prunePages();
     const current = currentVisit();
-    const merged = current == null
+    const denied = !!current && !isHomeId(current) && current === chatIdFromUrl() && isAccessDeniedPage();
+    if (denied && current) forgetPage(current);
+    const merged = current == null || denied
         ? [...idsFromHistory(), ...readVisits()]
         : [current, ...idsFromHistory(), ...readVisits()];
-    writeVisits(capVisits(merged));
+    writeVisits(capVisits(denied && current ? merged.filter(id => id !== current) : merged));
     reconcileSidebarCache();
-    if (current) {
-        rememberTitle(current, lookup(current)?.title || titleFromPage(current));
+    if (current && !denied) {
+        rememberTitle(current, lookup(current)?.title);
         if (shouldRememberProject(current)) rememberProject(current);
     }
     for (const id of capVisits(readVisits())) {
