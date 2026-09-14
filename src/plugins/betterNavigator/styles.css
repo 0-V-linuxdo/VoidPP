@@ -187,4 +187,9 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     .void-bn-tick::after {
         transition: none;
     }
+
+    .void-bn-flash {
+        outline: none;
+        background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
+    }
 }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.23] v1.0.0
+// @version      [20260914.24] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.23] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.24] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7349,9 +7349,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.23] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8aa6783"}`
-    }, `(${"8aa6783"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.24] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2b61b82"}`
+    }, `(${"2b61b82"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7862,6 +7862,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     .void-bn-tick::after {
         transition: none;
     }
+
+    .void-bn-flash {
+        outline: none;
+        background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
+    }
 }
 `);
 
@@ -7870,6 +7875,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
   var TICK_SEL = "button[aria-label^='Go to response ']";
   var PREV_SEL = "button[aria-label='Navigate to previous message']";
+  var NEXT_SEL = "button[aria-label='Navigate to next message']";
   var PANE_SKIP = "[data-sidebar], [class*='pane-card']";
   var STRIP_SEL = [
     "button",
@@ -7889,9 +7895,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var HIDE_CLASS = "void-bn-hidetip";
   var SUMMARY_MAX = 60;
   var FLASH_MS = 2000;
+  var FLASH_REDUCED_MS = 1000;
   var THRESHOLD = 0.4;
   var OFFSET_PX = 72;
   var LOCK_MS = 800;
+  var LOCK_FAST_MS = 280;
+  var FAR_VIEWPORTS = 2.5;
   var DENSE_N = 16;
   var SLOT_CLASS = "void-bn-rail";
   var settings6 = definePluginSettings({
@@ -7915,7 +7924,8 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
   });
   var ac = null;
-  var mo = null;
+  var paneMo = null;
+  var mainMo = null;
   var ro = null;
   var io = null;
   var host = null;
@@ -7923,6 +7933,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var frameTouched = null;
   var framePrevPos = "";
   var paintedKey = "";
+  var lastPath = "";
   var lastNav = [];
   var flashTimer = 0;
   var flashing = null;
@@ -7931,6 +7942,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var lockIdx = -1;
   var lockUntil = 0;
   var overMenu = false;
+  var observedPane = null;
   function isVisible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
@@ -7938,6 +7950,9 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function scrolls(el) {
     const oy = getComputedStyle(el).overflowY;
     return oy === "auto" || oy === "scroll";
+  }
+  function reduceMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
   function isTypingTarget(t) {
     if (!(t instanceof HTMLElement))
@@ -7949,13 +7964,23 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const tag = t.tagName;
     return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
   }
+  function chatPath() {
+    return `${location.pathname}${location.search}`;
+  }
   function nativeTicks() {
     return [...document.querySelectorAll(TICK_SEL)].filter(isVisible);
+  }
+  function nativeStepBtn(dir) {
+    const btn = document.querySelector(dir < 0 ? PREV_SEL : NEXT_SEL);
+    if (!btn || !isVisible(btn) || btn.disabled)
+      return null;
+    return btn;
   }
   function nativeSlot() {
     const tick = document.querySelector(TICK_SEL);
     const prev = document.querySelector(PREV_SEL);
-    const start = tick ?? prev;
+    const next = document.querySelector(NEXT_SEL);
+    const start = tick ?? prev ?? next;
     const slot = start?.closest(".absolute") ?? null;
     if (!slot || !isVisible(slot))
       return null;
@@ -8009,6 +8034,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     return pane.parentElement;
   }
+  function composerTop() {
+    const bar = document.querySelector(".query-bar");
+    if (!(bar instanceof HTMLElement) || !isVisible(bar))
+      return window.innerHeight;
+    return bar.getBoundingClientRect().top;
+  }
   function hasMedia(el) {
     if (el.querySelector("img, video, canvas"))
       return "image";
@@ -8055,10 +8086,51 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     return out;
   }
   function structKey(mode, nav) {
-    return `${mode}:${nav.length}:${nav.map((n) => n.role).join("")}`;
+    return `${chatPath()}:${mode}:${nav.length}:${nav.map((n) => n.role).join("")}`;
   }
   function sameEls(nav) {
     return nav.length === lastNav.length && nav.every((n, i) => n.el === lastNav[i]?.el && n.role === lastNav[i]?.role);
+  }
+  function responseIdxs() {
+    const out = [];
+    for (let i = 0;i < lastNav.length; i++) {
+      if (lastNav[i].role === "assistant")
+        out.push(i);
+    }
+    return out;
+  }
+  function nextResponseIdx(from, dir) {
+    const asst = responseIdxs();
+    if (!asst.length)
+      return null;
+    if (dir < 0) {
+      let best = -1;
+      for (const i of asst)
+        if (i < from)
+          best = i;
+      return best >= 0 ? best : null;
+    }
+    for (const i of asst)
+      if (i > from)
+        return i;
+    return null;
+  }
+  function metaLabel(index) {
+    const n = lastNav.length;
+    const pos = `${Math.min(Math.max(index, 0) + 1, Math.max(n, 1))} / ${n}`;
+    if (!settings6.store.showAssistant || !n)
+      return pos;
+    const asstN = responseIdxs().length;
+    if (!asstN || asstN === n)
+      return pos;
+    const item = lastNav[index];
+    if (item?.role !== "assistant")
+      return pos;
+    let k = 0;
+    for (let i = 0;i <= index; i++)
+      if (lastNav[i].role === "assistant")
+        k++;
+    return `${pos} · ${k} / ${asstN}`;
   }
   function clearFlash() {
     if (flashTimer)
@@ -8073,7 +8145,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return;
     flashing = el;
     el.classList.add("void-bn-flash");
-    flashTimer = window.setTimeout(clearFlash, FLASH_MS);
+    flashTimer = window.setTimeout(clearFlash, reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
   }
   function nativeTickFor(item, index, ticks) {
     if (!ticks.length)
@@ -8102,9 +8174,16 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     return Math.min(tickIndex, Math.max(0, lastNav.length - 1));
   }
+  function isFar(el) {
+    const pane = chatPane();
+    const vh = pane?.clientHeight ?? window.innerHeight;
+    const top = pane?.getBoundingClientRect().top ?? 0;
+    return Math.abs(el.getBoundingClientRect().top - top) > vh * FAR_VIEWPORTS;
+  }
   function jump(item, index, ticks) {
+    const far = isFar(item.el);
     lockIdx = index;
-    lockUntil = performance.now() + LOCK_MS;
+    lockUntil = performance.now() + (far || reduceMotion() ? LOCK_FAST_MS : LOCK_MS);
     applyActive(index);
     const tick = nativeTickFor(item, index, ticks);
     if (tick) {
@@ -8113,8 +8192,29 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return;
     }
     item.el.style.scrollMarginTop = `${OFFSET_PX}px`;
-    item.el.scrollIntoView({ behavior: "smooth", block: "start" });
+    const behavior = far || reduceMotion() ? "auto" : "smooth";
+    item.el.scrollIntoView({ behavior, block: "start" });
     window.setTimeout(() => flash(item.el), 180);
+  }
+  function stepResponse(dir) {
+    const native = nativeStepBtn(dir);
+    const nextIdx = nextResponseIdx(activeIdx, dir);
+    if (native) {
+      if (nextIdx != null) {
+        lockIdx = nextIdx;
+        lockUntil = performance.now() + LOCK_FAST_MS;
+        applyActive(nextIdx);
+        alignMenu(nextIdx);
+      }
+      native.click();
+      if (nextIdx != null)
+        window.setTimeout(() => flash(lastNav[nextIdx].el), 180);
+      return;
+    }
+    if (nextIdx == null)
+      return;
+    jump(lastNav[nextIdx], nextIdx, []);
+    alignMenu(nextIdx);
   }
   function markAim(index) {
     host?.querySelectorAll(".void-bn-item").forEach((node) => {
@@ -8131,7 +8231,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     });
     const meta = host?.querySelector(".void-bn-meta");
     if (meta)
-      meta.textContent = `${index + 1} / ${lastNav.length}`;
+      meta.textContent = metaLabel(index);
     const tick = host?.querySelectorAll(".void-bn-tick")[index];
     tick?.scrollIntoView({ block: "nearest" });
     if (!overMenu) {
@@ -8171,12 +8271,19 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const row = menu.querySelector(`.void-bn-item[data-void-bn-i="${index}"]`);
     row?.scrollIntoView({ block: "nearest" });
     markAim(index);
-    if (!tick)
-      return;
-    const top = tick.getBoundingClientRect().top - origin.getBoundingClientRect().top;
+    const originRect = origin.getBoundingClientRect();
+    const tickRect = tick?.getBoundingClientRect();
+    const cap = Math.max(120, composerTop() - 16);
+    menu.style.maxHeight = `${Math.min(cap, window.innerHeight * 0.7)}px`;
     const mh = menu.offsetHeight;
-    const max = mh > 0 ? Math.max(0, origin.clientHeight - mh) : 0;
-    menu.style.top = `${Math.min(Math.max(0, top - 6), max)}px`;
+    const viewTop = 8;
+    const viewBottom = Math.min(window.innerHeight - 8, composerTop() - 8);
+    let abs = (tickRect?.top ?? originRect.top) - 6;
+    if (abs + mh > viewBottom)
+      abs = viewBottom - mh;
+    if (abs < viewTop)
+      abs = viewTop;
+    menu.style.top = `${abs - originRect.top}px`;
   }
   function requestActive() {
     if (raf)
@@ -8214,7 +8321,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     });
     const meta = document.createElement("div");
     meta.className = cl17("meta");
-    meta.textContent = `1 / ${nav.length}`;
+    meta.textContent = metaLabel(0);
     const ul = document.createElement("ul");
     ul.className = cl17("list");
     nav.forEach((item, i) => {
@@ -8294,6 +8401,9 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     if (!on)
       markAim(-1);
   }
+  function railHovered() {
+    return !!host?.matches(":hover") || !!rail?.matches(":hover") || !!host?.classList.contains("void-bn-open");
+  }
   function onPointerOver(e) {
     const t = e.target;
     if (!(t instanceof Element))
@@ -8321,18 +8431,24 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       }
       return;
     }
+    const homeEnd = e.key === "Home" || e.key === "End";
     const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
-    if (!arrow)
+    if (!homeEnd && !arrow)
       return;
-    const hovered = host.matches(":hover") || !!rail?.matches(":hover") || host.classList.contains("void-bn-open");
-    if (!e.altKey && !hovered)
+    if (!e.altKey && !railHovered())
       return;
     e.preventDefault();
-    const dir = e.key === "ArrowUp" ? -1 : 1;
-    const next = Math.min(lastNav.length - 1, Math.max(0, activeIdx + dir));
     setOpen(true);
-    jump(lastNav[next], next, nativeTicks());
-    alignMenu(next);
+    if (homeEnd) {
+      const asst = responseIdxs();
+      if (!asst.length)
+        return;
+      const idx = e.key === "Home" ? asst[0] : asst[asst.length - 1];
+      jump(lastNav[idx], idx, nativeTicks());
+      alignMenu(idx);
+      return;
+    }
+    stepResponse(e.key === "ArrowUp" ? -1 : 1);
   }
   function onPointerDown(e) {
     const t = e.target;
@@ -8342,7 +8458,34 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return;
     setOpen(false);
   }
+  function bindWatchers() {
+    const col = chatColumn();
+    const pane = chatPane();
+    const main = document.querySelector("main");
+    const target = col ?? pane ?? (main instanceof HTMLElement ? main : document.body);
+    if (target !== observedPane) {
+      paneMo?.disconnect();
+      paneMo = new MutationObserver(debouncedPaint);
+      paneMo.observe(target, { childList: true, subtree: true });
+      observedPane = target;
+    }
+    if (main && !mainMo) {
+      mainMo = new MutationObserver(() => {
+        bindWatchers();
+        debouncedPaint();
+      });
+      mainMo.observe(main, { childList: true, subtree: false });
+    }
+  }
   function paint() {
+    bindWatchers();
+    const path = chatPath();
+    if (path !== lastPath) {
+      lastPath = path;
+      paintedKey = "";
+      if (host)
+        unmount();
+    }
     const nav = collect();
     if (!nav.length) {
       lastNav = [];
@@ -8395,14 +8538,14 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return;
     ac = new AbortController;
     const { signal } = ac;
+    lastPath = chatPath();
     syncHideTip();
     paint();
-    mo = new MutationObserver(debouncedPaint);
-    const root = document.querySelector("main") ?? document.body;
-    mo.observe(root, { childList: true, subtree: true });
+    bindWatchers();
     document.addEventListener("keydown", onKeyDown, { capture: true, signal });
     document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
     document.addEventListener("pointerover", onPointerOver, { capture: true, passive: true, signal });
+    window.addEventListener("popstate", debouncedPaint, { signal });
     const main = document.querySelector("main");
     if (main) {
       ro = new ResizeObserver(debouncedPaint);
@@ -8412,8 +8555,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function stop() {
     ac?.abort();
     ac = null;
-    mo?.disconnect();
-    mo = null;
+    paneMo?.disconnect();
+    paneMo = null;
+    mainMo?.disconnect();
+    mainMo = null;
+    observedPane = null;
     ro?.disconnect();
     ro = null;
     io?.disconnect();
@@ -8424,6 +8570,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     unmount();
     clearFlash();
     lastNav = [];
+    lastPath = "";
     document.documentElement.classList.remove(HIDE_CLASS);
   }
   var betterNavigator_default = definePlugin({
@@ -20223,7 +20370,7 @@ div:has(> #grok-bot-nav-button) {
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1781101259000;
   contextMenu_default.updatedAt = 1781702684000;
-  betterNavigator_default.updatedAt = 1789401335000;
+  betterNavigator_default.updatedAt = 1789402175000;
   noSidebarIdentity_default.updatedAt = 1788577403000;
   cleaner_default.updatedAt = 1789246749000;
   betterSidebar_default.updatedAt = 1789254776000;
