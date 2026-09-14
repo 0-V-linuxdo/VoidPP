@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.29] v1.0.0
+// @version      [20260914.30] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.29] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.30] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7368,9 +7368,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.29] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9b1c21a"}`
-    }, `(${"9b1c21a"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.30] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1f3d1b8"}`
+    }, `(${"1f3d1b8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10673,6 +10673,29 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const a = el instanceof HTMLAnchorElement ? el : el.closest("a[href]") ?? el.querySelector("a[href]");
     return a?.getAttribute("href") ?? el.getAttribute("href") ?? "";
   }
+  function pathOfHref(href) {
+    if (!href)
+      return "";
+    try {
+      return new URL(href, location.origin).pathname.replace(/\/+$/, "") || "/";
+    } catch {
+      return "";
+    }
+  }
+  function isDestPath(path) {
+    return PRIMARY_PATH.has(path) || path === "/bot" || path.startsWith("/bot/");
+  }
+  function navScope(el) {
+    return el.closest('[data-sidebar="group"]') ?? el.closest('[data-sidebar="menu"]');
+  }
+  function isDestCluster(scope) {
+    for (const a of scope.querySelectorAll("a[href]")) {
+      const path = pathOfHref(a.getAttribute("href") ?? "");
+      if (path === "/imagine" || path === "/library" || path === "/automations")
+        return true;
+    }
+    return false;
+  }
   function idFromHref(href) {
     if (!href)
       return "";
@@ -10688,19 +10711,17 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     return idFromHref(hrefOf(el));
   }
   function isPrimaryNav(el) {
-    const href = hrefOf(el);
-    if (!href)
-      return false;
-    try {
-      const path = new URL(href, location.origin).pathname.replace(/\/+$/, "") || "/";
-      if (CONV_PATH.test(path))
-        return false;
-      if (path === "/bot" || path.startsWith("/bot/"))
+    if (!el.closest('[data-sidebar="menu-sub-button"]')) {
+      const scope = navScope(el);
+      if (scope && isDestCluster(scope))
         return true;
-      return PRIMARY_PATH.has(path);
-    } catch {
-      return false;
     }
+    const path = pathOfHref(hrefOf(el));
+    if (!path)
+      return false;
+    if (CONV_PATH.test(path))
+      return false;
+    return isDestPath(path);
   }
   function rowHost(el, root) {
     if (el.classList.contains(MARK))
@@ -20337,7 +20358,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterLinks_default.updatedAt = 1787870966000;
   betterNavigator_default.updatedAt = 1789404663000;
   betterSidebar_default.updatedAt = 1789254776000;
-  chatListStatus_default.updatedAt = 1789405718000;
+  chatListStatus_default.updatedAt = 1789406252000;
   chatStateFavicons_default.updatedAt = 1787789817000;
   cleaner_default.updatedAt = 1789246749000;
   cloneChats_default.updatedAt = 1787870966000;

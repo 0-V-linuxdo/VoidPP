@@ -348,6 +348,31 @@ function hrefOf(el: Element): string {
     return a?.getAttribute("href") ?? el.getAttribute("href") ?? "";
 }
 
+function pathOfHref(href: string): string {
+    if (!href) return "";
+    try {
+        return new URL(href, location.origin).pathname.replace(/\/+$/, "") || "/";
+    } catch {
+        return "";
+    }
+}
+
+function isDestPath(path: string): boolean {
+    return PRIMARY_PATH.has(path) || path === "/bot" || path.startsWith("/bot/");
+}
+
+function navScope(el: Element): Element | null {
+    return el.closest('[data-sidebar="group"]') ?? el.closest('[data-sidebar="menu"]');
+}
+
+function isDestCluster(scope: Element): boolean {
+    for (const a of scope.querySelectorAll("a[href]")) {
+        const path = pathOfHref(a.getAttribute("href") ?? "");
+        if (path === "/imagine" || path === "/library" || path === "/automations") return true;
+    }
+    return false;
+}
+
 function idFromHref(href: string): string {
     if (!href) return "";
     try {
@@ -367,16 +392,14 @@ function hrefId(el: Element): string {
 }
 
 function isPrimaryNav(el: Element): boolean {
-    const href = hrefOf(el);
-    if (!href) return false;
-    try {
-        const path = new URL(href, location.origin).pathname.replace(/\/+$/, "") || "/";
-        if (CONV_PATH.test(path)) return false;
-        if (path === "/bot" || path.startsWith("/bot/")) return true;
-        return PRIMARY_PATH.has(path);
-    } catch {
-        return false;
+    if (!el.closest('[data-sidebar="menu-sub-button"]')) {
+        const scope = navScope(el);
+        if (scope && isDestCluster(scope)) return true;
     }
+    const path = pathOfHref(hrefOf(el));
+    if (!path) return false;
+    if (CONV_PATH.test(path)) return false;
+    return isDestPath(path);
 }
 
 function rowHost(el: HTMLElement, root: Element): HTMLElement | null {
