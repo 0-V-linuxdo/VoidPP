@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260912.53] v1.0.0
+// @version      [20260914.1] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -30,7 +30,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260912.53] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -1318,8 +1318,8 @@ ${sourceUrl}`;
     }
     const scan = () => {
       const activeFilters = [...filterFns];
-      const results2 = new Array(length).fill(null);
-      let found2 = 0;
+      const results = new Array(length).fill(null);
+      let found = 0;
       forEachModuleValue((value) => {
         for (let j = 0;j < length; j++) {
           const filter = activeFilters[j];
@@ -1327,15 +1327,15 @@ ${sourceUrl}`;
             continue;
           try {
             if (filter(value)) {
-              results2[j] = value;
+              results[j] = value;
               activeFilters[j] = undefined;
-              if (++found2 === length)
+              if (++found === length)
                 return STOP;
             }
           } catch {}
         }
       });
-      return { results: results2, found: found2 };
+      return { results, found };
     };
     const { results, found } = withLazySync(scan, (r) => r.found < length);
     if (found !== length)
@@ -1911,11 +1911,11 @@ ${sourceUrl}`;
   // src/api/Events.ts
   var logger6 = new Logger("Events");
   var listeners = new Map;
-  function subscribe(event, handler2) {
+  function subscribe(event, handler) {
     const set = mapGetOrCreate(listeners, event, () => new Set);
-    set.add(handler2);
+    set.add(handler);
     return () => {
-      set.delete(handler2);
+      set.delete(handler);
       if (!set.size)
         listeners.delete(event);
     };
@@ -1925,9 +1925,9 @@ ${sourceUrl}`;
     if (!set?.size)
       return;
     const data = args[0];
-    for (const handler2 of Array.from(set)) {
+    for (const handler of Array.from(set)) {
       try {
-        handler2(data);
+        handler(data);
       } catch (e) {
         logger6.error(`Event handler error (${event}):`, e);
       }
@@ -1937,20 +1937,20 @@ ${sourceUrl}`;
   // src/turbopack/common/stores.ts
   var exports_stores = {};
   __export(exports_stores, {
-    TextToSpeechStore: () => TextToSpeechStore,
-    SubscriptionsStore: () => SubscriptionsStore,
-    SettingsStore: () => SettingsStore,
-    SettingsDialogStore: () => SettingsDialogStore,
-    SessionStore: () => SessionStore,
-    RoutingStore: () => RoutingStore,
-    ResponseStore: () => ResponseStore,
-    ModesStore: () => ModesStore,
-    MessageStore: () => MessageStore,
-    MediaStore: () => MediaStore,
-    FilesPageStore: () => FilesPageStore,
-    FeatureStore: () => FeatureStore,
+    ChatPageStore: () => ChatPageStore,
     ConversationStore: () => ConversationStore,
-    ChatPageStore: () => ChatPageStore
+    FeatureStore: () => FeatureStore,
+    FilesPageStore: () => FilesPageStore,
+    MediaStore: () => MediaStore,
+    MessageStore: () => MessageStore,
+    ModesStore: () => ModesStore,
+    ResponseStore: () => ResponseStore,
+    RoutingStore: () => RoutingStore,
+    SessionStore: () => SessionStore,
+    SettingsDialogStore: () => SettingsDialogStore,
+    SettingsStore: () => SettingsStore,
+    SubscriptionsStore: () => SubscriptionsStore,
+    TextToSpeechStore: () => TextToSpeechStore
   });
   var ChatPageStore = findByPropsLazy("useChatPageStore");
   var ConversationStore = findByPropsLazy("useConversationStore", "createOptimisticConversation");
@@ -2048,18 +2048,18 @@ ${sourceUrl}`;
   function useForceUpdater() {
     return useReducer((x) => x + 1, 0)[1];
   }
-  function useEventSubscription(event, handler2) {
-    const ref = useRef(handler2);
-    ref.current = handler2;
+  function useEventSubscription(event, handler) {
+    const ref = useRef(handler);
+    ref.current = handler;
     useEffect(() => subscribe(event, () => ref.current()), [event]);
   }
-  function useFiltered(list, search2, getKey) {
+  function useFiltered(list, search, getKey) {
     return useMemo(() => {
-      const q = search2.toLowerCase().trim();
+      const q = search.toLowerCase().trim();
       if (!q)
         return list;
       return list.filter((item) => getKey(item).toLowerCase().includes(q));
-    }, [list, search2, getKey]);
+    }, [list, search, getKey]);
   }
   function useAsyncAction(fn) {
     const [busy, setBusy] = useState(false);
@@ -2170,8 +2170,8 @@ ${sourceUrl}`;
       this.proxyCache.set(target, proxy);
       return proxy;
     }
-    invokeListeners(listeners2, path) {
-      for (const l of Array.from(listeners2)) {
+    invokeListeners(listeners, path) {
+      for (const l of Array.from(listeners)) {
         try {
           l(path);
         } catch (e) {
@@ -2181,9 +2181,9 @@ ${sourceUrl}`;
     }
     notifyListeners(path) {
       this.invokeListeners(this.globalListeners, path);
-      const listeners2 = this.pathListeners.get(path);
-      if (listeners2)
-        this.invokeListeners(listeners2, path);
+      const listeners = this.pathListeners.get(path);
+      if (listeners)
+        this.invokeListeners(listeners, path);
       for (const [prefix, set] of Array.from(this.prefixListeners)) {
         if (path.startsWith(prefix))
           this.invokeListeners(set, path);
@@ -2260,21 +2260,21 @@ ${sourceUrl}`;
     return p;
   }
   var StartAt;
-  ((StartAt2) => {
-    StartAt2["Init"] = "Init";
-    StartAt2["DOMContentLoaded"] = "DOMContentLoaded";
-    StartAt2["TurbopackReady"] = "TurbopackReady";
+  ((StartAt) => {
+    StartAt["Init"] = "Init";
+    StartAt["DOMContentLoaded"] = "DOMContentLoaded";
+    StartAt["TurbopackReady"] = "TurbopackReady";
   })(StartAt ||= {});
   var OptionType;
-  ((OptionType2) => {
-    OptionType2[OptionType2["STRING"] = 0] = "STRING";
-    OptionType2[OptionType2["NUMBER"] = 1] = "NUMBER";
-    OptionType2[OptionType2["BIGINT"] = 2] = "BIGINT";
-    OptionType2[OptionType2["BOOLEAN"] = 3] = "BOOLEAN";
-    OptionType2[OptionType2["SELECT"] = 4] = "SELECT";
-    OptionType2[OptionType2["SLIDER"] = 5] = "SLIDER";
-    OptionType2[OptionType2["COMPONENT"] = 6] = "COMPONENT";
-    OptionType2[OptionType2["CUSTOM"] = 7] = "CUSTOM";
+  ((OptionType) => {
+    OptionType[OptionType["STRING"] = 0] = "STRING";
+    OptionType[OptionType["NUMBER"] = 1] = "NUMBER";
+    OptionType[OptionType["BIGINT"] = 2] = "BIGINT";
+    OptionType[OptionType["BOOLEAN"] = 3] = "BOOLEAN";
+    OptionType[OptionType["SELECT"] = 4] = "SELECT";
+    OptionType[OptionType["SLIDER"] = 5] = "SLIDER";
+    OptionType[OptionType["COMPONENT"] = 6] = "COMPONENT";
+    OptionType[OptionType["CUSTOM"] = 7] = "CUSTOM";
   })(OptionType ||= {});
 
   // src/api/Settings.ts
@@ -3507,8 +3507,8 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     zustand: {
       ChatPageStore: {
         selector: isRightOpen,
-        handler(open2) {
-          if (open2)
+        handler(open) {
+          if (open)
             enforce();
         }
       }
@@ -3534,148 +3534,148 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
   // src/VoidPP.ts
   var exports_VoidPP = {};
   __export(exports_VoidPP, {
-    walkFiberUp: () => walkFiberUp,
-    walkFiberTree: () => walkFiberTree,
-    waitFor: () => waitFor,
-    useSelectionSize: () => useSelectionSize,
-    useSelectionHas: () => useSelectionHas,
-    useIsStreaming: () => useIsStreaming,
-    useForceUpdater: () => useForceUpdater,
-    useExternalStore: () => useExternalStore,
-    useEventSubscription: () => useEventSubscription,
-    updateLocalTheme: () => updateLocalTheme,
-    unregisterStyle: () => unregisterStyle,
-    syncLazyModules: () => syncLazyModules,
-    subscribe: () => subscribe,
-    stopPlugin: () => stopPlugin,
-    startPlugin: () => startPlugin,
-    sortedEntries: () => sortedEntries,
-    sleep: () => sleep,
-    showToast: () => showToast,
-    showNotice: () => showNotice,
-    setThemesEnabled: () => setThemesEnabled,
-    setOnlineThemesEnabled: () => setOnlineThemesEnabled,
-    sendBrowserNotification: () => sendBrowserNotification,
-    search: () => search,
-    sanitizeFilename: () => sanitizeFilename,
-    requireModule: () => requireModule,
-    reportFailedFinders: () => reportFailedFinders,
-    removeTheme: () => removeTheme,
-    removeContextMenuItem: () => removeContextMenuItem,
-    removeChatBarButton: () => removeChatBarButton,
-    registerStyle: () => registerStyle,
-    registerPlugin: () => registerPlugin,
-    proxyLazy: () => proxyLazy,
-    pluralize: () => pluralize,
-    plugins: () => plugins,
-    patches: () => patches,
-    patchStats: () => patchStats,
-    patchResults: () => patchResults,
-    patchReport: () => patchReport,
-    openModal: () => openModal,
-    onlyOnce: () => onlyOnce,
-    onceReady: () => onceReady,
-    onModuleLoad: () => onModuleLoad,
-    migrateSettingsToPlugin: () => migrateSettingsToPlugin,
-    migratePluginSettings: () => migratePluginSettings,
-    migratePluginSetting: () => migratePluginSetting,
-    mergeDefaults: () => mergeDefaults,
-    matchesPattern: () => matchesPattern,
-    matchesAllPatterns: () => matchesAllPatterns,
-    mapMangledModuleLazy: () => mapMangledModuleLazy,
-    mapMangledModule: () => mapMangledModule,
-    mapMangledCssClasses: () => mapMangledCssClasses,
-    mapGetOrCreate: () => mapGetOrCreate,
-    makeLazy: () => makeLazy,
-    isZustandStore: () => isZustandStore,
-    isTruthy: () => isTruthy,
-    isThemesEnabled: () => isThemesEnabled,
-    isPluginEnabled: () => isPluginEnabled,
-    isOnlineThemesEnabled: () => isOnlineThemesEnabled,
-    isObject: () => isObject,
-    isNonNullish: () => isNonNullish,
-    isBlacklisted: () => isBlacklisted,
-    injectExports: () => injectExports,
-    initSettings: () => initSettings,
-    init: () => init,
-    importModule: () => importModule,
-    humanizeKey: () => humanizeKey,
-    getTurbopackHelpers: () => getTurbopackHelpers,
-    getThemes: () => getThemes,
-    getRuntimeModuleCache: () => getRuntimeModuleCache,
-    getRuntimeFactoryRegistry: () => getRuntimeFactoryRegistry2,
-    getReactRoot: () => getReactRoot,
-    getModuleCache: () => getModuleCache,
-    getFnSource: () => getFnSource,
-    getFiber: () => getFiber,
-    getAllStores: () => getAllStores,
-    formatDuration: () => formatDuration,
-    formatCountdown: () => formatCountdown,
-    fnSourceCache: () => fnSourceCache,
-    findStoreLazy: () => findStoreLazy,
-    findStore: () => findStore,
-    findModuleId: () => findModuleId,
-    findModuleFactory: () => findModuleFactory,
-    findLazy: () => findLazy,
-    findExportedComponentLazy: () => findExportedComponentLazy,
-    findExportedComponent: () => findExportedComponent,
-    findCssClassesLazy: () => findCssClassesLazy,
-    findCssClasses: () => findCssClasses,
-    findComponentByCodeLazy: () => findComponentByCodeLazy,
-    findComponentByCode: () => findComponentByCode,
-    findByPropsLazy: () => findByPropsLazy,
-    findByProps: () => findByProps,
-    findByEventNameLazy: () => findByEventNameLazy,
-    findByEventName: () => findByEventName,
-    findByDisplayNameLazy: () => findByDisplayNameLazy,
-    findByDisplayName: () => findByDisplayName,
-    findByCodeLazy: () => findByCodeLazy,
-    findByCode: () => findByCode,
-    findBulk: () => findBulk,
-    findAll: () => findAll,
-    find: () => find,
-    filters: () => filters,
-    fetchExternal: () => fetchExternal,
-    extractAndLoadChunksLazy: () => extractAndLoadChunksLazy,
-    extractAndLoadChunks: () => extractAndLoadChunks,
-    escapeRegExp: () => escapeRegExp,
-    escapeHtml: () => escapeHtml,
-    errorMessage: () => errorMessage,
-    enableTheme: () => enableTheme,
-    enableStyle: () => enableStyle,
-    dispatch: () => dispatch,
-    dismissToast: () => dismissToast,
-    disableTheme: () => disableTheme,
-    disableStyle: () => disableStyle,
-    definePluginSettings: () => definePluginSettings,
-    definePlugin: () => definePlugin,
-    debounce: () => debounce,
-    createExternalStore: () => createExternalStore,
-    copyToClipboard: () => copyToClipboard,
-    common: () => exports_common,
-    closeNotice: () => closeNotice,
-    closeModal: () => closeModal,
-    closeAllModals: () => closeAllModals,
-    classes: () => classes,
-    classNameFactory: () => classNameFactory,
-    clamp: () => clamp,
-    addTheme: () => addTheme,
-    addPatch: () => addPatch,
-    addLocalTheme: () => addLocalTheme,
-    addContextMenuItem: () => addContextMenuItem,
-    addChatBarButton: () => addChatBarButton,
-    ToastType: () => ToastType,
-    StartAt: () => StartAt,
-    SettingsStore: () => SettingsStore3,
-    Settings: () => Settings,
-    PlainSettings: () => PlainSettings,
-    OptionType: () => OptionType,
-    NoticeType: () => NoticeType,
-    Logger: () => Logger,
-    ErrorBoundary: () => ErrorBoundary,
-    Devs: () => Devs,
+    ChunkPathRegex: () => ChunkPathRegex,
     DefaultChunkLoadRegex: () => DefaultChunkLoadRegex,
-    ChunkPathRegex: () => ChunkPathRegex
+    Devs: () => Devs,
+    ErrorBoundary: () => ErrorBoundary,
+    Logger: () => Logger,
+    NoticeType: () => NoticeType,
+    OptionType: () => OptionType,
+    PlainSettings: () => PlainSettings,
+    Settings: () => Settings,
+    SettingsStore: () => SettingsStore3,
+    StartAt: () => StartAt,
+    ToastType: () => ToastType,
+    addChatBarButton: () => addChatBarButton,
+    addContextMenuItem: () => addContextMenuItem,
+    addLocalTheme: () => addLocalTheme,
+    addPatch: () => addPatch,
+    addTheme: () => addTheme,
+    clamp: () => clamp,
+    classNameFactory: () => classNameFactory,
+    classes: () => classes,
+    closeAllModals: () => closeAllModals,
+    closeModal: () => closeModal,
+    closeNotice: () => closeNotice,
+    common: () => exports_common,
+    copyToClipboard: () => copyToClipboard,
+    createExternalStore: () => createExternalStore,
+    debounce: () => debounce,
+    definePlugin: () => definePlugin,
+    definePluginSettings: () => definePluginSettings,
+    disableStyle: () => disableStyle,
+    disableTheme: () => disableTheme,
+    dismissToast: () => dismissToast,
+    dispatch: () => dispatch,
+    enableStyle: () => enableStyle,
+    enableTheme: () => enableTheme,
+    errorMessage: () => errorMessage,
+    escapeHtml: () => escapeHtml,
+    escapeRegExp: () => escapeRegExp,
+    extractAndLoadChunks: () => extractAndLoadChunks,
+    extractAndLoadChunksLazy: () => extractAndLoadChunksLazy,
+    fetchExternal: () => fetchExternal,
+    filters: () => filters,
+    find: () => find,
+    findAll: () => findAll,
+    findBulk: () => findBulk,
+    findByCode: () => findByCode,
+    findByCodeLazy: () => findByCodeLazy,
+    findByDisplayName: () => findByDisplayName,
+    findByDisplayNameLazy: () => findByDisplayNameLazy,
+    findByEventName: () => findByEventName,
+    findByEventNameLazy: () => findByEventNameLazy,
+    findByProps: () => findByProps,
+    findByPropsLazy: () => findByPropsLazy,
+    findComponentByCode: () => findComponentByCode,
+    findComponentByCodeLazy: () => findComponentByCodeLazy,
+    findCssClasses: () => findCssClasses,
+    findCssClassesLazy: () => findCssClassesLazy,
+    findExportedComponent: () => findExportedComponent,
+    findExportedComponentLazy: () => findExportedComponentLazy,
+    findLazy: () => findLazy,
+    findModuleFactory: () => findModuleFactory,
+    findModuleId: () => findModuleId,
+    findStore: () => findStore,
+    findStoreLazy: () => findStoreLazy,
+    fnSourceCache: () => fnSourceCache,
+    formatCountdown: () => formatCountdown,
+    formatDuration: () => formatDuration,
+    getAllStores: () => getAllStores,
+    getFiber: () => getFiber,
+    getFnSource: () => getFnSource,
+    getModuleCache: () => getModuleCache,
+    getReactRoot: () => getReactRoot,
+    getRuntimeFactoryRegistry: () => getRuntimeFactoryRegistry2,
+    getRuntimeModuleCache: () => getRuntimeModuleCache,
+    getThemes: () => getThemes,
+    getTurbopackHelpers: () => getTurbopackHelpers,
+    humanizeKey: () => humanizeKey,
+    importModule: () => importModule,
+    init: () => init,
+    initSettings: () => initSettings,
+    injectExports: () => injectExports,
+    isBlacklisted: () => isBlacklisted,
+    isNonNullish: () => isNonNullish,
+    isObject: () => isObject,
+    isOnlineThemesEnabled: () => isOnlineThemesEnabled,
+    isPluginEnabled: () => isPluginEnabled,
+    isThemesEnabled: () => isThemesEnabled,
+    isTruthy: () => isTruthy,
+    isZustandStore: () => isZustandStore,
+    makeLazy: () => makeLazy,
+    mapGetOrCreate: () => mapGetOrCreate,
+    mapMangledCssClasses: () => mapMangledCssClasses,
+    mapMangledModule: () => mapMangledModule,
+    mapMangledModuleLazy: () => mapMangledModuleLazy,
+    matchesAllPatterns: () => matchesAllPatterns,
+    matchesPattern: () => matchesPattern,
+    mergeDefaults: () => mergeDefaults,
+    migratePluginSetting: () => migratePluginSetting,
+    migratePluginSettings: () => migratePluginSettings,
+    migrateSettingsToPlugin: () => migrateSettingsToPlugin,
+    onModuleLoad: () => onModuleLoad,
+    onceReady: () => onceReady,
+    onlyOnce: () => onlyOnce,
+    openModal: () => openModal,
+    patchReport: () => patchReport,
+    patchResults: () => patchResults,
+    patchStats: () => patchStats,
+    patches: () => patches,
+    plugins: () => plugins,
+    pluralize: () => pluralize,
+    proxyLazy: () => proxyLazy,
+    registerPlugin: () => registerPlugin,
+    registerStyle: () => registerStyle,
+    removeChatBarButton: () => removeChatBarButton,
+    removeContextMenuItem: () => removeContextMenuItem,
+    removeTheme: () => removeTheme,
+    reportFailedFinders: () => reportFailedFinders,
+    requireModule: () => requireModule,
+    sanitizeFilename: () => sanitizeFilename,
+    search: () => search,
+    sendBrowserNotification: () => sendBrowserNotification,
+    setOnlineThemesEnabled: () => setOnlineThemesEnabled,
+    setThemesEnabled: () => setThemesEnabled,
+    showNotice: () => showNotice,
+    showToast: () => showToast,
+    sleep: () => sleep,
+    sortedEntries: () => sortedEntries,
+    startPlugin: () => startPlugin,
+    stopPlugin: () => stopPlugin,
+    subscribe: () => subscribe,
+    syncLazyModules: () => syncLazyModules,
+    unregisterStyle: () => unregisterStyle,
+    updateLocalTheme: () => updateLocalTheme,
+    useEventSubscription: () => useEventSubscription,
+    useExternalStore: () => useExternalStore,
+    useForceUpdater: () => useForceUpdater,
+    useIsStreaming: () => useIsStreaming,
+    useSelectionHas: () => useSelectionHas,
+    useSelectionSize: () => useSelectionSize,
+    waitFor: () => waitFor,
+    walkFiberTree: () => walkFiberTree,
+    walkFiberUp: () => walkFiberUp
   });
 
   // src/api/BuildHealth.ts
@@ -3695,7 +3695,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     }
     updateSettingsPluginData({ chunkFingerprint: current });
   }
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/ColorSettingRow.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/ColorSettingRow.css
   registerStyle("ColorSettingRow", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -3734,7 +3734,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, title), /* @__PURE__ */ React.createElement(SettingsDescription, null, description)));
   }
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/ConfirmDialog.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/ConfirmDialog.css
   registerStyle("ConfirmDialog", `.void-confirm-dialog {
     width: 100%;
     max-width: 28rem;
@@ -3921,9 +3921,9 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
   var AnimatePresence = lazyExport("AnimatePresence");
 
   // src/components/ConfirmDialog.tsx
-  function ConfirmDialog({ open: open2, onOpenChange, title, description, confirmText = "Confirm", cancelText = "Cancel", danger, onConfirm }) {
+  function ConfirmDialog({ open, onOpenChange, title, description, confirmText = "Confirm", cancelText = "Cancel", danger, onConfirm }) {
     return /* @__PURE__ */ React.createElement(AlertDialog, {
-      open: open2,
+      open,
       onOpenChange
     }, /* @__PURE__ */ React.createElement(AlertDialogContent, {
       className: "void-confirm-dialog"
@@ -3983,7 +3983,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     },
     configurable: true
   });
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/ErrorCard.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/ErrorCard.css
   registerStyle("ErrorCard", `.void-error-card-root {
     contain: content;
     padding: 1rem;
@@ -4043,7 +4043,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       ...restProps
     }, children);
   }
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/Paragraph.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/Paragraph.css
   registerStyle("Paragraph", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -4130,7 +4130,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       weight: "medium"
     }, title), description && /* @__PURE__ */ React.createElement(Paragraph, null, description));
   }
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/SelectionUI.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/SelectionUI.css
   registerStyle("SelectionUI", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -4191,7 +4191,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
   }
   function SelectionActionBar({ selection, noun, title, onDelete }) {
     const count = useSelectionSize(selection);
-    const [open2, setOpen] = useState(false);
+    const [open, setOpen] = useState(false);
     if (!count)
       return null;
     const handleConfirm = async () => {
@@ -4216,7 +4216,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       shape: "pill",
       onClick: () => setOpen(true)
     }, "Delete"))), /* @__PURE__ */ React.createElement(ConfirmDialog, {
-      open: open2,
+      open,
       onOpenChange: setOpen,
       title,
       description: `Are you sure you want to delete ${pluralize(count, noun)}? This cannot be undone.`,
@@ -4452,10 +4452,10 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     if (!Array.isArray(patch.replacement)) {
       patch.replacement = [patch.replacement];
     }
-    const pluginPath2 = `VoidPP.plugins[${JSON.stringify(pluginName)}]`;
+    const pluginPath = `VoidPP.plugins[${JSON.stringify(pluginName)}]`;
     for (const replacement of patch.replacement) {
       if (false) {}
-      canonicalizeReplacement(replacement, pluginPath2);
+      canonicalizeReplacement(replacement, pluginPath);
     }
     patches.push(patch);
   }
@@ -4535,9 +4535,9 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       const unsubs = [];
       pluginUnsubscribers.set(plugin.name, unsubs);
       if (plugin.events) {
-        for (const [event, handler2] of Object.entries(plugin.events)) {
-          if (handler2)
-            unsubs.push(subscribe(event, handler2));
+        for (const [event, handler] of Object.entries(plugin.events)) {
+          if (handler)
+            unsubs.push(subscribe(event, handler));
         }
       }
       if (plugin.zustand) {
@@ -4549,8 +4549,8 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
               logger11.error(`Zustand handler error in ${plugin.name} for ${storeName}:`, e);
             }
           };
-          const attach = (store2) => {
-            unsubs.push(sub.selector ? store2.subscribe(sub.selector, wrappedHandler) : store2.subscribe(wrappedHandler));
+          const attach = (store) => {
+            unsubs.push(sub.selector ? store.subscribe(sub.selector, wrappedHandler) : store.subscribe(wrappedHandler));
           };
           const store = resolveStoreHook(storeName);
           if (store) {
@@ -4804,7 +4804,92 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     });
   }
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/_core/settings/styles.css
+  // src/plugins/_core/fixChrome.chrome/index.ts
+  var fixChrome_default = definePlugin({
+    name: "FixChrome",
+    icon: ChromiumIcon,
+    description: "Fixes Chromium-specific performance issues like backdrop blur lag.",
+    authors: [Devs.Prism],
+    required: true,
+    patches: [
+      {
+        find: "backdrop-blur-",
+        all: true,
+        replacement: {
+          match: /backdrop-blur-(?:\w+|\[[^\]]+\]) ?/g,
+          replace: ""
+        }
+      }
+    ]
+  });
+
+  // src/plugins/_core/noTelemetry/index.ts
+  var noTelemetry_default = definePlugin({
+    name: "NoTelemetry",
+    icon: ShieldOffIcon,
+    description: "Disables all tracking, telemetry, and event logging.",
+    authors: [Devs.Prism],
+    tags: ["privacy"],
+    required: true,
+    patches: [
+      {
+        find: '"opentelemetry.js.api."',
+        replacement: {
+          match: /("onRouterTransitionStart",0,)function\([^)]*\)\{[^}]{0,200}\}/,
+          replace: "$1function(){}"
+        }
+      },
+      {
+        find: '"after-init"),(0,',
+        group: true,
+        replacement: [
+          {
+            match: /(function \i\(\)\{)if\(Object\.prototype\.hasOwnProperty\.call\(\i\.default,"get_distinct_id"\)\)return;/,
+            replace: "$1return}function _ignore(){"
+          },
+          {
+            match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]{0,300}?start_session_recording\(\)\}/,
+            replace: '"startRecordingImagineSession",0,function(){}'
+          },
+          {
+            match: /"stopRecordingImagineSession",0,function\(\)\{[\s\S]{0,300}?stop_session_recording\(\)\},\d+e?\d*\)\}/,
+            replace: '"stopRecordingImagineSession",0,function(){}'
+          }
+        ]
+      },
+      {
+        find: "sendBatchLogEvent",
+        all: true,
+        group: true,
+        replacement: [
+          {
+            match: /sendBatchLogEvent=\i=>\{[^}]{0,150}\}/,
+            replace: "sendBatchLogEvent=()=>{}"
+          },
+          {
+            match: /sendBatchLogExperimentExposure=\i=>\{[^}]{0,150}\}/,
+            replace: "sendBatchLogExperimentExposure=()=>{}"
+          }
+        ]
+      },
+      {
+        find: '"/api/log_metric"',
+        replacement: {
+          match: /"\/api\/log_metric",\i\)/,
+          replace: '"/api/log_metric",[])'
+        }
+      },
+      {
+        find: "isEnvVarsSet(){return void 0!=",
+        replacement: {
+          match: /isEnvVarsSet\(\)\{return void 0!=\i&&""!=\i\|\|!!this\.customEndpoint\}/,
+          replace: "isEnvVarsSet(){return false}"
+        }
+      }
+    ]
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/_core/settings/styles.css
   registerStyle("settings", `.void-settings-version,
 .void-settings-version * {
     user-select: text;
@@ -5087,7 +5172,7 @@ button .void-info-hint {
     }
   }
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/settings/tabs/CustomCSSTab.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/CustomCSSTab.css
   registerStyle("CustomCSSTab", `.void-css-root {
     contain: content;
     height: 100%;
@@ -5103,7 +5188,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/settings/CssEditor.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/CssEditor.css
   registerStyle("CssEditor", `.void-css-wrap {
     flex: 1;
     min-height: 0;
@@ -5244,7 +5329,7 @@ button .void-info-hint {
   function formatCss(raw) {
     let out = "";
     let indent = 0;
-    const pad2 = () => "    ".repeat(indent);
+    const pad = () => "    ".repeat(indent);
     const tokens = raw.replaceAll(/\s+/g, " ").trim().split(/(?=[{}:;])|(?<=[{}:;])/g);
     for (const t of tokens) {
       const s = t.trim();
@@ -5256,7 +5341,7 @@ button .void-info-hint {
         indent++;
       } else if (s === "}") {
         indent = Math.max(0, indent - 1);
-        out += pad2() + `}
+        out += pad() + `}
 
 `;
       } else if (s === ";")
@@ -5265,7 +5350,7 @@ button .void-info-hint {
       else if (s === ":")
         out += ": ";
       else if (indent > 0)
-        out += pad2() + s;
+        out += pad() + s;
       else
         out += s;
     }
@@ -5344,7 +5429,7 @@ button .void-info-hint {
   function CustomCSSTab() {
     const [enabled, setEnabled] = useState(() => getSettingsPluginData().customCSSEnabled !== false);
     const [css, setCss] = useState(loadSavedCSS);
-    const apply2 = useCallback((val) => {
+    const apply = useCallback((val) => {
       setCss(val);
       updateSettingsPluginData({ customCSS: val });
       if (getSettingsPluginData().customCSSEnabled !== false)
@@ -5370,12 +5455,12 @@ button .void-info-hint {
       onCheckedChange: handleToggle
     })), /* @__PURE__ */ React.createElement(CssEditor, {
       value: css,
-      onChange: apply2,
+      onChange: apply,
       disabled: !enabled
     }));
   }
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/settings/shared.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/shared.css
   registerStyle("shared", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -5450,7 +5535,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/settings/tabs/PluginsTab.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/PluginsTab.css
   registerStyle("PluginsTab", `.void-plugins-reload-banner {
     padding: 0.625rem 0.75rem;
     border-radius: 0.5rem;
@@ -5491,7 +5576,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/settings/PluginCard.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/PluginCard.css
   registerStyle("PluginCard", `.void-plugin-card-required-icon,
 .void-plugin-card-badge,
 .void-plugin-card-crashed-icon {
@@ -5542,7 +5627,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/settings/BaseCard.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/BaseCard.css
   registerStyle("BaseCard", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -5822,7 +5907,7 @@ button .void-info-hint {
     });
   }
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/settings/tabs/PluginDialog.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/PluginDialog.css
   registerStyle("PluginDialog", `.void-plugin-dialog-settings-list>.px-3 {
     padding-left: 0;
     padding-right: 0;
@@ -5848,7 +5933,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/settings/SettingField.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/SettingField.css
   registerStyle("SettingField", `.void-setting-slider-row {
     align-items: center;
     width: 100%;
@@ -6210,14 +6295,14 @@ button .void-info-hint {
   }
 
   // src/components/settings/tabs/SearchFilterBar.tsx
-  function SearchFilterBar({ placeholder, search: search2, onSearchChange, filter, onFilterChange, options }) {
+  function SearchFilterBar({ placeholder, search, onSearchChange, filter, onFilterChange, options }) {
     return /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.75rem"
     }, /* @__PURE__ */ React.createElement(Input, {
       type: "text",
       placeholder,
-      value: search2,
+      value: search,
       onChange: (e) => onSearchChange(e.target.value),
       className: "void-search-bar-input"
     }), /* @__PURE__ */ React.createElement(Select, {
@@ -6245,8 +6330,8 @@ button .void-info-hint {
     const enabled = filter === "enabled";
     return list.filter((n) => isPluginEnabled(n) === enabled);
   }
-  function emptyHint(search2, category) {
-    if (search2)
+  function emptyHint(search, category) {
+    if (search)
       return "No plugins match your search.";
     if (category === "favorites")
       return "No favorites yet. Star a plugin to see it here.";
@@ -6282,7 +6367,7 @@ button .void-info-hint {
     return name;
   }
   function PluginsTab() {
-    const [search2, setSearch] = useState("");
+    const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("all");
     const [category, setCategory] = useState("favorites");
     const [dialogName, setDialogName] = useState(null);
@@ -6290,14 +6375,14 @@ button .void-info-hint {
     const [needsReload, setNeedsReload] = useState(false);
     const [toggleTick, setToggleTick] = useState(0);
     const { userPlugins, requiredPlugins } = useMemo(() => {
-      const userPlugins2 = [];
-      const requiredPlugins2 = [];
+      const userPlugins = [];
+      const requiredPlugins = [];
       for (const n of Object.keys(plugins).toSorted((a, b) => a.localeCompare(b))) {
         if (plugins[n].hidden)
           continue;
-        (plugins[n].required ? requiredPlugins2 : userPlugins2).push(n);
+        (plugins[n].required ? requiredPlugins : userPlugins).push(n);
       }
-      return { userPlugins: userPlugins2, requiredPlugins: requiredPlugins2 };
+      return { userPlugins, requiredPlugins };
     }, []);
     const initialStatesRef = useRef(null);
     const changedPluginsRef = useRef(new Set);
@@ -6362,8 +6447,8 @@ button .void-info-hint {
         tabRequired: []
       };
     }, [category, filter, userPlugins, requiredPlugins, toggleTick]);
-    const filteredUser = useFiltered(tabUser, search2, getPluginKey);
-    const filteredRequired = useFiltered(tabRequired, search2, getPluginKey);
+    const filteredUser = useFiltered(tabUser, search, getPluginKey);
+    const filteredRequired = useFiltered(tabRequired, search, getPluginKey);
     const dialogPlugin = dialogName ? plugins[dialogName] : null;
     const hasResults = filteredUser.length > 0 || filteredRequired.length > 0;
     const onReload = useCallback((pluginName) => {
@@ -6415,7 +6500,7 @@ button .void-info-hint {
       onClick: () => setCategory(t.id)
     }, t.label))), /* @__PURE__ */ React.createElement(SearchFilterBar, {
       placeholder: `Search ${tabUser.length + tabRequired.length} plugins...`,
-      search: search2,
+      search,
       onSearchChange: setSearch,
       filter,
       onFilterChange: setFilter,
@@ -6441,7 +6526,7 @@ button .void-info-hint {
     }))))), !hasResults && /* @__PURE__ */ React.createElement(Paragraph, {
       color: "secondary",
       className: "void-tab-empty"
-    }, emptyHint(search2, category)), dialogPlugin && /* @__PURE__ */ React.createElement(ErrorBoundary, {
+    }, emptyHint(search, category)), dialogPlugin && /* @__PURE__ */ React.createElement(ErrorBoundary, {
       fallback: null
     }, /* @__PURE__ */ React.createElement(PluginDialog, {
       plugin: dialogPlugin,
@@ -6460,7 +6545,7 @@ button .void-info-hint {
     }));
   }
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/settings/tabs/ThemesTab.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/ThemesTab.css
   registerStyle("ThemesTab", `.void-themes-add-error {
     color: hsl(var(--fg-danger));
 }
@@ -6483,7 +6568,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/components/settings/ThemeCard.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/ThemeCard.css
   registerStyle("ThemeCard", `.void-theme-card-name {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -6652,13 +6737,13 @@ button .void-info-hint {
     }));
   }
   function ThemesTab() {
-    const [search2, setSearch] = useState("");
+    const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("all");
-    const [themes, setThemes2] = useState(getThemes);
+    const [themes, setThemes] = useState(getThemes);
     const [localDialogOpen, setLocalDialogOpen] = useState(false);
     const [onlineDialogOpen, setOnlineDialogOpen] = useState(false);
     const [editingTheme, setEditingTheme] = useState();
-    const refreshThemes = () => setThemes2(getThemes());
+    const refreshThemes = () => setThemes(getThemes());
     const visible = useMemo(() => {
       switch (filter) {
         case "enabled":
@@ -6673,7 +6758,7 @@ button .void-info-hint {
           return themes;
       }
     }, [themes, filter]);
-    const filtered = useFiltered(visible, search2, getThemeKey);
+    const filtered = useFiltered(visible, search, getThemeKey);
     const [removeUrl, setRemoveUrl] = useState(null);
     const removeTarget = removeUrl ? themes.find((t) => t.url === removeUrl) : null;
     const handleRemove = () => {
@@ -6714,7 +6799,7 @@ button .void-info-hint {
       }
     }, "Manage")), /* @__PURE__ */ React.createElement(Separator, null), themes.length > 0 && /* @__PURE__ */ React.createElement(SearchFilterBar, {
       placeholder: `Search ${themes.length} themes...`,
-      search: search2,
+      search,
       onSearchChange: setSearch,
       filter,
       onFilterChange: setFilter,
@@ -6761,7 +6846,7 @@ button .void-info-hint {
   var PluginsTab2 = ErrorBoundary.wrap(PluginsTab);
   var ThemesTab2 = ErrorBoundary.wrap(ThemesTab);
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/experiments/styles.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/experiments/styles.css
   registerStyle("experiments", `.void-experiments-section {
     padding: 0 1.25rem;
 }
@@ -6811,13 +6896,13 @@ button .void-info-hint {
 
   // src/api/Notifications.ts
   var ToastType;
-  ((ToastType2) => {
-    ToastType2[ToastType2["MESSAGE"] = 0] = "MESSAGE";
-    ToastType2[ToastType2["SUCCESS"] = 1] = "SUCCESS";
-    ToastType2[ToastType2["ERROR"] = 2] = "ERROR";
-    ToastType2[ToastType2["INFO"] = 3] = "INFO";
-    ToastType2[ToastType2["WARNING"] = 4] = "WARNING";
-    ToastType2[ToastType2["LOADING"] = 5] = "LOADING";
+  ((ToastType) => {
+    ToastType[ToastType["MESSAGE"] = 0] = "MESSAGE";
+    ToastType[ToastType["SUCCESS"] = 1] = "SUCCESS";
+    ToastType[ToastType["ERROR"] = 2] = "ERROR";
+    ToastType[ToastType["INFO"] = 3] = "INFO";
+    ToastType[ToastType["WARNING"] = 4] = "WARNING";
+    ToastType[ToastType["LOADING"] = 5] = "LOADING";
   })(ToastType ||= {});
   var TOAST_FN = {
     [0 /* MESSAGE */]: null,
@@ -6986,7 +7071,7 @@ button .void-info-hint {
     }, "(modified)")), /* @__PURE__ */ React.createElement(SettingsDescription, null, decodedKey ?? flagKey));
   }
   function ExperimentsTab() {
-    const [search2, setSearch] = useState("");
+    const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("all");
     const config = FeatureStore.useFeatureStore((s) => s.config);
     const overrides = FeatureStore.useFeatureStore((s) => s.overrides);
@@ -7011,7 +7096,7 @@ button .void-info-hint {
       return override !== undefined;
     }, [filter, config, overrides]);
     const prefiltered = useMemo(() => booleanKeys.filter(filterFn), [booleanKeys, filterFn]);
-    const filtered = useFiltered(prefiltered, search2, getFlagSearchText);
+    const filtered = useFiltered(prefiltered, search, getFlagSearchText);
     const overrideCount = Object.keys(overrides).length;
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
@@ -7041,7 +7126,7 @@ button .void-info-hint {
       className: cl14("section")
     }, /* @__PURE__ */ React.createElement(Input, {
       placeholder: `Search ${prefiltered.length} flags...`,
-      value: search2,
+      value: search,
       onChange: (e) => setSearch(e.target.value),
       className: cl14("search-input")
     }), /* @__PURE__ */ React.createElement(Select, {
@@ -7070,7 +7155,7 @@ button .void-info-hint {
     }))), !filtered.length && /* @__PURE__ */ React.createElement(Paragraph, {
       color: "muted",
       className: cl14("empty")
-    }, search2 ? `No flags matching "${search2}"` : `No ${filter} flags`));
+    }, search ? `No flags matching "${search}"` : `No ${filter} flags`));
   }
   var Tab = ErrorBoundary.wrap(ExperimentsTab);
   function overrideProxy(config, getState) {
@@ -7139,7 +7224,7 @@ button .void-info-hint {
     ]
   });
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/pluginsFlyout/styles.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/pluginsFlyout/styles.css
   registerStyle("pluginsFlyout", `.void-pf-icon {
     width: 1rem;
     height: 1rem;
@@ -7281,9 +7366,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260912.53] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"399daaf"}`
-    }, `(${"399daaf"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"442adc8"}`
+    }, `(${"442adc8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7446,91 +7531,6 @@ button .void-info-hint {
     ]
   });
 
-  // src/plugins/_core/fixChrome.chrome/index.ts
-  var fixChrome_default = definePlugin({
-    name: "FixChrome",
-    icon: ChromiumIcon,
-    description: "Fixes Chromium-specific performance issues like backdrop blur lag.",
-    authors: [Devs.Prism],
-    required: true,
-    patches: [
-      {
-        find: "backdrop-blur-",
-        all: true,
-        replacement: {
-          match: /backdrop-blur-(?:\w+|\[[^\]]+\]) ?/g,
-          replace: ""
-        }
-      }
-    ]
-  });
-
-  // src/plugins/_core/noTelemetry/index.ts
-  var noTelemetry_default = definePlugin({
-    name: "NoTelemetry",
-    icon: ShieldOffIcon,
-    description: "Disables all tracking, telemetry, and event logging.",
-    authors: [Devs.Prism],
-    tags: ["privacy"],
-    required: true,
-    patches: [
-      {
-        find: '"opentelemetry.js.api."',
-        replacement: {
-          match: /("onRouterTransitionStart",0,)function\([^)]*\)\{[^}]{0,200}\}/,
-          replace: "$1function(){}"
-        }
-      },
-      {
-        find: '"after-init"),(0,',
-        group: true,
-        replacement: [
-          {
-            match: /(function \i\(\)\{)if\(Object\.prototype\.hasOwnProperty\.call\(\i\.default,"get_distinct_id"\)\)return;/,
-            replace: "$1return}function _ignore(){"
-          },
-          {
-            match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]{0,300}?start_session_recording\(\)\}/,
-            replace: '"startRecordingImagineSession",0,function(){}'
-          },
-          {
-            match: /"stopRecordingImagineSession",0,function\(\)\{[\s\S]{0,300}?stop_session_recording\(\)\},\d+e?\d*\)\}/,
-            replace: '"stopRecordingImagineSession",0,function(){}'
-          }
-        ]
-      },
-      {
-        find: "sendBatchLogEvent",
-        all: true,
-        group: true,
-        replacement: [
-          {
-            match: /sendBatchLogEvent=\i=>\{[^}]{0,150}\}/,
-            replace: "sendBatchLogEvent=()=>{}"
-          },
-          {
-            match: /sendBatchLogExperimentExposure=\i=>\{[^}]{0,150}\}/,
-            replace: "sendBatchLogExperimentExposure=()=>{}"
-          }
-        ]
-      },
-      {
-        find: '"/api/log_metric"',
-        replacement: {
-          match: /"\/api\/log_metric",\i\)/,
-          replace: '"/api/log_metric",[])'
-        }
-      },
-      {
-        find: "isEnvVarsSet(){return void 0!=",
-        replacement: {
-          match: /isEnvVarsSet\(\)\{return void 0!=\i&&""!=\i\|\|!!this\.customEndpoint\}/,
-          replace: "isEnvVarsSet(){return false}"
-        }
-      }
-    ]
-  });
-
   // src/api/Modals.tsx
   var nextId = 0;
   var modalStack = [];
@@ -7555,7 +7555,7 @@ button .void-info-hint {
     modalStack.length = 0;
     store.notify();
   }
-  var ModalInstance = ErrorBoundary.wrap(function ModalInstance2({ entry }) {
+  var ModalInstance = ErrorBoundary.wrap(function ModalInstance({ entry }) {
     const onClose = useCallback(() => closeModal(entry.key), [entry.key]);
     return entry.render({ onClose });
   });
@@ -7670,96 +7670,6282 @@ button .void-info-hint {
     ]
   });
 
-  // src/plugins/starry/index.tsx
-  var DEFAULT_COLOR = "#ffffff";
-  var StarsBackground = findExportedComponentLazy("StarsBackground");
-  function hexToRgb(hex) {
-    const m = /^#([0-9a-fA-F]{6})$/.exec(hex);
-    if (!m)
-      return [255, 255, 255];
-    const n = parseInt(m[1], 16);
-    return [n >> 16 & 255, n >> 8 & 255, n & 255];
-  }
-  function ColorRow() {
-    const { starColor } = settings6.use(["starColor"]);
-    return /* @__PURE__ */ React.createElement(ColorSettingRow, {
-      value: starColor,
-      onChange: (v) => {
-        settings6.store.starColor = v;
-      },
-      title: "Star color",
-      description: "Color of the twinkling stars."
-    });
-  }
-  function StarryBackground() {
-    const { starColor } = settings6.use(["starColor"]);
-    return /* @__PURE__ */ React.createElement("div", {
-      "aria-hidden": true,
-      className: "fixed inset-0 -z-10 pointer-events-none"
-    }, /* @__PURE__ */ React.createElement(StarsBackground, {
-      starColor: hexToRgb(starColor)
-    }));
-  }
-  var WrappedStarry = ErrorBoundary.wrap(StarryBackground);
-  var settings6 = definePluginSettings({
-    starColor: {
-      type: 6 /* COMPONENT */,
-      default: DEFAULT_COLOR,
-      component: ColorRow
-    }
-  }).withPrivateSettings();
-  var starry_default = definePlugin({
-    name: "Starry",
-    icon: SparklesIcon,
-    description: "Adds Grok's native twinkling starry background to the main page.",
+  // src/plugins/autoCollapse/index.ts
+  var autoCollapse_default = definePlugin({
+    name: "AutoCollapse",
+    icon: ChevronsDownUpIcon,
+    description: "Automatically collapse code blocks in responses.",
     authors: [Devs.Prism],
-    tags: ["ui"],
-    settings: settings6,
-    _StarryBg() {
-      return /* @__PURE__ */ React.createElement(WrappedStarry, {
-        key: "void-starry-bg"
-      });
-    },
+    tags: ["chat"],
+    _collapse: () => true,
     patches: [
       {
-        find: '"chat-page")',
+        find: ["isInitiallyCollapsed", "showRunCode"],
+        all: true,
         replacement: {
-          match: /(children:\[)((?:\i,){2,8}\i\]\},"chat-page"\))/,
-          replace: "$1$self._StarryBg(),$2"
+          match: /isInitiallyCollapsed:(\i)=!1/g,
+          replace: "isInitiallyCollapsed:$1=$self._collapse()"
         }
       }
     ]
   });
 
-  // src/plugins/widerChat/index.ts
-  var STYLE_NAME2 = "widerChat";
-  var settings7 = definePluginSettings({
-    width: {
+  // src/plugins/autoRetry/index.ts
+  var logger16 = new Logger("AutoRetry");
+  var CONTENT_MODERATED = "grok:content-moderated";
+  var settings6 = definePluginSettings({
+    retryModeration: {
+      type: 3 /* BOOLEAN */,
+      description: "Retry content moderation errors.",
+      default: true
+    },
+    retryNetwork: {
+      type: 3 /* BOOLEAN */,
+      description: "Retry network and stream errors.",
+      default: true
+    },
+    maxRetries: {
       type: 1 /* NUMBER */,
-      description: "Maximum chat width in rem.",
-      default: 64
+      description: "Maximum consecutive retries per conversation.",
+      default: 3
+    },
+    delay: {
+      type: 1 /* NUMBER */,
+      description: "Seconds to wait before retrying.",
+      default: 2
     }
   });
-  function applyWidth() {
-    const w = settings7.store.width;
-    registerStyle(STYLE_NAME2, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
+  var retryCounts = new Map;
+  var pendingTimer = null;
+  function clearPending() {
+    if (pendingTimer != null) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
   }
-  var widerChat_default = definePlugin({
-    name: "WiderChat",
-    icon: UnfoldHorizontalIcon,
-    description: "Adjustable chat width for big monitors.",
+  function isModeration(response) {
+    return String(response.error?.message ?? "").includes(CONTENT_MODERATED);
+  }
+  function shouldRetry(response) {
+    if (isModeration(response))
+      return settings6.store.retryModeration;
+    return settings6.store.retryNetwork;
+  }
+  function retry(responseId, conversationId, response) {
+    const count = (retryCounts.get(conversationId) ?? 0) + 1;
+    const max = settings6.store.maxRetries;
+    if (count > max) {
+      showToast("Max retries reached.", 2 /* ERROR */);
+      retryCounts.delete(conversationId);
+      return;
+    }
+    retryCounts.set(conversationId, count);
+    const delaySec = settings6.store.delay;
+    showToast(`Retrying... (${count}/${max})`, 0 /* MESSAGE */);
+    logger16.info(`Retry ${count}/${max} for ${conversationId} in ${delaySec}s`);
+    clearPending();
+    pendingTimer = setTimeout(() => {
+      pendingTimer = null;
+      const state = ChatPageStore.useChatPageStore.getState();
+      if (state.streamedMessageId)
+        return;
+      state.sendResponse({
+        message: "",
+        parentResponseId: responseId,
+        conversationId,
+        fileAttachmentIds: response.fileAttachments,
+        setOpimisticUserResponse: false,
+        setUserResponse: false,
+        enableRetries: true
+      });
+    }, delaySec * 1000);
+  }
+  function onStreamEnd({ responseId }) {
+    const response = ResponseStore.useResponseStore.getState().byId[responseId];
+    if (!response || response.state !== "error") {
+      const convId = ChatPageStore.useChatPageStore.getState().conversationId;
+      if (convId)
+        retryCounts.delete(convId);
+      return;
+    }
+    if (!shouldRetry(response))
+      return;
+    const { conversationId } = ChatPageStore.useChatPageStore.getState();
+    if (!conversationId)
+      return;
+    retry(responseId, conversationId, response);
+  }
+  var autoRetry_default = definePlugin({
+    name: "AutoRetry",
+    icon: RotateCcwIcon,
+    description: "Automatically retry failed messages on moderation or network errors.",
     authors: [Devs.Prism],
-    tags: ["chat", "ui"],
-    settings: settings7,
-    start: applyWidth,
-    onSettingsChange: applyWidth,
+    tags: ["chat"],
+    settings: settings6,
+    startAt: "TurbopackReady" /* TurbopackReady */,
+    start() {
+      retryCounts.clear();
+      clearPending();
+    },
     stop() {
-      unregisterStyle(STYLE_NAME2);
+      clearPending();
+      retryCounts.clear();
+    },
+    events: {
+      streamEnd: onStreamEnd
+    }
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterFiles/styles.css
+  registerStyle("betterFiles", `/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/* stylelint-disable-next-line selector-class-pattern */
+.group\\/sidebar-menu-item:hover .void-sel-wrap {
+    display: inline-flex;
+}
+
+/* stylelint-disable-next-line selector-class-pattern */
+.group\\/sidebar-menu-item.relative > .void-sel-wrap {
+    position: absolute;
+    inset-inline-start: 0.5rem;
+    top: 0.5rem;
+    z-index: 10;
+    pointer-events: auto;
+}
+`);
+
+  // src/plugins/betterFiles/index.tsx
+  var logger17 = new Logger("BetterFiles");
+  var LibraryAssets = findByPropsLazy("deleteLibraryAsset", "useLibraryAssets");
+  var selection = createSelectionStore();
+  var assetsById = new Map;
+  function fileId(item) {
+    if (item?.kind !== "file")
+      return null;
+    return item.asset?.assetId ?? item.id ?? null;
+  }
+  function FileCheckbox({ item }) {
+    const id = fileId(item);
+    if (!id || !item.asset)
+      return null;
+    assetsById.set(id, item.asset);
+    return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
+      selection,
+      id
+    });
+  }
+  async function deleteAssets(ids) {
+    const { deleteLibraryAsset } = LibraryAssets;
+    for (const id of ids) {
+      const asset = assetsById.get(id) ?? { assetId: id };
+      try {
+        await deleteLibraryAsset(asset);
+      } catch (e) {
+        logger17.error("Failed to delete asset", id, e);
+      }
+      assetsById.delete(id);
+    }
+  }
+  function wrapItemClick(onClick, item) {
+    return (e) => {
+      const id = fileId(item);
+      if (id && item.asset && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (selection.has(id)) {
+          selection.toggle(id);
+          assetsById.delete(id);
+        } else {
+          assetsById.set(id, item.asset);
+          selection.toggle(id);
+        }
+        return;
+      }
+      onClick(e);
+    };
+  }
+  var betterFiles_default = definePlugin({
+    name: "BetterFiles",
+    icon: FilesIcon,
+    description: "Adds bulk delete to the Library page.",
+    authors: [Devs.Prism, Devs.p],
+    tags: ["ui"],
+    managedStyle: "betterFiles",
+    start() {
+      selection.clear();
+      assetsById.clear();
+    },
+    stop() {
+      selection.clear();
+      assetsById.clear();
+    },
+    _renderFileCheckbox: ErrorBoundary.wrap(FileCheckbox, null),
+    _renderFileActionBar: ErrorBoundary.wrap(() => /* @__PURE__ */ React.createElement(SelectionActionBar, {
+      selection,
+      noun: "file",
+      title: "Delete files",
+      onDelete: deleteAssets
+    }), null),
+    _wrapItemClick: wrapItemClick,
+    patches: [
+      {
+        find: "LibraryPageContent:refreshAssets",
+        replacement: [
+          {
+            match: /("data-library-item-id":\i\.id,onPointerDown:\i,onClick:)(\i)(,className:"absolute inset-0 z-0 focus-visible:outline-none")/,
+            replace: "$1$self._wrapItemClick($2,arguments[0].item)$3"
+          },
+          {
+            match: /(SIDEBAR_ROW_MASK_STYLE,children:\[)(\i,\i,\i,\i)\]/,
+            replace: "$1$self._renderFileCheckbox({item:arguments[0].item}),$2]"
+          },
+          {
+            match: /("data-library-item-id":\i\.id,onClick:)(\i=>\{\i\.stopPropagation\(\),\i\(\i\)\})/,
+            replace: "$1$self._wrapItemClick($2,arguments[0].item)"
+          },
+          {
+            match: /("flex min-w-0 items-center gap-3 text-left font-medium",children:\[)(\i,\i)\]/,
+            replace: "$1$self._renderFileCheckbox({item:arguments[0].item}),$2]"
+          },
+          {
+            match: /("library-page\.title","Library"\)\}\),\(0,\i\.jsx\)\("div",\{className:"flex items-center gap-3",children:)(\i)\}\)/,
+            replace: "$1[$self._renderFileActionBar(),$2]})"
+          }
+        ]
+      }
+    ]
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterImagine/styles.css
+  registerStyle("betterImagine", `/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+.void-imagine-chip {
+    background: hsl(var(--surface-l1));
+}
+
+.void-imagine-chip:hover {
+    background: hsl(var(--surface-l2));
+}
+
+.void-imagine-search {
+    width: 10rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+}
+
+.void-imagine-date-select,
+.void-imagine-sort-select {
+    flex-shrink: 0;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    background: hsl(var(--surface-l1));
+    color: hsl(var(--fg-secondary));
+    border: none;
+}
+
+.void-imagine-sort-active {
+    color: hsl(var(--fg-primary));
+    background: hsl(var(--surface-l2));
+}
+`);
+
+  // src/plugins/betterImagine/index.tsx
+  var logger18 = new Logger("BetterImagine");
+  var cl17 = classNameFactory("void-imagine-");
+  var settings7 = definePluginSettings({
+    hideDefaultPreviews: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide the community image grid and templates on the Imagine home page.",
+      default: true
+    },
+    noAutoplay: {
+      type: 3 /* BOOLEAN */,
+      description: "Stop video thumbnails from autoplaying.",
+      default: true
+    },
+    playOnHover: {
+      type: 3 /* BOOLEAN */,
+      description: "Play video thumbnails when hovered.",
+      default: true
+    },
+    hideModerated: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide moderated images and videos that cannot be interacted with.",
+      default: true
+    },
+    pauseWhenHidden: {
+      type: 3 /* BOOLEAN */,
+      description: "Pause any playing video thumbnails when the tab loses focus.",
+      default: true
+    },
+    persistFilters: {
+      type: 3 /* BOOLEAN */,
+      description: "Remember Favorites filter + sort across reloads.",
+      default: true
+    },
+    smartFilenames: {
+      type: 3 /* BOOLEAN */,
+      description: "Rename downloads to YYYY-MM-DD_prompt-slug_id.ext.",
+      default: true
+    },
+    bypassPaywall: {
+      type: 3 /* BOOLEAN */,
+      description: "Skip the upsell dialog when picking 720p / 10s / video extend. The setting is applied locally; the server still enforces your subscription on generation.",
+      default: false
+    },
+    ctrlClickSelect: {
+      type: 3 /* BOOLEAN */,
+      description: "Ctrl/Cmd-click an image to add it to the multi-select.",
+      default: true
+    }
+  });
+  function buildFilename(post, isVideo) {
+    if (!settings7.store.smartFilenames || !post)
+      return null;
+    const prompt = (post.prompt ?? post.originalPrompt ?? "").trim();
+    const slug = sanitizeFilename(prompt.slice(0, 60), "").slice(0, 60);
+    const date = post.createTime ? new Date(post.createTime).toISOString().slice(0, 10) : "";
+    const id = post.id?.slice(0, 8) ?? "";
+    const ext = isVideo ? "mp4" : "png";
+    const parts = [date, slug, id].filter(Boolean);
+    if (!parts.length)
+      return null;
+    return `${parts.join("_")}.${ext}`;
+  }
+  var FILTER_MAP = {
+    image: "MEDIA_POST_TYPE_IMAGE",
+    video: "MEDIA_POST_TYPE_VIDEO"
+  };
+  var DATE_LABELS = {
+    all: "Any time",
+    today: "Today",
+    week: "This week",
+    month: "This month"
+  };
+  var SORT_LABELS = {
+    newest: "Newest first",
+    oldest: "Oldest first",
+    "prompt-az": "Prompt A → Z",
+    "prompt-za": "Prompt Z → A",
+    random: "Shuffle"
+  };
+  var SORT_KEYS = Object.keys(SORT_LABELS);
+  var DAY_MS = 86400000;
+  var DATE_CUTOFFS = {
+    all: 0,
+    today: DAY_MS,
+    week: 7 * DAY_MS,
+    month: 30 * DAY_MS
+  };
+  var STORAGE_KEY2 = "void-imagine-filters";
+  var DEFAULT_FILTERS = { filter: "all", search: "", date: "all", sort: "newest" };
+  function loadFilters() {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY2);
+      if (!raw)
+        return DEFAULT_FILTERS;
+      const parsed = JSON.parse(raw);
+      return {
+        filter: ["all", "image", "video"].includes(parsed.filter) ? parsed.filter : "all",
+        search: typeof parsed.search === "string" ? parsed.search : "",
+        date: Object.keys(DATE_LABELS).includes(parsed.date) ? parsed.date : "all",
+        sort: SORT_KEYS.includes(parsed.sort) ? parsed.sort : "newest"
+      };
+    } catch {
+      return DEFAULT_FILTERS;
+    }
+  }
+  var initial = loadFilters();
+  var currentFilter = initial.filter;
+  var currentSearch = initial.search;
+  var currentDate = initial.date;
+  var currentSort = initial.sort;
+  var randomSeed = Date.now();
+  var filterStore = createExternalStore();
+  function persist() {
+    if (!settings7.store.persistFilters)
+      return;
+    try {
+      sessionStorage.setItem(STORAGE_KEY2, JSON.stringify({ filter: currentFilter, search: currentSearch, date: currentDate, sort: currentSort }));
+    } catch {}
+  }
+  function setFilter(f) {
+    currentFilter = f;
+    filterStore.notify();
+    persist();
+  }
+  var setSearch = debounce((s) => {
+    currentSearch = s;
+    filterStore.notify();
+    persist();
+  }, 200);
+  function setDate(d) {
+    currentDate = d;
+    filterStore.notify();
+    persist();
+  }
+  function setSort(s) {
+    if (s === "random" && currentSort === "random")
+      randomSeed = Date.now();
+    currentSort = s;
+    filterStore.notify();
+    persist();
+  }
+  function resetFilters() {
+    currentFilter = "all";
+    currentSearch = "";
+    currentDate = "all";
+    currentSort = "newest";
+    filterStore.notify();
+    persist();
+  }
+  function hasActiveFilters() {
+    return currentFilter !== "all" || currentSearch.length > 0 || currentDate !== "all";
+  }
+  function isModerated(p) {
+    return !!(p.moderated || p.isModerated) && !p.mediaUrl;
+  }
+  var haystackCache = new WeakMap;
+  var tsCache = new WeakMap;
+  var promptCollator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+  function getHaystack(p) {
+    let h = haystackCache.get(p);
+    if (h === undefined) {
+      h = `${p.prompt ?? ""}
+${p.originalPrompt ?? ""}`.toLowerCase();
+      haystackCache.set(p, h);
+    }
+    return h;
+  }
+  function getTs(p) {
+    let t = tsCache.get(p);
+    if (t === undefined) {
+      t = new Date(p.createTime).getTime() || 0;
+      tsCache.set(p, t);
+    }
+    return t;
+  }
+  function matchesFilters(p, target, q, cutoff, hideModerated) {
+    if (!p)
+      return false;
+    if (hideModerated && isModerated(p))
+      return false;
+    if (target && p.mediaType !== target)
+      return false;
+    if (cutoff && getTs(p) < cutoff)
+      return false;
+    if (q && !getHaystack(p).includes(q))
+      return false;
+    return true;
+  }
+  var cacheKey = null;
+  var cacheList = null;
+  var cacheResult = [];
+  function filterItems(items) {
+    const { hideModerated } = settings7.store;
+    const key = `${items.length}|${currentFilter}|${currentSearch}|${currentDate}|${currentSort}|${hideModerated ? 1 : 0}|${randomSeed}`;
+    if (cacheList === items && cacheKey === key)
+      return cacheResult;
+    const needsFilter = currentFilter !== "all" || currentSearch || currentDate !== "all" || hideModerated;
+    let out = items;
+    if (needsFilter) {
+      const target = currentFilter !== "all" ? FILTER_MAP[currentFilter] : null;
+      const q = currentSearch.toLowerCase();
+      const cutoff = DATE_CUTOFFS[currentDate] ? Date.now() - DATE_CUTOFFS[currentDate] : 0;
+      out = items.filter((p) => matchesFilters(p, target, q, cutoff, hideModerated));
+    }
+    cacheList = items;
+    cacheKey = key;
+    cacheResult = currentSort === "newest" ? out : sortItems(out);
+    return cacheResult;
+  }
+  function mulberry32(seed) {
+    let a = seed;
+    return () => {
+      a |= 0;
+      a = a + 1831565813 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t ^= t + Math.imul(t ^ t >>> 7, 61 | t);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function sortItems(items) {
+    if (items.length < 2)
+      return items;
+    const arr = [...items];
+    switch (currentSort) {
+      case "oldest":
+        return arr.toSorted((a, b) => getTs(a) - getTs(b));
+      case "prompt-az":
+        return arr.toSorted((a, b) => promptCollator.compare(a.prompt ?? "", b.prompt ?? ""));
+      case "prompt-za":
+        return arr.toSorted((a, b) => promptCollator.compare(b.prompt ?? "", a.prompt ?? ""));
+      case "random": {
+        const rand = mulberry32(randomSeed);
+        for (let i = arr.length - 1;i > 0; i--) {
+          const j = Math.floor(rand() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+      default:
+        return arr;
+    }
+  }
+  var pending = new WeakMap;
+  function pauseVideo(video) {
+    const promise = pending.get(video);
+    pending.delete(video);
+    if (promise) {
+      promise.then(() => {
+        if (pending.has(video))
+          return;
+        video.pause();
+        video.currentTime = 0;
+      }).catch((e) => logger18.warn("Failed to pause video:", e));
+    } else {
+      video.pause();
+      video.currentTime = 0;
+    }
+  }
+  var onMouseEnter = (e) => {
+    const video = e.currentTarget.querySelector("video");
+    if (video)
+      pending.set(video, video.play().catch((e) => logger18.error("Failed to play video", e)));
+  };
+  var onMouseLeave = (e) => {
+    const video = e.currentTarget.querySelector("video");
+    if (video)
+      pauseVideo(video);
+  };
+  function useFilteredFavorites() {
+    const list = MediaStore.useMediaStore((s) => s.favoritesList);
+    useExternalStore(filterStore);
+    return filterItems(list);
+  }
+  function mediaState() {
+    return MediaStore.useMediaStore.getState();
+  }
+  function selectVisible() {
+    const state = mediaState();
+    const list = state.favoritesList ?? [];
+    const visible = filterItems(list);
+    if (!visible.length)
+      return;
+    state.setMultiSelectItems(visible);
+    Toaster.toast.success(`Selected ${pluralize(visible.length, "item")}.`);
+  }
+  function deselectAll() {
+    const state = mediaState();
+    state.clearMultiSelect?.();
+  }
+  function selectedPosts() {
+    const state = mediaState();
+    const ids = Object.keys(state.multiSelectIds ?? {});
+    return ids.map((id) => state.byId[id]).filter((p) => !!p);
+  }
+  async function copyLines(lines, label) {
+    if (!lines.length) {
+      Toaster.toast.info(`Selected items have no ${label}s.`);
+      return;
+    }
+    try {
+      await copyToClipboard(lines.join(`
+`));
+      Toaster.toast.success(`Copied ${pluralize(lines.length, label)} to clipboard.`);
+    } catch (e) {
+      logger18.error(`Failed to copy ${label}s`, e);
+      Toaster.toast.error(`Failed to copy ${label}s.`);
+    }
+  }
+  async function copySelectedPrompts() {
+    const posts = selectedPosts();
+    if (!posts.length) {
+      Toaster.toast.info("No items selected.");
+      return;
+    }
+    await copyLines(posts.map((p) => (p.prompt ?? p.originalPrompt ?? "").trim()).filter(Boolean), "prompt");
+  }
+  async function copySelectedUrls() {
+    const posts = selectedPosts();
+    if (!posts.length) {
+      Toaster.toast.info("No items selected.");
+      return;
+    }
+    const { videoByMediaId } = mediaState();
+    const urls = posts.map((p) => videoByMediaId[p.id]?.find((v) => v.hdMediaUrl)?.hdMediaUrl ?? p.mediaUrl).filter((u) => !!u);
+    await copyLines(urls, "URL");
+  }
+  async function bulkUpscaleSelected() {
+    const state = mediaState();
+    const ids = Object.keys(state.multiSelectIds ?? {});
+    let upscaled = 0;
+    let alreadyHd = 0;
+    let inProgress = 0;
+    for (const id of ids) {
+      const videos = state.videoByMediaId[id];
+      if (!videos?.length)
+        continue;
+      for (const video of videos) {
+        if (video.hdMediaUrl) {
+          alreadyHd++;
+          continue;
+        }
+        if (video.upscalingInProgress) {
+          inProgress++;
+          continue;
+        }
+        try {
+          await state.upscaleVideo(id, video.id);
+          upscaled++;
+        } catch (e) {
+          logger18.error("Failed to upscale video:", id, video.id, e);
+        }
+      }
+    }
+    if (upscaled)
+      Toaster.toast.success(`Upscaling ${pluralize(upscaled, "video")}.`);
+    else if (alreadyHd)
+      Toaster.toast.info(`${pluralize(alreadyHd, "video")} already in HD.`);
+    else if (inProgress)
+      Toaster.toast.info(`${pluralize(inProgress, "video")} already upscaling.`);
+    else
+      Toaster.toast.info("No videos to upscale.");
+  }
+  function FilterButtons() {
+    useExternalStore(filterStore);
+    const [searchInput, setSearchInput] = useState(currentSearch);
+    const showClear = hasActiveFilters() || currentSort !== "newest" || searchInput.length > 0;
+    const sortActive = currentSort !== "newest";
+    const lastSync = useRef(currentSearch);
+    if (lastSync.current !== currentSearch) {
+      lastSync.current = currentSearch;
+      setSearchInput(currentSearch);
+    }
+    return /* @__PURE__ */ React.createElement(Fragment, null, /* @__PURE__ */ React.createElement(Select, {
+      value: currentDate,
+      onValueChange: (v) => setDate(v)
+    }, /* @__PURE__ */ React.createElement(SelectTrigger, {
+      className: cl17("date-select")
+    }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, Object.keys(DATE_LABELS).map((d) => /* @__PURE__ */ React.createElement(SelectItem, {
+      key: d,
+      value: d
+    }, DATE_LABELS[d])))), /* @__PURE__ */ React.createElement(Select, {
+      value: currentSort,
+      onValueChange: (v) => setSort(v)
+    }, /* @__PURE__ */ React.createElement(SelectTrigger, {
+      className: sortActive ? cl17("sort-select", "sort-active") : cl17("sort-select")
+    }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, SORT_KEYS.map((s) => /* @__PURE__ */ React.createElement(SelectItem, {
+      key: s,
+      value: s
+    }, SORT_LABELS[s])))), /* @__PURE__ */ React.createElement(Input, {
+      type: "text",
+      placeholder: "Search...",
+      value: searchInput,
+      onChange: (e) => {
+        setSearchInput(e.target.value);
+        setSearch(e.target.value);
+      },
+      className: cl17("search")
+    }), ["image", "video"].map((f) => /* @__PURE__ */ React.createElement(Button, {
+      key: f,
+      variant: currentFilter === f ? "primary" : "tertiary",
+      size: "sm",
+      shape: "pill",
+      className: currentFilter !== f ? cl17("chip") : undefined,
+      onClick: () => setFilter(currentFilter === f ? "all" : f)
+    }, f === "image" ? "Images" : "Videos")), showClear && /* @__PURE__ */ React.createElement(Button, {
+      variant: "tertiary",
+      size: "sm",
+      shape: "pill",
+      className: cl17("chip"),
+      onClick: resetFilters
+    }, "Clear"));
+  }
+  function UpscaleItem() {
+    const [open, setOpen] = useState(false);
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+      onSelect: () => setOpen(true)
+    }, /* @__PURE__ */ React.createElement(ScalingIcon, {
+      className: "size-4 me-2"
+    }), "Upscale videos"), /* @__PURE__ */ React.createElement(ConfirmDialog, {
+      open,
+      onOpenChange: setOpen,
+      title: "Upscale selected videos",
+      description: "Start HD upscaling for the selected videos. Already-HD and in-progress videos will be skipped.",
+      confirmText: "Upscale",
+      onConfirm: bulkUpscaleSelected
+    }));
+  }
+  function CopyActions() {
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+      onSelect: copySelectedPrompts
+    }, /* @__PURE__ */ React.createElement(CopyIcon, {
+      className: "size-4 me-2"
+    }), "Copy prompts"), /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+      onSelect: copySelectedUrls
+    }, /* @__PURE__ */ React.createElement(CopyIcon, {
+      className: "size-4 me-2"
+    }), "Copy URLs"));
+  }
+  function isImaginePage() {
+    const page = RoutingStore.useRoutingStore.getState().route?.page;
+    return page === "imagine" || page === "imagine-favorites";
+  }
+  function isFavoritesPage() {
+    return RoutingStore.useRoutingStore.getState().route?.page === "imagine-favorites";
+  }
+  function isTypingTarget(t) {
+    if (!(t instanceof HTMLElement))
+      return false;
+    if (t.isContentEditable)
+      return true;
+    const tag = t.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+  }
+  function onKeyDown(e) {
+    if (!isImaginePage())
+      return;
+    if (e.ctrlKey || e.metaKey || e.altKey)
+      return;
+    if (isTypingTarget(e.target))
+      return;
+    if (e.key === "i" || e.key === "I") {
+      setFilter(currentFilter === "image" ? "all" : "image");
+      e.preventDefault();
+    } else if (e.key === "v" || e.key === "V") {
+      setFilter(currentFilter === "video" ? "all" : "video");
+      e.preventDefault();
+    } else if (e.key === "r" || e.key === "R") {
+      resetFilters();
+      e.preventDefault();
+    } else if (e.key === "A") {
+      if (isFavoritesPage()) {
+        deselectAll();
+        e.preventDefault();
+      }
+    } else if (e.key === "a") {
+      if (isFavoritesPage()) {
+        selectVisible();
+        e.preventDefault();
+      }
+    } else if (e.key === "c" || e.key === "C") {
+      if (isFavoritesPage() && Object.keys(mediaState().multiSelectIds ?? {}).length) {
+        copySelectedPrompts();
+        e.preventDefault();
+      }
+    }
+  }
+  function onVisibilityChange() {
+    if (!settings7.store.pauseWhenHidden)
+      return;
+    if (document.visibilityState !== "hidden")
+      return;
+    for (const video of document.querySelectorAll("video")) {
+      if (!video.paused)
+        video.pause();
+    }
+  }
+  var abortCtrl = null;
+  var betterImagine_default = definePlugin({
+    name: "BetterImagine",
+    icon: ImagesIcon,
+    description: "Imagine polish: filter, sort, shortcuts, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
+    authors: [Devs.Prism],
+    tags: ["ui"],
+    settings: settings7,
+    _hideDefault: () => settings7.store.hideDefaultPreviews,
+    _NullGrid: () => null,
+    _autoPlay: () => !settings7.store.noAutoplay,
+    _bypassPaywall: () => settings7.store.bypassPaywall,
+    _ctrlClickSelect: () => settings7.store.ctrlClickSelect,
+    _hoverProps: () => settings7.store.playOnHover ? { onMouseEnter, onMouseLeave } : {},
+    _useFilteredFavorites: useFilteredFavorites,
+    _renderFilterButtons: ErrorBoundary.wrap(FilterButtons, null),
+    _renderUpscaleItem: ErrorBoundary.wrap(UpscaleItem, null),
+    _renderCopyActions: ErrorBoundary.wrap(CopyActions, null),
+    _buildFilename: buildFilename,
+    start() {
+      if (abortCtrl)
+        return;
+      abortCtrl = new AbortController;
+      const { signal } = abortCtrl;
+      document.addEventListener("keydown", onKeyDown, { capture: true, signal });
+      document.addEventListener("visibilitychange", onVisibilityChange, { signal });
+    },
+    stop() {
+      abortCtrl?.abort();
+      abortCtrl = null;
+    },
+    patches: [
+      {
+        find: "image_feed_opened",
+        group: true,
+        replacement: [
+          {
+            match: /\(0,(\i\.jsx)\)\((\i),\{containerRef:(\i),variant:(\i),width:/,
+            replace: '(0,$1)($self._hideDefault()&&"favorites"!==$4?$self._NullGrid:$2,{containerRef:$3,variant:$4,width:'
+          },
+          {
+            match: /=\(0,\i\.useMediaStore\)\(\i=>\i\.favoritesList\)/,
+            replace: "=$self._useFilteredFavorites()"
+          }
+        ]
+      },
+      {
+        find: "image_feed_image_selected",
+        group: true,
+        replacement: [
+          {
+            match: /autoPlay:!0/g,
+            replace: "autoPlay:$self._autoPlay()"
+          },
+          {
+            match: /\.updateShiftPreview\(null\)\)\},onClick:/,
+            replace: ".updateShiftPreview(null))},...$self._hoverProps(),onClick:"
+          },
+          {
+            match: /if\(([^)]{1,40})\)return void (\i)\((\i)\);(?=let \i=\{imagine:"home-grid")/,
+            replace: "if($1||($self._ctrlClickSelect()&&($3.ctrlKey||$3.metaKey)))return void $2($3);"
+          },
+          {
+            match: /if\(([^)]{1,40})\)return void (\i)\((\i)\);(?=if\(!\i\)return;\i\.useMediaStore\.getState\(\)\.clearMultiSelect)/,
+            replace: "if($1||($self._ctrlClickSelect()&&($3.ctrlKey||$3.metaKey)))return void $2($3);"
+          }
+        ]
+      },
+      {
+        find: 'imagine-folder.all","All"',
+        replacement: {
+          match: /"imagine-folder\.all","All"\)\}\)/,
+          replace: "$&,$self._renderFilterButtons({})"
+        }
+      },
+      {
+        find: "imagine-templates.section-title",
+        all: true,
+        noWarn: true,
+        replacement: {
+          match: /\?(\i)\.play\(\)\.catch\(\i\):\1\.pause\(\)/,
+          replace: "&&$self._autoPlay()?$1.play().catch(()=>{}):$1.pause()"
+        }
+      },
+      {
+        find: '"imagine-set-resolution"',
+        all: true,
+        replacement: {
+          match: /return void \i\.useUpsellStore\.getState\(\)\.openUpsell\(\{entrypointKey:"imagine-[\w-]+"\}\)/g,
+          replace: "if(!$self._bypassPaywall())$&"
+        }
+      },
+      {
+        find: ["imagine-multiselect.add-to-tag", 'DropdownMenuContent,{align:"end",sideOffset:8,children:[(0,'],
+        group: true,
+        replacement: [
+          {
+            match: /(?<=\.DropdownMenuContent,\{align:"end",sideOffset:8,children:\[)/,
+            replace: "$self._renderUpscaleItem(),$self._renderCopyActions(),"
+          },
+          {
+            match: /`imagine-\$\{(\i)\.slice\(0,8\)\}\.\$\{(\i)\?"mp4":"png"\}`/,
+            replace: '($self._buildFilename(e.byId[$1],$2)||`imagine-${$1.slice(0,8)}.${$2?"mp4":"png"}`)'
+          }
+        ]
+      }
+    ]
+  });
+
+  // src/plugins/betterLinks/index.tsx
+  var DEFAULT_LINK = "#4a9eff";
+  var DEFAULT_VISITED = "#9b59b6";
+  var STYLE_NAME2 = "better-links-dynamic";
+  var DOMAIN_RE = /(?<![a-zA-Z0-9@/:.#])(?:www\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.(?:com|org|net|io|dev|app|co|ai|gov|edu|me|xyz|gg|tv|cc|so|is|info|tech|pro|site|store|cloud|online|icu|top|be|ly|sh|to|fm|am|us|uk|ca|de|fr|es|it|nl|jp|cn|ru|br|au|in|eu)(?:\/[^\s<>"'`)\]},]*)?/g;
+  function isValidHex(c) {
+    return /^#[0-9a-fA-F]{6}$/.test(c);
+  }
+  function getColor(key, fallback) {
+    const val = settings8.store[key];
+    return val && isValidHex(val) ? val : fallback;
+  }
+  function applyColors() {
+    const link = getColor("linkColor", DEFAULT_LINK);
+    let css = `.void-colored-link{color:${link}!important;text-decoration-color:${link}!important}`;
+    if (settings8.store.enableVisitedColor) {
+      const visited = getColor("visitedColor", DEFAULT_VISITED);
+      css += `.void-colored-link:visited{color:${visited}!important;text-decoration-color:${visited}!important}`;
+    }
+    registerStyle(STYLE_NAME2, css);
+  }
+  function ColorRow({ settingKey, title, description, fallback }) {
+    settings8.use([settingKey]);
+    return /* @__PURE__ */ React.createElement(ColorSettingRow, {
+      value: getColor(settingKey, fallback),
+      onChange: (v) => {
+        settings8.store[settingKey] = v;
+        applyColors();
+      },
+      title,
+      description
+    });
+  }
+  var settings8 = definePluginSettings({
+    linkifyDomains: {
+      type: 3 /* BOOLEAN */,
+      description: "Detect bare domains in messages and make them clickable.",
+      default: true
+    },
+    enableVisitedColor: {
+      type: 3 /* BOOLEAN */,
+      description: "Apply a different color to links you already visited.",
+      default: false,
+      onChange: applyColors
+    },
+    linkColor: {
+      type: 6 /* COMPONENT */,
+      component: () => /* @__PURE__ */ React.createElement(ColorRow, {
+        settingKey: "linkColor",
+        title: "Link color",
+        description: "Colorize links in messages.",
+        fallback: DEFAULT_LINK
+      })
+    },
+    visitedColor: {
+      type: 6 /* COMPONENT */,
+      component: () => /* @__PURE__ */ React.createElement(ColorRow, {
+        settingKey: "visitedColor",
+        title: "Visited color",
+        description: "Colorize links you already visited.",
+        fallback: DEFAULT_VISITED
+      })
+    }
+  }).withPrivateSettings();
+  var betterLinks_default = definePlugin({
+    name: "BetterLinks",
+    icon: LinkIcon,
+    description: "Colorize links and detect bare domains in chat messages.",
+    authors: [Devs.Prism],
+    tags: ["chat"],
+    settings: settings8,
+    patches: [
+      {
+        find: "chat-markdown:a:link",
+        all: true,
+        replacement: {
+          match: /target:"_blank",rel:"noopener noreferrer nofollow",onClick:/,
+          replace: 'target:"_blank",rel:"noopener noreferrer nofollow",className:"void-colored-link",onClick:'
+        }
+      },
+      {
+        find: "chat-markdown-load-third-party",
+        replacement: {
+          match: /singleDollarTextMath:!1\}\],([^\]]{0,200})\]/,
+          replace: "singleDollarTextMath:!1}],$1,$self._remarkLinkify]"
+        }
+      }
+    ],
+    _remarkLinkify() {
+      const { store } = settings8;
+      return (tree) => {
+        try {
+          if (!store.linkifyDomains)
+            return;
+          const walk = (node) => {
+            if (!node.children)
+              return;
+            const out = [];
+            let changed = false;
+            for (const child of node.children) {
+              if (child.type !== "text") {
+                walk(child);
+                out.push(child);
+                continue;
+              }
+              DOMAIN_RE.lastIndex = 0;
+              if (!DOMAIN_RE.test(child.value)) {
+                out.push(child);
+                continue;
+              }
+              DOMAIN_RE.lastIndex = 0;
+              let last = 0;
+              let m;
+              while ((m = DOMAIN_RE.exec(child.value)) != null) {
+                if (m.index > last)
+                  out.push({ type: "text", value: child.value.slice(last, m.index) });
+                out.push({ type: "link", url: "https://" + m[0], children: [{ type: "text", value: m[0] }] });
+                last = m.index + m[0].length;
+              }
+              if (last < child.value.length)
+                out.push({ type: "text", value: child.value.slice(last) });
+              changed = true;
+            }
+            if (changed)
+              node.children = out;
+          };
+          walk(tree);
+        } catch {
+          return tree;
+        }
+      };
+    },
+    start() {
+      settings8.store.linkColor ??= DEFAULT_LINK;
+      settings8.store.visitedColor ??= DEFAULT_VISITED;
+      applyColors();
+      enableStyle(STYLE_NAME2);
+    },
+    stop() {
+      disableStyle(STYLE_NAME2);
+    }
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/headerHover.css
+  registerStyle("headerHover", `/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/* stylelint-disable no-descending-specificity */
+
+@media (width >= 48rem) {
+    [data-sidebar="sidebar"] [data-void-bots-plus],
+    [data-sidebar="sidebar"] .void-bots-plus,
+    [data-sidebar="sidebar"] button[aria-label="New bot"],
+    [data-sidebar="sidebar"] [data-void-chats-plus],
+    [data-sidebar="sidebar"] .void-chats-plus,
+    [data-sidebar="sidebar"] button[aria-label="Add project"],
+    [data-sidebar="sidebar"] button[aria-label="All projects"],
+    [data-sidebar="sidebar"] [data-sidebar="group"] > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+        opacity: 0 !important;
+        transition: opacity 0.15s ease;
+    }
+
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-bots-plus],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-bots-plus,
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="New bot"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-chats-plus],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-chats-plus,
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="Add project"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="All projects"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    [data-sidebar="sidebar"] :has(> :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus)):is(:hover, :focus-within) > :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus),
+    [data-sidebar="sidebar"] [data-void-bots-plus]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] .void-bots-plus:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="New bot"]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] [data-void-chats-plus]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] .void-chats-plus:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="Add project"]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]) {
+        opacity: 1 !important;
+    }
+}
+
+@media (width >= 48rem) and (prefers-reduced-motion: reduce) {
+    [data-sidebar="sidebar"] [data-void-bots-plus],
+    [data-sidebar="sidebar"] .void-bots-plus,
+    [data-sidebar="sidebar"] button[aria-label="New bot"],
+    [data-sidebar="sidebar"] [data-void-chats-plus],
+    [data-sidebar="sidebar"] .void-chats-plus,
+    [data-sidebar="sidebar"] button[aria-label="Add project"],
+    [data-sidebar="sidebar"] button[aria-label="All projects"],
+    [data-sidebar="sidebar"] [data-sidebar="group"] > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+        transition: none;
+    }
+}
+`);
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/styles.css
+  registerStyle("betterSidebar", `.group.peer [data-sidebar="sidebar"] + div,
+.group.peer [data-sidebar="content"] > .grow {
+    cursor: default !important;
+}
+
+.group.peer [data-sidebar="sidebar"] + div::after {
+    background-color: transparent !important;
+}
+
+.void-sidebar-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    min-width: 0;
+    flex: 1;
+}
+
+.void-sidebar-card:hover {
+    background-color: hsl(var(--surface-l2));
+}
+
+.void-sidebar-card button[data-state] {
+    pointer-events: none;
+    background-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.void-sidebar-info {
+    min-width: 0;
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .void-sidebar-card { transition: none; }
+}
+
+.void-sidebar-name,
+.void-sidebar-plan {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* stylelint-disable-next-line selector-class-pattern */
+.group\\/sidebar-menu-item:hover .void-sel-wrap {
+    display: inline-flex;
+}
+`);
+
+  // src/turbopack/common/plan.ts
+  var PLAN_NAMES = {
+    SUBSCRIPTION_TIER_X_BASIC: "X Basic",
+    SUBSCRIPTION_TIER_X_PREMIUM: "X Premium",
+    SUBSCRIPTION_TIER_X_PREMIUM_PLUS: "X Premium+",
+    SUBSCRIPTION_TIER_SUPER_GROK_LITE: "SuperGrok Lite",
+    SUBSCRIPTION_TIER_GROK_PRO: "SuperGrok",
+    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "SuperGrok Pro"
+  };
+  var X_SUB_NAMES = {
+    PremiumPlus: "SuperGrok",
+    Premium: "X Premium",
+    Basic: "X Basic"
+  };
+  function getPlanName(bestSubscription, xSubscriptionType) {
+    return (bestSubscription ? PLAN_NAMES[bestSubscription] : undefined) ?? (xSubscriptionType ? X_SUB_NAMES[xSubscriptionType] : undefined) ?? "Free";
+  }
+
+  // src/plugins/betterSidebar/index.tsx
+  var logger19 = new Logger("BetterSidebar");
+  var cl18 = classNameFactory("void-sidebar-");
+  var settings9 = definePluginSettings({
+    clickToToggle: {
+      type: 3 /* BOOLEAN */,
+      description: "Click anywhere on the sidebar to toggle it.",
+      default: false
+    },
+    defaultCollapsed: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the sidebar collapsed on page load.",
+      default: false
+    },
+    botsDefaultCollapsed: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the Bots section collapsed on page load.",
+      default: true
+    },
+    chatsDefaultExpanded: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the Chats section expanded on page load.",
+      default: false
+    },
+    projectsDefaultCollapsed: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the Projects section collapsed on page load.",
+      default: false
+    },
+    batchSelect: {
+      type: 3 /* BOOLEAN */,
+      description: "Show checkboxes on conversations for bulk selection and deletion.",
+      default: true
+    },
+    titleRowHover: {
+      type: 3 /* BOOLEAN */,
+      description: "Show Bots, Chats, and Projects header actions only when hovering that section, like the expand chevron.",
+      default: true
+    },
+    chatsPlus: {
+      type: 3 /* BOOLEAN */,
+      description: "Show a plus on the Chats header that starts a new chat.",
+      default: true
+    }
+  });
+  migrateSettingsToPlugin("BetterSidebar", "SidebarHeaderHover", "titleRowHover", "chatsPlus");
+  migrateSettingsToPlugin("BetterSidebar", "BotsPlusHover", "titleRowHover", "chatsPlus");
+  var BTN_CLASS = "void-chats-plus flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary hover:bg-button-ghost-hover hover:text-primary focus:outline-none focus-visible:bg-button-ghost-hover";
+  var BOTS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-bots-plus], .void-bots-plus)";
+  var CHATS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-chats-plus], .void-chats-plus)";
+  var CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
+  var PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
+  var PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
+  var botsCollapseObserver = null;
+  var botsCollapseTimer = null;
+  var chatsExpandObserver = null;
+  var chatsExpandTimer = null;
+  var projectsCollapseObserver = null;
+  var projectsCollapseTimer = null;
+  function applyHeaderHover() {
+    if (settings9.store.titleRowHover)
+      enableStyle("headerHover");
+    else
+      disableStyle("headerHover");
+  }
+  function collapseBotsSection() {
+    const plus = document.querySelector(BOTS_PLUS_SEL);
+    if (!plus)
+      return false;
+    const group = plus.closest("[data-sidebar=group]");
+    if (!group)
+      return false;
+    const expanded = group.querySelector("button[aria-expanded=true]");
+    if (!expanded)
+      return true;
+    expanded.click();
+    return true;
+  }
+  function stopBotsCollapse() {
+    botsCollapseObserver?.disconnect();
+    botsCollapseObserver = null;
+    if (botsCollapseTimer != null) {
+      clearTimeout(botsCollapseTimer);
+      botsCollapseTimer = null;
+    }
+  }
+  function startBotsCollapse() {
+    stopBotsCollapse();
+    if (!settings9.store.botsDefaultCollapsed)
+      return;
+    let done = false;
+    const tick = () => {
+      if (done)
+        return;
+      if (collapseBotsSection()) {
+        done = true;
+        stopBotsCollapse();
+      }
+    };
+    tick();
+    if (done)
+      return;
+    botsCollapseObserver = new MutationObserver(tick);
+    botsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
+    botsCollapseTimer = setTimeout(() => {
+      done = true;
+      stopBotsCollapse();
+    }, 1e4);
+  }
+  function resetChatsCollapsedStorage() {
+    if (!settings9.store.chatsDefaultExpanded)
+      return;
+    try {
+      localStorage.removeItem(CHATS_COLLAPSED_KEY);
+    } catch {}
+  }
+  function chatsGroup() {
+    const plus = document.querySelector(CHATS_PLUS_SEL);
+    if (plus)
+      return plus.closest("[data-sidebar=group]");
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar)
+      return null;
+    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
+      const label = (btn.getAttribute("aria-label") ?? "").trim();
+      if (label === "Chats" || label === "History")
+        return btn.closest("[data-sidebar=group]");
+    }
+    const bots = document.querySelector(BOTS_PLUS_SEL)?.closest("[data-sidebar=group]");
+    const next = bots?.nextElementSibling;
+    return next?.matches("[data-sidebar=group]") ? next : null;
+  }
+  function expandChatsSection() {
+    const group = chatsGroup();
+    if (!group)
+      return false;
+    const collapsed = group.querySelector("button[aria-expanded=false]");
+    if (!collapsed)
+      return true;
+    collapsed.click();
+    return true;
+  }
+  function stopChatsExpand() {
+    chatsExpandObserver?.disconnect();
+    chatsExpandObserver = null;
+    if (chatsExpandTimer != null) {
+      clearTimeout(chatsExpandTimer);
+      chatsExpandTimer = null;
+    }
+  }
+  function startChatsExpand() {
+    stopChatsExpand();
+    if (!settings9.store.chatsDefaultExpanded)
+      return;
+    resetChatsCollapsedStorage();
+    let done = false;
+    const tick = () => {
+      if (done)
+        return;
+      if (expandChatsSection()) {
+        done = true;
+        stopChatsExpand();
+      }
+    };
+    tick();
+    if (done)
+      return;
+    chatsExpandObserver = new MutationObserver(tick);
+    chatsExpandObserver.observe(document.documentElement, { childList: true, subtree: true });
+    chatsExpandTimer = setTimeout(() => {
+      done = true;
+      stopChatsExpand();
+    }, 1e4);
+  }
+  function resetProjectsCollapsedStorage() {
+    if (!settings9.store.projectsDefaultCollapsed)
+      return;
+    try {
+      localStorage.setItem(PROJECTS_COLLAPSED_KEY, "true");
+    } catch {}
+  }
+  function projectsGroup() {
+    const action = document.querySelector(PROJECTS_ACTION_SEL);
+    if (action)
+      return action.closest("[data-sidebar=group]");
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar)
+      return null;
+    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
+      const label = (btn.getAttribute("aria-label") ?? "").trim();
+      if (label === "Projects")
+        return btn.closest("[data-sidebar=group]");
+    }
+    return null;
+  }
+  function collapseProjectsSection() {
+    const group = projectsGroup();
+    if (!group)
+      return false;
+    const expanded = group.querySelector("button[aria-expanded=true]");
+    if (!expanded)
+      return true;
+    expanded.click();
+    return true;
+  }
+  function stopProjectsCollapse() {
+    projectsCollapseObserver?.disconnect();
+    projectsCollapseObserver = null;
+    if (projectsCollapseTimer != null) {
+      clearTimeout(projectsCollapseTimer);
+      projectsCollapseTimer = null;
+    }
+  }
+  function startProjectsCollapse() {
+    stopProjectsCollapse();
+    if (!settings9.store.projectsDefaultCollapsed)
+      return;
+    resetProjectsCollapsedStorage();
+    let done = false;
+    const tick = () => {
+      if (done)
+        return;
+      if (collapseProjectsSection()) {
+        done = true;
+        stopProjectsCollapse();
+      }
+    };
+    tick();
+    if (done)
+      return;
+    projectsCollapseObserver = new MutationObserver(tick);
+    projectsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
+    projectsCollapseTimer = setTimeout(() => {
+      done = true;
+      stopProjectsCollapse();
+    }, 1e4);
+  }
+  function newChat(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const native = document.querySelector('[data-testid="new-chat"]');
+    if (native) {
+      native.click();
+      return;
+    }
+    const { route, push } = RoutingStore.useRoutingStore.getState();
+    const teamId = route.teamId ?? null;
+    const { workspaceId } = route;
+    if (workspaceId) {
+      push({ page: "workspace", workspaceId, tab: "conversations", teamId });
+      const chat = ChatPageStore.useChatPageStore.getState();
+      chat.setProjectId(workspaceId);
+      chat.setConversationId(undefined);
+      return;
+    }
+    ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
+    push({ page: "main", teamId });
+  }
+  var ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
+    if (!settings9.use(["chatsPlus"]).chatsPlus)
+      return null;
+    return /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      className: BTN_CLASS,
+      "aria-label": "New chat",
+      "data-void-chats-plus": "",
+      onClick: newChat
+    }, /* @__PURE__ */ React.createElement(PlusIcon, {
+      size: 14
+    }));
+  }, null);
+  function UserCard({ AvatarMenu }) {
+    const { open } = SidebarComponents.useSidebar();
+    const { user } = SessionStore.useSession();
+    const bestSubscription = SubscriptionsStore.useSubscriptionsStore((s) => s.bestSubscription);
+    const cardRef = useRef(null);
+    if (!open || !user)
+      return /* @__PURE__ */ React.createElement(AvatarMenu, null);
+    const forward = (e, type) => {
+      if (!e.isTrusted)
+        return;
+      cardRef.current?.querySelector("button[data-state]")?.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, button: 0, pointerId: 1, pointerType: "mouse" }));
+    };
+    return /* @__PURE__ */ React.createElement("div", {
+      ref: cardRef,
+      className: cl18("card"),
+      onPointerDown: (e) => forward(e, "pointerdown"),
+      onPointerUp: (e) => forward(e, "pointerup")
+    }, /* @__PURE__ */ React.createElement(AvatarMenu, null), /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      justifyContent: "center",
+      gap: "0",
+      className: cl18("info")
+    }, /* @__PURE__ */ React.createElement(Text2, {
+      as: "span",
+      size: "sm",
+      weight: "medium",
+      className: cl18("name")
+    }, user.givenName ?? user.email?.split("@")[0] ?? "User"), /* @__PURE__ */ React.createElement(Text2, {
+      as: "span",
+      size: "xs",
+      color: "secondary",
+      className: cl18("plan")
+    }, getPlanName(bestSubscription, user.xSubscriptionType))));
+  }
+  var selection2 = createSelectionStore();
+  var CONVERSATION_PAGE = "chat";
+  var isConversationRoute = (route) => route?.page === CONVERSATION_PAGE;
+  async function deleteConversations(ids) {
+    const currentConvId = ChatPageStore.useChatPageStore.getState().conversationId;
+    if (currentConvId && ids.includes(currentConvId)) {
+      ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
+    }
+    const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
+    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger19.error("Failed to delete", id, e))));
+  }
+  function SelectCheckbox({ id, route }) {
+    const enabled = settings9.use(["batchSelect"]).batchSelect;
+    if (!enabled || !id || !isConversationRoute(route))
+      return null;
+    return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
+      selection: selection2,
+      id
+    });
+  }
+  var WrappedCheckbox = ErrorBoundary.wrap(SelectCheckbox, null);
+  var betterSidebar_default = definePlugin({
+    name: "BetterSidebar",
+    icon: PanelLeftIcon,
+    description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
+    authors: [Devs.Prism, Devs.p],
+    tags: ["ui"],
+    enabledByDefault: true,
+    settings: settings9,
+    managedStyle: "betterSidebar",
+    _ChatsPlus: () => createElement(ChatsPlus),
+    _UserCard: ErrorBoundary.wrap(UserCard),
+    _renderActionBar: ErrorBoundary.wrap(() => /* @__PURE__ */ React.createElement(SelectionActionBar, {
+      selection: selection2,
+      noun: "conversation",
+      title: "Delete conversations",
+      onDelete: deleteConversations
+    }), null),
+    _wrapCheckbox(item, id, route) {
+      return createElement(Fragment, null, createElement(WrappedCheckbox, { id, route }), item);
+    },
+    _wrapSidebarClick(onClick, id, route) {
+      return (e) => {
+        if (id && settings9.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          e.stopPropagation();
+          selection2.toggle(id);
+          return;
+        }
+        onClick?.(e);
+      };
+    },
+    _defaultOpen() {
+      return !settings9.store.defaultCollapsed;
+    },
+    _botsDefaultCollapsed() {
+      return settings9.store.botsDefaultCollapsed;
+    },
+    _chatsCollapsedInit() {
+      resetChatsCollapsedStorage();
+      return false;
+    },
+    _projectsCollapsedInit() {
+      resetProjectsCollapsedStorage();
+      return true;
+    },
+    _projectsAutoExpand() {
+      return !settings9.store.projectsDefaultCollapsed;
+    },
+    _onSidebarClick() {
+      if (!settings9.store.clickToToggle)
+        return;
+      return (e) => {
+        const target = e.target;
+        if (target.closest("button,a,input,[role=button],[data-sidebar=trigger],[data-sidebar=footer]"))
+          return;
+        e.currentTarget.closest("[data-state]")?.querySelector("[data-sidebar=trigger]")?.click();
+      };
+    },
+    start() {
+      selection2.clear();
+      applyHeaderHover();
+      resetChatsCollapsedStorage();
+      resetProjectsCollapsedStorage();
+      startBotsCollapse();
+      startChatsExpand();
+      startProjectsCollapse();
+    },
+    onSettingsChange: applyHeaderHover,
+    stop() {
+      selection2.clear();
+      disableStyle("headerHover");
+      stopBotsCollapse();
+      stopChatsExpand();
+      stopProjectsCollapse();
+    },
+    patches: [
+      {
+        find: "AvatarDropdownMenu,{expanded:",
+        replacement: {
+          match: /\(0,(\i)\.jsx\)\((\i)\.AvatarDropdownMenu,\{/,
+          replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.AvatarDropdownMenu,"
+        }
+      },
+      {
+        find: "useSidebar must be used within a SidebarProvider",
+        all: true,
+        group: true,
+        replacement: [
+          {
+            match: /\{defaultOpen:(\i),open:/,
+            replace: "{defaultOpen:$1=$self._defaultOpen(),open:"
+          },
+          {
+            match: /data-sidebar":"sidebar",className:/,
+            replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),className:'
+          }
+        ]
+      },
+      {
+        find: '"Editing actions","Editing actions"',
+        all: true,
+        group: true,
+        replacement: [
+          {
+            match: /=(\(0,\i\.jsx\)\(\i,\{title:\i,editing:\i,[^}]{0,80}?validationErrorMessage:\i[^}]{0,40}?\}\))/,
+            replace: "=$self._wrapCheckbox($1,arguments[0].id,arguments[0].route)"
+          },
+          {
+            match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
+            replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4"
+          }
+        ]
+      },
+      {
+        find: '"sidebar-expand","Expand"',
+        replacement: {
+          match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
+          replace: "$self._renderActionBar(),$&"
+        }
+      },
+      {
+        find: '"sidebar.new-bot-btn.aria-label","New bot"',
+        replacement: [
+          {
+            match: /(\i)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover"\)/,
+            replace: '$1("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover")'
+          },
+          {
+            match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
+            replace: '$&,"data-void-bots-plus":""'
+          }
+        ]
+      },
+      {
+        find: '"sidebar-chats","Chats"',
+        replacement: {
+          match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
+          replace: "$1,action:$self._ChatsPlus()"
+        }
+      },
+      {
+        find: '"sidebar.section-title","Bots"',
+        replacement: {
+          match: /\(0,(\i)\.useState\)\(!1\)(?=,\[.{0,30}\]=\(0,\1\.useState\)\(!1\),.{0,48}\.COLLAPSED_BOT_LIMIT)/,
+          replace: "(0,$1.useState)($self._botsDefaultCollapsed())"
+        }
+      },
+      {
+        find: "sidebar-history-collapsed",
+        replacement: {
+          match: /useLocalStorage\)\("sidebar-history-collapsed",!1,!1\)/,
+          replace: 'useLocalStorage)("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)'
+        }
+      },
+      {
+        find: "sidebar-projects-collapsed",
+        group: true,
+        replacement: [
+          {
+            match: /useLocalStorage\)\("sidebar-projects-collapsed",!1,!1\)/,
+            replace: 'useLocalStorage)("sidebar-projects-collapsed",$self._projectsCollapsedInit(),!1)'
+          },
+          {
+            match: /!(\i)\.current&&(\i)&&\((\i)\.length>0\|\|(\i)\.length>0\)&&\(\1\.current=!0,(\i)\(!1\)\)/,
+            replace: "!$1.current&&$2&&($3.length>0||$4.length>0)&&($1.current=!0,$self._projectsAutoExpand()&&$5(!1))"
+          }
+        ]
+      }
+    ]
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/chatListStatus/styles.css
+  registerStyle("chatListStatus", `/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+[data-sidebar] :is(
+    [data-sidebar="menu-button"],
+    [data-sidebar="menu-sub-button"],
+    a
+):has(> .void-cls):not([data-void-cls-nest]) {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.void-cls {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-right: 0.25rem;
+    pointer-events: none;
+    color: #3b82f6;
+}
+
+.void-cls[data-kind="done"],
+.void-cls[data-kind="error"] {
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-right: 0.3rem;
+    border-radius: 999px;
+    background: #3b82f6;
+}
+
+.void-cls[data-kind="error"] {
+    background: #ef4444;
+}
+
+[data-void-cls-nest] {
+    position: relative;
+}
+
+[data-void-cls-nest] > .void-cls {
+    position: absolute;
+    top: 50%;
+    left: 0.25rem;
+    z-index: 1;
+    margin: 0;
+    transform: translateY(-50%);
+}
+
+.void-cls[data-kind="streaming"] svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    animation: void-cls-spin 0.8s linear infinite;
+}
+
+@keyframes void-cls-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .void-cls[data-kind="streaming"] svg {
+        animation: none;
+    }
+}
+`);
+
+  // src/plugins/chatListStatus/index.ts
+  var logger20 = new Logger("ChatListStatus");
+  var MARK = "void-cls";
+  var LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
+  var DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed"]);
+  var LIVE_WORD = /^(working|running|in[_-]?progress|executing|processing|pending|continuing|started)$/i;
+  var LIVE_FLAG = /^(isWorking|isRunning|inProgress|isInProgress|isExecuting|working)$/;
+  var SKIP_KEY = /^(message|content|html|query|text|title|thinkingTrace)$/i;
+  var EXTRA_HINT = /computer|sandbox|agent|task|working/i;
+  var OWN_HOOKS = new Set(["useChatPageStore", "useConversationStore", "useResponseStore", "useRoutingStore", "useBotsStore"]);
+  var SIDEBAR = '[data-sidebar="sidebar"]';
+  var HOST = '[data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]';
+  var ROW = 'a[href*="/c/"], a[href*="/chat/"], a[href*="chat="], a[href*="/bot/"]';
+  var SPIN_PATH = "M21 12a9 9 0 1 1-6.219-8.56";
+  var PATH_CHAT = /^\/(?:c|chat)\/([^/?#]+)/i;
+  var PATH_BOT = /^\/bot\/([^/?#]+)/i;
+  var PATH_ID = /^\/(?:c|chat|bot)\/([^/?#]+)/i;
+  var BotsStore = findByPropsLazy("useBotsStore");
+  var marks = new Map;
+  var rowById = new Map;
+  var extraStores = [];
+  var extraSeen = new WeakSet;
+  var extraScanned = new Set;
+  var extraUnsubs = [];
+  var raf = 0;
+  var extraScanRaf = 0;
+  var extraBusy = false;
+  var started2 = false;
+  var obs = null;
+  var extraOff = null;
+  var botsOff = null;
+  function isConvId(value) {
+    return typeof value === "string" && value.length >= 8 && /^[a-z0-9_-]+$/i.test(value) && !value.includes("draft");
+  }
+  function isLiveStatus(value) {
+    if (typeof value !== "string")
+      return false;
+    const status = value.trim().toLowerCase();
+    if (!status || DEAD.has(status))
+      return false;
+    return LIVE.has(status) || LIVE_WORD.test(status);
+  }
+  function isLiveBag(value, depth = 0) {
+    if (value == null || depth > 5)
+      return false;
+    if (typeof value === "string")
+      return isLiveStatus(value);
+    if (typeof value !== "object")
+      return false;
+    if (Array.isArray(value)) {
+      const start = Math.max(0, value.length - 24);
+      for (let i = value.length - 1;i >= start; i--) {
+        if (isLiveBag(value[i], depth + 1))
+          return true;
+      }
+      return false;
+    }
+    const rec = value;
+    if (isLiveStatus(rec.status ?? rec.state ?? rec.phase ?? rec.activity ?? rec.taskStatus))
+      return true;
+    if (rec.workingFor || rec.working_for || rec.workingDuration)
+      return true;
+    let n = 0;
+    for (const [key, child] of Object.entries(rec)) {
+      if (++n > 48)
+        break;
+      if (SKIP_KEY.test(key))
+        continue;
+      if (LIVE_FLAG.test(key) && child === true)
+        return true;
+      if (isLiveBag(child, depth + 1))
+        return true;
+    }
+    return false;
+  }
+  function isLiveResponse(r) {
+    if (!r)
+      return false;
+    if (r.partial)
+      return true;
+    if (isLiveBag(r.steps) || isLiveBag(r.toolResponses) || isLiveBag(r.fastToolResponse) || isLiveBag(r.metadata))
+      return true;
+    const state = r.state ?? "";
+    if (!state)
+      return false;
+    if (LIVE.has(state))
+      return true;
+    return !DEAD.has(state.toLowerCase());
+  }
+  function isErrorResponse(r) {
+    return !!r && (r.state === "error" || r.error != null);
+  }
+  function collectConvIds(value, out, depth = 0) {
+    if (value == null || typeof value !== "object" || depth > 5)
+      return;
+    if (Array.isArray(value)) {
+      const start = Math.max(0, value.length - 16);
+      for (let i = start;i < value.length; i++)
+        collectConvIds(value[i], out, depth + 1);
+      return;
+    }
+    const rec = value;
+    const id = rec.conversationId ?? rec.optimisticConversationId ?? rec.chat ?? rec.conversation_id ?? rec.agentId;
+    if (isConvId(id) && isLiveBag(rec))
+      out.add(id);
+    let n = 0;
+    for (const [key, child] of Object.entries(rec)) {
+      if (++n > 48)
+        break;
+      if (SKIP_KEY.test(key))
+        continue;
+      if (isConvId(key) && isLiveBag(child))
+        out.add(key);
+      collectConvIds(child, out, depth + 1);
+    }
+  }
+  function addId(ids, value) {
+    if (isConvId(value) && !ids.includes(value))
+      ids.push(value);
+  }
+  function currentChatIds() {
+    const ids = [];
+    try {
+      const page = ChatPageStore.useChatPageStore.getState();
+      addId(ids, page.conversationId);
+      addId(ids, page.optimisticConversationId);
+    } catch (e) {
+      logger20.debug("page ids unavailable:", e);
+    }
+    try {
+      const { route } = RoutingStore.useRoutingStore.getState();
+      addId(ids, route.conversationId);
+      addId(ids, route.chat);
+    } catch (e) {
+      logger20.debug("route chat ids unavailable:", e);
+    }
+    try {
+      const url = new URL(location.href);
+      addId(ids, url.searchParams.get("chat"));
+      addId(ids, url.searchParams.get("conversationId"));
+      addId(ids, url.pathname.match(PATH_CHAT)?.[1]);
+    } catch (e) {
+      logger20.debug("url chat ids unavailable:", e);
+    }
+    return ids;
+  }
+  function currentAgentIds() {
+    const ids = [];
+    try {
+      addId(ids, RoutingStore.useRoutingStore.getState().route.agentId);
+    } catch (e) {
+      logger20.debug("route agent id unavailable:", e);
+    }
+    try {
+      addId(ids, new URL(location.href).pathname.match(PATH_BOT)?.[1]);
+    } catch (e) {
+      logger20.debug("url agent id unavailable:", e);
+    }
+    return ids;
+  }
+  function currentIds() {
+    const ids = currentChatIds();
+    for (const id of currentAgentIds())
+      addId(ids, id);
+    return ids;
+  }
+  function considerConversation(ids, conversation) {
+    if (!conversation?.conversationId)
+      return;
+    if (conversation.state === "open" || isLiveBag(conversation.taskResult))
+      ids.add(conversation.conversationId);
+  }
+  function looksExtraStore(name, state) {
+    if (EXTRA_HINT.test(name))
+      return true;
+    const keys = Object.keys(state);
+    if (keys.some((key) => EXTRA_HINT.test(key)))
+      return true;
+    let n = 0;
+    for (const child of Object.values(state)) {
+      if (++n > 8)
+        break;
+      if (child && typeof child === "object" && !Array.isArray(child) && Object.keys(child).slice(0, 16).some((key) => EXTRA_HINT.test(key)))
+        return true;
+    }
+    return false;
+  }
+  function scanModule(exports) {
+    if (exports == null || typeof exports !== "object" || isBlacklisted(exports))
+      return;
+    const mod = exports;
+    for (const key of Object.keys(mod)) {
+      if (OWN_HOOKS.has(key))
+        continue;
+      const val = mod[key];
+      if (!isZustandStore(val) || extraSeen.has(val))
+        continue;
+      let state;
+      try {
+        state = val.getState();
+      } catch {
+        continue;
+      }
+      if (!state || typeof state !== "object")
+        continue;
+      if (!looksExtraStore(key, state))
+        continue;
+      extraSeen.add(val);
+      extraStores.push(val);
+      extraUnsubs.push(val.subscribe(() => schedule()));
+      logger20.info("extra store", key);
+    }
+  }
+  function attachExtraStores() {
+    if (extraBusy)
+      return;
+    extraBusy = true;
+    try {
+      silenceWarns(() => syncLazyModules());
+      const before = extraStores.length;
+      for (const [id, exports] of getModuleCache()) {
+        if (extraScanned.has(id))
+          continue;
+        extraScanned.add(id);
+        scanModule(exports);
+      }
+      if (extraStores.length !== before)
+        schedule();
+    } finally {
+      extraBusy = false;
+    }
+  }
+  function queueExtraScan() {
+    if (!started2 || extraScanRaf)
+      return;
+    extraScanRaf = requestAnimationFrame(() => {
+      extraScanRaf = 0;
+      if (started2)
+        attachExtraStores();
+    });
+  }
+  function extraLiveIds(ids) {
+    for (const store of extraStores) {
+      let state;
+      try {
+        state = store.getState();
+      } catch {
+        continue;
+      }
+      if (!isLiveBag(state))
+        continue;
+      const found = new Set;
+      collectConvIds(state, found);
+      if (found.size) {
+        for (const id of found)
+          ids.add(id);
+        continue;
+      }
+      for (const id of currentChatIds())
+        ids.add(id);
+    }
+  }
+  function botLiveIds(ids) {
+    try {
+      const s = BotsStore.useBotsStore.getState();
+      for (const [id, turn] of Object.entries(s.liveTurnByAgentId ?? {})) {
+        if (turn && isConvId(id))
+          ids.add(id);
+      }
+      for (const [id, pending] of Object.entries(s.pendingSendsByAgentId ?? {})) {
+        if (!isConvId(id) || !Array.isArray(pending) || !pending.some((send) => send && !send.failed))
+          continue;
+        ids.add(id);
+      }
+      for (const agent of s.agents ?? []) {
+        if (agent?.runState === "running" && isConvId(agent.agentId))
+          ids.add(agent.agentId);
+      }
+    } catch (e) {
+      logger20.debug("bots store unavailable:", e);
+    }
+  }
+  function liveIds() {
+    const ids = new Set;
+    try {
+      const page = ChatPageStore.useChatPageStore.getState();
+      const chats = currentChatIds();
+      if (page.streamedMessageId || page.showStreamingIndicator || isLiveBag(page.sidePanelContent) || isLiveBag(page.metadata)) {
+        for (const id of chats)
+          ids.add(id);
+      }
+      const { byId, byConversationId, inflightPromisesByConversationId } = ResponseStore.useResponseStore.getState();
+      if (isLiveResponse(byId[page.streamedMessageId ?? ""]) || isLiveResponse(byId[page.lastMessageId ?? ""]) || isLiveResponse(byId[page.sidePanelResponseId ?? ""])) {
+        for (const id of chats)
+          ids.add(id);
+      }
+      for (const id of Object.keys(inflightPromisesByConversationId ?? {}))
+        ids.add(id);
+      for (const [id, list] of Object.entries(byConversationId ?? {})) {
+        if (list?.some(isLiveResponse))
+          ids.add(id);
+      }
+    } catch (e) {
+      logger20.debug("stream stores unavailable:", e);
+    }
+    try {
+      const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
+      for (const conversation of list ?? [])
+        considerConversation(ids, conversation);
+      for (const conversation of Object.values(byId ?? {}))
+        considerConversation(ids, conversation);
+      for (const conversation of Object.values(byIdWithWorkspaces ?? {}))
+        considerConversation(ids, conversation);
+    } catch (e) {
+      logger20.debug("conversation store unavailable:", e);
+    }
+    extraLiveIds(ids);
+    botLiveIds(ids);
+    return ids;
+  }
+  function errorOf(id) {
+    try {
+      const { byConversationId, byId } = ResponseStore.useResponseStore.getState();
+      const list = byConversationId[id];
+      if (list?.length) {
+        for (let i = list.length - 1;i >= 0; i--) {
+          const r = list[i];
+          if (String(r.sender ?? "").toLowerCase() === "human")
+            continue;
+          return isErrorResponse(r);
+        }
+      }
+      const page = ChatPageStore.useChatPageStore.getState();
+      if ((page.conversationId === id || page.optimisticConversationId === id) && page.lastMessageId) {
+        return isErrorResponse(byId[page.lastMessageId]);
+      }
+    } catch (e) {
+      logger20.debug("error lookup failed:", e);
+    }
+    try {
+      const pending = BotsStore.useBotsStore.getState().pendingSendsByAgentId?.[id];
+      if (Array.isArray(pending) && pending.some((send) => send?.failed))
+        return true;
+    } catch (e) {
+      logger20.debug("bot error lookup failed:", e);
+    }
+    return false;
+  }
+  function refreshMarks() {
+    const live = liveIds();
+    const opened = new Set(currentIds());
+    for (const id of live)
+      marks.set(id, "streaming");
+    for (const [id, kind] of marks) {
+      let next = kind;
+      if (kind === "streaming" && !live.has(id)) {
+        next = errorOf(id) ? "error" : "done";
+        marks.set(id, next);
+      }
+      if (next !== "streaming" && opened.has(id))
+        marks.delete(id);
+    }
+  }
+  function convOfResponse(responseId) {
+    try {
+      const { byConversationId } = ResponseStore.useResponseStore.getState();
+      for (const [id, list] of Object.entries(byConversationId ?? {})) {
+        if (list?.some((r) => r.responseId === responseId))
+          return id;
+      }
+      return currentIds()[0] ?? "";
+    } catch (e) {
+      logger20.debug("conv lookup failed:", e);
+      return "";
+    }
+  }
+  function onStreamEnd2({ responseId }) {
+    const cid = convOfResponse(responseId);
+    if (!cid)
+      return;
+    if (liveIds().has(cid)) {
+      schedule();
+      return;
+    }
+    if (currentIds().includes(cid)) {
+      marks.delete(cid);
+      schedule();
+      return;
+    }
+    try {
+      const response = ResponseStore.useResponseStore.getState().byId[responseId];
+      marks.set(cid, isErrorResponse(response) ? "error" : "done");
+    } catch (e) {
+      logger20.debug("streamEnd failed:", e);
+      marks.set(cid, "done");
+    }
+    schedule();
+  }
+  function idFromHref(href) {
+    if (!href)
+      return "";
+    try {
+      const u = new URL(href, location.origin);
+      const id = u.searchParams.get("chat") || u.searchParams.get("conversationId") || u.pathname.match(PATH_ID)?.[1] || "";
+      return isConvId(id) ? id : "";
+    } catch {
+      return "";
+    }
+  }
+  function hrefId(el) {
+    const a = el instanceof HTMLAnchorElement ? el : el.closest("a[href]") ?? el.querySelector("a[href]");
+    return idFromHref(a?.getAttribute("href") ?? el.getAttribute("href") ?? "");
+  }
+  function isPrimaryNav(el) {
+    const href = (el.getAttribute("href") ?? el.querySelector("a[href]")?.getAttribute("href") ?? "").replace(/[?#].*$/, "");
+    return href === "/" || href === "/imagine" || href === "/library" || href === "/automations";
+  }
+  function rowHost(el, root) {
+    if (el.classList.contains(MARK))
+      return null;
+    if (el.closest('[data-sidebar="menu-action"], [data-sidebar="footer"], [data-sidebar="header"]'))
+      return null;
+    if (isPrimaryNav(el))
+      return null;
+    if (!hrefId(el))
+      return null;
+    const wrapped = el.closest(HOST);
+    return wrapped && root.contains(wrapped) ? wrapped : el;
+  }
+  function isNestedHost(el) {
+    if (el.matches('[data-sidebar="menu-sub-button"]'))
+      return true;
+    const a = el instanceof HTMLAnchorElement ? el : el.querySelector("a[href]");
+    const href = a?.getAttribute("href") ?? el.getAttribute("href") ?? "";
+    return href.includes("chat=") || href.includes("/project/");
+  }
+  function spinSvg() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2.5");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", SPIN_PATH);
+    svg.append(path);
+    return svg;
+  }
+  function ensureMark(btn, kind) {
+    btn.toggleAttribute("data-void-cls-nest", isNestedHost(btn));
+    let mark = btn.querySelector(`:scope > .${MARK}`);
+    if (!mark) {
+      mark = document.createElement("span");
+      mark.className = MARK;
+      mark.setAttribute("aria-hidden", "true");
+      btn.prepend(mark);
+    }
+    if (mark.dataset.kind === kind && (kind !== "streaming" || mark.querySelector("svg")))
+      return;
+    mark.dataset.kind = kind;
+    mark.replaceChildren();
+    if (kind === "streaming")
+      mark.append(spinSvg());
+  }
+  function clearMark(btn) {
+    btn.querySelector(`:scope > .${MARK}`)?.remove();
+    btn.removeAttribute("data-void-cls-nest");
+  }
+  function roots() {
+    const found = [...document.querySelectorAll(SIDEBAR)];
+    return found.length ? found : [document.body];
+  }
+  function rowForId(root, id) {
+    if (!isConvId(id))
+      return null;
+    for (const a of root.querySelectorAll(`a[href*="${id}"]`)) {
+      if (hrefId(a) !== id)
+        continue;
+      const host = rowHost(a, root);
+      if (host)
+        return host;
+    }
+    return null;
+  }
+  function paint() {
+    if (!started2)
+      return;
+    refreshMarks();
+    const usedIds = new Set;
+    const seen = new Set;
+    for (const root of roots()) {
+      for (const el of root.querySelectorAll(ROW)) {
+        const host = rowHost(el, root);
+        if (!host || seen.has(host))
+          continue;
+        seen.add(host);
+        const id = hrefId(host);
+        if (!id) {
+          clearMark(host);
+          continue;
+        }
+        usedIds.add(id);
+        rowById.set(id, host);
+        const kind = marks.get(id);
+        if (kind)
+          ensureMark(host, kind);
+        else
+          clearMark(host);
+      }
+    }
+    for (const [id, el] of rowById) {
+      if (!el.isConnected || !usedIds.has(id))
+        rowById.delete(id);
+    }
+    for (const [id, kind] of marks) {
+      if (rowById.get(id)?.isConnected)
+        continue;
+      for (const root of roots()) {
+        const host = rowForId(root, id);
+        if (!host)
+          continue;
+        rowById.set(id, host);
+        ensureMark(host, kind);
+        break;
+      }
+    }
+    const live = [...marks].filter(([, kind]) => kind === "streaming").map(([id]) => id);
+    if (live.length && !rowById.size)
+      logger20.info("live ids with no rows", live);
+  }
+  function schedule() {
+    if (!started2 || raf)
+      return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      if (started2)
+        paint();
+    });
+  }
+  function ownMutation(list) {
+    if (!list.length)
+      return false;
+    for (const m of list) {
+      const { target } = m;
+      if (target instanceof Element && (target.classList.contains(MARK) || target.closest(`.${MARK}`)))
+        continue;
+      for (const n of m.addedNodes) {
+        if (n instanceof Element && (n.classList.contains(MARK) || n.querySelector(`.${MARK}`)))
+          continue;
+        return false;
+      }
+      for (const n of m.removedNodes) {
+        if (n instanceof Element && n.classList.contains(MARK))
+          continue;
+        return false;
+      }
+      if (m.type === "attributes")
+        return false;
+    }
+    return true;
+  }
+  function observe() {
+    obs?.disconnect();
+    obs = new MutationObserver((list) => {
+      if (ownMutation(list))
+        return;
+      schedule();
+    });
+    const node = document.querySelector(SIDEBAR) ?? document.body;
+    obs.observe(node, node === document.body ? { childList: true, subtree: true } : { childList: true, subtree: true, attributes: true, attributeFilter: ["href"] });
+  }
+  function pageKey(s) {
+    return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.streamedMessageId ?? ""}|${s.lastMessageId ?? ""}|${s.sidePanelResponseId ?? ""}|${s.showStreamingIndicator ? 1 : 0}`;
+  }
+  function responseKey(s) {
+    const inflight = Object.keys(s.inflightPromisesByConversationId ?? {}).join(",");
+    const bits = [];
+    for (const [id, list] of Object.entries(s.byConversationId ?? {})) {
+      const last = list?.[list.length - 1];
+      if (!last)
+        continue;
+      bits.push(`${id}:${last.responseId}:${last.state ?? ""}:${last.partial ? 1 : 0}:${last.steps?.length ?? 0}`);
+    }
+    return `${inflight}|${bits.join(",")}`;
+  }
+  function conversationKey(s) {
+    const rows = s.list?.length ? s.list : Object.values(s.byId ?? {});
+    return rows.map((conversation) => `${conversation?.conversationId ?? ""}:${conversation?.state ?? ""}`).join(",");
+  }
+  function routeKey(s) {
+    const { route } = s;
+    return `${route.conversationId ?? ""}|${route.chat ?? ""}|${route.workspaceId ?? ""}|${route.agentId ?? ""}`;
+  }
+  var chatListStatus_default = definePlugin({
+    name: "ChatListStatus",
+    icon: LoaderCircleIcon,
+    description: "Show Grok reply status on sidebar chats and bots: spinner, blue dot, or error.",
+    authors: [Devs.p],
+    tags: ["chat", "ui"],
+    enabledByDefault: true,
+    startAt: "TurbopackReady" /* TurbopackReady */,
+    managedStyle: "chatListStatus",
+    cleanupSelectors: [`.${MARK}`],
+    start() {
+      started2 = true;
+      attachExtraStores();
+      extraOff = onModuleLoad(() => queueExtraScan());
+      try {
+        botsOff = BotsStore.useBotsStore.subscribe(() => schedule());
+      } catch (e) {
+        logger20.debug("bots store subscribe failed:", e);
+      }
+      observe();
+      schedule();
+    },
+    stop() {
+      started2 = false;
+      if (raf)
+        cancelAnimationFrame(raf);
+      raf = 0;
+      if (extraScanRaf)
+        cancelAnimationFrame(extraScanRaf);
+      extraScanRaf = 0;
+      obs?.disconnect();
+      obs = null;
+      extraOff?.();
+      extraOff = null;
+      botsOff?.();
+      botsOff = null;
+      for (const unsub of extraUnsubs)
+        unsub();
+      extraUnsubs.length = 0;
+      extraStores.length = 0;
+      extraSeen = new WeakSet;
+      extraScanned.clear();
+      for (const el of document.querySelectorAll(`.${MARK}`)) {
+        el.parentElement?.removeAttribute("data-void-cls-nest");
+        el.remove();
+      }
+      marks.clear();
+      rowById.clear();
+    },
+    events: {
+      streamEnd: onStreamEnd2
+    },
+    zustand: {
+      ChatPageStore: {
+        selector: pageKey,
+        handler: schedule
+      },
+      ResponseStore: {
+        selector: responseKey,
+        handler: schedule
+      },
+      ConversationStore: {
+        selector: conversationKey,
+        handler: schedule
+      },
+      RoutingStore: {
+        selector: routeKey,
+        handler: schedule
+      }
+    }
+  });
+
+  // src/plugins/chatStateFavicons/detect.ts
+  var EDITOR_SEL = '.tiptap.ProseMirror[contenteditable="true"]';
+  var STOP_SELECTORS = [
+    'button[aria-label="Stop model response"]',
+    'button[aria-label*="Stop"]',
+    'button[aria-label*="stop"]',
+    'button[aria-label*="停止"]'
+  ];
+  var SEND_SELECTORS = [
+    'button[aria-label*="Send"]',
+    'button[aria-label*="Submit"]',
+    'button[type="submit"]'
+  ];
+  function isVisible(el) {
+    if (!(el instanceof HTMLElement) || !el.isConnected)
+      return false;
+    if (!el.getClientRects().length)
+      return false;
+    const style = getComputedStyle(el);
+    return style.visibility !== "hidden" && style.display !== "none";
+  }
+  function isStopControl(el) {
+    const label = el.getAttribute("aria-label") ?? "";
+    const text = el.textContent ?? "";
+    return /stop|停止/i.test(label) || /\bstop\b/i.test(text) || text.includes("停止");
+  }
+  function getActiveEditor() {
+    const list = Array.from(document.querySelectorAll(EDITOR_SEL));
+    return list.find(isVisible) ?? list[0] ?? null;
+  }
+  function getComposerRoot() {
+    const editor = getActiveEditor();
+    return editor?.closest("form") ?? editor?.closest("div.relative") ?? editor?.parentElement ?? document.body;
+  }
+  function collectStopButtons(root) {
+    const candidates = [];
+    for (const sel of STOP_SELECTORS) {
+      for (const node of root.querySelectorAll(sel)) {
+        if (node instanceof HTMLElement)
+          candidates.push(node);
+      }
+    }
+    if (candidates.length === 0) {
+      for (const btn of root.querySelectorAll("button")) {
+        if (btn instanceof HTMLElement && isStopControl(btn))
+          candidates.push(btn);
+      }
+    }
+    return candidates;
+  }
+  function getStopButton() {
+    const candidates = collectStopButtons(document);
+    return candidates.find(isVisible) ?? candidates[0] ?? null;
+  }
+  function isDisabledControl(el) {
+    if (el instanceof HTMLButtonElement && el.disabled)
+      return true;
+    if (el.hasAttribute("disabled"))
+      return true;
+    if (el.getAttribute("aria-disabled") === "true")
+      return true;
+    if (el.getAttribute("data-disabled") === "true")
+      return true;
+    return el.classList.contains("opacity-50") || el.classList.contains("cursor-not-allowed");
+  }
+  function getSubmitButton() {
+    for (const root of [getComposerRoot(), document]) {
+      for (const sel of SEND_SELECTORS) {
+        for (const node of root.querySelectorAll(sel)) {
+          if (!(node instanceof HTMLElement) || isStopControl(node))
+            continue;
+          if (isVisible(node) || isDisabledControl(node))
+            return node;
+        }
+      }
+    }
+    return null;
+  }
+  function submitIsGray() {
+    const btn = getSubmitButton();
+    return !!btn && isDisabledControl(btn);
+  }
+  function isInputEmpty() {
+    const editor = getActiveEditor();
+    if (!editor)
+      return true;
+    if (editor.querySelector("p.is-empty.is-editor-empty"))
+      return true;
+    return (editor.textContent ?? "").replaceAll("​", "").trim().length === 0;
+  }
+  function conversationToken() {
+    const params = new URLSearchParams(location.search);
+    const paramId = params.get("conversationId") ?? params.get("conversation_id") ?? params.get("chatId") ?? params.get("chat_id") ?? params.get("cid") ?? params.get("id") ?? "";
+    const lastSeg = location.pathname.split("/").filter(Boolean).slice(-1)[0] ?? "";
+    const pathId = /^[a-z0-9_-]{8,}$/i.test(lastSeg) ? lastSeg : "";
+    const dataId = document.querySelector("[data-conversation-id]")?.getAttribute("data-conversation-id") ?? "";
+    return [dataId, paramId, pathId].filter(Boolean).join("|");
+  }
+  function contextKeyFromUrl(token) {
+    const base = `${location.origin}${location.pathname}`;
+    return token ? `${base}|${token}` : `${base}|draft`;
+  }
+
+  // src/plugins/chatStateFavicons/icons.ts
+  var ICON_STYLES = ["original", "badge", "dot", "hole", "bg"];
+  var STYLE_OPTIONS = [
+    { label: "only emoji", value: "original" },
+    { label: "Badge + glyph", value: "badge", default: true },
+    { label: "Color dot", value: "dot" },
+    { label: "Mark tint", value: "hole" },
+    { label: "Background tint", value: "bg" }
+  ];
+  var KIND_COLOR = {
+    rotate: "#3B82F6",
+    done: "#22C55E",
+    ready: "#F59E0B",
+    error: "#EF4444"
+  };
+  var HOLE_IDLE = "#050505";
+  var MARK_FILL = "#FCFCFC";
+  var GROK_MARK_PATH = "M9.27 15.29l7.978-5.897c.391-.29.95-.177 1.137.272.98 2.369.542 5.215-1.41 7.169-1.951 1.954-4.667 2.382-7.149 1.406l-2.711 1.257c3.889 2.661 8.611 2.003 11.562-.953 2.341-2.344 3.066-5.539 2.388-8.42l.006.007c-.983-4.232.242-5.924 2.75-9.383.06-.082.12-.164.179-.248l-3.301 3.305v-.01L9.267 15.292M7.623 16.723c-2.792-2.67-2.31-6.801.071-9.184 1.761-1.763 4.647-2.483 7.166-1.425l2.705-1.25a7.808 7.808 0 00-1.829-1A8.975 8.975 0 005.984 5.83c-2.533 2.536-3.33 6.436-1.962 9.764 1.022 2.487-.653 4.246-2.34 6.022-.599.63-1.199 1.259-1.682 1.925l7.62-6.815";
+  var GROK_BG_PATH = "M0 256C0 166.392 0 121.587 17.439 87.3615C32.7787 57.2556 57.2556 32.7787 87.3615 17.439C121.587 0 166.392 0 256 0C345.608 0 390.413 0 424.638 17.439C454.744 32.7787 479.221 57.2556 494.561 87.3615C512 121.587 512 166.392 512 256C512 345.608 512 390.413 494.561 424.638C479.221 454.744 454.744 479.221 424.638 494.561C390.413 512 345.608 512 256 512C166.392 512 121.587 512 87.3615 494.561C57.2556 479.221 32.7787 454.744 17.439 424.638C0 390.413 0 345.608 0 256Z";
+  var GROK_MARK_P1 = "M210.484 312.759L343.465 210.383C349.984 205.364 359.302 207.322 362.408 215.117C378.758 256.231 371.454 305.64 338.925 339.563C306.397 373.487 261.137 380.927 219.768 363.983L174.577 385.803C239.394 432.008 318.104 420.581 367.289 369.251C406.303 328.564 418.386 273.104 407.088 223.091L407.19 223.198C390.807 149.726 411.218 120.359 453.03 60.3072C454.02 58.8833 455.01 57.4595 456 56L400.978 113.382V113.204L210.45 312.794";
+  var GROK_MARK_P2 = "M183.042 337.641C136.519 291.294 144.54 219.567 184.236 178.203C213.59 147.59 261.683 135.096 303.666 153.464L348.755 131.75C340.632 125.627 330.221 119.042 318.275 114.414C264.277 91.2407 199.63 102.774 155.735 148.516C113.513 192.549 100.236 260.254 123.036 318.027C140.069 361.206 112.148 391.748 84.0229 422.575C74.0561 433.503 64.0553 444.431 56 456L183.007 337.677";
+  var ORIGINAL_EMOJI = {
+    rotate: "\uD83D\uDD04",
+    done: "✔️",
+    ready: "\uD83D\uDC4D",
+    error: "\uD83D\uDEAB"
+  };
+  function isIconStyle(value) {
+    return typeof value === "string" && ICON_STYLES.includes(value);
+  }
+  function svgEmoji(emoji) {
+    return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${emoji}</text></svg>`)}`;
+  }
+  function toSvgData(inner, viewBox = "0 0 64 64") {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="64" height="64">${inner}</svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  }
+  function grokMarkSvg() {
+    return [
+      `<rect width="64" height="64" rx="14" fill="${HOLE_IDLE}"/>`,
+      `<g transform="translate(8 8) scale(2)" fill="${MARK_FILL}" fill-rule="evenodd">`,
+      `<path d="${GROK_MARK_PATH}"/>`,
+      "</g>"
+    ].join("");
+  }
+  function officialGrokSvg(markColor, bgColor) {
+    return [
+      `<path d="${GROK_BG_PATH}" fill="${bgColor}"/>`,
+      `<path d="${GROK_MARK_P1}" fill="${markColor}"/>`,
+      `<path d="${GROK_MARK_P2}" fill="${markColor}"/>`
+    ].join("");
+  }
+  function badgeGlyph(kind) {
+    if (kind === "rotate") {
+      return [
+        '<g transform="translate(51.5 51.5)"><g>',
+        '<path d="M0-6.1 A6.1 6.1 0 1 1 -5.3 3.05" fill="none" stroke="#fff" stroke-width="2.15" stroke-linecap="round"/>',
+        '<animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="0.85s" repeatCount="indefinite"/>',
+        "</g></g>"
+      ].join("");
+    }
+    if (kind === "done") {
+      return '<path d="M46.6 51.7 L50.1 55.3 L56.8 47.4" fill="none" stroke="#fff" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
+    if (kind === "ready") {
+      return [
+        '<path d="M51.5 56.4 V46.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>',
+        '<path d="M46.6 51.2 L51.5 46.2 L56.4 51.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
+      ].join("");
+    }
+    return [
+      '<path d="M47.2 47.2 L55.8 55.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>',
+      '<path d="M55.8 47.2 L47.2 55.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>'
+    ].join("");
+  }
+  function composeIcon(style, kind, officialHref) {
+    if (style === "original") {
+      if (kind === "wait")
+        return officialHref;
+      return svgEmoji(ORIGINAL_EMOJI[kind]);
+    }
+    const color = kind === "wait" ? undefined : KIND_COLOR[kind];
+    if (style === "hole") {
+      return toSvgData(officialGrokSvg(color ?? MARK_FILL, HOLE_IDLE), "0 0 512 512");
+    }
+    if (style === "bg") {
+      return toSvgData(officialGrokSvg(MARK_FILL, color ?? HOLE_IDLE), "0 0 512 512");
+    }
+    if (!color || kind === "wait")
+      return toSvgData(grokMarkSvg());
+    const badge = style === "dot" ? [
+      '<circle cx="52.2" cy="52.2" r="10.4" fill="#050505"/>',
+      `<circle cx="52.2" cy="52.2" r="7.7" fill="${color}"/>`
+    ].join("") : [
+      '<circle cx="51.5" cy="51.5" r="12.15" fill="#050505"/>',
+      `<circle cx="51.5" cy="51.5" r="9.55" fill="${color}"/>`,
+      badgeGlyph(kind)
+    ].join("");
+    return toSvgData(grokMarkSvg() + badge);
+  }
+  function buildIcons(style, officialHref) {
+    return {
+      wait: composeIcon(style, "wait", officialHref),
+      rotate: composeIcon(style, "rotate", officialHref),
+      done: composeIcon(style, "done", officialHref),
+      ready: composeIcon(style, "ready", officialHref),
+      error: composeIcon(style, "error", officialHref)
+    };
+  }
+
+  // src/plugins/chatStateFavicons/index.ts
+  var logger21 = new Logger("ChatStateFavicons");
+  var ICON_ID = "void-chat-state-favicon";
+  var LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting"]);
+  var settings10 = definePluginSettings({
+    style: {
+      type: 4 /* SELECT */,
+      description: "How the Grok mark is overlaid with chat state.",
+      options: STYLE_OPTIONS
+    }
+  });
+  var officialHref = "/images/favicon.svg";
+  var icons = buildIcons("badge", officialHref);
+  var kind = "wait";
+  var wasStreaming = false;
+  var justFinished = false;
+  var streamContext = null;
+  var lockedToken = "";
+  var lastWasError = false;
+  var lastConvId = "";
+  var primedReady = true;
+  var faviconObs = null;
+  var globalObs = null;
+  var composerObs = null;
+  var buttonObs = null;
+  var inputCtrl = null;
+  var unsubRoute = null;
+  var unsubPage = null;
+  var raf2 = 0;
+  var started3 = false;
+  function currentStyle() {
+    const value = settings10.store.style;
+    return isIconStyle(value) ? value : "badge";
+  }
+  function captureOfficial() {
+    const existing = document.querySelector(`link[rel~="icon"]:not(#${ICON_ID})`);
+    const href = existing?.href;
+    if (href && !href.startsWith("data:"))
+      return href;
+    return `${location.origin}/images/favicon.svg`;
+  }
+  function isIconLink(node) {
+    return node instanceof HTMLLinkElement && (node.relList.contains("icon") || /\bicon\b/i.test(node.rel));
+  }
+  function stripCompetitors() {
+    const { head } = document;
+    if (!head)
+      return;
+    for (const node of head.querySelectorAll("link")) {
+      if (node.id !== ICON_ID && isIconLink(node))
+        node.remove();
+    }
+  }
+  function applyHref(href) {
+    const { head } = document;
+    if (!head)
+      return;
+    stripCompetitors();
+    let link = document.getElementById(ICON_ID);
+    if (!link) {
+      link = document.createElement("link");
+      link.id = ICON_ID;
+      link.rel = "icon shortcut icon";
+      link.type = "image/svg+xml";
+      link.setAttribute("sizes", "any");
+      head.prepend(link);
+    } else if (head.firstChild !== link) {
+      head.prepend(link);
+    }
+    if (link.getAttribute("href") !== href)
+      link.setAttribute("href", href);
+  }
+  function setKind(next) {
+    kind = next;
+    applyHref(icons[next]);
+  }
+  function rebuildIcons() {
+    icons = buildIcons(currentStyle(), officialHref);
+    applyHref(icons[kind]);
+  }
+  function liveResponse(id, byId) {
+    if (!id)
+      return false;
+    const response = byId[id];
+    if (!response)
+      return false;
+    if (response.partial)
+      return true;
+    return LIVE_RESPONSE.has(response.state ?? "");
+  }
+  function storeStreaming() {
+    try {
+      const page = ChatPageStore.useChatPageStore.getState();
+      if (page.streamedMessageId || page.showStreamingIndicator)
+        return true;
+      const { byId } = ResponseStore.useResponseStore.getState();
+      return liveResponse(page.streamedMessageId, byId) || liveResponse(page.lastMessageId, byId);
+    } catch (e) {
+      logger21.debug("stream stores unavailable:", e);
+      return false;
+    }
+  }
+  function isStreaming() {
+    if (storeStreaming())
+      return true;
+    return getStopButton() != null;
+  }
+  function currentConversationId() {
+    try {
+      const { route } = RoutingStore.useRoutingStore.getState();
+      if (route.conversationId)
+        return String(route.conversationId);
+    } catch (e) {
+      logger21.debug("RoutingStore unavailable:", e);
+    }
+    try {
+      const id = ChatPageStore.useChatPageStore.getState().conversationId;
+      if (id)
+        return id;
+    } catch (e) {
+      logger21.debug("ChatPageStore unavailable:", e);
+    }
+    return conversationToken();
+  }
+  function getContextKey() {
+    const id = currentConversationId();
+    const key = id || contextKeyFromUrl("");
+    if (isStreaming()) {
+      if (!lockedToken && key)
+        lockedToken = key;
+      return lockedToken;
+    }
+    lockedToken = "";
+    return key;
+  }
+  function sameStreamContext(key) {
+    return !!streamContext && !!key && streamContext === key;
+  }
+  function resetStreamFlags() {
+    wasStreaming = false;
+    justFinished = false;
+    streamContext = null;
+    lockedToken = "";
+    lastWasError = false;
+  }
+  function onConversationSwitch(id) {
+    lastConvId = id;
+    resetStreamFlags();
+    primedReady = false;
+    composerObs?.disconnect();
+    composerObs = null;
+    buttonObs?.disconnect();
+    buttonObs = null;
+    setKind("wait");
+  }
+  function hasError() {
+    if (lastWasError)
+      return true;
+    try {
+      const { byId } = ResponseStore.useResponseStore.getState();
+      const page = ChatPageStore.useChatPageStore.getState();
+      const id = page.streamedMessageId ?? page.lastMessageId;
+      if (!id)
+        return false;
+      const response = byId[id];
+      return response?.state === "error" || response?.error != null;
+    } catch (e) {
+      logger21.debug("ResponseStore unavailable:", e);
+      return false;
+    }
+  }
+  function evaluateState() {
+    if (!started3)
+      return;
+    const conv = currentConversationId();
+    if (lastConvId && conv && lastConvId !== conv) {
+      onConversationSwitch(conv);
+      return;
+    }
+    if (conv)
+      lastConvId = conv;
+    const contextKey = getContextKey();
+    const streaming = isStreaming();
+    const empty = isInputEmpty();
+    const gray = submitIsGray();
+    if (hasError() && !streaming) {
+      setKind("error");
+      wasStreaming = false;
+      justFinished = false;
+      streamContext = null;
+      lastWasError = false;
+      return;
+    }
+    if (streaming && empty) {
+      wasStreaming = true;
+      justFinished = false;
+      lastWasError = false;
+      streamContext = contextKey;
+      setKind("rotate");
+      return;
+    }
+    if (wasStreaming) {
+      const sameContext = sameStreamContext(contextKey);
+      wasStreaming = false;
+      if (sameContext && gray) {
+        justFinished = true;
+        streamContext = contextKey;
+        setKind("done");
+        return;
+      }
+      justFinished = false;
+      streamContext = null;
+    }
+    if (justFinished) {
+      const contextChanged = !!(streamContext && contextKey && streamContext !== contextKey);
+      if (contextChanged) {
+        justFinished = false;
+        streamContext = null;
+      } else if (empty) {
+        setKind("done");
+        return;
+      } else if (primedReady) {
+        justFinished = false;
+        setKind("ready");
+        return;
+      } else {
+        justFinished = false;
+        setKind("wait");
+        return;
+      }
+    }
+    streamContext = null;
+    lastWasError = false;
+    if (empty)
+      setKind("wait");
+    else if (primedReady)
+      setKind("ready");
+    else
+      setKind("wait");
+  }
+  function nodeTouchesStop(node) {
+    if (!(node instanceof Element))
+      return false;
+    if (node instanceof HTMLElement && node.tagName === "BUTTON" && isStopControl(node))
+      return true;
+    for (const btn of node.querySelectorAll("button")) {
+      if (isStopControl(btn))
+        return true;
+    }
+    return false;
+  }
+  function stopButtonMutation(list) {
+    for (const m of list) {
+      if (nodeTouchesStop(m.target))
+        return true;
+      for (const n of m.addedNodes) {
+        if (nodeTouchesStop(n))
+          return true;
+      }
+      for (const n of m.removedNodes) {
+        if (nodeTouchesStop(n))
+          return true;
+      }
+      if (m.type === "attributes" && m.attributeName === "aria-label" && m.target instanceof HTMLElement) {
+        if (isStopControl(m.target) || /stop|停止/i.test(String(m.oldValue ?? "")))
+          return true;
+      }
+    }
+    return false;
+  }
+  function nodeInEditor(node) {
+    const el = node instanceof Element ? node : node?.parentElement;
+    return !!el?.closest(EDITOR_SEL);
+  }
+  function mutationsAreEditorOnly(list) {
+    if (!list.length)
+      return false;
+    for (const m of list) {
+      if (!nodeInEditor(m.target))
+        return false;
+      for (const n of m.addedNodes) {
+        if (n instanceof Text)
+          continue;
+        if (!nodeInEditor(n))
+          return false;
+      }
+      for (const n of m.removedNodes) {
+        if (n instanceof Text)
+          continue;
+        if (!nodeInEditor(n))
+          return false;
+      }
+    }
+    return true;
+  }
+  function onDomMutate(list) {
+    if (kind === "rotate" || wasStreaming) {
+      if (mutationsAreEditorOnly(list))
+        return;
+      if (!stopButtonMutation(list))
+        return;
+    }
+    scheduleEvaluate();
+  }
+  function onEditorInput() {
+    primedReady = true;
+    scheduleEvaluate();
+  }
+  function scheduleEvaluate() {
+    if (!started3 || raf2)
+      return;
+    raf2 = requestAnimationFrame(() => {
+      raf2 = 0;
+      if (!started3)
+        return;
+      bindEditorInput();
+      const root = getComposerRoot();
+      if (!composerObs || !root.isConnected) {
+        observeComposer();
+        observeButtons();
+      }
+      evaluateState();
+    });
+  }
+  function onStreamEnd3({ responseId }) {
+    try {
+      const response = ResponseStore.useResponseStore.getState().byId[responseId];
+      lastWasError = response?.state === "error" || response?.error != null;
+    } catch (e) {
+      logger21.debug("ResponseStore unavailable:", e);
+    }
+  }
+  function startFaviconGuard() {
+    faviconObs?.disconnect();
+    const { head } = document;
+    if (!head)
+      return;
+    faviconObs = new MutationObserver((list) => {
+      for (const m of list) {
+        if (m.type === "attributes" && isIconLink(m.target) && m.target.id !== ICON_ID) {
+          applyHref(icons[kind]);
+          return;
+        }
+        for (const node of m.addedNodes) {
+          if (isIconLink(node) && node.id !== ICON_ID) {
+            applyHref(icons[kind]);
+            return;
+          }
+        }
+      }
+    });
+    faviconObs.observe(head, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["href", "rel"]
+    });
+  }
+  function bindEditorInput() {
+    const editor = getActiveEditor();
+    if (!editor || editor.dataset.voidCsfBound === "1")
+      return;
+    editor.dataset.voidCsfBound = "1";
+    editor.addEventListener("input", onEditorInput, { passive: true });
+    editor.addEventListener("compositionend", onEditorInput, { passive: true });
+  }
+  function observeComposer() {
+    composerObs?.disconnect();
+    const root = getComposerRoot();
+    composerObs = new MutationObserver(onDomMutate);
+    composerObs.observe(root, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["aria-label", "aria-disabled", "disabled", "data-testid", "class"],
+      attributeOldValue: true
+    });
+  }
+  function observeButtons() {
+    buttonObs?.disconnect();
+    const target = getComposerRoot();
+    buttonObs = new MutationObserver(onDomMutate);
+    buttonObs.observe(target, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["aria-label", "type"],
+      attributeOldValue: true
+    });
+  }
+  function attachStores() {
+    unsubRoute?.();
+    unsubPage?.();
+    try {
+      const routeStore = RoutingStore.useRoutingStore;
+      if (typeof routeStore?.subscribe === "function") {
+        unsubRoute = routeStore.subscribe((s) => s.route.conversationId, (id, prev) => {
+          if (!id || id === prev)
+            return;
+          onConversationSwitch(String(id));
+        });
+      }
+    } catch (e) {
+      logger21.debug("RoutingStore subscribe failed:", e);
+      try {
+        unsubRoute = RoutingStore.useRoutingStore.subscribe(() => scheduleEvaluate());
+      } catch (err) {
+        logger21.debug("RoutingStore full subscribe failed:", err);
+      }
+    }
+    try {
+      const pageStore = ChatPageStore.useChatPageStore;
+      if (typeof pageStore?.subscribe === "function") {
+        unsubPage = pageStore.subscribe((s) => s.conversationId, (id, prev) => {
+          if (!id || id === prev)
+            return;
+          onConversationSwitch(id);
+        });
+      }
+    } catch (e) {
+      logger21.debug("ChatPageStore subscribe failed:", e);
+    }
+  }
+  function restoreOfficial() {
+    faviconObs?.disconnect();
+    faviconObs = null;
+    document.getElementById(ICON_ID)?.remove();
+    const { head } = document;
+    if (!head)
+      return;
+    const link = document.createElement("link");
+    link.rel = "icon";
+    link.type = "image/svg+xml";
+    link.href = officialHref;
+    head.prepend(link);
+  }
+  var chatStateFavicons_default = definePlugin({
+    name: "ChatStateFavicons",
+    icon: AppWindowIcon,
+    description: "Show streaming, done, ready, and error states on the tab favicon.",
+    authors: [Devs.p],
+    tags: ["chat", "ui"],
+    enabledByDefault: true,
+    settings: settings10,
+    startAt: "TurbopackReady" /* TurbopackReady */,
+    cleanupSelectors: [`#${ICON_ID}`],
+    start() {
+      started3 = true;
+      officialHref = captureOfficial();
+      rebuildIcons();
+      startFaviconGuard();
+      inputCtrl?.abort();
+      inputCtrl = new AbortController;
+      window.addEventListener("popstate", scheduleEvaluate, { signal: inputCtrl.signal });
+      globalObs?.disconnect();
+      globalObs = new MutationObserver(onDomMutate);
+      globalObs.observe(document.body, { childList: true, subtree: true });
+      bindEditorInput();
+      observeComposer();
+      observeButtons();
+      attachStores();
+      evaluateState();
+    },
+    stop() {
+      started3 = false;
+      if (raf2)
+        cancelAnimationFrame(raf2);
+      raf2 = 0;
+      inputCtrl?.abort();
+      inputCtrl = null;
+      unsubRoute?.();
+      unsubRoute = null;
+      unsubPage?.();
+      unsubPage = null;
+      globalObs?.disconnect();
+      globalObs = null;
+      composerObs?.disconnect();
+      composerObs = null;
+      buttonObs?.disconnect();
+      buttonObs = null;
+      wasStreaming = false;
+      justFinished = false;
+      streamContext = null;
+      lockedToken = "";
+      lastConvId = "";
+      primedReady = true;
+      lastWasError = false;
+      restoreOfficial();
+    },
+    onSettingsChange: rebuildIcons,
+    events: {
+      streamEnd: onStreamEnd3
+    }
+  });
+
+  // src/plugins/cleaner/index.ts
+  var settings11 = definePluginSettings({
+    hideUpgradePlan: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide the upgrade plan button in the user menu.",
+      default: true
+    },
+    hideUpsellCard: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide the upsell card banner.",
+      default: true
+    },
+    hideUpsellSmall: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide the small SuperGrok upsell banner.",
+      default: true
+    },
+    hideModelUpsell: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide the upgrade prompt in the model selector.",
+      default: true
+    },
+    hideInaccessibleModels: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide locked/inaccessible models in the model selector.",
+      default: true
+    },
+    hideNotificationBanner: {
+      type: 3 /* BOOLEAN */,
+      description: 'Hide the "Get notified when Grok finishes answering" banner.',
+      default: true
+    },
+    hideConnectX: {
+      type: 3 /* BOOLEAN */,
+      description: 'Hide the "Connect your \uD835\uDD4F account" upsell popout.',
+      default: true
+    }
+  });
+  var hideComponentPatch = (name, setting, all = true) => ({
+    find: `"${name}",0,`,
+    all,
+    replacement: {
+      match: new RegExp(`"${name}",0,`),
+      replace: `"${name}",0,$self.settings.store.${setting}?()=>null:`
+    }
+  });
+  var cleaner_default = definePlugin({
+    name: "Cleaner",
+    icon: BrushCleaningIcon,
+    description: "Hides upgrade nags and upsell banners.",
+    authors: [Devs.Prism, Devs.p],
+    tags: ["ui"],
+    enabledByDefault: true,
+    settings: settings11,
+    patches: [
+      {
+        find: '"user-dropdown.upgrade","Upgrade plan"',
+        all: true,
+        replacement: {
+          match: /,(\i)(?=\?null:.{0,160}"user-dropdown\.upgrade")/,
+          replace: ",$self.settings.store.hideUpgradePlan||$1"
+        }
+      },
+      {
+        find: "UPSELL_CARD_PRIORITY)",
+        all: true,
+        replacement: {
+          match: /(\(0,\i\.useIsUpsellLayerVisible\)\(\i\.UPSELL_CARD_PRIORITY\))/,
+          replace: "$1&&!$self.settings.store.hideUpsellCard"
+        }
+      },
+      hideComponentPatch("UpsellSuperGrokSmall", "hideUpsellSmall"),
+      hideComponentPatch("UpsellButton", "hideUpsellSmall", false),
+      {
+        find: "connect-x-upsell-dismissed",
+        replacement: {
+          match: /\.ENABLE_X_INTEGRATION&&(\i\.SHOW_CONNECT_X_UPSELL)/,
+          replace: ".ENABLE_X_INTEGRATION&&!$self.settings.store.hideConnectX&&$1"
+        }
+      },
+      hideComponentPatch("BrowserNotificationBanner", "hideNotificationBanner"),
+      {
+        find: ["mode-select.search-placeholder", "UPSELL_MODEL_SELECT_PRIORITY"],
+        all: true,
+        group: true,
+        replacement: [
+          {
+            match: /UPSELL_MODEL_SELECT_PRIORITY\),.{0,200}?if\(/,
+            replace: "$&$self.settings.store.hideModelUpsell||"
+          },
+          {
+            match: /upgradePrimaryModes:(\i),unavailablePrimaryModes:(\i)\}/,
+            replace: "upgradePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$1,unavailablePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$2}"
+          }
+        ]
+      }
+    ]
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/cloneChats/styles.css
+  registerStyle("cloneChats", `.void-clone-icon {
+    margin-inline-end: 0.5rem;
+}
+`);
+
+  // src/plugins/cloneChats/index.tsx
+  var logger22 = new Logger("CloneChats");
+  async function cloneChat(conversationId) {
+    const lastResponseId = ResponseStore.useResponseStore.getState().nodesByConversationId[conversationId]?.at(-1)?.responseId;
+    if (!lastResponseId)
+      throw new Error("No responses found in conversation.");
+    const { shareLinkId } = await ApiClients.chatApi.chatShareConversation({
+      conversationId,
+      body: { responseId: lastResponseId, allowIndexing: false }
+    });
+    if (!shareLinkId)
+      throw new Error("Failed to create share link.");
+    try {
+      const { conversation } = await ApiClients.chatApi.chatCloneConversation({ shareLinkId, body: {} });
+      if (conversation?.conversationId) {
+        RoutingStore.useRoutingStore.getState().push({ page: "chat", conversationId: conversation.conversationId });
+      }
+    } finally {
+      ApiClients.chatApi.chatDeleteShareLink({ shareLinkId }).catch(() => {});
+    }
+  }
+  function CloneItem({ conversationId }) {
+    const streaming = useIsStreaming(conversationId);
+    return /* @__PURE__ */ React.createElement(MenuItem, {
+      onSelect: () => cloneChat(conversationId).catch((e) => logger22.error("Failed to clone chat:", e)),
+      disabled: streaming
+    }, /* @__PURE__ */ React.createElement(CopyIcon, {
+      size: 16,
+      className: "void-clone-icon"
+    }), "Clone");
+  }
+  var cloneChats_default = definePlugin({
+    name: "CloneChats",
+    icon: CopyIcon,
+    description: "Clone conversations from the context-menu.",
+    authors: [Devs.Prism],
+    tags: ["chat"],
+    contextMenuItems: {
+      conversation: {
+        label: "Clone",
+        render: ErrorBoundary.wrap(CloneItem)
+      }
+    }
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/compactModeSelect/styles.css
+  registerStyle("compactModeSelect", `/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+.void-cms-pins {
+    display: contents;
+}
+
+.void-cms-pin {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    max-height: 2.25rem;
+    padding: 0;
+    box-sizing: border-box;
+    background: transparent;
+    box-shadow: none;
+}
+
+.query-bar .void-cms-on {
+    color: #ff7a17;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.void-cms-label {
+    display: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.void-cms-glyph {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+}
+
+.void-cms-glyph svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+}
+
+.query-bar:has(.void-cms-hide-native) [data-query-bar-mode-select] {
+    position: absolute;
+    width: 0;
+    height: 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    max-height: 2.25rem;
+    padding: 0;
+    position: relative;
+    display: grid;
+    place-items: center;
+}
+
+.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button > * {
+    display: none !important;
+}
+
+.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button::after {
+    content: "";
+    width: 18px;
+    height: 18px;
+    background-color: currentcolor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='5' cy='12' r='1'/%3E%3Ccircle cx='12' cy='12' r='1'/%3E%3Ccircle cx='19' cy='12' r='1'/%3E%3C/svg%3E") center / 18px 18px no-repeat;
+}
+
+html.void-cms-picking .query-bar [data-query-bar-mode-select] {
+    pointer-events: auto !important;
+}
+
+html.void-cms-picking [role="tooltip"],
+html.void-cms-picking [data-radix-tooltip-content] {
+    display: none !important;
+}
+
+.void-cms-ghost {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+html.void-cms-picked .void-cms-ghost {
+    pointer-events: none !important;
+}
+
+.void-cms-order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.void-cms-order-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+    padding: 0.25rem 0.25rem 0.25rem 0;
+    border-radius: 0.5rem;
+    user-select: none;
+}
+
+.void-cms-order-row:hover {
+    background: hsl(var(--fg-primary) / 6%);
+}
+
+.void-cms-order-row.void-cms-dragging {
+    opacity: 0.45;
+}
+
+.void-cms-order-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.void-cms-grip {
+    display: grid;
+    place-items: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: hsl(var(--fg-secondary));
+    cursor: grab;
+}
+
+.void-cms-grip:active {
+    cursor: grabbing;
+}
+
+.void-cms-order-icon {
+    flex-shrink: 0;
+    color: hsl(var(--fg-secondary));
+}
+
+@media (width >= 48rem) {
+    .void-cms-labeled {
+        width: auto;
+        min-width: 2.25rem;
+        max-height: 2.25rem;
+        border-radius: 999px;
+        padding-inline: 0.5rem;
+        gap: 0.25rem;
+    }
+
+    .void-cms-labeled .void-cms-label {
+        display: inline;
+    }
+}
+`);
+
+  // src/plugins/compactModeSelect/index.tsx
+  var logger23 = new Logger("CompactModeSelect");
+  var cl19 = classNameFactory("void-cms-");
+  var MODES = [
+    { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
+    { id: "fast", pin: "pinFast", label: "Fast", Icon: FastModeIcon },
+    { id: "expert", pin: "pinExpert", label: "Expert", Icon: LightbulbIcon },
+    { id: "heavy", pin: "pinHeavy", label: "Heavy", Icon: ConnectedAppsIcon },
+    { id: "build", pin: "pinBuild", label: "Build", Icon: BuildModeIcon }
+  ];
+  var KNOWN_IDS = new Set(MODES.map((m) => m.id));
+  var PIN_BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m.pin]));
+  var MODE_BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m]));
+  var DEFAULT_PIN_ORDER = "heavy,build";
+  var SETTING_KEYS = ["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "showLabels", "hideNativeTrigger", "pinOrder"];
+  var ITEM_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
+  var MENU_ROOT_SEL = [
+    "[data-radix-popper-content-wrapper]",
+    "[data-radix-menu-content]",
+    "[data-radix-dropdown-menu-content]",
+    "[data-radix-select-content]",
+    "[data-radix-popover-content]",
+    "[role='menu']",
+    "[role='listbox']"
+  ].join(", ");
+  var TRIGGER_SEL = ".query-bar [data-query-bar-mode-select] button";
+  var PICK_MS = 900;
+  var POINTER = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
+  var GHOST_STYLE = { opacity: "0", visibility: "hidden" };
+  var settings12 = definePluginSettings({
+    pinList: {
+      type: 6 /* COMPONENT */,
+      description: "Toggle pins and drag to set chip order.",
+      component: PinOrderEditor
+    },
+    hideNativeTrigger: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide the native mode menu button and keep its popup invisible.",
+      default: true
+    },
+    showLabels: {
+      type: 3 /* BOOLEAN */,
+      description: "Show mode names on pinned chips.",
+      default: false
+    },
+    pinAuto: {
+      type: 3 /* BOOLEAN */,
+      description: "Pin Auto next to the compact selector.",
+      default: false,
+      hidden: true
+    },
+    pinFast: {
+      type: 3 /* BOOLEAN */,
+      description: "Pin Fast next to the compact selector.",
+      default: false,
+      hidden: true
+    },
+    pinExpert: {
+      type: 3 /* BOOLEAN */,
+      description: "Pin Expert next to the compact selector.",
+      default: false,
+      hidden: true
+    },
+    pinHeavy: {
+      type: 3 /* BOOLEAN */,
+      description: "Pin Heavy next to the compact selector.",
+      default: true,
+      hidden: true
+    },
+    pinBuild: {
+      type: 3 /* BOOLEAN */,
+      description: "Pin Build next to the compact selector.",
+      default: true,
+      hidden: true
+    },
+    pinOrder: {
+      type: 0 /* STRING */,
+      description: "Order of pinned chips.",
+      default: DEFAULT_PIN_ORDER,
+      hidden: true
+    }
+  });
+  var picking = false;
+  var harvesting = false;
+  var tipLock = false;
+  var harvested = new Map;
+  var harvestListeners = new Set;
+  var tipListeners = new Set;
+  var ghosts = new Set;
+  var cloakWatch = null;
+  function uncloak() {
+    for (const host of ghosts) {
+      host.classList.remove(cl19("ghost"));
+      host.style.removeProperty("opacity");
+      host.style.removeProperty("visibility");
+      host.style.removeProperty("pointer-events");
+    }
+    ghosts.clear();
+  }
+  function notifyTips() {
+    for (const fn of tipListeners)
+      fn();
+  }
+  function onDocPointerOver(e) {
+    if (!tipLock || picking)
+      return;
+    const el = e.target;
+    if (el instanceof Element && el.closest(".query-bar .void-cms-pin"))
+      return;
+    setTipLock(false);
+  }
+  function setTipLock(on) {
+    if (tipLock === on)
+      return;
+    tipLock = on;
+    if (on)
+      document.addEventListener("pointerover", onDocPointerOver);
+    else
+      document.removeEventListener("pointerover", onDocPointerOver);
+    notifyTips();
+  }
+  function subscribeTips(fn) {
+    tipListeners.add(fn);
+    return () => {
+      tipListeners.delete(fn);
+    };
+  }
+  function getTipLock() {
+    return tipLock;
+  }
+  function useTipLock() {
+    return React.useSyncExternalStore(subscribeTips, getTipLock, getTipLock);
+  }
+  function setPicking(on) {
+    picking = on;
+    document.documentElement.classList.toggle("void-cms-picking", on);
+    if (on) {
+      setTipLock(true);
+      cloakWatch ??= new MutationObserver(onCloakMutations);
+      cloakWatch.observe(document.documentElement, { childList: true, subtree: true });
+      return;
+    }
+    cloakWatch?.disconnect();
+    cloakWatch = null;
+    document.documentElement.classList.remove("void-cms-picked");
+    uncloak();
+    if (!document.querySelector(".query-bar .void-cms-pin:hover"))
+      setTipLock(false);
+  }
+  function notifyHarvest() {
+    for (const fn of harvestListeners)
+      fn();
+  }
+  function parseOrder(raw) {
+    const seen = new Set;
+    const ordered = [];
+    for (const token of String(raw ?? "").split(/[,\s]+/)) {
+      const id = token.toLowerCase();
+      if (!KNOWN_IDS.has(id) || seen.has(id))
+        continue;
+      seen.add(id);
+      ordered.push(id);
+    }
+    for (const m of MODES) {
+      if (seen.has(m.id))
+        continue;
+      ordered.push(m.id);
+    }
+    return ordered;
+  }
+  function reorder(ids, from, to) {
+    if (from === to || from < 0 || to < 0 || to >= ids.length)
+      return ids;
+    const next = ids.slice();
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    return next;
+  }
+  function setOrder(ids) {
+    settings12.store.pinOrder = ids.join(",");
+  }
+  function setPinned(pin, on) {
+    settings12.store[pin] = on;
+  }
+  function itemText(el) {
+    return `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`.replaceAll(/\s+/g, " ").trim().toLowerCase();
+  }
+  function titlesFor(id) {
+    const mode = MODES.find((m) => m.id === id);
+    const catalogTitle = ModesStore.useModesStore.getState().modes.find((m) => m.id === id)?.title;
+    return [catalogTitle, mode?.label, id].filter((t) => !!t).map((t) => t.toLowerCase());
+  }
+  function matchItem(el, id) {
+    const hay = itemText(el);
+    if (!hay)
+      return false;
+    return titlesFor(id).some((t) => hay === t || hay.startsWith(`${t} `));
+  }
+  function isModeMenu(items) {
+    return items.filter((el) => MODES.some((m) => matchItem(el, m.id))).length >= 2;
+  }
+  function ghostHost(el) {
+    const wrap = el.closest("[data-radix-popper-content-wrapper]");
+    if (wrap instanceof HTMLElement)
+      return wrap;
+    let host = el;
+    for (let n = el;n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+      const pos = getComputedStyle(n).position;
+      if (pos === "fixed" || pos === "absolute")
+        host = n;
+    }
+    return host;
+  }
+  function cloak(menu) {
+    const host = ghostHost(menu.root);
+    if (ghosts.has(host))
+      return;
+    host.classList.add(cl19("ghost"));
+    host.style.setProperty("opacity", GHOST_STYLE.opacity, "important");
+    host.style.setProperty("visibility", GHOST_STYLE.visibility, "important");
+    ghosts.add(host);
+  }
+  function lockGhosts() {
+    document.documentElement.classList.add("void-cms-picked");
+    for (const host of ghosts)
+      host.style.setProperty("pointer-events", "none", "important");
+  }
+  function modeMenu() {
+    for (const root of document.querySelectorAll(MENU_ROOT_SEL)) {
+      if (!(root instanceof HTMLElement))
+        continue;
+      const items = [...root.querySelectorAll(ITEM_SEL)];
+      if (isModeMenu(items))
+        return { root, items };
+    }
+    const loose = [...document.querySelectorAll(ITEM_SEL)].filter((el) => MODES.some((m) => matchItem(el, m.id)));
+    if (loose.length < 2)
+      return null;
+    const nested = loose[0].closest(MENU_ROOT_SEL);
+    const root = nested instanceof HTMLElement ? nested : ghostHost(loose[0]);
+    return { root, items: loose };
+  }
+  function onCloakMutations() {
+    const menu = modeMenu();
+    if (menu)
+      cloak(menu);
+  }
+  function waitUntil(ok) {
+    const start = performance.now();
+    return new Promise((resolve) => {
+      const tick = () => {
+        if (ok()) {
+          resolve(true);
+          return;
+        }
+        if (performance.now() - start > PICK_MS) {
+          resolve(false);
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+  async function waitForMenu() {
+    await waitUntil(() => {
+      const menu = modeMenu();
+      if (menu)
+        cloak(menu);
+      return !!menu;
+    });
+    return modeMenu();
+  }
+  function waitForGone() {
+    return waitUntil(() => !modeMenu());
+  }
+  function nativeTrigger() {
+    return document.querySelector(TRIGGER_SEL);
+  }
+  function clickEl(el) {
+    el.dispatchEvent(new PointerEvent("pointerdown", POINTER));
+    el.dispatchEvent(new PointerEvent("pointerup", POINTER));
+    el.click();
+  }
+  function paintCurrent(el) {
+    for (const attr of ["fill", "stroke"]) {
+      const v = el.getAttribute(attr);
+      if (!v || v === "none" || v === "currentColor")
+        continue;
+      el.setAttribute(attr, "currentColor");
+    }
+    for (const name of el.getAttributeNames()) {
+      if (name.startsWith("on"))
+        el.removeAttribute(name);
+    }
+    el.removeAttribute("class");
+  }
+  function normalizeSvg(src) {
+    const svg = src.cloneNode(true);
+    svg.setAttribute("width", "18");
+    svg.setAttribute("height", "18");
+    svg.setAttribute("aria-hidden", "true");
+    svg.querySelectorAll("script").forEach((n) => n.remove());
+    paintCurrent(svg);
+    svg.querySelectorAll("*").forEach(paintCurrent);
+    return svg.outerHTML;
+  }
+  function stashGlyphs(items) {
+    let added = false;
+    for (const item of items) {
+      const mode = MODES.find((m) => matchItem(item, m.id));
+      if (!mode || harvested.has(mode.id))
+        continue;
+      const svg = item.querySelector("svg");
+      if (!(svg instanceof SVGSVGElement))
+        continue;
+      harvested.set(mode.id, normalizeSvg(svg));
+      added = true;
+    }
+    if (added)
+      notifyHarvest();
+  }
+  async function harvestIcons() {
+    if (harvesting || picking || harvested.size > 0)
+      return;
+    const trigger = nativeTrigger();
+    if (!trigger)
+      return;
+    harvesting = true;
+    setPicking(true);
+    try {
+      let menu = modeMenu();
+      if (!menu) {
+        clickEl(trigger);
+        menu = await waitForMenu();
+      }
+      if (!menu)
+        return;
+      cloak(menu);
+      stashGlyphs(menu.items);
+      if (modeMenu())
+        clickEl(trigger);
+      lockGhosts();
+      await waitForGone();
+    } catch (e) {
+      logger23.warn("Failed to harvest mode icons:", e);
+    } finally {
+      setPicking(false);
+      harvesting = false;
+    }
+  }
+  async function selectMode(id) {
+    if (picking)
+      return;
+    setPicking(true);
+    try {
+      await ModesStore.useModesStore.getState().ensureLoaded();
+      let menu = modeMenu();
+      if (!menu) {
+        const trigger = nativeTrigger();
+        if (!trigger) {
+          logger23.warn("Native mode selector not found");
+          return;
+        }
+        clickEl(trigger);
+        menu = await waitForMenu();
+      }
+      if (!menu) {
+        logger23.warn("Native mode item not found:", id);
+        return;
+      }
+      cloak(menu);
+      stashGlyphs(menu.items);
+      const item = menu.items.find((el) => matchItem(el, id));
+      if (!item) {
+        logger23.warn("Native mode item not found:", id);
+        const trigger = nativeTrigger();
+        if (modeMenu() && trigger)
+          clickEl(trigger);
+        lockGhosts();
+        await waitForGone();
+        return;
+      }
+      clickEl(item);
+      lockGhosts();
+      await waitForGone();
+    } catch (e) {
+      logger23.warn("Failed to select mode:", e);
+    } finally {
+      setPicking(false);
+    }
+  }
+  function useNativeGlyph(id) {
+    const [, bump] = React.useState(0);
+    React.useEffect(() => {
+      const onHarvest = () => bump((n) => n + 1);
+      harvestListeners.add(onHarvest);
+      harvestIcons();
+      return () => {
+        harvestListeners.delete(onHarvest);
+      };
+    }, [id]);
+    return harvested.get(id);
+  }
+  function PinGlyph({ id, Icon, label, showLabels }) {
+    const html = useNativeGlyph(id);
+    const glyph = html ? /* @__PURE__ */ React.createElement("span", {
+      className: cl19("glyph"),
+      dangerouslySetInnerHTML: { __html: html }
+    }) : /* @__PURE__ */ React.createElement(Icon, {
+      size: 18
+    });
+    if (!showLabels)
+      return glyph;
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, glyph, /* @__PURE__ */ React.createElement("span", {
+      className: cl19("label")
+    }, label));
+  }
+  function preventDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+  function PinOrderEditor() {
+    const cfg = settings12.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
+    const ids = parseOrder(cfg.pinOrder);
+    const [dragId, setDragId] = React.useState(null);
+    const onDragStart = (id) => (e) => {
+      e.dataTransfer.setData("text/plain", id);
+      e.dataTransfer.effectAllowed = "move";
+      setDragId(id);
+    };
+    const onDrop = (toId) => (e) => {
+      e.preventDefault();
+      const fromId = e.dataTransfer.getData("text/plain");
+      setOrder(reorder(ids, ids.indexOf(fromId), ids.indexOf(toId)));
+      setDragId(null);
+    };
+    return /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0.5rem",
+      className: cl19("order")
+    }, /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0"
+    }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order.")), /* @__PURE__ */ React.createElement("div", {
+      className: cl19("order-list"),
+      role: "list"
+    }, ids.map((id, i) => {
+      const m = MODE_BY_ID[id];
+      return /* @__PURE__ */ React.createElement("div", {
+        key: m.id,
+        role: "listitem",
+        className: classes(cl19("order-row"), dragId === m.id && cl19("dragging")),
+        onDragOver: preventDragOver,
+        onDrop: onDrop(m.id)
+      }, /* @__PURE__ */ React.createElement(Flex, {
+        alignItems: "center",
+        gap: "0.5rem",
+        className: cl19("order-main")
+      }, /* @__PURE__ */ React.createElement("span", {
+        className: cl19("grip"),
+        draggable: true,
+        onDragStart: onDragStart(m.id),
+        onDragEnd: () => setDragId(null),
+        "aria-label": `Reorder ${m.label}`
+      }, /* @__PURE__ */ React.createElement(GripVerticalIcon, {
+        size: 16
+      })), /* @__PURE__ */ React.createElement(m.Icon, {
+        size: 16,
+        className: cl19("order-icon")
+      }), /* @__PURE__ */ React.createElement(SettingsTitle, null, m.label)), /* @__PURE__ */ React.createElement(Flex, {
+        alignItems: "center",
+        gap: "0.25rem"
+      }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
+        variant: "tertiary",
+        size: "xs",
+        shape: "square",
+        tooltipContent: "Move up",
+        "aria-label": `Move ${m.label} up`,
+        disabled: i === 0,
+        onClick: () => setOrder(reorder(ids, i, i - 1))
+      }, /* @__PURE__ */ React.createElement(ChevronUpIcon, {
+        size: 14
+      })), /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
+        variant: "tertiary",
+        size: "xs",
+        shape: "square",
+        tooltipContent: "Move down",
+        "aria-label": `Move ${m.label} down`,
+        disabled: i === ids.length - 1,
+        onClick: () => setOrder(reorder(ids, i, i + 1))
+      }, /* @__PURE__ */ React.createElement(ChevronDownIcon, {
+        size: 14
+      })), /* @__PURE__ */ React.createElement(Switch, {
+        checked: !!cfg[m.pin],
+        onCheckedChange: (on) => setPinned(m.pin, on)
+      })));
+    })));
+  }
+  function PinnedModes() {
+    const cfg = settings12.use([...SETTING_KEYS]);
+    const page = RoutingStore.useRoutingStore((s) => s.route.page);
+    const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
+    const catalog = ModesStore.useModesStore((s) => s.modes);
+    const hideTip = useTipLock();
+    const knownCatalog = catalog.filter((c) => KNOWN_IDS.has(c.id));
+    const items = parseOrder(cfg.pinOrder).map((id) => MODE_BY_ID[id]).filter((m) => cfg[m.pin] && (m.id === "build" || !knownCatalog.length || knownCatalog.some((c) => c.id === m.id)));
+    if (page === "bot" || !items.length)
+      return null;
+    const { showLabels } = cfg;
+    const allCovered = knownCatalog.length > 0 && knownCatalog.every((c) => cfg[PIN_BY_ID[c.id]]);
+    const hideNative = cfg.hideNativeTrigger || allCovered;
+    const onPin = (id) => (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setTipLock(true);
+      selectMode(id);
+    };
+    return /* @__PURE__ */ React.createElement("div", {
+      className: classes(cl19("pins"), hideNative && cl19("hide-native"))
+    }, items.map((m) => /* @__PURE__ */ React.createElement(ChatBarButton, {
+      key: m.id,
+      size: "sm",
+      icon: /* @__PURE__ */ React.createElement(PinGlyph, {
+        id: m.id,
+        Icon: m.Icon,
+        label: m.label,
+        showLabels
+      }),
+      tooltip: hideTip ? undefined : m.label,
+      onClick: onPin(m.id),
+      className: classes(cl19("pin"), selectedModeId === m.id && cl19("on"), showLabels && cl19("labeled")),
+      "aria-label": m.label
+    })));
+  }
+  var compactModeSelect_default = definePlugin({
+    name: "CompactModeSelect",
+    icon: Minimize2Icon,
+    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu.",
+    authors: [Devs.p],
+    tags: ["chat", "ui"],
+    enabledByDefault: true,
+    settings: settings12,
+    managedStyle: "compactModeSelect",
+    startAt: "TurbopackReady" /* TurbopackReady */,
+    start() {
+      ModesStore.useModesStore.getState().ensureLoaded();
+    },
+    stop() {
+      setPicking(false);
+      setTipLock(false);
+      harvested.clear();
+      harvestListeners.clear();
+      tipListeners.clear();
+    },
+    renderPinned: ErrorBoundary.wrap(PinnedModes),
+    patches: [
+      {
+        find: "data-query-bar-mode-select",
+        all: true,
+        group: true,
+        replacement: [
+          {
+            match: /ModeSelect,\{compact:\i\|\|\i,/,
+            replace: "ModeSelect,{compact:!0,"
+          },
+          {
+            match: /\},"mode-select"\),/,
+            replace: "$&$self.renderPinned(),"
+          }
+        ]
+      }
+    ]
+  });
+
+  // src/plugins/composerOpacity/index.ts
+  var STYLE_NAME3 = "composerOpacity";
+  var SHELL = ".query-bar";
+  var FRAME = "form:has(.query-bar),form:has(.query-bar)>:first-child";
+  var FRAME_KIDS = "form:has(.query-bar)>:first-child>*";
+  var BACKDROP = ".chat-input-backdrop,.pointer-events-none.absolute.bottom-0.z-0[class*=bg-gradient-to-t]";
+  var RADIUS = "var(--border-t-radius,10rem) var(--border-t-radius,10rem) var(--border-b-radius,10rem) var(--border-b-radius,10rem)";
+  var settings13 = definePluginSettings({
+    opacity: {
+      type: 5 /* SLIDER */,
+      description: "Background opacity of the chat input. 100 is fully opaque.",
+      min: 0,
+      max: 100,
+      default: 100
+    },
+    blur: {
+      type: 5 /* SLIDER */,
+      description: "Backdrop blur in pixels. Helps when opacity is below 100.",
+      min: 0,
+      max: 40,
+      default: 16
+    }
+  });
+  function apply2() {
+    const pct = clamp(settings13.store.opacity, 0, 100);
+    const blur = clamp(settings13.store.blur, 0, 40);
+    const alpha = pct / 100;
+    const frost = pct < 100 && blur > 0 ? `-webkit-backdrop-filter:blur(${blur}px)!important;backdrop-filter:blur(${blur}px)!important;` : "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;";
+    registerStyle(STYLE_NAME3, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + `background-color:hsl(var(--surface-l1)/${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}");
+  }
+  var composerOpacity_default = definePlugin({
+    name: "ComposerOpacity",
+    icon: BlendIcon,
+    description: "Customizable chat input background opacity so content behind the bar cannot show through.",
+    authors: [Devs.p],
+    tags: ["ui", "chat"],
+    enabledByDefault: true,
+    settings: settings13,
+    start: apply2,
+    onSettingsChange: apply2,
+    stop() {
+      unregisterStyle(STYLE_NAME3);
+    }
+  });
+
+  // src/plugins/consoleJanitor/index.ts
+  var warnNoop = { match: /console\.warn\(\i\)/, replace: "void 0" };
+  var consoleJanitor_default = definePlugin({
+    name: "ConsoleJanitor",
+    icon: TerminalIcon,
+    description: "Silences noisy warnings and info logs in the browser console.",
+    authors: [Devs.Prism],
+    patches: [
+      { find: "x.ai/careers", replacement: { match: /console\.info\("[^"]{0,3000}"\)/, replace: "void 0" } },
+      { find: "useDrawerContext must be used within a Drawer.Root", all: true, replacement: warnNoop },
+      { find: "DialogDescriptionWarning", all: true, replacement: warnNoop },
+      { find: "window.PressureObserver", replacement: { match: /if\(!window\.PressureObserver\)return/, replace: "return" } },
+      { find: "NO_I18NEXT_INSTANCE", all: true, replacement: { match: /console\.warn\(\.\.\.\i\)/, replace: "void 0" } }
+    ]
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customInstructions/styles.css
+  registerStyle("customInstructions", `.void-ci-root {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.void-ci-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+.void-ci-card {
+    position: relative;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.625rem;
+    border-radius: 1rem;
+    padding: 0.625rem 0.75rem;
+    height: 3.25rem;
+    color: hsl(var(--fg-primary));
+    background: hsl(var(--surface-l1));
+    box-shadow: inset 0 0 0 1px hsl(var(--border-l1));
+    cursor: pointer;
+}
+
+.void-ci-card:hover {
+    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
+}
+
+.void-ci-card-add {
+    justify-content: center;
+    box-shadow: none;
+    border: 1px dashed hsl(var(--border-l1));
+}
+
+.void-ci-avatar {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.void-ci-card-name {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+    flex: 1;
+    gap: 0.125rem;
+}
+
+.void-ci-card-name>* {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.void-ci-card-actions {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.void-ci-card:hover .void-ci-card-actions {
+    opacity: 1;
+}
+
+.void-ci-card:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px hsl(var(--fg-primary));
+}
+
+.void-ci-card-add:focus-visible {
+    box-shadow: none;
+    border-color: hsl(var(--fg-primary));
+}
+
+.void-ci-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.void-ci-label {
+    padding-inline: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: hsl(var(--fg-primary));
+}
+
+.void-ci-input {
+    width: 100%;
+}
+
+.void-ci-textarea-wrap {
+    border: 1px solid hsl(var(--border-l2));
+    border-radius: 0.75rem;
+}
+
+.void-ci-textarea-wrap:focus-within {
+    border-color: hsl(var(--fg-primary));
+    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
+}
+
+.void-ci-textarea-wrap-error {
+    border-color: hsl(var(--fg-danger));
+}
+
+.void-ci-textarea-wrap-error:focus-within {
+    border-color: hsl(var(--fg-danger));
+    box-shadow: inset 0 0 0 1px hsl(var(--fg-danger));
+}
+
+.void-ci-textarea {
+    width: 100%;
+    min-height: 7.5rem;
+    padding: 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: 0.75rem;
+    color: hsl(var(--fg-primary));
+    font-size: 0.875rem;
+    resize: vertical;
+}
+
+.void-ci-textarea:focus,
+.void-ci-textarea:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
+.void-ci-editor-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 0.25rem;
+}
+
+.void-ci-error-text {
+    color: hsl(var(--fg-danger));
+}
+
+.void-ci-trigger {
+    gap: 0.5rem;
+}
+
+.void-ci-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .void-ci-card-actions {
+        transition: none;
+    }
+}
+`);
+
+  // src/plugins/customInstructions/index.tsx
+  var cl20 = classNameFactory("void-ci-");
+  var PixelAvatarModule = findByPropsLazy("PixelAvatar");
+  var CheckIcon = findExportedComponentLazy("CheckIcon");
+  var BookIcon = findExportedComponentLazy("BookIcon");
+  var PenIcon = findExportedComponentLazy("PenIcon");
+  var TrashIcon = findExportedComponentLazy("TrashIcon");
+  var PlusIcon2 = findExportedComponentLazy("PlusIcon");
+  var MAX_LENGTH = 4000;
+  var settings14 = definePluginSettings({
+    editor: {
+      type: 6 /* COMPONENT */,
+      component: () => /* @__PURE__ */ React.createElement(PresetsEditor, null)
+    }
+  }).withPrivateSettings();
+  function getPresets() {
+    return settings14.plain.presets ?? [];
+  }
+  function setPresets(presets) {
+    settings14.store.presets = presets;
+  }
+  function getAssignments() {
+    return settings14.plain.assignments ?? {};
+  }
+  function PresetCard({ preset, onEdit, onDelete }) {
+    return /* @__PURE__ */ React.createElement("div", {
+      role: "button",
+      className: cl20("card"),
+      onClick: onEdit
+    }, /* @__PURE__ */ React.createElement("div", {
+      className: cl20("avatar")
+    }, /* @__PURE__ */ React.createElement(PixelAvatarModule.PixelAvatar, {
+      seed: preset.id,
+      size: 32
+    })), /* @__PURE__ */ React.createElement("div", {
+      className: cl20("card-name")
+    }, /* @__PURE__ */ React.createElement(Text2, {
+      size: "sm",
+      weight: "medium"
+    }, preset.name || "Untitled")), /* @__PURE__ */ React.createElement("div", {
+      className: cl20("card-actions")
+    }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
+      variant: "tertiary",
+      size: "xs",
+      shape: "square",
+      tooltipContent: "Edit",
+      onClick: (e) => {
+        e.stopPropagation();
+        onEdit();
+      }
+    }, /* @__PURE__ */ React.createElement(PenIcon, {
+      className: "size-3.5 text-secondary"
+    })), /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
+      variant: "tertiary",
+      size: "xs",
+      shape: "square",
+      tooltipContent: "Delete",
+      onClick: (e) => {
+        e.stopPropagation();
+        onDelete();
+      }
+    }, /* @__PURE__ */ React.createElement(TrashIcon, {
+      className: "size-3.5 text-secondary"
+    }))));
+  }
+  function PresetEditor({ preset, onUpdate, onClose }) {
+    const overLimit = preset.prompt.length > MAX_LENGTH;
+    return /* @__PURE__ */ React.createElement("div", {
+      className: cl20("editor")
+    }, /* @__PURE__ */ React.createElement(Text2, {
+      size: "sm",
+      weight: "medium",
+      className: cl20("label")
+    }, "Name"), /* @__PURE__ */ React.createElement(Input, {
+      type: "text",
+      className: cl20("input"),
+      placeholder: "Preset name",
+      value: preset.name,
+      onChange: (e) => onUpdate({ ...preset, name: e.target.value }),
+      autoComplete: "off"
+    }), /* @__PURE__ */ React.createElement(Text2, {
+      size: "sm",
+      weight: "medium",
+      className: cl20("label")
+    }, "Instructions"), /* @__PURE__ */ React.createElement("div", {
+      className: cl20("textarea-wrap", { "textarea-wrap-error": overLimit })
+    }, /* @__PURE__ */ React.createElement(Textarea, {
+      className: cl20("textarea"),
+      placeholder: "How should Grok behave?",
+      value: preset.prompt,
+      onChange: (e) => onUpdate({ ...preset, prompt: e.target.value })
+    })), /* @__PURE__ */ React.createElement("div", {
+      className: cl20("editor-footer")
+    }, /* @__PURE__ */ React.createElement(Text2, {
+      size: "xs",
+      color: overLimit ? undefined : "muted",
+      className: overLimit ? cl20("error-text") : undefined
+    }, preset.prompt.length, "/", MAX_LENGTH), /* @__PURE__ */ React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      shape: "rectangle",
+      onClick: onClose
+    }, "Done")));
+  }
+  function PresetsEditor() {
+    const presets = settings14.use(["presets"]).presets ?? [];
+    const [editingId, setEditingId] = useState(null);
+    const updatePreset = useCallback((updated) => {
+      setPresets(getPresets().map((p) => p.id === updated.id ? updated : p));
+    }, []);
+    const deletePreset = useCallback((id) => {
+      setPresets(getPresets().filter((p) => p.id !== id));
+      const a = { ...getAssignments() };
+      for (const [k, v] of Object.entries(a)) {
+        if (v === id)
+          delete a[k];
+      }
+      settings14.store.assignments = a;
+      setEditingId((prev) => prev === id ? null : prev);
+    }, []);
+    const addPreset = useCallback(() => {
+      const id = randomId();
+      setPresets([...getPresets(), { id, name: "", prompt: "" }]);
+      setEditingId(id);
+    }, []);
+    const editing = presets.find((p) => p.id === editingId);
+    return /* @__PURE__ */ React.createElement("div", {
+      className: cl20("root")
+    }, /* @__PURE__ */ React.createElement("div", {
+      className: cl20("grid")
+    }, presets.map((p) => /* @__PURE__ */ React.createElement(PresetCard, {
+      key: p.id,
+      preset: p,
+      onEdit: () => setEditingId(editingId === p.id ? null : p.id),
+      onDelete: () => deletePreset(p.id)
+    })), /* @__PURE__ */ React.createElement("div", {
+      role: "button",
+      className: cl20("card", "card-add"),
+      onClick: addPreset
+    }, /* @__PURE__ */ React.createElement(PlusIcon2, {
+      className: "size-4 text-secondary"
+    }), /* @__PURE__ */ React.createElement(Text2, {
+      size: "sm",
+      weight: "medium",
+      color: "muted"
+    }, "New"))), editing && /* @__PURE__ */ React.createElement(PresetEditor, {
+      preset: editing,
+      onUpdate: updatePreset,
+      onClose: () => setEditingId(null)
+    }));
+  }
+  function InstructionsMenu({ conversationId }) {
+    const presets = settings14.use(["presets"]).presets ?? [];
+    const assignments = settings14.use(["assignments"]).assignments ?? {};
+    const activePresetId = assignments[conversationId];
+    const assign = useCallback((presetId) => {
+      const a = { ...getAssignments() };
+      if (presetId)
+        a[conversationId] = presetId;
+      else
+        delete a[conversationId];
+      settings14.store.assignments = a;
+    }, [conversationId]);
+    if (!presets.length)
+      return null;
+    return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, {
+      className: cl20("trigger")
+    }, /* @__PURE__ */ React.createElement(BookIcon, {
+      size: 16
+    }), " Instructions"), /* @__PURE__ */ React.createElement(MenuSubContent, null, /* @__PURE__ */ React.createElement(MenuItem, {
+      onSelect: () => assign(),
+      className: cl20("menu-item")
+    }, /* @__PURE__ */ React.createElement(Text2, {
+      size: "sm"
+    }, "None"), !activePresetId && /* @__PURE__ */ React.createElement(CheckIcon, {
+      className: "size-3.5 shrink-0"
+    })), presets.map((p) => /* @__PURE__ */ React.createElement(MenuItem, {
+      key: p.id,
+      onSelect: () => assign(p.id),
+      className: cl20("menu-item")
+    }, /* @__PURE__ */ React.createElement(Text2, {
+      size: "sm"
+    }, p.name || "Untitled"), activePresetId === p.id && /* @__PURE__ */ React.createElement(CheckIcon, {
+      className: "size-3.5 shrink-0"
+    })))));
+  }
+  var customInstructions_default = definePlugin({
+    name: "CustomInstructions",
+    icon: ScrollTextIcon,
+    description: "Create instruction presets and assign them to conversations.",
+    authors: [Devs.Prism],
+    tags: ["chat"],
+    settings: settings14,
+    contextMenuItems: {
+      conversation: {
+        label: "Instructions",
+        render: ErrorBoundary.wrap(InstructionsMenu)
+      }
+    },
+    _getPrompt() {
+      const { conversationId } = ChatPageStore.useChatPageStore.getState();
+      if (!conversationId)
+        return;
+      const presetId = getAssignments()[conversationId];
+      if (!presetId)
+        return;
+      const preset = getPresets().find((p) => p.id === presetId);
+      return preset?.prompt?.trim() || undefined;
+    },
+    patches: [
+      {
+        find: ["customInstructions:e.customInstructions,customPersonality:e.customPersonality"],
+        all: true,
+        replacement: {
+          match: /customInstructions:(\i)\.customInstructions/g,
+          replace: "customInstructions:$1.customInstructions||$self._getPrompt()"
+        }
+      }
+    ]
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/downloadTTS/styles.css
+  registerStyle("downloadTTS", `.void-download-tts-spinner {
+    pointer-events: none;
+}
+`);
+
+  // src/plugins/downloadTTS/index.tsx
+  var cl21 = classNameFactory("void-download-tts-");
+  var logger24 = new Logger("DownloadTTS");
+  async function fetchAndDownload() {
+    const { currentStreamId } = TextToSpeechStore.useTextToSpeechStore.getState();
+    if (!currentStreamId)
+      return;
+    const voiceId = ChatPageStore.useChatPageStore.getState().voiceId;
+    let url = `/http/app-chat/read-response-audio-file/${currentStreamId}`;
+    if (voiceId)
+      url += `?voiceId=${encodeURIComponent(voiceId)}`;
+    const res = await fetch(url);
+    if (!res.ok)
+      throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    await FileUtils.downloadBlob(blob, `tts-${currentStreamId.slice(0, 8)}.wav`);
+  }
+  function DownloadButton() {
+    const [loading, onClick] = useAsyncAction(async () => {
+      try {
+        await fetchAndDownload();
+      } catch (e) {
+        logger24.error("Failed to download TTS audio:", e);
+      }
+    });
+    return /* @__PURE__ */ React.createElement(Button, {
+      "aria-label": "Download audio",
+      onClick,
+      disabled: loading,
+      size: "md",
+      shape: "square",
+      variant: "tertiary"
+    }, loading ? /* @__PURE__ */ React.createElement(Spinner, {
+      size: "sm",
+      className: cl21("spinner")
+    }) : /* @__PURE__ */ React.createElement(DownloadIcon, {
+      size: 16
+    }));
+  }
+  var downloadTTS_default = definePlugin({
+    name: "DownloadTTS",
+    icon: Volume2Icon,
+    description: "Add a download button to the TTS playback controls.",
+    authors: [Devs.Prism],
+    tags: ["chat"],
+    patches: [{
+      find: 'tts-controls.stop.label","Stop"',
+      all: true,
+      replacement: {
+        match: /("tts-controls\.stop\.label","Stop"\).{0,600}?,children:\[(?:\i,){1,8}\i)\]/,
+        replace: "$1,$self._renderDownloadButton()]"
+      }
+    }],
+    _renderDownloadButton: ErrorBoundary.wrap(DownloadButton)
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/exportChat/styles.css
+  registerStyle("exportChat", `.void-export-icon {
+    margin-inline-end: 0.5rem;
+}
+`);
+
+  // src/plugins/exportChat/index.tsx
+  var logger25 = new Logger("ExportChat");
+  function buildExportMessage(r) {
+    return {
+      id: r.responseId,
+      sender: r.sender,
+      message: r.message,
+      query: r.query,
+      createTime: r.createTime,
+      model: r.requestMetadata?.model ?? r.model,
+      ...r.thinkingTrace && { thinkingTrace: r.thinkingTrace },
+      ...r.webSearchResults?.length && { webSearchResults: r.webSearchResults },
+      ...r.generatedImageUrls?.length && { generatedImageUrls: r.generatedImageUrls },
+      ...r.fileAttachments?.length && { fileAttachments: r.fileAttachments },
+      ...r.steps?.length && { steps: r.steps }
+    };
+  }
+  function formatTs(ts) {
+    return ts ? new Date(ts).toLocaleString() : "";
+  }
+  function sender(s) {
+    return s.toLowerCase() === "human" ? "You" : "Grok";
+  }
+  function toMarkdown(title, messages) {
+    const lines = [`# ${title}`, ""];
+    for (const m of messages) {
+      const ts = formatTs(m.createTime);
+      lines.push(`## ${sender(m.sender)}${ts ? ` — ${ts}` : ""}${m.model ? ` (${m.model})` : ""}`, "");
+      if (m.thinkingTrace)
+        lines.push("<details><summary>Thinking</summary>", "", m.thinkingTrace, "", "</details>", "");
+      const mdText = m.query || m.message;
+      if (mdText)
+        lines.push(mdText, "");
+      if (m.generatedImageUrls?.length) {
+        for (const url of m.generatedImageUrls)
+          lines.push(`![image](${url})`);
+        lines.push("");
+      }
+      if (m.webSearchResults?.length) {
+        lines.push("**Web search results:**", "");
+        for (const r of m.webSearchResults) {
+          const { title: t, url } = r;
+          if (url)
+            lines.push(`- [${t ?? url}](${url})`);
+        }
+        lines.push("");
+      }
+      lines.push("---", "");
+    }
+    return lines.join(`
+`);
+  }
+  function toPlainText(title, messages) {
+    const lines = [title, "=".repeat(title.length), ""];
+    for (const m of messages) {
+      const ts = formatTs(m.createTime);
+      lines.push(`[${sender(m.sender)}]${ts ? ` ${ts}` : ""}${m.model ? ` (${m.model})` : ""}`, "");
+      if (m.thinkingTrace)
+        lines.push("[Thinking]", m.thinkingTrace, "");
+      const txtText = m.query || m.message;
+      if (txtText)
+        lines.push(txtText, "");
+      if (m.generatedImageUrls?.length) {
+        for (const url of m.generatedImageUrls)
+          lines.push(`  ${url}`);
+        lines.push("");
+      }
+      if (m.webSearchResults?.length) {
+        for (const r of m.webSearchResults) {
+          const { title: t, url } = r;
+          if (url)
+            lines.push(`  ${t ?? ""} - ${url}`);
+        }
+        lines.push("");
+      }
+      lines.push("-".repeat(40), "");
+    }
+    return lines.join(`
+`);
+  }
+  var HTML_HEAD = [
+    '<!DOCTYPE html><html><head><meta charset="utf-8">',
+    "<style>",
+    "body{font-family:system-ui,sans-serif;max-width:50rem;margin:2rem auto;padding:0 1rem;background:#0d0d0d;color:#e0e0e0}",
+    ".m{margin:1.5rem 0;padding:1rem;border-radius:.5rem;border:1px solid #222}",
+    ".h{background:#1a1a2e}.g{background:#111}",
+    ".s{font-weight:600;margin-bottom:.5rem;color:#aaa}.t{font-size:.8rem;color:#666}",
+    ".th{margin:.5rem 0;padding:.5rem;background:#1a1a1a;border-left:3px solid #444;font-size:.9rem;color:#999}",
+    "a{color:#6ea8fe}",
+    "</style></head><body>"
+  ].join(`
+`);
+  function toHtml(title, messages) {
+    const p = [HTML_HEAD, `<h1>${escapeHtml(title)}</h1>`];
+    for (const m of messages) {
+      const cls = m.sender.toLowerCase() === "human" ? "h" : "g";
+      const ts = formatTs(m.createTime);
+      p.push(`<div class="m ${cls}"><div class="s">${sender(m.sender)} <span class="t">${ts ? escapeHtml(ts) : ""}${m.model ? ` · ${escapeHtml(m.model)}` : ""}</span></div>`);
+      if (m.thinkingTrace)
+        p.push(`<details><summary>Thinking</summary><div class="th">${escapeHtml(m.thinkingTrace)}</div></details>`);
+      const text = m.query || m.message;
+      if (text)
+        p.push(`<div>${escapeHtml(text).replaceAll(`
+`, "<br>")}</div>`);
+      if (m.generatedImageUrls?.length) {
+        for (const url of m.generatedImageUrls) {
+          const safe = safeUrl(url);
+          if (safe)
+            p.push(`<img src="${escapeHtml(safe, true)}" style="max-width:100%;margin:.5rem 0">`);
+        }
+      }
+      if (m.webSearchResults?.length) {
+        p.push("<ul>");
+        for (const r of m.webSearchResults) {
+          const { title: t, url } = r;
+          if (!url)
+            continue;
+          const safe = safeUrl(url);
+          if (safe)
+            p.push(`<li><a href="${escapeHtml(safe, true)}" rel="noopener noreferrer">${escapeHtml(t ?? safe)}</a></li>`);
+          else
+            p.push(`<li>${escapeHtml(t ?? url)}</li>`);
+        }
+        p.push("</ul>");
+      }
+      p.push("</div>");
+    }
+    p.push("</body></html>");
+    return p.join(`
+`);
+  }
+  var FORMATS = [
+    { fmt: "json", label: "JSON" },
+    { fmt: "md", label: "Markdown" },
+    { fmt: "txt", label: "Plain Text" },
+    { fmt: "html", label: "HTML" }
+  ];
+  async function exportChat(conversationId, format) {
+    const { responses } = await ApiClients.chatApi.chatListResponses({ conversationId }) ?? {};
+    if (!responses?.length)
+      return;
+    const conversation = ConversationStore.useConversationStore.getState().byId[conversationId];
+    const title = conversation?.title ?? "Untitled Chat";
+    const messages = responses.map(buildExportMessage);
+    const filename = sanitizeFilename(title, "chat");
+    let content;
+    let mime;
+    switch (format) {
+      case "json":
+        content = JSON.stringify({ conversationId, title, exportedAt: new Date().toISOString(), messages }, null, 2);
+        mime = "application/json";
+        break;
+      case "md":
+        content = toMarkdown(title, messages);
+        mime = "text/markdown";
+        break;
+      case "txt":
+        content = toPlainText(title, messages);
+        mime = "text/plain";
+        break;
+      case "html":
+        content = toHtml(title, messages);
+        mime = "text/html";
+        break;
+    }
+    await FileUtils.downloadBlob(new Blob([content], { type: mime }), `${filename}.${format}`);
+  }
+  function ExportMenu({ conversationId }) {
+    const streaming = useIsStreaming(conversationId);
+    return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, {
+      disabled: streaming
+    }, /* @__PURE__ */ React.createElement(DownloadIcon, {
+      size: 16,
+      className: "void-export-icon"
+    }), "Export"), /* @__PURE__ */ React.createElement(MenuSubContent, null, FORMATS.map(({ fmt, label }) => /* @__PURE__ */ React.createElement(MenuItem, {
+      key: fmt,
+      onSelect: () => exportChat(conversationId, fmt).catch((e) => logger25.error("Failed to export chat", e))
+    }, label))));
+  }
+  var exportChat_default = definePlugin({
+    name: "ExportChat",
+    icon: FileDownIcon,
+    description: "Export conversations in multiple formats from the right-click menu.",
+    authors: [Devs.Prism],
+    tags: ["chat"],
+    contextMenuItems: {
+      conversation: {
+        label: "Export",
+        render: ErrorBoundary.wrap(ExportMenu)
+      }
+    }
+  });
+
+  // src/plugins/incognito/index.ts
+  var store2 = () => SettingsStore.useSettingsStore.getState();
+  var unsubscribe = null;
+  function enforce2() {
+    if (!store2().isIncognito)
+      store2().setIsIncognito(true);
+  }
+  var incognito_default = definePlugin({
+    name: "Incognito",
+    icon: GhostFilledIcon,
+    description: "Force private chat mode for new conversations.",
+    authors: [Devs.Prism],
+    tags: ["privacy"],
+    startAt: "TurbopackReady" /* TurbopackReady */,
+    start() {
+      enforce2();
+      unsubscribe = SettingsStore.useSettingsStore.subscribe(enforce2);
+    },
+    stop() {
+      unsubscribe?.();
+      unsubscribe = null;
+      store2().setIsIncognito(false);
+    }
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/inputHistory/styles.css
+  registerStyle("inputHistory", `.void-ih-hud {
+    contain: content;
+    position: fixed;
+    z-index: 2147483646;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid hsl(var(--border-l2));
+    border-radius: 0.5rem;
+    background: hsl(var(--surface-l2));
+    color: hsl(var(--fg-secondary));
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -100%);
+    transition: opacity 0.12s ease;
+}
+
+.void-ih-hud-on {
+    opacity: 1;
+}
+
+.void-ih-panel {
+    min-width: 0;
+}
+
+.void-ih-toolbar {
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.void-ih-search {
+    width: 100%;
+    min-width: 0;
+}
+
+.void-ih-meta {
+    min-width: 0;
+}
+
+.void-ih-count {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    color: hsl(var(--fg-secondary));
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.void-ih-empty {
+    margin: 0;
+    color: hsl(var(--fg-tertiary));
+}
+
+.void-ih-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    max-height: min(18rem, 40vh);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border-l2) / 80%) transparent;
+}
+
+.void-ih-item {
+    display: grid;
+    grid-template-columns: 3ch minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.375rem;
+    width: 100%;
+    padding: 0.28rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+}
+
+.void-ih-item:hover {
+    background: hsl(var(--surface-l2));
+    border-color: hsl(var(--border-l2) / 45%);
+}
+
+.void-ih-item-on {
+    align-items: start;
+    background: hsl(var(--surface-l2));
+    border-color: hsl(var(--border-l2) / 60%);
+}
+
+.void-ih-index {
+    min-width: 0;
+    color: hsl(var(--fg-tertiary));
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.45;
+    text-align: right;
+}
+
+.void-ih-item-on .void-ih-index {
+    padding-top: 0.1rem;
+}
+
+.void-ih-main {
+    min-width: 0;
+    cursor: pointer;
+}
+
+.void-ih-main:focus-visible {
+    outline: none;
+    border-radius: 0.25rem;
+    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
+}
+
+.void-ih-body {
+    display: block;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: hsl(var(--fg-primary));
+    font-size: 0.8125rem;
+    line-height: 1.45;
+}
+
+.void-ih-clamp {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+}
+
+.void-ih-item-on .void-ih-body {
+    max-height: 8rem;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.void-ih-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.125rem;
+}
+
+.void-ih-actions :is(button) {
+    width: 1.5rem;
+    height: 1.5rem;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .void-ih-hud {
+        transition: none;
+    }
+}
+`);
+
+  // src/plugins/inputHistory/index.tsx
+  var logger26 = new Logger("InputHistory");
+  var cl22 = classNameFactory("void-ih-");
+  var EDITOR_SEL2 = '.query-bar .tiptap.ProseMirror[contenteditable="true"]';
+  var ZWSP = /\u200B/g;
+  var MAX_MIN = 10;
+  var MAX_MAX = 500;
+  var MAX_DEFAULT = 100;
+  var HUD_GAP_PX = 8;
+  var APPLY_QUIET_MS = 120;
+  var CAPTURE_DEDUPE_MS = 2000;
+  var settings15 = definePluginSettings({
+    maxEntries: {
+      type: 5 /* SLIDER */,
+      description: "Maximum stored prompts.",
+      min: MAX_MIN,
+      max: MAX_MAX,
+      default: MAX_DEFAULT
+    },
+    history: {
+      type: 6 /* COMPONENT */,
+      component: HistoryPanel
+    }
+  }).withPrivateSettings();
+  var recentAt = new Map;
+  var cursor = 0;
+  var draft = "";
+  var recalling = false;
+  var applying = false;
+  var composing = false;
+  var applyGen = 0;
+  var keys = null;
+  var applyTimer;
+  var applyEl = null;
+  var applyAtStart = true;
+  function getEntries() {
+    const raw = settings15.plain.entries;
+    return Array.isArray(raw) ? raw.filter((x) => typeof x === "string") : [];
+  }
+  function cap(entries) {
+    const max = clamp(settings15.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
+    return entries.length > max ? entries.slice(entries.length - max) : entries;
+  }
+  function setEntries(entries) {
+    settings15.store.entries = entries;
+  }
+  function normalize(text) {
+    return text.replaceAll(ZWSP, "").replace(/\n$/, "").trim();
+  }
+  function imeEvent(e) {
+    if (composing)
+      return true;
+    if (e instanceof InputEvent && e.isComposing)
+      return true;
+    if (e instanceof KeyboardEvent && (e.isComposing || e.keyCode === 229))
+      return true;
+    return false;
+  }
+  function invalidateApply() {
+    applyGen++;
+    applying = false;
+    applyEl = null;
+    clearTimeout(applyTimer);
+    applyTimer = undefined;
+  }
+  function resetBrowse(length) {
+    invalidateApply();
+    cursor = length;
+    draft = "";
+    recalling = false;
+    hideHud();
+  }
+  function chatEditor(t) {
+    if (t instanceof Text)
+      return t.parentElement?.closest(EDITOR_SEL2) ?? null;
+    if (t instanceof Element)
+      return t.closest(EDITOR_SEL2) ?? null;
+    return null;
+  }
+  function editorText(el) {
+    const blocks = el.querySelectorAll(":scope > *");
+    const raw = blocks.length ? Array.from(blocks, (b) => b.textContent ?? "").join(`
+`) : el.innerText ?? el.textContent ?? "";
+    return normalize(raw);
+  }
+  function spanHeight(range) {
+    const rects = range.getClientRects();
+    let top = Infinity;
+    let bottom = -Infinity;
+    for (const r of rects) {
+      if (r.height === 0 && r.width === 0)
+        continue;
+      if (r.top < top)
+        top = r.top;
+      if (r.bottom > bottom)
+        bottom = r.bottom;
+    }
+    if (top === Infinity)
+      return range.getBoundingClientRect().height;
+    return bottom - top;
+  }
+  function caretOnEdge(el) {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount || !sel.isCollapsed)
+      return { first: false, last: false };
+    const caret = sel.getRangeAt(0);
+    if (!el.contains(caret.startContainer))
+      return { first: false, last: false };
+    if (!el.innerText?.trim())
+      return { first: true, last: true };
+    const before = document.createRange();
+    before.selectNodeContents(el);
+    before.setEnd(caret.startContainer, caret.startOffset);
+    const after = document.createRange();
+    after.selectNodeContents(el);
+    after.setStart(caret.startContainer, caret.startOffset);
+    const { lineHeight, fontSize } = getComputedStyle(el);
+    const lh = parseFloat(lineHeight);
+    const fs = parseFloat(fontSize) || 16;
+    const budget = (lh > 0 ? lh : fs * 1.5) * 1.5;
+    return {
+      first: spanHeight(before) <= budget,
+      last: spanHeight(after) <= budget
+    };
+  }
+  function matchesRecall(el) {
+    if (!recalling)
+      return false;
+    const list = getEntries();
+    const expected = cursor < list.length ? list[cursor] : draft;
+    return editorText(el) === expected || normalize(el.innerText ?? "") === expected;
+  }
+  function dropRecall(el) {
+    invalidateApply();
+    cursor = getEntries().length;
+    draft = editorText(el);
+    recalling = false;
+    hideHud();
+  }
+  function placeCaret(el, atStart) {
+    if (composing)
+      return;
+    try {
+      const view = el.pmViewDesc?.view;
+      if (view) {
+        if (view.composing)
+          return;
+        const Sel = view.state.selection.constructor;
+        const pmSel = atStart ? Sel.atStart(view.state.doc) : Sel.atEnd(view.state.doc);
+        view.dispatch(view.state.tr.setSelection(pmSel).scrollIntoView());
+        return;
+      }
+    } catch (err) {
+      logger26.debug("placeCaret pm failed:", err);
+    }
+    const native = window.getSelection();
+    if (!native)
+      return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(atStart);
+    native.removeAllRanges();
+    native.addRange(range);
+  }
+  function scheduleApplyEnd(gen) {
+    clearTimeout(applyTimer);
+    applyTimer = setTimeout(() => {
+      if (gen !== applyGen)
+        return;
+      applying = false;
+      const el = applyEl;
+      applyEl = null;
+      if (!el || composing)
+        return;
+      if (!recalling)
+        return;
+      if (!matchesRecall(el))
+        dropRecall(el);
+      else
+        placeCaret(el, applyAtStart);
+    }, APPLY_QUIET_MS);
+  }
+  function setEditorText(el, text, atStart) {
+    el.focus();
+    const sel = window.getSelection();
+    if (!sel)
+      return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    applying = true;
+    applyEl = el;
+    applyAtStart = atStart;
+    const gen = ++applyGen;
+    try {
+      if (!text)
+        document.execCommand("delete");
+      else
+        document.execCommand("insertText", false, text);
+    } catch (err) {
+      logger26.debug("insertText failed:", err);
+    }
+    placeCaret(el, atStart);
+    scheduleApplyEnd(gen);
+  }
+  function hudEl() {
+    let el = document.querySelector(`.${cl22("hud")}`);
+    if (el)
+      return el;
+    el = document.createElement("div");
+    el.className = cl22("hud");
+    el.setAttribute("aria-live", "polite");
+    document.body.appendChild(el);
+    return el;
+  }
+  function hideHud() {
+    document.querySelector(`.${cl22("hud")}`)?.classList.remove(cl22("hud-on"));
+  }
+  function showHud(label, editor) {
+    const bar = editor.closest(".query-bar");
+    if (!bar)
+      return;
+    const el = hudEl();
+    el.textContent = label;
+    requestAnimationFrame(() => {
+      const r = bar.getBoundingClientRect();
+      el.style.left = `${r.left + r.width / 2}px`;
+      el.style.top = `${r.top - HUD_GAP_PX}px`;
+      el.classList.add(cl22("hud-on"));
+    });
+  }
+  function pushEntry(text) {
+    const value = normalize(text);
+    if (!value)
+      return;
+    const now = Date.now();
+    const prev = recentAt.get(value);
+    if (prev != null && now - prev < CAPTURE_DEDUPE_MS)
+      return;
+    recentAt.set(value, now);
+    const list = getEntries();
+    if (list[list.length - 1] === value) {
+      resetBrowse(list.length);
+      return;
+    }
+    const next = cap([...list, value]);
+    setEntries(next);
+    resetBrowse(next.length);
+  }
+  function cycle(older, el) {
+    const list = getEntries();
+    if (!list.length && older)
+      return;
+    if (cursor >= list.length) {
+      draft = editorText(el);
+      cursor = list.length;
+    }
+    const next = older ? cursor - 1 : cursor + 1;
+    if (next < 0 || next > list.length)
+      return;
+    cursor = next;
+    recalling = true;
+    setEditorText(el, next === list.length ? draft : list[next], older);
+    if (next < list.length)
+      showHud(`${next + 1} / ${list.length}`, el);
+    else
+      hideHud();
+  }
+  function onKeyDown2(e) {
+    if (imeEvent(e))
+      return;
+    if (e.ctrlKey || e.metaKey)
+      return;
+    const el = chatEditor(e.target);
+    if (!el)
+      return;
+    if (applying && e.key !== "ArrowUp" && e.key !== "ArrowDown")
+      invalidateApply();
+    if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
+      dropRecall(el);
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+    if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
+      pushEntry(editorText(el));
+      return;
+    }
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown")
+      return;
+    if (e.shiftKey)
+      return;
+    const older = e.key === "ArrowUp";
+    const force = e.altKey;
+    const list = getEntries();
+    if (!force) {
+      const edge = caretOnEdge(el);
+      if (older && !edge.first || !older && !edge.last)
+        return;
+    }
+    if (older && (!list.length || cursor <= 0))
+      return;
+    if (!older && cursor >= list.length)
+      return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    cycle(older, el);
+  }
+  function onPointerDown(e) {
+    if (!recalling)
+      return;
+    const el = chatEditor(e.target);
+    if (!el)
+      return;
+    dropRecall(el);
+  }
+  function onCompositionStart(e) {
+    if (!chatEditor(e.target))
+      return;
+    composing = true;
+    invalidateApply();
+  }
+  function onCompositionEnd(e) {
+    const el = chatEditor(e.target);
+    if (!el)
+      return;
+    composing = false;
+    if (recalling && !matchesRecall(el))
+      dropRecall(el);
+  }
+  function onInput(e) {
+    const el = chatEditor(e.target);
+    if (!el)
+      return;
+    if (imeEvent(e)) {
+      if (applying)
+        invalidateApply();
+      return;
+    }
+    const recalled = matchesRecall(el);
+    if (applying && recalled)
+      return;
+    if (recalling && !recalled)
+      dropRecall(el);
+  }
+  function onSubmit(e) {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement))
+      return;
+    const editor = form.querySelector(EDITOR_SEL2);
+    if (editor instanceof HTMLElement)
+      pushEntry(editorText(editor));
+  }
+  function onClick(e) {
+    const t = e.target;
+    if (!(t instanceof Element))
+      return;
+    const ctrl = t.closest("button, [role='button']");
+    if (!ctrl)
+      return;
+    const bar = ctrl.closest(".query-bar");
+    if (!bar || ctrl.closest("[data-query-bar-mode-select]"))
+      return;
+    const label = (ctrl.getAttribute("aria-label") ?? "").toLowerCase();
+    const submit = ctrl instanceof HTMLButtonElement && ctrl.type === "submit";
+    if (!submit && !label.includes("send") && !label.includes("submit"))
+      return;
+    const editor = bar.querySelector(EDITOR_SEL2);
+    if (editor instanceof HTMLElement)
+      pushEntry(editorText(editor));
+  }
+  function removeEntry(index) {
+    const list = getEntries();
+    if (index < 0 || index >= list.length)
+      return;
+    const next = list.filter((_, i) => i !== index);
+    setEntries(next);
+    resetBrowse(next.length);
+  }
+  function HistoryPanel() {
+    const { entries } = settings15.use(["entries"]);
+    const list = entries ?? [];
+    const [query, setQuery] = useState("");
+    const [openId, setOpenId] = useState(null);
+    const [confirm, setConfirm] = useState(false);
+    const needle = query.trim().toLowerCase();
+    const visible = list.map((text, index) => ({ text, index })).filter((row) => !needle || row.text.toLowerCase().includes(needle)).toReversed();
+    return /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0.5rem",
+      className: cl22("panel")
+    }, /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0.35rem",
+      className: cl22("toolbar")
+    }, list.length > 0 && /* @__PURE__ */ React.createElement(Input, {
+      type: "text",
+      placeholder: "Search prompts",
+      value: query,
+      onChange: (e) => setQuery(e.target.value),
+      className: cl22("search")
+    }), /* @__PURE__ */ React.createElement(Flex, {
+      className: cl22("meta"),
+      alignItems: "center",
+      gap: "0.5rem"
+    }, /* @__PURE__ */ React.createElement(Paragraph, {
+      className: cl22("count")
+    }, needle ? pluralize(visible.length, "match", "matches") : pluralize(list.length, "stored prompt")), /* @__PURE__ */ React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      shape: "rectangle",
+      disabled: !list.length,
+      onClick: () => setConfirm(true)
+    }, "Clear history"))), list.length === 0 && /* @__PURE__ */ React.createElement(Paragraph, {
+      className: cl22("empty")
+    }, "No stored prompts."), list.length > 0 && visible.length === 0 && /* @__PURE__ */ React.createElement(Paragraph, {
+      className: cl22("empty")
+    }, "No matches."), visible.length > 0 && /* @__PURE__ */ React.createElement("div", {
+      className: cl22("list")
+    }, visible.map((row) => {
+      const expanded = openId === row.index;
+      return /* @__PURE__ */ React.createElement("div", {
+        key: row.index,
+        className: cl22("item", expanded && "item-on")
+      }, /* @__PURE__ */ React.createElement("span", {
+        className: cl22("index")
+      }, row.index + 1), /* @__PURE__ */ React.createElement("div", {
+        className: cl22("main"),
+        role: "button",
+        tabIndex: 0,
+        onClick: () => setOpenId(expanded ? null : row.index),
+        onKeyDown: (e) => {
+          if (e.key !== "Enter" && e.key !== " ")
+            return;
+          e.preventDefault();
+          setOpenId(expanded ? null : row.index);
+        }
+      }, /* @__PURE__ */ React.createElement("span", {
+        className: cl22("body", !expanded && "clamp")
+      }, row.text)), /* @__PURE__ */ React.createElement("div", {
+        className: cl22("actions")
+      }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
+        variant: "tertiary",
+        size: "sm",
+        shape: "square",
+        tooltipContent: "Copy",
+        "aria-label": "Copy",
+        onClick: () => {
+          copyToClipboard(row.text).catch((err) => logger26.error("copy failed:", err));
+        }
+      }, /* @__PURE__ */ React.createElement(CopyIcon, {
+        size: 16
+      })), /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
+        variant: "tertiary",
+        size: "sm",
+        shape: "square",
+        tooltipContent: "Delete",
+        "aria-label": "Delete",
+        onClick: () => {
+          if (openId === row.index)
+            setOpenId(null);
+          removeEntry(row.index);
+        }
+      }, /* @__PURE__ */ React.createElement(Trash2Icon, {
+        size: 16
+      }))));
+    })), /* @__PURE__ */ React.createElement(ConfirmDialog, {
+      open: confirm,
+      onOpenChange: setConfirm,
+      title: "Clear input history",
+      description: "Delete all stored prompts? This cannot be undone.",
+      confirmText: "Clear",
+      danger: true,
+      onConfirm: () => {
+        setEntries([]);
+        resetBrowse(0);
+        setOpenId(null);
+        setQuery("");
+      }
+    }));
+  }
+  var inputHistory_default = definePlugin({
+    name: "InputHistory",
+    icon: HistoryIcon,
+    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell.",
+    authors: [Devs.p],
+    tags: ["chat"],
+    enabledByDefault: true,
+    settings: settings15,
+    managedStyle: "inputHistory",
+    cleanupSelectors: [".void-ih-hud"],
+    start() {
+      if (keys)
+        return;
+      cursor = getEntries().length;
+      recalling = false;
+      composing = false;
+      invalidateApply();
+      keys = new AbortController;
+      const { signal } = keys;
+      document.addEventListener("keydown", onKeyDown2, { capture: true, signal });
+      document.addEventListener("input", onInput, { capture: true, signal });
+      document.addEventListener("compositionstart", onCompositionStart, { capture: true, signal });
+      document.addEventListener("compositionend", onCompositionEnd, { capture: true, signal });
+      document.addEventListener("submit", onSubmit, { capture: true, signal });
+      document.addEventListener("click", onClick, { capture: true, signal });
+      document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
+    },
+    stop() {
+      keys?.abort();
+      keys = null;
+      hideHud();
+      recentAt.clear();
+      composing = false;
+      recalling = false;
+      invalidateApply();
+    },
+    onSettingsChange() {
+      const current = getEntries();
+      const next = cap(current);
+      if (next.length !== current.length)
+        setEntries(next);
+      if (cursor > next.length)
+        cursor = next.length;
+    }
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/messageTimestamps/styles.css
+  registerStyle("messageTimestamps", `.void-timestamp {
+    margin-bottom: 0.125rem;
+}
+
+@media print {
+    .void-timestamp {
+        display: none;
+    }
+}
+`);
+
+  // src/plugins/messageTimestamps/time.ts
+  var FRESH_MS = 2 * 60 * 1000;
+  var BORROW_MS = 1000;
+  var MIN_MS = Date.UTC(2020, 0, 1);
+  var MAX_SKEW_MS = 24 * 60 * 60 * 1000;
+  var TIME_KEYS = ["thinkingStartTime", "createTime", "create_time", "createdAt", "created_at"];
+  function isFresh(ms, now = Date.now()) {
+    return Math.abs(now - ms) < FRESH_MS;
+  }
+  function inRange(ms, now = Date.now()) {
+    return Number.isFinite(ms) && ms >= MIN_MS && ms <= now + MAX_SKEW_MS;
+  }
+  function fromUnixish(n, now = Date.now()) {
+    if (!Number.isFinite(n) || n <= 0)
+      return null;
+    const ms = n < 1000000000000 ? n * 1000 : n;
+    return inRange(ms, now) ? Math.round(ms) : null;
+  }
+  function parseTime(value, now = Date.now()) {
+    if (value == null || value === "")
+      return null;
+    if (typeof value === "number")
+      return fromUnixish(value, now);
+    if (typeof value === "bigint")
+      return fromUnixish(Number(value), now);
+    if (value instanceof Date) {
+      const t = value.getTime();
+      return Number.isNaN(t) || !inRange(t, now) ? null : t;
+    }
+    if (typeof value === "string") {
+      const s = value.trim();
+      if (!s)
+        return null;
+      if (/^\d+(\.\d+)?$/.test(s))
+        return fromUnixish(Number(s), now);
+      const t = Date.parse(s);
+      return Number.isNaN(t) || !inRange(t, now) ? null : t;
+    }
+    if (typeof value !== "object")
+      return null;
+    const rec = value;
+    if (rec.seconds != null) {
+      const sec = typeof rec.seconds === "string" ? Number(rec.seconds) : Number(rec.seconds);
+      const nanos = Number(rec.nanos) || 0;
+      if (!Number.isFinite(sec))
+        return null;
+      const ms = sec * 1000 + Math.floor(nanos / 1e6);
+      return inRange(ms, now) ? Math.round(ms) : null;
+    }
+    if (rec.$date != null) {
+      const date = rec.$date;
+      if (date && typeof date === "object" && "$numberLong" in date) {
+        return parseTime(date.$numberLong, now);
+      }
+      return parseTime(date, now);
+    }
+    if (rec.$numberLong != null)
+      return parseTime(rec.$numberLong, now);
+    return parseTime(rec.createTime ?? rec.create_time ?? rec.createdAt ?? rec.created_at, now);
+  }
+  function uuidTime(id, now = Date.now()) {
+    if (typeof id !== "string")
+      return null;
+    const compact = id.trim().replaceAll("-", "").toLowerCase();
+    if (compact.length !== 32)
+      return null;
+    if (compact.charAt(12) !== "7")
+      return null;
+    const variant = parseInt(compact.charAt(16), 16);
+    if (!Number.isFinite(variant) || (variant & 12) !== 8)
+      return null;
+    const ms = parseInt(compact.slice(0, 12), 16);
+    return inRange(ms, now) ? ms : null;
+  }
+  function asRecord(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value) ? value : null;
+  }
+  function recordId(record) {
+    const { responseId, _id } = record;
+    if (typeof responseId === "string" && responseId)
+      return responseId;
+    return typeof _id === "string" ? _id : "";
+  }
+  function isHumanSender(sender) {
+    if (typeof sender !== "string")
+      return false;
+    const normalized = sender.toLowerCase();
+    return normalized === "human" || normalized === "user";
+  }
+  function isOptimisticState(state) {
+    if (typeof state !== "string")
+      return false;
+    const normalized = state.toLowerCase();
+    return normalized === "optimistic" || normalized === "streaming";
+  }
+  function pickTimes(record, now = Date.now()) {
+    const out = [];
+    const seen = new Set;
+    const add = (value) => {
+      const ms = parseTime(value, now);
+      if (ms == null || seen.has(ms))
+        return;
+      seen.add(ms);
+      out.push(ms);
+    };
+    for (const key of TIME_KEYS)
+      add(record[key]);
+    const meta = asRecord(record.metadata);
+    if (meta) {
+      for (const key of TIME_KEYS)
+        add(meta[key]);
+    }
+    return out;
+  }
+  function oldestTrusted(values, now = Date.now()) {
+    let best = null;
+    for (const ms of values) {
+      if (ms == null || isFresh(ms, now))
+        continue;
+      if (best == null || ms < best)
+        best = ms;
+    }
+    return best;
+  }
+  function chooseTime(opts) {
+    const now = opts.now ?? Date.now();
+    const trusted = oldestTrusted([opts.stored, ...opts.fieldTimes, opts.uuid], now);
+    if (trusted != null)
+      return trusted;
+    return opts.stored ?? opts.fieldTimes[0] ?? opts.uuid ?? null;
+  }
+  function trustedTime(opts) {
+    const now = opts.now ?? Date.now();
+    return oldestTrusted([opts.stored ?? null, ...opts.fieldTimes, opts.uuid], now);
+  }
+  function shouldKeepStored(prev, incoming, now = Date.now()) {
+    if (incoming === prev)
+      return true;
+    if (isFresh(incoming, now) && incoming >= prev)
+      return true;
+    if (!isFresh(prev, now) && incoming > prev)
+      return true;
+    return false;
+  }
+  function preferHumanTime(own, borrowed) {
+    if (borrowed == null)
+      return own;
+    if (own == null || own > borrowed)
+      return borrowed;
+    return own;
+  }
+  function textKey(value) {
+    if (typeof value !== "string")
+      return "";
+    const s = value.trim();
+    if (!s)
+      return "";
+    const slice = s.slice(0, 240);
+    let h = 5381;
+    for (let i = 0;i < slice.length; i++)
+      h = Math.imul(h, 33) ^ slice.charCodeAt(i);
+    return (h >>> 0).toString(36);
+  }
+  function stampOf(rec, now) {
+    const id = recordId(rec);
+    const ms = trustedTime({ fieldTimes: pickTimes(rec, now), uuid: uuidTime(id, now), now });
+    return ms == null ? null : ms - BORROW_MS;
+  }
+  function nextNonHuman(records, from) {
+    for (let i = from;i < records.length; i++) {
+      if (!isHumanSender(records[i].sender))
+        return records[i];
+    }
+    return null;
+  }
+  function childTime(id, records, now = Date.now()) {
+    if (!id)
+      return null;
+    for (const rec of records) {
+      if (rec.parentResponseId !== id || isHumanSender(rec.sender))
+        continue;
+      const ms = parseTime(rec.thinkingStartTime, now);
+      if (ms != null)
+        return ms - BORROW_MS;
+    }
+    return null;
+  }
+  function authoritativeTime(rec, records, now = Date.now()) {
+    if (isHumanSender(rec.sender))
+      return childTime(recordId(rec), records, now);
+    return parseTime(rec.thinkingStartTime, now);
+  }
+  function neighborTime(id, records, now = Date.now()) {
+    if (!id)
+      return null;
+    let next = null;
+    for (let i = 0;i < records.length; i++) {
+      const rec = records[i];
+      const recId = recordId(rec);
+      if (rec.parentResponseId === id && !isHumanSender(rec.sender)) {
+        const ms = stampOf(rec, now);
+        if (ms != null)
+          return ms;
+      }
+      if (recId === id && next == null)
+        next = nextNonHuman(records, i + 1);
+    }
+    if (!next)
+      return null;
+    return stampOf(next, now);
+  }
+  function childTimeFromNodes(id, nodes, byId, now = Date.now()) {
+    if (!id || !nodes.length)
+      return null;
+    let nextId = "";
+    for (let i = 0;i < nodes.length; i++) {
+      const node = nodes[i];
+      const recId = recordId(node);
+      if (node.parentResponseId === id && !isHumanSender(node.sender)) {
+        const rec = byId[recId] ?? node;
+        const ms = stampOf(rec, now);
+        if (ms != null)
+          return ms;
+      }
+      if (recId === id && !nextId)
+        nextId = recordId(nextNonHuman(nodes, i + 1) ?? {});
+    }
+    if (!nextId)
+      return null;
+    const rec = byId[nextId] ?? nodes.find((n) => recordId(n) === nextId);
+    return rec && !isHumanSender(rec.sender) ? stampOf(rec, now) : null;
+  }
+  function shouldPersistStamp(sender, ms, stored, now = Date.now(), state) {
+    if (stored != null)
+      return !shouldKeepStored(stored, ms, now);
+    if (isHumanSender(sender) && isFresh(ms, now))
+      return isOptimisticState(state);
+    return true;
+  }
+  function harvestResponses(value, now = Date.now()) {
+    const records = [];
+    collectRecords(value, 0, records, new Set);
+    const out = [];
+    const seen = new Set;
+    for (const rec of records) {
+      const id = recordId(rec);
+      if (!id || seen.has(id))
+        continue;
+      const authoritative = authoritativeTime(rec, records, now);
+      if (authoritative != null) {
+        seen.add(id);
+        out.push({ id, ms: authoritative, rec, authoritative: true });
+        continue;
+      }
+      const uuid = uuidTime(id, now);
+      const { sender, state } = rec;
+      const human = isHumanSender(sender);
+      const fieldTimes = human && !isOptimisticState(state) ? [] : pickTimes(rec, now);
+      let ms = chooseTime({ fieldTimes, stored: null, uuid, now });
+      if (human) {
+        if (isOptimisticState(state)) {
+          if (ms == null)
+            continue;
+        } else {
+          ms = preferHumanTime(ms, neighborTime(id, records, now));
+          if (ms != null && isFresh(ms, now))
+            ms = null;
+        }
+      }
+      if (ms == null)
+        continue;
+      seen.add(id);
+      out.push({ id, ms, rec, authoritative: false });
+    }
+    return out;
+  }
+  function collectRecords(value, depth, out, seen) {
+    if (value == null || depth > 8)
+      return;
+    if (typeof value !== "object")
+      return;
+    if (seen.has(value))
+      return;
+    seen.add(value);
+    if (Array.isArray(value)) {
+      for (const item of value)
+        collectRecords(item, depth + 1, out, seen);
+      return;
+    }
+    const rec = value;
+    if (recordId(rec))
+      out.push(rec);
+    for (const child of Object.values(rec))
+      collectRecords(child, depth + 1, out, seen);
+  }
+
+  // src/plugins/messageTimestamps/index.tsx
+  var logger27 = new Logger("MessageTimestamps");
+  var STAMP_MAX = 5000;
+  var RESPONSE_URL = /\/(?:load-responses|share_links|response-node)(?:\/|\?|$)/i;
+  var settings16 = definePluginSettings({
+    showDate: {
+      type: 3 /* BOOLEAN */,
+      description: "Show the full date for messages older than today.",
+      default: true
+    },
+    hideOwnMessages: {
+      type: 3 /* BOOLEAN */,
+      default: false,
+      description: "Hide timestamps on your own messages."
+    }
+  }).withPrivateSettings();
+  var tick = createExternalStore();
+  var cache = null;
+  var origFetch = null;
+  var origXhrOpen = null;
+  var origXhrSend = null;
+  var origList = null;
+  var hookedWindow = null;
+  var xhrMeta = new WeakMap;
+  function pageWindow2() {
+    return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
+  }
+  function stamps() {
+    if (cache)
+      return cache;
+    cache = new Map;
+    const raw = settings16.plain.stamps;
+    if (raw && typeof raw === "object") {
+      for (const [id, ms] of Object.entries(raw)) {
+        if (typeof ms === "number" && Number.isFinite(ms))
+          cache.set(id, ms);
+      }
+    }
+    return cache;
+  }
+  function persistNow() {
+    const next = {};
+    for (const [id, ms] of stamps())
+      next[id] = ms;
+    settings16.store.stamps = next;
+  }
+  var persist2 = debounce(persistNow, 400);
+  function remember(id, ms, sender, state, force = false) {
+    if (!id)
+      return false;
+    const map = stamps();
+    const prev = map.get(id) ?? null;
+    if (!force && !shouldPersistStamp(sender, ms, prev, Date.now(), state))
+      return false;
+    if (map.has(id))
+      map.delete(id);
+    map.set(id, ms);
+    while (map.size > STAMP_MAX) {
+      const oldest = map.keys().next().value;
+      if (oldest == null)
+        break;
+      map.delete(oldest);
+    }
+    persist2();
+    return prev !== ms;
+  }
+  function conversationIdOf(id, rec) {
+    if (typeof rec.conversationId === "string")
+      return rec.conversationId;
+    try {
+      const { byConversationId, nodesByConversationId } = ResponseStore.useResponseStore.getState();
+      for (const [cid, list] of Object.entries(byConversationId ?? {})) {
+        if (list?.some((r) => r.responseId === id))
+          return cid;
+      }
+      for (const [cid, nodes] of Object.entries(nodesByConversationId ?? {})) {
+        if (nodes?.some((n) => n.responseId === id))
+          return cid;
+      }
+    } catch (e) {
+      logger27.debug("conversation id lookup failed", e);
+    }
+    return "";
+  }
+  function userKeys(rec, id) {
+    const keys = [];
+    if (id)
+      keys.push(`u:${id}`);
+    const { parentResponseId } = rec;
+    if (typeof parentResponseId === "string" && parentResponseId)
+      keys.push(`u:p:${parentResponseId}`);
+    const text = typeof rec.message === "string" && rec.message ? rec.message : typeof rec.query === "string" ? rec.query : "";
+    const fp = textKey(text);
+    if (fp) {
+      const cid = conversationIdOf(id, rec);
+      keys.push(cid ? `u:t:${cid}:${fp}` : `u:t:${fp}`);
+    }
+    return keys;
+  }
+  function gatewayRecords(cid) {
+    const out = [];
+    try {
+      const { conversations } = MessageStore.useMessageStore.getState();
+      const slices = cid ? [conversations?.[cid]] : Object.values(conversations ?? {});
+      for (const slice of slices) {
+        for (const { status, content } of Object.values(slice?.nodes ?? {})) {
+          if (!content)
+            continue;
+          const { responseId, sender, parentResponseId, createTime, thinkingStartTime, state } = content;
+          out.push({
+            responseId,
+            sender,
+            parentResponseId,
+            thinkingStartTime,
+            createTime: status === "complete" ? undefined : createTime,
+            state: status === "ack-pending" ? "optimistic" : state
+          });
+        }
+      }
+    } catch (e) {
+      logger27.debug("message store unavailable", e);
+    }
+    return out;
+  }
+  function gatewaySettled(cid, id) {
+    if (!cid)
+      return false;
+    try {
+      return MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id]?.status === "complete";
+    } catch (e) {
+      logger27.debug("message store unavailable", e);
+      return false;
+    }
+  }
+  function extraKeys(rec, id) {
+    const keys = [];
+    if (id)
+      keys.push(`h:${id}`);
+    const { parentResponseId } = rec;
+    if (typeof parentResponseId === "string" && parentResponseId)
+      keys.push(`h:${parentResponseId}`);
+    try {
+      const { byConversationId } = ResponseStore.useResponseStore.getState();
+      for (const [cid, list] of Object.entries(byConversationId ?? {})) {
+        const index = list?.findIndex((r) => r.responseId === id) ?? -1;
+        if (index < 0)
+          continue;
+        keys.push(`h:${cid}:${index}`);
+        break;
+      }
+    } catch (e) {
+      logger27.debug("stable key lookup failed", e);
+    }
+    return keys;
+  }
+  function storedMs(id, rec, user) {
+    const map = stamps();
+    const keys = user ? userKeys(rec, id) : [id, ...extraKeys(rec, id)];
+    for (const key of keys) {
+      const ms = map.get(key);
+      if (ms != null)
+        return ms;
+    }
+    return null;
+  }
+  function rememberKeys(id, rec, ms, sender, user, force = false) {
+    const { state } = rec;
+    let changed = false;
+    if (user) {
+      for (const key of userKeys(rec, id)) {
+        if (remember(key, ms, "human", state, force))
+          changed = true;
+      }
+      return changed;
+    }
+    if (remember(id, ms, sender, state, force))
+      changed = true;
+    for (const key of extraKeys(rec, id)) {
+      if (remember(key, ms, sender, state, force))
+        changed = true;
+    }
+    return changed;
+  }
+  function storeRecords(id) {
+    try {
+      const { byId, byConversationId } = ResponseStore.useResponseStore.getState();
+      for (const list of Object.values(byConversationId ?? {})) {
+        if (list?.some((r) => r.responseId === id))
+          return list;
+      }
+      return Object.values(byId ?? {});
+    } catch (e) {
+      logger27.debug("response store unavailable", e);
+      return [];
+    }
+  }
+  function borrowedMs(id, cid) {
+    if (cid) {
+      const ms = neighborTime(id, gatewayRecords(cid));
+      if (ms != null)
+        return ms;
+    }
+    try {
+      const { byId, nodesByConversationId } = ResponseStore.useResponseStore.getState();
+      const lookup = byId;
+      for (const nodes of Object.values(nodesByConversationId ?? {})) {
+        const ms = childTimeFromNodes(id, nodes ?? [], lookup);
+        if (ms != null)
+          return ms;
+      }
+      const records = [
+        ...storeRecords(id),
+        ...Object.values(lookup).filter((r) => r != null)
+      ];
+      return neighborTime(id, records) ?? conversationCreateTime(id);
+    } catch (e) {
+      logger27.debug("node neighbor lookup failed", e);
+    }
+    return neighborTime(id, storeRecords(id)) ?? conversationCreateTime(id);
+  }
+  function conversationCreateTime(id) {
+    try {
+      const { byConversationId } = ResponseStore.useResponseStore.getState();
+      for (const [cid, list] of Object.entries(byConversationId ?? {})) {
+        const first = list?.find((r) => isHumanSender(r.sender));
+        if (first?.responseId !== id)
+          continue;
+        const conv = ConversationStore.useConversationStore.getState().byId?.[cid];
+        const ms = parseTime(conv?.createTime);
+        return ms != null && !isFresh(ms) ? ms : null;
+      }
+    } catch (e) {
+      logger27.debug("conversation time lookup failed", e);
+    }
+    return null;
+  }
+  function fullRecord(id, rec) {
+    if (!id)
+      return rec;
+    try {
+      const hit = asRecord(ResponseStore.useResponseStore.getState().byId?.[id]);
+      if (hit)
+        return { ...rec, ...hit };
+    } catch (e) {
+      logger27.debug("byId lookup failed", e);
+    }
+    return rec;
+  }
+  function resolveMs(response, isUser) {
+    const rec = asRecord(response);
+    if (!rec)
+      return null;
+    const id = recordId(rec);
+    const full = fullRecord(id, rec);
+    const human = isUser === true || isHumanSender(full.sender);
+    const sender = human ? "human" : full.sender;
+    const cid = id ? conversationIdOf(id, full) : "";
+    let authoritative = null;
+    if (id)
+      authoritative = human ? childTime(id, [...gatewayRecords(cid), ...storeRecords(id)]) : parseTime(full.thinkingStartTime);
+    if (authoritative != null) {
+      rememberKeys(id, full, authoritative, sender, human, true);
+      return authoritative;
+    }
+    const stored = id ? storedMs(id, full, human) : null;
+    const fieldTimes = human && !isOptimisticState(full.state) || gatewaySettled(cid, id) ? [] : pickTimes(full);
+    let ms = chooseTime({
+      fieldTimes,
+      stored,
+      uuid: uuidTime(id)
+    });
+    if (human && id)
+      ms = preferHumanTime(ms, borrowedMs(id, cid));
+    if (id && ms != null)
+      rememberKeys(id, full, ms, sender, human);
+    return ms;
+  }
+  function ingest(value) {
+    let changed = false;
+    for (const { id, ms, rec, authoritative } of harvestResponses(value)) {
+      const human = isHumanSender(rec.sender);
+      if (rememberKeys(id, rec, ms, rec.sender, human, authoritative))
+        changed = true;
+    }
+    if (changed)
+      tick.notify();
+  }
+  function requestUrl(input) {
+    if (typeof input === "string")
+      return input;
+    if (input instanceof URL)
+      return input.href;
+    try {
+      return input.url;
+    } catch {
+      return "";
+    }
+  }
+  function hookFetch() {
+    if (origFetch)
+      return;
+    const w = pageWindow2();
+    origFetch = w.fetch;
+    hookedWindow = w;
+    w.fetch = function voidMessageTimestampsFetch(input, init) {
+      const url = requestUrl(input);
+      const promise = origFetch.call(w, input, init);
+      if (!RESPONSE_URL.test(url))
+        return promise;
+      return promise.then((res) => {
+        try {
+          res.clone().json().then(ingest, () => {});
+        } catch (e) {
+          logger27.debug("fetch ingest failed", e);
+        }
+        return res;
+      });
+    };
+  }
+  function unhookFetch() {
+    if (!origFetch || !hookedWindow)
+      return;
+    hookedWindow.fetch = origFetch;
+    origFetch = null;
+    hookedWindow = null;
+  }
+  function ingestXhr(xhr) {
+    if (xhr.status < 200 || xhr.status >= 300)
+      return;
+    const { responseType } = xhr;
+    if (responseType === "json") {
+      ingest(xhr.response);
+      return;
+    }
+    if (responseType !== "" && responseType !== "text")
+      return;
+    const text = xhr.responseText;
+    if (!text)
+      return;
+    ingest(JSON.parse(text));
+  }
+  function hookXhr() {
+    if (origXhrOpen)
+      return;
+    const XHR = pageWindow2().XMLHttpRequest;
+    origXhrOpen = XHR.prototype.open;
+    origXhrSend = XHR.prototype.send;
+    XHR.prototype.open = function voidMessageTimestampsOpen(method, url, ...rest) {
+      try {
+        xhrMeta.set(this, requestUrl(url));
+      } catch (e) {
+        logger27.debug("xhr open failed", e);
+      }
+      return origXhrOpen.call(this, method, url, ...rest);
+    };
+    XHR.prototype.send = function voidMessageTimestampsSend(body) {
+      const url = xhrMeta.get(this) ?? "";
+      if (RESPONSE_URL.test(url)) {
+        this.addEventListener("load", () => {
+          try {
+            ingestXhr(this);
+          } catch (e) {
+            logger27.debug("xhr ingest failed", e);
+          }
+        }, { once: true });
+      }
+      return origXhrSend.call(this, body);
+    };
+  }
+  function unhookXhr() {
+    if (!origXhrOpen || !origXhrSend)
+      return;
+    const XHR = pageWindow2().XMLHttpRequest;
+    XHR.prototype.open = origXhrOpen;
+    XHR.prototype.send = origXhrSend;
+    origXhrOpen = null;
+    origXhrSend = null;
+  }
+  function hookListResponses() {
+    if (origList)
+      return;
+    try {
+      const { chatApi } = ApiClients;
+      origList = chatApi.chatListResponses;
+      chatApi.chatListResponses = function voidMessageTimestampsList(a) {
+        return origList.call(chatApi, a).then((data) => {
+          ingest(data);
+          return data;
+        });
+      };
+    } catch (e) {
+      origList = null;
+      logger27.debug("chatListResponses wrap skipped", e);
+    }
+  }
+  function unhookListResponses() {
+    if (!origList)
+      return;
+    try {
+      ApiClients.chatApi.chatListResponses = origList;
+    } catch (e) {
+      logger27.debug("chatListResponses unwrap skipped", e);
+    }
+    origList = null;
+  }
+  function formatTimestamp(ms, showDate) {
+    const date = new Date(ms);
+    const now = new Date;
+    const today = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+    const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    if (!showDate || today)
+      return time;
+    return date.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + time;
+  }
+  var messageTimestamps_default = definePlugin({
+    name: "MessageTimestamps",
+    icon: ClockIcon,
+    description: "Shows timestamps on chat messages.",
+    authors: [Devs.Prism, Devs.p],
+    tags: ["chat"],
+    settings: settings16,
+    start() {
+      try {
+        hookFetch();
+        hookXhr();
+        hookListResponses();
+      } catch (e) {
+        logger27.warn("Failed to hook network", e);
+      }
+    },
+    stop() {
+      unhookFetch();
+      unhookXhr();
+      unhookListResponses();
+      persistNow();
+    },
+    zustand: {
+      ResponseStore: {
+        selector: (s) => {
+          let n = 0;
+          for (const list of Object.values(s.nodesByConversationId ?? {}))
+            n += list?.length ?? 0;
+          return `${Object.keys(s.byId ?? {}).length}:${n}`;
+        },
+        handler() {
+          try {
+            const { byId, nodesByConversationId } = ResponseStore.useResponseStore.getState();
+            ingest({
+              responses: Object.values(byId ?? {}),
+              nodes: Object.values(nodesByConversationId ?? {}).flat()
+            });
+          } catch (e) {
+            logger27.debug("store ingest failed", e);
+          }
+        }
+      },
+      MessageStore: {
+        selector: (s) => {
+          let n = 0;
+          for (const slice of Object.values(s.conversations ?? {}))
+            n += Object.keys(slice?.nodes ?? {}).length;
+          return n;
+        },
+        handler() {
+          ingest({ responses: gatewayRecords("") });
+        }
+      }
+    },
+    _renderTimestamp: ErrorBoundary.wrap(({ response, isUser }) => {
+      useExternalStore(tick);
+      const human = isUser === true || isHumanSender(response.sender);
+      if (settings16.store.hideOwnMessages && human)
+        return null;
+      const ms = resolveMs(response, isUser);
+      if (ms == null)
+        return null;
+      return /* @__PURE__ */ React.createElement(Text2, {
+        as: "span",
+        size: "xs",
+        color: "muted",
+        className: "void-timestamp"
+      }, formatTimestamp(ms, settings16.store.showDate));
+    }),
+    patches: [
+      {
+        find: "response-family:handleEditSave",
+        all: true,
+        replacement: {
+          match: /\(0,\i\.jsx\)\(\i\.MessageBubble,\{isUser:(\i),isIncognito:\i,responseId:(\i)\.responseId/,
+          replace: "$self._renderTimestamp({response:$2,isUser:$1}),$&"
+        }
+      }
+    ]
+  });
+
+  // src/plugins/noDictation/index.ts
+  var STYLE_NAME4 = "noDictation";
+  var REFINEMENT_MARK = "void-no-dictation-refinement";
+  var BUTTON_CSS = `
+button[aria-label="Dictation"]:not([role="dialog"] *),
+button[aria-label^="Dictation ("]:not([role="dialog"] *),
+div:has(> button[aria-label="Dictation"]):not([role="dialog"] *),
+div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
+    display: none !important;
+}
+`;
+  var REFINEMENT_CSS = `.${REFINEMENT_MARK}{display:none!important}`;
+  var settings17 = definePluginSettings({
+    hideDictationRefinement: {
+      type: 3 /* BOOLEAN */,
+      description: 'Hide "Dictation Refinement" in the Grok Settings dialog (Behavior tab).',
+      default: true
+    }
+  });
+  function apply3() {
+    const rules = [BUTTON_CSS];
+    if (settings17.store.hideDictationRefinement)
+      rules.push(REFINEMENT_CSS);
+    registerStyle(STYLE_NAME4, rules.join(`
+`));
+  }
+  var noDictation_default = definePlugin({
+    name: "NoDictation",
+    icon: MicOffIcon,
+    description: "Hide the Dictation (voice input) button from the chat input bar, and optionally Dictation Refinement in Settings.",
+    authors: [Devs.p],
+    tags: ["chat", "ui"],
+    enabledByDefault: true,
+    settings: settings17,
+    patches: [
+      {
+        find: 'settings.behavior.dictation-refinement.description","How much Grok refines your speech-to-text transcriptions',
+        replacement: {
+          match: /DISABLE_VOICE_MODE&&\(0,(\i)\.jsxs\)\(\i\.Fragment,\{/,
+          replace: `DISABLE_VOICE_MODE&&(0,$1.jsxs)("div",{className:"${REFINEMENT_MARK}",style:{display:"contents"},`
+        }
+      }
+    ],
+    start: apply3,
+    onSettingsChange: apply3,
+    stop() {
+      unregisterStyle(STYLE_NAME4);
     }
   });
 
   // src/plugins/noGrokBot/index.ts
-  var STYLE_NAME3 = "noGrokBot";
+  var STYLE_NAME5 = "noGrokBot";
   var CSS2 = `
 #grok-bot-nav-button,
 div:has(> #grok-bot-nav-button) {
@@ -7777,10 +13963,2359 @@ div:has(> #grok-bot-nav-button) {
     tags: ["ui"],
     enabledByDefault: true,
     start() {
-      registerStyle(STYLE_NAME3, CSS2);
+      registerStyle(STYLE_NAME5, CSS2);
     },
     stop() {
-      unregisterStyle(STYLE_NAME3);
+      unregisterStyle(STYLE_NAME5);
+    }
+  });
+
+  // src/plugins/noShareLink/index.ts
+  var STYLE_NAME6 = "noShareLink";
+  var settings18 = definePluginSettings({
+    hideShareProject: {
+      type: 3 /* BOOLEAN */,
+      description: "Inside a project: hide the top-right Share Project button.",
+      default: true
+    },
+    hideCreateShareLink: {
+      type: 3 /* BOOLEAN */,
+      description: "Not in a project: hide the top-right Create share link button on chats.",
+      default: true
+    }
+  });
+  function apply4() {
+    const rules = [];
+    if (settings18.store.hideShareProject) {
+      rules.push('button[aria-label="Share Project"]{display:none!important}');
+    }
+    if (settings18.store.hideCreateShareLink) {
+      rules.push('button[aria-label="Create share link"]{display:none!important}');
+    }
+    registerStyle(STYLE_NAME6, rules.join(`
+`));
+  }
+  var noShareLink_default = definePlugin({
+    name: "NoShareLink",
+    icon: Link2OffIcon,
+    description: "Hide share buttons: Share Project (in a project) and Create share link (top-right of chats).",
+    authors: [Devs.p],
+    tags: ["ui", "privacy"],
+    enabledByDefault: true,
+    settings: settings18,
+    start: apply4,
+    onSettingsChange: apply4,
+    stop() {
+      unregisterStyle(STYLE_NAME6);
+    }
+  });
+
+  // src/plugins/noSidebarIdentity/index.ts
+  var STYLE_NAME7 = "noSidebarIdentity";
+  var FOOTER = '[data-sidebar="footer"]';
+  var STACK = `${FOOTER} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
+  var TEXT_WRAP = `${FOOTER} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
+  var MENU_EMAIL = '[role="menu"] [class*="max-w-[400px]"].truncate';
+  var settings19 = definePluginSettings({
+    hideUsername: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide the username next to the sidebar avatar.",
+      default: true
+    },
+    hideEmail: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide the email next to the sidebar avatar and at the top of the account menu.",
+      default: true
+    }
+  });
+  function apply5() {
+    const rules = [];
+    if (settings19.store.hideUsername) {
+      rules.push(`${STACK}>:first-child{display:none!important}`);
+      rules.push(`${FOOTER} .void-sidebar-name{display:none!important}`);
+    }
+    if (settings19.store.hideEmail) {
+      rules.push(`${STACK}>:nth-child(2){display:none!important}`);
+      rules.push(`${MENU_EMAIL}{display:none!important}`);
+    }
+    if (settings19.store.hideUsername && settings19.store.hideEmail) {
+      rules.push(`${TEXT_WRAP}{display:none!important}`);
+      rules.push(`${FOOTER} .void-sidebar-info{display:none!important}`);
+    }
+    registerStyle(STYLE_NAME7, rules.join(`
+`));
+  }
+  var noSidebarIdentity_default = definePlugin({
+    name: "NoSidebarIdentity",
+    icon: UserRoundXIcon,
+    description: "Hide username and/or email in the Grok sidebar and account menu. Avatar stays clickable.",
+    authors: [Devs.p],
+    tags: ["ui", "privacy"],
+    enabledByDefault: true,
+    settings: settings19,
+    patches: [
+      {
+        find: '"max-w-[400px] truncate"',
+        all: true,
+        replacement: {
+          match: /WD_REFRESH&&(\i)\.user\.email&&/,
+          replace: "WD_REFRESH&&!$self.settings.store.hideEmail&&$1.user.email&&"
+        }
+      }
+    ],
+    start: apply5,
+    onSettingsChange: apply5,
+    stop() {
+      unregisterStyle(STYLE_NAME7);
+    }
+  });
+
+  // src/plugins/noSidebarPlugins/index.tsx
+  var PluginsDialogStore = findByPropsLazy("usePluginsDialogStore");
+  function PluginsIcon(props = {}) {
+    const Comp = findExportedComponent("ConnectorsIcon") ?? GrokConnectorsIcon;
+    return /* @__PURE__ */ React.createElement(Comp, {
+      ...props
+    });
+  }
+  function openPlugins() {
+    PluginsDialogStore.usePluginsDialogStore.getState().setOpen(true);
+  }
+  function PluginsItem() {
+    return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+      onSelect: openPlugins
+    }, /* @__PURE__ */ React.createElement(PluginsIcon, {
+      className: "void-settings-menu-icon"
+    }), "Plugins");
+  }
+  var WrappedPluginsItem = ErrorBoundary.wrap(PluginsItem);
+  var noSidebarPlugins_default = definePlugin({
+    name: "NoSidebarPlugins",
+    icon: PluginsIcon,
+    description: "Move the sidebar Plugins button into the avatar menu.",
+    authors: [Devs.p],
+    tags: ["ui"],
+    enabledByDefault: true,
+    _renderItem: () => createElement(WrappedPluginsItem),
+    patches: [
+      {
+        find: "usePluginsDialogStore.getState().setOpen(!0)",
+        replacement: {
+          match: /(\(0,\i\.jsx\)\(\i\.AppSidebarItem,\{icon:.{0,80}?onClick:\(\)=>\{"skills-and-connectors")/,
+          replace: "false&&$1"
+        }
+      },
+      {
+        find: 'ENABLE_GROK_WEB_PLUGIN_MARKETPLACE)&&{id:"skills-and-connectors"',
+        replacement: {
+          match: /ENABLE_GROK_WEB_PLUGIN_MARKETPLACE\)&&\{id:"skills-and-connectors"/,
+          replace: 'ENABLE_GROK_WEB_PLUGIN_MARKETPLACE)&&!1&&{id:"skills-and-connectors"'
+        }
+      },
+      {
+        find: '"user-dropdown.help"',
+        replacement: {
+          match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,100}"user-dropdown\.help")/,
+          replace: "$self._renderItem(),"
+        }
+      }
+    ]
+  });
+
+  // src/plugins/oneko/index.ts
+  var ONEKO_GIF = "https://raw.githubusercontent.com/adryd325/oneko.js/14bab15a755d0e35cd4ae19c931d96d306f99f42/oneko.gif";
+  var ONEKO_SCRIPT = '(function oneko(){const nekoEl=document.createElement("div");let nekoPosX=32,nekoPosY=32,mousePosX=0,mousePosY=0,frameCount=0,idleTime=0,idleAnimation=null,idleAnimationFrame=0;const nekoSpeed=10;const spriteSets={idle:[[-3,-3]],alert:[[-7,-3]],scratchSelf:[[-5,0],[-6,0],[-7,0]],scratchWallN:[[0,0],[0,-1]],scratchWallS:[[-7,-1],[-6,-2]],scratchWallE:[[-2,-2],[-2,-3]],scratchWallW:[[-4,0],[-4,-1]],tired:[[-3,-2]],sleeping:[[-2,0],[-2,-1]],N:[[-1,-2],[-1,-3]],NE:[[0,-2],[0,-3]],E:[[-3,0],[-3,-1]],SE:[[-5,-1],[-5,-2]],S:[[-6,-3],[-7,-2]],SW:[[-5,-3],[-6,-1]],W:[[-4,-2],[-4,-3]],NW:[[-1,0],[-1,-1]]};function init(){nekoEl.id="oneko";nekoEl.ariaHidden=true;nekoEl.style.width="32px";nekoEl.style.height="32px";nekoEl.style.position="fixed";nekoEl.style.pointerEvents="none";nekoEl.style.imageRendering="pixelated";nekoEl.style.left=nekoPosX-16+"px";nekoEl.style.top=nekoPosY-16+"px";nekoEl.style.zIndex=2147483647;nekoEl.style.backgroundImage="url(ONEKO_GIF_URL)";document.body.appendChild(nekoEl);document.addEventListener("mousemove",function(e){mousePosX=e.clientX;mousePosY=e.clientY});window.requestAnimationFrame(onAnimationFrame)}let lastFrameTimestamp;function onAnimationFrame(timestamp){if(!nekoEl.isConnected)return;if(!lastFrameTimestamp)lastFrameTimestamp=timestamp;if(timestamp-lastFrameTimestamp>100){lastFrameTimestamp=timestamp;frame()}window.requestAnimationFrame(onAnimationFrame)}function setSprite(name,frame){const sprite=spriteSets[name][frame%spriteSets[name].length];nekoEl.style.backgroundPosition=sprite[0]*32+"px "+sprite[1]*32+"px"}function resetIdleAnimation(){idleAnimation=null;idleAnimationFrame=0}function idle(){idleTime+=1;if(idleTime>10&&Math.floor(Math.random()*200)==0&&idleAnimation==null){let a=["sleeping","scratchSelf"];if(nekoPosX<32)a.push("scratchWallW");if(nekoPosY<32)a.push("scratchWallN");if(nekoPosX>window.innerWidth-32)a.push("scratchWallE");if(nekoPosY>window.innerHeight-32)a.push("scratchWallS");idleAnimation=a[Math.floor(Math.random()*a.length)]}switch(idleAnimation){case"sleeping":if(idleAnimationFrame<8){setSprite("tired",0);break}setSprite("sleeping",Math.floor(idleAnimationFrame/4));if(idleAnimationFrame>192)resetIdleAnimation();break;case"scratchWallN":case"scratchWallS":case"scratchWallE":case"scratchWallW":case"scratchSelf":setSprite(idleAnimation,idleAnimationFrame);if(idleAnimationFrame>9)resetIdleAnimation();break;default:setSprite("idle",0);return}idleAnimationFrame+=1}function frame(){frameCount+=1;const diffX=nekoPosX-mousePosX;const diffY=nekoPosY-mousePosY;const distance=Math.sqrt(diffX**2+diffY**2);if(distance<nekoSpeed||distance<48){idle();return}idleAnimation=null;idleAnimationFrame=0;if(idleTime>1){setSprite("alert",0);idleTime=Math.min(idleTime,7);idleTime-=1;return}let direction;direction=diffY/distance>0.5?"N":"";direction+=diffY/distance<-0.5?"S":"";direction+=diffX/distance>0.5?"W":"";direction+=diffX/distance<-0.5?"E":"";setSprite(direction,frameCount);nekoPosX-=(diffX/distance)*nekoSpeed;nekoPosY-=(diffY/distance)*nekoSpeed;nekoPosX=Math.min(Math.max(16,nekoPosX),window.innerWidth-16);nekoPosY=Math.min(Math.max(16,nekoPosY),window.innerHeight-16);nekoEl.style.left=nekoPosX-16+"px";nekoEl.style.top=nekoPosY-16+"px"}init()})();';
+  var oneko_default = definePlugin({
+    name: "Oneko",
+    icon: CatIcon,
+    description: "Cat follows your mouse cursor.",
+    authors: [Devs.adryd],
+    tags: ["ui"],
+    cleanupSelectors: ["#oneko"],
+    start() {
+      const s = ONEKO_SCRIPT.replace("ONEKO_GIF_URL", ONEKO_GIF);
+      const el = document.createElement("script");
+      el.src = URL.createObjectURL(new Blob([s], { type: "text/javascript" }));
+      document.head.appendChild(el);
+      el.addEventListener("load", () => {
+        el.remove();
+        URL.revokeObjectURL(el.src);
+      }, { once: true });
+    }
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/placeholder/styles.css
+  registerStyle("placeholder", `.void-ph-root {
+    contain: layout;
+}
+
+.void-ph-textarea-wrap {
+    border: 1px solid hsl(var(--border-l2));
+    border-radius: 0.75rem;
+}
+
+.void-ph-textarea-wrap:focus-within {
+    border-color: hsl(var(--fg-primary));
+    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
+}
+
+.void-ph-textarea {
+    width: 100%;
+    min-height: 7.5rem;
+    padding: 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: 0.75rem;
+    color: hsl(var(--fg-primary));
+    font-size: 0.875rem;
+    resize: vertical;
+}
+
+.void-ph-textarea:focus,
+.void-ph-textarea:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+`);
+
+  // src/plugins/placeholder/index.tsx
+  var cl23 = classNameFactory("void-ph-");
+  var DEFAULT_PHRASES = [
+    "What do you want to know?",
+    "How can I help you today?",
+    "What's on your mind?"
+  ].join(`
+`);
+  function parsePhrases(raw) {
+    return String(raw ?? "").split(`
+`).map((s) => s.trim()).filter(Boolean);
+  }
+  var settings20 = definePluginSettings({
+    phrases: {
+      type: 6 /* COMPONENT */,
+      default: DEFAULT_PHRASES,
+      component: PhrasesEditor
+    }
+  }).withPrivateSettings();
+  function PhrasesEditor() {
+    const { phrases } = settings20.use(["phrases"]);
+    return /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0.5rem",
+      className: cl23("root")
+    }, /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0"
+    }, /* @__PURE__ */ React.createElement(Text2, {
+      size: "sm",
+      weight: "medium"
+    }, "Phrases"), /* @__PURE__ */ React.createElement(Paragraph, null, "One placeholder per line. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
+      className: cl23("textarea-wrap")
+    }, /* @__PURE__ */ React.createElement(Textarea, {
+      className: cl23("textarea"),
+      value: phrases ?? DEFAULT_PHRASES,
+      onChange: (e) => {
+        settings20.store.phrases = e.target.value;
+      },
+      placeholder: DEFAULT_PHRASES
+    })));
+  }
+  var placeholder_default = definePlugin({
+    name: "Placeholder",
+    icon: TextCursorInputIcon,
+    description: "Replace the rotating chat and Grok Bot input placeholder.",
+    authors: [Devs.p],
+    tags: ["chat"],
+    settings: settings20,
+    _phrases() {
+      const lines = parsePhrases(settings20.store.phrases ?? DEFAULT_PHRASES);
+      return lines.length ? lines : null;
+    },
+    _inputPlaceholder(value) {
+      if (typeof value !== "string")
+        return value;
+      return this._phrases()?.[0] ?? value;
+    },
+    patches: [
+      {
+        find: `query-bar-placeholder.whats-on-your-mind","What's on your mind?"`,
+        replacement: {
+          match: /("query-bar-placeholder\.whats-on-your-mind","What's on your mind\?"\)\],\[\i,\i,\i,\i\]\),)(\i)=(\i\(\)),(\i)=(\i)\.map\(\2\)/,
+          replace: "$1$2=$3,$4=($self._phrases()??$5).map($2)"
+        }
+      },
+      {
+        find: "data-query-bar-mode-select",
+        all: true,
+        replacement: {
+          match: /("query-bar\.voice-connecting-placeholder","Connecting…"\):)(\i)(?=,isLoading)/,
+          replace: "$1$self._inputPlaceholder($2)"
+        }
+      }
+    ]
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/recentTopics/styles.css
+  registerStyle("recentTopics", `.void-rt-root,
+.void-rt-root:popover-open {
+    isolation: isolate;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483647 !important;
+    display: block !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: none !important;
+    background: transparent !important;
+    color: inherit;
+    pointer-events: auto !important;
+}
+
+.void-rt-root::backdrop {
+    background: transparent;
+}
+
+html.void-rt-open [data-sidebar="sidebar"],
+html.void-rt-open [data-sidebar="gap"] {
+    z-index: 0 !important;
+}
+
+.void-rt-panel,
+.void-rt-card,
+.void-rt-meta,
+.void-rt-name,
+.void-rt-host,
+.void-rt-empty {
+    font-family: inherit;
+    letter-spacing: inherit;
+}
+
+.void-rt-panel,
+.void-rt-panel * {
+    box-sizing: border-box;
+}
+
+.void-rt-panel {
+    --void-rt-accent: hsl(var(--fg-primary));
+    --void-rt-card-width: clamp(136px, calc((100vw - 68px) / 5), 204px);
+    --void-rt-gap: 8px;
+    --void-rt-padding-panel: 12px;
+    --void-rt-padding-card: 8px;
+    --void-rt-border-card: 1px;
+    --void-rt-radius-panel: 16px;
+    --void-rt-radius-card: calc(var(--void-rt-radius-panel) - var(--void-rt-padding-panel));
+    --void-rt-radius-thumb: calc(var(--void-rt-radius-card) - var(--void-rt-padding-card) - var(--void-rt-border-card));
+    --void-rt-radius-icon: 8px;
+    --void-rt-radius-title-icon: 8px;
+    --void-rt-meta-inline-padding: 4px;
+    --void-rt-motion-card: 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    --void-rt-motion-cover: 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    --void-rt-thumb-stroke-inset: -0.5px;
+    --void-rt-thumb-stroke-radius-offset: 0.5px;
+    --void-rt-thumb-stroke-color: hsl(var(--border-l2));
+    --void-rt-title-icon-size: 16px;
+    --void-rt-title-icon-gap: 4px;
+
+    all: unset;
+    color-scheme: inherit;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate3d(-50%, -50%, 0);
+    transform-origin: center center;
+    z-index: 1;
+    display: block;
+    width: fit-content;
+    max-width: calc(100vw - 24px);
+    overflow: auto hidden;
+    scrollbar-width: none;
+    color: hsl(var(--fg-primary));
+    background: hsl(var(--surface-l2));
+    border: 1px solid hsl(var(--border-l1));
+    border-radius: var(--void-rt-radius-panel);
+    box-shadow: 0 4px 16px hsl(var(--black) / 12%);
+    padding: var(--void-rt-padding-panel);
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 90ms ease;
+    will-change: opacity;
+}
+
+.void-rt-panel::-webkit-scrollbar {
+    display: none;
+}
+
+.void-rt-panel[data-visible="true"] {
+    opacity: 1;
+}
+
+.void-rt-list {
+    display: grid;
+    grid-template-columns: repeat(var(--void-rt-count, 5), var(--void-rt-card-width));
+    gap: var(--void-rt-gap);
+    width: max-content;
+    max-width: 100%;
+    padding: 2px;
+}
+
+.void-rt-card {
+    all: unset;
+    box-sizing: border-box;
+    width: var(--void-rt-card-width);
+    min-width: var(--void-rt-card-width);
+    max-width: var(--void-rt-card-width);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-radius: var(--void-rt-radius-card);
+    border: var(--void-rt-border-card) solid transparent;
+    outline: 0;
+    background: transparent;
+    padding: var(--void-rt-padding-card);
+    color: hsl(var(--fg-primary));
+    cursor: pointer;
+    box-shadow: none;
+    transition:
+        border-color 140ms ease,
+        box-shadow var(--void-rt-motion-card);
+}
+
+.void-rt-card[data-active="true"] {
+    z-index: 1;
+    border-color: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 82%, hsl(var(--border-l2)));
+    background: transparent;
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 55%, transparent);
+}
+
+.void-rt-card:focus-visible {
+    border-color: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 88%, hsl(var(--border-l2)));
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 60%, transparent);
+}
+
+.void-rt-thumb {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--void-rt-radius-thumb);
+    background: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 14%, hsl(var(--surface-l1)));
+}
+
+.void-rt-thumb::after {
+    content: "";
+    position: absolute;
+    inset: var(--void-rt-thumb-stroke-inset);
+    z-index: 2;
+    border-radius: calc(var(--void-rt-radius-thumb) + var(--void-rt-thumb-stroke-radius-offset));
+    box-sizing: border-box;
+    border: 1px solid var(--void-rt-thumb-stroke-color);
+    box-shadow: none;
+    pointer-events: none;
+}
+
+.void-rt-shot {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+}
+
+.void-rt-shot,
+.void-rt-shot * {
+    pointer-events: none !important;
+    scrollbar-width: none;
+}
+
+.void-rt-thumb:has(.void-rt-shot) .void-rt-fallback {
+    display: none;
+}
+
+.void-rt-cover {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: top center;
+}
+
+.void-rt-mark {
+    display: none !important;
+}
+
+.void-rt-page {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 8px;
+    overflow: hidden;
+    padding: 8px 12px 12px;
+    background: hsl(var(--surface-l1));
+    color: hsl(var(--fg-primary));
+    font-family: inherit;
+}
+
+.void-rt-page-line {
+    display: -webkit-box;
+    align-self: flex-start;
+    width: fit-content;
+    max-width: 94%;
+    overflow: hidden;
+    color: hsl(var(--fg-secondary));
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    /* stylelint-disable-next-line property-no-vendor-prefix */
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+}
+
+.void-rt-page-line-user,
+.void-rt-page-line[data-role="user"] {
+    align-self: flex-end;
+    width: fit-content;
+    max-width: 78%;
+    padding: 6px 8px;
+    border-radius: 12px 12px 4px 12px;
+    background: hsl(var(--surface-l2));
+    color: hsl(var(--fg-primary));
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+.void-rt-page-line[data-role="assistant"] {
+    align-self: flex-start;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    color: hsl(var(--fg-secondary));
+}
+
+.void-rt-fallback {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.void-rt-favicon {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--void-rt-radius-icon);
+    object-fit: cover;
+    display: block;
+}
+
+.void-rt-favicon[data-broken="true"],
+.void-rt-title-favicon[data-broken="true"] {
+    visibility: hidden;
+}
+
+.void-rt-meta {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+    padding: 0 var(--void-rt-meta-inline-padding);
+}
+
+.void-rt-name-row {
+    min-width: 0;
+}
+
+.void-rt-title-favicon {
+    display: none;
+}
+
+.void-rt-name {
+    min-width: 0;
+    display: block;
+    overflow: hidden;
+    color: hsl(var(--fg-primary));
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.16;
+    letter-spacing: inherit;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.void-rt-host {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    color: hsl(var(--fg-secondary));
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.18;
+}
+
+.void-rt-folder {
+    width: 12px;
+    height: 12px;
+    flex: 0 0 12px;
+    display: block;
+}
+
+.void-rt-host-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.void-rt-empty {
+    min-width: min(22rem, calc(100vw - 3rem));
+    padding: 16px 20px;
+    color: hsl(var(--fg-primary));
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.void-rt-panel[data-theme="dark"] {
+    color-scheme: dark;
+}
+`);
+
+  // src/plugins/recentTopics/index.tsx
+  var logger28 = new Logger("RecentTopics");
+  var cl24 = classNameFactory("void-rt-");
+  var HOME_KEY = "home";
+  var HOME_SEP = "home:";
+  var TRIGGER_CODES = new Set(["Backquote", "IntlBackslash"]);
+  var TRIGGER_KEYS = new Set(["`", "~", "·", "｀", "～", "Dead", "Process"]);
+  var TITLE_TAIL = /\s*[·|—–-]\s*Grok.*$/i;
+  var SKIP_LABEL = /^(more|history|today|yesterday|projects|new chat|new conversation|see all(?: chats| conversations)?|show all(?: chats| conversations)?|view all(?: chats| conversations)?|all chats|all conversations|查看全部|显示全部|查看所有|全部会话|所有对话)$/i;
+  var SKIP_NOISE = /^(copy|share|retry|edit|more|thinking|analyzing|searching|continue from here|what can i help with\??|files|add files for grok to use in this project)$/i;
+  var FILES_CHROME = /add files for grok to use in this project/i;
+  var PANE_SKIP = "[data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
+  var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
+  var TIME_TOKEN = /(?:^|\s)\d{1,2}:\d{2}\s*(?:am|pm)\b/gi;
+  var STATUS_TOKEN = /\b(?:connected to computer|continuing the(?: task)?|worked for \d+\s*m(?:\s*\d+\s*s)?|worked for \d+\s*s)\b/gi;
+  var COUNT_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => ({ label: String(n), value: n, default: n === 5 }));
+  var settings21 = definePluginSettings({
+    maxRecent: {
+      type: 4 /* SELECT */,
+      description: "How many recently opened conversations to show.",
+      options: COUNT_OPTIONS
+    },
+    includeHome: {
+      type: 3 /* BOOLEAN */,
+      description: "Include new-chat home pages in the switcher.",
+      default: true
+    }
+  }).withPrivateSettings();
+  var thumbs = new Map;
+  var wsNames = {};
+  var open2 = false;
+  var selected = 0;
+  var held = false;
+  var ctrlHeld = false;
+  var keys2 = null;
+  var host = null;
+  var paintedKey = "";
+  var sidebarSnap = null;
+  var pendingWs = new Set;
+  function isSkipLabel(name) {
+    const t = name.replaceAll(/\s+/g, " ").trim();
+    if (!t)
+      return false;
+    SKIP_LABEL.lastIndex = 0;
+    return SKIP_LABEL.test(t);
+  }
+  function usableName(name) {
+    const t = name.replaceAll(/\s+/g, " ").trim();
+    return t && !isSkipLabel(t) ? t : "";
+  }
+  function unique(ids) {
+    const seen = new Set;
+    const out = [];
+    for (const id of ids) {
+      if (seen.has(id))
+        continue;
+      seen.add(id);
+      out.push(id);
+    }
+    return out;
+  }
+  function readVisits() {
+    return settings21.plain.visits ?? [];
+  }
+  function maxCount() {
+    const n = Number(settings21.store.maxRecent);
+    return Number.isFinite(n) && n > 0 ? n : 5;
+  }
+  function capVisits(ids) {
+    const allowHome = settings21.store.includeHome;
+    return unique(ids).filter((id) => isHomeId(id) ? allowHome && (id === HOME_KEY || !!workspaceFromHomeId(id)) : !!id).slice(0, maxCount());
+  }
+  function pruneRecord(source, ids) {
+    const keep = {};
+    if (!source)
+      return keep;
+    for (const id of ids) {
+      if (source[id])
+        keep[id] = source[id];
+    }
+    return keep;
+  }
+  function sameList(a, b) {
+    return a.length === b.length && a.every((id, i) => id === b[i]);
+  }
+  function sameRecord(a, b) {
+    const src = a ?? {};
+    const keys = Object.keys(b);
+    if (Object.keys(src).length !== keys.length)
+      return false;
+    return keys.every((k) => src[k] === b[k]);
+  }
+  function assignRecord(key, next) {
+    if (sameRecord(settings21.plain[key], next))
+      return false;
+    settings21.store[key] = next;
+    return true;
+  }
+  var writing = false;
+  function writeVisits(next) {
+    if (writing)
+      return;
+    writing = true;
+    try {
+      const visits = capVisits(next);
+      const rawWs = pruneRecord(settings21.plain.workspaceByConv, visits);
+      const workspaceByConv = {};
+      for (const [id, value] of Object.entries(rawWs)) {
+        const ws = asWorkspaceId(value);
+        if (ws)
+          workspaceByConv[id] = ws;
+      }
+      const pages = pruneRecord(settings21.plain.pages, visits);
+      const usedWs = new Set(Object.values(workspaceByConv));
+      for (const id of visits) {
+        const ws = workspaceFromHomeId(id);
+        if (!ws)
+          continue;
+        usedWs.add(ws);
+        workspaceByConv[id] = ws;
+      }
+      const keepProjects = {};
+      for (const [id, name] of Object.entries(settings21.plain.projectNames ?? {})) {
+        const n = usableName(name);
+        if (usedWs.has(id) && n)
+          keepProjects[id] = n;
+      }
+      let changed = false;
+      if (!sameList(readVisits(), visits)) {
+        settings21.store.visits = visits;
+        changed = true;
+      }
+      if (assignRecord("titles", pruneRecord(settings21.plain.titles, visits)))
+        changed = true;
+      if (assignRecord("workspaceByConv", workspaceByConv))
+        changed = true;
+      if (assignRecord("pages", pages))
+        changed = true;
+      if (assignRecord("projectNames", keepProjects))
+        changed = true;
+      if (changed && open2)
+        paint2();
+    } finally {
+      writing = false;
+    }
+  }
+  function rememberTitle(id, title) {
+    const t = title?.trim();
+    if (!id || isHomeId(id) || !t)
+      return;
+    const prev = settings21.plain.titles ?? {};
+    if (prev[id] === t)
+      return;
+    settings21.store.titles = { ...prev, [id]: t };
+  }
+  function isHomeId(id) {
+    return id === HOME_KEY || id.startsWith(HOME_SEP);
+  }
+  function homeId(workspaceId) {
+    const ws = asWorkspaceId(workspaceId);
+    return ws ? HOME_SEP + ws : HOME_KEY;
+  }
+  function workspaceFromHomeId(id) {
+    return id.startsWith(HOME_SEP) ? asWorkspaceId(id.slice(HOME_SEP.length)) : "";
+  }
+  function routeConvId(route) {
+    if (!route)
+      return null;
+    if (route.conversationId)
+      return route.conversationId;
+    if (typeof route.chat === "string" && route.chat)
+      return route.chat;
+    if (route.page === "main")
+      return HOME_KEY;
+    if (route.page === "workspace" && asWorkspaceId(route.workspaceId) && !route.conversationId)
+      return homeId(route.workspaceId);
+    return null;
+  }
+  function projectIdFromUrl() {
+    const m = location.pathname.match(/^\/project\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i) ?? location.pathname.match(/^\/project\/(deepsearch)(?:\/|$)/i);
+    return m?.[1] ?? "";
+  }
+  function chatIdFromUrl() {
+    try {
+      const u = new URL(location.href);
+      const q = u.searchParams.get("chat");
+      if (q)
+        return q;
+      return u.pathname.match(/^\/c\/([^/?#]+)/i)?.[1] ?? "";
+    } catch {
+      return "";
+    }
+  }
+  var WS_ID = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|deepsearch)$/i;
+  function asWorkspaceId(value) {
+    if (typeof value === "string") {
+      const s = value.trim();
+      return WS_ID.test(s) ? s : "";
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const id = asWorkspaceId(item);
+        if (id)
+          return id;
+      }
+      return "";
+    }
+    if (value && typeof value === "object") {
+      const rec = value;
+      return asWorkspaceId(rec.workspaceId ?? rec.id ?? rec.projectId);
+    }
+    return "";
+  }
+  function hrefFor(id, workspaceId) {
+    if (isHomeId(id)) {
+      const ws = workspaceFromHomeId(id) || asWorkspaceId(workspaceId);
+      return ws ? `/project/${ws}` : "/";
+    }
+    const ws = asWorkspaceId(workspaceId);
+    if (!id)
+      return ws ? `/project/${ws}` : "/";
+    if (ws)
+      return `/project/${ws}?chat=${encodeURIComponent(id)}`;
+    return `/c/${encodeURIComponent(id)}`;
+  }
+  function hrefParts(href) {
+    if (!href)
+      return { ws: "", chat: "" };
+    try {
+      const u = new URL(href, location.origin);
+      const ws = asWorkspaceId(u.pathname.match(/^\/project\/([^/?#]+)/i)?.[1]);
+      const chat = u.searchParams.get("chat") || u.pathname.match(/^\/c\/([^/?#]+)/i)?.[1] || "";
+      return { ws, chat };
+    } catch {
+      return { ws: "", chat: "" };
+    }
+  }
+  function currentVisit() {
+    const urlChat = chatIdFromUrl();
+    if (urlChat)
+      return urlChat;
+    try {
+      const { conversationId, optimisticConversationId } = ChatPageStore.useChatPageStore.getState();
+      if (conversationId)
+        return conversationId;
+      if (optimisticConversationId)
+        return optimisticConversationId;
+    } catch (e) {
+      logger28.debug("ChatPageStore unavailable:", e);
+    }
+    try {
+      const fromRoute = routeConvId(RoutingStore.useRoutingStore.getState().route);
+      if (fromRoute != null)
+        return fromRoute;
+    } catch (e) {
+      logger28.debug("RoutingStore unavailable:", e);
+    }
+    const ws = projectIdFromUrl();
+    return ws ? homeId(ws) : null;
+  }
+  function idsFromHistory() {
+    try {
+      const { route, historyStack } = RoutingStore.useRoutingStore.getState();
+      const ids = [];
+      const add = (r) => {
+        const id = routeConvId(r);
+        if (id != null)
+          ids.push(id);
+      };
+      add(route);
+      for (let i = (historyStack?.length ?? 0) - 1;i >= 0; i--)
+        add(historyStack[i]);
+      return unique(ids);
+    } catch (e) {
+      logger28.debug("historyStack unavailable:", e);
+      return [];
+    }
+  }
+  function pageTitle() {
+    const raw = document.title.replace(TITLE_TAIL, "").trim();
+    if (!raw || /^grok$/i.test(raw))
+      return "";
+    return raw;
+  }
+  function lookup(id) {
+    try {
+      const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
+      return byId[id] ?? byIdWithWorkspaces[id] ?? list.find((c) => c.conversationId === id);
+    } catch (e) {
+      logger28.debug("Conversation lookup failed:", e);
+      return;
+    }
+  }
+  function titleOf(id) {
+    if (!id || isHomeId(id))
+      return "New chat";
+    const conv = lookup(id);
+    if (conv?.title?.trim())
+      return conv.title.trim();
+    const cached = settings21.plain.titles?.[id];
+    if (cached)
+      return cached;
+    if (id === currentVisit())
+      return pageTitle() || "Untitled";
+    return "Untitled";
+  }
+  function liveWorkspaceId() {
+    try {
+      const pid = asWorkspaceId(ChatPageStore.useChatPageStore.getState().projectId);
+      if (pid)
+        return pid;
+    } catch {}
+    try {
+      const { workspaceId } = RoutingStore.useRoutingStore.getState().route;
+      const id = asWorkspaceId(workspaceId);
+      if (id)
+        return id;
+    } catch {}
+    return asWorkspaceId(projectIdFromUrl());
+  }
+  function workspaceFromHistory(id) {
+    try {
+      const { route, historyStack } = RoutingStore.useRoutingStore.getState();
+      if (routeConvId(route) === id) {
+        const ws = asWorkspaceId(route.workspaceId);
+        if (ws)
+          return ws;
+      }
+      for (let i = (historyStack?.length ?? 0) - 1;i >= 0; i--) {
+        const r = historyStack[i];
+        if (routeConvId(r) === id) {
+          const ws = asWorkspaceId(r?.workspaceId);
+          if (ws)
+            return ws;
+        }
+      }
+    } catch {}
+    return "";
+  }
+  function convWorkspaceId(id) {
+    try {
+      const { byId, byIdWithWorkspaces } = ConversationStore.useConversationStore.getState();
+      const resolved = ConversationStore.resolveConversationProjectWorkspaceId?.(byId[id], byIdWithWorkspaces[id]);
+      const fromResolver = asWorkspaceId(resolved);
+      if (fromResolver)
+        return fromResolver;
+      const conv = byId[id] ?? byIdWithWorkspaces[id];
+      return asWorkspaceId(conv?.workspaceId) || asWorkspaceId(conv?.workspaces);
+    } catch (e) {
+      logger28.debug("convWorkspaceId failed:", e);
+      return asWorkspaceId(lookup(id)?.workspaceId) || asWorkspaceId(lookup(id)?.workspaces);
+    }
+  }
+  function workspaceFromDom(id) {
+    if (!id)
+      return "";
+    try {
+      for (const a of document.querySelectorAll("a[href]")) {
+        const href = a.getAttribute("href");
+        if (!href || !href.includes(id))
+          continue;
+        const { ws, chat } = hrefParts(href);
+        if (chat === id && ws)
+          return ws;
+      }
+    } catch {}
+    return "";
+  }
+  function shortOwnText(el) {
+    const parts = [];
+    for (const n of el.childNodes) {
+      if (n.nodeType === Node.TEXT_NODE) {
+        parts.push(n.textContent ?? "");
+        continue;
+      }
+      if (!(n instanceof HTMLElement))
+        continue;
+      if (n.matches("svg, a[href]"))
+        continue;
+      const nestedHref = n.getAttribute("href") ?? "";
+      if (nestedHref.includes("chat=") || nestedHref.includes("/c/"))
+        continue;
+      if (n.querySelector("a[href*='chat='], a[href*='/c/']"))
+        continue;
+      const t = (n.textContent ?? "").replaceAll(/\s+/g, " ").trim();
+      if (t.length > 0 && t.length <= 64)
+        parts.push(t);
+    }
+    const out = parts.join(" ").replaceAll(/\s+/g, " ").trim();
+    return out.length >= 2 && out.length <= 64 ? out : "";
+  }
+  function folderLabel(el) {
+    if (!el.querySelector("svg"))
+      return "";
+    return usableName(shortOwnText(el));
+  }
+  function projectNameFromAncestors(el) {
+    const sidebar = el.closest("[data-sidebar=sidebar]");
+    let cur = el.parentElement;
+    while (cur && cur !== sidebar) {
+      let sib = cur;
+      while (sib) {
+        const name = folderLabel(sib);
+        if (name)
+          return name;
+        sib = sib.previousElementSibling;
+      }
+      cur = cur.parentElement;
+    }
+    return "";
+  }
+  function invalidateSidebar() {
+    sidebarSnap = null;
+  }
+  function sidebarIndex() {
+    const empty = { wsByConv: {}, nameByWs: {}, nameByConv: {} };
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar)
+      return empty;
+    const key = `${sidebar.childElementCount}:${(sidebar.textContent ?? "").length}`;
+    if (sidebarSnap?.key === key)
+      return sidebarSnap.index;
+    const index = { wsByConv: {}, nameByWs: {}, nameByConv: {} };
+    let currentName = "";
+    const assignConv = (chat, ws, name) => {
+      if (!chat || !ws)
+        return;
+      index.wsByConv[chat] = ws;
+      const label = usableName(name || currentName || index.nameByWs[ws] || "");
+      if (label) {
+        index.nameByWs[ws] = label;
+        index.nameByConv[chat] = label;
+      }
+    };
+    for (const el of sidebar.querySelectorAll("a[href], button, [role='button']")) {
+      const { ws, chat } = hrefParts(el.getAttribute("href"));
+      if (chat) {
+        assignConv(chat, ws, currentName);
+        if (ws && !index.nameByConv[chat]) {
+          const up = usableName(projectNameFromAncestors(el));
+          if (up) {
+            index.nameByConv[chat] = up;
+            index.nameByWs[ws] ??= up;
+            currentName ||= up;
+          }
+        }
+        continue;
+      }
+      const label = shortOwnText(el) || folderLabel(el);
+      if (isSkipLabel(label) && !ws) {
+        currentName = "";
+        continue;
+      }
+      if (ws) {
+        const n = usableName(label);
+        if (n) {
+          currentName = n;
+          index.nameByWs[ws] = n;
+        } else if (isSkipLabel(label)) {
+          currentName = index.nameByWs[ws] || "";
+        }
+        continue;
+      }
+      const folder = folderLabel(el);
+      if (folder)
+        currentName = folder;
+    }
+    sidebarSnap = { key, index };
+    return index;
+  }
+  function workspaceFetchedEmpty(id) {
+    try {
+      const { byIdWithWorkspaces } = ConversationStore.useConversationStore.getState();
+      return !!byIdWithWorkspaces[id] && !convWorkspaceId(id);
+    } catch {
+      return false;
+    }
+  }
+  function routeWorkspaceFor(id) {
+    if (id === chatIdFromUrl())
+      return asWorkspaceId(projectIdFromUrl());
+    try {
+      const { route } = RoutingStore.useRoutingStore.getState();
+      const chat = route.conversationId || (typeof route.chat === "string" ? route.chat : "");
+      if (chat === id)
+        return asWorkspaceId(route.workspaceId);
+    } catch {}
+    return "";
+  }
+  function dropWorkspace(id) {
+    const prev = settings21.plain.workspaceByConv ?? {};
+    if (!prev[id])
+      return;
+    const next = { ...prev };
+    delete next[id];
+    settings21.store.workspaceByConv = next;
+  }
+  function workspaceOf(id) {
+    if (!id)
+      return "";
+    if (isHomeId(id)) {
+      const fromKey = workspaceFromHomeId(id);
+      if (fromKey)
+        return fromKey;
+      return id === currentVisit() ? liveWorkspaceId() : asWorkspaceId(settings21.plain.workspaceByConv?.[id]);
+    }
+    const fromConv = convWorkspaceId(id);
+    if (fromConv)
+      return fromConv;
+    if (workspaceFetchedEmpty(id))
+      return "";
+    const fromSidebar = sidebarIndex().wsByConv[id] || workspaceFromDom(id);
+    if (fromSidebar)
+      return fromSidebar;
+    const cached = asWorkspaceId(settings21.plain.workspaceByConv?.[id]);
+    if (cached)
+      return cached;
+    const fromHist = workspaceFromHistory(id);
+    if (fromHist)
+      return fromHist;
+    if (id === currentVisit())
+      return routeWorkspaceFor(id);
+    return "";
+  }
+  function readOpenProjectName() {
+    const idx = sidebarIndex();
+    const live = liveWorkspaceId();
+    if (live) {
+      const n = usableName(idx.nameByWs[live]);
+      if (n)
+        return n;
+    }
+    const current = currentVisit();
+    const ws = current ? workspaceOf(current) : "";
+    if (!current || !ws)
+      return "";
+    return usableName(idx.nameByConv[current] || idx.nameByWs[ws]);
+  }
+  function projectNameOf(id) {
+    if (!id)
+      return "";
+    const ws = workspaceOf(id);
+    if (!ws)
+      return "";
+    const idx = sidebarIndex();
+    const named = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || wsNames[ws] || settings21.plain.projectNames?.[ws] || "");
+    if (!named)
+      return "";
+    const live = liveWorkspaceId();
+    const liveName = readOpenProjectName();
+    if (live && ws !== live && liveName && named === liveName)
+      return "";
+    return named;
+  }
+  function rememberProject(id) {
+    if (!id)
+      return;
+    const ws = workspaceOf(id);
+    if (!ws)
+      return;
+    const prevWs = settings21.plain.workspaceByConv ?? {};
+    if (prevWs[id] !== ws)
+      settings21.store.workspaceByConv = { ...prevWs, [id]: ws };
+    const idx = sidebarIndex();
+    const sidebarName = idx.nameByConv[id] || idx.nameByWs[ws] || "";
+    const liveName = ws === liveWorkspaceId() ? readOpenProjectName() : "";
+    const name = usableName(sidebarName || wsNames[ws] || liveName || settings21.plain.projectNames?.[ws] || "");
+    if (!name)
+      return;
+    wsNames[ws] = name;
+    const prevNames = settings21.plain.projectNames ?? {};
+    if (prevNames[ws] !== name)
+      settings21.store.projectNames = { ...prevNames, [ws]: name };
+  }
+  function reconcileSidebarCache() {
+    const idx = sidebarIndex();
+    const prevWs = { ...settings21.plain.workspaceByConv };
+    const prevNames = { ...settings21.plain.projectNames };
+    let wsChanged = false;
+    let namesChanged = false;
+    for (const [conv, ws] of Object.entries(idx.wsByConv)) {
+      if (prevWs[conv] !== ws) {
+        prevWs[conv] = ws;
+        wsChanged = true;
+      }
+    }
+    for (const [ws, name] of Object.entries(idx.nameByWs)) {
+      const n = usableName(name);
+      if (!n)
+        continue;
+      wsNames[ws] = n;
+      if (prevNames[ws] !== n) {
+        prevNames[ws] = n;
+        namesChanged = true;
+      }
+    }
+    for (const [ws, name] of Object.entries(prevNames)) {
+      if (usableName(name))
+        continue;
+      delete prevNames[ws];
+      delete wsNames[ws];
+      namesChanged = true;
+    }
+    if (wsChanged)
+      settings21.store.workspaceByConv = prevWs;
+    if (namesChanged)
+      settings21.store.projectNames = prevNames;
+  }
+  function requestWorkspace(id) {
+    if (!id || isHomeId(id) || pendingWs.has(id))
+      return;
+    if (convWorkspaceId(id))
+      return;
+    if (workspaceFetchedEmpty(id)) {
+      dropWorkspace(id);
+      return;
+    }
+    if (sidebarIndex().wsByConv[id])
+      return;
+    pendingWs.add(id);
+    try {
+      const { fetchGetConversationWithWorkspaces, fetchGetConversation } = ConversationStore.useConversationStore.getState();
+      const fetchConv = fetchGetConversationWithWorkspaces ?? fetchGetConversation;
+      if (!fetchConv) {
+        pendingWs.delete(id);
+        return;
+      }
+      fetchConv(id).then((conv) => {
+        const ws = asWorkspaceId(ConversationStore.resolveConversationProjectWorkspaceId?.(conv)) || asWorkspaceId(conv?.workspaceId) || asWorkspaceId(conv?.workspaces);
+        if (!ws) {
+          dropWorkspace(id);
+          if (open2)
+            paint2();
+          return;
+        }
+        const prev = settings21.plain.workspaceByConv ?? {};
+        if (prev[id] !== ws)
+          settings21.store.workspaceByConv = { ...prev, [id]: ws };
+        const live = liveWorkspaceId();
+        const liveName = usableName(readOpenProjectName());
+        const names = settings21.plain.projectNames ?? {};
+        if (live && ws !== live && liveName && names[ws] === liveName) {
+          const next = { ...names };
+          delete next[ws];
+          settings21.store.projectNames = next;
+          delete wsNames[ws];
+        }
+        if (open2)
+          paint2();
+      }).catch((e) => logger28.debug("workspace fetch failed:", e)).finally(() => {
+        pendingWs.delete(id);
+      });
+    } catch {
+      pendingWs.delete(id);
+    }
+  }
+  function chatPane() {
+    const main = document.querySelector("main");
+    if (!main)
+      return null;
+    const skip = (n) => !!n.closest(PANE_SKIP);
+    const msg = main.querySelector(MSG_SEL);
+    if (msg) {
+      const col = msg.closest("[class*='overflow-y-auto'], [class*='overflow-auto']");
+      if (col && !skip(col))
+        return col;
+    }
+    let best = null;
+    let bestScore = 0;
+    for (const n of main.querySelectorAll("[class*='overflow-y-auto'], [class*='overflow-auto']")) {
+      if (skip(n))
+        continue;
+      const r = n.getBoundingClientRect();
+      if (r.width < 240 || r.height < 120)
+        continue;
+      const score = r.width * r.height;
+      if (score > bestScore) {
+        best = n;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+  function messageList(pane) {
+    let node = pane;
+    for (let i = 0;i < 8; i++) {
+      const kids = [...node.children].filter((c) => c instanceof HTMLElement);
+      if (kids.length === 1 && kids[0].children.length > 1) {
+        node = kids[0];
+        continue;
+      }
+      break;
+    }
+    return node;
+  }
+  function chromeOff(el) {
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll("button, .void-timestamp, time, nav, svg, [class*='timestamp']").forEach((n) => n.remove());
+    return clone;
+  }
+  function userBubble(root) {
+    const tagged = root.matches("[data-testid='user-message']") ? root : root.querySelector("[data-testid='user-message'], [data-void-rt-role='user'], .void-rt-user-msg");
+    if (tagged)
+      return tagged;
+    const cands = [...root.querySelectorAll("[class*='justify-end'], [class*='self-end'], [class*='ml-auto'], [class*='ms-auto']")];
+    if (/justify-end|self-end|ml-auto|ms-auto/.test(root.className))
+      cands.unshift(root);
+    if (!cands.length)
+      return null;
+    const inner = cands.filter((el) => !cands.some((other) => other !== el && el.contains(other)));
+    inner.sort((a, b) => (b.innerText?.length ?? 0) - (a.innerText?.length ?? 0));
+    return inner[0] ?? null;
+  }
+  function extractTurn(kid) {
+    const tagged = [...kid.querySelectorAll(MSG_SEL)];
+    if (kid.matches(MSG_SEL))
+      tagged.unshift(kid);
+    if (tagged.length) {
+      const lines = [];
+      for (const el of tagged) {
+        const role = el.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
+        const text = scrubText(chromeOff(el).innerText ?? "");
+        if (text)
+          lines.push({ role, text });
+      }
+      return lines;
+    }
+    const bubble = userBubble(kid);
+    if (!bubble)
+      return [];
+    const userText = scrubText(chromeOff(bubble).innerText ?? "");
+    const rest = chromeOff(kid);
+    if (bubble !== kid) {
+      rest.querySelectorAll(`${MSG_SEL}, [class*='justify-end'], [class*='self-end'], [class*='ml-auto']`).forEach((n) => n.remove());
+    }
+    let asstText = scrubText(rest.innerText ?? "");
+    if (userText && asstText.includes(userText))
+      asstText = scrubText(asstText.replace(userText, " "));
+    const lines = [];
+    if (userText)
+      lines.push({ role: "user", text: userText });
+    if (asstText && asstText !== userText)
+      lines.push({ role: "assistant", text: asstText });
+    return lines;
+  }
+  function extractMarks(root) {
+    const marks = [...root.querySelectorAll(".void-rt-mark")];
+    if (!marks.length)
+      return [];
+    const out = [];
+    for (const m of marks) {
+      const role = m.getAttribute("data-role") === "user" ? "user" : "assistant";
+      const text = scrubText(m.textContent ?? "");
+      if (text)
+        out.push({ role, text });
+    }
+    return lastRound(out);
+  }
+  function extractLines(pane) {
+    const fromMarks = extractMarks(pane);
+    if (fromMarks.length)
+      return fromMarks;
+    const tagged = [...pane.querySelectorAll(MSG_SEL)];
+    if (tagged.length) {
+      const out = [];
+      for (const el of tagged) {
+        const role = el.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
+        const text = scrubText(chromeOff(el).innerText ?? "");
+        if (text)
+          out.push({ role, text });
+      }
+      return lastRound(out);
+    }
+    const source = messageList(pane);
+    const kids = [...source.children].filter((c) => c instanceof HTMLElement);
+    const out = [];
+    for (const kid of kids)
+      out.push(...extractTurn(kid));
+    return lastRound(out);
+  }
+  function looksLikeChrome(text) {
+    if (FILES_CHROME.test(text))
+      return true;
+    const packed = text.replaceAll(/\s+/g, "").toLowerCase();
+    return packed.startsWith("filesaddfiles");
+  }
+  function scrubText(raw) {
+    let t = raw.replaceAll(/\s+/g, " ").trim();
+    t = t.replace(TIME_TOKEN, " ").replace(STATUS_TOKEN, " ");
+    t = t.replaceAll(/\s+/g, " ").trim();
+    if (!t || SKIP_NOISE.test(t) || looksLikeChrome(t))
+      return "";
+    return t;
+  }
+  function plainText(md) {
+    const t = md.replace(/```[\s\S]*?```/g, " ").replace(/`([^`]+)`/g, "$1").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/^#{1,6}\s+/gm, "").replace(/[*_~]{1,3}/g, "").replace(/^>\s+/gm, "");
+    return scrubText(t);
+  }
+  function clipLine(text, max) {
+    const t = scrubText(text);
+    if (t.length <= max)
+      return t;
+    return `${t.slice(0, Math.max(1, max - 1))}…`;
+  }
+  function lastRound(lines) {
+    const cleaned = lines.map((line) => ({ role: line.role, text: scrubText(line.text) })).filter((line) => !!line.text);
+    if (!cleaned.length)
+      return [];
+    let asst = -1;
+    let user = -1;
+    for (let i = cleaned.length - 1;i >= 0; i--) {
+      if (asst < 0 && cleaned[i].role === "assistant")
+        asst = i;
+      if (user < 0 && cleaned[i].role === "user")
+        user = i;
+      if (asst >= 0 && user >= 0)
+        break;
+    }
+    const pick = user >= 0 && asst >= 0 && user < asst ? [cleaned[user], cleaned[asst]] : user >= 0 && (asst < 0 || user > asst) ? [cleaned[user]] : asst >= 0 ? [cleaned[asst]] : cleaned.slice(-1);
+    return pick.map((line) => ({
+      role: line.role,
+      text: clipLine(line.text, line.role === "user" ? 72 : 140)
+    }));
+  }
+  function pickUserText(query, message) {
+    const q = plainText(query);
+    const m = plainText(message);
+    if (q && m) {
+      if (m.startsWith(q) && m.length > q.length)
+        return q;
+      return q.length <= m.length ? q : m;
+    }
+    return q || m;
+  }
+  function walkThread(startId) {
+    if (!startId)
+      return [];
+    try {
+      const { byId } = ResponseStore.useResponseStore.getState();
+      const out = [];
+      const seen = new Set;
+      let id = startId;
+      while (id && !seen.has(id) && out.length < 50) {
+        seen.add(id);
+        const r = byId[id];
+        if (!r)
+          break;
+        out.unshift(r);
+        id = r.parentResponseId;
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  }
+  function responsesOf(id) {
+    const { byConversationId, byId, nodesByConversationId } = ResponseStore.useResponseStore.getState();
+    const nodes = nodesByConversationId[id] ?? [];
+    if (nodes.length) {
+      const list = nodes.map((n) => byId[n.responseId]).filter((r) => !!r);
+      if (list.length)
+        return list;
+      const walked = walkThread(nodes.at(-1)?.responseId);
+      if (walked.length)
+        return walked;
+    }
+    const cached = byConversationId[id];
+    if (cached?.length)
+      return [...cached].sort((a, b) => String(a.createTime ?? "").localeCompare(String(b.createTime ?? "")));
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      if (chat.conversationId === id) {
+        return walkThread(chat.lastMessageId ?? chat.streamedMessageId ?? chat.optimisticMessageId);
+      }
+    } catch {}
+    return [];
+  }
+  function responsesToLines(list) {
+    const out = [];
+    for (const r of list) {
+      if (!r || r.isControl)
+        continue;
+      const sender = String(r.sender ?? "").toLowerCase();
+      const human = sender === "human" || sender === "user";
+      if (human) {
+        const text = pickUserText(r.query || "", r.message || "");
+        if (text)
+          out.push({ role: "user", text });
+        continue;
+      }
+      const query = pickUserText(r.query || "", "");
+      let message = plainText(r.message || "");
+      if (query && message.startsWith(query) && message.length > query.length) {
+        message = scrubText(message.slice(query.length));
+      }
+      if (query && out.at(-1)?.text !== query)
+        out.push({ role: "user", text: query });
+      if (message && message !== query)
+        out.push({ role: "assistant", text: message });
+    }
+    return lastRound(out);
+  }
+  function linesFromStore(id) {
+    if (!id)
+      return [];
+    try {
+      return responsesToLines(responsesOf(id));
+    } catch (e) {
+      logger28.debug("ResponseStore snapshot failed:", e);
+      return [];
+    }
+  }
+  function betterLines(store, dom) {
+    const pair = (lines) => lines.some((l) => l.role === "user") && lines.some((l) => l.role === "assistant");
+    if (pair(store))
+      return store;
+    if (pair(dom))
+      return dom;
+    return store.length ? store : dom;
+  }
+  function parseSnap(raw) {
+    if (!raw)
+      return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.lines) || !parsed.lines.length)
+        return null;
+      const lines = lastRound(parsed.lines.filter((line) => !!line && (line.role === "user" || line.role === "assistant") && typeof line.text === "string"));
+      if (!lines.length)
+        return null;
+      return {
+        title: typeof parsed.title === "string" ? parsed.title : "",
+        theme: parsed.theme === "light" ? "light" : "dark",
+        lines
+      };
+    } catch {
+      return null;
+    }
+  }
+  function snapOf(id) {
+    if (!id || isHomeId(id))
+      return null;
+    const snap = thumbs.get(id) ?? parseSnap(settings21.plain.pages?.[id]);
+    if (!snap)
+      return null;
+    const lines = lastRound(snap.lines);
+    if (!lines.length) {
+      thumbs.delete(id);
+      return null;
+    }
+    return { ...snap, lines };
+  }
+  function rememberPage(id, snap) {
+    const json = JSON.stringify(snap);
+    const prev = settings21.plain.pages ?? {};
+    if (prev[id] === json)
+      return;
+    settings21.store.pages = { ...prev, [id]: json };
+  }
+  function forgetPage(id) {
+    thumbs.delete(id);
+    const prev = settings21.plain.pages ?? {};
+    if (!(id in prev))
+      return;
+    const next = { ...prev };
+    delete next[id];
+    settings21.store.pages = next;
+  }
+  function prunePages() {
+    const prev = settings21.plain.pages ?? {};
+    const next = {};
+    let changed = false;
+    for (const [id, raw] of Object.entries(prev)) {
+      if (isHomeId(id) || !parseSnap(raw)) {
+        thumbs.delete(id);
+        changed = true;
+        continue;
+      }
+      next[id] = raw;
+    }
+    if (changed)
+      settings21.store.pages = next;
+  }
+  function applyLineStyle(el, role, theme) {
+    el.style.display = "-webkit-box";
+    el.style.webkitBoxOrient = "vertical";
+    el.style.overflow = "hidden";
+    el.style.width = "fit-content";
+    el.style.overflowWrap = "anywhere";
+    el.style.fontSize = "11px";
+    el.style.lineHeight = "1.35";
+    if (role === "user") {
+      el.style.alignSelf = "flex-end";
+      el.style.maxWidth = "78%";
+      el.style.padding = "6px 9px";
+      el.style.borderRadius = "14px 14px 4px 14px";
+      el.style.background = theme === "light" ? "#e8e6e0" : "#2f2f2f";
+      el.style.color = theme === "light" ? "#171717" : "#fff";
+      el.style.webkitLineClamp = "2";
+    } else {
+      el.style.alignSelf = "flex-start";
+      el.style.maxWidth = "94%";
+      el.style.padding = "0";
+      el.style.background = "transparent";
+      el.style.color = theme === "light" ? "#3f3f3f" : "#c4c4c4";
+      el.style.webkitLineClamp = "4";
+    }
+  }
+  function buildPageShot(snap) {
+    const page = node("span", cl24("page"));
+    page.dataset.theme = snap.theme;
+    for (const line of lastRound(snap.lines)) {
+      const el = node("span", cl24("page-line", line.role === "user" && "page-line-user"), line.text);
+      el.dataset.role = line.role;
+      applyLineStyle(el, line.role, snap.theme);
+      page.append(el);
+    }
+    return page;
+  }
+  function captureId(id) {
+    if (!id)
+      return;
+    if (isHomeId(id)) {
+      forgetPage(id);
+      return;
+    }
+    const fromStore = linesFromStore(id);
+    const live = id === currentVisit();
+    let fromDom = [];
+    if (live) {
+      const pane = chatPane();
+      if (pane)
+        fromDom = extractLines(pane);
+    }
+    const lines = lastRound(betterLines(fromStore, fromDom));
+    if (!lines.length) {
+      if (live)
+        forgetPage(id);
+      return;
+    }
+    const snap = {
+      title: titleOf(id),
+      theme: detectTheme(),
+      lines
+    };
+    thumbs.set(id, snap);
+    rememberPage(id, snap);
+  }
+  var capturing = false;
+  function captureCurrent() {
+    if (capturing || open2)
+      return;
+    capturing = true;
+    try {
+      const current = currentVisit();
+      if (current)
+        captureId(current);
+      for (const id of capVisits(readVisits())) {
+        if (id && id !== current)
+          captureId(id);
+      }
+    } catch (e) {
+      logger28.debug("snapshot failed:", e);
+    } finally {
+      capturing = false;
+    }
+  }
+  function scheduleCapture() {
+    if (open2)
+      return;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!open2)
+          captureCurrent();
+      });
+    });
+  }
+  function bump(id) {
+    if (!id)
+      return;
+    if (isHomeId(id) && !settings21.store.includeHome)
+      return;
+    writeVisits(capVisits([id, ...readVisits()]));
+    if (isHomeId(id)) {
+      if (shouldRememberProject(id))
+        rememberProject(id);
+      return;
+    }
+    const conv = lookup(id);
+    rememberTitle(id, conv?.title || (id === currentVisit() ? pageTitle() : undefined));
+    if (shouldRememberProject(id))
+      rememberProject(id);
+  }
+  function shouldRememberProject(id) {
+    if (!id || workspaceFetchedEmpty(id))
+      return false;
+    return !!workspaceOf(id);
+  }
+  function hydrate() {
+    invalidateSidebar();
+    prunePages();
+    const current = currentVisit();
+    const merged = current == null ? [...idsFromHistory(), ...readVisits()] : [current, ...idsFromHistory(), ...readVisits()];
+    writeVisits(capVisits(merged));
+    reconcileSidebarCache();
+    if (current) {
+      rememberTitle(current, lookup(current)?.title || pageTitle());
+      if (shouldRememberProject(current))
+        rememberProject(current);
+    }
+    for (const id of capVisits(readVisits())) {
+      if (id)
+        requestWorkspace(id);
+    }
+  }
+  function topics() {
+    return capVisits(readVisits()).map((id) => ({
+      id,
+      title: titleOf(id),
+      project: projectNameOf(id)
+    }));
+  }
+  function parseHref(href) {
+    try {
+      const u = new URL(href, location.origin);
+      const parsed = RoutingStore.urlToRoute(u.pathname, new URLSearchParams(u.search), u.hash.replace(/^#/, ""));
+      if (parsed?.page && parsed.page !== "unknown")
+        return parsed;
+    } catch (e) {
+      logger28.debug("urlToRoute failed:", e);
+    }
+    return null;
+  }
+  function applyChatPage(id, workspaceId) {
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      chat.setConversationId(id || undefined);
+      chat.setProjectId(asWorkspaceId(workspaceId) || undefined);
+    } catch (e) {
+      logger28.debug("ChatPageStore update failed:", e);
+    }
+  }
+  function navigateTo(id) {
+    try {
+      const routing = RoutingStore.useRoutingStore.getState();
+      const { route } = routing;
+      const teamId = route.teamId ?? null;
+      if (isHomeId(id) || !id) {
+        const ws = workspaceFromHomeId(id) || asWorkspaceId(workspaceOf(id));
+        const hereWs = asWorkspaceId(route.workspaceId) || projectIdFromUrl();
+        const hereChat = route.conversationId || chatIdFromUrl();
+        if (!ws) {
+          if (!hereChat && (route.page === "main" || !hereWs))
+            return;
+          routing.push({ page: "main", teamId });
+          applyChatPage("");
+          return;
+        }
+        if (!hereChat && hereWs === ws)
+          return;
+        routing.push({ page: "workspace", workspaceId: ws, tab: "conversations", teamId });
+        applyChatPage("", ws);
+        return;
+      }
+      const workspaceId = workspaceOf(id);
+      const href = hrefFor(id, workspaceId);
+      const parsed = parseHref(href);
+      const dest = workspaceId ? {
+        page: "workspace",
+        workspaceId,
+        tab: "conversations",
+        conversationId: id,
+        teamId
+      } : {
+        page: "chat",
+        conversationId: id,
+        temporary: lookup(id)?.temporary ?? false,
+        teamId
+      };
+      if (parsed?.page === "workspace" && asWorkspaceId(parsed.workspaceId)) {
+        dest.page = "workspace";
+        dest.workspaceId = asWorkspaceId(parsed.workspaceId);
+        dest.conversationId = parsed.conversationId || id;
+        dest.tab = parsed.tab || "conversations";
+        if (parsed.filePath)
+          dest.filePath = parsed.filePath;
+      } else if (parsed?.page === "chat" && parsed.conversationId && !workspaceId) {
+        dest.page = "chat";
+        dest.conversationId = parsed.conversationId;
+        dest.temporary = parsed.temporary ?? dest.temporary;
+      }
+      if (dest.page === "workspaces" || dest.page === "workspace" && !asWorkspaceId(dest.workspaceId)) {
+        dest.page = "chat";
+        dest.conversationId = id;
+        delete dest.workspaceId;
+        delete dest.tab;
+      }
+      if (routeConvId(route) === dest.conversationId && (asWorkspaceId(route.workspaceId) || "") === (asWorkspaceId(dest.workspaceId) || "") && route.page === dest.page)
+        return;
+      routing.push(dest);
+      applyChatPage(id, asWorkspaceId(dest.workspaceId));
+      if (dest.page !== "workspace") {
+        try {
+          const { fetchGetConversationWithWorkspaces, fetchGetConversation } = ConversationStore.useConversationStore.getState();
+          const fetchConv = fetchGetConversationWithWorkspaces ?? fetchGetConversation;
+          fetchConv?.(id).then((conv) => {
+            const ws = asWorkspaceId(ConversationStore.resolveConversationProjectWorkspaceId?.(conv)) || convWorkspaceId(id);
+            if (!ws)
+              return;
+            const now = RoutingStore.useRoutingStore.getState();
+            if (routeConvId(now.route) !== id)
+              return;
+            now.replace({
+              page: "workspace",
+              workspaceId: ws,
+              tab: "conversations",
+              conversationId: id,
+              teamId
+            });
+            applyChatPage(id, ws);
+            rememberProject(id);
+          }).catch((e) => logger28.debug("workspace resolve failed:", e));
+        } catch (e) {
+          logger28.debug("workspace fetch skipped:", e);
+        }
+      }
+    } catch (e) {
+      logger28.error("Failed to navigate:", e);
+      try {
+        location.assign(hrefFor(id, workspaceOf(id) || undefined));
+      } catch (navErr) {
+        logger28.error("Fallback navigation failed:", navErr);
+      }
+    }
+  }
+  function isTrigger(e) {
+    if (TRIGGER_CODES.has(e.code) || e.keyCode === 192)
+      return true;
+    return TRIGGER_KEYS.has(e.key);
+  }
+  function isCtrlKey(e) {
+    return e.key === "Control" || e.code === "ControlLeft" || e.code === "ControlRight";
+  }
+  function begin(reverse, fromHold) {
+    held = fromHold;
+    open2 = false;
+    captureCurrent();
+    open2 = true;
+    selected = 0;
+    try {
+      hydrate();
+      const current = currentVisit();
+      if (current != null)
+        bump(current);
+      if (topics().length > 1)
+        selected = reverse ? topics().length - 1 : 1;
+    } catch (e) {
+      logger28.error("Failed to open switcher:", e);
+    }
+    paint2();
+  }
+  function cycle2(reverse) {
+    const { length } = topics();
+    if (!length)
+      return;
+    selected = (selected + (reverse ? -1 : 1) + length) % length;
+    paint2();
+  }
+  function commit() {
+    if (!open2)
+      return;
+    const target = topics()[selected];
+    open2 = false;
+    held = false;
+    paint2();
+    if (target)
+      navigateTo(target.id);
+  }
+  function cancel() {
+    if (!open2)
+      return;
+    open2 = false;
+    held = false;
+    paint2();
+  }
+  function onKeyDown3(e) {
+    if (isCtrlKey(e)) {
+      ctrlHeld = true;
+      return;
+    }
+    const combo = (e.ctrlKey || ctrlHeld) && !e.altKey && !e.metaKey && isTrigger(e) && !e.repeat;
+    if (combo) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      try {
+        if (open2)
+          cycle2(e.shiftKey);
+        else
+          begin(e.shiftKey, true);
+      } catch (err) {
+        logger28.error("Hotkey failed:", err);
+      }
+      return;
+    }
+    if (!open2)
+      return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      cancel();
+      return;
+    }
+    if (e.key === "Tab" && (e.ctrlKey || ctrlHeld)) {
+      e.preventDefault();
+      cycle2(e.shiftKey);
+    }
+  }
+  function onKeyUp(e) {
+    if (!isCtrlKey(e))
+      return;
+    ctrlHeld = false;
+    if (open2 && held)
+      commit();
+  }
+  function onBeforeInput(e) {
+    if (!ctrlHeld && !open2)
+      return;
+    const { data } = e;
+    if (data && TRIGGER_KEYS.has(data))
+      e.preventDefault();
+  }
+  function onWindowBlur() {
+    ctrlHeld = false;
+  }
+  function onVisibility() {
+    if (document.hidden) {
+      ctrlHeld = false;
+      cancel();
+    }
+  }
+  function pick(index) {
+    selected = index;
+    commit();
+  }
+  function node(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className)
+      el.className = className;
+    if (text)
+      el.textContent = text;
+    return el;
+  }
+  function fillShot(box, id) {
+    const snap = snapOf(id);
+    if (!snap) {
+      const fallback = node("span", cl24("fallback"));
+      fallback.append(faviconImg(cl24("favicon")));
+      box.append(fallback);
+      return;
+    }
+    const shot = node("span", cl24("shot"));
+    shot.append(buildPageShot(snap));
+    box.append(shot);
+  }
+  var GROK_BG_PATH2 = "M0 256C0 166.392 0 121.587 17.439 87.3615C32.7787 57.2556 57.2556 32.7787 87.3615 17.439C121.587 0 166.392 0 256 0C345.608 0 390.413 0 424.638 17.439C454.744 32.7787 479.221 57.2556 494.561 87.3615C512 121.587 512 166.392 512 256C512 345.608 512 390.413 494.561 424.638C479.221 454.744 454.744 479.221 424.638 494.561C390.413 512 345.608 512 256 512C166.392 512 121.587 512 87.3615 494.561C57.2556 479.221 32.7787 454.744 17.439 424.638C0 390.413 0 345.608 0 256Z";
+  var GROK_MARK_P12 = "M210.484 312.759L343.465 210.383C349.984 205.364 359.302 207.322 362.408 215.117C378.758 256.231 371.454 305.64 338.925 339.563C306.397 373.487 261.137 380.927 219.768 363.983L174.577 385.803C239.394 432.008 318.104 420.581 367.289 369.251C406.303 328.564 418.386 273.104 407.088 223.091L407.19 223.198C390.807 149.726 411.218 120.359 453.03 60.3072C454.02 58.8833 455.01 57.4595 456 56L400.978 113.382V113.204L210.45 312.794";
+  var GROK_MARK_P22 = "M183.042 337.641C136.519 291.294 144.54 219.567 184.236 178.203C213.59 147.59 261.683 135.096 303.666 153.464L348.755 131.75C340.632 125.627 330.221 119.042 318.275 114.414C264.277 91.2407 199.63 102.774 155.735 148.516C113.513 192.549 100.236 260.254 123.036 318.027C140.069 361.206 112.148 391.748 84.0229 422.575C74.0561 433.503 64.0553 444.431 56 456L183.007 337.677";
+  var GROK_ICON_DATA = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="${GROK_BG_PATH2}" fill="#050505"/><path d="${GROK_MARK_P12}" fill="#FCFCFC"/><path d="${GROK_MARK_P22}" fill="#FCFCFC"/></svg>`)}`;
+  var ACCENTS = [
+    "rgb(37, 99, 235)",
+    "rgb(14, 165, 233)",
+    "rgb(20, 184, 166)",
+    "rgb(249, 115, 22)",
+    "rgb(100, 116, 139)"
+  ];
+  function accentOf(id) {
+    if (!id)
+      return ACCENTS[4];
+    let hash = 0;
+    for (let i = 0;i < id.length; i++)
+      hash = hash * 31 + id.charCodeAt(i) >>> 0;
+    return ACCENTS[hash % ACCENTS.length];
+  }
+  function detectTheme() {
+    const html = document.documentElement;
+    const { body } = document;
+    const tokens = `${html.className} ${body?.className ?? ""} ${html.getAttribute("data-theme") ?? ""} ${html.getAttribute("data-color-scheme") ?? ""}`.toLowerCase();
+    if (/(^|[\s_-])(dark|night)([\s_-]|$)/.test(tokens) || html.classList.contains("dark") || html.getAttribute("dark") != null)
+      return "dark";
+    if (/(^|[\s_-])(light|day)([\s_-]|$)/.test(tokens) || html.classList.contains("light"))
+      return "light";
+    try {
+      const bg = getComputedStyle(body || html).backgroundColor;
+      const m = bg.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)/);
+      if (m) {
+        const r = Number(m[1]) / 255;
+        const g = Number(m[2]) / 255;
+        const b = Number(m[3]) / 255;
+        const lin = [r, g, b].map((c) => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+        const lum = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+        return lum < 0.42 ? "dark" : "light";
+      }
+    } catch {}
+    const scheme = getComputedStyle(html).colorScheme;
+    if (scheme.includes("light") && !scheme.includes("dark"))
+      return "light";
+    return "dark";
+  }
+  function grokFaviconSrc() {
+    try {
+      if (/\.grok\.com$|^grok\.com$/.test(location.hostname)) {
+        const link = document.querySelector('link[rel*="icon"]:not(#void-chat-state-favicon)');
+        const href = link?.href;
+        if (href && !href.startsWith("data:"))
+          return href;
+        return `${location.origin}/images/favicon.svg`;
+      }
+    } catch {}
+    return GROK_ICON_DATA;
+  }
+  function faviconImg(className) {
+    const img = document.createElement("img");
+    img.className = className;
+    img.alt = "";
+    img.draggable = false;
+    img.src = grokFaviconSrc();
+    img.addEventListener("error", () => {
+      if (img.src === GROK_ICON_DATA) {
+        img.dataset.broken = "true";
+        return;
+      }
+      img.src = GROK_ICON_DATA;
+    });
+    return img;
+  }
+  function folderIcon() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", cl24("folder"));
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z");
+    svg.append(path);
+    return svg;
+  }
+  function applyTheme(panel) {
+    const theme = detectTheme();
+    panel.setAttribute("data-theme", theme);
+    panel.style.colorScheme = theme;
+  }
+  function buildHost() {
+    const root = node("div", cl24("root"));
+    root.id = "void-rt-host";
+    root.setAttribute("role", "presentation");
+    root.addEventListener("click", cancel);
+    const panel = node("div", cl24("panel"));
+    panel.setAttribute("role", "listbox");
+    panel.setAttribute("aria-label", "Recent conversations");
+    panel.addEventListener("click", (e) => e.stopPropagation());
+    panel.append(node("div", cl24("list")));
+    root.append(panel);
+    return root;
+  }
+  function renderList(items) {
+    if (!host)
+      return;
+    const panel = host.querySelector(`.${cl24("panel")}`);
+    if (!panel)
+      return;
+    let list = panel.querySelector(`.${cl24("list")}`);
+    if (!list) {
+      panel.replaceChildren();
+      list = node("div", cl24("list"));
+      panel.append(list);
+    }
+    list.replaceChildren();
+    items.forEach((topic, i) => {
+      const btn = node("button", cl24("card"));
+      btn.type = "button";
+      btn.tabIndex = -1;
+      btn.setAttribute("role", "option");
+      btn.setAttribute("aria-label", topic.project ? `${topic.title}, ${topic.project}` : topic.title);
+      btn.style.setProperty("--void-rt-card-accent", accentOf(topic.id));
+      btn.addEventListener("pointerenter", () => {
+        if (selected === i)
+          return;
+        selected = i;
+        syncActive();
+      });
+      btn.addEventListener("focus", () => {
+        if (selected === i)
+          return;
+        selected = i;
+        syncActive();
+      });
+      btn.addEventListener("click", () => pick(i));
+      const shot = node("span", cl24("thumb"));
+      shot.setAttribute("aria-hidden", "true");
+      fillShot(shot, topic.id);
+      const meta = node("span", cl24("meta"));
+      meta.append(node("span", cl24("name"), topic.title));
+      if (topic.project) {
+        const proj = node("span", cl24("host"));
+        proj.append(folderIcon(), node("span", cl24("host-name"), topic.project));
+        meta.append(proj);
+      }
+      btn.append(shot, meta);
+      list.append(btn);
+    });
+  }
+  function syncActive() {
+    if (!host)
+      return;
+    const cards = host.querySelectorAll(`.${cl24("card")}`);
+    cards.forEach((card, i) => {
+      const on = i === selected;
+      card.setAttribute("data-active", on ? "true" : "false");
+      card.setAttribute("aria-selected", on ? "true" : "false");
+      card.tabIndex = on ? 0 : -1;
+      if (on)
+        card.setAttribute("aria-current", "true");
+      else
+        card.removeAttribute("aria-current");
+    });
+    cards[selected]?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  }
+  function paint2() {
+    document.documentElement.classList.toggle("void-rt-open", open2);
+    if (!open2) {
+      detachHost();
+      return;
+    }
+    const items = topics();
+    const key = items.map((t) => `${t.id}\x00${t.title}\x00${t.project}`).join("|") || "__empty__";
+    if (!host) {
+      host = buildHost();
+      mountOverlay(host);
+    }
+    const panel = host.querySelector(`.${cl24("panel")}`);
+    if (!panel)
+      return;
+    applyTheme(panel);
+    panel.style.setProperty("--void-rt-count", String(Math.max(1, items.length)));
+    if (!items.length) {
+      if (paintedKey !== "__empty__") {
+        panel.replaceChildren(node("div", cl24("empty"), "Open a few chats, then hold Ctrl+` to switch."));
+        paintedKey = "__empty__";
+      }
+      requestAnimationFrame(() => panel.setAttribute("data-visible", "true"));
+      return;
+    }
+    if (paintedKey === "__empty__" || !panel.querySelector(`.${cl24("list")}`)) {
+      panel.replaceChildren(node("div", cl24("list")));
+      paintedKey = "";
+    }
+    if (paintedKey !== key) {
+      renderList(items);
+      paintedKey = key;
+    }
+    syncActive();
+    requestAnimationFrame(() => panel.setAttribute("data-visible", "true"));
+  }
+  function detachHost() {
+    document.documentElement.classList.remove("void-rt-open");
+    paintedKey = "";
+    if (host) {
+      try {
+        host.hidePopover();
+      } catch {}
+      host.remove();
+      host = null;
+    }
+    document.getElementById("void-rt-host")?.remove();
+    document.querySelectorAll("dialog.void-rt-root, [popover].void-rt-root").forEach((el) => {
+      const p = el;
+      try {
+        p.hidePopover?.();
+      } catch {}
+      try {
+        p.close?.();
+      } catch {}
+      el.remove();
+    });
+  }
+  function mountOverlay(root) {
+    root.style.cssText = "position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:none;overflow:hidden;z-index:2147483647;display:block;background:transparent;pointer-events:auto;";
+    document.documentElement.append(root);
+    document.documentElement.classList.add("void-rt-open");
+    if (typeof root.showPopover !== "function")
+      return;
+    root.setAttribute("popover", "manual");
+    try {
+      root.showPopover();
+    } catch {
+      root.removeAttribute("popover");
+    }
+  }
+  var recentTopics_default = definePlugin({
+    name: "RecentTopics",
+    icon: LayoutGridIcon,
+    description: "Switch recently opened conversations with Ctrl+` like Arc's tab switcher.",
+    authors: [Devs.p],
+    tags: ["chat", "ui"],
+    enabledByDefault: true,
+    settings: settings21,
+    managedStyle: "recentTopics",
+    _mark({ response }) {
+      try {
+        if (!response || response.isControl)
+          return null;
+        const sender = String(response.sender ?? "").toLowerCase();
+        const human = sender === "human" || sender === "user";
+        const text = human ? pickUserText(response.query || "", response.message || "") : plainText(response.message || "");
+        if (!text)
+          return null;
+        return React.createElement("span", {
+          className: "void-rt-mark",
+          "data-role": human ? "user" : "assistant",
+          hidden: true
+        }, text);
+      } catch {
+        return null;
+      }
+    },
+    patches: [
+      {
+        find: "response-family:handleEditSave",
+        all: true,
+        replacement: {
+          match: /\(0,\i\.jsx\)\(\i\.MessageBubble,\{isUser:\i,isIncognito:\i,responseId:(\i)\.responseId/,
+          replace: "$self._mark({response:$1}),$&"
+        }
+      }
+    ],
+    start() {
+      detachHost();
+      open2 = false;
+      held = false;
+      ctrlHeld = false;
+      try {
+        hydrate();
+        const current = currentVisit();
+        if (current != null)
+          bump(current);
+        scheduleCapture();
+      } catch (e) {
+        logger28.error("Hydrate failed:", e);
+      }
+      if (!keys2) {
+        keys2 = new AbortController;
+        const { signal } = keys2;
+        window.addEventListener("keydown", onKeyDown3, { capture: true, signal });
+        window.addEventListener("keyup", onKeyUp, { capture: true, signal });
+        window.addEventListener("blur", onWindowBlur, { signal });
+        document.addEventListener("visibilitychange", onVisibility, { signal });
+        document.addEventListener("beforeinput", onBeforeInput, { capture: true, signal });
+      }
+    },
+    stop() {
+      keys2?.abort();
+      keys2 = null;
+      open2 = false;
+      held = false;
+      ctrlHeld = false;
+      thumbs.clear();
+      detachHost();
+    },
+    onSettingsChange() {
+      try {
+        writeVisits(capVisits(readVisits()));
+      } catch (e) {
+        logger28.error("Settings update failed:", e);
+      }
+    },
+    zustand: {
+      RoutingStore: {
+        selector: (s) => routeConvId(s.route),
+        handler(id) {
+          if (open2)
+            return;
+          const current = currentVisit();
+          if (current == null)
+            return;
+          if (id && isHomeId(current) && !isHomeId(id))
+            return;
+          bump(current);
+          scheduleCapture();
+        }
+      },
+      ChatPageStore: {
+        selector: (s) => `${s.conversationId ?? ""}|${s.projectId ?? ""}`,
+        handler() {
+          if (open2)
+            return;
+          const id = currentVisit();
+          if (id == null)
+            return;
+          bump(id);
+          scheduleCapture();
+        }
+      },
+      ResponseStore: {
+        selector: (s) => {
+          const id = currentVisit();
+          if (!id || isHomeId(id))
+            return "";
+          const list = s.byConversationId[id];
+          const last = list?.[list.length - 1];
+          return last ? `${last.responseId}:${last.message?.length ?? 0}` : "";
+        },
+        handler() {
+          if (open2)
+            return;
+          scheduleCapture();
+        }
+      }
     }
   });
 
@@ -7788,7 +16323,7 @@ div:has(> #grok-bot-nav-button) {
   var DEFAULT_CHIME = "data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2ZjYxLjcuMTAwAAAAAAAAAAAAAAD/+5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABJbmZvAAAADwAAACgAAELvAAwMEhIYGBgfHyUlJSsrMTExODg+Pj5EREpKSlFRV1dXXV1jY2NqanBwcHZ2fHx8g4OJiYmPj5WVlZycoqKiqKiurq61tbu7u8HBx8fHzs7U1NTa2uDg4Ofn7e3t8/P5+fn//wAAAABMYXZjNjEuMTkAAAAAAAAAAAAAAAAkBXwAAAAAAABC75HV3zMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/+5BkAAACVRhUHSTABDSjGMCkpAAV+UdIeawACK0LpksSkAAAEhOaEPa6NHqgJgmK0ewQIGLv//sYTJ34iIgmT1iAIEIWAAAQDGCAY0Qff/1gh3+CHKAgCEuCBzggCGCDv1B+CBwoCAIAh/V+UOQ9zXRtyQAmCYrR6ogQIEc5//wIATFaPYIECBATo9UFAIBgwuCAIChg5BwEHbi4f/8HAwsHwDJSk25HiBkEDmrGDRlRGDE44BKOErcpXEmnGLGAUG05WF48gSBebi1am1KjGgveDHroFZEIH+QlCyxGABCC1VCrlYQwcS/xhYcVnMtqxl77WNr5RzmHzZUqg8/U1m/KljFqTC+2AvdPax+xen21StkMqhq/RpPXb/zWWUNT3/RRXmMps9pZ3O9/63///f////ludLKoDcTe+frn/9WK////f//5///9mm3sjJlqb/oAAADADutHY8i2rvky+59Wnn/WFTxDiS2ttrIhnfxrf7Mnb/W//Qd2f//6FQAGgwIA8wGC8yEK82ysYxBF4xNBYtMMgAYMgIWAAMFABRP/+5JkEQ/EsUDLF3aABDKiOMDtPAAQMQUgD2lnyNOKJE2hNZhgBLlJIHAFEFOSmOwiZInTghEAKPAyAMLQgs8QUegDRAHQegDFRXhKYuQc4Vs6AyopETAMtC5SCl1kjKtSZmiaUjYdQ3xkiBEyasgmatRukZJoomSaa2Z3IaTxs6/SQPKqZNu/2Vrut1oFE1DJXgYfkVJ/DUDvkKlToxygu1h75KqdrK18fst/G52dizb96dnVr6AhuiQkgYmYMlRjQESsq4jt+sq7pEgDDAYAnMBcPoxGW9SoBkAgCzAPAmLppEGcIC9AsAAUWMjCR6ZgX+uMmcxYz0SyC6YUBui82kcFEwYCE74kHeVFVLkakhmmB5ICYhyax52KPWdF51FySSw9AfKi67ZzLKVh+Wk1EhSQTzKoOs3TPtlu6qRdXbL//4vdw6Euzej3qgBhvXWL31LDddiITD0UykDG3Wld90OQxTW6DaFlYKlkTE9ntf+HP7XNp+v9uvp/9nM8Mf/0qgAAWpTMLFIjAHD9M9NeQ+ewYYCiFWDIwWaP2luULS7X//uSZBAEQ7AqyJs+yAA2Yojmc08WDBDPKu6YVoDyj+OJx5Wg4votW6k/BszLpY8MCsAl24JWLAZAmadDzPUgiikv9f27mVvKrzP+f+eFXHv5Y5V5rWX813/3/953v8zn7+UsD4SH7Fg4Bj0+nfrYEXu/i/+j+QkfxWsIABAALAJSkwCNArTQceWqi5hKXoOEIaa+WkYu0/NG+pNU2j/q7rLMHW06PyLvCaKu+S57d00yBVGWbrCCoAmCw2HuVlmHwJIlOqoS9iE0wdAqnhtKmG6duLiSrOa+XU9jP8qHkYWWEADDtNT0aVkocilq5lSCXTht3M+ohle26/tQoEKDlSpiK5LXmoNR9+rT/knf///SSpgIVjoAAA/O35oqA1eRICqJxwqCAuL4Ajqy9tbROzs1Nx423n7XVgXYEt8MWxcJBZ1c//qvSo539TP+uojBJFtONfDgGDAvArNG8XwMC7DABEN0LEApdEwRAAHVRgCDvxeH1Y+nPccMHZvd5vRcZXOapV6llhp9mtaZl5p4fLbDiHK91/2b/v/QkHQNF1ytzP/7kmQqAIM8M8q7zDLkQGKIxXdsGg4orRzvaQfBNZSiye2sach/TduWyiQFZ1p72f9v/p1OH6KwIAADgeC4HgAzj6B1TOB4uuDAIOKENDAy0Jth4DZYsh15xnyjOvVb9hc/arPnYNQMmcJBj6VQiIs7txQ7+tQD1gEBQCRkDACTAxACMJQI87Bh3jESAFDgZzAQAnQfBJAEvAL9UaZSFyUUliBCD4bi0JlMr61G123YjK8nLTofOu6U6FQ8JNUwxLgYHTkI2KJURTY8tae2+F/ruHxhYw0PrEqJJQDUuzq8n/1/2qX/1e33gEgA0B+XYMEUHU2PQajZREaKTDSkMfEEJgiiddKBgDBRKEPzCLyfR2jc1WshyM7TPB6cBsf3DsOoGsW13193/9f8Q+b72X/bt8bl3UwaAAxQNpVzZIYAABmBuEQa75oZ+SRhAJhRdPPBUaf8oqOXhUKjRNQxCoDhyD6uUxAsUMEkExhQ7BKIFFbF8wHObTZGk6KlOgtmbZS1mKVkfrbsyVMuFRuxoUJNgClF3+M/9tFSPd6QgJBm0Bj/+5JkNYjjLCtJU9po8EpCiKFj3AANkKkctemAAVYK4oa88AAzAGm38T4amApEPwIXwaDU4zABeOSJUIEDrq7YrEU/4AoG8tzdHHYu79vCgxYK4jXIelk9Z5lAh0QFDhi1z7RTyVQCfFoGwYKAHBgoA4GCySObCToBhuB6GH8FYYKwBiDac4NBVMJwEgwFgBAcAACAE0GYHa2TADEPMiKF6MYQQk0z6I5YQAJgAtw5wohOGJdLYyRxSFNaVt6JfZJkj6zhiTCK0ldddkK7pJGDFakCsbvQYIYFZgcg3mBaLYauqEJhFg9mEaDWYD4M40DWCQCACDAYrIIZgSgEpFhcAuk9Q9MxLq08IkROyHRGrAsSovgGgl/JNHXBkwZ9DTBXeMt7M7S9RH/3KgABEnU2I3M4QslnQ2IxYBCQAWZIRki0OwYtGJmRuAFQk3Rk5ZxEysYxETRoWcE/kMAjEA4JqLPD8hHgb+HIBYaI6DCwYwFKC5xcAaAAcAG4BgAfghIACsyAHDEnyuXBZAuQcAAyw29YuYCpADmBv08/FjHAeTLj//uSZDuABgFfVn5mYAZeQ8nPzeAAEFVDQv24ABjKCKcrtCACBaMZBxQcsTIof+mLgJxB0GNg1aTtSSf/GYPG4lAiDEXIuT5RFtLQ6xYTXO//FwGpuQQnGLhcNEkC2gZMnZJzEx/////LpV35BIAAAMSEgFAFAHA5AYDAAABCpmriAUWTRBIACILOJ9EB1UOqtJbJMxgZZIeHJZDLiSGVxvLsceQGatzl3/48UPTuuZUlh5u3avf/n09vOWWPxoYveNZm9/4fy38+X70iAAABTgkDNgoMma5hlh7HkhU1WctaVO0ZgT6rlDAG7D5AjU6WSKmpdMWWuYmBEwFEZE1JoixZFygWRJjUomiR+s9MiLFYZ4MTOkklr+pL9aJ5NZDieSSfbX60S6fKJGC5SqyJdJ1zEZUgpdZfSNkkknZnRWYmqLf0kkkkaq/60WWYiAHAIAASQttRwClAL1AQVK1iD3KbK2FAWzjc1ayz1qt/Zop9AY/Ev/3Ld/2dn//7nf/WigACVKC4g0AZgoFxtJBp4GCQYR5gYAiCyYsJIQCd9bKCjP/7kmQQgAQEUEwbuVLyQmW6GmWCXs3A11WsMRaxUZapKYGLRoHCeFBxh8NxqjmYhGIfZ3GLHI9K3FVBUmH5l8PuEBYF1XpE8C35fbzpd297pQFRQcyZqnuYkbaqujD4uPntPWo8MMbmJNBeAiJznaitZm866XOYo6M3a3/RHnGu6tlARAIUwI2wAJukeM07FeWJrnY4utwO9YJBMcY695mbk8GgAgHDP5pSl5mW7+w4URzEcQyef3m6whG7EO+hG///Di24AQByOSVq1tyBD5oM+J6OzIrmzlijmFDVDlg29hl+Xga7Enennmq1rSJqEpUry1HRTlT6iNLZv60dA3NKlwtB8IxKPgiZdgaZtZ7a71HT0B0dfH9fJTz/Mr4rKqvzKs0BboqjxIO9cFaukq4l/SSWggs5GbIQFDnw2FRXvzFiZtQN2ck8u1Mw7Td+mtZ1alDamW6qWzFPTZbpsu/zKVQNZBSk5SzKsK7EwmbV3RVu1Utq8DYYCHKvvuYD/KAhDv/+6v+GqgBqACAJEIDBgRAwmt8NsaOx4Jg6AqGASBP/+5JkDIwDpDVJE9pCcEVDKRFzLyYOwNccL2BtgSWP5SnMoKCXFAwCQOACAzd1hHRAyhQLb4Bw+afiC1VY1DUqLzPdXkMuh5ASBjkszis1hFXBTdbNK7U0C49Md1UtLTfMDaul+ueOqQ0dZk8vvs92yb84kHDSZJIPFCTWKRiGgKCyaL4JBQPqZrWHEoLYcW8JjBGCfRj8gxQjSyOJOFe8gXPt42q21IC5g1wJaC3K95Z7GFuZoI3UZbOtzt9YIlvxreJfsBAwAwHDAsALIQnDlHKRPH8MMBGDGDMA+YB4EAhAfQfMFMC5BYqhiiQDK3ZwveazOCuGfLyQM8UZfScq09lp6wxijLJFdmZxUcaYixeYlcbhUzWp6fWe+aNKesRFI+G079hiCCmANUPW5ckyoQCFGkFn/+V//6kESAAFbd+QzQiLATNzIAb7IkPAaO0VAGpUKGwgUqHtpRLKr4MZIct41ZJccIwYXo2z1jfh57r/1i/mShMb+mf/1C3/7v+////3VUAD4Acl13U3FgFEQTnJB4HBUbGEgTrDKHJWMREp//uSZA6Ag0U1y1O5GnBOAykad0woDQzXIE9sqcE0DOMBnuxAJ0Q7pq4PszEoMo5iWsDofsQ3zndP561rXcPxqYs8cS9zZIAAwQiFT6vZsW8yJewiZ8BVj1n/tfeoCYeDhTHGLERLehWPCav/6jH/QAABABTCFrSAwFmumcYKnCrAmF4EAQyOhwoFesS3QoLZhbfjLnrYLHfhR52WFH9ezzIHX5TfqZe2ip16T8r3+oSbrbwG7/9n//9X2f0/WAsgGAeBKBgTTA1B+Mjc9U2eESzDWBMMBsBWTmASAICgAjBg+cBkWNCDozDBI2ryne5qzzXJHeubuwBem0RIpblungg1SCm7EYnCJsUOJwBIOpLXQg4qGzClLmqUyi7XR2yUNaezo3GnGNAdGZGpivHuebGKIehwiPBwNShCGmeDjUADzC285Tuw0UBbz17y25RK5DBcv7cqPvXTOp+2+YPrK3JUnGJZu9hcqw1fDlNXr1pT/+0AAjABFKwBwBUGgCGAEDSYcpXBo2hemEKAUPWl30BajRWPNDGLnVpuIsy5TWmtSv/7kmQXgJLhNkrT2SlgS6UZB3dIKgvM0SlO5WVJRIyiwY7sCKIZw2xyw1AUrqYQERMMAadR27rq6kV0ZHV009t5RBJlftT3o7HdSnUUqLb29QBAA4AACAGGalkjMQ6z4gFSIzQUWCoQwoldxihrYhTkDm0rkspaVDUvsO7kiJPxMBKDiyriRgbAJCFuNrjHT/+3NwNv+GeJvmblRRgBwIAFkgASjC4JmAQ3HDWcm11oGCgejqzSy9hclhyvBysaLkMugxT0bmqzVUCxMtd9julVGZiBMKYBQ7Ys2OTD3f/SKqTWvKIPVPna4q/ceV4ue3XP8XudVOaSFKirGaRggFx3N17aPq9zMYxOMMCAMZmcCqFAGfi2wJ3hoif1/okVg0tuwwuaWVpNHZfS7rTLdcaTC3Mzi32fqBvHnapZbnS0EtIlTStWzuB539FrFWAIglEQ7LAAmOVAAYFCZ0GNH9ISYwAiWSPAQGki04MSoB2r5HZWF/WfHTDpHfP2Tk/F17NVtU5DVXlLKXOrFO/soczOo7HeyF2TWAwxrm6+nHLt3Gv/+5JkKoGSvijM64wbalEFGPd1hWoKrNFNrSxv8TwUIwnttLDtfWwEEBwASLCF3RIHDNZAzoV2DEsITAYICECyQHIuiQ1gdHBrsTuBQD5P25TUudb57Y1NrrKdDQUjg9ZjAzYXf9DdtMiaWs5ho///////0f/1f6YA75JY3NW9CCUOjUg6IFoScLTwQFTQMYPR2JBqbNn4m6xJdBOOEsnqU6dZUOfMQqTTEJVua9S0/528Pdcksjtm5VSRuvqTxJKnOfXkWP/JNllFEpbVAGlWBgTTAlAWMOMRM1kgjAUKaZeIBiwYyXqrFxXIAs8HDFuKT63qO/LXsprF7BA0WxwYUIdzSswMRPxKhOEDcwNTY6okOnv/6bT3ZlsamioAgWlskB9oZRuPNbzGZxN2CGUv068BUsSlUlL/q/QCOE3FoTaOGtB2XKfJxH3mtQCAQdFYSAEh1H07E4QgHSkZY/FLPwe7kNug1VrzNUry9hVCjNBIAjIcFIkKbuA+Mal0mn6RSFfXoSEF4CDFUov18p3ZMNOYePBzVnjcB5eFGEhqrY0q//uSREKABEo5zUtiZw5+xzljcwhuStzRMa49q4mOnGZpyIsJqZZbOQAV2gALgZGUKjA8TazKnAHBGQAYv7F2SLDq7IAmRAprCJivILYI2NTeXw5H3XmIpMSyvL4bRPTrfBdEFOI9aRa92h17dS/UvU9yMVY3QMPO7VLi0jHGHyJ2JbGKWfqUWfGiv1FKLhQHwXsZOlJXv1wLsHALBzvowcAKCIWfCPMAACIkACZ4AUzPh0Dm6k0cQPIkFF3wQqaDWAPnMc5unIuWFigsLBqLG3jG6wG4mJYab3Iqm0kLRq2bb7pIAAmB3HWel+oyqu1jhipAxNf/+kay+UeJrbACQBBCVcAOE4A6FTby+P6JkFEwaAatjJ5VH2vEgBURiS1o86VJTV53C13lazcta9mLqy25ecJl0dVpi85jnbRpHS6WQMUNtHaZGyLJUtz6X0DB3ChhX//dgokDDOUBQpAICFRaAAKNSAL2+AFNoQAIZ1lycNmaYXgAXxVuaLEnLhtQ0iBOlaBFX8PJBwHAGtCPeo8HG57ceLAZKi5YQom0Pflfe//7kmQgAQKeJ8vrpkOyT+Z5TXHlagqg0S+uME3BHIzotPwwLty6Dq6+dfxh9YlA3msgt9fRPP50AAgKABl7MAUrPVdAEgniHEYcAbJ0/VU5lksgGQITAX7NRbmdtRKd3TFKR99/t5bWKsbuGDlRb1TuY5CW6lAUc/7dDs2ujyiLbnOqk0rbqKsACFIkLfIlKCp6mAGMa5lgBBbIGXskc13nGhkoB1A6Erhi1cu+juWjG1aRwm9WttjBkNRQ1hOprvrtnNy3U+mwI/aZ55pkbmEsrIVuFcyc+V2cd9NcAjkksb1kAAH6N6uiYdIxhAW3aLU7T2QkgibDglmwDSdrJcfoIQX40quwJTt61+XuKSq5iuFp0fYVXj4nUem1hEJPrUqm2AYAMRABLEACYAcBAEmAOCIYzxW5pfBXiQjg0B8qUtNF3kdtR4mBKliOaFfG1IdkadwVuvCkYE6kpPW8Q+ZjGIZbGFkrdXxwd6jZqxDrVh1zLYlNCxIIW13hRaZIAAABQACwIQJmJBF+TLMNgHZYsWwQDBcZPb2vWiQABoNKa7L/+5JkPwCC1ihI089bUEmkCQ11gmoKnHMfLHXhSUGMoondPJhytvQJxigg2K33nlMBRjZdnHdZRtLtYmb6k1aGcx+bb/1f////8iAAQAP4AQTC9CoQ55X/h/jZ5jaIwCAWXI3tPSrdJEIaGukOhUpmVYgI9xcIsbEei6jNh8rq+p2xyVoOE5cagTQn33v7rqbT8YtxXB3lbDAJ4b70+r9AgARgHhwEwKFRo9H53J2higLoBeIbmKCqwB0lgoXKD9GQtjkG9dkaiW9uaXn+pzjXBvQ3PcOKZTSIMa2fmbF6zRciZY82S/Lf+S///////30BgAcYDDTzAEDTCIVD37DTunBjGUQzBIGESi2CzKy/GeEQ17PT8vJUJ4gzA6kvTj6wngGeVnlGCKJINiIqzACra0lIDvKpLhQLTKAbD87e1Vh7///6wFIBDAwBgAjATAJC4yhqqF6mE4CERSzBBYYcYxYFi4wME8OEJJmA7gtxPmOR3G1W8rTOhsOPPd5AV5XPY20FrzleZ/U2j/b0ADEAApGwAiMTAAlAN5mWhaGj0B2T//uSZFkAwqodx7usE1BH4siie08mCoyfIU9kqcE9i6JJz2hACUDQHZbxV6mQcDfKow+FGnWf2e1T2qbXbPM+a5GqryfnfwtVp9R+V50OYFMzJShTs6zKIoZ1LY/SYgcBa/9OkCABEgyAQYYgEJnOMG4WMmYcIDgZRS1jT7mfBPMu4f415PIVuzVWwvP92q1q/9uHcVJW8a2ohG7ywDbQ9Vysijz6hCWlyZV5L7P//////9YMwCkAACEkwNBIwmFU+WcQ67pcxVDowEAdEdIlfBftWsZAQWD6q/RErOoE+zNr6LE3nOlCeCGZmeyS3T5VfElgFFysze4uuZWRH2Y79kcWD7BIqCyjAIFSUNjFWJzYD8jBYXSECC3icCDoKEx1UvyIzIeHBKBR5JUKUne7NZQyIxhuBdaB2EdaVjtUrwoWFgNc+xzPi9X9myz3f2gGNAACECBwEwuMh+nd56jdBiSHoIAggBFORgiazJx0BBYQrr9dFwZW6Oxw4Hff7q7mQlvvEmYzhSY2EIa5o6EFDmXJjAibpAAFXO47IfxVgrbAAv/7kmR3gAKFKMe7rytQSwLoknUvaApAoRxuvG1JHIrjadykmADABpuNs9UgJAOZbE8euMKYvAgY4ogEa8uZiM2skrqkyWhRtVxMYN7mbK2DaVT/ggOik1AwxndWV19fX/17vYj///2evjYBAFIAj8WwBINpn4HNG0cDiYZQAxgTgAgYCRRFgKEDXxAYTxxiItYVy/8LhuQS+3Wprk7VmYEdi7cprV2Q1ZYXnZrnOxYPocyTzWdaO+YzapZW3mlg82sgCF1YgP7/7spa0tEyaKjp5XDhMul+1QtKVd0SEH1owaADOdpwRKKZw6q4My8j2XI0bLm/pbu1t6f/q2//oDgBbdodEAnHCOfn0+FmLYaGAQBgUCF4KmDgHlJCARQN8Gv45Y0Au+cz5ictPtRMK0qCTp6SWWytJeQVDmSIuxcZD/mx9+qpFlXU/65BFAAQACCko1EBUAwYERoEcpghSRUDkLAh0OvBlKVERLBcPgxSbutTOYHWMbvMP9KMvOoc7OLGgJCI00DUx9XXuyf/+rVv9wy3/Z20f/RVAAgAAVkADBT/+5JknAECuChGM9k6cD3BqU1yaVAJxJ8YzrxtQTELIundMKBwKDmaQ4Idm1EYihOLEAZNK1ihMfKiqgR9Q2ytIdjCsMNbV8JCGe63XxlpuLiHXZTssct5YmNhY4ff71eJ9Me2wXg9bUk31G6BnGbZpr436evxiOkBhBQLQAAN0SURieH5xQaYGFwiOggfqH1euIm2TkjE5WYAWoioifQz9yT9irDCVWSHWyooWD4a5PKrHjek9JwCBCFoByoiYZju0AahIDkYlrrIYjodG90enmQMhxQlAFo8qVrRSQkKOw8CUrgOxFcZTlnz6+f/3fuwH0d8u/w6RLM1r4svlrVTCvHFGsSINUpHLHga////9n/I//9AQARAAAUrQKAAAC0wCW48RRUxXA4iaKgRIf8MGwUlKUwcIvVaia245ap8xPmtaMa7VpcWWSWMhx/C+cGetrfWPmvtBHpQ1QxAah0X//////////1KAG1AHw8GAFIAMMCRfPu8gO9ZTMPwwBABoyJ95oIYMEQKDwdKOj2tKJy8fFSJddr+lx1cBiXIvbLJ//uSZMMAAuAoxtO5eUBJo+j6dwwoSmB3IU6x7YFPDuLd3DygCHkdI2Kigk2M2tQ3+ETGZ0j/+1kGZ////+z9nrYAqgcMgaSi4ZPVyYr5IFxBJGgqKWgVynZYJVxNmAzlOlCme6hkiq/OX+qQ08wva0hx3qGQA0WZY3EZ8wSD2inVR9P3d6t3//+/6KaQKgGJyNuyBQBMKAeP8IJOV5mMUQnMDAORqUi1BGJ0EOQ0BU41LZ9MaYfR4mY0R3nf0sCVgavSsq8uUJxNFIB9NJG2qIVD1a7Pdbvu/1erXExv+3/6P9LhYCEUVmL8GBoWmc7PH1zMmOQECZzcFv2+FqwcMtK6VIBFOFja1a2uWkqzMFzAFzBa9V5+hSFAv91l4hygw20MAvR1adun9X9yUf1+n/6f/7YEBvgoCYwJgFzCHBIOFsXE4/AwQ4okHBjAYCyWl5TKQb8RzETd5kbws9pIkyFvZXl9rCpepHfiRugwI/tDcoY2pWHDv/TxmccBASKr3LNDLDMRD69oOvX3+QdEVFWuz0o5Vc27K6G/Y+a7kG+fSP/7kmTbgMKsKEbLrBtQTAMIcXcvJgsAgRruvE1BPQuiCdwwmO6iCYRgwAZrQFZ9+npjmBgR2TKbqmBy4MHZj4Z2MwJ1tbVPqzp7WmLwV+EG4yXgzV749kdCzLqCEdTb7qd733p8Vmmp/1F67PryOaV9CvUn932ACBlWjGLNmIwTAszW6QuM+E28wgQWDdUtepugCLOo1BQyQcDQG0KLNyi9PBV2nn6OmpKlhpCeqGVPO02VqUNZSAh6BNTVPbpb/467jasNJHOSxSYs6vv+7R1p//L/+53SPX2bGp6jNYEAgBMBQUNyTZMH4+GAlZgOAizel1oSKXGq34DA4RI8t8ajah5ww3Vw33lqQa2TI3nl5wwslFVopdo7dSNX7v2fqLf/60f6qkx9GyoBKaBsA5iYCYehqFsBmhKf4YNIMpkgIOsLRMGrOAQaWvD0gb63N5z7rym3fxtdymIzBqAGzen9RJ/XcJcL9llixLqcLPPFjhhCruzfa1Kt+Y/30O/3GcU463uORPX7fpckCmqZCyAlBM1iJQ58Psw2AIuGo8wGXJf/+5Jk9gDDbR/Dq9kacFLC+HF3DyYMxG8SzPsAQTMLIcXcPJgSIdAtOGjCEEzEp+0zvuSEtxLrT0+ospGU+CRE6Y2CrF2++h3uo/lGUhRH03eLx2vt3opL6apm3rHRQgoGCaMGaU0wB3vCWmL8Ake9iaRcRFgKDMwOXmMOhCGdtJGhRUoHvVNALtw67k9ffrCdXUyMEAICl9ijdtEZZYjSkwyCYds0dTLO9lUz7TAqeKODBwFQsYUKhMq5qRatSmRC86uOXpvDuEm8i776xX51hT7dOoIGq6SNgZKg0LFc5VLsDDUW9LhqWTbX5YSNVBNPoTTPnjWx539Nny+c7/0sreAYbAmwNpVLpvv6s0tC6LCBUS/2PKopKJlpOHEkeRvv4kuQMqqdTEFNRTMuMTAwVVVVVVVVJNBQsuYJAexkSNemvmmyYZINR3ZmSYpuhOOhUdBmhaZnDjtWdmmeuWSyWQzGNv7lVyU4a6FCvZKr1u2xBsa6FYX+lt2nnChUFyL1RVLpFKGtFzDBYdngApP5ZHmPf33MfANTH4HWKsZ9QlaY//uSZPsMQwYXxBM+wBBPwqiSdM9mDvhvCA17QEFKiqJZ3DCYejhDuBFkV8qHkoBmXxAGGkPDAQqyEoU+82vTpYypZSn5eNLwaoZpuMdl+Hscu7uZocgOPwVSB2i7zfS0qHIX6dOtOgg4kk1iB1y2k9feAlaf+9+5typj1MUkEQEV8y5vDAkSz4/Pj125jFUMwxhnWj60xLt+EXkx2WsymFXFYm1OPoMlMxdSTn+PU47gVbFauxynjH1SGJzm0CpI2Mev9qfXT26rS7QG+4wHWH2ZTchjlVjXmRSn3N9iZsAERm7jqzWTGMVHE8soQ4YLfYBDcfTYiiictvNAKG/Rn+zB3MXdpnrYQoeXJBohdy2u1bKuQ7//0VtdZo//3e//UkxBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqi2xtRmA0FkdVTUZ3vAhmLIAyTqzDDQoYBwOB6UdbNq30URXVsT3it1pNmUP5MbnZ2PsnZwGBbrXn1xgxxlOhgm1iLYUlN9qlqbufyroFEwXtKJtUXAdriSJhCFJdP/7kmT1AAN+F8KL2cEAVgKoYncMJgwwXRLO4eTBBYri5cGxmOphx12xySy0o+PknoOoKpegyXSK1pVkKntYwSrJEAiKWqAgbmibMHyaNmMoIE0TGRHhW5YOkLFVNZS9ZSI04w1a279PPvDuYsUuI13jt0KY2W+H1Z0PKGPe9707FoP5SlCyyv91jdlv9Wuz9nX/06VmgAg2VWhWkkk8LIAKB5yKfRqOjZgOBCqoqATrPnEX/Q8ZBGX1VhX71V7tlfbruCyiQGo7nxqtKAwguObpsHlBgXuke79f/5Lq6P9rp7++7/6aAIFVT//3ghtbBs02YhoJSqoIc6GxGtJ+0mhyAV6jMu9RBAV5eYYKMH13o09je6y76+/9+jf//3fot0UWTIHI1zCcBhOkoJU2V1QjEBB3MEgE4iAzOEUVFUEWir5CQhgkIoATLwjMFPA88Bxifor/c5KQqAY5C/ktvyqMrAHlrWJbOXJ3lDh3HW9VN0+OH9+mxhEDivExdiQVQSAxFL0rmlgBzVGlqvoYVLjzK0WzZbRHmkj2ixcXMOB++eX/+5Jk7YAD0RxBgz7QEFQjCFF3DyYKIGEfrr0tIOmKoyWxlYiPQSYTBVyUAAaqG3dx6BEVzL5iO1I0MHC/21fefcyyQAmBoFqx+BqMADR5xOokEJ7eVNYyIIRCqQrS7/xjf7NH/pWrYdR19/6Uf9Vl/WExKmsBw2YLoWxq0ndmyoCUYawBJ+mBGKji+VhmTihSmMtbZudaagmN17dmP2dzd6Jym2oE/czfp5+ISxdsO5SW/U3qnsDzwTcUPlB0We259TvZmCan+QJkFzmw3WVM2e1tBwj0K2uamxbhtFeuxFmoSjAoGTLoijtM9zEsBiICUji+0vJWqAJky3DbtDLRbMO3b/4l+NLxMaX3JJGUwhUr3+9SdEDPD7Sy8X/t/u/Z6U6qvZ93/p8t6jMJzS7DBOGxNjCTw0gVuTCvCqNLtkpwihwSji/xA4mCt+PI7IQvRBDau098BUMzJZJqWPqvlc8xLoVFITGFFHTfaLRqNTf279VodNhoiWYI5WgMn1FR7FiSOF72k6FitYlWD6WCzjtSl28oDD2ZkDgKkm58YlKl//uSZP+MhEEgQYs+wCBGQpi5cGl0DaxlDEx7IEExDmGF14k4PQwIlrTc0VEigAgrVTxJokIQM/scyXRBGEVgK0cgCRZLZr7hAM65XcXpW5Vha4rtRiGA0V1xd7r9+/X0iYtTX6Sm1us8phkiilQlvT5pFl7bEPr3eKdJDiIIwbzAaDmMcNlU0fzaDCLBXDgJCqAKhikzB6hKOiPDLnRia91pgRRcpU4+5pyXk5KBoZvQ+dPNIZiuffiWOhQaJQpr1NtlGpvNetpFtDmcpoeR1vqFj3dJLA6RZCnLTl5uQ2G1uf9b+skBomdZOHnB1mJgCA4D3labQssh9HV9qYPBsTpTaazIM1Prokg3mTpy6JZvnmecqWrU9ydYr02SG+lfRZX9/aYq/6Ltul6dW0yqi56sYLYgZlBvUHHoCwBiMDqsTJBC/xaVUypgAGXlK2b4L5lrMIBgOGH5pZyp21NWE9GCuv2bmJfKWQAoPFXmt2sqTSeLDdX+5jLl7OtFatrX3tiyr9Fi9ODe17HJ9SMWccZo6+teH6NMeNbc9nS/NXt/3v/7kmT6jIQCGUEDXsgQTWKohnDIYg0gYQos+YGBKgrhQb6kYN/6dvyd8KVxey4EiIJ/d8MyRroGGxyU/hgiLwsrgCLTNI8MawEqNie/BQA0iKMhInPO9v06P1s+7X16f9F7vbv8WehVTL3uBdB0YKgQRrsLKmgmkiYVYKxyQmyQhPVjQhb8cOUAV9LG5JyPAy14nevS/CQxPC/L4Ahpbr2R6fp56EOCr13pPHqu5y12rmYJZ+f/WYtMo+eNKgZTwP/xP+irfkNZO3bX9up+fd72sg461udhumuhft3f/sjuWvnp4toXoFxspJKtAayBgfNB2kG3YfftV7pY8dHiEAgIgxFs3zqya07O0YNgNJIz27+d7+jq6Vf/d/1J/3L9aUf9umoOyEAR1DAtARNqs5I0VzwjBvBJMA4BIwBwEwgBFImHWqJPFwLKul+l0W5NMiu67jPsxHjy55NbRDgYY0OfhzRkth9WQhf8c/0LK9er5VX8rJJ2tmTvTB/ck9fNrPbt6meeZa/M6X7W/qx8Mvh/szsVyyI3mdk8iJyuUyf8obb/+5Bk+I9D5xhBAx7QEj0iGLlwI2YPcGMECHsgSPMK4p2xMZj/g+yrr0Asqt2EKjMPDc/sow4sJsqUYIJwlE0nS8jW01t0vHvmmG098qDotoLWnZmvcHcTs8mheLfVxXts1XLR/tU25+KV1b0UaDYEFxEzTAmAAOBA0s2uhDwwWk4UEGTLASvT6b0tQjIySAVhhI9HphFKlUu8RYjDWh6m+Ima6hWI78ehvBWEsxHezRK7z/8zkd253LarCLl+1g3Lf6tl15V4r/+t5NZ1FuWGT7+8T5HDaWCPft37dfqY9SEjtQ1P9ufIuda/GVNWLAQBmH5UcXneYdgYogqYgGIIjkKQHE1SvDdJelMdr/b/Oxbv/204FmrG2O0t766LNlMlQdveTfKI16mjvtTbpTu++znkFGxAtf3GakwA8zVUyiAzAPAkNFMQo5FYkwjBYnhAh/ulAj1AIKi19dm9HQwzKt+H88ePD6bN8Itlh3o2LC+PM8VLJSa0UQrFnvAy1HIWADxhRjHFzixS5qTZo0UrF9trYYIpawWqWk814/F7xoj/+5Jk/YzEHWbBi88bwkVCuHJxiDYPpG8EL2XlCTUK4QHOsEigACDplQUvm+HnCyGyRMccCQrMzatKMCg0B4CTl5UIz3ilGO4E7YYxlAynLaj/EXOG1n7UkMQy3hJQaNXxe7u921Uz0o2ye17H2dtKP96Pu2NR/15sKIVslT6MGAVPmCsNgWEMLQJBgBTyQC6rdEyhK2NCCKkxb1aVQ57wwnAkyH6xJO2NrxSrE+tyAGFhYoqMLUCEegePABhYgFBi0ihckPQAZCOm8kXG1Bg+meqaPYOYtUvS8ahEja4Yl2ZYdSLIR5VcYw18lNhz4ViwoCQxJaLHqD4vlF2rVHD39GCAfVJwtA9Z1HNWA6+1xnSL2/2dbWWq/dzPR/29f/YuIghAMMAgCcwYQ5jYLTNAWTphqAEjwP4kCCqkrlsCzQqgKGQDyheCqLsuhOOZMxiP4w/Vp5I/hfcOY+ssjeecORcAjUIuzted5btXd0+t8KLb6FWM6UCk9PL1l7o7TQlYwYZatNLqq6OxphLTFQyoJIbRbOakiwjSnIVSfHkbI1lu//uSZPIBw5MYQzPdeIBIYrhAcekmDYhdDM6Z7IDvCqIJxaCISVdekTndDiZZQFpsNxri7GUVAY67Yq5Swhk4onCVaEBZlrdIvZnc6F9qZQIWsrM2zbS2Btjmw5zjAJMML91EW1xd1X01RG9IXscUr7HoX1X28t7rn0JfdoZY9ymLL0ALCuDAghzjLyDc11zDEKjAIE0DZKxNqLLwrGLwkk1IVWBPXUPaR1tKEO4MQG4/RrjWwGXW/x0GBGxpMeqKipU6Pv6TxpIDLGQUHBsoc7TCQiWJLYtKgIkJkhhBj6lt6yEzwvGANr1AQeOA73NvhZqdS10jgyI5+kLxkiQIoHMHQ1cKRSvNx8fjwLBs11d0oNschL9D8qlITUmKtIezPbx4vff4kIrVTaiVf67zWdQ8ov2MemsRhQQllMAQOQweU5zKvJiMDUC8mgJHSETBhDchgYWC61qyyymsx6vTwin19aVWqdmQsCVT89VqQ5GFTxC5W7l9ulk9HuNq6V/76a9Bqr+Dan/eou1lelJLr7WgY+wVYg673ft8dFqdyJ5m5f/7kmT/jMSoY0AL2BrySQKYYXBrZg3gXQgsdYEBHAqhybSgmN22hWmvq2svZl/Pkf2NFWAEUZYbUTbrYvUa4OhK6ogBZDn1CoT7Ipkmf/OsDCnVyjtnr33/edK7+x/5nV6nIQ3f+pNnWv/u+oWA5MAoBYwTQvzONXkNSYQMOFdMBkAkdAUWcuYhqdBSqUYyGhJgvT/U+32HSPbJ4zjITcEaCLbnsli/HYd4NUf0jUxCAjKOzaZHFrI7uaQkeYdSJ2jLmp552Q7Ry39+tkkpUnUyctCZqDRWIvdsh8VA37+VyNCnigfGxcrZnwgSa1aUop385SXBnJXyMhMIUywo00tjj/HEmRvq+wJ6b6fUYBWuptvTrf7kIFh87WPkr7JWR3J/6dnkGevRjOytn2dXxo1CORp6qkaSgBcwQAZDUEO7MicYMwSwCBoCEwCwABUAIwAQEGHypIBSIxrL4CvclawoUhrXiLC/Z4hAi/Ihqa2JqXCQFmiqKMuruoufT4vzvG2zu69rFSKfVyOHzPhf5MFhRZpe5Mp6Opii17g6c8+LJxT/+5Jk9IwD1hhBCz7AEjiCGLptIyYSDaD+DzxpyN6KogmzKOC5ZTEThVSrqueh338iPWwuZU3aunbDH4TXSz+CQ+KCoQ14u104gIOjZg4HfyB3DEYJHEiqqWd7ZluMIKu75yhZQ2w+OM9M10VehP7/TsLVkBUGLgLQl2nuyLuncKdEWWRcisJgOgNGoOQ4Yl4vQJAFFAClL0e2RLrfCErPbWKLRddr0EPzG6K5925NfUcSCGPQ5MYWbETl4iADaBfmrlmtTayz/fcKf0wnPAaCNw5gLIMnHJbIxnp41DGQ5EnUoRLyeRjCA51bM5h4UW4MrdK0qP9oXuOhyEb8G45tLgAICnEkkq1lpRo24DsL9i1wWpHGJXpdjH/ZCX0aAmlaSQylL5juRfs/Q9tmXV9Xr37X/+6Lf6OiIMeAIEYAhgHATmnIG2ZEwUYYBoW6j8mTtL1MLGgDjLoex+nIZhuMLZJSPiFSrU2DlJUxtU/2qlnbPFvlEcjik4/oUJ/I083nGVtiU617SIm9/p2WmXyGkmaecZav76QHe5t9YvOqt0Iq//uSZPWNhFljQAPPGvJBQqhibMU4D8FxAi8EW0jdimK1oZTg5x11q9BxhryoK5tlLSi+xMCWtJmgMEYYeMm6e0Rgpopn08DWVaShbnxJJ43oqyHO7d+cW6q1XUM9rzNqgk0DtuOHC/u+dv/ey+KofvpvS269LdKLdvv+ubXYZGgEEdTAdBMNKsJkyEwrysBsQgDJ0KuTXLmNySoUR0p03GU8EiyRlc68CS821EqREF07UrMylekwUyHpGPUZ2Mjm5eskc+7UsoRyz/znPS0JUhlJS95kmORBzuXLl+b82LuvHPtiQ3qzna2lekq1lqhkrpEs97K5J5FZD56GRT9Cw1Kgs2Ze8BksicydJngEC5QKE7osJMdzKs9088WO61WA4tOJZcjxSxXZ+MTtFam1VVIRp/XY79+xj4xYu7YCSOSoq0tSo0YCBudgKEYuIAKgGyJ1HpdEah7oaP5OrKuOxguo4XzFljR/RRhLBCXcJgi6UylbnTl+46p/sbOxn1/ldDrFoC6UlzWr8/5kRfm+UzJpTY5Fc65Ww14dJTQ1tJyqSv/7kmTzjKQfZsCLzxriP+KYYW0iJhBdqQAPPGuI/YphlbSUmH/L+532vt4PiUWbskFO9VW8NLDEriBSTIVsBAan7/pqPjmQfxByQTtLxqjZQ4dRfeUbOi6zXs6+zb/1qsqQ3UuP/f//6PV8YFCFpVAUGioczx6bsHiYNAIj+hChOloJcuRdhF45vo0lLFCTzOsPp41axY6oLkAxJZWx4lFRGJGlnnhDUzjF2UoYpJ5eNI8OTPGM/eKTLDedKITqsaGqgu/nfI06l1YX1WY/PLUoDg06StlkUK1TUl/I3HQd78Fb0O5e6KpIQ0nrqdwQIg/7IDQs00lbWNEXcVZBhNo7H6FY65Kqc37lBQSjxCSCDKDJVj3ip0Ay+5byzS4CUoXpTWtVJJ4pKKLh1xr1kKpjJITFYSqsQ5+Hb00uaMCSAKfH3wEFWb+vmgMaIAeZuhB9ZGLByQtKFJCrEAWI5ojSia0fUbqqUTOBRvw7RguBR9hWe9gEWJGCd6DqR90m6MhgEFq0k3ECmPfQPCREmEBKquLicW3WEUg0J1NYx0HWuZb/+5Jk74wD1lhBC68aci3hOLkHJgIQTWMALrxpyVeIYMW0rOAKu1xdxG+vDjMzb4wyc8gsWggKIxI2yBIcRpO0/sURGO8WCjpk/HlHNGZO8mghZeqW0NRQuryWgZc+9b2XLWxLc7FjO9Sfm7VpJZDYSyKAIABkBRAKxipf5rExxgwEK6VM1CURB4EIKISJ8qDzXTi/QqlmHNIGYLYdZZA5VNp/RMKNGhgBdRmGUGTCtMKLWuSqaoGNxggxmFJ2Dx4MKXSMmFdNR5Lcijd+g09YOsNCRvJxDwq2YOkTUoONsWPj0A9SRAVsa9HyGCrejufBWBjD9BLfkqxy2xlW+/3K4weh+bYO8sT2BoJJrMeo31GN+47hD5AQiwALxZ3QzTMUwxW9ArXcte5FAQXopSKb63zG92wEL+yrejI98ioAPTSsX5RAKoNNd7I2AzQUBFB4w+sld+LQRTPanQYxAbPrfTVoUS8lRpPpdPHnDiWmWYtNO8UmQIjn336klIPFRuogVaQXtA0d8vO776HkD9eo9DJ3A1P/PV59H6TP70YPLfdx//uSZO4AwyAYQ8ubSJBF4phAbMMoEa1ZAE68ackAiGGFowjg4CU/XtXdoCKW3VlrtnfnwctusWFDCcUed3MGzCzjvnqziwWzc2zWNU8fYtZ/uF49Q801nASmpKvnB1N1Iylo5jP2uDtdxKo1S1aliZuaZYeT4tpcOQ9Tqw4gHCgoOoX08uAhYhIDE85TaA0JQcAXLCG4Lzw+W2ybZn7EYlAm728tIigLTZejgtgmf7kRK6x66bjBoJ02CMO4jKOxT4xj3jliUwcqMxjlfVKZAzMqfOeadzNv1o/arsL09otJKnliaa/r6/AFNkDpF8zrdqEx83J4EOKEC2kWUkFGOY4HOKWY7za+Mo6EIBCBmljQ3KasluK1P3LS7IKJFWiYWUlTmvSWlIkdY4VSxezqCDN5JYqxI3xSxhumQAHACyYeDI6JW42MTIwsAUAgFH2VypMRlIyjJjOatozV0p72w27zqzGUBiwsejAo1Q1tEfEYyCLcvThZESExWtmIeF5FLFNzPk2mmUPbzlYrkTH5yugc3OEVaNnSNnyRTTmdzaJ06v/7kmTxDINtFkIzhnsyS8KoMGzIKA8FJQZOMGnJJQihVbMIoKzMmjOj2bRe5UjLfVTvc2jHtS8MiwSlnAGxSqzEgcI8MVW+Dhh+tD+podMpOiL9jJ1sqAiiEK6cQAZeg65601uVptS5o65lHUOkfaLwzr3bZ5QoMf0qUlbqaidA8ILTBIID0YxzWJhTA4GmromsHetThp5UAZNCLZOhAGk8cFxR15b7niJconN7BpuzxnJXeBvfOpL0x2QnRQjLiuD1vm/x393bm1tjLmRw0z5MIdMenrD86j05f/PNEF5qqkudQ4SkRgqHsr2mcmrcGLsp0pWpd4aEo8qlJEGYDJId2ElTXpQDF0XBBQydOKnSm/TNbObdr0UMGAcVFDR7NDlwFoqht4peIUjhspUTUy9LYpOuYPnGE1CpTUvUdpCKBiXJxBeUJsCTWPES83A8SwlVqPCVQSOkwUOEQ+GhfYYyR/IgL5PECQhoZltbW3rUt3ccwqXtDUDEUquh/3ZNJJsvq5986f97tlPh98+0zL76JymRHSnadKeZNeNZ9T1ue7T/+5Jk8o2D9mhAC68a4kPiqGZpIiYQHaj+DrxtSUKIoMG0nKhmLwmZ/+9nkSEM2x2HcZL45bu3cQOheK/0VHCT9sDL1gENGas66nRB6GOUrKFCjKFaXfkX9kVfKsUCAVb7v/dq8X9Pf7kslert+r9Gjr3E3tipQIKzyoBB8oNRyEqBhAB6okNVDi9qRj8oFI8xuMtH8rIz1Ov4sNla7Wgx10B7iVku8c1OmUZHd0apINr6vJijaEHjHFda0RWfU/QiNkzQdoCiK5vDTVG6dHhBoSNNCRuRUx4pmRaq1BnJMKGPcQiFDJCEEZi0doS5gjSuScBsruTsiR0HIiPdQm0nj4EBLJUneajLGPk8BFwhAntoujZxz9xJm+6sCKNDSj5JNBFDetZpsypmf7BfcU7IhTsER4k2YXO9eSpqh88q1ugislKuvJjUnhZVygEBhQAZgSCRyCiZj8lZgIAiVbxNJe1vYfg9JGRtbvuZDk5JXiMIsXJlJhCNH0W59SBIazCnK+xR40REdXJulmTM1pdQmsVX17FM0hOs6h2FG3urmrji//uSZOcPg39DQIOvGnIxwpiWZGIoEYGM/A68bYknCGEFtJSg7IfW9+5wnQsqlMjGO70jrWRUi7r5lDqZcLqmw5wGx5N7/AqfMB9sRO2qocE5mLkDroluZqAGLu4jc27NTWCFx0qklWT0Oe6kvTdmr7krUzP1fr0gDmU3tddrTXFb0fGG1OuStp0hRLb4iCsEYAEp07YHJT8TDZClx2NIKKTqjUAw2fXEertYYW2K7nVroUQKefqa+AEfuYvbX+2y0yZcymIItAo8StwyvnedtDFkyHsbIbSatuGONzliREOab18w2QNnCFDdNjWU4m9fd6PMdQvrXmOEJl6XhGqv10CWfrzr/HXGBx2Kgc1VTDPSn39N/doN9ZZLivv2bNWesec0jKO3vyvQ72Sj+5T302I0blLpVRADIcB5hoWxkHRplEJ5haErlNRWIsKmEyWYg5yJdIXaAEkRhEY4yNXcBKgUDTprEbAiBMTxrLrDzKbvG70iX5VXFLrDzEzUdJQ/uZX1kZ2g2vuXN6irm2PrnqNeoaZS6Qqkmueae+6vjWUgzv/7kmTqDIPpXsADphwyQIIoQGzCKg6VIQIuMGuI1Yph4aGImOHbWFuFHSsKr9/FXQ76gdq1uORJHm5hkAuQiAlCcoCLtfazcpJdN5XZ7P94PsTtd1OCSYE8qh6YXbjmUY+9u/sVS8lSYRM3UOk3MW0WkpgVnZkmcbrpcsWvUwJJP0kLd6VNAAQIAQAQABpZI1MY4S5hBBJ6qRDAGvQwiHRomgkEKVODHTCYHX026QpmVgVcAwBSI2VOah5gDkAqYgMOUO48xecQeGRxeBygpEhpBR1JqoQvQGrQbGw9kPGZEWLMmUk1MhE6DNCwDLjRFlmiJwvGSabXQRlAbYyh4cA5ZEyZMTxNGRsTPWqy0xzyUHAQwiozZGkkQQxNSkovHZig+gpaa1WIsRAi5IkHMCXIoakQIeipJJMumLF4yeyddFVddayuT5YIITBdIuUS2RQvE4RcnSfMUTUyUkuihU6loJ1f///nCuRRH///9FFjIQCgl1GpUilI9YxSpv3ni7EE+muymlnViPHSRp7QiA/SXa8muEGPBJRWlisHCQiT0of/+5Jk9QAEJWQ/hXUAAkliGDCtiAAdUhEK2ckAAlo6oIc0sAAjTd2VuJii0tjd9ons3NT5oeNPmp1D/fVJrJ2fUY6Ns06mS71Ltip9VxyKuLnqP4VX3Ne6msafo8x7JefZzX37ZprGqMtelDmtv6Um5as469p5R0R8////Ebf///////9YLf/ii0xBTUVEjdE1FxOmIfxBiFPCVD1FydqVDUNZbCoIgiS0RCoVYRCoVItVISXVUKFnJIkQSBoOlQWgq6VOwaeDQdKgqVBU6IjwNA0sFR4KnREHCwNRL/1B2VOiUNKBpQNHip0SgrBqDT53//BXYCBWAkAYdrkkSTF1kxMT3mly60DAQoeCp0FQVLA0oGjxU6VO//+Ij0FYKuUqTEFNRTMuMTAwqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uSZIqP8z0WsAc9IAArgWWx5gwAAAABpAAAACAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqg==";
 
   // src/plugins/responseNotification/index.ts
-  var logger16 = new Logger("ResponseNotification");
+  var logger29 = new Logger("ResponseNotification");
   var LIVE_STATES = new Set(["streaming", "optimistic", "reconnecting"]);
   var RETRY_MS = 80;
   var SAMPLE_VOLUME = 0.5;
@@ -7802,7 +16337,7 @@ div:has(> #grok-bot-nav-button) {
       }
     }, "Play preview"));
   }
-  var settings8 = definePluginSettings({
+  var settings22 = definePluginSettings({
     sound: {
       type: 3 /* BOOLEAN */,
       description: "Play a notification sound.",
@@ -7843,14 +16378,14 @@ div:has(> #grok-bot-nav-button) {
       audioCtx = new AudioContext;
       return audioCtx;
     } catch (e) {
-      logger16.debug("AudioContext unavailable:", e);
+      logger29.debug("AudioContext unavailable:", e);
       audioCtx = null;
       return null;
     }
   }
   function onUserGesture() {
     userGestured = true;
-    if (settings8.store.browserNotification && Notification.permission === "default")
+    if (settings22.store.browserNotification && Notification.permission === "default")
       Notification.requestPermission();
     const ctx = getCtx();
     if (!ctx)
@@ -7890,41 +16425,41 @@ div:has(> #grok-bot-nav-button) {
   }
   function playUrl(ctx, url) {
     loadBuffer(ctx, url).then((buf) => playBuffer(ctx, buf), (err) => {
-      logger16.info("sample play failed:", err);
+      logger29.info("sample play failed:", err);
       if (url !== DEFAULT_CHIME)
-        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger16.info("default chime failed:", e));
+        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger29.info("default chime failed:", e));
     });
   }
   function playSound() {
     if (!userGestured) {
-      logger16.info("sound skipped, no user gesture yet");
+      logger29.info("sound skipped, no user gesture yet");
       return;
     }
     const ctx = getCtx();
     if (!ctx)
       return;
-    const url = settings8.store.soundUrl?.trim() || DEFAULT_CHIME;
+    const url = settings22.store.soundUrl?.trim() || DEFAULT_CHIME;
     if (ctx.state === "suspended")
-      ctx.resume().then(() => playUrl(ctx, url), () => logger16.info("AudioContext resume failed"));
+      ctx.resume().then(() => playUrl(ctx, url), () => logger29.info("AudioContext resume failed"));
     else
       playUrl(ctx, url);
   }
-  function isErrorResponse(response) {
+  function isErrorResponse2(response) {
     return response?.state === "error" || response?.error != null;
   }
-  function isLiveResponse(response) {
+  function isLiveResponse2(response) {
     return !!response?.state && LIVE_STATES.has(response.state);
   }
   function shouldNotify(response) {
-    return !isErrorResponse(response) && !isLiveResponse(response);
+    return !isErrorResponse2(response) && !isLiveResponse2(response);
   }
   function notify(responseId, state) {
-    logger16.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
-    if (settings8.store.onlyWhenHidden && document.visibilityState === "visible")
+    logger29.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
+    if (settings22.store.onlyWhenHidden && document.visibilityState === "visible")
       return;
-    if (settings8.store.sound)
+    if (settings22.store.sound)
       playSound();
-    if (settings8.store.browserNotification)
+    if (settings22.store.browserNotification)
       sendBrowserNotification("Grok", "Response complete.");
   }
   function notifyOnce(responseId, state) {
@@ -7941,12 +16476,12 @@ div:has(> #grok-bot-nav-button) {
     if (!cur || !old)
       return;
     for (const id of Object.keys(cur)) {
-      if (isLiveResponse(old[id]) && shouldNotify(cur[id]))
+      if (isLiveResponse2(old[id]) && shouldNotify(cur[id]))
         notifyOnce(id, cur[id]?.state);
     }
   }
-  function onStreamEnd({ responseId }) {
-    logger16.info("streamEnd", responseId);
+  function onStreamEnd4({ responseId }) {
+    logger29.info("streamEnd", responseId);
     if (retryTimer)
       clearTimeout(retryTimer);
     const attempt = (retried) => {
@@ -7954,21 +16489,21 @@ div:has(> #grok-bot-nav-button) {
       try {
         response = ResponseStore.useResponseStore.getState().byId[responseId];
       } catch (e) {
-        logger16.info("ResponseStore unavailable:", e);
+        logger29.info("ResponseStore unavailable:", e);
       }
       if (shouldNotify(response)) {
         notifyOnce(responseId, response?.state ?? "gateway");
         return;
       }
-      if (isErrorResponse(response)) {
-        logger16.info("skip error", responseId);
+      if (isErrorResponse2(response)) {
+        logger29.info("skip error", responseId);
         return;
       }
       if (!retried) {
         retryTimer = setTimeout(() => attempt(true), RETRY_MS);
         return;
       }
-      logger16.info("skip", responseId, response?.state ?? "unset");
+      logger29.info("skip", responseId, response?.state ?? "unset");
     };
     attempt(false);
   }
@@ -7978,7 +16513,7 @@ div:has(> #grok-bot-nav-button) {
     description: "Notify when Grok finishes responding.",
     authors: [Devs.Prism, Devs.p],
     tags: ["chat"],
-    settings: settings8,
+    settings: settings22,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
       if (gestureCtrl)
@@ -8002,7 +16537,7 @@ div:has(> #grok-bot-nav-button) {
       audioCtx = null;
     },
     events: {
-      streamEnd: onStreamEnd
+      streamEnd: onStreamEnd4
     },
     zustand: {
       ResponseStore: {
@@ -8011,67 +16546,544 @@ div:has(> #grok-bot-nav-button) {
     }
   });
 
-  // src/plugins/noSidebarIdentity/index.ts
-  var STYLE_NAME4 = "noSidebarIdentity";
-  var FOOTER = '[data-sidebar="footer"]';
-  var STACK = `${FOOTER} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
-  var TEXT_WRAP = `${FOOTER} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
-  var MENU_EMAIL = '[role="menu"] [class*="max-w-[400px]"].truncate';
-  var settings9 = definePluginSettings({
-    hideUsername: {
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/settingsFlyout/styles.css
+  registerStyle("settingsFlyout", `/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+.void-sf-menu-icon {
+    width: 1rem;
+    height: 1rem;
+    margin-inline-end: 0.5rem;
+    color: hsl(var(--fg-secondary));
+    flex-shrink: 0;
+}
+
+.void-sf-group {
+    padding: 0.25rem 0.5rem 0.125rem;
+    pointer-events: none;
+}
+
+.void-sf-menu {
+    max-height: min(24rem, calc(100vh - 6rem));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+`);
+
+  // src/plugins/settingsFlyout/icons.tsx
+  function grokSvg(props, ...children) {
+    return /* @__PURE__ */ React.createElement("svg", {
+      width: props.width ?? props.size ?? 16,
+      height: props.height ?? props.size ?? 16,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      xmlns: "http://www.w3.org/2000/svg",
+      className: props.className,
+      "aria-hidden": "true"
+    }, children);
+  }
+  var CogIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "m13.456 1.75.296.445c.832 1.247 1.198 1.654 1.558 1.818.321.146.82.172 2.242-.157l.54-.124 2.171 2.171-.124.54c-.328 1.423-.302 1.921-.156 2.243.164.36.57.726 1.817 1.557l.446.297v2.92l-.446.297c-1.247.831-1.653 1.198-1.817 1.558-.146.32-.172.82.156 2.242l.124.54-2.17 2.17-.54-.123c-1.423-.329-1.922-.303-2.243-.157-.36.164-.726.57-1.558 1.818l-.296.445h-2.92l-.297-.445c-.832-1.247-1.198-1.654-1.558-1.818-.321-.146-.82-.172-2.242.157l-.54.124-2.171-2.171.124-.54c.328-1.423.303-1.921.156-2.242-.164-.36-.57-.727-1.817-1.558l-.445-.297v-2.92l.445-.297c1.247-.831 1.653-1.198 1.817-1.557.147-.322.172-.82-.156-2.243l-.124-.54 2.17-2.17.541.123c1.422.329 1.92.303 2.242.157.36-.164.727-.57 1.558-1.818l.297-.445zm-1.853 2c-.637.93-1.249 1.699-2.092 2.083-.875.4-1.845.324-2.977.092l-.614.613c.232 1.132.308 2.102-.091 2.978-.385.842-1.153 1.454-2.083 2.09v.787c.93.636 1.698 1.248 2.083 2.091.399.876.323 1.845.091 2.977l.614.613c1.132-.232 2.102-.306 2.977.093.843.384 1.455 1.153 2.092 2.083h.785c.637-.93 1.249-1.699 2.092-2.083.875-.399 1.845-.325 2.976-.093l.614-.613c-.232-1.132-.306-2.101.093-2.977.384-.843 1.152-1.455 2.083-2.091v-.787c-.93-.636-1.7-1.248-2.083-2.09-.4-.876-.325-1.846-.093-2.978l-.614-.613c-1.131.232-2.1.307-2.976-.092-.843-.384-1.455-1.153-2.092-2.083zM14.001 12A2 2 0 1 0 10 12a2 2 0 0 0 4 0m2 0A4 4 0 1 1 8 12a4 4 0 0 1 8 0"
+  }));
+  var PersonIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
+    fillRule: "evenodd",
+    clipRule: "evenodd",
+    d: "M12 12.25C16.4183 12.25 20 15.8317 20 20.25V22H4V20.25C4 15.8317 7.58172 12.25 12 12.25ZM12 14.25C8.77005 14.25 6.13694 16.8022 6.00586 20H17.9941C17.8631 16.8022 15.23 14.25 12 14.25Z",
+    fill: "currentColor"
+  }), /* @__PURE__ */ React.createElement("path", {
+    fillRule: "evenodd",
+    clipRule: "evenodd",
+    d: "M12 2C14.4853 2 16.5 4.01472 16.5 6.5C16.5 8.98528 14.4853 11 12 11C9.51472 11 7.5 8.98528 7.5 6.5C7.5 4.01472 9.51472 2 12 2ZM12 4C10.6193 4 9.5 5.11929 9.5 6.5C9.5 7.88071 10.6193 9 12 9C13.3807 9 14.5 7.88071 14.5 6.5C14.5 5.11929 13.3807 4 12 4Z",
+    fill: "currentColor"
+  }));
+  var PaintIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M16.2637 3.19188C17.5328 2.03183 19.4908 2.07547 20.707 3.29149C21.9244 4.50883 21.967 6.46969 20.8037 7.73876L20.8027 7.73778L12.4814 16.9038C12.2753 19.4758 10.1251 21.4985 7.5 21.4985H2.5V16.4985C2.50025 13.8741 4.52251 11.7229 7.09375 11.5161L16.2637 3.19188ZM19.293 4.70653C18.8329 4.24643 18.0921 4.2299 17.6123 4.66942L17.6084 4.67333L9.58594 11.9546C10.67 12.453 11.5441 13.3277 12.043 14.4116L19.3262 6.39012L19.3291 6.3872C19.7688 5.90754 19.7529 5.16673 19.293 4.70653ZM4.5 19.4985H7.5C9.15685 19.4985 10.5 18.1554 10.5 16.4985C10.4997 14.8419 9.15669 13.4985 7.5 13.4985C5.84331 13.4985 4.50026 14.8419 4.5 16.4985V19.4985Z"
+  }));
+  var VisitIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M21.5 14.5L19.2402 16.1201L22.0596 18.9404L19.9404 21.0596L17.1201 18.2402L15.5 20.5L13 12L21.5 14.5Z"
+  }), /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M18.5 2C20.433 2 22 3.567 22 5.5V11H20V5.5C20 4.67157 19.3284 4 18.5 4H5.5C4.67157 4 4 4.67157 4 5.5V16.5C4 17.3284 4.67157 18 5.5 18H12V20H5.5C3.567 20 2 18.433 2 16.5V5.5C2 3.567 3.567 2 5.5 2H18.5Z"
+  }), /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M10.4941 5.52441C10.7365 5.57269 10.9591 5.69148 11.1338 5.86621C11.3085 6.04094 11.4273 6.26352 11.4756 6.50586C11.5238 6.74833 11.4999 7.00011 11.4053 7.22852C11.3107 7.45691 11.1499 7.65171 10.9443 7.78906C10.7388 7.92641 10.4972 8 10.25 8C9.91848 8 9.60063 7.86821 9.36621 7.63379C9.13179 7.39937 9 7.08152 9 6.75C9 6.50277 9.07359 6.26123 9.21094 6.05566C9.34829 5.85012 9.54309 5.68933 9.77148 5.59473C9.99989 5.50012 10.2517 5.47618 10.4941 5.52441Z"
+  }), /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M6.75 5.5C7.08152 5.5 7.39937 5.63179 7.63379 5.86621C7.86821 6.10063 8 6.41848 8 6.75C8 6.99723 7.92641 7.23877 7.78906 7.44434C7.65171 7.64988 7.45691 7.81067 7.22852 7.90527C7.00011 7.99988 6.74833 8.02382 6.50586 7.97559C6.26352 7.92731 6.04094 7.80852 5.86621 7.63379C5.69148 7.45906 5.57269 7.23648 5.52441 6.99414C5.47618 6.75167 5.50012 6.49989 5.59473 6.27148C5.68933 6.04309 5.85012 5.84829 6.05566 5.71094C6.26123 5.57359 6.50277 5.5 6.75 5.5Z"
+  }), /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M13.75 5.5C14.0815 5.5 14.3994 5.63179 14.6338 5.86621C14.8682 6.10063 15 6.41848 15 6.75C15 6.99723 14.9264 7.23877 14.7891 7.44434C14.6517 7.64988 14.4569 7.81067 14.2285 7.90527C14.0001 7.99988 13.7483 8.02382 13.5059 7.97559C13.2635 7.92731 13.0409 7.80852 12.8662 7.63379C12.6915 7.45906 12.5727 7.23648 12.5244 6.99414C12.4762 6.75167 12.5001 6.49989 12.5947 6.27148C12.6893 6.04309 12.8501 5.84829 13.0557 5.71094C13.2612 5.57359 13.5028 5.5 13.75 5.5Z"
+  }));
+  var SlidersIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
+    d: "M21 7H10M14 17H3M20.25 17C20.25 18.6569 18.9069 20 17.25 20C15.5931 20 14.25 18.6569 14.25 17C14.25 15.3431 15.5931 14 17.25 14C18.9069 14 20.25 15.3431 20.25 17ZM9.75 7C9.75 8.65685 8.40685 10 6.75 10C5.09315 10 3.75 8.65685 3.75 7C3.75 5.34315 5.09315 4 6.75 4C8.40685 4 9.75 5.34315 9.75 7Z",
+    stroke: "currentColor",
+    strokeLinejoin: "round",
+    strokeWidth: "2"
+  }));
+  var PaymentsIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M12.9004 7.83984C13.0629 7.87413 13.2225 7.91676 13.376 7.96777C13.9053 8.14378 14.4688 8.45248 14.8301 8.95215L13.3711 10.0068C13.3148 9.92902 13.1447 9.78764 12.8086 9.67578C12.4889 9.56951 12.1071 9.52104 11.75 9.5459C11.3842 9.57147 11.1204 9.6686 10.9727 9.77734C10.6672 10.0025 10.7901 10.4692 11.0615 10.6533C11.3259 10.8325 11.7135 10.964 12.2734 11.1426C12.7633 11.2988 13.4271 11.5024 13.9502 11.8574C14.5404 12.2581 15.0008 12.8825 15.001 13.8027C15.001 14.6074 14.6157 15.2292 14.0645 15.6318C13.716 15.8862 13.3104 16.0473 12.9004 16.1426V17.5H11.1006V16.1924C10.8876 16.158 10.6783 16.1108 10.4785 16.0488C9.92674 15.8775 9.3358 15.5675 8.95996 15.0479L10.4189 13.9932C10.4778 14.0743 10.6555 14.2195 11.0117 14.3301C11.3503 14.4351 11.7577 14.4787 12.1426 14.4453C12.5359 14.411 12.8313 14.303 13.0029 14.1777C13.3128 13.9513 13.2321 13.5454 12.9395 13.3467C12.6751 13.1673 12.2868 13.0361 11.7266 12.8574C11.2368 12.7012 10.5739 12.4974 10.0508 12.1426C9.46027 11.7419 9.00013 11.1178 9 10.1973V10.1328C9 9.34586 9.36032 8.72911 9.9043 8.32812C10.2629 8.06395 10.6821 7.90612 11.1006 7.82129V6.5H12.9004V7.83984Z"
+  }), /* @__PURE__ */ React.createElement("path", {
+    fillRule: "evenodd",
+    clipRule: "evenodd",
+    d: "M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4Z",
+    fill: "currentColor"
+  }));
+  var LightningIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
+    d: "M5 14.25L14 4L13 9.75H19L10 20L11 14.25H5Z",
+    stroke: "currentColor",
+    strokeWidth: "2"
+  }));
+  var DatabaseIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
+    fillRule: "evenodd",
+    clipRule: "evenodd",
+    d: "M20.5 18C20.5 18.7778 20.1017 19.4178 19.5977 19.8945C19.0957 20.3692 18.423 20.7505 17.6748 21.0498C16.1726 21.6507 14.1657 22 12 22C9.83428 22 7.82743 21.6507 6.3252 21.0498C5.57697 20.7505 4.90428 20.3692 4.40234 19.8945C3.89825 19.4178 3.5 18.7778 3.5 18V5.5C3.5 4.71709 3.97721 4.13013 4.4707 3.74121C4.97543 3.34352 5.64416 3.02877 6.38086 2.7832C7.86497 2.28858 9.85158 2 12 2C14.1484 2 16.135 2.28858 17.6191 2.7832C18.3558 3.02877 19.0246 3.34352 19.5293 3.74121C20.0228 4.13013 20.5 4.71709 20.5 5.5V18ZM18.5 14.166C18.2396 14.3063 17.963 14.4345 17.6748 14.5498C16.1726 15.1507 14.1657 15.5 12 15.5C9.83428 15.5 7.82743 15.1507 6.3252 14.5498C6.03697 14.4345 5.76036 14.3063 5.5 14.166V18C5.5 18.0506 5.52142 18.2003 5.77637 18.4414C6.03343 18.6845 6.4595 18.9488 7.06836 19.1924C8.28059 19.6773 10.0236 20 12 20C13.9764 20 15.7194 19.6773 16.9316 19.1924C17.5405 18.9488 17.9666 18.6845 18.2236 18.4414C18.4786 18.2003 18.5 18.0506 18.5 18V14.166ZM5.5 11.5C5.5 11.5506 5.52142 11.7003 5.77637 11.9414C6.03343 12.1845 6.4595 12.4488 7.06836 12.6924C8.28059 13.1773 10.0236 13.5 12 13.5C13.9764 13.5 15.7194 13.1773 16.9316 12.6924C17.5405 12.4488 17.9666 12.1845 18.2236 11.9414C18.4786 11.7003 18.5 11.5506 18.5 11.5V7.86914C18.2226 7.99709 17.9273 8.11407 17.6191 8.2168C16.135 8.71142 14.1484 9 12 9C9.85158 9 7.86497 8.71142 6.38086 8.2168C6.07267 8.11407 5.77737 7.99709 5.5 7.86914V11.5ZM12 4C10.0065 4 8.24301 4.27056 7.0127 4.68066C6.39238 4.88745 5.96226 5.11212 5.70801 5.3125C5.59875 5.39864 5.5459 5.46254 5.51953 5.5C5.5459 5.53746 5.59875 5.60136 5.70801 5.6875C5.96226 5.88788 6.39238 6.11255 7.0127 6.31934C8.24301 6.72944 10.0065 7 12 7C13.9935 7 15.757 6.72944 16.9873 6.31934C17.6076 6.11255 18.0377 5.88788 18.292 5.6875C18.4008 5.60171 18.453 5.53752 18.4795 5.5C18.453 5.46248 18.4008 5.39829 18.292 5.3125C18.0377 5.11212 17.6076 4.88745 16.9873 4.68066C15.757 4.27056 13.9935 4 12 4Z",
+    fill: "currentColor"
+  }));
+
+  // src/plugins/settingsFlyout/index.tsx
+  var cl25 = classNameFactory("void-sf-");
+  var settings23 = definePluginSettings({
+    showOpenSettings: {
       type: 3 /* BOOLEAN */,
-      description: "Hide the username next to the sidebar avatar.",
+      description: 'Show "Open Settings" (last used tab).',
       default: true
     },
-    hideEmail: {
+    voidppPosition: {
+      type: 4 /* SELECT */,
+      description: "Place Void++ tabs above or below Grok tabs.",
+      options: [
+        { label: "Above Grok tabs", value: "above", default: true },
+        { label: "Below Grok tabs", value: "below" }
+      ]
+    },
+    plugins: {
       type: 3 /* BOOLEAN */,
-      description: "Hide the email next to the sidebar avatar and at the top of the account menu.",
+      description: "Plugins",
+      default: true
+    },
+    themes: {
+      type: 3 /* BOOLEAN */,
+      description: "Themes",
+      default: true
+    },
+    css: {
+      type: 3 /* BOOLEAN */,
+      description: "Quick CSS",
+      default: true
+    },
+    account: {
+      type: 3 /* BOOLEAN */,
+      description: "Account",
+      default: true
+    },
+    appearance: {
+      type: 3 /* BOOLEAN */,
+      description: "Appearance",
+      default: true
+    },
+    behavior: {
+      type: 3 /* BOOLEAN */,
+      description: "Behavior",
+      default: true
+    },
+    customize: {
+      type: 3 /* BOOLEAN */,
+      description: "Customize",
+      default: true
+    },
+    billing: {
+      type: 3 /* BOOLEAN */,
+      description: "Billing",
+      default: true
+    },
+    usage: {
+      type: 3 /* BOOLEAN */,
+      description: "Usage",
+      default: true
+    },
+    data: {
+      type: 3 /* BOOLEAN */,
+      description: "Data Controls",
       default: true
     }
   });
-  function apply2() {
-    const rules = [];
-    if (settings9.store.hideUsername) {
-      rules.push(`${STACK}>:first-child{display:none!important}`);
-      rules.push(`${FOOTER} .void-sidebar-name{display:none!important}`);
+  var GROK_TABS = [
+    { id: "account", name: "Account", setting: "account", icon: PersonIcon },
+    { id: "appearance", name: "Appearance", setting: "appearance", icon: PaintIcon },
+    { id: "behavior", name: "Behavior", setting: "behavior", icon: VisitIcon },
+    { id: "personality", name: "Customize", setting: "customize", icon: SlidersIcon },
+    { id: "billing", name: "Billing", setting: "billing", icon: PaymentsIcon },
+    { id: "usage", name: "Usage", setting: "usage", icon: LightningIcon },
+    { id: "data", name: "Data Controls", setting: "data", icon: DatabaseIcon }
+  ];
+  var VOIDPP_TABS = [
+    { id: "voidpp_plugins_tab", name: "Plugins", setting: "plugins", icon: UnplugIcon },
+    { id: "voidpp_themes_tab", name: "Themes", setting: "themes", icon: PaletteIcon },
+    { id: "voidpp_css_tab", name: "Quick CSS", setting: "css", icon: BracesIcon }
+  ];
+  function openTab(tab, onOpen, event) {
+    const store = SettingsDialogStore.useSettingsDialogStore.getState();
+    if (tab) {
+      store.setTab(tab);
+      store.setOpen(true);
+      return;
     }
-    if (settings9.store.hideEmail) {
-      rules.push(`${STACK}>:nth-child(2){display:none!important}`);
-      rules.push(`${MENU_EMAIL}{display:none!important}`);
-    }
-    if (settings9.store.hideUsername && settings9.store.hideEmail) {
-      rules.push(`${TEXT_WRAP}{display:none!important}`);
-      rules.push(`${FOOTER} .void-sidebar-info{display:none!important}`);
-    }
-    registerStyle(STYLE_NAME4, rules.join(`
-`));
+    try {
+      onOpen?.(event);
+    } catch {}
+    store.setOpen(true);
   }
-  var noSidebarIdentity_default = definePlugin({
-    name: "NoSidebarIdentity",
-    icon: UserRoundXIcon,
-    description: "Hide username and/or email in the Grok sidebar and account menu. Avatar stays clickable.",
+  function tabItems(tabs) {
+    return tabs.map((t) => {
+      const Icon = t.icon;
+      return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+        key: t.id,
+        onSelect: () => openTab(t.id)
+      }, /* @__PURE__ */ React.createElement(Icon, {
+        className: cl25("menu-icon")
+      }), t.name);
+    });
+  }
+  function VoidPPSection({ tabs }) {
+    if (tabs.length === 0)
+      return null;
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Text2, {
+      size: "xs",
+      color: "secondary",
+      className: cl25("group")
+    }, "Void++"), tabItems(tabs));
+  }
+  function SettingsMenu({ onOpen }) {
+    const cfg = settings23.use([
+      "showOpenSettings",
+      "voidppPosition",
+      "plugins",
+      "themes",
+      "css",
+      "account",
+      "appearance",
+      "behavior",
+      "customize",
+      "billing",
+      "usage",
+      "data"
+    ]);
+    const grokTabs = GROK_TABS.filter((t) => cfg[t.setting]);
+    const voidppTabs = VOIDPP_TABS.filter((t) => cfg[t.setting]);
+    const showOpen = cfg.showOpenSettings || grokTabs.length === 0 && voidppTabs.length === 0;
+    const voidppFirst = cfg.voidppPosition !== "below";
+    const hasBoth = grokTabs.length > 0 && voidppTabs.length > 0;
+    return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(CogIcon, {
+      className: cl25("menu-icon")
+    }), "Settings"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, {
+      className: cl25("menu")
+    }, showOpen && /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+      onSelect: (e) => openTab(undefined, onOpen, e)
+    }, /* @__PURE__ */ React.createElement(CogIcon, {
+      className: cl25("menu-icon")
+    }), "Open Settings"), showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
+      tabs: voidppTabs
+    }), voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), tabItems(grokTabs), !voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), !voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
+      tabs: voidppTabs
+    })));
+  }
+  var WrappedSettingsMenu = ErrorBoundary.wrap(SettingsMenu);
+  var settingsFlyout_default = definePlugin({
+    name: "SettingsFlyout",
+    icon: Settings2Icon,
+    description: "Replace the avatar Settings item with a flyout of shortcuts to Void++ and Grok settings tabs.",
     authors: [Devs.p],
-    tags: ["ui", "privacy"],
+    tags: ["ui", "settings"],
     enabledByDefault: true,
-    settings: settings9,
+    requiresRestart: true,
+    settings: settings23,
+    start() {
+      migratePluginSetting("SettingsFlyout", "voidppPosition", "voidPosition");
+    },
+    _renderSettingsMenu: (onOpen) => createElement(WrappedSettingsMenu, { onOpen }),
     patches: [
       {
-        find: '"max-w-[400px] truncate"',
-        all: true,
+        find: '"user-dropdown.settings","Settings"',
         replacement: {
-          match: /WD_REFRESH&&(\i)\.user\.email&&/,
-          replace: "WD_REFRESH&&!$self.settings.store.hideEmail&&$1.user.email&&"
+          match: /\jsx{\i\.DropdownMenuItem}\{onSelect:(\i),children:\[\jsx{\i\.CogIcon}\{[^}]{0,80}\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
+          replace: "$self._renderSettingsMenu($1)"
         }
       }
-    ],
-    start: apply2,
-    onSettingsChange: apply2,
+    ]
+  });
+
+  // src/plugins/stableComposer/index.ts
+  var cachedDeps = null;
+  var cachedSig = "";
+  var cachedMention;
+  var stableComposer_default = definePlugin({
+    name: "StableComposer",
+    icon: TextCursorInputIcon,
+    description: "Stop the Grok composer from destroying and recreating its editor when the extension list is rebuilt unchanged, which was resetting the caret and breaking IME composition.",
+    authors: [Devs.p],
+    tags: ["chat"],
+    enabledByDefault: true,
+    _deps(extensions, mention) {
+      const sig = Array.isArray(extensions) ? `${extensions.length}:${extensions.map((e) => e?.name ?? "?").join(",")}` : String(extensions);
+      if (cachedDeps && sig === cachedSig && mention === cachedMention)
+        return cachedDeps;
+      cachedSig = sig;
+      cachedMention = mention;
+      cachedDeps = [extensions, mention];
+      return cachedDeps;
+    },
+    patches: [
+      {
+        find: "transformPastedHTML:",
+        replacement: {
+          match: /(transformPastedHTML:\i\}\},)\[(\i),(\i)\]\)/,
+          replace: "$1$self._deps($2,$3))"
+        }
+      }
+    ]
+  });
+
+  // src/plugins/starry/index.tsx
+  var DEFAULT_COLOR = "#ffffff";
+  var StarsBackground = findExportedComponentLazy("StarsBackground");
+  function hexToRgb(hex) {
+    const m = /^#([0-9a-fA-F]{6})$/.exec(hex);
+    if (!m)
+      return [255, 255, 255];
+    const n = parseInt(m[1], 16);
+    return [n >> 16 & 255, n >> 8 & 255, n & 255];
+  }
+  function ColorRow2() {
+    const { starColor } = settings24.use(["starColor"]);
+    return /* @__PURE__ */ React.createElement(ColorSettingRow, {
+      value: starColor,
+      onChange: (v) => {
+        settings24.store.starColor = v;
+      },
+      title: "Star color",
+      description: "Color of the twinkling stars."
+    });
+  }
+  function StarryBackground() {
+    const { starColor } = settings24.use(["starColor"]);
+    return /* @__PURE__ */ React.createElement("div", {
+      "aria-hidden": true,
+      className: "fixed inset-0 -z-10 pointer-events-none"
+    }, /* @__PURE__ */ React.createElement(StarsBackground, {
+      starColor: hexToRgb(starColor)
+    }));
+  }
+  var WrappedStarry = ErrorBoundary.wrap(StarryBackground);
+  var settings24 = definePluginSettings({
+    starColor: {
+      type: 6 /* COMPONENT */,
+      default: DEFAULT_COLOR,
+      component: ColorRow2
+    }
+  }).withPrivateSettings();
+  var starry_default = definePlugin({
+    name: "Starry",
+    icon: SparklesIcon,
+    description: "Adds Grok's native twinkling starry background to the main page.",
+    authors: [Devs.Prism],
+    tags: ["ui"],
+    settings: settings24,
+    _StarryBg() {
+      return /* @__PURE__ */ React.createElement(WrappedStarry, {
+        key: "void-starry-bg"
+      });
+    },
+    patches: [
+      {
+        find: '"chat-page")',
+        replacement: {
+          match: /(children:\[)((?:\i,){2,8}\i\]\},"chat-page"\))/,
+          replace: "$1$self._StarryBg(),$2"
+        }
+      }
+    ]
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/streamerMode/styles.css
+  registerStyle("streamerMode", `/* stylelint-disable no-descending-specificity */
+
+/* Sidebar avatar */
+html.void-streamer-sidebar-avatar [data-sidebar="footer"] button[data-state]>div {
+    filter: blur(6px);
+    transition: filter 0.2s ease;
+}
+
+html.void-streamer-sidebar-avatar [data-sidebar="footer"] button[data-state]:hover>div,
+html.void-streamer-sidebar-avatar .void-sidebar-card:hover button[data-state]>div {
+    filter: none;
+}
+
+/* Sidebar username */
+html.void-streamer-sidebar-name .void-sidebar-info {
+    filter: blur(6px);
+    transition: filter 0.2s ease;
+}
+
+html.void-streamer-sidebar-name .void-sidebar-card:hover .void-sidebar-info {
+    filter: none;
+}
+
+/* Account tab avatar (inside settings dialog) */
+html.void-streamer-account-avatar [role="dialog"] .w-12.h-12 img {
+    filter: blur(6px);
+    transition: filter 0.2s ease;
+}
+
+html.void-streamer-account-avatar [role="dialog"] .w-12.h-12:hover img {
+    filter: none;
+}
+
+/* Account tab username */
+html.void-streamer-account-name [role="dialog"] .p-1.min-w-0.text-sm>.text-sm.font-medium {
+    filter: blur(6px);
+    transition: filter 0.2s ease;
+}
+
+html.void-streamer-account-name [role="dialog"] .p-1.min-w-0.text-sm:hover>.text-sm.font-medium {
+    filter: none;
+}
+
+/* Account tab email */
+html.void-streamer-account-email [role="dialog"] .p-1.min-w-0.text-sm>.text-secondary.truncate {
+    filter: blur(6px);
+    transition: filter 0.2s ease;
+}
+
+html.void-streamer-account-email [role="dialog"] .p-1.min-w-0.text-sm:hover>.text-secondary.truncate {
+    filter: none;
+}
+
+/* Account tab birth year */
+html.void-streamer-account-age [role="dialog"] .text-fg-secondary.font-normal {
+    filter: blur(6px);
+    transition: filter 0.2s ease;
+}
+
+html.void-streamer-account-age [role="dialog"] .text-fg-secondary.font-normal:hover {
+    filter: none;
+}
+
+/* Conversation titles in sidebar (pinned + recent buckets) */
+html.void-streamer-conversations [data-sidebar="content"] a[href*="/c/"]>span {
+    filter: blur(6px);
+    transition: filter 0.2s ease;
+}
+
+html.void-streamer-conversations [data-sidebar="content"] a[href*="/c/"]:hover>span {
+    filter: none;
+}
+
+/* Project names in sidebar */
+html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]>span {
+    filter: blur(6px);
+    transition: filter 0.2s ease;
+}
+
+html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>span {
+    filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.void-streamer-sidebar-avatar [data-sidebar="footer"] button[data-state]>div,
+    html.void-streamer-sidebar-name .void-sidebar-info,
+    html.void-streamer-account-avatar [role="dialog"] .w-12.h-12 img,
+    html.void-streamer-account-name [role="dialog"] .p-1.min-w-0.text-sm>.text-sm.font-medium,
+    html.void-streamer-account-email [role="dialog"] .p-1.min-w-0.text-sm>.text-secondary.truncate,
+    html.void-streamer-account-age [role="dialog"] .text-fg-secondary.font-normal,
+    html.void-streamer-conversations [data-sidebar="content"] a[href*="/c/"]>span,
+    html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]>span { transition: none; }
+}
+`);
+
+  // src/plugins/streamerMode/index.ts
+  var CSS_CLASSES = {
+    sidebarAvatar: "void-streamer-sidebar-avatar",
+    sidebarName: "void-streamer-sidebar-name",
+    accountAvatar: "void-streamer-account-avatar",
+    accountName: "void-streamer-account-name",
+    accountEmail: "void-streamer-account-email",
+    accountAge: "void-streamer-account-age",
+    projects: "void-streamer-projects",
+    conversations: "void-streamer-conversations"
+  };
+  var settings25 = definePluginSettings({
+    sidebarAvatar: {
+      type: 3 /* BOOLEAN */,
+      description: "Blur your avatar in the sidebar.",
+      default: true
+    },
+    sidebarName: {
+      type: 3 /* BOOLEAN */,
+      description: "Blur your username in the sidebar.",
+      default: true
+    },
+    accountAvatar: {
+      type: 3 /* BOOLEAN */,
+      description: "Blur your avatar in the account settings tab.",
+      default: true
+    },
+    accountName: {
+      type: 3 /* BOOLEAN */,
+      description: "Blur your name in the account settings tab.",
+      default: true
+    },
+    accountEmail: {
+      type: 3 /* BOOLEAN */,
+      description: "Blur your email in the account settings tab.",
+      default: true
+    },
+    accountAge: {
+      type: 3 /* BOOLEAN */,
+      description: "Blur your birth year in the account settings tab.",
+      default: true
+    },
+    projects: {
+      type: 3 /* BOOLEAN */,
+      description: "Blur project names in the sidebar.",
+      default: true
+    },
+    conversations: {
+      type: 3 /* BOOLEAN */,
+      description: "Blur conversation titles in the sidebar.",
+      default: true
+    }
+  });
+  function syncClasses() {
+    const { classList } = document.documentElement;
+    for (const [key, cls] of Object.entries(CSS_CLASSES)) {
+      classList.toggle(cls, !!settings25.store[key]);
+    }
+  }
+  var streamerMode_default = definePlugin({
+    name: "StreamerMode",
+    icon: EyeOffIcon,
+    description: "Blurs personal information for privacy while streaming.",
+    authors: [Devs.Prism],
+    tags: ["privacy"],
+    settings: settings25,
+    start: syncClasses,
+    onSettingsChange: syncClasses,
     stop() {
-      unregisterStyle(STYLE_NAME4);
+      const { classList } = document.documentElement;
+      for (const cls of Object.values(CSS_CLASSES)) {
+        classList.remove(cls);
+      }
     }
   });
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/usageDisplay/styles.css
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/usageDisplay/styles.css
   registerStyle("usageDisplay", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -8290,24 +17302,6 @@ button:has(.void-ud-trigger > .void-ud-label) {
     width: 100%;
 }
 `);
-
-  // src/turbopack/common/plan.ts
-  var PLAN_NAMES = {
-    SUBSCRIPTION_TIER_X_BASIC: "X Basic",
-    SUBSCRIPTION_TIER_X_PREMIUM: "X Premium",
-    SUBSCRIPTION_TIER_X_PREMIUM_PLUS: "X Premium+",
-    SUBSCRIPTION_TIER_SUPER_GROK_LITE: "SuperGrok Lite",
-    SUBSCRIPTION_TIER_GROK_PRO: "SuperGrok",
-    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "SuperGrok Pro"
-  };
-  var X_SUB_NAMES = {
-    PremiumPlus: "SuperGrok",
-    Premium: "X Premium",
-    Basic: "X Basic"
-  };
-  function getPlanName(bestSubscription, xSubscriptionType) {
-    return (bestSubscription ? PLAN_NAMES[bestSubscription] : undefined) ?? (xSubscriptionType ? X_SUB_NAMES[xSubscriptionType] : undefined) ?? "Free";
-  }
 
   // src/plugins/usageDisplay/credits.ts
   var CREDITS_CONFIG_PATH = "/grok_api_v2.GrokBuildBilling/GetGrokCreditsConfig";
@@ -8703,8 +17697,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var CHART_WINDOW = 7;
   var CHART_SCALE_MIN = 20;
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-  var DAY_MS = 86400000;
-  var logger17 = new Logger("UsageDisplay");
+  var DAY_MS2 = 86400000;
+  var logger30 = new Logger("UsageDisplay");
   function isRecord2(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
@@ -8760,7 +17754,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      logger17.debug("Failed to read usage stats", error);
+      logger30.debug("Failed to read usage stats", error);
       return memory.get(key) ?? null;
     }
   }
@@ -8772,7 +17766,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      logger17.debug("Failed to persist usage stats", error);
+      logger30.debug("Failed to persist usage stats", error);
       memory.set(key, value);
     }
   }
@@ -8784,7 +17778,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      logger17.debug("Failed to clear usage stats", error);
+      logger30.debug("Failed to clear usage stats", error);
       memory.delete(key);
     }
   }
@@ -8804,7 +17798,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }
       return { version: STATS_VERSION, userId, days };
     } catch (error) {
-      logger17.debug("Failed to read usage stats", error);
+      logger30.debug("Failed to read usage stats", error);
       return emptyStore(userId);
     }
   }
@@ -8931,7 +17925,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function pruneDays(days, retainDays, now) {
     const keep = clamp(Math.floor(retainDays), RETAIN_MIN, RETAIN_MAX);
-    const cutoff = localDateKey(startOfLocalDay(now) - (keep - 1) * DAY_MS);
+    const cutoff = localDateKey(startOfLocalDay(now) - (keep - 1) * DAY_MS2);
     const out = {};
     for (const [date, rec] of Object.entries(days)) {
       if (date >= cutoff)
@@ -8988,9 +17982,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
 
   // src/plugins/usageDisplay/index.tsx
-  var logger18 = new Logger("UsageDisplay");
-  var cl17 = classNameFactory("void-ud-");
-  var settings10 = definePluginSettings({
+  var logger31 = new Logger("UsageDisplay");
+  var cl26 = classNameFactory("void-ud-");
+  var settings26 = definePluginSettings({
     usageStats: {
       type: 3 /* BOOLEAN */,
       description: "Record daily usage. Hover shows today after a delay; click opens history.",
@@ -9029,8 +18023,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
   var LOCAL_ACCOUNT = "local";
   var BOT_POOL = ":bot";
-  var BotsStore = findByPropsLazy("useBotsStore");
-  var store2 = createExternalStore();
+  var BotsStore2 = findByPropsLazy("useBotsStore");
+  var store3 = createExternalStore();
   var state = {
     loading: false,
     lastFetchAt: 0,
@@ -9039,7 +18033,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     userId: ""
   };
   var refreshPromise = null;
-  var unsubRoute = null;
+  var unsubRoute2 = null;
   function isBotPage() {
     try {
       return RoutingStore.useRoutingStore.getState().route?.page === "bot";
@@ -9077,7 +18071,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     state.usage = stored;
     state.lastUpdatedAt = stored ? Date.now() : 0;
     state.lastFetchAt = 0;
-    store2.notify();
+    store3.notify();
   }
   function syncAccount() {
     const userId = currentPoolId();
@@ -9087,11 +18081,11 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   async function fetchBotUsage() {
     try {
-      const hook = BotsStore.useBotsStore;
+      const hook = BotsStore2.useBotsStore;
       await hook.getState().refreshUsage();
       return normalizeBotUsage(hook.getState().usage);
     } catch (error) {
-      logger18.warn("Failed to fetch Grok Bot usage", error);
+      logger31.warn("Failed to fetch Grok Bot usage", error);
       return null;
     }
   }
@@ -9105,12 +18099,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
     SettingsStore3.markAsChanged();
   }
   function snapshotToday() {
-    if (!settings10.store.usageStats)
+    if (!settings26.store.usageStats)
       return;
     syncAccount();
     if (!state.userId)
       return;
-    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings10.store.retainDays));
+    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings26.store.retainDays));
   }
   async function refresh(reason = "manual") {
     if (refreshPromise)
@@ -9121,7 +18115,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     const poolId = currentPoolId();
     state.loading = true;
     state.lastFetchAt = Date.now();
-    store2.notify();
+    store3.notify();
     refreshPromise = (async () => {
       try {
         if (poolId.endsWith(BOT_POOL)) {
@@ -9139,7 +18133,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
         const pageUsage = readNativeUsage();
         const remote = await fetchOfficialUsage().then((usage) => ({ ok: true, usage })).catch((error) => {
-          logger18.warn("Failed to fetch official usage", error);
+          logger31.warn("Failed to fetch official usage", error);
           return { ok: false };
         });
         if (currentPoolId() !== poolId)
@@ -9156,18 +18150,18 @@ button:has(.void-ud-trigger > .void-ud-label) {
       } finally {
         state.loading = false;
         refreshPromise = null;
-        store2.notify();
+        store3.notify();
         if (currentPoolId() !== poolId)
           queueMicrotask(() => void refresh("route"));
       }
     })();
     return refreshPromise;
   }
-  function onVisibility() {
+  function onVisibility2() {
     if (!document.hidden && Date.now() - state.lastFetchAt > STALE_MS)
       refresh("visible");
   }
-  function onStreamEnd2() {
+  function onStreamEnd5() {
     refresh("stream");
   }
   function readPlan() {
@@ -9210,25 +18204,25 @@ button:has(.void-ud-trigger > .void-ud-label) {
       width: RING_SIZE,
       height: RING_SIZE,
       viewBox: `0 0 ${RING_SIZE} ${RING_SIZE}`,
-      className: classes(cl17("ring"), cl17(`ring-${tone}`))
+      className: classes(cl26("ring"), cl26(`ring-${tone}`))
     }, /* @__PURE__ */ React.createElement("circle", {
       cx: RING_CENTER,
       cy: RING_CENTER,
       r: RING_RADIUS,
-      className: cl17("ring-track")
+      className: cl26("ring-track")
     }), /* @__PURE__ */ React.createElement("circle", {
       cx: RING_CENTER,
       cy: RING_CENTER,
       r: RING_RADIUS,
-      className: cl17("ring-fill"),
+      className: cl26("ring-fill"),
       strokeDasharray: RING_CIRCUMFERENCE,
       strokeDashoffset: RING_CIRCUMFERENCE * (1 - fraction),
       transform: `rotate(-90 ${RING_CENTER} ${RING_CENTER})`
     }));
   }
   function ButtonIcon() {
-    useExternalStore(store2);
-    const { showPercent } = settings10.use(["showPercent"]);
+    useExternalStore(store3);
+    const { showPercent } = settings26.use(["showPercent"]);
     const weekly = state.usage?.weekly;
     const percent = weekly?.usedPercent ?? null;
     const tone = usageTone(percent);
@@ -9240,19 +18234,19 @@ button:has(.void-ud-trigger > .void-ud-label) {
         if (!document.hidden)
           refresh("poll");
       }, AUTO_REFRESH_MS);
-      document.addEventListener("visibilitychange", onVisibility);
+      document.addEventListener("visibilitychange", onVisibility2);
       return () => {
         window.clearInterval(id);
-        document.removeEventListener("visibilitychange", onVisibility);
+        document.removeEventListener("visibilitychange", onVisibility2);
       };
     }, []);
     return /* @__PURE__ */ React.createElement("span", {
-      className: classes(cl17("trigger"), label == null && cl17("icon-only"))
+      className: classes(cl26("trigger"), label == null && cl26("icon-only"))
     }, /* @__PURE__ */ React.createElement(ProgressRing, {
       percent: isFree ? null : percent,
       tone: isFree ? "waiting" : tone
     }), label != null && /* @__PURE__ */ React.createElement("span", {
-      className: cl17("label")
+      className: cl26("label")
     }, label));
   }
   function WeekBlock({ isFree, percent, resetAt, loading, labeled }) {
@@ -9267,14 +18261,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: 2,
-      className: cl17("week")
+      className: cl26("week")
     }, labeled && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
     }, isBotPage() ? "Grok Bot" : "Week"), /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "semibold",
-      className: cl17("used")
+      className: cl26("used")
     }, usedLabel(isFree, percent, loading)), resetAt != null && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
@@ -9286,19 +18280,19 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: 2,
-      className: cl17("today")
+      className: cl26("today")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
     }, "Today"), !isFree && /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "semibold",
-      className: cl17("used")
+      className: cl26("used")
     }, formatDelta(delta ?? (percent != null ? 0 : null)), " of weekly quota"));
   }
   function UsagePanel() {
-    useExternalStore(store2);
-    const { usageStats, hoverStatsDelay } = settings10.use(["usageStats", "hoverStatsDelay"]);
+    useExternalStore(store3);
+    const { usageStats, hoverStatsDelay } = settings26.use(["usageStats", "hoverStatsDelay"]);
     const delay = hoverDelayOf(hoverStatsDelay);
     const [showToday, setShowToday] = useState(usageStats && delay <= 0);
     const weekly = state.usage?.weekly;
@@ -9322,12 +18316,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
       if (!showToday)
         return;
       snapshotToday();
-      store2.notify();
+      store3.notify();
     }, [showToday, percent]);
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: 8,
-      className: cl17("panel")
+      className: cl26("panel")
     }, showToday && /* @__PURE__ */ React.createElement(TodayBlock, {
       isFree,
       percent
@@ -9340,12 +18334,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }));
   }
   function StatsToggle() {
-    const { usageStats } = settings10.use(["usageStats"]);
+    const { usageStats } = settings26.use(["usageStats"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       justifyContent: "space-between",
       gap: "0.75rem",
-      className: cl17("toggle")
+      className: cl26("toggle")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
@@ -9358,8 +18352,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }, "Record local daily usage on this device.")), /* @__PURE__ */ React.createElement(Switch, {
       checked: !!usageStats,
       onCheckedChange: (value) => {
-        settings10.store.usageStats = value;
-        store2.notify();
+        settings26.store.usageStats = value;
+        store3.notify();
         if (value)
           refresh("manual");
       }
@@ -9372,25 +18366,25 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "flex-start",
       gap: "0.5rem",
-      className: cl17("formula")
+      className: cl26("formula")
     }, terms.map((term, i) => /* @__PURE__ */ React.createElement(React.Fragment, {
       key: term.label
     }, i > 0 && /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       alignItems: "center",
-      className: cl17("formula-op-col")
+      className: cl26("formula-op-col")
     }, /* @__PURE__ */ React.createElement("span", {
-      className: cl17("formula-op")
+      className: cl26("formula-op")
     }, ops[i - 1]), /* @__PURE__ */ React.createElement("span", {
-      className: cl17("formula-op")
+      className: cl26("formula-op")
     }, ops[i - 1])), /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       alignItems: "center",
-      className: cl17("formula-term")
+      className: cl26("formula-term")
     }, /* @__PURE__ */ React.createElement("span", {
-      className: cl17("formula-label")
+      className: cl26("formula-label")
     }, term.label), /* @__PURE__ */ React.createElement("span", {
-      className: cl17("formula-value")
+      className: cl26("formula-value")
     }, term.value)))));
   }
   function DayFormula({ rec, today }) {
@@ -9418,7 +18412,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }), caption != null && /* @__PURE__ */ React.createElement(Text2, {
         size: "xs",
         color: "muted",
-        className: cl17("formula-caption")
+        className: cl26("formula-caption")
       }, caption));
     }
     return /* @__PURE__ */ React.createElement(Formula, {
@@ -9443,7 +18437,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.35rem",
-      className: cl17("repair")
+      className: cl26("repair")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
@@ -9457,7 +18451,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       step: 0.1,
       value: draft,
       onChange: (e) => setDraft(e.target.value),
-      className: cl17("repair-input"),
+      className: cl26("repair-input"),
       "aria-label": "Weekly percent before reset"
     }), /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
@@ -9467,14 +18461,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
       onClick: () => {
         if (pre == null)
           return;
-        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings10.store.retainDays));
-        store2.notify();
+        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings26.store.retainDays));
+        store3.notify();
       }
     }, "Repair")));
   }
   function StatsModal({ onClose }) {
-    useExternalStore(store2);
-    const { usageStats } = settings10.use(["usageStats"]);
+    useExternalStore(store3);
+    const { usageStats } = settings26.use(["usageStats"]);
     const days = usageStats && state.userId ? listDays(state.userId) : [];
     const todayKey = localDateKey(Date.now());
     const bars = days.length ? fillChartDays(days) : [];
@@ -9488,7 +18482,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         node.scrollLeft = node.scrollWidth;
     }, [bars.length]);
     useEffect(() => {
-      chartRef.current?.querySelector(`.${cl17("bar-on")}`)?.scrollIntoView({ inline: "nearest", block: "nearest" });
+      chartRef.current?.querySelector(`.${cl26("bar-on")}`)?.scrollIntoView({ inline: "nearest", block: "nearest" });
     }, [selected]);
     return /* @__PURE__ */ React.createElement(VoidPPDialogShell, {
       title: "Usage by date",
@@ -9498,10 +18492,10 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }, /* @__PURE__ */ React.createElement(StatsToggle, null), !usageStats ? /* @__PURE__ */ React.createElement(Paragraph, null, "Turn on daily usage stats to keep a per-day log. Hover shows today after a delay.") : days.length === 0 ? /* @__PURE__ */ React.createElement(Paragraph, null, "No days recorded yet. Stats start from the moment you enable tracking.") : /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.75rem",
-      className: cl17("history")
+      className: cl26("history")
     }, /* @__PURE__ */ React.createElement(Flex, {
       ref: chartRef,
-      className: cl17("chart"),
+      className: cl26("chart"),
       alignItems: "stretch",
       gap: "0.35rem",
       tabIndex: 0,
@@ -9530,22 +18524,22 @@ button:has(.void-ud-trigger > .void-ud-label) {
         role: "option",
         "aria-selected": on,
         "aria-label": `${rec.date === todayKey ? "Today" : formatDayLabel(rec.date)}, ${formatDelta(delta)}`,
-        className: classes(cl17("bar"), on && cl17("bar-on"), empty && cl17("bar-empty")),
+        className: classes(cl26("bar"), on && cl26("bar-on"), empty && cl26("bar-empty")),
         onClick: () => setSelected(rec.date)
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl17("bar-value")
+        className: cl26("bar-value")
       }, empty ? " " : formatPercent(delta)), /* @__PURE__ */ React.createElement("span", {
-        className: cl17("bar-track")
+        className: cl26("bar-track")
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl17("bar-fill"),
+        className: cl26("bar-fill"),
         style: { height: `${pct}%` }
       })), /* @__PURE__ */ React.createElement("span", {
-        className: cl17("bar-label")
+        className: cl26("bar-label")
       }, rec.date === todayKey ? "Today" : formatDayNumber(rec.date)));
     })), active != null && /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.35rem",
-      className: cl17("detail")
+      className: cl26("detail")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "semibold"
@@ -9559,8 +18553,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }))));
   }
   function ClearStats() {
-    useExternalStore(store2);
-    const [open2, setOpen] = useState(false);
+    useExternalStore(store3);
+    const [open, setOpen] = useState(false);
     const userId = state.userId || currentPoolId();
     const days = userId ? listDays(userId) : [];
     return /* @__PURE__ */ React.createElement(Flex, {
@@ -9573,7 +18567,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       disabled: !days.length,
       onClick: () => setOpen(true)
     }, "Clear usage history"), /* @__PURE__ */ React.createElement(ConfirmDialog, {
-      open: open2,
+      open,
       onOpenChange: setOpen,
       title: "Clear usage history",
       description: "Delete all locally recorded daily usage? This cannot be undone.",
@@ -9582,7 +18576,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       onConfirm: () => {
         if (userId)
           clearStats(userId);
-        store2.notify();
+        store3.notify();
       }
     }));
   }
@@ -9610,309 +18604,36 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
-    settings: settings10,
+    settings: settings26,
     start() {
       migrateUsageStats();
       try {
-        unsubRoute = RoutingStore.useRoutingStore.subscribe((s) => s.route.page, (page, prev) => {
+        unsubRoute2 = RoutingStore.useRoutingStore.subscribe((s) => s.route.page, (page, prev) => {
           if (page === prev)
             return;
           syncAccount();
           refresh("route");
         });
       } catch (error) {
-        logger18.warn("RoutingStore subscribe failed", error);
+        logger31.warn("RoutingStore subscribe failed", error);
       }
     },
     stop() {
-      unsubRoute?.();
-      unsubRoute = null;
+      unsubRoute2?.();
+      unsubRoute2 = null;
     },
     chatBarButton: { ...BUTTON_BASE, tooltip: () => /* @__PURE__ */ React.createElement(SafeUsagePanel, null) },
     events: {
-      streamEnd: onStreamEnd2
+      streamEnd: onStreamEnd5
     },
     onSettingsChange() {
-      if (settings10.store.usageStats)
+      if (settings26.store.usageStats)
         refresh("manual");
     }
   });
 
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/settingsFlyout/styles.css
-  registerStyle("settingsFlyout", `/*
- * Void++, a modification for grok.com
- * Copyright (c) 2026 Void++ Contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-.void-sf-menu-icon {
-    width: 1rem;
-    height: 1rem;
-    margin-inline-end: 0.5rem;
-    color: hsl(var(--fg-secondary));
-    flex-shrink: 0;
-}
-
-.void-sf-group {
-    padding: 0.25rem 0.5rem 0.125rem;
-    pointer-events: none;
-}
-
-.void-sf-menu {
-    max-height: min(24rem, calc(100vh - 6rem));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
-`);
-
-  // src/plugins/settingsFlyout/icons.tsx
-  function grokSvg(props, ...children) {
-    return /* @__PURE__ */ React.createElement("svg", {
-      width: props.width ?? props.size ?? 16,
-      height: props.height ?? props.size ?? 16,
-      viewBox: "0 0 24 24",
-      fill: "none",
-      xmlns: "http://www.w3.org/2000/svg",
-      className: props.className,
-      "aria-hidden": "true"
-    }, children);
-  }
-  var CogIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "m13.456 1.75.296.445c.832 1.247 1.198 1.654 1.558 1.818.321.146.82.172 2.242-.157l.54-.124 2.171 2.171-.124.54c-.328 1.423-.302 1.921-.156 2.243.164.36.57.726 1.817 1.557l.446.297v2.92l-.446.297c-1.247.831-1.653 1.198-1.817 1.558-.146.32-.172.82.156 2.242l.124.54-2.17 2.17-.54-.123c-1.423-.329-1.922-.303-2.243-.157-.36.164-.726.57-1.558 1.818l-.296.445h-2.92l-.297-.445c-.832-1.247-1.198-1.654-1.558-1.818-.321-.146-.82-.172-2.242.157l-.54.124-2.171-2.171.124-.54c.328-1.423.303-1.921.156-2.242-.164-.36-.57-.727-1.817-1.558l-.445-.297v-2.92l.445-.297c1.247-.831 1.653-1.198 1.817-1.557.147-.322.172-.82-.156-2.243l-.124-.54 2.17-2.17.541.123c1.422.329 1.92.303 2.242.157.36-.164.727-.57 1.558-1.818l.297-.445zm-1.853 2c-.637.93-1.249 1.699-2.092 2.083-.875.4-1.845.324-2.977.092l-.614.613c.232 1.132.308 2.102-.091 2.978-.385.842-1.153 1.454-2.083 2.09v.787c.93.636 1.698 1.248 2.083 2.091.399.876.323 1.845.091 2.977l.614.613c1.132-.232 2.102-.306 2.977.093.843.384 1.455 1.153 2.092 2.083h.785c.637-.93 1.249-1.699 2.092-2.083.875-.399 1.845-.325 2.976-.093l.614-.613c-.232-1.132-.306-2.101.093-2.977.384-.843 1.152-1.455 2.083-2.091v-.787c-.93-.636-1.7-1.248-2.083-2.09-.4-.876-.325-1.846-.093-2.978l-.614-.613c-1.131.232-2.1.307-2.976-.092-.843-.384-1.455-1.153-2.092-2.083zM14.001 12A2 2 0 1 0 10 12a2 2 0 0 0 4 0m2 0A4 4 0 1 1 8 12a4 4 0 0 1 8 0"
-  }));
-  var PersonIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M12 12.25C16.4183 12.25 20 15.8317 20 20.25V22H4V20.25C4 15.8317 7.58172 12.25 12 12.25ZM12 14.25C8.77005 14.25 6.13694 16.8022 6.00586 20H17.9941C17.8631 16.8022 15.23 14.25 12 14.25Z",
-    fill: "currentColor"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M12 2C14.4853 2 16.5 4.01472 16.5 6.5C16.5 8.98528 14.4853 11 12 11C9.51472 11 7.5 8.98528 7.5 6.5C7.5 4.01472 9.51472 2 12 2ZM12 4C10.6193 4 9.5 5.11929 9.5 6.5C9.5 7.88071 10.6193 9 12 9C13.3807 9 14.5 7.88071 14.5 6.5C14.5 5.11929 13.3807 4 12 4Z",
-    fill: "currentColor"
-  }));
-  var PaintIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M16.2637 3.19188C17.5328 2.03183 19.4908 2.07547 20.707 3.29149C21.9244 4.50883 21.967 6.46969 20.8037 7.73876L20.8027 7.73778L12.4814 16.9038C12.2753 19.4758 10.1251 21.4985 7.5 21.4985H2.5V16.4985C2.50025 13.8741 4.52251 11.7229 7.09375 11.5161L16.2637 3.19188ZM19.293 4.70653C18.8329 4.24643 18.0921 4.2299 17.6123 4.66942L17.6084 4.67333L9.58594 11.9546C10.67 12.453 11.5441 13.3277 12.043 14.4116L19.3262 6.39012L19.3291 6.3872C19.7688 5.90754 19.7529 5.16673 19.293 4.70653ZM4.5 19.4985H7.5C9.15685 19.4985 10.5 18.1554 10.5 16.4985C10.4997 14.8419 9.15669 13.4985 7.5 13.4985C5.84331 13.4985 4.50026 14.8419 4.5 16.4985V19.4985Z"
-  }));
-  var VisitIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M21.5 14.5L19.2402 16.1201L22.0596 18.9404L19.9404 21.0596L17.1201 18.2402L15.5 20.5L13 12L21.5 14.5Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M18.5 2C20.433 2 22 3.567 22 5.5V11H20V5.5C20 4.67157 19.3284 4 18.5 4H5.5C4.67157 4 4 4.67157 4 5.5V16.5C4 17.3284 4.67157 18 5.5 18H12V20H5.5C3.567 20 2 18.433 2 16.5V5.5C2 3.567 3.567 2 5.5 2H18.5Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M10.4941 5.52441C10.7365 5.57269 10.9591 5.69148 11.1338 5.86621C11.3085 6.04094 11.4273 6.26352 11.4756 6.50586C11.5238 6.74833 11.4999 7.00011 11.4053 7.22852C11.3107 7.45691 11.1499 7.65171 10.9443 7.78906C10.7388 7.92641 10.4972 8 10.25 8C9.91848 8 9.60063 7.86821 9.36621 7.63379C9.13179 7.39937 9 7.08152 9 6.75C9 6.50277 9.07359 6.26123 9.21094 6.05566C9.34829 5.85012 9.54309 5.68933 9.77148 5.59473C9.99989 5.50012 10.2517 5.47618 10.4941 5.52441Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M6.75 5.5C7.08152 5.5 7.39937 5.63179 7.63379 5.86621C7.86821 6.10063 8 6.41848 8 6.75C8 6.99723 7.92641 7.23877 7.78906 7.44434C7.65171 7.64988 7.45691 7.81067 7.22852 7.90527C7.00011 7.99988 6.74833 8.02382 6.50586 7.97559C6.26352 7.92731 6.04094 7.80852 5.86621 7.63379C5.69148 7.45906 5.57269 7.23648 5.52441 6.99414C5.47618 6.75167 5.50012 6.49989 5.59473 6.27148C5.68933 6.04309 5.85012 5.84829 6.05566 5.71094C6.26123 5.57359 6.50277 5.5 6.75 5.5Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M13.75 5.5C14.0815 5.5 14.3994 5.63179 14.6338 5.86621C14.8682 6.10063 15 6.41848 15 6.75C15 6.99723 14.9264 7.23877 14.7891 7.44434C14.6517 7.64988 14.4569 7.81067 14.2285 7.90527C14.0001 7.99988 13.7483 8.02382 13.5059 7.97559C13.2635 7.92731 13.0409 7.80852 12.8662 7.63379C12.6915 7.45906 12.5727 7.23648 12.5244 6.99414C12.4762 6.75167 12.5001 6.49989 12.5947 6.27148C12.6893 6.04309 12.8501 5.84829 13.0557 5.71094C13.2612 5.57359 13.5028 5.5 13.75 5.5Z"
-  }));
-  var SlidersIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    d: "M21 7H10M14 17H3M20.25 17C20.25 18.6569 18.9069 20 17.25 20C15.5931 20 14.25 18.6569 14.25 17C14.25 15.3431 15.5931 14 17.25 14C18.9069 14 20.25 15.3431 20.25 17ZM9.75 7C9.75 8.65685 8.40685 10 6.75 10C5.09315 10 3.75 8.65685 3.75 7C3.75 5.34315 5.09315 4 6.75 4C8.40685 4 9.75 5.34315 9.75 7Z",
-    stroke: "currentColor",
-    strokeLinejoin: "round",
-    strokeWidth: "2"
-  }));
-  var PaymentsIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M12.9004 7.83984C13.0629 7.87413 13.2225 7.91676 13.376 7.96777C13.9053 8.14378 14.4688 8.45248 14.8301 8.95215L13.3711 10.0068C13.3148 9.92902 13.1447 9.78764 12.8086 9.67578C12.4889 9.56951 12.1071 9.52104 11.75 9.5459C11.3842 9.57147 11.1204 9.6686 10.9727 9.77734C10.6672 10.0025 10.7901 10.4692 11.0615 10.6533C11.3259 10.8325 11.7135 10.964 12.2734 11.1426C12.7633 11.2988 13.4271 11.5024 13.9502 11.8574C14.5404 12.2581 15.0008 12.8825 15.001 13.8027C15.001 14.6074 14.6157 15.2292 14.0645 15.6318C13.716 15.8862 13.3104 16.0473 12.9004 16.1426V17.5H11.1006V16.1924C10.8876 16.158 10.6783 16.1108 10.4785 16.0488C9.92674 15.8775 9.3358 15.5675 8.95996 15.0479L10.4189 13.9932C10.4778 14.0743 10.6555 14.2195 11.0117 14.3301C11.3503 14.4351 11.7577 14.4787 12.1426 14.4453C12.5359 14.411 12.8313 14.303 13.0029 14.1777C13.3128 13.9513 13.2321 13.5454 12.9395 13.3467C12.6751 13.1673 12.2868 13.0361 11.7266 12.8574C11.2368 12.7012 10.5739 12.4974 10.0508 12.1426C9.46027 11.7419 9.00013 11.1178 9 10.1973V10.1328C9 9.34586 9.36032 8.72911 9.9043 8.32812C10.2629 8.06395 10.6821 7.90612 11.1006 7.82129V6.5H12.9004V7.83984Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4Z",
-    fill: "currentColor"
-  }));
-  var LightningIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    d: "M5 14.25L14 4L13 9.75H19L10 20L11 14.25H5Z",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  }));
-  var DatabaseIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M20.5 18C20.5 18.7778 20.1017 19.4178 19.5977 19.8945C19.0957 20.3692 18.423 20.7505 17.6748 21.0498C16.1726 21.6507 14.1657 22 12 22C9.83428 22 7.82743 21.6507 6.3252 21.0498C5.57697 20.7505 4.90428 20.3692 4.40234 19.8945C3.89825 19.4178 3.5 18.7778 3.5 18V5.5C3.5 4.71709 3.97721 4.13013 4.4707 3.74121C4.97543 3.34352 5.64416 3.02877 6.38086 2.7832C7.86497 2.28858 9.85158 2 12 2C14.1484 2 16.135 2.28858 17.6191 2.7832C18.3558 3.02877 19.0246 3.34352 19.5293 3.74121C20.0228 4.13013 20.5 4.71709 20.5 5.5V18ZM18.5 14.166C18.2396 14.3063 17.963 14.4345 17.6748 14.5498C16.1726 15.1507 14.1657 15.5 12 15.5C9.83428 15.5 7.82743 15.1507 6.3252 14.5498C6.03697 14.4345 5.76036 14.3063 5.5 14.166V18C5.5 18.0506 5.52142 18.2003 5.77637 18.4414C6.03343 18.6845 6.4595 18.9488 7.06836 19.1924C8.28059 19.6773 10.0236 20 12 20C13.9764 20 15.7194 19.6773 16.9316 19.1924C17.5405 18.9488 17.9666 18.6845 18.2236 18.4414C18.4786 18.2003 18.5 18.0506 18.5 18V14.166ZM5.5 11.5C5.5 11.5506 5.52142 11.7003 5.77637 11.9414C6.03343 12.1845 6.4595 12.4488 7.06836 12.6924C8.28059 13.1773 10.0236 13.5 12 13.5C13.9764 13.5 15.7194 13.1773 16.9316 12.6924C17.5405 12.4488 17.9666 12.1845 18.2236 11.9414C18.4786 11.7003 18.5 11.5506 18.5 11.5V7.86914C18.2226 7.99709 17.9273 8.11407 17.6191 8.2168C16.135 8.71142 14.1484 9 12 9C9.85158 9 7.86497 8.71142 6.38086 8.2168C6.07267 8.11407 5.77737 7.99709 5.5 7.86914V11.5ZM12 4C10.0065 4 8.24301 4.27056 7.0127 4.68066C6.39238 4.88745 5.96226 5.11212 5.70801 5.3125C5.59875 5.39864 5.5459 5.46254 5.51953 5.5C5.5459 5.53746 5.59875 5.60136 5.70801 5.6875C5.96226 5.88788 6.39238 6.11255 7.0127 6.31934C8.24301 6.72944 10.0065 7 12 7C13.9935 7 15.757 6.72944 16.9873 6.31934C17.6076 6.11255 18.0377 5.88788 18.292 5.6875C18.4008 5.60171 18.453 5.53752 18.4795 5.5C18.453 5.46248 18.4008 5.39829 18.292 5.3125C18.0377 5.11212 17.6076 4.88745 16.9873 4.68066C15.757 4.27056 13.9935 4 12 4Z",
-    fill: "currentColor"
-  }));
-
-  // src/plugins/settingsFlyout/index.tsx
-  var cl18 = classNameFactory("void-sf-");
-  var settings11 = definePluginSettings({
-    showOpenSettings: {
-      type: 3 /* BOOLEAN */,
-      description: 'Show "Open Settings" (last used tab).',
-      default: true
-    },
-    voidppPosition: {
-      type: 4 /* SELECT */,
-      description: "Place Void++ tabs above or below Grok tabs.",
-      options: [
-        { label: "Above Grok tabs", value: "above", default: true },
-        { label: "Below Grok tabs", value: "below" }
-      ]
-    },
-    plugins: {
-      type: 3 /* BOOLEAN */,
-      description: "Plugins",
-      default: true
-    },
-    themes: {
-      type: 3 /* BOOLEAN */,
-      description: "Themes",
-      default: true
-    },
-    css: {
-      type: 3 /* BOOLEAN */,
-      description: "Quick CSS",
-      default: true
-    },
-    account: {
-      type: 3 /* BOOLEAN */,
-      description: "Account",
-      default: true
-    },
-    appearance: {
-      type: 3 /* BOOLEAN */,
-      description: "Appearance",
-      default: true
-    },
-    behavior: {
-      type: 3 /* BOOLEAN */,
-      description: "Behavior",
-      default: true
-    },
-    customize: {
-      type: 3 /* BOOLEAN */,
-      description: "Customize",
-      default: true
-    },
-    billing: {
-      type: 3 /* BOOLEAN */,
-      description: "Billing",
-      default: true
-    },
-    usage: {
-      type: 3 /* BOOLEAN */,
-      description: "Usage",
-      default: true
-    },
-    data: {
-      type: 3 /* BOOLEAN */,
-      description: "Data Controls",
-      default: true
-    }
-  });
-  var GROK_TABS = [
-    { id: "account", name: "Account", setting: "account", icon: PersonIcon },
-    { id: "appearance", name: "Appearance", setting: "appearance", icon: PaintIcon },
-    { id: "behavior", name: "Behavior", setting: "behavior", icon: VisitIcon },
-    { id: "personality", name: "Customize", setting: "customize", icon: SlidersIcon },
-    { id: "billing", name: "Billing", setting: "billing", icon: PaymentsIcon },
-    { id: "usage", name: "Usage", setting: "usage", icon: LightningIcon },
-    { id: "data", name: "Data Controls", setting: "data", icon: DatabaseIcon }
-  ];
-  var VOIDPP_TABS = [
-    { id: "voidpp_plugins_tab", name: "Plugins", setting: "plugins", icon: UnplugIcon },
-    { id: "voidpp_themes_tab", name: "Themes", setting: "themes", icon: PaletteIcon },
-    { id: "voidpp_css_tab", name: "Quick CSS", setting: "css", icon: BracesIcon }
-  ];
-  function openTab(tab, onOpen, event) {
-    const store3 = SettingsDialogStore.useSettingsDialogStore.getState();
-    if (tab) {
-      store3.setTab(tab);
-      store3.setOpen(true);
-      return;
-    }
-    try {
-      onOpen?.(event);
-    } catch {}
-    store3.setOpen(true);
-  }
-  function tabItems(tabs) {
-    return tabs.map((t) => {
-      const Icon = t.icon;
-      return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
-        key: t.id,
-        onSelect: () => openTab(t.id)
-      }, /* @__PURE__ */ React.createElement(Icon, {
-        className: cl18("menu-icon")
-      }), t.name);
-    });
-  }
-  function VoidPPSection({ tabs }) {
-    if (tabs.length === 0)
-      return null;
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Text2, {
-      size: "xs",
-      color: "secondary",
-      className: cl18("group")
-    }, "Void++"), tabItems(tabs));
-  }
-  function SettingsMenu({ onOpen }) {
-    const cfg = settings11.use([
-      "showOpenSettings",
-      "voidppPosition",
-      "plugins",
-      "themes",
-      "css",
-      "account",
-      "appearance",
-      "behavior",
-      "customize",
-      "billing",
-      "usage",
-      "data"
-    ]);
-    const grokTabs = GROK_TABS.filter((t) => cfg[t.setting]);
-    const voidppTabs = VOIDPP_TABS.filter((t) => cfg[t.setting]);
-    const showOpen = cfg.showOpenSettings || grokTabs.length === 0 && voidppTabs.length === 0;
-    const voidppFirst = cfg.voidppPosition !== "below";
-    const hasBoth = grokTabs.length > 0 && voidppTabs.length > 0;
-    return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(CogIcon, {
-      className: cl18("menu-icon")
-    }), "Settings"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, {
-      className: cl18("menu")
-    }, showOpen && /* @__PURE__ */ React.createElement(DropdownMenuItem, {
-      onSelect: (e) => openTab(undefined, onOpen, e)
-    }, /* @__PURE__ */ React.createElement(CogIcon, {
-      className: cl18("menu-icon")
-    }), "Open Settings"), showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
-      tabs: voidppTabs
-    }), voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), tabItems(grokTabs), !voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), !voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
-      tabs: voidppTabs
-    })));
-  }
-  var WrappedSettingsMenu = ErrorBoundary.wrap(SettingsMenu);
-  var settingsFlyout_default = definePlugin({
-    name: "SettingsFlyout",
-    icon: Settings2Icon,
-    description: "Replace the avatar Settings item with a flyout of shortcuts to Void++ and Grok settings tabs.",
-    authors: [Devs.p],
-    tags: ["ui", "settings"],
-    enabledByDefault: true,
-    requiresRestart: true,
-    settings: settings11,
-    start() {
-      migratePluginSetting("SettingsFlyout", "voidppPosition", "voidPosition");
-    },
-    _renderSettingsMenu: (onOpen) => createElement(WrappedSettingsMenu, { onOpen }),
-    patches: [
-      {
-        find: '"user-dropdown.settings","Settings"',
-        replacement: {
-          match: /\jsx{\i\.DropdownMenuItem}\{onSelect:(\i),children:\[\jsx{\i\.CogIcon}\{[^}]{0,80}\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
-          replace: "$self._renderSettingsMenu($1)"
-        }
-      }
-    ]
-  });
-
   // src/plugins/userQuotes/index.ts
-  var STYLE_NAME5 = "userQuotes";
+  var STYLE_NAME8 = "userQuotes";
   var CSS3 = `
 [data-testid="user-message"] blockquote:not(.twitter-tweet) {
     border-inline-start-color: hsl(var(--fg-tertiary)) !important;
@@ -9929,8721 +18650,88 @@ button:has(.void-ud-trigger > .void-ud-label) {
     tags: ["chat", "ui"],
     enabledByDefault: true,
     start() {
-      registerStyle(STYLE_NAME5, CSS3);
+      registerStyle(STYLE_NAME8, CSS3);
     },
-    stop() {
-      unregisterStyle(STYLE_NAME5);
-    }
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/exportChat/styles.css
-  registerStyle("exportChat", `.void-export-icon {
-    margin-inline-end: 0.5rem;
-}
-`);
-
-  // src/plugins/exportChat/index.tsx
-  var logger19 = new Logger("ExportChat");
-  function buildExportMessage(r) {
-    return {
-      id: r.responseId,
-      sender: r.sender,
-      message: r.message,
-      query: r.query,
-      createTime: r.createTime,
-      model: r.requestMetadata?.model ?? r.model,
-      ...r.thinkingTrace && { thinkingTrace: r.thinkingTrace },
-      ...r.webSearchResults?.length && { webSearchResults: r.webSearchResults },
-      ...r.generatedImageUrls?.length && { generatedImageUrls: r.generatedImageUrls },
-      ...r.fileAttachments?.length && { fileAttachments: r.fileAttachments },
-      ...r.steps?.length && { steps: r.steps }
-    };
-  }
-  function formatTs(ts) {
-    return ts ? new Date(ts).toLocaleString() : "";
-  }
-  function sender(s) {
-    return s.toLowerCase() === "human" ? "You" : "Grok";
-  }
-  function toMarkdown(title, messages) {
-    const lines = [`# ${title}`, ""];
-    for (const m of messages) {
-      const ts = formatTs(m.createTime);
-      lines.push(`## ${sender(m.sender)}${ts ? ` — ${ts}` : ""}${m.model ? ` (${m.model})` : ""}`, "");
-      if (m.thinkingTrace)
-        lines.push("<details><summary>Thinking</summary>", "", m.thinkingTrace, "", "</details>", "");
-      const mdText = m.query || m.message;
-      if (mdText)
-        lines.push(mdText, "");
-      if (m.generatedImageUrls?.length) {
-        for (const url of m.generatedImageUrls)
-          lines.push(`![image](${url})`);
-        lines.push("");
-      }
-      if (m.webSearchResults?.length) {
-        lines.push("**Web search results:**", "");
-        for (const r of m.webSearchResults) {
-          const { title: t, url } = r;
-          if (url)
-            lines.push(`- [${t ?? url}](${url})`);
-        }
-        lines.push("");
-      }
-      lines.push("---", "");
-    }
-    return lines.join(`
-`);
-  }
-  function toPlainText(title, messages) {
-    const lines = [title, "=".repeat(title.length), ""];
-    for (const m of messages) {
-      const ts = formatTs(m.createTime);
-      lines.push(`[${sender(m.sender)}]${ts ? ` ${ts}` : ""}${m.model ? ` (${m.model})` : ""}`, "");
-      if (m.thinkingTrace)
-        lines.push("[Thinking]", m.thinkingTrace, "");
-      const txtText = m.query || m.message;
-      if (txtText)
-        lines.push(txtText, "");
-      if (m.generatedImageUrls?.length) {
-        for (const url of m.generatedImageUrls)
-          lines.push(`  ${url}`);
-        lines.push("");
-      }
-      if (m.webSearchResults?.length) {
-        for (const r of m.webSearchResults) {
-          const { title: t, url } = r;
-          if (url)
-            lines.push(`  ${t ?? ""} - ${url}`);
-        }
-        lines.push("");
-      }
-      lines.push("-".repeat(40), "");
-    }
-    return lines.join(`
-`);
-  }
-  var HTML_HEAD = [
-    '<!DOCTYPE html><html><head><meta charset="utf-8">',
-    "<style>",
-    "body{font-family:system-ui,sans-serif;max-width:50rem;margin:2rem auto;padding:0 1rem;background:#0d0d0d;color:#e0e0e0}",
-    ".m{margin:1.5rem 0;padding:1rem;border-radius:.5rem;border:1px solid #222}",
-    ".h{background:#1a1a2e}.g{background:#111}",
-    ".s{font-weight:600;margin-bottom:.5rem;color:#aaa}.t{font-size:.8rem;color:#666}",
-    ".th{margin:.5rem 0;padding:.5rem;background:#1a1a1a;border-left:3px solid #444;font-size:.9rem;color:#999}",
-    "a{color:#6ea8fe}",
-    "</style></head><body>"
-  ].join(`
-`);
-  function toHtml(title, messages) {
-    const p = [HTML_HEAD, `<h1>${escapeHtml(title)}</h1>`];
-    for (const m of messages) {
-      const cls = m.sender.toLowerCase() === "human" ? "h" : "g";
-      const ts = formatTs(m.createTime);
-      p.push(`<div class="m ${cls}"><div class="s">${sender(m.sender)} <span class="t">${ts ? escapeHtml(ts) : ""}${m.model ? ` · ${escapeHtml(m.model)}` : ""}</span></div>`);
-      if (m.thinkingTrace)
-        p.push(`<details><summary>Thinking</summary><div class="th">${escapeHtml(m.thinkingTrace)}</div></details>`);
-      const text = m.query || m.message;
-      if (text)
-        p.push(`<div>${escapeHtml(text).replaceAll(`
-`, "<br>")}</div>`);
-      if (m.generatedImageUrls?.length) {
-        for (const url of m.generatedImageUrls) {
-          const safe = safeUrl(url);
-          if (safe)
-            p.push(`<img src="${escapeHtml(safe, true)}" style="max-width:100%;margin:.5rem 0">`);
-        }
-      }
-      if (m.webSearchResults?.length) {
-        p.push("<ul>");
-        for (const r of m.webSearchResults) {
-          const { title: t, url } = r;
-          if (!url)
-            continue;
-          const safe = safeUrl(url);
-          if (safe)
-            p.push(`<li><a href="${escapeHtml(safe, true)}" rel="noopener noreferrer">${escapeHtml(t ?? safe)}</a></li>`);
-          else
-            p.push(`<li>${escapeHtml(t ?? url)}</li>`);
-        }
-        p.push("</ul>");
-      }
-      p.push("</div>");
-    }
-    p.push("</body></html>");
-    return p.join(`
-`);
-  }
-  var FORMATS = [
-    { fmt: "json", label: "JSON" },
-    { fmt: "md", label: "Markdown" },
-    { fmt: "txt", label: "Plain Text" },
-    { fmt: "html", label: "HTML" }
-  ];
-  async function exportChat(conversationId, format) {
-    const { responses } = await ApiClients.chatApi.chatListResponses({ conversationId }) ?? {};
-    if (!responses?.length)
-      return;
-    const conversation = ConversationStore.useConversationStore.getState().byId[conversationId];
-    const title = conversation?.title ?? "Untitled Chat";
-    const messages = responses.map(buildExportMessage);
-    const filename = sanitizeFilename(title, "chat");
-    let content;
-    let mime;
-    switch (format) {
-      case "json":
-        content = JSON.stringify({ conversationId, title, exportedAt: new Date().toISOString(), messages }, null, 2);
-        mime = "application/json";
-        break;
-      case "md":
-        content = toMarkdown(title, messages);
-        mime = "text/markdown";
-        break;
-      case "txt":
-        content = toPlainText(title, messages);
-        mime = "text/plain";
-        break;
-      case "html":
-        content = toHtml(title, messages);
-        mime = "text/html";
-        break;
-    }
-    await FileUtils.downloadBlob(new Blob([content], { type: mime }), `${filename}.${format}`);
-  }
-  function ExportMenu({ conversationId }) {
-    const streaming = useIsStreaming(conversationId);
-    return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, {
-      disabled: streaming
-    }, /* @__PURE__ */ React.createElement(DownloadIcon, {
-      size: 16,
-      className: "void-export-icon"
-    }), "Export"), /* @__PURE__ */ React.createElement(MenuSubContent, null, FORMATS.map(({ fmt, label }) => /* @__PURE__ */ React.createElement(MenuItem, {
-      key: fmt,
-      onSelect: () => exportChat(conversationId, fmt).catch((e) => logger19.error("Failed to export chat", e))
-    }, label))));
-  }
-  var exportChat_default = definePlugin({
-    name: "ExportChat",
-    icon: FileDownIcon,
-    description: "Export conversations in multiple formats from the right-click menu.",
-    authors: [Devs.Prism],
-    tags: ["chat"],
-    contextMenuItems: {
-      conversation: {
-        label: "Export",
-        render: ErrorBoundary.wrap(ExportMenu)
-      }
-    }
-  });
-
-  // src/plugins/chatStateFavicons/detect.ts
-  var EDITOR_SEL = '.tiptap.ProseMirror[contenteditable="true"]';
-  var STOP_SELECTORS = [
-    'button[aria-label="Stop model response"]',
-    'button[aria-label*="Stop"]',
-    'button[aria-label*="stop"]',
-    'button[aria-label*="停止"]'
-  ];
-  var SEND_SELECTORS = [
-    'button[aria-label*="Send"]',
-    'button[aria-label*="Submit"]',
-    'button[type="submit"]'
-  ];
-  function isVisible(el) {
-    if (!(el instanceof HTMLElement) || !el.isConnected)
-      return false;
-    if (!el.getClientRects().length)
-      return false;
-    const style = getComputedStyle(el);
-    return style.visibility !== "hidden" && style.display !== "none";
-  }
-  function isStopControl(el) {
-    const label = el.getAttribute("aria-label") ?? "";
-    const text = el.textContent ?? "";
-    return /stop|停止/i.test(label) || /\bstop\b/i.test(text) || text.includes("停止");
-  }
-  function getActiveEditor() {
-    const list = Array.from(document.querySelectorAll(EDITOR_SEL));
-    return list.find(isVisible) ?? list[0] ?? null;
-  }
-  function getComposerRoot() {
-    const editor = getActiveEditor();
-    return editor?.closest("form") ?? editor?.closest("div.relative") ?? editor?.parentElement ?? document.body;
-  }
-  function collectStopButtons(root) {
-    const candidates = [];
-    for (const sel of STOP_SELECTORS) {
-      for (const node of root.querySelectorAll(sel)) {
-        if (node instanceof HTMLElement)
-          candidates.push(node);
-      }
-    }
-    if (candidates.length === 0) {
-      for (const btn of root.querySelectorAll("button")) {
-        if (btn instanceof HTMLElement && isStopControl(btn))
-          candidates.push(btn);
-      }
-    }
-    return candidates;
-  }
-  function getStopButton() {
-    const candidates = collectStopButtons(document);
-    return candidates.find(isVisible) ?? candidates[0] ?? null;
-  }
-  function isDisabledControl(el) {
-    if (el instanceof HTMLButtonElement && el.disabled)
-      return true;
-    if (el.hasAttribute("disabled"))
-      return true;
-    if (el.getAttribute("aria-disabled") === "true")
-      return true;
-    if (el.getAttribute("data-disabled") === "true")
-      return true;
-    return el.classList.contains("opacity-50") || el.classList.contains("cursor-not-allowed");
-  }
-  function getSubmitButton() {
-    for (const root of [getComposerRoot(), document]) {
-      for (const sel of SEND_SELECTORS) {
-        for (const node of root.querySelectorAll(sel)) {
-          if (!(node instanceof HTMLElement) || isStopControl(node))
-            continue;
-          if (isVisible(node) || isDisabledControl(node))
-            return node;
-        }
-      }
-    }
-    return null;
-  }
-  function submitIsGray() {
-    const btn = getSubmitButton();
-    return !!btn && isDisabledControl(btn);
-  }
-  function isInputEmpty() {
-    const editor = getActiveEditor();
-    if (!editor)
-      return true;
-    if (editor.querySelector("p.is-empty.is-editor-empty"))
-      return true;
-    return (editor.textContent ?? "").replaceAll("​", "").trim().length === 0;
-  }
-  function conversationToken() {
-    const params = new URLSearchParams(location.search);
-    const paramId = params.get("conversationId") ?? params.get("conversation_id") ?? params.get("chatId") ?? params.get("chat_id") ?? params.get("cid") ?? params.get("id") ?? "";
-    const lastSeg = location.pathname.split("/").filter(Boolean).slice(-1)[0] ?? "";
-    const pathId = /^[a-z0-9_-]{8,}$/i.test(lastSeg) ? lastSeg : "";
-    const dataId = document.querySelector("[data-conversation-id]")?.getAttribute("data-conversation-id") ?? "";
-    return [dataId, paramId, pathId].filter(Boolean).join("|");
-  }
-  function contextKeyFromUrl(token) {
-    const base = `${location.origin}${location.pathname}`;
-    return token ? `${base}|${token}` : `${base}|draft`;
-  }
-
-  // src/plugins/chatStateFavicons/icons.ts
-  var ICON_STYLES = ["original", "badge", "dot", "hole", "bg"];
-  var STYLE_OPTIONS = [
-    { label: "only emoji", value: "original" },
-    { label: "Badge + glyph", value: "badge", default: true },
-    { label: "Color dot", value: "dot" },
-    { label: "Mark tint", value: "hole" },
-    { label: "Background tint", value: "bg" }
-  ];
-  var KIND_COLOR = {
-    rotate: "#3B82F6",
-    done: "#22C55E",
-    ready: "#F59E0B",
-    error: "#EF4444"
-  };
-  var HOLE_IDLE = "#050505";
-  var MARK_FILL = "#FCFCFC";
-  var GROK_MARK_PATH = "M9.27 15.29l7.978-5.897c.391-.29.95-.177 1.137.272.98 2.369.542 5.215-1.41 7.169-1.951 1.954-4.667 2.382-7.149 1.406l-2.711 1.257c3.889 2.661 8.611 2.003 11.562-.953 2.341-2.344 3.066-5.539 2.388-8.42l.006.007c-.983-4.232.242-5.924 2.75-9.383.06-.082.12-.164.179-.248l-3.301 3.305v-.01L9.267 15.292M7.623 16.723c-2.792-2.67-2.31-6.801.071-9.184 1.761-1.763 4.647-2.483 7.166-1.425l2.705-1.25a7.808 7.808 0 00-1.829-1A8.975 8.975 0 005.984 5.83c-2.533 2.536-3.33 6.436-1.962 9.764 1.022 2.487-.653 4.246-2.34 6.022-.599.63-1.199 1.259-1.682 1.925l7.62-6.815";
-  var GROK_BG_PATH = "M0 256C0 166.392 0 121.587 17.439 87.3615C32.7787 57.2556 57.2556 32.7787 87.3615 17.439C121.587 0 166.392 0 256 0C345.608 0 390.413 0 424.638 17.439C454.744 32.7787 479.221 57.2556 494.561 87.3615C512 121.587 512 166.392 512 256C512 345.608 512 390.413 494.561 424.638C479.221 454.744 454.744 479.221 424.638 494.561C390.413 512 345.608 512 256 512C166.392 512 121.587 512 87.3615 494.561C57.2556 479.221 32.7787 454.744 17.439 424.638C0 390.413 0 345.608 0 256Z";
-  var GROK_MARK_P1 = "M210.484 312.759L343.465 210.383C349.984 205.364 359.302 207.322 362.408 215.117C378.758 256.231 371.454 305.64 338.925 339.563C306.397 373.487 261.137 380.927 219.768 363.983L174.577 385.803C239.394 432.008 318.104 420.581 367.289 369.251C406.303 328.564 418.386 273.104 407.088 223.091L407.19 223.198C390.807 149.726 411.218 120.359 453.03 60.3072C454.02 58.8833 455.01 57.4595 456 56L400.978 113.382V113.204L210.45 312.794";
-  var GROK_MARK_P2 = "M183.042 337.641C136.519 291.294 144.54 219.567 184.236 178.203C213.59 147.59 261.683 135.096 303.666 153.464L348.755 131.75C340.632 125.627 330.221 119.042 318.275 114.414C264.277 91.2407 199.63 102.774 155.735 148.516C113.513 192.549 100.236 260.254 123.036 318.027C140.069 361.206 112.148 391.748 84.0229 422.575C74.0561 433.503 64.0553 444.431 56 456L183.007 337.677";
-  var ORIGINAL_EMOJI = {
-    rotate: "\uD83D\uDD04",
-    done: "✔️",
-    ready: "\uD83D\uDC4D",
-    error: "\uD83D\uDEAB"
-  };
-  function isIconStyle(value) {
-    return typeof value === "string" && ICON_STYLES.includes(value);
-  }
-  function svgEmoji(emoji) {
-    return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${emoji}</text></svg>`)}`;
-  }
-  function toSvgData(inner, viewBox = "0 0 64 64") {
-    const svg2 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="64" height="64">${inner}</svg>`;
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg2)}`;
-  }
-  function grokMarkSvg() {
-    return [
-      `<rect width="64" height="64" rx="14" fill="${HOLE_IDLE}"/>`,
-      `<g transform="translate(8 8) scale(2)" fill="${MARK_FILL}" fill-rule="evenodd">`,
-      `<path d="${GROK_MARK_PATH}"/>`,
-      "</g>"
-    ].join("");
-  }
-  function officialGrokSvg(markColor, bgColor) {
-    return [
-      `<path d="${GROK_BG_PATH}" fill="${bgColor}"/>`,
-      `<path d="${GROK_MARK_P1}" fill="${markColor}"/>`,
-      `<path d="${GROK_MARK_P2}" fill="${markColor}"/>`
-    ].join("");
-  }
-  function badgeGlyph(kind) {
-    if (kind === "rotate") {
-      return [
-        '<g transform="translate(51.5 51.5)"><g>',
-        '<path d="M0-6.1 A6.1 6.1 0 1 1 -5.3 3.05" fill="none" stroke="#fff" stroke-width="2.15" stroke-linecap="round"/>',
-        '<animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="0.85s" repeatCount="indefinite"/>',
-        "</g></g>"
-      ].join("");
-    }
-    if (kind === "done") {
-      return '<path d="M46.6 51.7 L50.1 55.3 L56.8 47.4" fill="none" stroke="#fff" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>';
-    }
-    if (kind === "ready") {
-      return [
-        '<path d="M51.5 56.4 V46.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>',
-        '<path d="M46.6 51.2 L51.5 46.2 L56.4 51.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
-      ].join("");
-    }
-    return [
-      '<path d="M47.2 47.2 L55.8 55.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>',
-      '<path d="M55.8 47.2 L47.2 55.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>'
-    ].join("");
-  }
-  function composeIcon(style, kind, officialHref) {
-    if (style === "original") {
-      if (kind === "wait")
-        return officialHref;
-      return svgEmoji(ORIGINAL_EMOJI[kind]);
-    }
-    const color = kind === "wait" ? undefined : KIND_COLOR[kind];
-    if (style === "hole") {
-      return toSvgData(officialGrokSvg(color ?? MARK_FILL, HOLE_IDLE), "0 0 512 512");
-    }
-    if (style === "bg") {
-      return toSvgData(officialGrokSvg(MARK_FILL, color ?? HOLE_IDLE), "0 0 512 512");
-    }
-    if (!color || kind === "wait")
-      return toSvgData(grokMarkSvg());
-    const badge = style === "dot" ? [
-      '<circle cx="52.2" cy="52.2" r="10.4" fill="#050505"/>',
-      `<circle cx="52.2" cy="52.2" r="7.7" fill="${color}"/>`
-    ].join("") : [
-      '<circle cx="51.5" cy="51.5" r="12.15" fill="#050505"/>',
-      `<circle cx="51.5" cy="51.5" r="9.55" fill="${color}"/>`,
-      badgeGlyph(kind)
-    ].join("");
-    return toSvgData(grokMarkSvg() + badge);
-  }
-  function buildIcons(style, officialHref) {
-    return {
-      wait: composeIcon(style, "wait", officialHref),
-      rotate: composeIcon(style, "rotate", officialHref),
-      done: composeIcon(style, "done", officialHref),
-      ready: composeIcon(style, "ready", officialHref),
-      error: composeIcon(style, "error", officialHref)
-    };
-  }
-
-  // src/plugins/chatStateFavicons/index.ts
-  var logger20 = new Logger("ChatStateFavicons");
-  var ICON_ID = "void-chat-state-favicon";
-  var LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting"]);
-  var settings12 = definePluginSettings({
-    style: {
-      type: 4 /* SELECT */,
-      description: "How the Grok mark is overlaid with chat state.",
-      options: STYLE_OPTIONS
-    }
-  });
-  var officialHref = "/images/favicon.svg";
-  var icons = buildIcons("badge", officialHref);
-  var kind = "wait";
-  var wasStreaming = false;
-  var justFinished = false;
-  var streamContext = null;
-  var lockedToken = "";
-  var lastWasError = false;
-  var lastConvId = "";
-  var primedReady = true;
-  var faviconObs = null;
-  var globalObs = null;
-  var composerObs = null;
-  var buttonObs = null;
-  var inputCtrl = null;
-  var unsubRoute2 = null;
-  var unsubPage = null;
-  var raf = 0;
-  var started2 = false;
-  function currentStyle() {
-    const value = settings12.store.style;
-    return isIconStyle(value) ? value : "badge";
-  }
-  function captureOfficial() {
-    const existing = document.querySelector(`link[rel~="icon"]:not(#${ICON_ID})`);
-    const href = existing?.href;
-    if (href && !href.startsWith("data:"))
-      return href;
-    return `${location.origin}/images/favicon.svg`;
-  }
-  function isIconLink(node) {
-    return node instanceof HTMLLinkElement && (node.relList.contains("icon") || /\bicon\b/i.test(node.rel));
-  }
-  function stripCompetitors() {
-    const { head } = document;
-    if (!head)
-      return;
-    for (const node of head.querySelectorAll("link")) {
-      if (node.id !== ICON_ID && isIconLink(node))
-        node.remove();
-    }
-  }
-  function applyHref(href) {
-    const { head } = document;
-    if (!head)
-      return;
-    stripCompetitors();
-    let link = document.getElementById(ICON_ID);
-    if (!link) {
-      link = document.createElement("link");
-      link.id = ICON_ID;
-      link.rel = "icon shortcut icon";
-      link.type = "image/svg+xml";
-      link.setAttribute("sizes", "any");
-      head.prepend(link);
-    } else if (head.firstChild !== link) {
-      head.prepend(link);
-    }
-    if (link.getAttribute("href") !== href)
-      link.setAttribute("href", href);
-  }
-  function setKind(next) {
-    kind = next;
-    applyHref(icons[next]);
-  }
-  function rebuildIcons() {
-    icons = buildIcons(currentStyle(), officialHref);
-    applyHref(icons[kind]);
-  }
-  function liveResponse(id, byId) {
-    if (!id)
-      return false;
-    const response = byId[id];
-    if (!response)
-      return false;
-    if (response.partial)
-      return true;
-    return LIVE_RESPONSE.has(response.state ?? "");
-  }
-  function storeStreaming() {
-    try {
-      const page = ChatPageStore.useChatPageStore.getState();
-      if (page.streamedMessageId || page.showStreamingIndicator)
-        return true;
-      const { byId } = ResponseStore.useResponseStore.getState();
-      return liveResponse(page.streamedMessageId, byId) || liveResponse(page.lastMessageId, byId);
-    } catch (e) {
-      logger20.debug("stream stores unavailable:", e);
-      return false;
-    }
-  }
-  function isStreaming() {
-    if (storeStreaming())
-      return true;
-    return getStopButton() != null;
-  }
-  function currentConversationId() {
-    try {
-      const { route } = RoutingStore.useRoutingStore.getState();
-      if (route.conversationId)
-        return String(route.conversationId);
-    } catch (e) {
-      logger20.debug("RoutingStore unavailable:", e);
-    }
-    try {
-      const id = ChatPageStore.useChatPageStore.getState().conversationId;
-      if (id)
-        return id;
-    } catch (e) {
-      logger20.debug("ChatPageStore unavailable:", e);
-    }
-    return conversationToken();
-  }
-  function getContextKey() {
-    const id = currentConversationId();
-    const key = id || contextKeyFromUrl("");
-    if (isStreaming()) {
-      if (!lockedToken && key)
-        lockedToken = key;
-      return lockedToken;
-    }
-    lockedToken = "";
-    return key;
-  }
-  function sameStreamContext(key) {
-    return !!streamContext && !!key && streamContext === key;
-  }
-  function resetStreamFlags() {
-    wasStreaming = false;
-    justFinished = false;
-    streamContext = null;
-    lockedToken = "";
-    lastWasError = false;
-  }
-  function onConversationSwitch(id) {
-    lastConvId = id;
-    resetStreamFlags();
-    primedReady = false;
-    composerObs?.disconnect();
-    composerObs = null;
-    buttonObs?.disconnect();
-    buttonObs = null;
-    setKind("wait");
-  }
-  function hasError() {
-    if (lastWasError)
-      return true;
-    try {
-      const { byId } = ResponseStore.useResponseStore.getState();
-      const page = ChatPageStore.useChatPageStore.getState();
-      const id = page.streamedMessageId ?? page.lastMessageId;
-      if (!id)
-        return false;
-      const response = byId[id];
-      return response?.state === "error" || response?.error != null;
-    } catch (e) {
-      logger20.debug("ResponseStore unavailable:", e);
-      return false;
-    }
-  }
-  function evaluateState() {
-    if (!started2)
-      return;
-    const conv = currentConversationId();
-    if (lastConvId && conv && lastConvId !== conv) {
-      onConversationSwitch(conv);
-      return;
-    }
-    if (conv)
-      lastConvId = conv;
-    const contextKey = getContextKey();
-    const streaming = isStreaming();
-    const empty = isInputEmpty();
-    const gray = submitIsGray();
-    if (hasError() && !streaming) {
-      setKind("error");
-      wasStreaming = false;
-      justFinished = false;
-      streamContext = null;
-      lastWasError = false;
-      return;
-    }
-    if (streaming && empty) {
-      wasStreaming = true;
-      justFinished = false;
-      lastWasError = false;
-      streamContext = contextKey;
-      setKind("rotate");
-      return;
-    }
-    if (wasStreaming) {
-      const sameContext = sameStreamContext(contextKey);
-      wasStreaming = false;
-      if (sameContext && gray) {
-        justFinished = true;
-        streamContext = contextKey;
-        setKind("done");
-        return;
-      }
-      justFinished = false;
-      streamContext = null;
-    }
-    if (justFinished) {
-      const contextChanged = !!(streamContext && contextKey && streamContext !== contextKey);
-      if (contextChanged) {
-        justFinished = false;
-        streamContext = null;
-      } else if (empty) {
-        setKind("done");
-        return;
-      } else if (primedReady) {
-        justFinished = false;
-        setKind("ready");
-        return;
-      } else {
-        justFinished = false;
-        setKind("wait");
-        return;
-      }
-    }
-    streamContext = null;
-    lastWasError = false;
-    if (empty)
-      setKind("wait");
-    else if (primedReady)
-      setKind("ready");
-    else
-      setKind("wait");
-  }
-  function nodeTouchesStop(node) {
-    if (!(node instanceof Element))
-      return false;
-    if (node instanceof HTMLElement && node.tagName === "BUTTON" && isStopControl(node))
-      return true;
-    for (const btn of node.querySelectorAll("button")) {
-      if (isStopControl(btn))
-        return true;
-    }
-    return false;
-  }
-  function stopButtonMutation(list) {
-    for (const m of list) {
-      if (nodeTouchesStop(m.target))
-        return true;
-      for (const n of m.addedNodes) {
-        if (nodeTouchesStop(n))
-          return true;
-      }
-      for (const n of m.removedNodes) {
-        if (nodeTouchesStop(n))
-          return true;
-      }
-      if (m.type === "attributes" && m.attributeName === "aria-label" && m.target instanceof HTMLElement) {
-        if (isStopControl(m.target) || /stop|停止/i.test(String(m.oldValue ?? "")))
-          return true;
-      }
-    }
-    return false;
-  }
-  function nodeInEditor(node) {
-    const el = node instanceof Element ? node : node?.parentElement;
-    return !!el?.closest(EDITOR_SEL);
-  }
-  function mutationsAreEditorOnly(list) {
-    if (!list.length)
-      return false;
-    for (const m of list) {
-      if (!nodeInEditor(m.target))
-        return false;
-      for (const n of m.addedNodes) {
-        if (n instanceof Text)
-          continue;
-        if (!nodeInEditor(n))
-          return false;
-      }
-      for (const n of m.removedNodes) {
-        if (n instanceof Text)
-          continue;
-        if (!nodeInEditor(n))
-          return false;
-      }
-    }
-    return true;
-  }
-  function onDomMutate(list) {
-    if (kind === "rotate" || wasStreaming) {
-      if (mutationsAreEditorOnly(list))
-        return;
-      if (!stopButtonMutation(list))
-        return;
-    }
-    scheduleEvaluate();
-  }
-  function onEditorInput() {
-    primedReady = true;
-    scheduleEvaluate();
-  }
-  function scheduleEvaluate() {
-    if (!started2 || raf)
-      return;
-    raf = requestAnimationFrame(() => {
-      raf = 0;
-      if (!started2)
-        return;
-      bindEditorInput();
-      const root = getComposerRoot();
-      if (!composerObs || !root.isConnected) {
-        observeComposer();
-        observeButtons();
-      }
-      evaluateState();
-    });
-  }
-  function onStreamEnd3({ responseId }) {
-    try {
-      const response = ResponseStore.useResponseStore.getState().byId[responseId];
-      lastWasError = response?.state === "error" || response?.error != null;
-    } catch (e) {
-      logger20.debug("ResponseStore unavailable:", e);
-    }
-  }
-  function startFaviconGuard() {
-    faviconObs?.disconnect();
-    const { head } = document;
-    if (!head)
-      return;
-    faviconObs = new MutationObserver((list) => {
-      for (const m of list) {
-        if (m.type === "attributes" && isIconLink(m.target) && m.target.id !== ICON_ID) {
-          applyHref(icons[kind]);
-          return;
-        }
-        for (const node of m.addedNodes) {
-          if (isIconLink(node) && node.id !== ICON_ID) {
-            applyHref(icons[kind]);
-            return;
-          }
-        }
-      }
-    });
-    faviconObs.observe(head, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["href", "rel"]
-    });
-  }
-  function bindEditorInput() {
-    const editor = getActiveEditor();
-    if (!editor || editor.dataset.voidCsfBound === "1")
-      return;
-    editor.dataset.voidCsfBound = "1";
-    editor.addEventListener("input", onEditorInput, { passive: true });
-    editor.addEventListener("compositionend", onEditorInput, { passive: true });
-  }
-  function observeComposer() {
-    composerObs?.disconnect();
-    const root = getComposerRoot();
-    composerObs = new MutationObserver(onDomMutate);
-    composerObs.observe(root, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: ["aria-label", "aria-disabled", "disabled", "data-testid", "class"],
-      attributeOldValue: true
-    });
-  }
-  function observeButtons() {
-    buttonObs?.disconnect();
-    const target = getComposerRoot();
-    buttonObs = new MutationObserver(onDomMutate);
-    buttonObs.observe(target, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["aria-label", "type"],
-      attributeOldValue: true
-    });
-  }
-  function attachStores() {
-    unsubRoute2?.();
-    unsubPage?.();
-    try {
-      const routeStore = RoutingStore.useRoutingStore;
-      if (typeof routeStore?.subscribe === "function") {
-        unsubRoute2 = routeStore.subscribe((s) => s.route.conversationId, (id, prev) => {
-          if (!id || id === prev)
-            return;
-          onConversationSwitch(String(id));
-        });
-      }
-    } catch (e) {
-      logger20.debug("RoutingStore subscribe failed:", e);
-      try {
-        unsubRoute2 = RoutingStore.useRoutingStore.subscribe(() => scheduleEvaluate());
-      } catch (err) {
-        logger20.debug("RoutingStore full subscribe failed:", err);
-      }
-    }
-    try {
-      const pageStore = ChatPageStore.useChatPageStore;
-      if (typeof pageStore?.subscribe === "function") {
-        unsubPage = pageStore.subscribe((s) => s.conversationId, (id, prev) => {
-          if (!id || id === prev)
-            return;
-          onConversationSwitch(id);
-        });
-      }
-    } catch (e) {
-      logger20.debug("ChatPageStore subscribe failed:", e);
-    }
-  }
-  function restoreOfficial() {
-    faviconObs?.disconnect();
-    faviconObs = null;
-    document.getElementById(ICON_ID)?.remove();
-    const { head } = document;
-    if (!head)
-      return;
-    const link = document.createElement("link");
-    link.rel = "icon";
-    link.type = "image/svg+xml";
-    link.href = officialHref;
-    head.prepend(link);
-  }
-  var chatStateFavicons_default = definePlugin({
-    name: "ChatStateFavicons",
-    icon: AppWindowIcon,
-    description: "Show streaming, done, ready, and error states on the tab favicon.",
-    authors: [Devs.p],
-    tags: ["chat", "ui"],
-    enabledByDefault: true,
-    settings: settings12,
-    startAt: "TurbopackReady" /* TurbopackReady */,
-    cleanupSelectors: [`#${ICON_ID}`],
-    start() {
-      started2 = true;
-      officialHref = captureOfficial();
-      rebuildIcons();
-      startFaviconGuard();
-      inputCtrl?.abort();
-      inputCtrl = new AbortController;
-      window.addEventListener("popstate", scheduleEvaluate, { signal: inputCtrl.signal });
-      globalObs?.disconnect();
-      globalObs = new MutationObserver(onDomMutate);
-      globalObs.observe(document.body, { childList: true, subtree: true });
-      bindEditorInput();
-      observeComposer();
-      observeButtons();
-      attachStores();
-      evaluateState();
-    },
-    stop() {
-      started2 = false;
-      if (raf)
-        cancelAnimationFrame(raf);
-      raf = 0;
-      inputCtrl?.abort();
-      inputCtrl = null;
-      unsubRoute2?.();
-      unsubRoute2 = null;
-      unsubPage?.();
-      unsubPage = null;
-      globalObs?.disconnect();
-      globalObs = null;
-      composerObs?.disconnect();
-      composerObs = null;
-      buttonObs?.disconnect();
-      buttonObs = null;
-      wasStreaming = false;
-      justFinished = false;
-      streamContext = null;
-      lockedToken = "";
-      lastConvId = "";
-      primedReady = true;
-      lastWasError = false;
-      restoreOfficial();
-    },
-    onSettingsChange: rebuildIcons,
-    events: {
-      streamEnd: onStreamEnd3
-    }
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterImagine/styles.css
-  registerStyle("betterImagine", `/*
- * Void++, a modification for grok.com
- * Copyright (c) 2026 Void++ Contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-.void-imagine-chip {
-    background: hsl(var(--surface-l1));
-}
-
-.void-imagine-chip:hover {
-    background: hsl(var(--surface-l2));
-}
-
-.void-imagine-search {
-    width: 10rem;
-    flex-shrink: 0;
-    border-radius: 9999px;
-}
-
-.void-imagine-date-select,
-.void-imagine-sort-select {
-    flex-shrink: 0;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    background: hsl(var(--surface-l1));
-    color: hsl(var(--fg-secondary));
-    border: none;
-}
-
-.void-imagine-sort-active {
-    color: hsl(var(--fg-primary));
-    background: hsl(var(--surface-l2));
-}
-`);
-
-  // src/plugins/betterImagine/index.tsx
-  var logger21 = new Logger("BetterImagine");
-  var cl19 = classNameFactory("void-imagine-");
-  var settings13 = definePluginSettings({
-    hideDefaultPreviews: {
-      type: 3 /* BOOLEAN */,
-      description: "Hide the community image grid and templates on the Imagine home page.",
-      default: true
-    },
-    noAutoplay: {
-      type: 3 /* BOOLEAN */,
-      description: "Stop video thumbnails from autoplaying.",
-      default: true
-    },
-    playOnHover: {
-      type: 3 /* BOOLEAN */,
-      description: "Play video thumbnails when hovered.",
-      default: true
-    },
-    hideModerated: {
-      type: 3 /* BOOLEAN */,
-      description: "Hide moderated images and videos that cannot be interacted with.",
-      default: true
-    },
-    pauseWhenHidden: {
-      type: 3 /* BOOLEAN */,
-      description: "Pause any playing video thumbnails when the tab loses focus.",
-      default: true
-    },
-    persistFilters: {
-      type: 3 /* BOOLEAN */,
-      description: "Remember Favorites filter + sort across reloads.",
-      default: true
-    },
-    smartFilenames: {
-      type: 3 /* BOOLEAN */,
-      description: "Rename downloads to YYYY-MM-DD_prompt-slug_id.ext.",
-      default: true
-    },
-    bypassPaywall: {
-      type: 3 /* BOOLEAN */,
-      description: "Skip the upsell dialog when picking 720p / 10s / video extend. The setting is applied locally; the server still enforces your subscription on generation.",
-      default: false
-    },
-    ctrlClickSelect: {
-      type: 3 /* BOOLEAN */,
-      description: "Ctrl/Cmd-click an image to add it to the multi-select.",
-      default: true
-    }
-  });
-  function buildFilename(post, isVideo) {
-    if (!settings13.store.smartFilenames || !post)
-      return null;
-    const prompt = (post.prompt ?? post.originalPrompt ?? "").trim();
-    const slug = sanitizeFilename(prompt.slice(0, 60), "").slice(0, 60);
-    const date = post.createTime ? new Date(post.createTime).toISOString().slice(0, 10) : "";
-    const id = post.id?.slice(0, 8) ?? "";
-    const ext = isVideo ? "mp4" : "png";
-    const parts = [date, slug, id].filter(Boolean);
-    if (!parts.length)
-      return null;
-    return `${parts.join("_")}.${ext}`;
-  }
-  var FILTER_MAP = {
-    image: "MEDIA_POST_TYPE_IMAGE",
-    video: "MEDIA_POST_TYPE_VIDEO"
-  };
-  var DATE_LABELS = {
-    all: "Any time",
-    today: "Today",
-    week: "This week",
-    month: "This month"
-  };
-  var SORT_LABELS = {
-    newest: "Newest first",
-    oldest: "Oldest first",
-    "prompt-az": "Prompt A → Z",
-    "prompt-za": "Prompt Z → A",
-    random: "Shuffle"
-  };
-  var SORT_KEYS = Object.keys(SORT_LABELS);
-  var DAY_MS2 = 86400000;
-  var DATE_CUTOFFS = {
-    all: 0,
-    today: DAY_MS2,
-    week: 7 * DAY_MS2,
-    month: 30 * DAY_MS2
-  };
-  var STORAGE_KEY2 = "void-imagine-filters";
-  var DEFAULT_FILTERS = { filter: "all", search: "", date: "all", sort: "newest" };
-  function loadFilters() {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY2);
-      if (!raw)
-        return DEFAULT_FILTERS;
-      const parsed = JSON.parse(raw);
-      return {
-        filter: ["all", "image", "video"].includes(parsed.filter) ? parsed.filter : "all",
-        search: typeof parsed.search === "string" ? parsed.search : "",
-        date: Object.keys(DATE_LABELS).includes(parsed.date) ? parsed.date : "all",
-        sort: SORT_KEYS.includes(parsed.sort) ? parsed.sort : "newest"
-      };
-    } catch {
-      return DEFAULT_FILTERS;
-    }
-  }
-  var initial = loadFilters();
-  var currentFilter = initial.filter;
-  var currentSearch = initial.search;
-  var currentDate = initial.date;
-  var currentSort = initial.sort;
-  var randomSeed = Date.now();
-  var filterStore = createExternalStore();
-  function persist() {
-    if (!settings13.store.persistFilters)
-      return;
-    try {
-      sessionStorage.setItem(STORAGE_KEY2, JSON.stringify({ filter: currentFilter, search: currentSearch, date: currentDate, sort: currentSort }));
-    } catch {}
-  }
-  function setFilter(f) {
-    currentFilter = f;
-    filterStore.notify();
-    persist();
-  }
-  var setSearch = debounce((s) => {
-    currentSearch = s;
-    filterStore.notify();
-    persist();
-  }, 200);
-  function setDate(d) {
-    currentDate = d;
-    filterStore.notify();
-    persist();
-  }
-  function setSort(s) {
-    if (s === "random" && currentSort === "random")
-      randomSeed = Date.now();
-    currentSort = s;
-    filterStore.notify();
-    persist();
-  }
-  function resetFilters() {
-    currentFilter = "all";
-    currentSearch = "";
-    currentDate = "all";
-    currentSort = "newest";
-    filterStore.notify();
-    persist();
-  }
-  function hasActiveFilters() {
-    return currentFilter !== "all" || currentSearch.length > 0 || currentDate !== "all";
-  }
-  function isModerated(p) {
-    return !!(p.moderated || p.isModerated) && !p.mediaUrl;
-  }
-  var haystackCache = new WeakMap;
-  var tsCache = new WeakMap;
-  var promptCollator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
-  function getHaystack(p) {
-    let h = haystackCache.get(p);
-    if (h === undefined) {
-      h = `${p.prompt ?? ""}
-${p.originalPrompt ?? ""}`.toLowerCase();
-      haystackCache.set(p, h);
-    }
-    return h;
-  }
-  function getTs(p) {
-    let t = tsCache.get(p);
-    if (t === undefined) {
-      t = new Date(p.createTime).getTime() || 0;
-      tsCache.set(p, t);
-    }
-    return t;
-  }
-  function matchesFilters(p, target, q, cutoff, hideModerated) {
-    if (!p)
-      return false;
-    if (hideModerated && isModerated(p))
-      return false;
-    if (target && p.mediaType !== target)
-      return false;
-    if (cutoff && getTs(p) < cutoff)
-      return false;
-    if (q && !getHaystack(p).includes(q))
-      return false;
-    return true;
-  }
-  var cacheKey = null;
-  var cacheList = null;
-  var cacheResult = [];
-  function filterItems(items) {
-    const { hideModerated } = settings13.store;
-    const key = `${items.length}|${currentFilter}|${currentSearch}|${currentDate}|${currentSort}|${hideModerated ? 1 : 0}|${randomSeed}`;
-    if (cacheList === items && cacheKey === key)
-      return cacheResult;
-    const needsFilter = currentFilter !== "all" || currentSearch || currentDate !== "all" || hideModerated;
-    let out = items;
-    if (needsFilter) {
-      const target = currentFilter !== "all" ? FILTER_MAP[currentFilter] : null;
-      const q = currentSearch.toLowerCase();
-      const cutoff = DATE_CUTOFFS[currentDate] ? Date.now() - DATE_CUTOFFS[currentDate] : 0;
-      out = items.filter((p) => matchesFilters(p, target, q, cutoff, hideModerated));
-    }
-    cacheList = items;
-    cacheKey = key;
-    cacheResult = currentSort === "newest" ? out : sortItems(out);
-    return cacheResult;
-  }
-  function mulberry32(seed) {
-    let a = seed;
-    return () => {
-      a |= 0;
-      a = a + 1831565813 | 0;
-      let t = Math.imul(a ^ a >>> 15, 1 | a);
-      t ^= t + Math.imul(t ^ t >>> 7, 61 | t);
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-  }
-  function sortItems(items) {
-    if (items.length < 2)
-      return items;
-    const arr = [...items];
-    switch (currentSort) {
-      case "oldest":
-        return arr.toSorted((a, b) => getTs(a) - getTs(b));
-      case "prompt-az":
-        return arr.toSorted((a, b) => promptCollator.compare(a.prompt ?? "", b.prompt ?? ""));
-      case "prompt-za":
-        return arr.toSorted((a, b) => promptCollator.compare(b.prompt ?? "", a.prompt ?? ""));
-      case "random": {
-        const rand = mulberry32(randomSeed);
-        for (let i = arr.length - 1;i > 0; i--) {
-          const j = Math.floor(rand() * (i + 1));
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-      }
-      default:
-        return arr;
-    }
-  }
-  var pending = new WeakMap;
-  function pauseVideo(video) {
-    const promise = pending.get(video);
-    pending.delete(video);
-    if (promise) {
-      promise.then(() => {
-        if (pending.has(video))
-          return;
-        video.pause();
-        video.currentTime = 0;
-      }).catch((e) => logger21.warn("Failed to pause video:", e));
-    } else {
-      video.pause();
-      video.currentTime = 0;
-    }
-  }
-  var onMouseEnter = (e) => {
-    const video = e.currentTarget.querySelector("video");
-    if (video)
-      pending.set(video, video.play().catch((e2) => logger21.error("Failed to play video", e2)));
-  };
-  var onMouseLeave = (e) => {
-    const video = e.currentTarget.querySelector("video");
-    if (video)
-      pauseVideo(video);
-  };
-  function useFilteredFavorites() {
-    const list = MediaStore.useMediaStore((s) => s.favoritesList);
-    useExternalStore(filterStore);
-    return filterItems(list);
-  }
-  function mediaState() {
-    return MediaStore.useMediaStore.getState();
-  }
-  function selectVisible() {
-    const state2 = mediaState();
-    const list = state2.favoritesList ?? [];
-    const visible = filterItems(list);
-    if (!visible.length)
-      return;
-    state2.setMultiSelectItems(visible);
-    Toaster.toast.success(`Selected ${pluralize(visible.length, "item")}.`);
-  }
-  function deselectAll() {
-    const state2 = mediaState();
-    state2.clearMultiSelect?.();
-  }
-  function selectedPosts() {
-    const state2 = mediaState();
-    const ids = Object.keys(state2.multiSelectIds ?? {});
-    return ids.map((id) => state2.byId[id]).filter((p) => !!p);
-  }
-  async function copyLines(lines, label) {
-    if (!lines.length) {
-      Toaster.toast.info(`Selected items have no ${label}s.`);
-      return;
-    }
-    try {
-      await copyToClipboard(lines.join(`
-`));
-      Toaster.toast.success(`Copied ${pluralize(lines.length, label)} to clipboard.`);
-    } catch (e) {
-      logger21.error(`Failed to copy ${label}s`, e);
-      Toaster.toast.error(`Failed to copy ${label}s.`);
-    }
-  }
-  async function copySelectedPrompts() {
-    const posts = selectedPosts();
-    if (!posts.length) {
-      Toaster.toast.info("No items selected.");
-      return;
-    }
-    await copyLines(posts.map((p) => (p.prompt ?? p.originalPrompt ?? "").trim()).filter(Boolean), "prompt");
-  }
-  async function copySelectedUrls() {
-    const posts = selectedPosts();
-    if (!posts.length) {
-      Toaster.toast.info("No items selected.");
-      return;
-    }
-    const { videoByMediaId } = mediaState();
-    const urls = posts.map((p) => videoByMediaId[p.id]?.find((v) => v.hdMediaUrl)?.hdMediaUrl ?? p.mediaUrl).filter((u) => !!u);
-    await copyLines(urls, "URL");
-  }
-  async function bulkUpscaleSelected() {
-    const state2 = mediaState();
-    const ids = Object.keys(state2.multiSelectIds ?? {});
-    let upscaled = 0;
-    let alreadyHd = 0;
-    let inProgress = 0;
-    for (const id of ids) {
-      const videos = state2.videoByMediaId[id];
-      if (!videos?.length)
-        continue;
-      for (const video of videos) {
-        if (video.hdMediaUrl) {
-          alreadyHd++;
-          continue;
-        }
-        if (video.upscalingInProgress) {
-          inProgress++;
-          continue;
-        }
-        try {
-          await state2.upscaleVideo(id, video.id);
-          upscaled++;
-        } catch (e) {
-          logger21.error("Failed to upscale video:", id, video.id, e);
-        }
-      }
-    }
-    if (upscaled)
-      Toaster.toast.success(`Upscaling ${pluralize(upscaled, "video")}.`);
-    else if (alreadyHd)
-      Toaster.toast.info(`${pluralize(alreadyHd, "video")} already in HD.`);
-    else if (inProgress)
-      Toaster.toast.info(`${pluralize(inProgress, "video")} already upscaling.`);
-    else
-      Toaster.toast.info("No videos to upscale.");
-  }
-  function FilterButtons() {
-    useExternalStore(filterStore);
-    const [searchInput, setSearchInput] = useState(currentSearch);
-    const showClear = hasActiveFilters() || currentSort !== "newest" || searchInput.length > 0;
-    const sortActive = currentSort !== "newest";
-    const lastSync = useRef(currentSearch);
-    if (lastSync.current !== currentSearch) {
-      lastSync.current = currentSearch;
-      setSearchInput(currentSearch);
-    }
-    return /* @__PURE__ */ React.createElement(Fragment, null, /* @__PURE__ */ React.createElement(Select, {
-      value: currentDate,
-      onValueChange: (v) => setDate(v)
-    }, /* @__PURE__ */ React.createElement(SelectTrigger, {
-      className: cl19("date-select")
-    }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, Object.keys(DATE_LABELS).map((d) => /* @__PURE__ */ React.createElement(SelectItem, {
-      key: d,
-      value: d
-    }, DATE_LABELS[d])))), /* @__PURE__ */ React.createElement(Select, {
-      value: currentSort,
-      onValueChange: (v) => setSort(v)
-    }, /* @__PURE__ */ React.createElement(SelectTrigger, {
-      className: sortActive ? cl19("sort-select", "sort-active") : cl19("sort-select")
-    }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, SORT_KEYS.map((s) => /* @__PURE__ */ React.createElement(SelectItem, {
-      key: s,
-      value: s
-    }, SORT_LABELS[s])))), /* @__PURE__ */ React.createElement(Input, {
-      type: "text",
-      placeholder: "Search...",
-      value: searchInput,
-      onChange: (e) => {
-        setSearchInput(e.target.value);
-        setSearch(e.target.value);
-      },
-      className: cl19("search")
-    }), ["image", "video"].map((f) => /* @__PURE__ */ React.createElement(Button, {
-      key: f,
-      variant: currentFilter === f ? "primary" : "tertiary",
-      size: "sm",
-      shape: "pill",
-      className: currentFilter !== f ? cl19("chip") : undefined,
-      onClick: () => setFilter(currentFilter === f ? "all" : f)
-    }, f === "image" ? "Images" : "Videos")), showClear && /* @__PURE__ */ React.createElement(Button, {
-      variant: "tertiary",
-      size: "sm",
-      shape: "pill",
-      className: cl19("chip"),
-      onClick: resetFilters
-    }, "Clear"));
-  }
-  function UpscaleItem() {
-    const [open2, setOpen] = useState(false);
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(DropdownMenuItem, {
-      onSelect: () => setOpen(true)
-    }, /* @__PURE__ */ React.createElement(ScalingIcon, {
-      className: "size-4 me-2"
-    }), "Upscale videos"), /* @__PURE__ */ React.createElement(ConfirmDialog, {
-      open: open2,
-      onOpenChange: setOpen,
-      title: "Upscale selected videos",
-      description: "Start HD upscaling for the selected videos. Already-HD and in-progress videos will be skipped.",
-      confirmText: "Upscale",
-      onConfirm: bulkUpscaleSelected
-    }));
-  }
-  function CopyActions() {
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(DropdownMenuItem, {
-      onSelect: copySelectedPrompts
-    }, /* @__PURE__ */ React.createElement(CopyIcon, {
-      className: "size-4 me-2"
-    }), "Copy prompts"), /* @__PURE__ */ React.createElement(DropdownMenuItem, {
-      onSelect: copySelectedUrls
-    }, /* @__PURE__ */ React.createElement(CopyIcon, {
-      className: "size-4 me-2"
-    }), "Copy URLs"));
-  }
-  function isImaginePage() {
-    const page = RoutingStore.useRoutingStore.getState().route?.page;
-    return page === "imagine" || page === "imagine-favorites";
-  }
-  function isFavoritesPage() {
-    return RoutingStore.useRoutingStore.getState().route?.page === "imagine-favorites";
-  }
-  function isTypingTarget(t) {
-    if (!(t instanceof HTMLElement))
-      return false;
-    if (t.isContentEditable)
-      return true;
-    const tag = t.tagName;
-    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
-  }
-  function onKeyDown(e) {
-    if (!isImaginePage())
-      return;
-    if (e.ctrlKey || e.metaKey || e.altKey)
-      return;
-    if (isTypingTarget(e.target))
-      return;
-    if (e.key === "i" || e.key === "I") {
-      setFilter(currentFilter === "image" ? "all" : "image");
-      e.preventDefault();
-    } else if (e.key === "v" || e.key === "V") {
-      setFilter(currentFilter === "video" ? "all" : "video");
-      e.preventDefault();
-    } else if (e.key === "r" || e.key === "R") {
-      resetFilters();
-      e.preventDefault();
-    } else if (e.key === "A") {
-      if (isFavoritesPage()) {
-        deselectAll();
-        e.preventDefault();
-      }
-    } else if (e.key === "a") {
-      if (isFavoritesPage()) {
-        selectVisible();
-        e.preventDefault();
-      }
-    } else if (e.key === "c" || e.key === "C") {
-      if (isFavoritesPage() && Object.keys(mediaState().multiSelectIds ?? {}).length) {
-        copySelectedPrompts();
-        e.preventDefault();
-      }
-    }
-  }
-  function onVisibilityChange() {
-    if (!settings13.store.pauseWhenHidden)
-      return;
-    if (document.visibilityState !== "hidden")
-      return;
-    for (const video of document.querySelectorAll("video")) {
-      if (!video.paused)
-        video.pause();
-    }
-  }
-  var abortCtrl = null;
-  var betterImagine_default = definePlugin({
-    name: "BetterImagine",
-    icon: ImagesIcon,
-    description: "Imagine polish: filter, sort, shortcuts, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
-    authors: [Devs.Prism],
-    tags: ["ui"],
-    settings: settings13,
-    _hideDefault: () => settings13.store.hideDefaultPreviews,
-    _NullGrid: () => null,
-    _autoPlay: () => !settings13.store.noAutoplay,
-    _bypassPaywall: () => settings13.store.bypassPaywall,
-    _ctrlClickSelect: () => settings13.store.ctrlClickSelect,
-    _hoverProps: () => settings13.store.playOnHover ? { onMouseEnter, onMouseLeave } : {},
-    _useFilteredFavorites: useFilteredFavorites,
-    _renderFilterButtons: ErrorBoundary.wrap(FilterButtons, null),
-    _renderUpscaleItem: ErrorBoundary.wrap(UpscaleItem, null),
-    _renderCopyActions: ErrorBoundary.wrap(CopyActions, null),
-    _buildFilename: buildFilename,
-    start() {
-      if (abortCtrl)
-        return;
-      abortCtrl = new AbortController;
-      const { signal } = abortCtrl;
-      document.addEventListener("keydown", onKeyDown, { capture: true, signal });
-      document.addEventListener("visibilitychange", onVisibilityChange, { signal });
-    },
-    stop() {
-      abortCtrl?.abort();
-      abortCtrl = null;
-    },
-    patches: [
-      {
-        find: "image_feed_opened",
-        group: true,
-        replacement: [
-          {
-            match: /\(0,(\i\.jsx)\)\((\i),\{containerRef:(\i),variant:(\i),width:/,
-            replace: '(0,$1)($self._hideDefault()&&"favorites"!==$4?$self._NullGrid:$2,{containerRef:$3,variant:$4,width:'
-          },
-          {
-            match: /=\(0,\i\.useMediaStore\)\(\i=>\i\.favoritesList\)/,
-            replace: "=$self._useFilteredFavorites()"
-          }
-        ]
-      },
-      {
-        find: "image_feed_image_selected",
-        group: true,
-        replacement: [
-          {
-            match: /autoPlay:!0/g,
-            replace: "autoPlay:$self._autoPlay()"
-          },
-          {
-            match: /\.updateShiftPreview\(null\)\)\},onClick:/,
-            replace: ".updateShiftPreview(null))},...$self._hoverProps(),onClick:"
-          },
-          {
-            match: /if\(([^)]{1,40})\)return void (\i)\((\i)\);(?=let \i=\{imagine:"home-grid")/,
-            replace: "if($1||($self._ctrlClickSelect()&&($3.ctrlKey||$3.metaKey)))return void $2($3);"
-          },
-          {
-            match: /if\(([^)]{1,40})\)return void (\i)\((\i)\);(?=if\(!\i\)return;\i\.useMediaStore\.getState\(\)\.clearMultiSelect)/,
-            replace: "if($1||($self._ctrlClickSelect()&&($3.ctrlKey||$3.metaKey)))return void $2($3);"
-          }
-        ]
-      },
-      {
-        find: 'imagine-folder.all","All"',
-        replacement: {
-          match: /"imagine-folder\.all","All"\)\}\)/,
-          replace: "$&,$self._renderFilterButtons({})"
-        }
-      },
-      {
-        find: "imagine-templates.section-title",
-        all: true,
-        noWarn: true,
-        replacement: {
-          match: /\?(\i)\.play\(\)\.catch\(\i\):\1\.pause\(\)/,
-          replace: "&&$self._autoPlay()?$1.play().catch(()=>{}):$1.pause()"
-        }
-      },
-      {
-        find: '"imagine-set-resolution"',
-        all: true,
-        replacement: {
-          match: /return void \i\.useUpsellStore\.getState\(\)\.openUpsell\(\{entrypointKey:"imagine-[\w-]+"\}\)/g,
-          replace: "if(!$self._bypassPaywall())$&"
-        }
-      },
-      {
-        find: ["imagine-multiselect.add-to-tag", 'DropdownMenuContent,{align:"end",sideOffset:8,children:[(0,'],
-        group: true,
-        replacement: [
-          {
-            match: /(?<=\.DropdownMenuContent,\{align:"end",sideOffset:8,children:\[)/,
-            replace: "$self._renderUpscaleItem(),$self._renderCopyActions(),"
-          },
-          {
-            match: /`imagine-\$\{(\i)\.slice\(0,8\)\}\.\$\{(\i)\?"mp4":"png"\}`/,
-            replace: '($self._buildFilename(e.byId[$1],$2)||`imagine-${$1.slice(0,8)}.${$2?"mp4":"png"}`)'
-          }
-        ]
-      }
-    ]
-  });
-
-  // src/plugins/consoleJanitor/index.ts
-  var warnNoop = { match: /console\.warn\(\i\)/, replace: "void 0" };
-  var consoleJanitor_default = definePlugin({
-    name: "ConsoleJanitor",
-    icon: TerminalIcon,
-    description: "Silences noisy warnings and info logs in the browser console.",
-    authors: [Devs.Prism],
-    patches: [
-      { find: "x.ai/careers", replacement: { match: /console\.info\("[^"]{0,3000}"\)/, replace: "void 0" } },
-      { find: "useDrawerContext must be used within a Drawer.Root", all: true, replacement: warnNoop },
-      { find: "DialogDescriptionWarning", all: true, replacement: warnNoop },
-      { find: "window.PressureObserver", replacement: { match: /if\(!window\.PressureObserver\)return/, replace: "return" } },
-      { find: "NO_I18NEXT_INSTANCE", all: true, replacement: { match: /console\.warn\(\.\.\.\i\)/, replace: "void 0" } }
-    ]
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterFiles/styles.css
-  registerStyle("betterFiles", `/*
- * Void++, a modification for grok.com
- * Copyright (c) 2026 Void++ Contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-/* stylelint-disable-next-line selector-class-pattern */
-.group\\/sidebar-menu-item:hover .void-sel-wrap {
-    display: inline-flex;
-}
-
-/* stylelint-disable-next-line selector-class-pattern */
-.group\\/sidebar-menu-item.relative > .void-sel-wrap {
-    position: absolute;
-    inset-inline-start: 0.5rem;
-    top: 0.5rem;
-    z-index: 10;
-    pointer-events: auto;
-}
-`);
-
-  // src/plugins/betterFiles/index.tsx
-  var logger22 = new Logger("BetterFiles");
-  var LibraryAssets = findByPropsLazy("deleteLibraryAsset", "useLibraryAssets");
-  var selection = createSelectionStore();
-  var assetsById = new Map;
-  function fileId(item) {
-    if (item?.kind !== "file")
-      return null;
-    return item.asset?.assetId ?? item.id ?? null;
-  }
-  function FileCheckbox({ item }) {
-    const id = fileId(item);
-    if (!id || !item.asset)
-      return null;
-    assetsById.set(id, item.asset);
-    return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
-      selection,
-      id
-    });
-  }
-  async function deleteAssets(ids) {
-    const { deleteLibraryAsset } = LibraryAssets;
-    for (const id of ids) {
-      const asset = assetsById.get(id) ?? { assetId: id };
-      try {
-        await deleteLibraryAsset(asset);
-      } catch (e) {
-        logger22.error("Failed to delete asset", id, e);
-      }
-      assetsById.delete(id);
-    }
-  }
-  function wrapItemClick(onClick, item) {
-    return (e) => {
-      const id = fileId(item);
-      if (id && item.asset && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (selection.has(id)) {
-          selection.toggle(id);
-          assetsById.delete(id);
-        } else {
-          assetsById.set(id, item.asset);
-          selection.toggle(id);
-        }
-        return;
-      }
-      onClick(e);
-    };
-  }
-  var betterFiles_default = definePlugin({
-    name: "BetterFiles",
-    icon: FilesIcon,
-    description: "Adds bulk delete to the Library page.",
-    authors: [Devs.Prism, Devs.p],
-    tags: ["ui"],
-    managedStyle: "betterFiles",
-    start() {
-      selection.clear();
-      assetsById.clear();
-    },
-    stop() {
-      selection.clear();
-      assetsById.clear();
-    },
-    _renderFileCheckbox: ErrorBoundary.wrap(FileCheckbox, null),
-    _renderFileActionBar: ErrorBoundary.wrap(() => /* @__PURE__ */ React.createElement(SelectionActionBar, {
-      selection,
-      noun: "file",
-      title: "Delete files",
-      onDelete: deleteAssets
-    }), null),
-    _wrapItemClick: wrapItemClick,
-    patches: [
-      {
-        find: "LibraryPageContent:refreshAssets",
-        replacement: [
-          {
-            match: /("data-library-item-id":\i\.id,onPointerDown:\i,onClick:)(\i)(,className:"absolute inset-0 z-0 focus-visible:outline-none")/,
-            replace: "$1$self._wrapItemClick($2,arguments[0].item)$3"
-          },
-          {
-            match: /(SIDEBAR_ROW_MASK_STYLE,children:\[)(\i,\i,\i,\i)\]/,
-            replace: "$1$self._renderFileCheckbox({item:arguments[0].item}),$2]"
-          },
-          {
-            match: /("data-library-item-id":\i\.id,onClick:)(\i=>\{\i\.stopPropagation\(\),\i\(\i\)\})/,
-            replace: "$1$self._wrapItemClick($2,arguments[0].item)"
-          },
-          {
-            match: /("flex min-w-0 items-center gap-3 text-left font-medium",children:\[)(\i,\i)\]/,
-            replace: "$1$self._renderFileCheckbox({item:arguments[0].item}),$2]"
-          },
-          {
-            match: /("library-page\.title","Library"\)\}\),\(0,\i\.jsx\)\("div",\{className:"flex items-center gap-3",children:)(\i)\}\)/,
-            replace: "$1[$self._renderFileActionBar(),$2]})"
-          }
-        ]
-      }
-    ]
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/cloneChats/styles.css
-  registerStyle("cloneChats", `.void-clone-icon {
-    margin-inline-end: 0.5rem;
-}
-`);
-
-  // src/plugins/cloneChats/index.tsx
-  var logger23 = new Logger("CloneChats");
-  async function cloneChat(conversationId) {
-    const lastResponseId = ResponseStore.useResponseStore.getState().nodesByConversationId[conversationId]?.at(-1)?.responseId;
-    if (!lastResponseId)
-      throw new Error("No responses found in conversation.");
-    const { shareLinkId } = await ApiClients.chatApi.chatShareConversation({
-      conversationId,
-      body: { responseId: lastResponseId, allowIndexing: false }
-    });
-    if (!shareLinkId)
-      throw new Error("Failed to create share link.");
-    try {
-      const { conversation } = await ApiClients.chatApi.chatCloneConversation({ shareLinkId, body: {} });
-      if (conversation?.conversationId) {
-        RoutingStore.useRoutingStore.getState().push({ page: "chat", conversationId: conversation.conversationId });
-      }
-    } finally {
-      ApiClients.chatApi.chatDeleteShareLink({ shareLinkId }).catch(() => {});
-    }
-  }
-  function CloneItem({ conversationId }) {
-    const streaming = useIsStreaming(conversationId);
-    return /* @__PURE__ */ React.createElement(MenuItem, {
-      onSelect: () => cloneChat(conversationId).catch((e) => logger23.error("Failed to clone chat:", e)),
-      disabled: streaming
-    }, /* @__PURE__ */ React.createElement(CopyIcon, {
-      size: 16,
-      className: "void-clone-icon"
-    }), "Clone");
-  }
-  var cloneChats_default = definePlugin({
-    name: "CloneChats",
-    icon: CopyIcon,
-    description: "Clone conversations from the context-menu.",
-    authors: [Devs.Prism],
-    tags: ["chat"],
-    contextMenuItems: {
-      conversation: {
-        label: "Clone",
-        render: ErrorBoundary.wrap(CloneItem)
-      }
-    }
-  });
-
-  // src/plugins/noShareLink/index.ts
-  var STYLE_NAME6 = "noShareLink";
-  var settings14 = definePluginSettings({
-    hideShareProject: {
-      type: 3 /* BOOLEAN */,
-      description: "Inside a project: hide the top-right Share Project button.",
-      default: true
-    },
-    hideCreateShareLink: {
-      type: 3 /* BOOLEAN */,
-      description: "Not in a project: hide the top-right Create share link button on chats.",
-      default: true
-    }
-  });
-  function apply3() {
-    const rules = [];
-    if (settings14.store.hideShareProject) {
-      rules.push('button[aria-label="Share Project"]{display:none!important}');
-    }
-    if (settings14.store.hideCreateShareLink) {
-      rules.push('button[aria-label="Create share link"]{display:none!important}');
-    }
-    registerStyle(STYLE_NAME6, rules.join(`
-`));
-  }
-  var noShareLink_default = definePlugin({
-    name: "NoShareLink",
-    icon: Link2OffIcon,
-    description: "Hide share buttons: Share Project (in a project) and Create share link (top-right of chats).",
-    authors: [Devs.p],
-    tags: ["ui", "privacy"],
-    enabledByDefault: true,
-    settings: settings14,
-    start: apply3,
-    onSettingsChange: apply3,
-    stop() {
-      unregisterStyle(STYLE_NAME6);
-    }
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/chatListStatus/styles.css
-  registerStyle("chatListStatus", `/*
- * Void++, a modification for grok.com
- * Copyright (c) 2026 Void++ Contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-[data-sidebar] :is(
-    [data-sidebar="menu-button"],
-    [data-sidebar="menu-sub-button"],
-    a
-):has(> .void-cls):not([data-void-cls-nest]) {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-}
-
-.void-cls {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    width: 0.75rem;
-    height: 0.75rem;
-    margin-right: 0.25rem;
-    pointer-events: none;
-    color: #3b82f6;
-}
-
-.void-cls[data-kind="done"],
-.void-cls[data-kind="error"] {
-    width: 0.45rem;
-    height: 0.45rem;
-    margin-right: 0.3rem;
-    border-radius: 999px;
-    background: #3b82f6;
-}
-
-.void-cls[data-kind="error"] {
-    background: #ef4444;
-}
-
-[data-void-cls-nest] {
-    position: relative;
-}
-
-[data-void-cls-nest] > .void-cls {
-    position: absolute;
-    top: 50%;
-    left: 0.25rem;
-    z-index: 1;
-    margin: 0;
-    transform: translateY(-50%);
-}
-
-.void-cls[data-kind="streaming"] svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-    animation: void-cls-spin 0.8s linear infinite;
-}
-
-@keyframes void-cls-spin {
-    to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .void-cls[data-kind="streaming"] svg {
-        animation: none;
-    }
-}
-`);
-
-  // src/plugins/chatListStatus/index.ts
-  var logger24 = new Logger("ChatListStatus");
-  var MARK = "void-cls";
-  var LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
-  var DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed"]);
-  var LIVE_WORD = /^(working|running|in[_-]?progress|executing|processing|pending|continuing|started)$/i;
-  var LIVE_FLAG = /^(isWorking|isRunning|inProgress|isInProgress|isExecuting|working)$/;
-  var SKIP_KEY = /^(message|content|html|query|text|title|thinkingTrace)$/i;
-  var EXTRA_HINT = /computer|sandbox|agent|task|working/i;
-  var OWN_HOOKS = new Set(["useChatPageStore", "useConversationStore", "useResponseStore", "useRoutingStore", "useBotsStore"]);
-  var SIDEBAR = '[data-sidebar="sidebar"]';
-  var HOST = '[data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]';
-  var ROW = 'a[href*="/c/"], a[href*="/chat/"], a[href*="chat="], a[href*="/bot/"]';
-  var SPIN_PATH = "M21 12a9 9 0 1 1-6.219-8.56";
-  var PATH_CHAT = /^\/(?:c|chat)\/([^/?#]+)/i;
-  var PATH_BOT = /^\/bot\/([^/?#]+)/i;
-  var PATH_ID = /^\/(?:c|chat|bot)\/([^/?#]+)/i;
-  var BotsStore2 = findByPropsLazy("useBotsStore");
-  var marks = new Map;
-  var rowById = new Map;
-  var extraStores = [];
-  var extraSeen = new WeakSet;
-  var extraScanned = new Set;
-  var extraUnsubs = [];
-  var raf2 = 0;
-  var extraScanRaf = 0;
-  var extraBusy = false;
-  var started3 = false;
-  var obs = null;
-  var extraOff = null;
-  var botsOff = null;
-  function isConvId(value) {
-    return typeof value === "string" && value.length >= 8 && /^[a-z0-9_-]+$/i.test(value) && !value.includes("draft");
-  }
-  function isLiveStatus(value) {
-    if (typeof value !== "string")
-      return false;
-    const status = value.trim().toLowerCase();
-    if (!status || DEAD.has(status))
-      return false;
-    return LIVE.has(status) || LIVE_WORD.test(status);
-  }
-  function isLiveBag(value, depth = 0) {
-    if (value == null || depth > 5)
-      return false;
-    if (typeof value === "string")
-      return isLiveStatus(value);
-    if (typeof value !== "object")
-      return false;
-    if (Array.isArray(value)) {
-      const start = Math.max(0, value.length - 24);
-      for (let i = value.length - 1;i >= start; i--) {
-        if (isLiveBag(value[i], depth + 1))
-          return true;
-      }
-      return false;
-    }
-    const rec = value;
-    if (isLiveStatus(rec.status ?? rec.state ?? rec.phase ?? rec.activity ?? rec.taskStatus))
-      return true;
-    if (rec.workingFor || rec.working_for || rec.workingDuration)
-      return true;
-    let n = 0;
-    for (const [key, child] of Object.entries(rec)) {
-      if (++n > 48)
-        break;
-      if (SKIP_KEY.test(key))
-        continue;
-      if (LIVE_FLAG.test(key) && child === true)
-        return true;
-      if (isLiveBag(child, depth + 1))
-        return true;
-    }
-    return false;
-  }
-  function isLiveResponse2(r) {
-    if (!r)
-      return false;
-    if (r.partial)
-      return true;
-    if (isLiveBag(r.steps) || isLiveBag(r.toolResponses) || isLiveBag(r.fastToolResponse) || isLiveBag(r.metadata))
-      return true;
-    const state2 = r.state ?? "";
-    if (!state2)
-      return false;
-    if (LIVE.has(state2))
-      return true;
-    return !DEAD.has(state2.toLowerCase());
-  }
-  function isErrorResponse2(r) {
-    return !!r && (r.state === "error" || r.error != null);
-  }
-  function collectConvIds(value, out, depth = 0) {
-    if (value == null || typeof value !== "object" || depth > 5)
-      return;
-    if (Array.isArray(value)) {
-      const start = Math.max(0, value.length - 16);
-      for (let i = start;i < value.length; i++)
-        collectConvIds(value[i], out, depth + 1);
-      return;
-    }
-    const rec = value;
-    const id = rec.conversationId ?? rec.optimisticConversationId ?? rec.chat ?? rec.conversation_id ?? rec.agentId;
-    if (isConvId(id) && isLiveBag(rec))
-      out.add(id);
-    let n = 0;
-    for (const [key, child] of Object.entries(rec)) {
-      if (++n > 48)
-        break;
-      if (SKIP_KEY.test(key))
-        continue;
-      if (isConvId(key) && isLiveBag(child))
-        out.add(key);
-      collectConvIds(child, out, depth + 1);
-    }
-  }
-  function addId(ids, value) {
-    if (isConvId(value) && !ids.includes(value))
-      ids.push(value);
-  }
-  function currentChatIds() {
-    const ids = [];
-    try {
-      const page = ChatPageStore.useChatPageStore.getState();
-      addId(ids, page.conversationId);
-      addId(ids, page.optimisticConversationId);
-    } catch (e) {
-      logger24.debug("page ids unavailable:", e);
-    }
-    try {
-      const { route } = RoutingStore.useRoutingStore.getState();
-      addId(ids, route.conversationId);
-      addId(ids, route.chat);
-    } catch (e) {
-      logger24.debug("route chat ids unavailable:", e);
-    }
-    try {
-      const url = new URL(location.href);
-      addId(ids, url.searchParams.get("chat"));
-      addId(ids, url.searchParams.get("conversationId"));
-      addId(ids, url.pathname.match(PATH_CHAT)?.[1]);
-    } catch (e) {
-      logger24.debug("url chat ids unavailable:", e);
-    }
-    return ids;
-  }
-  function currentAgentIds() {
-    const ids = [];
-    try {
-      addId(ids, RoutingStore.useRoutingStore.getState().route.agentId);
-    } catch (e) {
-      logger24.debug("route agent id unavailable:", e);
-    }
-    try {
-      addId(ids, new URL(location.href).pathname.match(PATH_BOT)?.[1]);
-    } catch (e) {
-      logger24.debug("url agent id unavailable:", e);
-    }
-    return ids;
-  }
-  function currentIds() {
-    const ids = currentChatIds();
-    for (const id of currentAgentIds())
-      addId(ids, id);
-    return ids;
-  }
-  function considerConversation(ids, conversation) {
-    if (!conversation?.conversationId)
-      return;
-    if (conversation.state === "open" || isLiveBag(conversation.taskResult))
-      ids.add(conversation.conversationId);
-  }
-  function looksExtraStore(name, state2) {
-    if (EXTRA_HINT.test(name))
-      return true;
-    const keys = Object.keys(state2);
-    if (keys.some((key) => EXTRA_HINT.test(key)))
-      return true;
-    let n = 0;
-    for (const child of Object.values(state2)) {
-      if (++n > 8)
-        break;
-      if (child && typeof child === "object" && !Array.isArray(child) && Object.keys(child).slice(0, 16).some((key) => EXTRA_HINT.test(key)))
-        return true;
-    }
-    return false;
-  }
-  function scanModule(exports) {
-    if (exports == null || typeof exports !== "object" || isBlacklisted(exports))
-      return;
-    const mod = exports;
-    for (const key of Object.keys(mod)) {
-      if (OWN_HOOKS.has(key))
-        continue;
-      const val = mod[key];
-      if (!isZustandStore(val) || extraSeen.has(val))
-        continue;
-      let state2;
-      try {
-        state2 = val.getState();
-      } catch {
-        continue;
-      }
-      if (!state2 || typeof state2 !== "object")
-        continue;
-      if (!looksExtraStore(key, state2))
-        continue;
-      extraSeen.add(val);
-      extraStores.push(val);
-      extraUnsubs.push(val.subscribe(() => schedule()));
-      logger24.info("extra store", key);
-    }
-  }
-  function attachExtraStores() {
-    if (extraBusy)
-      return;
-    extraBusy = true;
-    try {
-      silenceWarns(() => syncLazyModules());
-      const before = extraStores.length;
-      for (const [id, exports] of getModuleCache()) {
-        if (extraScanned.has(id))
-          continue;
-        extraScanned.add(id);
-        scanModule(exports);
-      }
-      if (extraStores.length !== before)
-        schedule();
-    } finally {
-      extraBusy = false;
-    }
-  }
-  function queueExtraScan() {
-    if (!started3 || extraScanRaf)
-      return;
-    extraScanRaf = requestAnimationFrame(() => {
-      extraScanRaf = 0;
-      if (started3)
-        attachExtraStores();
-    });
-  }
-  function extraLiveIds(ids) {
-    for (const store3 of extraStores) {
-      let state2;
-      try {
-        state2 = store3.getState();
-      } catch {
-        continue;
-      }
-      if (!isLiveBag(state2))
-        continue;
-      const found = new Set;
-      collectConvIds(state2, found);
-      if (found.size) {
-        for (const id of found)
-          ids.add(id);
-        continue;
-      }
-      for (const id of currentChatIds())
-        ids.add(id);
-    }
-  }
-  function botLiveIds(ids) {
-    try {
-      const s = BotsStore2.useBotsStore.getState();
-      for (const [id, turn] of Object.entries(s.liveTurnByAgentId ?? {})) {
-        if (turn && isConvId(id))
-          ids.add(id);
-      }
-      for (const [id, pending2] of Object.entries(s.pendingSendsByAgentId ?? {})) {
-        if (!isConvId(id) || !Array.isArray(pending2) || !pending2.some((send) => send && !send.failed))
-          continue;
-        ids.add(id);
-      }
-      for (const agent of s.agents ?? []) {
-        if (agent?.runState === "running" && isConvId(agent.agentId))
-          ids.add(agent.agentId);
-      }
-    } catch (e) {
-      logger24.debug("bots store unavailable:", e);
-    }
-  }
-  function liveIds() {
-    const ids = new Set;
-    try {
-      const page = ChatPageStore.useChatPageStore.getState();
-      const chats = currentChatIds();
-      if (page.streamedMessageId || page.showStreamingIndicator || isLiveBag(page.sidePanelContent) || isLiveBag(page.metadata)) {
-        for (const id of chats)
-          ids.add(id);
-      }
-      const { byId, byConversationId, inflightPromisesByConversationId } = ResponseStore.useResponseStore.getState();
-      if (isLiveResponse2(byId[page.streamedMessageId ?? ""]) || isLiveResponse2(byId[page.lastMessageId ?? ""]) || isLiveResponse2(byId[page.sidePanelResponseId ?? ""])) {
-        for (const id of chats)
-          ids.add(id);
-      }
-      for (const id of Object.keys(inflightPromisesByConversationId ?? {}))
-        ids.add(id);
-      for (const [id, list] of Object.entries(byConversationId ?? {})) {
-        if (list?.some(isLiveResponse2))
-          ids.add(id);
-      }
-    } catch (e) {
-      logger24.debug("stream stores unavailable:", e);
-    }
-    try {
-      const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
-      for (const conversation of list ?? [])
-        considerConversation(ids, conversation);
-      for (const conversation of Object.values(byId ?? {}))
-        considerConversation(ids, conversation);
-      for (const conversation of Object.values(byIdWithWorkspaces ?? {}))
-        considerConversation(ids, conversation);
-    } catch (e) {
-      logger24.debug("conversation store unavailable:", e);
-    }
-    extraLiveIds(ids);
-    botLiveIds(ids);
-    return ids;
-  }
-  function errorOf(id) {
-    try {
-      const { byConversationId, byId } = ResponseStore.useResponseStore.getState();
-      const list = byConversationId[id];
-      if (list?.length) {
-        for (let i = list.length - 1;i >= 0; i--) {
-          const r = list[i];
-          if (String(r.sender ?? "").toLowerCase() === "human")
-            continue;
-          return isErrorResponse2(r);
-        }
-      }
-      const page = ChatPageStore.useChatPageStore.getState();
-      if ((page.conversationId === id || page.optimisticConversationId === id) && page.lastMessageId) {
-        return isErrorResponse2(byId[page.lastMessageId]);
-      }
-    } catch (e) {
-      logger24.debug("error lookup failed:", e);
-    }
-    try {
-      const pending2 = BotsStore2.useBotsStore.getState().pendingSendsByAgentId?.[id];
-      if (Array.isArray(pending2) && pending2.some((send) => send?.failed))
-        return true;
-    } catch (e) {
-      logger24.debug("bot error lookup failed:", e);
-    }
-    return false;
-  }
-  function refreshMarks() {
-    const live = liveIds();
-    const opened = new Set(currentIds());
-    for (const id of live)
-      marks.set(id, "streaming");
-    for (const [id, kind2] of marks) {
-      let next = kind2;
-      if (kind2 === "streaming" && !live.has(id)) {
-        next = errorOf(id) ? "error" : "done";
-        marks.set(id, next);
-      }
-      if (next !== "streaming" && opened.has(id))
-        marks.delete(id);
-    }
-  }
-  function convOfResponse(responseId) {
-    try {
-      const { byConversationId } = ResponseStore.useResponseStore.getState();
-      for (const [id, list] of Object.entries(byConversationId ?? {})) {
-        if (list?.some((r) => r.responseId === responseId))
-          return id;
-      }
-      return currentIds()[0] ?? "";
-    } catch (e) {
-      logger24.debug("conv lookup failed:", e);
-      return "";
-    }
-  }
-  function onStreamEnd4({ responseId }) {
-    const cid = convOfResponse(responseId);
-    if (!cid)
-      return;
-    if (liveIds().has(cid)) {
-      schedule();
-      return;
-    }
-    if (currentIds().includes(cid)) {
-      marks.delete(cid);
-      schedule();
-      return;
-    }
-    try {
-      const response = ResponseStore.useResponseStore.getState().byId[responseId];
-      marks.set(cid, isErrorResponse2(response) ? "error" : "done");
-    } catch (e) {
-      logger24.debug("streamEnd failed:", e);
-      marks.set(cid, "done");
-    }
-    schedule();
-  }
-  function idFromHref(href) {
-    if (!href)
-      return "";
-    try {
-      const u = new URL(href, location.origin);
-      const id = u.searchParams.get("chat") || u.searchParams.get("conversationId") || u.pathname.match(PATH_ID)?.[1] || "";
-      return isConvId(id) ? id : "";
-    } catch {
-      return "";
-    }
-  }
-  function hrefId(el) {
-    const a = el instanceof HTMLAnchorElement ? el : el.closest("a[href]") ?? el.querySelector("a[href]");
-    return idFromHref(a?.getAttribute("href") ?? el.getAttribute("href") ?? "");
-  }
-  function isPrimaryNav(el) {
-    const href = (el.getAttribute("href") ?? el.querySelector("a[href]")?.getAttribute("href") ?? "").replace(/[?#].*$/, "");
-    return href === "/" || href === "/imagine" || href === "/library" || href === "/automations";
-  }
-  function rowHost(el, root) {
-    if (el.classList.contains(MARK))
-      return null;
-    if (el.closest('[data-sidebar="menu-action"], [data-sidebar="footer"], [data-sidebar="header"]'))
-      return null;
-    if (isPrimaryNav(el))
-      return null;
-    if (!hrefId(el))
-      return null;
-    const wrapped = el.closest(HOST);
-    return wrapped && root.contains(wrapped) ? wrapped : el;
-  }
-  function isNestedHost(el) {
-    if (el.matches('[data-sidebar="menu-sub-button"]'))
-      return true;
-    const a = el instanceof HTMLAnchorElement ? el : el.querySelector("a[href]");
-    const href = a?.getAttribute("href") ?? el.getAttribute("href") ?? "";
-    return href.includes("chat=") || href.includes("/project/");
-  }
-  function spinSvg() {
-    const svg2 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg2.setAttribute("viewBox", "0 0 24 24");
-    svg2.setAttribute("fill", "none");
-    svg2.setAttribute("stroke", "currentColor");
-    svg2.setAttribute("stroke-width", "2.5");
-    svg2.setAttribute("stroke-linecap", "round");
-    svg2.setAttribute("aria-hidden", "true");
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", SPIN_PATH);
-    svg2.append(path);
-    return svg2;
-  }
-  function ensureMark(btn, kind2) {
-    btn.toggleAttribute("data-void-cls-nest", isNestedHost(btn));
-    let mark = btn.querySelector(`:scope > .${MARK}`);
-    if (!mark) {
-      mark = document.createElement("span");
-      mark.className = MARK;
-      mark.setAttribute("aria-hidden", "true");
-      btn.prepend(mark);
-    }
-    if (mark.dataset.kind === kind2 && (kind2 !== "streaming" || mark.querySelector("svg")))
-      return;
-    mark.dataset.kind = kind2;
-    mark.replaceChildren();
-    if (kind2 === "streaming")
-      mark.append(spinSvg());
-  }
-  function clearMark(btn) {
-    btn.querySelector(`:scope > .${MARK}`)?.remove();
-    btn.removeAttribute("data-void-cls-nest");
-  }
-  function roots() {
-    const found = [...document.querySelectorAll(SIDEBAR)];
-    return found.length ? found : [document.body];
-  }
-  function rowForId(root, id) {
-    if (!isConvId(id))
-      return null;
-    for (const a of root.querySelectorAll(`a[href*="${id}"]`)) {
-      if (hrefId(a) !== id)
-        continue;
-      const host = rowHost(a, root);
-      if (host)
-        return host;
-    }
-    return null;
-  }
-  function paint() {
-    if (!started3)
-      return;
-    refreshMarks();
-    const usedIds = new Set;
-    const seen = new Set;
-    for (const root of roots()) {
-      for (const el of root.querySelectorAll(ROW)) {
-        const host = rowHost(el, root);
-        if (!host || seen.has(host))
-          continue;
-        seen.add(host);
-        const id = hrefId(host);
-        if (!id) {
-          clearMark(host);
-          continue;
-        }
-        usedIds.add(id);
-        rowById.set(id, host);
-        const kind2 = marks.get(id);
-        if (kind2)
-          ensureMark(host, kind2);
-        else
-          clearMark(host);
-      }
-    }
-    for (const [id, el] of rowById) {
-      if (!el.isConnected || !usedIds.has(id))
-        rowById.delete(id);
-    }
-    for (const [id, kind2] of marks) {
-      if (rowById.get(id)?.isConnected)
-        continue;
-      for (const root of roots()) {
-        const host = rowForId(root, id);
-        if (!host)
-          continue;
-        rowById.set(id, host);
-        ensureMark(host, kind2);
-        break;
-      }
-    }
-    const live = [...marks].filter(([, kind2]) => kind2 === "streaming").map(([id]) => id);
-    if (live.length && !rowById.size)
-      logger24.info("live ids with no rows", live);
-  }
-  function schedule() {
-    if (!started3 || raf2)
-      return;
-    raf2 = requestAnimationFrame(() => {
-      raf2 = 0;
-      if (started3)
-        paint();
-    });
-  }
-  function ownMutation(list) {
-    if (!list.length)
-      return false;
-    for (const m of list) {
-      const { target } = m;
-      if (target instanceof Element && (target.classList.contains(MARK) || target.closest(`.${MARK}`)))
-        continue;
-      for (const n of m.addedNodes) {
-        if (n instanceof Element && (n.classList.contains(MARK) || n.querySelector(`.${MARK}`)))
-          continue;
-        return false;
-      }
-      for (const n of m.removedNodes) {
-        if (n instanceof Element && n.classList.contains(MARK))
-          continue;
-        return false;
-      }
-      if (m.type === "attributes")
-        return false;
-    }
-    return true;
-  }
-  function observe() {
-    obs?.disconnect();
-    obs = new MutationObserver((list) => {
-      if (ownMutation(list))
-        return;
-      schedule();
-    });
-    const node = document.querySelector(SIDEBAR) ?? document.body;
-    obs.observe(node, node === document.body ? { childList: true, subtree: true } : { childList: true, subtree: true, attributes: true, attributeFilter: ["href"] });
-  }
-  function pageKey(s) {
-    return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.streamedMessageId ?? ""}|${s.lastMessageId ?? ""}|${s.sidePanelResponseId ?? ""}|${s.showStreamingIndicator ? 1 : 0}`;
-  }
-  function responseKey(s) {
-    const inflight = Object.keys(s.inflightPromisesByConversationId ?? {}).join(",");
-    const bits = [];
-    for (const [id, list] of Object.entries(s.byConversationId ?? {})) {
-      const last = list?.[list.length - 1];
-      if (!last)
-        continue;
-      bits.push(`${id}:${last.responseId}:${last.state ?? ""}:${last.partial ? 1 : 0}:${last.steps?.length ?? 0}`);
-    }
-    return `${inflight}|${bits.join(",")}`;
-  }
-  function conversationKey(s) {
-    const rows = s.list?.length ? s.list : Object.values(s.byId ?? {});
-    return rows.map((conversation) => `${conversation?.conversationId ?? ""}:${conversation?.state ?? ""}`).join(",");
-  }
-  function routeKey(s) {
-    const { route } = s;
-    return `${route.conversationId ?? ""}|${route.chat ?? ""}|${route.workspaceId ?? ""}|${route.agentId ?? ""}`;
-  }
-  var chatListStatus_default = definePlugin({
-    name: "ChatListStatus",
-    icon: LoaderCircleIcon,
-    description: "Show Grok reply status on sidebar chats and bots: spinner, blue dot, or error.",
-    authors: [Devs.p],
-    tags: ["chat", "ui"],
-    enabledByDefault: true,
-    startAt: "TurbopackReady" /* TurbopackReady */,
-    managedStyle: "chatListStatus",
-    cleanupSelectors: [`.${MARK}`],
-    start() {
-      started3 = true;
-      attachExtraStores();
-      extraOff = onModuleLoad(() => queueExtraScan());
-      try {
-        botsOff = BotsStore2.useBotsStore.subscribe(() => schedule());
-      } catch (e) {
-        logger24.debug("bots store subscribe failed:", e);
-      }
-      observe();
-      schedule();
-    },
-    stop() {
-      started3 = false;
-      if (raf2)
-        cancelAnimationFrame(raf2);
-      raf2 = 0;
-      if (extraScanRaf)
-        cancelAnimationFrame(extraScanRaf);
-      extraScanRaf = 0;
-      obs?.disconnect();
-      obs = null;
-      extraOff?.();
-      extraOff = null;
-      botsOff?.();
-      botsOff = null;
-      for (const unsub of extraUnsubs)
-        unsub();
-      extraUnsubs.length = 0;
-      extraStores.length = 0;
-      extraSeen = new WeakSet;
-      extraScanned.clear();
-      for (const el of document.querySelectorAll(`.${MARK}`)) {
-        el.parentElement?.removeAttribute("data-void-cls-nest");
-        el.remove();
-      }
-      marks.clear();
-      rowById.clear();
-    },
-    events: {
-      streamEnd: onStreamEnd4
-    },
-    zustand: {
-      ChatPageStore: {
-        selector: pageKey,
-        handler: schedule
-      },
-      ResponseStore: {
-        selector: responseKey,
-        handler: schedule
-      },
-      ConversationStore: {
-        selector: conversationKey,
-        handler: schedule
-      },
-      RoutingStore: {
-        selector: routeKey,
-        handler: schedule
-      }
-    }
-  });
-
-  // src/plugins/autoCollapse/index.ts
-  var autoCollapse_default = definePlugin({
-    name: "AutoCollapse",
-    icon: ChevronsDownUpIcon,
-    description: "Automatically collapse code blocks in responses.",
-    authors: [Devs.Prism],
-    tags: ["chat"],
-    _collapse: () => true,
-    patches: [
-      {
-        find: ["isInitiallyCollapsed", "showRunCode"],
-        all: true,
-        replacement: {
-          match: /isInitiallyCollapsed:(\i)=!1/g,
-          replace: "isInitiallyCollapsed:$1=$self._collapse()"
-        }
-      }
-    ]
-  });
-
-  // src/plugins/betterLinks/index.tsx
-  var DEFAULT_LINK = "#4a9eff";
-  var DEFAULT_VISITED = "#9b59b6";
-  var STYLE_NAME7 = "better-links-dynamic";
-  var DOMAIN_RE = /(?<![a-zA-Z0-9@/:.#])(?:www\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.(?:com|org|net|io|dev|app|co|ai|gov|edu|me|xyz|gg|tv|cc|so|is|info|tech|pro|site|store|cloud|online|icu|top|be|ly|sh|to|fm|am|us|uk|ca|de|fr|es|it|nl|jp|cn|ru|br|au|in|eu)(?:\/[^\s<>"'`)\]},]*)?/g;
-  function isValidHex(c) {
-    return /^#[0-9a-fA-F]{6}$/.test(c);
-  }
-  function getColor(key, fallback) {
-    const val = settings15.store[key];
-    return val && isValidHex(val) ? val : fallback;
-  }
-  function applyColors() {
-    const link = getColor("linkColor", DEFAULT_LINK);
-    let css = `.void-colored-link{color:${link}!important;text-decoration-color:${link}!important}`;
-    if (settings15.store.enableVisitedColor) {
-      const visited = getColor("visitedColor", DEFAULT_VISITED);
-      css += `.void-colored-link:visited{color:${visited}!important;text-decoration-color:${visited}!important}`;
-    }
-    registerStyle(STYLE_NAME7, css);
-  }
-  function ColorRow2({ settingKey, title, description, fallback }) {
-    settings15.use([settingKey]);
-    return /* @__PURE__ */ React.createElement(ColorSettingRow, {
-      value: getColor(settingKey, fallback),
-      onChange: (v) => {
-        settings15.store[settingKey] = v;
-        applyColors();
-      },
-      title,
-      description
-    });
-  }
-  var settings15 = definePluginSettings({
-    linkifyDomains: {
-      type: 3 /* BOOLEAN */,
-      description: "Detect bare domains in messages and make them clickable.",
-      default: true
-    },
-    enableVisitedColor: {
-      type: 3 /* BOOLEAN */,
-      description: "Apply a different color to links you already visited.",
-      default: false,
-      onChange: applyColors
-    },
-    linkColor: {
-      type: 6 /* COMPONENT */,
-      component: () => /* @__PURE__ */ React.createElement(ColorRow2, {
-        settingKey: "linkColor",
-        title: "Link color",
-        description: "Colorize links in messages.",
-        fallback: DEFAULT_LINK
-      })
-    },
-    visitedColor: {
-      type: 6 /* COMPONENT */,
-      component: () => /* @__PURE__ */ React.createElement(ColorRow2, {
-        settingKey: "visitedColor",
-        title: "Visited color",
-        description: "Colorize links you already visited.",
-        fallback: DEFAULT_VISITED
-      })
-    }
-  }).withPrivateSettings();
-  var betterLinks_default = definePlugin({
-    name: "BetterLinks",
-    icon: LinkIcon,
-    description: "Colorize links and detect bare domains in chat messages.",
-    authors: [Devs.Prism],
-    tags: ["chat"],
-    settings: settings15,
-    patches: [
-      {
-        find: "chat-markdown:a:link",
-        all: true,
-        replacement: {
-          match: /target:"_blank",rel:"noopener noreferrer nofollow",onClick:/,
-          replace: 'target:"_blank",rel:"noopener noreferrer nofollow",className:"void-colored-link",onClick:'
-        }
-      },
-      {
-        find: "chat-markdown-load-third-party",
-        replacement: {
-          match: /singleDollarTextMath:!1\}\],([^\]]{0,200})\]/,
-          replace: "singleDollarTextMath:!1}],$1,$self._remarkLinkify]"
-        }
-      }
-    ],
-    _remarkLinkify() {
-      const { store: store3 } = settings15;
-      return (tree) => {
-        try {
-          if (!store3.linkifyDomains)
-            return;
-          const walk = (node) => {
-            if (!node.children)
-              return;
-            const out = [];
-            let changed = false;
-            for (const child of node.children) {
-              if (child.type !== "text") {
-                walk(child);
-                out.push(child);
-                continue;
-              }
-              DOMAIN_RE.lastIndex = 0;
-              if (!DOMAIN_RE.test(child.value)) {
-                out.push(child);
-                continue;
-              }
-              DOMAIN_RE.lastIndex = 0;
-              let last = 0;
-              let m;
-              while ((m = DOMAIN_RE.exec(child.value)) != null) {
-                if (m.index > last)
-                  out.push({ type: "text", value: child.value.slice(last, m.index) });
-                out.push({ type: "link", url: "https://" + m[0], children: [{ type: "text", value: m[0] }] });
-                last = m.index + m[0].length;
-              }
-              if (last < child.value.length)
-                out.push({ type: "text", value: child.value.slice(last) });
-              changed = true;
-            }
-            if (changed)
-              node.children = out;
-          };
-          walk(tree);
-        } catch {
-          return tree;
-        }
-      };
-    },
-    start() {
-      settings15.store.linkColor ??= DEFAULT_LINK;
-      settings15.store.visitedColor ??= DEFAULT_VISITED;
-      applyColors();
-      enableStyle(STYLE_NAME7);
-    },
-    stop() {
-      disableStyle(STYLE_NAME7);
-    }
-  });
-
-  // src/plugins/stableComposer/index.ts
-  var cachedDeps = null;
-  var cachedSig = "";
-  var cachedMention;
-  var stableComposer_default = definePlugin({
-    name: "StableComposer",
-    icon: TextCursorInputIcon,
-    description: "Stop the Grok composer from destroying and recreating its editor when the extension list is rebuilt unchanged, which was resetting the caret and breaking IME composition.",
-    authors: [Devs.p],
-    tags: ["chat"],
-    enabledByDefault: true,
-    _deps(extensions, mention) {
-      const sig = Array.isArray(extensions) ? `${extensions.length}:${extensions.map((e) => e?.name ?? "?").join(",")}` : String(extensions);
-      if (cachedDeps && sig === cachedSig && mention === cachedMention)
-        return cachedDeps;
-      cachedSig = sig;
-      cachedMention = mention;
-      cachedDeps = [extensions, mention];
-      return cachedDeps;
-    },
-    patches: [
-      {
-        find: "transformPastedHTML:",
-        replacement: {
-          match: /(transformPastedHTML:\i\}\},)\[(\i),(\i)\]\)/,
-          replace: "$1$self._deps($2,$3))"
-        }
-      }
-    ]
-  });
-
-  // src/plugins/autoRetry/index.ts
-  var logger25 = new Logger("AutoRetry");
-  var CONTENT_MODERATED = "grok:content-moderated";
-  var settings16 = definePluginSettings({
-    retryModeration: {
-      type: 3 /* BOOLEAN */,
-      description: "Retry content moderation errors.",
-      default: true
-    },
-    retryNetwork: {
-      type: 3 /* BOOLEAN */,
-      description: "Retry network and stream errors.",
-      default: true
-    },
-    maxRetries: {
-      type: 1 /* NUMBER */,
-      description: "Maximum consecutive retries per conversation.",
-      default: 3
-    },
-    delay: {
-      type: 1 /* NUMBER */,
-      description: "Seconds to wait before retrying.",
-      default: 2
-    }
-  });
-  var retryCounts = new Map;
-  var pendingTimer = null;
-  function clearPending() {
-    if (pendingTimer != null) {
-      clearTimeout(pendingTimer);
-      pendingTimer = null;
-    }
-  }
-  function isModeration(response) {
-    return String(response.error?.message ?? "").includes(CONTENT_MODERATED);
-  }
-  function shouldRetry(response) {
-    if (isModeration(response))
-      return settings16.store.retryModeration;
-    return settings16.store.retryNetwork;
-  }
-  function retry(responseId, conversationId, response) {
-    const count = (retryCounts.get(conversationId) ?? 0) + 1;
-    const max = settings16.store.maxRetries;
-    if (count > max) {
-      showToast("Max retries reached.", 2 /* ERROR */);
-      retryCounts.delete(conversationId);
-      return;
-    }
-    retryCounts.set(conversationId, count);
-    const delaySec = settings16.store.delay;
-    showToast(`Retrying... (${count}/${max})`, 0 /* MESSAGE */);
-    logger25.info(`Retry ${count}/${max} for ${conversationId} in ${delaySec}s`);
-    clearPending();
-    pendingTimer = setTimeout(() => {
-      pendingTimer = null;
-      const state2 = ChatPageStore.useChatPageStore.getState();
-      if (state2.streamedMessageId)
-        return;
-      state2.sendResponse({
-        message: "",
-        parentResponseId: responseId,
-        conversationId,
-        fileAttachmentIds: response.fileAttachments,
-        setOpimisticUserResponse: false,
-        setUserResponse: false,
-        enableRetries: true
-      });
-    }, delaySec * 1000);
-  }
-  function onStreamEnd5({ responseId }) {
-    const response = ResponseStore.useResponseStore.getState().byId[responseId];
-    if (!response || response.state !== "error") {
-      const convId = ChatPageStore.useChatPageStore.getState().conversationId;
-      if (convId)
-        retryCounts.delete(convId);
-      return;
-    }
-    if (!shouldRetry(response))
-      return;
-    const { conversationId } = ChatPageStore.useChatPageStore.getState();
-    if (!conversationId)
-      return;
-    retry(responseId, conversationId, response);
-  }
-  var autoRetry_default = definePlugin({
-    name: "AutoRetry",
-    icon: RotateCcwIcon,
-    description: "Automatically retry failed messages on moderation or network errors.",
-    authors: [Devs.Prism],
-    tags: ["chat"],
-    settings: settings16,
-    startAt: "TurbopackReady" /* TurbopackReady */,
-    start() {
-      retryCounts.clear();
-      clearPending();
-    },
-    stop() {
-      clearPending();
-      retryCounts.clear();
-    },
-    events: {
-      streamEnd: onStreamEnd5
-    }
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/compactModeSelect/styles.css
-  registerStyle("compactModeSelect", `/*
- * Void++, a modification for grok.com
- * Copyright (c) 2026 Void++ Contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-.void-cms-pins {
-    display: contents;
-}
-
-.void-cms-pin {
-    width: 2.25rem;
-    height: 2.25rem;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-    max-height: 2.25rem;
-    padding: 0;
-    box-sizing: border-box;
-    background: transparent;
-    box-shadow: none;
-}
-
-.query-bar .void-cms-on {
-    color: #ff7a17;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-
-.void-cms-label {
-    display: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    line-height: 1;
-}
-
-.void-cms-glyph {
-    display: grid;
-    place-items: center;
-    width: 18px;
-    height: 18px;
-}
-
-.void-cms-glyph svg {
-    display: block;
-    width: 18px;
-    height: 18px;
-}
-
-.query-bar:has(.void-cms-hide-native) [data-query-bar-mode-select] {
-    position: absolute;
-    width: 0;
-    height: 0;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button {
-    width: 2.25rem;
-    height: 2.25rem;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-    max-height: 2.25rem;
-    padding: 0;
-    position: relative;
-    display: grid;
-    place-items: center;
-}
-
-.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button > * {
-    display: none !important;
-}
-
-.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button::after {
-    content: "";
-    width: 18px;
-    height: 18px;
-    background-color: currentcolor;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='5' cy='12' r='1'/%3E%3Ccircle cx='12' cy='12' r='1'/%3E%3Ccircle cx='19' cy='12' r='1'/%3E%3C/svg%3E") center / 18px 18px no-repeat;
-}
-
-html.void-cms-picking .query-bar [data-query-bar-mode-select] {
-    pointer-events: auto !important;
-}
-
-html.void-cms-picking [role="tooltip"],
-html.void-cms-picking [data-radix-tooltip-content] {
-    display: none !important;
-}
-
-.void-cms-ghost {
-    opacity: 0 !important;
-    visibility: hidden !important;
-}
-
-html.void-cms-picked .void-cms-ghost {
-    pointer-events: none !important;
-}
-
-.void-cms-order-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.void-cms-order-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    min-height: 2.25rem;
-    padding: 0.25rem 0.25rem 0.25rem 0;
-    border-radius: 0.5rem;
-    user-select: none;
-}
-
-.void-cms-order-row:hover {
-    background: hsl(var(--fg-primary) / 6%);
-}
-
-.void-cms-order-row.void-cms-dragging {
-    opacity: 0.45;
-}
-
-.void-cms-order-main {
-    min-width: 0;
-    flex: 1;
-}
-
-.void-cms-grip {
-    display: grid;
-    place-items: center;
-    width: 1.25rem;
-    height: 1.25rem;
-    color: hsl(var(--fg-secondary));
-    cursor: grab;
-}
-
-.void-cms-grip:active {
-    cursor: grabbing;
-}
-
-.void-cms-order-icon {
-    flex-shrink: 0;
-    color: hsl(var(--fg-secondary));
-}
-
-@media (width >= 48rem) {
-    .void-cms-labeled {
-        width: auto;
-        min-width: 2.25rem;
-        max-height: 2.25rem;
-        border-radius: 999px;
-        padding-inline: 0.5rem;
-        gap: 0.25rem;
-    }
-
-    .void-cms-labeled .void-cms-label {
-        display: inline;
-    }
-}
-`);
-
-  // src/plugins/compactModeSelect/index.tsx
-  var logger26 = new Logger("CompactModeSelect");
-  var cl20 = classNameFactory("void-cms-");
-  var MODES = [
-    { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
-    { id: "fast", pin: "pinFast", label: "Fast", Icon: FastModeIcon },
-    { id: "expert", pin: "pinExpert", label: "Expert", Icon: LightbulbIcon },
-    { id: "heavy", pin: "pinHeavy", label: "Heavy", Icon: ConnectedAppsIcon },
-    { id: "build", pin: "pinBuild", label: "Build", Icon: BuildModeIcon }
-  ];
-  var KNOWN_IDS = new Set(MODES.map((m) => m.id));
-  var PIN_BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m.pin]));
-  var MODE_BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m]));
-  var DEFAULT_PIN_ORDER = "heavy,build";
-  var SETTING_KEYS = ["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "showLabels", "hideNativeTrigger", "pinOrder"];
-  var ITEM_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
-  var MENU_ROOT_SEL = [
-    "[data-radix-popper-content-wrapper]",
-    "[data-radix-menu-content]",
-    "[data-radix-dropdown-menu-content]",
-    "[data-radix-select-content]",
-    "[data-radix-popover-content]",
-    "[role='menu']",
-    "[role='listbox']"
-  ].join(", ");
-  var TRIGGER_SEL = ".query-bar [data-query-bar-mode-select] button";
-  var PICK_MS = 900;
-  var POINTER = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
-  var GHOST_STYLE = { opacity: "0", visibility: "hidden" };
-  var settings17 = definePluginSettings({
-    pinList: {
-      type: 6 /* COMPONENT */,
-      description: "Toggle pins and drag to set chip order.",
-      component: PinOrderEditor
-    },
-    hideNativeTrigger: {
-      type: 3 /* BOOLEAN */,
-      description: "Hide the native mode menu button and keep its popup invisible.",
-      default: true
-    },
-    showLabels: {
-      type: 3 /* BOOLEAN */,
-      description: "Show mode names on pinned chips.",
-      default: false
-    },
-    pinAuto: {
-      type: 3 /* BOOLEAN */,
-      description: "Pin Auto next to the compact selector.",
-      default: false,
-      hidden: true
-    },
-    pinFast: {
-      type: 3 /* BOOLEAN */,
-      description: "Pin Fast next to the compact selector.",
-      default: false,
-      hidden: true
-    },
-    pinExpert: {
-      type: 3 /* BOOLEAN */,
-      description: "Pin Expert next to the compact selector.",
-      default: false,
-      hidden: true
-    },
-    pinHeavy: {
-      type: 3 /* BOOLEAN */,
-      description: "Pin Heavy next to the compact selector.",
-      default: true,
-      hidden: true
-    },
-    pinBuild: {
-      type: 3 /* BOOLEAN */,
-      description: "Pin Build next to the compact selector.",
-      default: true,
-      hidden: true
-    },
-    pinOrder: {
-      type: 0 /* STRING */,
-      description: "Order of pinned chips.",
-      default: DEFAULT_PIN_ORDER,
-      hidden: true
-    }
-  });
-  var picking = false;
-  var harvesting = false;
-  var tipLock = false;
-  var harvested = new Map;
-  var harvestListeners = new Set;
-  var tipListeners = new Set;
-  var ghosts = new Set;
-  var cloakWatch = null;
-  function uncloak() {
-    for (const host of ghosts) {
-      host.classList.remove(cl20("ghost"));
-      host.style.removeProperty("opacity");
-      host.style.removeProperty("visibility");
-      host.style.removeProperty("pointer-events");
-    }
-    ghosts.clear();
-  }
-  function notifyTips() {
-    for (const fn of tipListeners)
-      fn();
-  }
-  function onDocPointerOver(e) {
-    if (!tipLock || picking)
-      return;
-    const el = e.target;
-    if (el instanceof Element && el.closest(".query-bar .void-cms-pin"))
-      return;
-    setTipLock(false);
-  }
-  function setTipLock(on) {
-    if (tipLock === on)
-      return;
-    tipLock = on;
-    if (on)
-      document.addEventListener("pointerover", onDocPointerOver);
-    else
-      document.removeEventListener("pointerover", onDocPointerOver);
-    notifyTips();
-  }
-  function subscribeTips(fn) {
-    tipListeners.add(fn);
-    return () => {
-      tipListeners.delete(fn);
-    };
-  }
-  function getTipLock() {
-    return tipLock;
-  }
-  function useTipLock() {
-    return React.useSyncExternalStore(subscribeTips, getTipLock, getTipLock);
-  }
-  function setPicking(on) {
-    picking = on;
-    document.documentElement.classList.toggle("void-cms-picking", on);
-    if (on) {
-      setTipLock(true);
-      cloakWatch ??= new MutationObserver(onCloakMutations);
-      cloakWatch.observe(document.documentElement, { childList: true, subtree: true });
-      return;
-    }
-    cloakWatch?.disconnect();
-    cloakWatch = null;
-    document.documentElement.classList.remove("void-cms-picked");
-    uncloak();
-    if (!document.querySelector(".query-bar .void-cms-pin:hover"))
-      setTipLock(false);
-  }
-  function notifyHarvest() {
-    for (const fn of harvestListeners)
-      fn();
-  }
-  function parseOrder(raw) {
-    const seen = new Set;
-    const ordered = [];
-    for (const token of String(raw ?? "").split(/[,\s]+/)) {
-      const id = token.toLowerCase();
-      if (!KNOWN_IDS.has(id) || seen.has(id))
-        continue;
-      seen.add(id);
-      ordered.push(id);
-    }
-    for (const m of MODES) {
-      if (seen.has(m.id))
-        continue;
-      ordered.push(m.id);
-    }
-    return ordered;
-  }
-  function reorder(ids, from, to) {
-    if (from === to || from < 0 || to < 0 || to >= ids.length)
-      return ids;
-    const next = ids.slice();
-    const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
-    return next;
-  }
-  function setOrder(ids) {
-    settings17.store.pinOrder = ids.join(",");
-  }
-  function setPinned(pin, on) {
-    settings17.store[pin] = on;
-  }
-  function itemText(el) {
-    return `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`.replaceAll(/\s+/g, " ").trim().toLowerCase();
-  }
-  function titlesFor(id) {
-    const mode = MODES.find((m) => m.id === id);
-    const catalogTitle = ModesStore.useModesStore.getState().modes.find((m) => m.id === id)?.title;
-    return [catalogTitle, mode?.label, id].filter((t) => !!t).map((t) => t.toLowerCase());
-  }
-  function matchItem(el, id) {
-    const hay = itemText(el);
-    if (!hay)
-      return false;
-    return titlesFor(id).some((t) => hay === t || hay.startsWith(`${t} `));
-  }
-  function isModeMenu(items) {
-    return items.filter((el) => MODES.some((m) => matchItem(el, m.id))).length >= 2;
-  }
-  function ghostHost(el) {
-    const wrap = el.closest("[data-radix-popper-content-wrapper]");
-    if (wrap instanceof HTMLElement)
-      return wrap;
-    let host = el;
-    for (let n = el;n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
-      const pos = getComputedStyle(n).position;
-      if (pos === "fixed" || pos === "absolute")
-        host = n;
-    }
-    return host;
-  }
-  function cloak(menu) {
-    const host = ghostHost(menu.root);
-    if (ghosts.has(host))
-      return;
-    host.classList.add(cl20("ghost"));
-    host.style.setProperty("opacity", GHOST_STYLE.opacity, "important");
-    host.style.setProperty("visibility", GHOST_STYLE.visibility, "important");
-    ghosts.add(host);
-  }
-  function lockGhosts() {
-    document.documentElement.classList.add("void-cms-picked");
-    for (const host of ghosts)
-      host.style.setProperty("pointer-events", "none", "important");
-  }
-  function modeMenu() {
-    for (const root2 of document.querySelectorAll(MENU_ROOT_SEL)) {
-      if (!(root2 instanceof HTMLElement))
-        continue;
-      const items = [...root2.querySelectorAll(ITEM_SEL)];
-      if (isModeMenu(items))
-        return { root: root2, items };
-    }
-    const loose = [...document.querySelectorAll(ITEM_SEL)].filter((el) => MODES.some((m) => matchItem(el, m.id)));
-    if (loose.length < 2)
-      return null;
-    const nested = loose[0].closest(MENU_ROOT_SEL);
-    const root = nested instanceof HTMLElement ? nested : ghostHost(loose[0]);
-    return { root, items: loose };
-  }
-  function onCloakMutations() {
-    const menu = modeMenu();
-    if (menu)
-      cloak(menu);
-  }
-  function waitUntil(ok) {
-    const start = performance.now();
-    return new Promise((resolve) => {
-      const tick = () => {
-        if (ok()) {
-          resolve(true);
-          return;
-        }
-        if (performance.now() - start > PICK_MS) {
-          resolve(false);
-          return;
-        }
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    });
-  }
-  async function waitForMenu() {
-    await waitUntil(() => {
-      const menu = modeMenu();
-      if (menu)
-        cloak(menu);
-      return !!menu;
-    });
-    return modeMenu();
-  }
-  function waitForGone() {
-    return waitUntil(() => !modeMenu());
-  }
-  function nativeTrigger() {
-    return document.querySelector(TRIGGER_SEL);
-  }
-  function clickEl(el) {
-    el.dispatchEvent(new PointerEvent("pointerdown", POINTER));
-    el.dispatchEvent(new PointerEvent("pointerup", POINTER));
-    el.click();
-  }
-  function paintCurrent(el) {
-    for (const attr of ["fill", "stroke"]) {
-      const v = el.getAttribute(attr);
-      if (!v || v === "none" || v === "currentColor")
-        continue;
-      el.setAttribute(attr, "currentColor");
-    }
-    for (const name of el.getAttributeNames()) {
-      if (name.startsWith("on"))
-        el.removeAttribute(name);
-    }
-    el.removeAttribute("class");
-  }
-  function normalizeSvg(src) {
-    const svg2 = src.cloneNode(true);
-    svg2.setAttribute("width", "18");
-    svg2.setAttribute("height", "18");
-    svg2.setAttribute("aria-hidden", "true");
-    svg2.querySelectorAll("script").forEach((n) => n.remove());
-    paintCurrent(svg2);
-    svg2.querySelectorAll("*").forEach(paintCurrent);
-    return svg2.outerHTML;
-  }
-  function stashGlyphs(items) {
-    let added = false;
-    for (const item of items) {
-      const mode = MODES.find((m) => matchItem(item, m.id));
-      if (!mode || harvested.has(mode.id))
-        continue;
-      const svg2 = item.querySelector("svg");
-      if (!(svg2 instanceof SVGSVGElement))
-        continue;
-      harvested.set(mode.id, normalizeSvg(svg2));
-      added = true;
-    }
-    if (added)
-      notifyHarvest();
-  }
-  async function harvestIcons() {
-    if (harvesting || picking || harvested.size > 0)
-      return;
-    const trigger = nativeTrigger();
-    if (!trigger)
-      return;
-    harvesting = true;
-    setPicking(true);
-    try {
-      let menu = modeMenu();
-      if (!menu) {
-        clickEl(trigger);
-        menu = await waitForMenu();
-      }
-      if (!menu)
-        return;
-      cloak(menu);
-      stashGlyphs(menu.items);
-      if (modeMenu())
-        clickEl(trigger);
-      lockGhosts();
-      await waitForGone();
-    } catch (e) {
-      logger26.warn("Failed to harvest mode icons:", e);
-    } finally {
-      setPicking(false);
-      harvesting = false;
-    }
-  }
-  async function selectMode(id) {
-    if (picking)
-      return;
-    setPicking(true);
-    try {
-      await ModesStore.useModesStore.getState().ensureLoaded();
-      let menu = modeMenu();
-      if (!menu) {
-        const trigger = nativeTrigger();
-        if (!trigger) {
-          logger26.warn("Native mode selector not found");
-          return;
-        }
-        clickEl(trigger);
-        menu = await waitForMenu();
-      }
-      if (!menu) {
-        logger26.warn("Native mode item not found:", id);
-        return;
-      }
-      cloak(menu);
-      stashGlyphs(menu.items);
-      const item = menu.items.find((el) => matchItem(el, id));
-      if (!item) {
-        logger26.warn("Native mode item not found:", id);
-        const trigger = nativeTrigger();
-        if (modeMenu() && trigger)
-          clickEl(trigger);
-        lockGhosts();
-        await waitForGone();
-        return;
-      }
-      clickEl(item);
-      lockGhosts();
-      await waitForGone();
-    } catch (e) {
-      logger26.warn("Failed to select mode:", e);
-    } finally {
-      setPicking(false);
-    }
-  }
-  function useNativeGlyph(id) {
-    const [, bump] = React.useState(0);
-    React.useEffect(() => {
-      const onHarvest = () => bump((n) => n + 1);
-      harvestListeners.add(onHarvest);
-      harvestIcons();
-      return () => {
-        harvestListeners.delete(onHarvest);
-      };
-    }, [id]);
-    return harvested.get(id);
-  }
-  function PinGlyph({ id, Icon, label, showLabels }) {
-    const html = useNativeGlyph(id);
-    const glyph = html ? /* @__PURE__ */ React.createElement("span", {
-      className: cl20("glyph"),
-      dangerouslySetInnerHTML: { __html: html }
-    }) : /* @__PURE__ */ React.createElement(Icon, {
-      size: 18
-    });
-    if (!showLabels)
-      return glyph;
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, glyph, /* @__PURE__ */ React.createElement("span", {
-      className: cl20("label")
-    }, label));
-  }
-  function preventDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }
-  function PinOrderEditor() {
-    const cfg = settings17.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
-    const ids = parseOrder(cfg.pinOrder);
-    const [dragId, setDragId] = React.useState(null);
-    const onDragStart = (id) => (e) => {
-      e.dataTransfer.setData("text/plain", id);
-      e.dataTransfer.effectAllowed = "move";
-      setDragId(id);
-    };
-    const onDrop = (toId) => (e) => {
-      e.preventDefault();
-      const fromId = e.dataTransfer.getData("text/plain");
-      setOrder(reorder(ids, ids.indexOf(fromId), ids.indexOf(toId)));
-      setDragId(null);
-    };
-    return /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "0.5rem",
-      className: cl20("order")
-    }, /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "0"
-    }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl20("order-list"),
-      role: "list"
-    }, ids.map((id, i) => {
-      const m = MODE_BY_ID[id];
-      return /* @__PURE__ */ React.createElement("div", {
-        key: m.id,
-        role: "listitem",
-        className: classes(cl20("order-row"), dragId === m.id && cl20("dragging")),
-        onDragOver: preventDragOver,
-        onDrop: onDrop(m.id)
-      }, /* @__PURE__ */ React.createElement(Flex, {
-        alignItems: "center",
-        gap: "0.5rem",
-        className: cl20("order-main")
-      }, /* @__PURE__ */ React.createElement("span", {
-        className: cl20("grip"),
-        draggable: true,
-        onDragStart: onDragStart(m.id),
-        onDragEnd: () => setDragId(null),
-        "aria-label": `Reorder ${m.label}`
-      }, /* @__PURE__ */ React.createElement(GripVerticalIcon, {
-        size: 16
-      })), /* @__PURE__ */ React.createElement(m.Icon, {
-        size: 16,
-        className: cl20("order-icon")
-      }), /* @__PURE__ */ React.createElement(SettingsTitle, null, m.label)), /* @__PURE__ */ React.createElement(Flex, {
-        alignItems: "center",
-        gap: "0.25rem"
-      }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
-        variant: "tertiary",
-        size: "xs",
-        shape: "square",
-        tooltipContent: "Move up",
-        "aria-label": `Move ${m.label} up`,
-        disabled: i === 0,
-        onClick: () => setOrder(reorder(ids, i, i - 1))
-      }, /* @__PURE__ */ React.createElement(ChevronUpIcon, {
-        size: 14
-      })), /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
-        variant: "tertiary",
-        size: "xs",
-        shape: "square",
-        tooltipContent: "Move down",
-        "aria-label": `Move ${m.label} down`,
-        disabled: i === ids.length - 1,
-        onClick: () => setOrder(reorder(ids, i, i + 1))
-      }, /* @__PURE__ */ React.createElement(ChevronDownIcon, {
-        size: 14
-      })), /* @__PURE__ */ React.createElement(Switch, {
-        checked: !!cfg[m.pin],
-        onCheckedChange: (on) => setPinned(m.pin, on)
-      })));
-    })));
-  }
-  function PinnedModes() {
-    const cfg = settings17.use([...SETTING_KEYS]);
-    const page = RoutingStore.useRoutingStore((s) => s.route.page);
-    const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
-    const catalog = ModesStore.useModesStore((s) => s.modes);
-    const hideTip = useTipLock();
-    const knownCatalog = catalog.filter((c) => KNOWN_IDS.has(c.id));
-    const items = parseOrder(cfg.pinOrder).map((id) => MODE_BY_ID[id]).filter((m) => cfg[m.pin] && (m.id === "build" || !knownCatalog.length || knownCatalog.some((c) => c.id === m.id)));
-    if (page === "bot" || !items.length)
-      return null;
-    const { showLabels } = cfg;
-    const allCovered = knownCatalog.length > 0 && knownCatalog.every((c) => cfg[PIN_BY_ID[c.id]]);
-    const hideNative = cfg.hideNativeTrigger || allCovered;
-    const onPin = (id) => (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setTipLock(true);
-      selectMode(id);
-    };
-    return /* @__PURE__ */ React.createElement("div", {
-      className: classes(cl20("pins"), hideNative && cl20("hide-native"))
-    }, items.map((m) => /* @__PURE__ */ React.createElement(ChatBarButton, {
-      key: m.id,
-      size: "sm",
-      icon: /* @__PURE__ */ React.createElement(PinGlyph, {
-        id: m.id,
-        Icon: m.Icon,
-        label: m.label,
-        showLabels
-      }),
-      tooltip: hideTip ? undefined : m.label,
-      onClick: onPin(m.id),
-      className: classes(cl20("pin"), selectedModeId === m.id && cl20("on"), showLabels && cl20("labeled")),
-      "aria-label": m.label
-    })));
-  }
-  var compactModeSelect_default = definePlugin({
-    name: "CompactModeSelect",
-    icon: Minimize2Icon,
-    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu.",
-    authors: [Devs.p],
-    tags: ["chat", "ui"],
-    enabledByDefault: true,
-    settings: settings17,
-    managedStyle: "compactModeSelect",
-    startAt: "TurbopackReady" /* TurbopackReady */,
-    start() {
-      ModesStore.useModesStore.getState().ensureLoaded();
-    },
-    stop() {
-      setPicking(false);
-      setTipLock(false);
-      harvested.clear();
-      harvestListeners.clear();
-      tipListeners.clear();
-    },
-    renderPinned: ErrorBoundary.wrap(PinnedModes),
-    patches: [
-      {
-        find: "data-query-bar-mode-select",
-        all: true,
-        group: true,
-        replacement: [
-          {
-            match: /ModeSelect,\{compact:\i\|\|\i,/,
-            replace: "ModeSelect,{compact:!0,"
-          },
-          {
-            match: /\},"mode-select"\),/,
-            replace: "$&$self.renderPinned(),"
-          }
-        ]
-      }
-    ]
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/inputHistory/styles.css
-  registerStyle("inputHistory", `.void-ih-hud {
-    contain: content;
-    position: fixed;
-    z-index: 2147483646;
-    padding: 0.25rem 0.5rem;
-    border: 1px solid hsl(var(--border-l2));
-    border-radius: 0.5rem;
-    background: hsl(var(--surface-l2));
-    color: hsl(var(--fg-secondary));
-    font-size: 0.75rem;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.2;
-    pointer-events: none;
-    opacity: 0;
-    transform: translate(-50%, -100%);
-    transition: opacity 0.12s ease;
-}
-
-.void-ih-hud-on {
-    opacity: 1;
-}
-
-.void-ih-panel {
-    min-width: 0;
-}
-
-.void-ih-toolbar {
-    flex-shrink: 0;
-    min-width: 0;
-}
-
-.void-ih-search {
-    width: 100%;
-    min-width: 0;
-}
-
-.void-ih-meta {
-    min-width: 0;
-}
-
-.void-ih-count {
-    margin: 0;
-    flex: 1;
-    min-width: 0;
-    color: hsl(var(--fg-secondary));
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-.void-ih-empty {
-    margin: 0;
-    color: hsl(var(--fg-tertiary));
-}
-
-.void-ih-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    min-width: 0;
-    max-height: min(18rem, 40vh);
-    overflow: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border-l2) / 80%) transparent;
-}
-
-.void-ih-item {
-    display: grid;
-    grid-template-columns: 3ch minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0.375rem;
-    width: 100%;
-    padding: 0.28rem 0.5rem;
-    border: 1px solid transparent;
-    border-radius: 0.5rem;
-}
-
-.void-ih-item:hover {
-    background: hsl(var(--surface-l2));
-    border-color: hsl(var(--border-l2) / 45%);
-}
-
-.void-ih-item-on {
-    align-items: start;
-    background: hsl(var(--surface-l2));
-    border-color: hsl(var(--border-l2) / 60%);
-}
-
-.void-ih-index {
-    min-width: 0;
-    color: hsl(var(--fg-tertiary));
-    font-size: 0.75rem;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.45;
-    text-align: right;
-}
-
-.void-ih-item-on .void-ih-index {
-    padding-top: 0.1rem;
-}
-
-.void-ih-main {
-    min-width: 0;
-    cursor: pointer;
-}
-
-.void-ih-main:focus-visible {
-    outline: none;
-    border-radius: 0.25rem;
-    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
-}
-
-.void-ih-body {
-    display: block;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    color: hsl(var(--fg-primary));
-    font-size: 0.8125rem;
-    line-height: 1.45;
-}
-
-.void-ih-clamp {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    overflow: hidden;
-}
-
-.void-ih-item-on .void-ih-body {
-    max-height: 8rem;
-    overflow: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-}
-
-.void-ih-actions {
-    display: flex;
-    flex-shrink: 0;
-    gap: 0.125rem;
-}
-
-.void-ih-actions :is(button) {
-    width: 1.5rem;
-    height: 1.5rem;
-    min-width: 1.5rem;
-    min-height: 1.5rem;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .void-ih-hud {
-        transition: none;
-    }
-}
-`);
-
-  // src/plugins/inputHistory/index.tsx
-  var logger27 = new Logger("InputHistory");
-  var cl21 = classNameFactory("void-ih-");
-  var EDITOR_SEL2 = '.query-bar .tiptap.ProseMirror[contenteditable="true"]';
-  var ZWSP = /\u200B/g;
-  var MAX_MIN = 10;
-  var MAX_MAX = 500;
-  var MAX_DEFAULT = 100;
-  var HUD_GAP_PX = 8;
-  var APPLY_QUIET_MS = 120;
-  var CAPTURE_DEDUPE_MS = 2000;
-  var settings18 = definePluginSettings({
-    maxEntries: {
-      type: 5 /* SLIDER */,
-      description: "Maximum stored prompts.",
-      min: MAX_MIN,
-      max: MAX_MAX,
-      default: MAX_DEFAULT
-    },
-    history: {
-      type: 6 /* COMPONENT */,
-      component: HistoryPanel
-    }
-  }).withPrivateSettings();
-  var recentAt = new Map;
-  var cursor = 0;
-  var draft = "";
-  var recalling = false;
-  var applying = false;
-  var composing = false;
-  var applyGen = 0;
-  var keys = null;
-  var applyTimer;
-  var applyEl = null;
-  var applyAtStart = true;
-  function getEntries() {
-    const raw = settings18.plain.entries;
-    return Array.isArray(raw) ? raw.filter((x) => typeof x === "string") : [];
-  }
-  function cap(entries) {
-    const max = clamp(settings18.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
-    return entries.length > max ? entries.slice(entries.length - max) : entries;
-  }
-  function setEntries(entries) {
-    settings18.store.entries = entries;
-  }
-  function normalize(text) {
-    return text.replaceAll(ZWSP, "").replace(/\n$/, "").trim();
-  }
-  function imeEvent(e) {
-    if (composing)
-      return true;
-    if (e instanceof InputEvent && e.isComposing)
-      return true;
-    if (e instanceof KeyboardEvent && (e.isComposing || e.keyCode === 229))
-      return true;
-    return false;
-  }
-  function invalidateApply() {
-    applyGen++;
-    applying = false;
-    applyEl = null;
-    clearTimeout(applyTimer);
-    applyTimer = undefined;
-  }
-  function resetBrowse(length) {
-    invalidateApply();
-    cursor = length;
-    draft = "";
-    recalling = false;
-    hideHud();
-  }
-  function chatEditor(t) {
-    if (t instanceof Text)
-      return t.parentElement?.closest(EDITOR_SEL2) ?? null;
-    if (t instanceof Element)
-      return t.closest(EDITOR_SEL2) ?? null;
-    return null;
-  }
-  function editorText(el) {
-    const blocks = el.querySelectorAll(":scope > *");
-    const raw = blocks.length ? Array.from(blocks, (b) => b.textContent ?? "").join(`
-`) : el.innerText ?? el.textContent ?? "";
-    return normalize(raw);
-  }
-  function spanHeight(range) {
-    const rects = range.getClientRects();
-    let top = Infinity;
-    let bottom = -Infinity;
-    for (const r of rects) {
-      if (r.height === 0 && r.width === 0)
-        continue;
-      if (r.top < top)
-        top = r.top;
-      if (r.bottom > bottom)
-        bottom = r.bottom;
-    }
-    if (top === Infinity)
-      return range.getBoundingClientRect().height;
-    return bottom - top;
-  }
-  function caretOnEdge(el) {
-    const sel = window.getSelection();
-    if (!sel?.rangeCount || !sel.isCollapsed)
-      return { first: false, last: false };
-    const caret = sel.getRangeAt(0);
-    if (!el.contains(caret.startContainer))
-      return { first: false, last: false };
-    if (!el.innerText?.trim())
-      return { first: true, last: true };
-    const before = document.createRange();
-    before.selectNodeContents(el);
-    before.setEnd(caret.startContainer, caret.startOffset);
-    const after = document.createRange();
-    after.selectNodeContents(el);
-    after.setStart(caret.startContainer, caret.startOffset);
-    const { lineHeight, fontSize } = getComputedStyle(el);
-    const lh = parseFloat(lineHeight);
-    const fs = parseFloat(fontSize) || 16;
-    const budget = (lh > 0 ? lh : fs * 1.5) * 1.5;
-    return {
-      first: spanHeight(before) <= budget,
-      last: spanHeight(after) <= budget
-    };
-  }
-  function matchesRecall(el) {
-    if (!recalling)
-      return false;
-    const list = getEntries();
-    const expected = cursor < list.length ? list[cursor] : draft;
-    return editorText(el) === expected || normalize(el.innerText ?? "") === expected;
-  }
-  function dropRecall(el) {
-    invalidateApply();
-    cursor = getEntries().length;
-    draft = editorText(el);
-    recalling = false;
-    hideHud();
-  }
-  function placeCaret(el, atStart) {
-    if (composing)
-      return;
-    try {
-      const view = el.pmViewDesc?.view;
-      if (view) {
-        if (view.composing)
-          return;
-        const Sel = view.state.selection.constructor;
-        const pmSel = atStart ? Sel.atStart(view.state.doc) : Sel.atEnd(view.state.doc);
-        view.dispatch(view.state.tr.setSelection(pmSel).scrollIntoView());
-        return;
-      }
-    } catch (err) {
-      logger27.debug("placeCaret pm failed:", err);
-    }
-    const native = window.getSelection();
-    if (!native)
-      return;
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    range.collapse(atStart);
-    native.removeAllRanges();
-    native.addRange(range);
-  }
-  function scheduleApplyEnd(gen) {
-    clearTimeout(applyTimer);
-    applyTimer = setTimeout(() => {
-      if (gen !== applyGen)
-        return;
-      applying = false;
-      const el = applyEl;
-      applyEl = null;
-      if (!el || composing)
-        return;
-      if (!recalling)
-        return;
-      if (!matchesRecall(el))
-        dropRecall(el);
-      else
-        placeCaret(el, applyAtStart);
-    }, APPLY_QUIET_MS);
-  }
-  function setEditorText(el, text, atStart) {
-    el.focus();
-    const sel = window.getSelection();
-    if (!sel)
-      return;
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    applying = true;
-    applyEl = el;
-    applyAtStart = atStart;
-    const gen = ++applyGen;
-    try {
-      if (!text)
-        document.execCommand("delete");
-      else
-        document.execCommand("insertText", false, text);
-    } catch (err) {
-      logger27.debug("insertText failed:", err);
-    }
-    placeCaret(el, atStart);
-    scheduleApplyEnd(gen);
-  }
-  function hudEl() {
-    let el = document.querySelector(`.${cl21("hud")}`);
-    if (el)
-      return el;
-    el = document.createElement("div");
-    el.className = cl21("hud");
-    el.setAttribute("aria-live", "polite");
-    document.body.appendChild(el);
-    return el;
-  }
-  function hideHud() {
-    document.querySelector(`.${cl21("hud")}`)?.classList.remove(cl21("hud-on"));
-  }
-  function showHud(label, editor) {
-    const bar = editor.closest(".query-bar");
-    if (!bar)
-      return;
-    const el = hudEl();
-    el.textContent = label;
-    requestAnimationFrame(() => {
-      const r = bar.getBoundingClientRect();
-      el.style.left = `${r.left + r.width / 2}px`;
-      el.style.top = `${r.top - HUD_GAP_PX}px`;
-      el.classList.add(cl21("hud-on"));
-    });
-  }
-  function pushEntry(text) {
-    const value = normalize(text);
-    if (!value)
-      return;
-    const now = Date.now();
-    const prev = recentAt.get(value);
-    if (prev != null && now - prev < CAPTURE_DEDUPE_MS)
-      return;
-    recentAt.set(value, now);
-    const list = getEntries();
-    if (list[list.length - 1] === value) {
-      resetBrowse(list.length);
-      return;
-    }
-    const next = cap([...list, value]);
-    setEntries(next);
-    resetBrowse(next.length);
-  }
-  function cycle(older, el) {
-    const list = getEntries();
-    if (!list.length && older)
-      return;
-    if (cursor >= list.length) {
-      draft = editorText(el);
-      cursor = list.length;
-    }
-    const next = older ? cursor - 1 : cursor + 1;
-    if (next < 0 || next > list.length)
-      return;
-    cursor = next;
-    recalling = true;
-    setEditorText(el, next === list.length ? draft : list[next], older);
-    if (next < list.length)
-      showHud(`${next + 1} / ${list.length}`, el);
-    else
-      hideHud();
-  }
-  function onKeyDown2(e) {
-    if (imeEvent(e))
-      return;
-    if (e.ctrlKey || e.metaKey)
-      return;
-    const el = chatEditor(e.target);
-    if (!el)
-      return;
-    if (applying && e.key !== "ArrowUp" && e.key !== "ArrowDown")
-      invalidateApply();
-    if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
-      dropRecall(el);
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      return;
-    }
-    if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
-      pushEntry(editorText(el));
-      return;
-    }
-    if (e.key !== "ArrowUp" && e.key !== "ArrowDown")
-      return;
-    if (e.shiftKey)
-      return;
-    const older = e.key === "ArrowUp";
-    const force = e.altKey;
-    const list = getEntries();
-    if (!force) {
-      const edge = caretOnEdge(el);
-      if (older && !edge.first || !older && !edge.last)
-        return;
-    }
-    if (older && (!list.length || cursor <= 0))
-      return;
-    if (!older && cursor >= list.length)
-      return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    cycle(older, el);
-  }
-  function onPointerDown(e) {
-    if (!recalling)
-      return;
-    const el = chatEditor(e.target);
-    if (!el)
-      return;
-    dropRecall(el);
-  }
-  function onCompositionStart(e) {
-    if (!chatEditor(e.target))
-      return;
-    composing = true;
-    invalidateApply();
-  }
-  function onCompositionEnd(e) {
-    const el = chatEditor(e.target);
-    if (!el)
-      return;
-    composing = false;
-    if (recalling && !matchesRecall(el))
-      dropRecall(el);
-  }
-  function onInput(e) {
-    const el = chatEditor(e.target);
-    if (!el)
-      return;
-    if (imeEvent(e)) {
-      if (applying)
-        invalidateApply();
-      return;
-    }
-    const recalled = matchesRecall(el);
-    if (applying && recalled)
-      return;
-    if (recalling && !recalled)
-      dropRecall(el);
-  }
-  function onSubmit(e) {
-    const form = e.target;
-    if (!(form instanceof HTMLFormElement))
-      return;
-    const editor = form.querySelector(EDITOR_SEL2);
-    if (editor instanceof HTMLElement)
-      pushEntry(editorText(editor));
-  }
-  function onClick(e) {
-    const t = e.target;
-    if (!(t instanceof Element))
-      return;
-    const ctrl = t.closest("button, [role='button']");
-    if (!ctrl)
-      return;
-    const bar = ctrl.closest(".query-bar");
-    if (!bar || ctrl.closest("[data-query-bar-mode-select]"))
-      return;
-    const label = (ctrl.getAttribute("aria-label") ?? "").toLowerCase();
-    const submit = ctrl instanceof HTMLButtonElement && ctrl.type === "submit";
-    if (!submit && !label.includes("send") && !label.includes("submit"))
-      return;
-    const editor = bar.querySelector(EDITOR_SEL2);
-    if (editor instanceof HTMLElement)
-      pushEntry(editorText(editor));
-  }
-  function removeEntry(index) {
-    const list = getEntries();
-    if (index < 0 || index >= list.length)
-      return;
-    const next = list.filter((_, i) => i !== index);
-    setEntries(next);
-    resetBrowse(next.length);
-  }
-  function HistoryPanel() {
-    const { entries } = settings18.use(["entries"]);
-    const list = entries ?? [];
-    const [query, setQuery] = useState("");
-    const [openId, setOpenId] = useState(null);
-    const [confirm, setConfirm] = useState(false);
-    const needle = query.trim().toLowerCase();
-    const visible = list.map((text, index) => ({ text, index })).filter((row) => !needle || row.text.toLowerCase().includes(needle)).toReversed();
-    return /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "0.5rem",
-      className: cl21("panel")
-    }, /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "0.35rem",
-      className: cl21("toolbar")
-    }, list.length > 0 && /* @__PURE__ */ React.createElement(Input, {
-      type: "text",
-      placeholder: "Search prompts",
-      value: query,
-      onChange: (e) => setQuery(e.target.value),
-      className: cl21("search")
-    }), /* @__PURE__ */ React.createElement(Flex, {
-      className: cl21("meta"),
-      alignItems: "center",
-      gap: "0.5rem"
-    }, /* @__PURE__ */ React.createElement(Paragraph, {
-      className: cl21("count")
-    }, needle ? pluralize(visible.length, "match", "matches") : pluralize(list.length, "stored prompt")), /* @__PURE__ */ React.createElement(Button, {
-      variant: "secondary",
-      size: "sm",
-      shape: "rectangle",
-      disabled: !list.length,
-      onClick: () => setConfirm(true)
-    }, "Clear history"))), list.length === 0 && /* @__PURE__ */ React.createElement(Paragraph, {
-      className: cl21("empty")
-    }, "No stored prompts."), list.length > 0 && visible.length === 0 && /* @__PURE__ */ React.createElement(Paragraph, {
-      className: cl21("empty")
-    }, "No matches."), visible.length > 0 && /* @__PURE__ */ React.createElement("div", {
-      className: cl21("list")
-    }, visible.map((row) => {
-      const expanded = openId === row.index;
-      return /* @__PURE__ */ React.createElement("div", {
-        key: row.index,
-        className: cl21("item", expanded && "item-on")
-      }, /* @__PURE__ */ React.createElement("span", {
-        className: cl21("index")
-      }, row.index + 1), /* @__PURE__ */ React.createElement("div", {
-        className: cl21("main"),
-        role: "button",
-        tabIndex: 0,
-        onClick: () => setOpenId(expanded ? null : row.index),
-        onKeyDown: (e) => {
-          if (e.key !== "Enter" && e.key !== " ")
-            return;
-          e.preventDefault();
-          setOpenId(expanded ? null : row.index);
-        }
-      }, /* @__PURE__ */ React.createElement("span", {
-        className: cl21("body", !expanded && "clamp")
-      }, row.text)), /* @__PURE__ */ React.createElement("div", {
-        className: cl21("actions")
-      }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
-        variant: "tertiary",
-        size: "sm",
-        shape: "square",
-        tooltipContent: "Copy",
-        "aria-label": "Copy",
-        onClick: () => {
-          copyToClipboard(row.text).catch((err) => logger27.error("copy failed:", err));
-        }
-      }, /* @__PURE__ */ React.createElement(CopyIcon, {
-        size: 16
-      })), /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
-        variant: "tertiary",
-        size: "sm",
-        shape: "square",
-        tooltipContent: "Delete",
-        "aria-label": "Delete",
-        onClick: () => {
-          if (openId === row.index)
-            setOpenId(null);
-          removeEntry(row.index);
-        }
-      }, /* @__PURE__ */ React.createElement(Trash2Icon, {
-        size: 16
-      }))));
-    })), /* @__PURE__ */ React.createElement(ConfirmDialog, {
-      open: confirm,
-      onOpenChange: setConfirm,
-      title: "Clear input history",
-      description: "Delete all stored prompts? This cannot be undone.",
-      confirmText: "Clear",
-      danger: true,
-      onConfirm: () => {
-        setEntries([]);
-        resetBrowse(0);
-        setOpenId(null);
-        setQuery("");
-      }
-    }));
-  }
-  var inputHistory_default = definePlugin({
-    name: "InputHistory",
-    icon: HistoryIcon,
-    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell.",
-    authors: [Devs.p],
-    tags: ["chat"],
-    enabledByDefault: true,
-    settings: settings18,
-    managedStyle: "inputHistory",
-    cleanupSelectors: [".void-ih-hud"],
-    start() {
-      if (keys)
-        return;
-      cursor = getEntries().length;
-      recalling = false;
-      composing = false;
-      invalidateApply();
-      keys = new AbortController;
-      const { signal } = keys;
-      document.addEventListener("keydown", onKeyDown2, { capture: true, signal });
-      document.addEventListener("input", onInput, { capture: true, signal });
-      document.addEventListener("compositionstart", onCompositionStart, { capture: true, signal });
-      document.addEventListener("compositionend", onCompositionEnd, { capture: true, signal });
-      document.addEventListener("submit", onSubmit, { capture: true, signal });
-      document.addEventListener("click", onClick, { capture: true, signal });
-      document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
-    },
-    stop() {
-      keys?.abort();
-      keys = null;
-      hideHud();
-      recentAt.clear();
-      composing = false;
-      recalling = false;
-      invalidateApply();
-    },
-    onSettingsChange() {
-      const current = getEntries();
-      const next = cap(current);
-      if (next.length !== current.length)
-        setEntries(next);
-      if (cursor > next.length)
-        cursor = next.length;
-    }
-  });
-
-  // src/plugins/noSidebarPlugins/index.tsx
-  var PluginsDialogStore = findByPropsLazy("usePluginsDialogStore");
-  function PluginsIcon(props = {}) {
-    const Comp = findExportedComponent("ConnectorsIcon") ?? GrokConnectorsIcon;
-    return /* @__PURE__ */ React.createElement(Comp, {
-      ...props
-    });
-  }
-  function openPlugins() {
-    PluginsDialogStore.usePluginsDialogStore.getState().setOpen(true);
-  }
-  function PluginsItem() {
-    return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
-      onSelect: openPlugins
-    }, /* @__PURE__ */ React.createElement(PluginsIcon, {
-      className: "void-settings-menu-icon"
-    }), "Plugins");
-  }
-  var WrappedPluginsItem = ErrorBoundary.wrap(PluginsItem);
-  var noSidebarPlugins_default = definePlugin({
-    name: "NoSidebarPlugins",
-    icon: PluginsIcon,
-    description: "Move the sidebar Plugins button into the avatar menu.",
-    authors: [Devs.p],
-    tags: ["ui"],
-    enabledByDefault: true,
-    _renderItem: () => createElement(WrappedPluginsItem),
-    patches: [
-      {
-        find: "usePluginsDialogStore.getState().setOpen(!0)",
-        replacement: {
-          match: /(\(0,\i\.jsx\)\(\i\.AppSidebarItem,\{icon:.{0,80}?onClick:\(\)=>\{"skills-and-connectors")/,
-          replace: "false&&$1"
-        }
-      },
-      {
-        find: 'ENABLE_GROK_WEB_PLUGIN_MARKETPLACE)&&{id:"skills-and-connectors"',
-        replacement: {
-          match: /ENABLE_GROK_WEB_PLUGIN_MARKETPLACE\)&&\{id:"skills-and-connectors"/,
-          replace: 'ENABLE_GROK_WEB_PLUGIN_MARKETPLACE)&&!1&&{id:"skills-and-connectors"'
-        }
-      },
-      {
-        find: '"user-dropdown.help"',
-        replacement: {
-          match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,100}"user-dropdown\.help")/,
-          replace: "$self._renderItem(),"
-        }
-      }
-    ]
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/downloadTTS/styles.css
-  registerStyle("downloadTTS", `.void-download-tts-spinner {
-    pointer-events: none;
-}
-`);
-
-  // src/plugins/downloadTTS/index.tsx
-  var cl22 = classNameFactory("void-download-tts-");
-  var logger28 = new Logger("DownloadTTS");
-  async function fetchAndDownload() {
-    const { currentStreamId } = TextToSpeechStore.useTextToSpeechStore.getState();
-    if (!currentStreamId)
-      return;
-    const voiceId = ChatPageStore.useChatPageStore.getState().voiceId;
-    let url = `/http/app-chat/read-response-audio-file/${currentStreamId}`;
-    if (voiceId)
-      url += `?voiceId=${encodeURIComponent(voiceId)}`;
-    const res = await fetch(url);
-    if (!res.ok)
-      throw new Error(`HTTP ${res.status}`);
-    const blob = await res.blob();
-    await FileUtils.downloadBlob(blob, `tts-${currentStreamId.slice(0, 8)}.wav`);
-  }
-  function DownloadButton() {
-    const [loading, onClick2] = useAsyncAction(async () => {
-      try {
-        await fetchAndDownload();
-      } catch (e) {
-        logger28.error("Failed to download TTS audio:", e);
-      }
-    });
-    return /* @__PURE__ */ React.createElement(Button, {
-      "aria-label": "Download audio",
-      onClick: onClick2,
-      disabled: loading,
-      size: "md",
-      shape: "square",
-      variant: "tertiary"
-    }, loading ? /* @__PURE__ */ React.createElement(Spinner, {
-      size: "sm",
-      className: cl22("spinner")
-    }) : /* @__PURE__ */ React.createElement(DownloadIcon, {
-      size: 16
-    }));
-  }
-  var downloadTTS_default = definePlugin({
-    name: "DownloadTTS",
-    icon: Volume2Icon,
-    description: "Add a download button to the TTS playback controls.",
-    authors: [Devs.Prism],
-    tags: ["chat"],
-    patches: [{
-      find: 'tts-controls.stop.label","Stop"',
-      all: true,
-      replacement: {
-        match: /("tts-controls\.stop\.label","Stop"\).{0,600}?,children:\[(?:\i,){1,8}\i)\]/,
-        replace: "$1,$self._renderDownloadButton()]"
-      }
-    }],
-    _renderDownloadButton: ErrorBoundary.wrap(DownloadButton)
-  });
-
-  // src/plugins/incognito/index.ts
-  var store3 = () => SettingsStore.useSettingsStore.getState();
-  var unsubscribe = null;
-  function enforce2() {
-    if (!store3().isIncognito)
-      store3().setIsIncognito(true);
-  }
-  var incognito_default = definePlugin({
-    name: "Incognito",
-    icon: GhostFilledIcon,
-    description: "Force private chat mode for new conversations.",
-    authors: [Devs.Prism],
-    tags: ["privacy"],
-    startAt: "TurbopackReady" /* TurbopackReady */,
-    start() {
-      enforce2();
-      unsubscribe = SettingsStore.useSettingsStore.subscribe(enforce2);
-    },
-    stop() {
-      unsubscribe?.();
-      unsubscribe = null;
-      store3().setIsIncognito(false);
-    }
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/streamerMode/styles.css
-  registerStyle("streamerMode", `/* stylelint-disable no-descending-specificity */
-
-/* Sidebar avatar */
-html.void-streamer-sidebar-avatar [data-sidebar="footer"] button[data-state]>div {
-    filter: blur(6px);
-    transition: filter 0.2s ease;
-}
-
-html.void-streamer-sidebar-avatar [data-sidebar="footer"] button[data-state]:hover>div,
-html.void-streamer-sidebar-avatar .void-sidebar-card:hover button[data-state]>div {
-    filter: none;
-}
-
-/* Sidebar username */
-html.void-streamer-sidebar-name .void-sidebar-info {
-    filter: blur(6px);
-    transition: filter 0.2s ease;
-}
-
-html.void-streamer-sidebar-name .void-sidebar-card:hover .void-sidebar-info {
-    filter: none;
-}
-
-/* Account tab avatar (inside settings dialog) */
-html.void-streamer-account-avatar [role="dialog"] .w-12.h-12 img {
-    filter: blur(6px);
-    transition: filter 0.2s ease;
-}
-
-html.void-streamer-account-avatar [role="dialog"] .w-12.h-12:hover img {
-    filter: none;
-}
-
-/* Account tab username */
-html.void-streamer-account-name [role="dialog"] .p-1.min-w-0.text-sm>.text-sm.font-medium {
-    filter: blur(6px);
-    transition: filter 0.2s ease;
-}
-
-html.void-streamer-account-name [role="dialog"] .p-1.min-w-0.text-sm:hover>.text-sm.font-medium {
-    filter: none;
-}
-
-/* Account tab email */
-html.void-streamer-account-email [role="dialog"] .p-1.min-w-0.text-sm>.text-secondary.truncate {
-    filter: blur(6px);
-    transition: filter 0.2s ease;
-}
-
-html.void-streamer-account-email [role="dialog"] .p-1.min-w-0.text-sm:hover>.text-secondary.truncate {
-    filter: none;
-}
-
-/* Account tab birth year */
-html.void-streamer-account-age [role="dialog"] .text-fg-secondary.font-normal {
-    filter: blur(6px);
-    transition: filter 0.2s ease;
-}
-
-html.void-streamer-account-age [role="dialog"] .text-fg-secondary.font-normal:hover {
-    filter: none;
-}
-
-/* Conversation titles in sidebar (pinned + recent buckets) */
-html.void-streamer-conversations [data-sidebar="content"] a[href*="/c/"]>span {
-    filter: blur(6px);
-    transition: filter 0.2s ease;
-}
-
-html.void-streamer-conversations [data-sidebar="content"] a[href*="/c/"]:hover>span {
-    filter: none;
-}
-
-/* Project names in sidebar */
-html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]>span {
-    filter: blur(6px);
-    transition: filter 0.2s ease;
-}
-
-html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>span {
-    filter: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    html.void-streamer-sidebar-avatar [data-sidebar="footer"] button[data-state]>div,
-    html.void-streamer-sidebar-name .void-sidebar-info,
-    html.void-streamer-account-avatar [role="dialog"] .w-12.h-12 img,
-    html.void-streamer-account-name [role="dialog"] .p-1.min-w-0.text-sm>.text-sm.font-medium,
-    html.void-streamer-account-email [role="dialog"] .p-1.min-w-0.text-sm>.text-secondary.truncate,
-    html.void-streamer-account-age [role="dialog"] .text-fg-secondary.font-normal,
-    html.void-streamer-conversations [data-sidebar="content"] a[href*="/c/"]>span,
-    html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]>span { transition: none; }
-}
-`);
-
-  // src/plugins/streamerMode/index.ts
-  var CSS_CLASSES = {
-    sidebarAvatar: "void-streamer-sidebar-avatar",
-    sidebarName: "void-streamer-sidebar-name",
-    accountAvatar: "void-streamer-account-avatar",
-    accountName: "void-streamer-account-name",
-    accountEmail: "void-streamer-account-email",
-    accountAge: "void-streamer-account-age",
-    projects: "void-streamer-projects",
-    conversations: "void-streamer-conversations"
-  };
-  var settings19 = definePluginSettings({
-    sidebarAvatar: {
-      type: 3 /* BOOLEAN */,
-      description: "Blur your avatar in the sidebar.",
-      default: true
-    },
-    sidebarName: {
-      type: 3 /* BOOLEAN */,
-      description: "Blur your username in the sidebar.",
-      default: true
-    },
-    accountAvatar: {
-      type: 3 /* BOOLEAN */,
-      description: "Blur your avatar in the account settings tab.",
-      default: true
-    },
-    accountName: {
-      type: 3 /* BOOLEAN */,
-      description: "Blur your name in the account settings tab.",
-      default: true
-    },
-    accountEmail: {
-      type: 3 /* BOOLEAN */,
-      description: "Blur your email in the account settings tab.",
-      default: true
-    },
-    accountAge: {
-      type: 3 /* BOOLEAN */,
-      description: "Blur your birth year in the account settings tab.",
-      default: true
-    },
-    projects: {
-      type: 3 /* BOOLEAN */,
-      description: "Blur project names in the sidebar.",
-      default: true
-    },
-    conversations: {
-      type: 3 /* BOOLEAN */,
-      description: "Blur conversation titles in the sidebar.",
-      default: true
-    }
-  });
-  function syncClasses() {
-    const { classList } = document.documentElement;
-    for (const [key, cls] of Object.entries(CSS_CLASSES)) {
-      classList.toggle(cls, !!settings19.store[key]);
-    }
-  }
-  var streamerMode_default = definePlugin({
-    name: "StreamerMode",
-    icon: EyeOffIcon,
-    description: "Blurs personal information for privacy while streaming.",
-    authors: [Devs.Prism],
-    tags: ["privacy"],
-    settings: settings19,
-    start: syncClasses,
-    onSettingsChange: syncClasses,
-    stop() {
-      const { classList } = document.documentElement;
-      for (const cls of Object.values(CSS_CLASSES)) {
-        classList.remove(cls);
-      }
-    }
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/customInstructions/styles.css
-  registerStyle("customInstructions", `.void-ci-root {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.void-ci-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
-}
-
-.void-ci-card {
-    position: relative;
-    display: flex;
-    width: 100%;
-    align-items: center;
-    gap: 0.625rem;
-    border-radius: 1rem;
-    padding: 0.625rem 0.75rem;
-    height: 3.25rem;
-    color: hsl(var(--fg-primary));
-    background: hsl(var(--surface-l1));
-    box-shadow: inset 0 0 0 1px hsl(var(--border-l1));
-    cursor: pointer;
-}
-
-.void-ci-card:hover {
-    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
-}
-
-.void-ci-card-add {
-    justify-content: center;
-    box-shadow: none;
-    border: 1px dashed hsl(var(--border-l1));
-}
-
-.void-ci-avatar {
-    position: relative;
-    flex-shrink: 0;
-}
-
-.void-ci-card-name {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    min-width: 0;
-    flex: 1;
-    gap: 0.125rem;
-}
-
-.void-ci-card-name>* {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-}
-
-.void-ci-card-actions {
-    position: absolute;
-    inset-block: 0;
-    inset-inline-end: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.125rem;
-    opacity: 0;
-    transition: opacity 0.15s;
-}
-
-.void-ci-card:hover .void-ci-card-actions {
-    opacity: 1;
-}
-
-.void-ci-card:focus-visible {
-    outline: none;
-    box-shadow: inset 0 0 0 2px hsl(var(--fg-primary));
-}
-
-.void-ci-card-add:focus-visible {
-    box-shadow: none;
-    border-color: hsl(var(--fg-primary));
-}
-
-.void-ci-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.void-ci-label {
-    padding-inline: 0.75rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: hsl(var(--fg-primary));
-}
-
-.void-ci-input {
-    width: 100%;
-}
-
-.void-ci-textarea-wrap {
-    border: 1px solid hsl(var(--border-l2));
-    border-radius: 0.75rem;
-}
-
-.void-ci-textarea-wrap:focus-within {
-    border-color: hsl(var(--fg-primary));
-    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
-}
-
-.void-ci-textarea-wrap-error {
-    border-color: hsl(var(--fg-danger));
-}
-
-.void-ci-textarea-wrap-error:focus-within {
-    border-color: hsl(var(--fg-danger));
-    box-shadow: inset 0 0 0 1px hsl(var(--fg-danger));
-}
-
-.void-ci-textarea {
-    width: 100%;
-    min-height: 7.5rem;
-    padding: 0.75rem;
-    background: transparent;
-    border: none;
-    border-radius: 0.75rem;
-    color: hsl(var(--fg-primary));
-    font-size: 0.875rem;
-    resize: vertical;
-}
-
-.void-ci-textarea:focus,
-.void-ci-textarea:focus-visible {
-    outline: none;
-    box-shadow: none;
-}
-
-.void-ci-editor-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-inline: 0.25rem;
-}
-
-.void-ci-error-text {
-    color: hsl(var(--fg-danger));
-}
-
-.void-ci-trigger {
-    gap: 0.5rem;
-}
-
-.void-ci-menu-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .void-ci-card-actions {
-        transition: none;
-    }
-}
-`);
-
-  // src/plugins/customInstructions/index.tsx
-  var cl23 = classNameFactory("void-ci-");
-  var PixelAvatarModule = findByPropsLazy("PixelAvatar");
-  var CheckIcon = findExportedComponentLazy("CheckIcon");
-  var BookIcon = findExportedComponentLazy("BookIcon");
-  var PenIcon = findExportedComponentLazy("PenIcon");
-  var TrashIcon = findExportedComponentLazy("TrashIcon");
-  var PlusIcon2 = findExportedComponentLazy("PlusIcon");
-  var MAX_LENGTH = 4000;
-  var settings20 = definePluginSettings({
-    editor: {
-      type: 6 /* COMPONENT */,
-      component: () => /* @__PURE__ */ React.createElement(PresetsEditor, null)
-    }
-  }).withPrivateSettings();
-  function getPresets() {
-    return settings20.plain.presets ?? [];
-  }
-  function setPresets(presets) {
-    settings20.store.presets = presets;
-  }
-  function getAssignments() {
-    return settings20.plain.assignments ?? {};
-  }
-  function PresetCard({ preset, onEdit, onDelete }) {
-    return /* @__PURE__ */ React.createElement("div", {
-      role: "button",
-      className: cl23("card"),
-      onClick: onEdit
-    }, /* @__PURE__ */ React.createElement("div", {
-      className: cl23("avatar")
-    }, /* @__PURE__ */ React.createElement(PixelAvatarModule.PixelAvatar, {
-      seed: preset.id,
-      size: 32
-    })), /* @__PURE__ */ React.createElement("div", {
-      className: cl23("card-name")
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      size: "sm",
-      weight: "medium"
-    }, preset.name || "Untitled")), /* @__PURE__ */ React.createElement("div", {
-      className: cl23("card-actions")
-    }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
-      variant: "tertiary",
-      size: "xs",
-      shape: "square",
-      tooltipContent: "Edit",
-      onClick: (e) => {
-        e.stopPropagation();
-        onEdit();
-      }
-    }, /* @__PURE__ */ React.createElement(PenIcon, {
-      className: "size-3.5 text-secondary"
-    })), /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
-      variant: "tertiary",
-      size: "xs",
-      shape: "square",
-      tooltipContent: "Delete",
-      onClick: (e) => {
-        e.stopPropagation();
-        onDelete();
-      }
-    }, /* @__PURE__ */ React.createElement(TrashIcon, {
-      className: "size-3.5 text-secondary"
-    }))));
-  }
-  function PresetEditor({ preset, onUpdate, onClose }) {
-    const overLimit = preset.prompt.length > MAX_LENGTH;
-    return /* @__PURE__ */ React.createElement("div", {
-      className: cl23("editor")
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      size: "sm",
-      weight: "medium",
-      className: cl23("label")
-    }, "Name"), /* @__PURE__ */ React.createElement(Input, {
-      type: "text",
-      className: cl23("input"),
-      placeholder: "Preset name",
-      value: preset.name,
-      onChange: (e) => onUpdate({ ...preset, name: e.target.value }),
-      autoComplete: "off"
-    }), /* @__PURE__ */ React.createElement(Text2, {
-      size: "sm",
-      weight: "medium",
-      className: cl23("label")
-    }, "Instructions"), /* @__PURE__ */ React.createElement("div", {
-      className: cl23("textarea-wrap", { "textarea-wrap-error": overLimit })
-    }, /* @__PURE__ */ React.createElement(Textarea, {
-      className: cl23("textarea"),
-      placeholder: "How should Grok behave?",
-      value: preset.prompt,
-      onChange: (e) => onUpdate({ ...preset, prompt: e.target.value })
-    })), /* @__PURE__ */ React.createElement("div", {
-      className: cl23("editor-footer")
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      size: "xs",
-      color: overLimit ? undefined : "muted",
-      className: overLimit ? cl23("error-text") : undefined
-    }, preset.prompt.length, "/", MAX_LENGTH), /* @__PURE__ */ React.createElement(Button, {
-      variant: "secondary",
-      size: "sm",
-      shape: "rectangle",
-      onClick: onClose
-    }, "Done")));
-  }
-  function PresetsEditor() {
-    const presets = settings20.use(["presets"]).presets ?? [];
-    const [editingId, setEditingId] = useState(null);
-    const updatePreset = useCallback((updated) => {
-      setPresets(getPresets().map((p) => p.id === updated.id ? updated : p));
-    }, []);
-    const deletePreset = useCallback((id) => {
-      setPresets(getPresets().filter((p) => p.id !== id));
-      const a = { ...getAssignments() };
-      for (const [k, v] of Object.entries(a)) {
-        if (v === id)
-          delete a[k];
-      }
-      settings20.store.assignments = a;
-      setEditingId((prev) => prev === id ? null : prev);
-    }, []);
-    const addPreset = useCallback(() => {
-      const id = randomId();
-      setPresets([...getPresets(), { id, name: "", prompt: "" }]);
-      setEditingId(id);
-    }, []);
-    const editing = presets.find((p) => p.id === editingId);
-    return /* @__PURE__ */ React.createElement("div", {
-      className: cl23("root")
-    }, /* @__PURE__ */ React.createElement("div", {
-      className: cl23("grid")
-    }, presets.map((p) => /* @__PURE__ */ React.createElement(PresetCard, {
-      key: p.id,
-      preset: p,
-      onEdit: () => setEditingId(editingId === p.id ? null : p.id),
-      onDelete: () => deletePreset(p.id)
-    })), /* @__PURE__ */ React.createElement("div", {
-      role: "button",
-      className: cl23("card", "card-add"),
-      onClick: addPreset
-    }, /* @__PURE__ */ React.createElement(PlusIcon2, {
-      className: "size-4 text-secondary"
-    }), /* @__PURE__ */ React.createElement(Text2, {
-      size: "sm",
-      weight: "medium",
-      color: "muted"
-    }, "New"))), editing && /* @__PURE__ */ React.createElement(PresetEditor, {
-      preset: editing,
-      onUpdate: updatePreset,
-      onClose: () => setEditingId(null)
-    }));
-  }
-  function InstructionsMenu({ conversationId }) {
-    const presets = settings20.use(["presets"]).presets ?? [];
-    const assignments = settings20.use(["assignments"]).assignments ?? {};
-    const activePresetId = assignments[conversationId];
-    const assign = useCallback((presetId) => {
-      const a = { ...getAssignments() };
-      if (presetId)
-        a[conversationId] = presetId;
-      else
-        delete a[conversationId];
-      settings20.store.assignments = a;
-    }, [conversationId]);
-    if (!presets.length)
-      return null;
-    return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, {
-      className: cl23("trigger")
-    }, /* @__PURE__ */ React.createElement(BookIcon, {
-      size: 16
-    }), " Instructions"), /* @__PURE__ */ React.createElement(MenuSubContent, null, /* @__PURE__ */ React.createElement(MenuItem, {
-      onSelect: () => assign(),
-      className: cl23("menu-item")
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      size: "sm"
-    }, "None"), !activePresetId && /* @__PURE__ */ React.createElement(CheckIcon, {
-      className: "size-3.5 shrink-0"
-    })), presets.map((p) => /* @__PURE__ */ React.createElement(MenuItem, {
-      key: p.id,
-      onSelect: () => assign(p.id),
-      className: cl23("menu-item")
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      size: "sm"
-    }, p.name || "Untitled"), activePresetId === p.id && /* @__PURE__ */ React.createElement(CheckIcon, {
-      className: "size-3.5 shrink-0"
-    })))));
-  }
-  var customInstructions_default = definePlugin({
-    name: "CustomInstructions",
-    icon: ScrollTextIcon,
-    description: "Create instruction presets and assign them to conversations.",
-    authors: [Devs.Prism],
-    tags: ["chat"],
-    settings: settings20,
-    contextMenuItems: {
-      conversation: {
-        label: "Instructions",
-        render: ErrorBoundary.wrap(InstructionsMenu)
-      }
-    },
-    _getPrompt() {
-      const { conversationId } = ChatPageStore.useChatPageStore.getState();
-      if (!conversationId)
-        return;
-      const presetId = getAssignments()[conversationId];
-      if (!presetId)
-        return;
-      const preset = getPresets().find((p) => p.id === presetId);
-      return preset?.prompt?.trim() || undefined;
-    },
-    patches: [
-      {
-        find: ["customInstructions:e.customInstructions,customPersonality:e.customPersonality"],
-        all: true,
-        replacement: {
-          match: /customInstructions:(\i)\.customInstructions/g,
-          replace: "customInstructions:$1.customInstructions||$self._getPrompt()"
-        }
-      }
-    ]
-  });
-
-  // src/plugins/noDictation/index.ts
-  var STYLE_NAME8 = "noDictation";
-  var REFINEMENT_MARK = "void-no-dictation-refinement";
-  var BUTTON_CSS = `
-button[aria-label="Dictation"]:not([role="dialog"] *),
-button[aria-label^="Dictation ("]:not([role="dialog"] *),
-div:has(> button[aria-label="Dictation"]):not([role="dialog"] *),
-div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
-    display: none !important;
-}
-`;
-  var REFINEMENT_CSS = `.${REFINEMENT_MARK}{display:none!important}`;
-  var settings21 = definePluginSettings({
-    hideDictationRefinement: {
-      type: 3 /* BOOLEAN */,
-      description: 'Hide "Dictation Refinement" in the Grok Settings dialog (Behavior tab).',
-      default: true
-    }
-  });
-  function apply4() {
-    const rules = [BUTTON_CSS];
-    if (settings21.store.hideDictationRefinement)
-      rules.push(REFINEMENT_CSS);
-    registerStyle(STYLE_NAME8, rules.join(`
-`));
-  }
-  var noDictation_default = definePlugin({
-    name: "NoDictation",
-    icon: MicOffIcon,
-    description: "Hide the Dictation (voice input) button from the chat input bar, and optionally Dictation Refinement in Settings.",
-    authors: [Devs.p],
-    tags: ["chat", "ui"],
-    enabledByDefault: true,
-    settings: settings21,
-    patches: [
-      {
-        find: 'settings.behavior.dictation-refinement.description","How much Grok refines your speech-to-text transcriptions',
-        replacement: {
-          match: /DISABLE_VOICE_MODE&&\(0,(\i)\.jsxs\)\(\i\.Fragment,\{/,
-          replace: `DISABLE_VOICE_MODE&&(0,$1.jsxs)("div",{className:"${REFINEMENT_MARK}",style:{display:"contents"},`
-        }
-      }
-    ],
-    start: apply4,
-    onSettingsChange: apply4,
     stop() {
       unregisterStyle(STYLE_NAME8);
     }
   });
 
-  // src/plugins/oneko/index.ts
-  var ONEKO_GIF = "https://raw.githubusercontent.com/adryd325/oneko.js/14bab15a755d0e35cd4ae19c931d96d306f99f42/oneko.gif";
-  var ONEKO_SCRIPT = '(function oneko(){const nekoEl=document.createElement("div");let nekoPosX=32,nekoPosY=32,mousePosX=0,mousePosY=0,frameCount=0,idleTime=0,idleAnimation=null,idleAnimationFrame=0;const nekoSpeed=10;const spriteSets={idle:[[-3,-3]],alert:[[-7,-3]],scratchSelf:[[-5,0],[-6,0],[-7,0]],scratchWallN:[[0,0],[0,-1]],scratchWallS:[[-7,-1],[-6,-2]],scratchWallE:[[-2,-2],[-2,-3]],scratchWallW:[[-4,0],[-4,-1]],tired:[[-3,-2]],sleeping:[[-2,0],[-2,-1]],N:[[-1,-2],[-1,-3]],NE:[[0,-2],[0,-3]],E:[[-3,0],[-3,-1]],SE:[[-5,-1],[-5,-2]],S:[[-6,-3],[-7,-2]],SW:[[-5,-3],[-6,-1]],W:[[-4,-2],[-4,-3]],NW:[[-1,0],[-1,-1]]};function init(){nekoEl.id="oneko";nekoEl.ariaHidden=true;nekoEl.style.width="32px";nekoEl.style.height="32px";nekoEl.style.position="fixed";nekoEl.style.pointerEvents="none";nekoEl.style.imageRendering="pixelated";nekoEl.style.left=nekoPosX-16+"px";nekoEl.style.top=nekoPosY-16+"px";nekoEl.style.zIndex=2147483647;nekoEl.style.backgroundImage="url(ONEKO_GIF_URL)";document.body.appendChild(nekoEl);document.addEventListener("mousemove",function(e){mousePosX=e.clientX;mousePosY=e.clientY});window.requestAnimationFrame(onAnimationFrame)}let lastFrameTimestamp;function onAnimationFrame(timestamp){if(!nekoEl.isConnected)return;if(!lastFrameTimestamp)lastFrameTimestamp=timestamp;if(timestamp-lastFrameTimestamp>100){lastFrameTimestamp=timestamp;frame()}window.requestAnimationFrame(onAnimationFrame)}function setSprite(name,frame){const sprite=spriteSets[name][frame%spriteSets[name].length];nekoEl.style.backgroundPosition=sprite[0]*32+"px "+sprite[1]*32+"px"}function resetIdleAnimation(){idleAnimation=null;idleAnimationFrame=0}function idle(){idleTime+=1;if(idleTime>10&&Math.floor(Math.random()*200)==0&&idleAnimation==null){let a=["sleeping","scratchSelf"];if(nekoPosX<32)a.push("scratchWallW");if(nekoPosY<32)a.push("scratchWallN");if(nekoPosX>window.innerWidth-32)a.push("scratchWallE");if(nekoPosY>window.innerHeight-32)a.push("scratchWallS");idleAnimation=a[Math.floor(Math.random()*a.length)]}switch(idleAnimation){case"sleeping":if(idleAnimationFrame<8){setSprite("tired",0);break}setSprite("sleeping",Math.floor(idleAnimationFrame/4));if(idleAnimationFrame>192)resetIdleAnimation();break;case"scratchWallN":case"scratchWallS":case"scratchWallE":case"scratchWallW":case"scratchSelf":setSprite(idleAnimation,idleAnimationFrame);if(idleAnimationFrame>9)resetIdleAnimation();break;default:setSprite("idle",0);return}idleAnimationFrame+=1}function frame(){frameCount+=1;const diffX=nekoPosX-mousePosX;const diffY=nekoPosY-mousePosY;const distance=Math.sqrt(diffX**2+diffY**2);if(distance<nekoSpeed||distance<48){idle();return}idleAnimation=null;idleAnimationFrame=0;if(idleTime>1){setSprite("alert",0);idleTime=Math.min(idleTime,7);idleTime-=1;return}let direction;direction=diffY/distance>0.5?"N":"";direction+=diffY/distance<-0.5?"S":"";direction+=diffX/distance>0.5?"W":"";direction+=diffX/distance<-0.5?"E":"";setSprite(direction,frameCount);nekoPosX-=(diffX/distance)*nekoSpeed;nekoPosY-=(diffY/distance)*nekoSpeed;nekoPosX=Math.min(Math.max(16,nekoPosX),window.innerWidth-16);nekoPosY=Math.min(Math.max(16,nekoPosY),window.innerHeight-16);nekoEl.style.left=nekoPosX-16+"px";nekoEl.style.top=nekoPosY-16+"px"}init()})();';
-  var oneko_default = definePlugin({
-    name: "Oneko",
-    icon: CatIcon,
-    description: "Cat follows your mouse cursor.",
-    authors: [Devs.adryd],
-    tags: ["ui"],
-    cleanupSelectors: ["#oneko"],
-    start() {
-      const s = ONEKO_SCRIPT.replace("ONEKO_GIF_URL", ONEKO_GIF);
-      const el = document.createElement("script");
-      el.src = URL.createObjectURL(new Blob([s], { type: "text/javascript" }));
-      document.head.appendChild(el);
-      el.addEventListener("load", () => {
-        el.remove();
-        URL.revokeObjectURL(el.src);
-      }, { once: true });
-    }
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/headerHover.css
-  registerStyle("headerHover", `/*
- * Void++, a modification for grok.com
- * Copyright (c) 2026 Void++ Contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-/* stylelint-disable no-descending-specificity */
-
-@media (width >= 48rem) {
-    [data-sidebar="sidebar"] [data-void-bots-plus],
-    [data-sidebar="sidebar"] .void-bots-plus,
-    [data-sidebar="sidebar"] button[aria-label="New bot"],
-    [data-sidebar="sidebar"] [data-void-chats-plus],
-    [data-sidebar="sidebar"] .void-chats-plus,
-    [data-sidebar="sidebar"] button[aria-label="Add project"],
-    [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"] > :first-child :is(button, [role="button"]):not([aria-expanded]) {
-        opacity: 0 !important;
-        transition: opacity 0.15s ease;
-    }
-
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-bots-plus],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-bots-plus,
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="New bot"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-chats-plus],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-chats-plus,
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="Add project"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
-    [data-sidebar="sidebar"] :has(> :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus)):is(:hover, :focus-within) > :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus),
-    [data-sidebar="sidebar"] [data-void-bots-plus]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] .void-bots-plus:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="New bot"]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] [data-void-chats-plus]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] .void-chats-plus:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="Add project"]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]) {
-        opacity: 1 !important;
-    }
-}
-
-@media (width >= 48rem) and (prefers-reduced-motion: reduce) {
-    [data-sidebar="sidebar"] [data-void-bots-plus],
-    [data-sidebar="sidebar"] .void-bots-plus,
-    [data-sidebar="sidebar"] button[aria-label="New bot"],
-    [data-sidebar="sidebar"] [data-void-chats-plus],
-    [data-sidebar="sidebar"] .void-chats-plus,
-    [data-sidebar="sidebar"] button[aria-label="Add project"],
-    [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"] > :first-child :is(button, [role="button"]):not([aria-expanded]) {
-        transition: none;
-    }
-}
-`);
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/styles.css
-  registerStyle("betterSidebar", `.group.peer [data-sidebar="sidebar"] + div,
-.group.peer [data-sidebar="content"] > .grow {
-    cursor: default !important;
-}
-
-.group.peer [data-sidebar="sidebar"] + div::after {
-    background-color: transparent !important;
-}
-
-.void-sidebar-card {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.375rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-    min-width: 0;
-    flex: 1;
-}
-
-.void-sidebar-card:hover {
-    background-color: hsl(var(--surface-l2));
-}
-
-.void-sidebar-card button[data-state] {
-    pointer-events: none;
-    background-color: transparent !important;
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-.void-sidebar-info {
-    min-width: 0;
-    overflow: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .void-sidebar-card { transition: none; }
-}
-
-.void-sidebar-name,
-.void-sidebar-plan {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    user-select: none;
-}
-
-/* stylelint-disable-next-line selector-class-pattern */
-.group\\/sidebar-menu-item:hover .void-sel-wrap {
-    display: inline-flex;
-}
-`);
-
-  // src/plugins/betterSidebar/index.tsx
-  var logger29 = new Logger("BetterSidebar");
-  var cl24 = classNameFactory("void-sidebar-");
-  var settings22 = definePluginSettings({
-    clickToToggle: {
-      type: 3 /* BOOLEAN */,
-      description: "Click anywhere on the sidebar to toggle it.",
-      default: false
-    },
-    defaultCollapsed: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the sidebar collapsed on page load.",
-      default: false
-    },
-    botsDefaultCollapsed: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the Bots section collapsed on page load.",
-      default: true
-    },
-    chatsDefaultExpanded: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the Chats section expanded on page load.",
-      default: false
-    },
-    projectsDefaultCollapsed: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the Projects section collapsed on page load.",
-      default: false
-    },
-    batchSelect: {
-      type: 3 /* BOOLEAN */,
-      description: "Show checkboxes on conversations for bulk selection and deletion.",
-      default: true
-    },
-    titleRowHover: {
-      type: 3 /* BOOLEAN */,
-      description: "Show Bots, Chats, and Projects header actions only when hovering that section, like the expand chevron.",
-      default: true
-    },
-    chatsPlus: {
-      type: 3 /* BOOLEAN */,
-      description: "Show a plus on the Chats header that starts a new chat.",
-      default: true
-    }
-  });
-  migrateSettingsToPlugin("BetterSidebar", "SidebarHeaderHover", "titleRowHover", "chatsPlus");
-  migrateSettingsToPlugin("BetterSidebar", "BotsPlusHover", "titleRowHover", "chatsPlus");
-  var BTN_CLASS = "void-chats-plus flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary hover:bg-button-ghost-hover hover:text-primary focus:outline-none focus-visible:bg-button-ghost-hover";
-  var BOTS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-bots-plus], .void-bots-plus)";
-  var CHATS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-chats-plus], .void-chats-plus)";
-  var CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
-  var PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
-  var PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
-  var botsCollapseObserver = null;
-  var botsCollapseTimer = null;
-  var chatsExpandObserver = null;
-  var chatsExpandTimer = null;
-  var projectsCollapseObserver = null;
-  var projectsCollapseTimer = null;
-  function applyHeaderHover() {
-    if (settings22.store.titleRowHover)
-      enableStyle("headerHover");
-    else
-      disableStyle("headerHover");
-  }
-  function collapseBotsSection() {
-    const plus = document.querySelector(BOTS_PLUS_SEL);
-    if (!plus)
-      return false;
-    const group = plus.closest("[data-sidebar=group]");
-    if (!group)
-      return false;
-    const expanded = group.querySelector("button[aria-expanded=true]");
-    if (!expanded)
-      return true;
-    expanded.click();
-    return true;
-  }
-  function stopBotsCollapse() {
-    botsCollapseObserver?.disconnect();
-    botsCollapseObserver = null;
-    if (botsCollapseTimer != null) {
-      clearTimeout(botsCollapseTimer);
-      botsCollapseTimer = null;
-    }
-  }
-  function startBotsCollapse() {
-    stopBotsCollapse();
-    if (!settings22.store.botsDefaultCollapsed)
-      return;
-    let done = false;
-    const tick = () => {
-      if (done)
-        return;
-      if (collapseBotsSection()) {
-        done = true;
-        stopBotsCollapse();
-      }
-    };
-    tick();
-    if (done)
-      return;
-    botsCollapseObserver = new MutationObserver(tick);
-    botsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
-    botsCollapseTimer = setTimeout(() => {
-      done = true;
-      stopBotsCollapse();
-    }, 1e4);
-  }
-  function resetChatsCollapsedStorage() {
-    if (!settings22.store.chatsDefaultExpanded)
-      return;
-    try {
-      localStorage.removeItem(CHATS_COLLAPSED_KEY);
-    } catch {}
-  }
-  function chatsGroup() {
-    const plus = document.querySelector(CHATS_PLUS_SEL);
-    if (plus)
-      return plus.closest("[data-sidebar=group]");
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!sidebar)
-      return null;
-    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
-      const label = (btn.getAttribute("aria-label") ?? "").trim();
-      if (label === "Chats" || label === "History")
-        return btn.closest("[data-sidebar=group]");
-    }
-    const bots = document.querySelector(BOTS_PLUS_SEL)?.closest("[data-sidebar=group]");
-    const next = bots?.nextElementSibling;
-    return next?.matches("[data-sidebar=group]") ? next : null;
-  }
-  function expandChatsSection() {
-    const group = chatsGroup();
-    if (!group)
-      return false;
-    const collapsed = group.querySelector("button[aria-expanded=false]");
-    if (!collapsed)
-      return true;
-    collapsed.click();
-    return true;
-  }
-  function stopChatsExpand() {
-    chatsExpandObserver?.disconnect();
-    chatsExpandObserver = null;
-    if (chatsExpandTimer != null) {
-      clearTimeout(chatsExpandTimer);
-      chatsExpandTimer = null;
-    }
-  }
-  function startChatsExpand() {
-    stopChatsExpand();
-    if (!settings22.store.chatsDefaultExpanded)
-      return;
-    resetChatsCollapsedStorage();
-    let done = false;
-    const tick = () => {
-      if (done)
-        return;
-      if (expandChatsSection()) {
-        done = true;
-        stopChatsExpand();
-      }
-    };
-    tick();
-    if (done)
-      return;
-    chatsExpandObserver = new MutationObserver(tick);
-    chatsExpandObserver.observe(document.documentElement, { childList: true, subtree: true });
-    chatsExpandTimer = setTimeout(() => {
-      done = true;
-      stopChatsExpand();
-    }, 1e4);
-  }
-  function resetProjectsCollapsedStorage() {
-    if (!settings22.store.projectsDefaultCollapsed)
-      return;
-    try {
-      localStorage.setItem(PROJECTS_COLLAPSED_KEY, "true");
-    } catch {}
-  }
-  function projectsGroup() {
-    const action = document.querySelector(PROJECTS_ACTION_SEL);
-    if (action)
-      return action.closest("[data-sidebar=group]");
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!sidebar)
-      return null;
-    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
-      const label = (btn.getAttribute("aria-label") ?? "").trim();
-      if (label === "Projects")
-        return btn.closest("[data-sidebar=group]");
-    }
-    return null;
-  }
-  function collapseProjectsSection() {
-    const group = projectsGroup();
-    if (!group)
-      return false;
-    const expanded = group.querySelector("button[aria-expanded=true]");
-    if (!expanded)
-      return true;
-    expanded.click();
-    return true;
-  }
-  function stopProjectsCollapse() {
-    projectsCollapseObserver?.disconnect();
-    projectsCollapseObserver = null;
-    if (projectsCollapseTimer != null) {
-      clearTimeout(projectsCollapseTimer);
-      projectsCollapseTimer = null;
-    }
-  }
-  function startProjectsCollapse() {
-    stopProjectsCollapse();
-    if (!settings22.store.projectsDefaultCollapsed)
-      return;
-    resetProjectsCollapsedStorage();
-    let done = false;
-    const tick = () => {
-      if (done)
-        return;
-      if (collapseProjectsSection()) {
-        done = true;
-        stopProjectsCollapse();
-      }
-    };
-    tick();
-    if (done)
-      return;
-    projectsCollapseObserver = new MutationObserver(tick);
-    projectsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
-    projectsCollapseTimer = setTimeout(() => {
-      done = true;
-      stopProjectsCollapse();
-    }, 1e4);
-  }
-  function newChat(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    const native = document.querySelector('[data-testid="new-chat"]');
-    if (native) {
-      native.click();
-      return;
-    }
-    const { route, push } = RoutingStore.useRoutingStore.getState();
-    const teamId = route.teamId ?? null;
-    const { workspaceId } = route;
-    if (workspaceId) {
-      push({ page: "workspace", workspaceId, tab: "conversations", teamId });
-      const chat = ChatPageStore.useChatPageStore.getState();
-      chat.setProjectId(workspaceId);
-      chat.setConversationId(undefined);
-      return;
-    }
-    ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
-    push({ page: "main", teamId });
-  }
-  var ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
-    if (!settings22.use(["chatsPlus"]).chatsPlus)
-      return null;
-    return /* @__PURE__ */ React.createElement("button", {
-      type: "button",
-      className: BTN_CLASS,
-      "aria-label": "New chat",
-      "data-void-chats-plus": "",
-      onClick: newChat
-    }, /* @__PURE__ */ React.createElement(PlusIcon, {
-      size: 14
-    }));
-  }, null);
-  function UserCard({ AvatarMenu }) {
-    const { open: open2 } = SidebarComponents.useSidebar();
-    const { user } = SessionStore.useSession();
-    const bestSubscription = SubscriptionsStore.useSubscriptionsStore((s) => s.bestSubscription);
-    const cardRef = useRef(null);
-    if (!open2 || !user)
-      return /* @__PURE__ */ React.createElement(AvatarMenu, null);
-    const forward = (e, type) => {
-      if (!e.isTrusted)
-        return;
-      cardRef.current?.querySelector("button[data-state]")?.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, button: 0, pointerId: 1, pointerType: "mouse" }));
-    };
-    return /* @__PURE__ */ React.createElement("div", {
-      ref: cardRef,
-      className: cl24("card"),
-      onPointerDown: (e) => forward(e, "pointerdown"),
-      onPointerUp: (e) => forward(e, "pointerup")
-    }, /* @__PURE__ */ React.createElement(AvatarMenu, null), /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      justifyContent: "center",
-      gap: "0",
-      className: cl24("info")
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      as: "span",
-      size: "sm",
-      weight: "medium",
-      className: cl24("name")
-    }, user.givenName ?? user.email?.split("@")[0] ?? "User"), /* @__PURE__ */ React.createElement(Text2, {
-      as: "span",
-      size: "xs",
-      color: "secondary",
-      className: cl24("plan")
-    }, getPlanName(bestSubscription, user.xSubscriptionType))));
-  }
-  var selection2 = createSelectionStore();
-  var CONVERSATION_PAGE = "chat";
-  var isConversationRoute = (route) => route?.page === CONVERSATION_PAGE;
-  async function deleteConversations(ids) {
-    const currentConvId = ChatPageStore.useChatPageStore.getState().conversationId;
-    if (currentConvId && ids.includes(currentConvId)) {
-      ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
-    }
-    const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
-    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger29.error("Failed to delete", id, e))));
-  }
-  function SelectCheckbox({ id, route }) {
-    const enabled = settings22.use(["batchSelect"]).batchSelect;
-    if (!enabled || !id || !isConversationRoute(route))
-      return null;
-    return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
-      selection: selection2,
-      id
-    });
-  }
-  var WrappedCheckbox = ErrorBoundary.wrap(SelectCheckbox, null);
-  var betterSidebar_default = definePlugin({
-    name: "BetterSidebar",
-    icon: PanelLeftIcon,
-    description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
-    authors: [Devs.Prism, Devs.p],
-    tags: ["ui"],
-    enabledByDefault: true,
-    settings: settings22,
-    managedStyle: "betterSidebar",
-    _ChatsPlus: () => createElement(ChatsPlus),
-    _UserCard: ErrorBoundary.wrap(UserCard),
-    _renderActionBar: ErrorBoundary.wrap(() => /* @__PURE__ */ React.createElement(SelectionActionBar, {
-      selection: selection2,
-      noun: "conversation",
-      title: "Delete conversations",
-      onDelete: deleteConversations
-    }), null),
-    _wrapCheckbox(item, id, route) {
-      return createElement(Fragment, null, createElement(WrappedCheckbox, { id, route }), item);
-    },
-    _wrapSidebarClick(onClick2, id, route) {
-      return (e) => {
-        if (id && settings22.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
-          e.preventDefault();
-          e.stopPropagation();
-          selection2.toggle(id);
-          return;
-        }
-        onClick2?.(e);
-      };
-    },
-    _defaultOpen() {
-      return !settings22.store.defaultCollapsed;
-    },
-    _botsDefaultCollapsed() {
-      return settings22.store.botsDefaultCollapsed;
-    },
-    _chatsCollapsedInit() {
-      resetChatsCollapsedStorage();
-      return false;
-    },
-    _projectsCollapsedInit() {
-      resetProjectsCollapsedStorage();
-      return true;
-    },
-    _projectsAutoExpand() {
-      return !settings22.store.projectsDefaultCollapsed;
-    },
-    _onSidebarClick() {
-      if (!settings22.store.clickToToggle)
-        return;
-      return (e) => {
-        const target = e.target;
-        if (target.closest("button,a,input,[role=button],[data-sidebar=trigger],[data-sidebar=footer]"))
-          return;
-        e.currentTarget.closest("[data-state]")?.querySelector("[data-sidebar=trigger]")?.click();
-      };
-    },
-    start() {
-      selection2.clear();
-      applyHeaderHover();
-      resetChatsCollapsedStorage();
-      resetProjectsCollapsedStorage();
-      startBotsCollapse();
-      startChatsExpand();
-      startProjectsCollapse();
-    },
-    onSettingsChange: applyHeaderHover,
-    stop() {
-      selection2.clear();
-      disableStyle("headerHover");
-      stopBotsCollapse();
-      stopChatsExpand();
-      stopProjectsCollapse();
-    },
-    patches: [
-      {
-        find: "AvatarDropdownMenu,{expanded:",
-        replacement: {
-          match: /\(0,(\i)\.jsx\)\((\i)\.AvatarDropdownMenu,\{/,
-          replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.AvatarDropdownMenu,"
-        }
-      },
-      {
-        find: "useSidebar must be used within a SidebarProvider",
-        all: true,
-        group: true,
-        replacement: [
-          {
-            match: /\{defaultOpen:(\i),open:/,
-            replace: "{defaultOpen:$1=$self._defaultOpen(),open:"
-          },
-          {
-            match: /data-sidebar":"sidebar",className:/,
-            replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),className:'
-          }
-        ]
-      },
-      {
-        find: '"Editing actions","Editing actions"',
-        all: true,
-        group: true,
-        replacement: [
-          {
-            match: /=(\(0,\i\.jsx\)\(\i,\{title:\i,editing:\i,[^}]{0,80}?validationErrorMessage:\i[^}]{0,40}?\}\))/,
-            replace: "=$self._wrapCheckbox($1,arguments[0].id,arguments[0].route)"
-          },
-          {
-            match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
-            replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4"
-          }
-        ]
-      },
-      {
-        find: '"sidebar-expand","Expand"',
-        replacement: {
-          match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
-          replace: "$self._renderActionBar(),$&"
-        }
-      },
-      {
-        find: '"sidebar.new-bot-btn.aria-label","New bot"',
-        replacement: [
-          {
-            match: /(\i)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover"\)/,
-            replace: '$1("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover")'
-          },
-          {
-            match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
-            replace: '$&,"data-void-bots-plus":""'
-          }
-        ]
-      },
-      {
-        find: '"sidebar-chats","Chats"',
-        replacement: {
-          match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-          replace: "$1,action:$self._ChatsPlus()"
-        }
-      },
-      {
-        find: '"sidebar.section-title","Bots"',
-        replacement: {
-          match: /\(0,(\i)\.useState\)\(!1\)(?=,\[.{0,30}\]=\(0,\1\.useState\)\(!1\),.{0,48}\.COLLAPSED_BOT_LIMIT)/,
-          replace: "(0,$1.useState)($self._botsDefaultCollapsed())"
-        }
-      },
-      {
-        find: "sidebar-history-collapsed",
-        replacement: {
-          match: /useLocalStorage\)\("sidebar-history-collapsed",!1,!1\)/,
-          replace: 'useLocalStorage)("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)'
-        }
-      },
-      {
-        find: "sidebar-projects-collapsed",
-        group: true,
-        replacement: [
-          {
-            match: /useLocalStorage\)\("sidebar-projects-collapsed",!1,!1\)/,
-            replace: 'useLocalStorage)("sidebar-projects-collapsed",$self._projectsCollapsedInit(),!1)'
-          },
-          {
-            match: /!(\i)\.current&&(\i)&&\((\i)\.length>0\|\|(\i)\.length>0\)&&\(\1\.current=!0,(\i)\(!1\)\)/,
-            replace: "!$1.current&&$2&&($3.length>0||$4.length>0)&&($1.current=!0,$self._projectsAutoExpand()&&$5(!1))"
-          }
-        ]
-      }
-    ]
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/placeholder/styles.css
-  registerStyle("placeholder", `.void-ph-root {
-    contain: layout;
-}
-
-.void-ph-textarea-wrap {
-    border: 1px solid hsl(var(--border-l2));
-    border-radius: 0.75rem;
-}
-
-.void-ph-textarea-wrap:focus-within {
-    border-color: hsl(var(--fg-primary));
-    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
-}
-
-.void-ph-textarea {
-    width: 100%;
-    min-height: 7.5rem;
-    padding: 0.75rem;
-    background: transparent;
-    border: none;
-    border-radius: 0.75rem;
-    color: hsl(var(--fg-primary));
-    font-size: 0.875rem;
-    resize: vertical;
-}
-
-.void-ph-textarea:focus,
-.void-ph-textarea:focus-visible {
-    outline: none;
-    box-shadow: none;
-}
-`);
-
-  // src/plugins/placeholder/index.tsx
-  var cl25 = classNameFactory("void-ph-");
-  var DEFAULT_PHRASES = [
-    "What do you want to know?",
-    "How can I help you today?",
-    "What's on your mind?"
-  ].join(`
-`);
-  function parsePhrases(raw) {
-    return String(raw ?? "").split(`
-`).map((s) => s.trim()).filter(Boolean);
-  }
-  var settings23 = definePluginSettings({
-    phrases: {
-      type: 6 /* COMPONENT */,
-      default: DEFAULT_PHRASES,
-      component: PhrasesEditor
-    }
-  }).withPrivateSettings();
-  function PhrasesEditor() {
-    const { phrases } = settings23.use(["phrases"]);
-    return /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "0.5rem",
-      className: cl25("root")
-    }, /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "0"
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      size: "sm",
-      weight: "medium"
-    }, "Phrases"), /* @__PURE__ */ React.createElement(Paragraph, null, "One placeholder per line. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl25("textarea-wrap")
-    }, /* @__PURE__ */ React.createElement(Textarea, {
-      className: cl25("textarea"),
-      value: phrases ?? DEFAULT_PHRASES,
-      onChange: (e) => {
-        settings23.store.phrases = e.target.value;
-      },
-      placeholder: DEFAULT_PHRASES
-    })));
-  }
-  var placeholder_default = definePlugin({
-    name: "Placeholder",
-    icon: TextCursorInputIcon,
-    description: "Replace the rotating chat and Grok Bot input placeholder.",
-    authors: [Devs.p],
-    tags: ["chat"],
-    settings: settings23,
-    _phrases() {
-      const lines = parsePhrases(settings23.store.phrases ?? DEFAULT_PHRASES);
-      return lines.length ? lines : null;
-    },
-    _inputPlaceholder(value) {
-      if (typeof value !== "string")
-        return value;
-      return this._phrases()?.[0] ?? value;
-    },
-    patches: [
-      {
-        find: `query-bar-placeholder.whats-on-your-mind","What's on your mind?"`,
-        replacement: {
-          match: /("query-bar-placeholder\.whats-on-your-mind","What's on your mind\?"\)\],\[\i,\i,\i,\i\]\),)(\i)=(\i\(\)),(\i)=(\i)\.map\(\2\)/,
-          replace: "$1$2=$3,$4=($self._phrases()??$5).map($2)"
-        }
-      },
-      {
-        find: "data-query-bar-mode-select",
-        all: true,
-        replacement: {
-          match: /("query-bar\.voice-connecting-placeholder","Connecting…"\):)(\i)(?=,isLoading)/,
-          replace: "$1$self._inputPlaceholder($2)"
-        }
-      }
-    ]
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/messageTimestamps/styles.css
-  registerStyle("messageTimestamps", `.void-timestamp {
-    margin-bottom: 0.125rem;
-}
-
-@media print {
-    .void-timestamp {
-        display: none;
-    }
-}
-`);
-
-  // src/plugins/messageTimestamps/time.ts
-  var FRESH_MS = 2 * 60 * 1000;
-  var BORROW_MS = 1000;
-  var MIN_MS = Date.UTC(2020, 0, 1);
-  var MAX_SKEW_MS = 24 * 60 * 60 * 1000;
-  var TIME_KEYS = ["thinkingStartTime", "createTime", "create_time", "createdAt", "created_at"];
-  function isFresh(ms, now = Date.now()) {
-    return Math.abs(now - ms) < FRESH_MS;
-  }
-  function inRange(ms, now = Date.now()) {
-    return Number.isFinite(ms) && ms >= MIN_MS && ms <= now + MAX_SKEW_MS;
-  }
-  function fromUnixish(n, now = Date.now()) {
-    if (!Number.isFinite(n) || n <= 0)
-      return null;
-    const ms = n < 1000000000000 ? n * 1000 : n;
-    return inRange(ms, now) ? Math.round(ms) : null;
-  }
-  function parseTime(value, now = Date.now()) {
-    if (value == null || value === "")
-      return null;
-    if (typeof value === "number")
-      return fromUnixish(value, now);
-    if (typeof value === "bigint")
-      return fromUnixish(Number(value), now);
-    if (value instanceof Date) {
-      const t = value.getTime();
-      return Number.isNaN(t) || !inRange(t, now) ? null : t;
-    }
-    if (typeof value === "string") {
-      const s = value.trim();
-      if (!s)
-        return null;
-      if (/^\d+(\.\d+)?$/.test(s))
-        return fromUnixish(Number(s), now);
-      const t = Date.parse(s);
-      return Number.isNaN(t) || !inRange(t, now) ? null : t;
-    }
-    if (typeof value !== "object")
-      return null;
-    const rec = value;
-    if (rec.seconds != null) {
-      const sec = typeof rec.seconds === "string" ? Number(rec.seconds) : Number(rec.seconds);
-      const nanos = Number(rec.nanos) || 0;
-      if (!Number.isFinite(sec))
-        return null;
-      const ms = sec * 1000 + Math.floor(nanos / 1e6);
-      return inRange(ms, now) ? Math.round(ms) : null;
-    }
-    if (rec.$date != null) {
-      const date = rec.$date;
-      if (date && typeof date === "object" && "$numberLong" in date) {
-        return parseTime(date.$numberLong, now);
-      }
-      return parseTime(date, now);
-    }
-    if (rec.$numberLong != null)
-      return parseTime(rec.$numberLong, now);
-    return parseTime(rec.createTime ?? rec.create_time ?? rec.createdAt ?? rec.created_at, now);
-  }
-  function uuidTime(id, now = Date.now()) {
-    if (typeof id !== "string")
-      return null;
-    const compact = id.trim().replaceAll("-", "").toLowerCase();
-    if (compact.length !== 32)
-      return null;
-    if (compact.charAt(12) !== "7")
-      return null;
-    const variant = parseInt(compact.charAt(16), 16);
-    if (!Number.isFinite(variant) || (variant & 12) !== 8)
-      return null;
-    const ms = parseInt(compact.slice(0, 12), 16);
-    return inRange(ms, now) ? ms : null;
-  }
-  function asRecord(value) {
-    return value !== null && typeof value === "object" && !Array.isArray(value) ? value : null;
-  }
-  function recordId(record) {
-    const { responseId, _id } = record;
-    if (typeof responseId === "string" && responseId)
-      return responseId;
-    return typeof _id === "string" ? _id : "";
-  }
-  function isHumanSender(sender2) {
-    if (typeof sender2 !== "string")
-      return false;
-    const normalized = sender2.toLowerCase();
-    return normalized === "human" || normalized === "user";
-  }
-  function isOptimisticState(state2) {
-    if (typeof state2 !== "string")
-      return false;
-    const normalized = state2.toLowerCase();
-    return normalized === "optimistic" || normalized === "streaming";
-  }
-  function pickTimes(record, now = Date.now()) {
-    const out = [];
-    const seen = new Set;
-    const add = (value) => {
-      const ms = parseTime(value, now);
-      if (ms == null || seen.has(ms))
-        return;
-      seen.add(ms);
-      out.push(ms);
-    };
-    for (const key of TIME_KEYS)
-      add(record[key]);
-    const meta = asRecord(record.metadata);
-    if (meta) {
-      for (const key of TIME_KEYS)
-        add(meta[key]);
-    }
-    return out;
-  }
-  function oldestTrusted(values, now = Date.now()) {
-    let best = null;
-    for (const ms of values) {
-      if (ms == null || isFresh(ms, now))
-        continue;
-      if (best == null || ms < best)
-        best = ms;
-    }
-    return best;
-  }
-  function chooseTime(opts) {
-    const now = opts.now ?? Date.now();
-    const trusted = oldestTrusted([opts.stored, ...opts.fieldTimes, opts.uuid], now);
-    if (trusted != null)
-      return trusted;
-    return opts.stored ?? opts.fieldTimes[0] ?? opts.uuid ?? null;
-  }
-  function trustedTime(opts) {
-    const now = opts.now ?? Date.now();
-    return oldestTrusted([opts.stored ?? null, ...opts.fieldTimes, opts.uuid], now);
-  }
-  function shouldKeepStored(prev, incoming, now = Date.now()) {
-    if (incoming === prev)
-      return true;
-    if (isFresh(incoming, now) && incoming >= prev)
-      return true;
-    if (!isFresh(prev, now) && incoming > prev)
-      return true;
-    return false;
-  }
-  function preferHumanTime(own, borrowed) {
-    if (borrowed == null)
-      return own;
-    if (own == null || own > borrowed)
-      return borrowed;
-    return own;
-  }
-  function textKey(value) {
-    if (typeof value !== "string")
-      return "";
-    const s = value.trim();
-    if (!s)
-      return "";
-    const slice = s.slice(0, 240);
-    let h = 5381;
-    for (let i = 0;i < slice.length; i++)
-      h = Math.imul(h, 33) ^ slice.charCodeAt(i);
-    return (h >>> 0).toString(36);
-  }
-  function stampOf(rec, now) {
-    const id = recordId(rec);
-    const ms = trustedTime({ fieldTimes: pickTimes(rec, now), uuid: uuidTime(id, now), now });
-    return ms == null ? null : ms - BORROW_MS;
-  }
-  function nextNonHuman(records, from) {
-    for (let i = from;i < records.length; i++) {
-      if (!isHumanSender(records[i].sender))
-        return records[i];
-    }
-    return null;
-  }
-  function childTime(id, records, now = Date.now()) {
-    if (!id)
-      return null;
-    for (const rec of records) {
-      if (rec.parentResponseId !== id || isHumanSender(rec.sender))
-        continue;
-      const ms = parseTime(rec.thinkingStartTime, now);
-      if (ms != null)
-        return ms - BORROW_MS;
-    }
-    return null;
-  }
-  function authoritativeTime(rec, records, now = Date.now()) {
-    if (isHumanSender(rec.sender))
-      return childTime(recordId(rec), records, now);
-    return parseTime(rec.thinkingStartTime, now);
-  }
-  function neighborTime(id, records, now = Date.now()) {
-    if (!id)
-      return null;
-    let next = null;
-    for (let i = 0;i < records.length; i++) {
-      const rec = records[i];
-      const recId = recordId(rec);
-      if (rec.parentResponseId === id && !isHumanSender(rec.sender)) {
-        const ms = stampOf(rec, now);
-        if (ms != null)
-          return ms;
-      }
-      if (recId === id && next == null)
-        next = nextNonHuman(records, i + 1);
-    }
-    if (!next)
-      return null;
-    return stampOf(next, now);
-  }
-  function childTimeFromNodes(id, nodes, byId, now = Date.now()) {
-    if (!id || !nodes.length)
-      return null;
-    let nextId2 = "";
-    for (let i = 0;i < nodes.length; i++) {
-      const node = nodes[i];
-      const recId = recordId(node);
-      if (node.parentResponseId === id && !isHumanSender(node.sender)) {
-        const rec2 = byId[recId] ?? node;
-        const ms = stampOf(rec2, now);
-        if (ms != null)
-          return ms;
-      }
-      if (recId === id && !nextId2)
-        nextId2 = recordId(nextNonHuman(nodes, i + 1) ?? {});
-    }
-    if (!nextId2)
-      return null;
-    const rec = byId[nextId2] ?? nodes.find((n) => recordId(n) === nextId2);
-    return rec && !isHumanSender(rec.sender) ? stampOf(rec, now) : null;
-  }
-  function shouldPersistStamp(sender2, ms, stored, now = Date.now(), state2) {
-    if (stored != null)
-      return !shouldKeepStored(stored, ms, now);
-    if (isHumanSender(sender2) && isFresh(ms, now))
-      return isOptimisticState(state2);
-    return true;
-  }
-  function harvestResponses(value, now = Date.now()) {
-    const records = [];
-    collectRecords(value, 0, records, new Set);
-    const out = [];
-    const seen = new Set;
-    for (const rec of records) {
-      const id = recordId(rec);
-      if (!id || seen.has(id))
-        continue;
-      const authoritative = authoritativeTime(rec, records, now);
-      if (authoritative != null) {
-        seen.add(id);
-        out.push({ id, ms: authoritative, rec, authoritative: true });
-        continue;
-      }
-      const uuid = uuidTime(id, now);
-      const { sender: sender2, state: state2 } = rec;
-      const human = isHumanSender(sender2);
-      const fieldTimes = human && !isOptimisticState(state2) ? [] : pickTimes(rec, now);
-      let ms = chooseTime({ fieldTimes, stored: null, uuid, now });
-      if (human) {
-        if (isOptimisticState(state2)) {
-          if (ms == null)
-            continue;
-        } else {
-          ms = preferHumanTime(ms, neighborTime(id, records, now));
-          if (ms != null && isFresh(ms, now))
-            ms = null;
-        }
-      }
-      if (ms == null)
-        continue;
-      seen.add(id);
-      out.push({ id, ms, rec, authoritative: false });
-    }
-    return out;
-  }
-  function collectRecords(value, depth, out, seen) {
-    if (value == null || depth > 8)
-      return;
-    if (typeof value !== "object")
-      return;
-    if (seen.has(value))
-      return;
-    seen.add(value);
-    if (Array.isArray(value)) {
-      for (const item of value)
-        collectRecords(item, depth + 1, out, seen);
-      return;
-    }
-    const rec = value;
-    if (recordId(rec))
-      out.push(rec);
-    for (const child of Object.values(rec))
-      collectRecords(child, depth + 1, out, seen);
-  }
-
-  // src/plugins/messageTimestamps/index.tsx
-  var logger30 = new Logger("MessageTimestamps");
-  var STAMP_MAX = 5000;
-  var RESPONSE_URL = /\/(?:load-responses|share_links|response-node)(?:\/|\?|$)/i;
-  var settings24 = definePluginSettings({
-    showDate: {
-      type: 3 /* BOOLEAN */,
-      description: "Show the full date for messages older than today.",
-      default: true
-    },
-    hideOwnMessages: {
-      type: 3 /* BOOLEAN */,
-      default: false,
-      description: "Hide timestamps on your own messages."
-    }
-  }).withPrivateSettings();
-  var tick = createExternalStore();
-  var cache = null;
-  var origFetch = null;
-  var origXhrOpen = null;
-  var origXhrSend = null;
-  var origList = null;
-  var hookedWindow = null;
-  var xhrMeta = new WeakMap;
-  function pageWindow2() {
-    return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-  }
-  function stamps() {
-    if (cache)
-      return cache;
-    cache = new Map;
-    const raw = settings24.plain.stamps;
-    if (raw && typeof raw === "object") {
-      for (const [id, ms] of Object.entries(raw)) {
-        if (typeof ms === "number" && Number.isFinite(ms))
-          cache.set(id, ms);
-      }
-    }
-    return cache;
-  }
-  function persistNow() {
-    const next = {};
-    for (const [id, ms] of stamps())
-      next[id] = ms;
-    settings24.store.stamps = next;
-  }
-  var persist2 = debounce(persistNow, 400);
-  function remember(id, ms, sender2, state2, force = false) {
-    if (!id)
-      return false;
-    const map = stamps();
-    const prev = map.get(id) ?? null;
-    if (!force && !shouldPersistStamp(sender2, ms, prev, Date.now(), state2))
-      return false;
-    if (map.has(id))
-      map.delete(id);
-    map.set(id, ms);
-    while (map.size > STAMP_MAX) {
-      const oldest = map.keys().next().value;
-      if (oldest == null)
-        break;
-      map.delete(oldest);
-    }
-    persist2();
-    return prev !== ms;
-  }
-  function conversationIdOf(id, rec) {
-    if (typeof rec.conversationId === "string")
-      return rec.conversationId;
-    try {
-      const { byConversationId, nodesByConversationId } = ResponseStore.useResponseStore.getState();
-      for (const [cid, list] of Object.entries(byConversationId ?? {})) {
-        if (list?.some((r) => r.responseId === id))
-          return cid;
-      }
-      for (const [cid, nodes] of Object.entries(nodesByConversationId ?? {})) {
-        if (nodes?.some((n) => n.responseId === id))
-          return cid;
-      }
-    } catch (e) {
-      logger30.debug("conversation id lookup failed", e);
-    }
-    return "";
-  }
-  function userKeys(rec, id) {
-    const keys2 = [];
-    if (id)
-      keys2.push(`u:${id}`);
-    const { parentResponseId } = rec;
-    if (typeof parentResponseId === "string" && parentResponseId)
-      keys2.push(`u:p:${parentResponseId}`);
-    const text = typeof rec.message === "string" && rec.message ? rec.message : typeof rec.query === "string" ? rec.query : "";
-    const fp = textKey(text);
-    if (fp) {
-      const cid = conversationIdOf(id, rec);
-      keys2.push(cid ? `u:t:${cid}:${fp}` : `u:t:${fp}`);
-    }
-    return keys2;
-  }
-  function gatewayRecords(cid) {
-    const out = [];
-    try {
-      const { conversations } = MessageStore.useMessageStore.getState();
-      const slices = cid ? [conversations?.[cid]] : Object.values(conversations ?? {});
-      for (const slice of slices) {
-        for (const { status, content } of Object.values(slice?.nodes ?? {})) {
-          if (!content)
-            continue;
-          const { responseId, sender: sender2, parentResponseId, createTime, thinkingStartTime, state: state2 } = content;
-          out.push({
-            responseId,
-            sender: sender2,
-            parentResponseId,
-            thinkingStartTime,
-            createTime: status === "complete" ? undefined : createTime,
-            state: status === "ack-pending" ? "optimistic" : state2
-          });
-        }
-      }
-    } catch (e) {
-      logger30.debug("message store unavailable", e);
-    }
-    return out;
-  }
-  function gatewaySettled(cid, id) {
-    if (!cid)
-      return false;
-    try {
-      return MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id]?.status === "complete";
-    } catch (e) {
-      logger30.debug("message store unavailable", e);
-      return false;
-    }
-  }
-  function extraKeys(rec, id) {
-    const keys2 = [];
-    if (id)
-      keys2.push(`h:${id}`);
-    const { parentResponseId } = rec;
-    if (typeof parentResponseId === "string" && parentResponseId)
-      keys2.push(`h:${parentResponseId}`);
-    try {
-      const { byConversationId } = ResponseStore.useResponseStore.getState();
-      for (const [cid, list] of Object.entries(byConversationId ?? {})) {
-        const index = list?.findIndex((r) => r.responseId === id) ?? -1;
-        if (index < 0)
-          continue;
-        keys2.push(`h:${cid}:${index}`);
-        break;
-      }
-    } catch (e) {
-      logger30.debug("stable key lookup failed", e);
-    }
-    return keys2;
-  }
-  function storedMs(id, rec, user) {
-    const map = stamps();
-    const keys2 = user ? userKeys(rec, id) : [id, ...extraKeys(rec, id)];
-    for (const key of keys2) {
-      const ms = map.get(key);
-      if (ms != null)
-        return ms;
-    }
-    return null;
-  }
-  function rememberKeys(id, rec, ms, sender2, user, force = false) {
-    const { state: state2 } = rec;
-    let changed = false;
-    if (user) {
-      for (const key of userKeys(rec, id)) {
-        if (remember(key, ms, "human", state2, force))
-          changed = true;
-      }
-      return changed;
-    }
-    if (remember(id, ms, sender2, state2, force))
-      changed = true;
-    for (const key of extraKeys(rec, id)) {
-      if (remember(key, ms, sender2, state2, force))
-        changed = true;
-    }
-    return changed;
-  }
-  function storeRecords(id) {
-    try {
-      const { byId, byConversationId } = ResponseStore.useResponseStore.getState();
-      for (const list of Object.values(byConversationId ?? {})) {
-        if (list?.some((r) => r.responseId === id))
-          return list;
-      }
-      return Object.values(byId ?? {});
-    } catch (e) {
-      logger30.debug("response store unavailable", e);
-      return [];
-    }
-  }
-  function borrowedMs(id, cid) {
-    if (cid) {
-      const ms = neighborTime(id, gatewayRecords(cid));
-      if (ms != null)
-        return ms;
-    }
-    try {
-      const { byId, nodesByConversationId } = ResponseStore.useResponseStore.getState();
-      const lookup = byId;
-      for (const nodes of Object.values(nodesByConversationId ?? {})) {
-        const ms = childTimeFromNodes(id, nodes ?? [], lookup);
-        if (ms != null)
-          return ms;
-      }
-      const records = [
-        ...storeRecords(id),
-        ...Object.values(lookup).filter((r) => r != null)
-      ];
-      return neighborTime(id, records) ?? conversationCreateTime(id);
-    } catch (e) {
-      logger30.debug("node neighbor lookup failed", e);
-    }
-    return neighborTime(id, storeRecords(id)) ?? conversationCreateTime(id);
-  }
-  function conversationCreateTime(id) {
-    try {
-      const { byConversationId } = ResponseStore.useResponseStore.getState();
-      for (const [cid, list] of Object.entries(byConversationId ?? {})) {
-        const first = list?.find((r) => isHumanSender(r.sender));
-        if (first?.responseId !== id)
-          continue;
-        const conv = ConversationStore.useConversationStore.getState().byId?.[cid];
-        const ms = parseTime(conv?.createTime);
-        return ms != null && !isFresh(ms) ? ms : null;
-      }
-    } catch (e) {
-      logger30.debug("conversation time lookup failed", e);
-    }
-    return null;
-  }
-  function fullRecord(id, rec) {
-    if (!id)
-      return rec;
-    try {
-      const hit = asRecord(ResponseStore.useResponseStore.getState().byId?.[id]);
-      if (hit)
-        return { ...rec, ...hit };
-    } catch (e) {
-      logger30.debug("byId lookup failed", e);
-    }
-    return rec;
-  }
-  function resolveMs(response, isUser) {
-    const rec = asRecord(response);
-    if (!rec)
-      return null;
-    const id = recordId(rec);
-    const full = fullRecord(id, rec);
-    const human = isUser === true || isHumanSender(full.sender);
-    const sender2 = human ? "human" : full.sender;
-    const cid = id ? conversationIdOf(id, full) : "";
-    let authoritative = null;
-    if (id)
-      authoritative = human ? childTime(id, [...gatewayRecords(cid), ...storeRecords(id)]) : parseTime(full.thinkingStartTime);
-    if (authoritative != null) {
-      rememberKeys(id, full, authoritative, sender2, human, true);
-      return authoritative;
-    }
-    const stored = id ? storedMs(id, full, human) : null;
-    const fieldTimes = human && !isOptimisticState(full.state) || gatewaySettled(cid, id) ? [] : pickTimes(full);
-    let ms = chooseTime({
-      fieldTimes,
-      stored,
-      uuid: uuidTime(id)
-    });
-    if (human && id)
-      ms = preferHumanTime(ms, borrowedMs(id, cid));
-    if (id && ms != null)
-      rememberKeys(id, full, ms, sender2, human);
-    return ms;
-  }
-  function ingest(value) {
-    let changed = false;
-    for (const { id, ms, rec, authoritative } of harvestResponses(value)) {
-      const human = isHumanSender(rec.sender);
-      if (rememberKeys(id, rec, ms, rec.sender, human, authoritative))
-        changed = true;
-    }
-    if (changed)
-      tick.notify();
-  }
-  function requestUrl(input) {
-    if (typeof input === "string")
-      return input;
-    if (input instanceof URL)
-      return input.href;
-    try {
-      return input.url;
-    } catch {
-      return "";
-    }
-  }
-  function hookFetch() {
-    if (origFetch)
-      return;
-    const w = pageWindow2();
-    origFetch = w.fetch;
-    hookedWindow = w;
-    w.fetch = function voidMessageTimestampsFetch(input, init) {
-      const url = requestUrl(input);
-      const promise = origFetch.call(w, input, init);
-      if (!RESPONSE_URL.test(url))
-        return promise;
-      return promise.then((res) => {
-        try {
-          res.clone().json().then(ingest, () => {});
-        } catch (e) {
-          logger30.debug("fetch ingest failed", e);
-        }
-        return res;
-      });
-    };
-  }
-  function unhookFetch() {
-    if (!origFetch || !hookedWindow)
-      return;
-    hookedWindow.fetch = origFetch;
-    origFetch = null;
-    hookedWindow = null;
-  }
-  function ingestXhr(xhr) {
-    if (xhr.status < 200 || xhr.status >= 300)
-      return;
-    const { responseType } = xhr;
-    if (responseType === "json") {
-      ingest(xhr.response);
-      return;
-    }
-    if (responseType !== "" && responseType !== "text")
-      return;
-    const text = xhr.responseText;
-    if (!text)
-      return;
-    ingest(JSON.parse(text));
-  }
-  function hookXhr() {
-    if (origXhrOpen)
-      return;
-    const XHR = pageWindow2().XMLHttpRequest;
-    origXhrOpen = XHR.prototype.open;
-    origXhrSend = XHR.prototype.send;
-    XHR.prototype.open = function voidMessageTimestampsOpen(method, url, ...rest) {
-      try {
-        xhrMeta.set(this, requestUrl(url));
-      } catch (e) {
-        logger30.debug("xhr open failed", e);
-      }
-      return origXhrOpen.call(this, method, url, ...rest);
-    };
-    XHR.prototype.send = function voidMessageTimestampsSend(body) {
-      const url = xhrMeta.get(this) ?? "";
-      if (RESPONSE_URL.test(url)) {
-        this.addEventListener("load", () => {
-          try {
-            ingestXhr(this);
-          } catch (e) {
-            logger30.debug("xhr ingest failed", e);
-          }
-        }, { once: true });
-      }
-      return origXhrSend.call(this, body);
-    };
-  }
-  function unhookXhr() {
-    if (!origXhrOpen || !origXhrSend)
-      return;
-    const XHR = pageWindow2().XMLHttpRequest;
-    XHR.prototype.open = origXhrOpen;
-    XHR.prototype.send = origXhrSend;
-    origXhrOpen = null;
-    origXhrSend = null;
-  }
-  function hookListResponses() {
-    if (origList)
-      return;
-    try {
-      const { chatApi } = ApiClients;
-      origList = chatApi.chatListResponses;
-      chatApi.chatListResponses = function voidMessageTimestampsList(a) {
-        return origList.call(chatApi, a).then((data) => {
-          ingest(data);
-          return data;
-        });
-      };
-    } catch (e) {
-      origList = null;
-      logger30.debug("chatListResponses wrap skipped", e);
-    }
-  }
-  function unhookListResponses() {
-    if (!origList)
-      return;
-    try {
-      ApiClients.chatApi.chatListResponses = origList;
-    } catch (e) {
-      logger30.debug("chatListResponses unwrap skipped", e);
-    }
-    origList = null;
-  }
-  function formatTimestamp(ms, showDate) {
-    const date = new Date(ms);
-    const now = new Date;
-    const today = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
-    const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    if (!showDate || today)
-      return time;
-    return date.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + time;
-  }
-  var messageTimestamps_default = definePlugin({
-    name: "MessageTimestamps",
-    icon: ClockIcon,
-    description: "Shows timestamps on chat messages.",
-    authors: [Devs.Prism, Devs.p],
-    tags: ["chat"],
-    settings: settings24,
-    start() {
-      try {
-        hookFetch();
-        hookXhr();
-        hookListResponses();
-      } catch (e) {
-        logger30.warn("Failed to hook network", e);
-      }
-    },
-    stop() {
-      unhookFetch();
-      unhookXhr();
-      unhookListResponses();
-      persistNow();
-    },
-    zustand: {
-      ResponseStore: {
-        selector: (s) => {
-          let n = 0;
-          for (const list of Object.values(s.nodesByConversationId ?? {}))
-            n += list?.length ?? 0;
-          return `${Object.keys(s.byId ?? {}).length}:${n}`;
-        },
-        handler() {
-          try {
-            const { byId, nodesByConversationId } = ResponseStore.useResponseStore.getState();
-            ingest({
-              responses: Object.values(byId ?? {}),
-              nodes: Object.values(nodesByConversationId ?? {}).flat()
-            });
-          } catch (e) {
-            logger30.debug("store ingest failed", e);
-          }
-        }
-      },
-      MessageStore: {
-        selector: (s) => {
-          let n = 0;
-          for (const slice of Object.values(s.conversations ?? {}))
-            n += Object.keys(slice?.nodes ?? {}).length;
-          return n;
-        },
-        handler() {
-          ingest({ responses: gatewayRecords("") });
-        }
-      }
-    },
-    _renderTimestamp: ErrorBoundary.wrap(({ response, isUser }) => {
-      useExternalStore(tick);
-      const human = isUser === true || isHumanSender(response.sender);
-      if (settings24.store.hideOwnMessages && human)
-        return null;
-      const ms = resolveMs(response, isUser);
-      if (ms == null)
-        return null;
-      return /* @__PURE__ */ React.createElement(Text2, {
-        as: "span",
-        size: "xs",
-        color: "muted",
-        className: "void-timestamp"
-      }, formatTimestamp(ms, settings24.store.showDate));
-    }),
-    patches: [
-      {
-        find: "response-family:handleEditSave",
-        all: true,
-        replacement: {
-          match: /\(0,\i\.jsx\)\(\i\.MessageBubble,\{isUser:(\i),isIncognito:\i,responseId:(\i)\.responseId/,
-          replace: "$self._renderTimestamp({response:$2,isUser:$1}),$&"
-        }
-      }
-    ]
-  });
-
-  // src/plugins/cleaner/index.ts
-  var settings25 = definePluginSettings({
-    hideUpgradePlan: {
-      type: 3 /* BOOLEAN */,
-      description: "Hide the upgrade plan button in the user menu.",
-      default: true
-    },
-    hideUpsellCard: {
-      type: 3 /* BOOLEAN */,
-      description: "Hide the upsell card banner.",
-      default: true
-    },
-    hideUpsellSmall: {
-      type: 3 /* BOOLEAN */,
-      description: "Hide the small SuperGrok upsell banner.",
-      default: true
-    },
-    hideModelUpsell: {
-      type: 3 /* BOOLEAN */,
-      description: "Hide the upgrade prompt in the model selector.",
-      default: true
-    },
-    hideInaccessibleModels: {
-      type: 3 /* BOOLEAN */,
-      description: "Hide locked/inaccessible models in the model selector.",
-      default: true
-    },
-    hideNotificationBanner: {
-      type: 3 /* BOOLEAN */,
-      description: 'Hide the "Get notified when Grok finishes answering" banner.',
-      default: true
-    },
-    hideConnectX: {
-      type: 3 /* BOOLEAN */,
-      description: 'Hide the "Connect your \uD835\uDD4F account" upsell popout.',
-      default: true
-    }
-  });
-  var hideComponentPatch = (name, setting, all = true) => ({
-    find: `"${name}",0,`,
-    all,
-    replacement: {
-      match: new RegExp(`"${name}",0,`),
-      replace: `"${name}",0,$self.settings.store.${setting}?()=>null:`
-    }
-  });
-  var cleaner_default = definePlugin({
-    name: "Cleaner",
-    icon: BrushCleaningIcon,
-    description: "Hides upgrade nags and upsell banners.",
-    authors: [Devs.Prism, Devs.p],
-    tags: ["ui"],
-    enabledByDefault: true,
-    settings: settings25,
-    patches: [
-      {
-        find: '"user-dropdown.upgrade","Upgrade plan"',
-        all: true,
-        replacement: {
-          match: /,(\i)(?=\?null:.{0,160}"user-dropdown\.upgrade")/,
-          replace: ",$self.settings.store.hideUpgradePlan||$1"
-        }
-      },
-      {
-        find: "UPSELL_CARD_PRIORITY)",
-        all: true,
-        replacement: {
-          match: /(\(0,\i\.useIsUpsellLayerVisible\)\(\i\.UPSELL_CARD_PRIORITY\))/,
-          replace: "$1&&!$self.settings.store.hideUpsellCard"
-        }
-      },
-      hideComponentPatch("UpsellSuperGrokSmall", "hideUpsellSmall"),
-      hideComponentPatch("UpsellButton", "hideUpsellSmall", false),
-      {
-        find: "connect-x-upsell-dismissed",
-        replacement: {
-          match: /\.ENABLE_X_INTEGRATION&&(\i\.SHOW_CONNECT_X_UPSELL)/,
-          replace: ".ENABLE_X_INTEGRATION&&!$self.settings.store.hideConnectX&&$1"
-        }
-      },
-      hideComponentPatch("BrowserNotificationBanner", "hideNotificationBanner"),
-      {
-        find: ["mode-select.search-placeholder", "UPSELL_MODEL_SELECT_PRIORITY"],
-        all: true,
-        group: true,
-        replacement: [
-          {
-            match: /UPSELL_MODEL_SELECT_PRIORITY\),.{0,200}?if\(/,
-            replace: "$&$self.settings.store.hideModelUpsell||"
-          },
-          {
-            match: /upgradePrimaryModes:(\i),unavailablePrimaryModes:(\i)\}/,
-            replace: "upgradePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$1,unavailablePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$2}"
-          }
-        ]
-      }
-    ]
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/recentTopics/styles.css
-  registerStyle("recentTopics", `.void-rt-root,
-.void-rt-root:popover-open {
-    isolation: isolate;
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 2147483647 !important;
-    display: block !important;
-    width: 100vw !important;
-    height: 100dvh !important;
-    max-width: none !important;
-    max-height: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    border: none !important;
-    background: transparent !important;
-    color: inherit;
-    pointer-events: auto !important;
-}
-
-.void-rt-root::backdrop {
-    background: transparent;
-}
-
-html.void-rt-open [data-sidebar="sidebar"],
-html.void-rt-open [data-sidebar="gap"] {
-    z-index: 0 !important;
-}
-
-.void-rt-panel,
-.void-rt-card,
-.void-rt-meta,
-.void-rt-name,
-.void-rt-host,
-.void-rt-empty {
-    font-family: inherit;
-    letter-spacing: inherit;
-}
-
-.void-rt-panel,
-.void-rt-panel * {
-    box-sizing: border-box;
-}
-
-.void-rt-panel {
-    --void-rt-accent: hsl(var(--fg-primary));
-    --void-rt-card-width: clamp(136px, calc((100vw - 68px) / 5), 204px);
-    --void-rt-gap: 8px;
-    --void-rt-padding-panel: 12px;
-    --void-rt-padding-card: 8px;
-    --void-rt-border-card: 1px;
-    --void-rt-radius-panel: 16px;
-    --void-rt-radius-card: calc(var(--void-rt-radius-panel) - var(--void-rt-padding-panel));
-    --void-rt-radius-thumb: calc(var(--void-rt-radius-card) - var(--void-rt-padding-card) - var(--void-rt-border-card));
-    --void-rt-radius-icon: 8px;
-    --void-rt-radius-title-icon: 8px;
-    --void-rt-meta-inline-padding: 4px;
-    --void-rt-motion-card: 180ms cubic-bezier(0.22, 1, 0.36, 1);
-    --void-rt-motion-cover: 220ms cubic-bezier(0.22, 1, 0.36, 1);
-    --void-rt-thumb-stroke-inset: -0.5px;
-    --void-rt-thumb-stroke-radius-offset: 0.5px;
-    --void-rt-thumb-stroke-color: hsl(var(--border-l2));
-    --void-rt-title-icon-size: 16px;
-    --void-rt-title-icon-gap: 4px;
-
-    all: unset;
-    color-scheme: inherit;
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate3d(-50%, -50%, 0);
-    transform-origin: center center;
-    z-index: 1;
-    display: block;
-    width: fit-content;
-    max-width: calc(100vw - 24px);
-    overflow: auto hidden;
-    scrollbar-width: none;
-    color: hsl(var(--fg-primary));
-    background: hsl(var(--surface-l2));
-    border: 1px solid hsl(var(--border-l1));
-    border-radius: var(--void-rt-radius-panel);
-    box-shadow: 0 4px 16px hsl(var(--black) / 12%);
-    padding: var(--void-rt-padding-panel);
-    pointer-events: auto;
-    opacity: 0;
-    transition: opacity 90ms ease;
-    will-change: opacity;
-}
-
-.void-rt-panel::-webkit-scrollbar {
-    display: none;
-}
-
-.void-rt-panel[data-visible="true"] {
-    opacity: 1;
-}
-
-.void-rt-list {
-    display: grid;
-    grid-template-columns: repeat(var(--void-rt-count, 5), var(--void-rt-card-width));
-    gap: var(--void-rt-gap);
-    width: max-content;
-    max-width: 100%;
-    padding: 2px;
-}
-
-.void-rt-card {
-    all: unset;
-    box-sizing: border-box;
-    width: var(--void-rt-card-width);
-    min-width: var(--void-rt-card-width);
-    max-width: var(--void-rt-card-width);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    border-radius: var(--void-rt-radius-card);
-    border: var(--void-rt-border-card) solid transparent;
-    outline: 0;
-    background: transparent;
-    padding: var(--void-rt-padding-card);
-    color: hsl(var(--fg-primary));
-    cursor: pointer;
-    box-shadow: none;
-    transition:
-        border-color 140ms ease,
-        box-shadow var(--void-rt-motion-card);
-}
-
-.void-rt-card[data-active="true"] {
-    z-index: 1;
-    border-color: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 82%, hsl(var(--border-l2)));
-    background: transparent;
-    box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 55%, transparent);
-}
-
-.void-rt-card:focus-visible {
-    border-color: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 88%, hsl(var(--border-l2)));
-    box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 60%, transparent);
-}
-
-.void-rt-thumb {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    border-radius: var(--void-rt-radius-thumb);
-    background: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 14%, hsl(var(--surface-l1)));
-}
-
-.void-rt-thumb::after {
-    content: "";
-    position: absolute;
-    inset: var(--void-rt-thumb-stroke-inset);
-    z-index: 2;
-    border-radius: calc(var(--void-rt-radius-thumb) + var(--void-rt-thumb-stroke-radius-offset));
-    box-sizing: border-box;
-    border: 1px solid var(--void-rt-thumb-stroke-color);
-    box-shadow: none;
-    pointer-events: none;
-}
-
-.void-rt-shot {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    overflow: hidden;
-    pointer-events: none;
-    user-select: none;
-}
-
-.void-rt-shot,
-.void-rt-shot * {
-    pointer-events: none !important;
-    scrollbar-width: none;
-}
-
-.void-rt-thumb:has(.void-rt-shot) .void-rt-fallback {
-    display: none;
-}
-
-.void-rt-cover {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-    object-position: top center;
-}
-
-.void-rt-mark {
-    display: none !important;
-}
-
-.void-rt-page {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: 8px;
-    overflow: hidden;
-    padding: 8px 12px 12px;
-    background: hsl(var(--surface-l1));
-    color: hsl(var(--fg-primary));
-    font-family: inherit;
-}
-
-.void-rt-page-line {
-    display: -webkit-box;
-    align-self: flex-start;
-    width: fit-content;
-    max-width: 94%;
-    overflow: hidden;
-    color: hsl(var(--fg-secondary));
-    font-size: 11px;
-    font-weight: 400;
-    line-height: 1.35;
-    overflow-wrap: anywhere;
-    /* stylelint-disable-next-line property-no-vendor-prefix */
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
-    line-clamp: 4;
-}
-
-.void-rt-page-line-user,
-.void-rt-page-line[data-role="user"] {
-    align-self: flex-end;
-    width: fit-content;
-    max-width: 78%;
-    padding: 6px 8px;
-    border-radius: 12px 12px 4px 12px;
-    background: hsl(var(--surface-l2));
-    color: hsl(var(--fg-primary));
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-}
-
-.void-rt-page-line[data-role="assistant"] {
-    align-self: flex-start;
-    padding: 0;
-    border-radius: 0;
-    background: none;
-    color: hsl(var(--fg-secondary));
-}
-
-.void-rt-fallback {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.void-rt-favicon {
-    width: 38px;
-    height: 38px;
-    border-radius: var(--void-rt-radius-icon);
-    object-fit: cover;
-    display: block;
-}
-
-.void-rt-favicon[data-broken="true"],
-.void-rt-title-favicon[data-broken="true"] {
-    visibility: hidden;
-}
-
-.void-rt-meta {
-    min-width: 0;
-    display: grid;
-    gap: 4px;
-    padding: 0 var(--void-rt-meta-inline-padding);
-}
-
-.void-rt-name-row {
-    min-width: 0;
-}
-
-.void-rt-title-favicon {
-    display: none;
-}
-
-.void-rt-name {
-    min-width: 0;
-    display: block;
-    overflow: hidden;
-    color: hsl(var(--fg-primary));
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.16;
-    letter-spacing: inherit;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.void-rt-host {
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    overflow: hidden;
-    color: hsl(var(--fg-secondary));
-    font-size: 11px;
-    font-weight: 500;
-    line-height: 1.18;
-}
-
-.void-rt-folder {
-    width: 12px;
-    height: 12px;
-    flex: 0 0 12px;
-    display: block;
-}
-
-.void-rt-host-name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.void-rt-empty {
-    min-width: min(22rem, calc(100vw - 3rem));
-    padding: 16px 20px;
-    color: hsl(var(--fg-primary));
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.4;
-}
-
-.void-rt-panel[data-theme="dark"] {
-    color-scheme: dark;
-}
-`);
-
-  // src/plugins/recentTopics/index.tsx
-  var logger31 = new Logger("RecentTopics");
-  var cl26 = classNameFactory("void-rt-");
-  var HOME_KEY = "home";
-  var HOME_SEP = "home:";
-  var TRIGGER_CODES = new Set(["Backquote", "IntlBackslash"]);
-  var TRIGGER_KEYS = new Set(["`", "~", "·", "｀", "～", "Dead", "Process"]);
-  var TITLE_TAIL = /\s*[·|—–-]\s*Grok.*$/i;
-  var SKIP_LABEL = /^(more|history|today|yesterday|projects|new chat|new conversation|see all(?: chats| conversations)?|show all(?: chats| conversations)?|view all(?: chats| conversations)?|all chats|all conversations|查看全部|显示全部|查看所有|全部会话|所有对话)$/i;
-  var SKIP_NOISE = /^(copy|share|retry|edit|more|thinking|analyzing|searching|continue from here|what can i help with\??)$/i;
-  var TIME_TOKEN = /(?:^|\s)\d{1,2}:\d{2}\s*(?:am|pm)\b/gi;
-  var STATUS_TOKEN = /\b(?:connected to computer|continuing the(?: task)?|worked for \d+\s*m(?:\s*\d+\s*s)?|worked for \d+\s*s)\b/gi;
-  var COUNT_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => ({ label: String(n), value: n, default: n === 5 }));
-  var settings26 = definePluginSettings({
-    maxRecent: {
-      type: 4 /* SELECT */,
-      description: "How many recently opened conversations to show.",
-      options: COUNT_OPTIONS
-    },
-    includeHome: {
-      type: 3 /* BOOLEAN */,
-      description: "Include new-chat home pages in the switcher.",
-      default: true
-    }
-  }).withPrivateSettings();
-  var thumbs = new Map;
-  var wsNames = {};
-  var open2 = false;
-  var selected = 0;
-  var held = false;
-  var ctrlHeld = false;
-  var keys2 = null;
-  var host = null;
-  var paintedKey = "";
-  var sidebarSnap = null;
-  var pendingWs = new Set;
-  function isSkipLabel(name) {
-    const t = name.replaceAll(/\s+/g, " ").trim();
-    if (!t)
-      return false;
-    SKIP_LABEL.lastIndex = 0;
-    return SKIP_LABEL.test(t);
-  }
-  function usableName(name) {
-    const t = name.replaceAll(/\s+/g, " ").trim();
-    return t && !isSkipLabel(t) ? t : "";
-  }
-  function unique(ids) {
-    const seen = new Set;
-    const out = [];
-    for (const id of ids) {
-      if (seen.has(id))
-        continue;
-      seen.add(id);
-      out.push(id);
-    }
-    return out;
-  }
-  function readVisits() {
-    return settings26.plain.visits ?? [];
-  }
-  function maxCount() {
-    const n = Number(settings26.store.maxRecent);
-    return Number.isFinite(n) && n > 0 ? n : 5;
-  }
-  function capVisits(ids) {
-    const allowHome = settings26.store.includeHome;
-    return unique(ids).filter((id) => isHomeId(id) ? allowHome && (id === HOME_KEY || !!workspaceFromHomeId(id)) : !!id).slice(0, maxCount());
-  }
-  function pruneRecord(source, ids) {
-    const keep = {};
-    if (!source)
-      return keep;
-    for (const id of ids) {
-      if (source[id])
-        keep[id] = source[id];
-    }
-    return keep;
-  }
-  function sameList(a, b) {
-    return a.length === b.length && a.every((id, i) => id === b[i]);
-  }
-  function sameRecord(a, b) {
-    const src = a ?? {};
-    const keys3 = Object.keys(b);
-    if (Object.keys(src).length !== keys3.length)
-      return false;
-    return keys3.every((k) => src[k] === b[k]);
-  }
-  function assignRecord(key, next) {
-    if (sameRecord(settings26.plain[key], next))
-      return false;
-    settings26.store[key] = next;
-    return true;
-  }
-  var writing = false;
-  function writeVisits(next) {
-    if (writing)
-      return;
-    writing = true;
-    try {
-      const visits = capVisits(next);
-      const rawWs = pruneRecord(settings26.plain.workspaceByConv, visits);
-      const workspaceByConv = {};
-      for (const [id, value] of Object.entries(rawWs)) {
-        const ws = asWorkspaceId(value);
-        if (ws)
-          workspaceByConv[id] = ws;
-      }
-      const pages = pruneRecord(settings26.plain.pages, visits);
-      const usedWs = new Set(Object.values(workspaceByConv));
-      for (const id of visits) {
-        const ws = workspaceFromHomeId(id);
-        if (!ws)
-          continue;
-        usedWs.add(ws);
-        workspaceByConv[id] = ws;
-      }
-      const keepProjects = {};
-      for (const [id, name] of Object.entries(settings26.plain.projectNames ?? {})) {
-        const n = usableName(name);
-        if (usedWs.has(id) && n)
-          keepProjects[id] = n;
-      }
-      let changed = false;
-      if (!sameList(readVisits(), visits)) {
-        settings26.store.visits = visits;
-        changed = true;
-      }
-      if (assignRecord("titles", pruneRecord(settings26.plain.titles, visits)))
-        changed = true;
-      if (assignRecord("workspaceByConv", workspaceByConv))
-        changed = true;
-      if (assignRecord("pages", pages))
-        changed = true;
-      if (assignRecord("projectNames", keepProjects))
-        changed = true;
-      if (changed && open2)
-        paint2();
-    } finally {
-      writing = false;
-    }
-  }
-  function rememberTitle(id, title) {
-    const t = title?.trim();
-    if (!id || isHomeId(id) || !t)
-      return;
-    const prev = settings26.plain.titles ?? {};
-    if (prev[id] === t)
-      return;
-    settings26.store.titles = { ...prev, [id]: t };
-  }
-  function isHomeId(id) {
-    return id === HOME_KEY || id.startsWith(HOME_SEP);
-  }
-  function homeId(workspaceId) {
-    const ws = asWorkspaceId(workspaceId);
-    return ws ? HOME_SEP + ws : HOME_KEY;
-  }
-  function workspaceFromHomeId(id) {
-    return id.startsWith(HOME_SEP) ? asWorkspaceId(id.slice(HOME_SEP.length)) : "";
-  }
-  function routeConvId(route) {
-    if (!route)
-      return null;
-    if (route.conversationId)
-      return route.conversationId;
-    if (typeof route.chat === "string" && route.chat)
-      return route.chat;
-    if (route.page === "main")
-      return HOME_KEY;
-    if (route.page === "workspace" && asWorkspaceId(route.workspaceId) && !route.conversationId)
-      return homeId(route.workspaceId);
-    return null;
-  }
-  function projectIdFromUrl() {
-    const m = location.pathname.match(/^\/project\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i) ?? location.pathname.match(/^\/project\/(deepsearch)(?:\/|$)/i);
-    return m?.[1] ?? "";
-  }
-  function chatIdFromUrl() {
-    try {
-      const u = new URL(location.href);
-      const q = u.searchParams.get("chat");
-      if (q)
-        return q;
-      return u.pathname.match(/^\/c\/([^/?#]+)/i)?.[1] ?? "";
-    } catch {
-      return "";
-    }
-  }
-  var WS_ID = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|deepsearch)$/i;
-  function asWorkspaceId(value) {
-    if (typeof value === "string") {
-      const s = value.trim();
-      return WS_ID.test(s) ? s : "";
-    }
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        const id = asWorkspaceId(item);
-        if (id)
-          return id;
-      }
-      return "";
-    }
-    if (value && typeof value === "object") {
-      const rec = value;
-      return asWorkspaceId(rec.workspaceId ?? rec.id ?? rec.projectId);
-    }
-    return "";
-  }
-  function hrefFor(id, workspaceId) {
-    if (isHomeId(id)) {
-      const ws2 = workspaceFromHomeId(id) || asWorkspaceId(workspaceId);
-      return ws2 ? `/project/${ws2}` : "/";
-    }
-    const ws = asWorkspaceId(workspaceId);
-    if (!id)
-      return ws ? `/project/${ws}` : "/";
-    if (ws)
-      return `/project/${ws}?chat=${encodeURIComponent(id)}`;
-    return `/c/${encodeURIComponent(id)}`;
-  }
-  function hrefParts(href) {
-    if (!href)
-      return { ws: "", chat: "" };
-    try {
-      const u = new URL(href, location.origin);
-      const ws = asWorkspaceId(u.pathname.match(/^\/project\/([^/?#]+)/i)?.[1]);
-      const chat = u.searchParams.get("chat") || u.pathname.match(/^\/c\/([^/?#]+)/i)?.[1] || "";
-      return { ws, chat };
-    } catch {
-      return { ws: "", chat: "" };
-    }
-  }
-  function currentVisit() {
-    const urlChat = chatIdFromUrl();
-    if (urlChat)
-      return urlChat;
-    try {
-      const { conversationId, optimisticConversationId } = ChatPageStore.useChatPageStore.getState();
-      if (conversationId)
-        return conversationId;
-      if (optimisticConversationId)
-        return optimisticConversationId;
-    } catch (e) {
-      logger31.debug("ChatPageStore unavailable:", e);
-    }
-    try {
-      const fromRoute = routeConvId(RoutingStore.useRoutingStore.getState().route);
-      if (fromRoute != null)
-        return fromRoute;
-    } catch (e) {
-      logger31.debug("RoutingStore unavailable:", e);
-    }
-    const ws = projectIdFromUrl();
-    return ws ? homeId(ws) : null;
-  }
-  function idsFromHistory() {
-    try {
-      const { route, historyStack } = RoutingStore.useRoutingStore.getState();
-      const ids = [];
-      const add = (r) => {
-        const id = routeConvId(r);
-        if (id != null)
-          ids.push(id);
-      };
-      add(route);
-      for (let i = (historyStack?.length ?? 0) - 1;i >= 0; i--)
-        add(historyStack[i]);
-      return unique(ids);
-    } catch (e) {
-      logger31.debug("historyStack unavailable:", e);
-      return [];
-    }
-  }
-  function pageTitle() {
-    const raw = document.title.replace(TITLE_TAIL, "").trim();
-    if (!raw || /^grok$/i.test(raw))
-      return "";
-    return raw;
-  }
-  function lookup(id) {
-    try {
-      const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
-      return byId[id] ?? byIdWithWorkspaces[id] ?? list.find((c) => c.conversationId === id);
-    } catch (e) {
-      logger31.debug("Conversation lookup failed:", e);
-      return;
-    }
-  }
-  function titleOf(id) {
-    if (!id || isHomeId(id))
-      return "New chat";
-    const conv = lookup(id);
-    if (conv?.title?.trim())
-      return conv.title.trim();
-    const cached = settings26.plain.titles?.[id];
-    if (cached)
-      return cached;
-    if (id === currentVisit())
-      return pageTitle() || "Untitled";
-    return "Untitled";
-  }
-  function liveWorkspaceId() {
-    try {
-      const pid = asWorkspaceId(ChatPageStore.useChatPageStore.getState().projectId);
-      if (pid)
-        return pid;
-    } catch {}
-    try {
-      const { workspaceId } = RoutingStore.useRoutingStore.getState().route;
-      const id = asWorkspaceId(workspaceId);
-      if (id)
-        return id;
-    } catch {}
-    return asWorkspaceId(projectIdFromUrl());
-  }
-  function workspaceFromHistory(id) {
-    try {
-      const { route, historyStack } = RoutingStore.useRoutingStore.getState();
-      if (routeConvId(route) === id) {
-        const ws = asWorkspaceId(route.workspaceId);
-        if (ws)
-          return ws;
-      }
-      for (let i = (historyStack?.length ?? 0) - 1;i >= 0; i--) {
-        const r = historyStack[i];
-        if (routeConvId(r) === id) {
-          const ws = asWorkspaceId(r?.workspaceId);
-          if (ws)
-            return ws;
-        }
-      }
-    } catch {}
-    return "";
-  }
-  function convWorkspaceId(id) {
-    try {
-      const { byId, byIdWithWorkspaces } = ConversationStore.useConversationStore.getState();
-      const resolved = ConversationStore.resolveConversationProjectWorkspaceId?.(byId[id], byIdWithWorkspaces[id]);
-      const fromResolver = asWorkspaceId(resolved);
-      if (fromResolver)
-        return fromResolver;
-      const conv = byId[id] ?? byIdWithWorkspaces[id];
-      return asWorkspaceId(conv?.workspaceId) || asWorkspaceId(conv?.workspaces);
-    } catch (e) {
-      logger31.debug("convWorkspaceId failed:", e);
-      return asWorkspaceId(lookup(id)?.workspaceId) || asWorkspaceId(lookup(id)?.workspaces);
-    }
-  }
-  function workspaceFromDom(id) {
-    if (!id)
-      return "";
-    try {
-      for (const a of document.querySelectorAll("a[href]")) {
-        const href = a.getAttribute("href");
-        if (!href || !href.includes(id))
-          continue;
-        const { ws, chat } = hrefParts(href);
-        if (chat === id && ws)
-          return ws;
-      }
-    } catch {}
-    return "";
-  }
-  function shortOwnText(el) {
-    const parts = [];
-    for (const n of el.childNodes) {
-      if (n.nodeType === Node.TEXT_NODE) {
-        parts.push(n.textContent ?? "");
-        continue;
-      }
-      if (!(n instanceof HTMLElement))
-        continue;
-      if (n.matches("svg, a[href]"))
-        continue;
-      const nestedHref = n.getAttribute("href") ?? "";
-      if (nestedHref.includes("chat=") || nestedHref.includes("/c/"))
-        continue;
-      if (n.querySelector("a[href*='chat='], a[href*='/c/']"))
-        continue;
-      const t = (n.textContent ?? "").replaceAll(/\s+/g, " ").trim();
-      if (t.length > 0 && t.length <= 64)
-        parts.push(t);
-    }
-    const out = parts.join(" ").replaceAll(/\s+/g, " ").trim();
-    return out.length >= 2 && out.length <= 64 ? out : "";
-  }
-  function folderLabel(el) {
-    if (!el.querySelector("svg"))
-      return "";
-    return usableName(shortOwnText(el));
-  }
-  function projectNameFromAncestors(el) {
-    const sidebar = el.closest("[data-sidebar=sidebar]");
-    let cur = el.parentElement;
-    while (cur && cur !== sidebar) {
-      let sib = cur;
-      while (sib) {
-        const name = folderLabel(sib);
-        if (name)
-          return name;
-        sib = sib.previousElementSibling;
-      }
-      cur = cur.parentElement;
-    }
-    return "";
-  }
-  function invalidateSidebar() {
-    sidebarSnap = null;
-  }
-  function sidebarIndex() {
-    const empty = { wsByConv: {}, nameByWs: {}, nameByConv: {} };
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!sidebar)
-      return empty;
-    const key = `${sidebar.childElementCount}:${(sidebar.textContent ?? "").length}`;
-    if (sidebarSnap?.key === key)
-      return sidebarSnap.index;
-    const index = { wsByConv: {}, nameByWs: {}, nameByConv: {} };
-    let currentName = "";
-    const assignConv = (chat, ws, name) => {
-      if (!chat || !ws)
-        return;
-      index.wsByConv[chat] = ws;
-      const label = usableName(name || currentName || index.nameByWs[ws] || "");
-      if (label) {
-        index.nameByWs[ws] = label;
-        index.nameByConv[chat] = label;
-      }
-    };
-    for (const el of sidebar.querySelectorAll("a[href], button, [role='button']")) {
-      const { ws, chat } = hrefParts(el.getAttribute("href"));
-      if (chat) {
-        assignConv(chat, ws, currentName);
-        if (ws && !index.nameByConv[chat]) {
-          const up = usableName(projectNameFromAncestors(el));
-          if (up) {
-            index.nameByConv[chat] = up;
-            index.nameByWs[ws] ??= up;
-            currentName ||= up;
-          }
-        }
-        continue;
-      }
-      const label = shortOwnText(el) || folderLabel(el);
-      if (isSkipLabel(label) && !ws) {
-        currentName = "";
-        continue;
-      }
-      if (ws) {
-        const n = usableName(label);
-        if (n) {
-          currentName = n;
-          index.nameByWs[ws] = n;
-        } else if (isSkipLabel(label)) {
-          currentName = index.nameByWs[ws] || "";
-        }
-        continue;
-      }
-      const folder = folderLabel(el);
-      if (folder)
-        currentName = folder;
-    }
-    sidebarSnap = { key, index };
-    return index;
-  }
-  function workspaceFetchedEmpty(id) {
-    try {
-      const { byIdWithWorkspaces } = ConversationStore.useConversationStore.getState();
-      return !!byIdWithWorkspaces[id] && !convWorkspaceId(id);
-    } catch {
-      return false;
-    }
-  }
-  function routeWorkspaceFor(id) {
-    if (id === chatIdFromUrl())
-      return asWorkspaceId(projectIdFromUrl());
-    try {
-      const { route } = RoutingStore.useRoutingStore.getState();
-      const chat = route.conversationId || (typeof route.chat === "string" ? route.chat : "");
-      if (chat === id)
-        return asWorkspaceId(route.workspaceId);
-    } catch {}
-    return "";
-  }
-  function dropWorkspace(id) {
-    const prev = settings26.plain.workspaceByConv ?? {};
-    if (!prev[id])
-      return;
-    const next = { ...prev };
-    delete next[id];
-    settings26.store.workspaceByConv = next;
-  }
-  function workspaceOf(id) {
-    if (!id)
-      return "";
-    if (isHomeId(id)) {
-      const fromKey = workspaceFromHomeId(id);
-      if (fromKey)
-        return fromKey;
-      return id === currentVisit() ? liveWorkspaceId() : asWorkspaceId(settings26.plain.workspaceByConv?.[id]);
-    }
-    const fromConv = convWorkspaceId(id);
-    if (fromConv)
-      return fromConv;
-    if (workspaceFetchedEmpty(id))
-      return "";
-    const fromSidebar = sidebarIndex().wsByConv[id] || workspaceFromDom(id);
-    if (fromSidebar)
-      return fromSidebar;
-    const cached = asWorkspaceId(settings26.plain.workspaceByConv?.[id]);
-    if (cached)
-      return cached;
-    const fromHist = workspaceFromHistory(id);
-    if (fromHist)
-      return fromHist;
-    if (id === currentVisit())
-      return routeWorkspaceFor(id);
-    return "";
-  }
-  function readOpenProjectName() {
-    const idx = sidebarIndex();
-    const live = liveWorkspaceId();
-    if (live) {
-      const n = usableName(idx.nameByWs[live]);
-      if (n)
-        return n;
-    }
-    const current = currentVisit();
-    const ws = current ? workspaceOf(current) : "";
-    if (!current || !ws)
-      return "";
-    return usableName(idx.nameByConv[current] || idx.nameByWs[ws]);
-  }
-  function projectNameOf(id) {
-    if (!id)
-      return "";
-    const ws = workspaceOf(id);
-    if (!ws)
-      return "";
-    const idx = sidebarIndex();
-    const named = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || wsNames[ws] || settings26.plain.projectNames?.[ws] || "");
-    if (!named)
-      return "";
-    const live = liveWorkspaceId();
-    const liveName = readOpenProjectName();
-    if (live && ws !== live && liveName && named === liveName)
-      return "";
-    return named;
-  }
-  function rememberProject(id) {
-    if (!id)
-      return;
-    const ws = workspaceOf(id);
-    if (!ws)
-      return;
-    const prevWs = settings26.plain.workspaceByConv ?? {};
-    if (prevWs[id] !== ws)
-      settings26.store.workspaceByConv = { ...prevWs, [id]: ws };
-    const idx = sidebarIndex();
-    const sidebarName = idx.nameByConv[id] || idx.nameByWs[ws] || "";
-    const liveName = ws === liveWorkspaceId() ? readOpenProjectName() : "";
-    const name = usableName(sidebarName || wsNames[ws] || liveName || settings26.plain.projectNames?.[ws] || "");
-    if (!name)
-      return;
-    wsNames[ws] = name;
-    const prevNames = settings26.plain.projectNames ?? {};
-    if (prevNames[ws] !== name)
-      settings26.store.projectNames = { ...prevNames, [ws]: name };
-  }
-  function reconcileSidebarCache() {
-    const idx = sidebarIndex();
-    const prevWs = { ...settings26.plain.workspaceByConv };
-    const prevNames = { ...settings26.plain.projectNames };
-    let wsChanged = false;
-    let namesChanged = false;
-    for (const [conv, ws] of Object.entries(idx.wsByConv)) {
-      if (prevWs[conv] !== ws) {
-        prevWs[conv] = ws;
-        wsChanged = true;
-      }
-    }
-    for (const [ws, name] of Object.entries(idx.nameByWs)) {
-      const n = usableName(name);
-      if (!n)
-        continue;
-      wsNames[ws] = n;
-      if (prevNames[ws] !== n) {
-        prevNames[ws] = n;
-        namesChanged = true;
-      }
-    }
-    for (const [ws, name] of Object.entries(prevNames)) {
-      if (usableName(name))
-        continue;
-      delete prevNames[ws];
-      delete wsNames[ws];
-      namesChanged = true;
-    }
-    if (wsChanged)
-      settings26.store.workspaceByConv = prevWs;
-    if (namesChanged)
-      settings26.store.projectNames = prevNames;
-  }
-  function requestWorkspace(id) {
-    if (!id || isHomeId(id) || pendingWs.has(id))
-      return;
-    if (convWorkspaceId(id))
-      return;
-    if (workspaceFetchedEmpty(id)) {
-      dropWorkspace(id);
-      return;
-    }
-    if (sidebarIndex().wsByConv[id])
-      return;
-    pendingWs.add(id);
-    try {
-      const { fetchGetConversationWithWorkspaces, fetchGetConversation } = ConversationStore.useConversationStore.getState();
-      const fetchConv = fetchGetConversationWithWorkspaces ?? fetchGetConversation;
-      if (!fetchConv) {
-        pendingWs.delete(id);
-        return;
-      }
-      fetchConv(id).then((conv) => {
-        const ws = asWorkspaceId(ConversationStore.resolveConversationProjectWorkspaceId?.(conv)) || asWorkspaceId(conv?.workspaceId) || asWorkspaceId(conv?.workspaces);
-        if (!ws) {
-          dropWorkspace(id);
-          if (open2)
-            paint2();
-          return;
-        }
-        const prev = settings26.plain.workspaceByConv ?? {};
-        if (prev[id] !== ws)
-          settings26.store.workspaceByConv = { ...prev, [id]: ws };
-        const live = liveWorkspaceId();
-        const liveName = usableName(readOpenProjectName());
-        const names = settings26.plain.projectNames ?? {};
-        if (live && ws !== live && liveName && names[ws] === liveName) {
-          const next = { ...names };
-          delete next[ws];
-          settings26.store.projectNames = next;
-          delete wsNames[ws];
-        }
-        if (open2)
-          paint2();
-      }).catch((e) => logger31.debug("workspace fetch failed:", e)).finally(() => {
-        pendingWs.delete(id);
-      });
-    } catch {
-      pendingWs.delete(id);
-    }
-  }
-  function chatPane() {
-    const main = document.querySelector("main");
-    if (!main)
-      return null;
-    let best = null;
-    let bestScore = 0;
-    for (const n of main.querySelectorAll("[class*='overflow-y-auto'], [class*='overflow-auto']")) {
-      if (n.closest("[data-sidebar], .void-rt-root, #void-rt-host"))
-        continue;
-      const r = n.getBoundingClientRect();
-      if (r.width < 240 || r.height < 120)
-        continue;
-      const score = r.width * r.height;
-      if (score > bestScore) {
-        best = n;
-        bestScore = score;
-      }
-    }
-    return best;
-  }
-  function messageList(pane) {
-    let node = pane;
-    for (let i = 0;i < 8; i++) {
-      const kids = [...node.children].filter((c) => c instanceof HTMLElement);
-      if (kids.length === 1 && kids[0].children.length > 1) {
-        node = kids[0];
-        continue;
-      }
-      break;
-    }
-    return node;
-  }
-  function chromeOff(el) {
-    const clone = el.cloneNode(true);
-    clone.querySelectorAll("button, .void-timestamp, time, nav, svg, [class*='timestamp']").forEach((n) => n.remove());
-    return clone;
-  }
-  function userBubble(root) {
-    const tagged = root.querySelector("[data-void-rt-role='user'], .void-rt-user-msg");
-    if (tagged)
-      return tagged;
-    const cands = [...root.querySelectorAll("[class*='justify-end'], [class*='self-end'], [class*='ml-auto'], [class*='ms-auto'], [class*='items-end']")];
-    if (/justify-end|self-end|ml-auto|ms-auto|items-end/.test(root.className))
-      cands.unshift(root);
-    if (!cands.length)
-      return null;
-    const inner = cands.filter((el) => !cands.some((other) => other !== el && el.contains(other)));
-    inner.sort((a, b) => (a.innerText?.length ?? 0) - (b.innerText?.length ?? 0));
-    return inner[0] ?? null;
-  }
-  function extractTurn(kid) {
-    const bubble = userBubble(kid);
-    const userText = bubble ? scrubText(chromeOff(bubble).innerText ?? "") : "";
-    const rest = chromeOff(kid);
-    if (bubble && bubble !== kid) {
-      rest.querySelectorAll("[class*='justify-end'], [class*='self-end'], [class*='ml-auto']").forEach((n) => n.remove());
-    }
-    let asstText = scrubText(rest.innerText ?? "");
-    if (userText && asstText.includes(userText))
-      asstText = scrubText(asstText.replace(userText, " "));
-    const lines = [];
-    if (userText)
-      lines.push({ role: "user", text: userText });
-    if (asstText && asstText !== userText)
-      lines.push({ role: "assistant", text: asstText });
-    return lines;
-  }
-  function extractMarks(root) {
-    const marks2 = [...root.querySelectorAll(".void-rt-mark")];
-    if (!marks2.length)
-      return [];
-    const out = [];
-    for (const m of marks2) {
-      const role = m.getAttribute("data-role") === "user" ? "user" : "assistant";
-      const text = scrubText(m.textContent ?? "");
-      if (text)
-        out.push({ role, text });
-    }
-    return lastRound(out);
-  }
-  function extractLines(pane) {
-    const fromMarks = extractMarks(pane);
-    if (fromMarks.length)
-      return fromMarks;
-    const source = messageList(pane);
-    const kids = [...source.children].filter((c) => c instanceof HTMLElement);
-    const out = [];
-    for (const kid of kids)
-      out.push(...extractTurn(kid));
-    return lastRound(out);
-  }
-  function scrubText(raw) {
-    let t = raw.replaceAll(/\s+/g, " ").trim();
-    t = t.replace(TIME_TOKEN, " ").replace(STATUS_TOKEN, " ");
-    t = t.replaceAll(/\s+/g, " ").trim();
-    if (!t || SKIP_NOISE.test(t))
-      return "";
-    return t;
-  }
-  function plainText(md) {
-    const t = md.replace(/```[\s\S]*?```/g, " ").replace(/`([^`]+)`/g, "$1").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/^#{1,6}\s+/gm, "").replace(/[*_~]{1,3}/g, "").replace(/^>\s+/gm, "");
-    return scrubText(t);
-  }
-  function clipLine(text, max) {
-    const t = scrubText(text);
-    if (t.length <= max)
-      return t;
-    return `${t.slice(0, Math.max(1, max - 1))}…`;
-  }
-  function lastRound(lines) {
-    const cleaned = lines.map((line) => ({ role: line.role, text: scrubText(line.text) })).filter((line) => !!line.text);
-    if (!cleaned.length)
-      return [];
-    let asst = -1;
-    let user = -1;
-    for (let i = cleaned.length - 1;i >= 0; i--) {
-      if (asst < 0 && cleaned[i].role === "assistant")
-        asst = i;
-      if (user < 0 && cleaned[i].role === "user")
-        user = i;
-      if (asst >= 0 && user >= 0)
-        break;
-    }
-    const pick = user >= 0 && asst >= 0 && user < asst ? [cleaned[user], cleaned[asst]] : user >= 0 && (asst < 0 || user > asst) ? [cleaned[user]] : asst >= 0 ? [cleaned[asst]] : cleaned.slice(-1);
-    return pick.map((line) => ({
-      role: line.role,
-      text: clipLine(line.text, line.role === "user" ? 72 : 140)
-    }));
-  }
-  function pickUserText(query, message) {
-    const q = plainText(query);
-    const m = plainText(message);
-    if (q && m) {
-      if (m.startsWith(q) && m.length > q.length)
-        return q;
-      return q.length <= m.length ? q : m;
-    }
-    return q || m;
-  }
-  function walkThread(startId) {
-    if (!startId)
-      return [];
-    try {
-      const { byId } = ResponseStore.useResponseStore.getState();
-      const out = [];
-      const seen = new Set;
-      let id = startId;
-      while (id && !seen.has(id) && out.length < 50) {
-        seen.add(id);
-        const r = byId[id];
-        if (!r)
-          break;
-        out.unshift(r);
-        id = r.parentResponseId;
-      }
-      return out;
-    } catch {
-      return [];
-    }
-  }
-  function responsesOf(id) {
-    const { byConversationId, byId, nodesByConversationId } = ResponseStore.useResponseStore.getState();
-    const nodes = nodesByConversationId[id] ?? [];
-    if (nodes.length) {
-      const list = nodes.map((n) => byId[n.responseId]).filter((r) => !!r);
-      if (list.length)
-        return list;
-      const walked = walkThread(nodes.at(-1)?.responseId);
-      if (walked.length)
-        return walked;
-    }
-    const cached = byConversationId[id];
-    if (cached?.length)
-      return [...cached].sort((a, b) => String(a.createTime ?? "").localeCompare(String(b.createTime ?? "")));
-    try {
-      const chat = ChatPageStore.useChatPageStore.getState();
-      if (chat.conversationId === id) {
-        return walkThread(chat.lastMessageId ?? chat.streamedMessageId ?? chat.optimisticMessageId);
-      }
-    } catch {}
-    return [];
-  }
-  function responsesToLines(list) {
-    const out = [];
-    for (const r of list) {
-      if (!r || r.isControl)
-        continue;
-      const sender2 = String(r.sender ?? "").toLowerCase();
-      const human = sender2 === "human" || sender2 === "user";
-      if (human) {
-        const text = pickUserText(r.query || "", r.message || "");
-        if (text)
-          out.push({ role: "user", text });
-        continue;
-      }
-      const query = pickUserText(r.query || "", "");
-      let message = plainText(r.message || "");
-      if (query && message.startsWith(query) && message.length > query.length) {
-        message = scrubText(message.slice(query.length));
-      }
-      if (query && out.at(-1)?.text !== query)
-        out.push({ role: "user", text: query });
-      if (message && message !== query)
-        out.push({ role: "assistant", text: message });
-    }
-    return lastRound(out);
-  }
-  function linesFromStore(id) {
-    if (!id)
-      return [];
-    try {
-      return responsesToLines(responsesOf(id));
-    } catch (e) {
-      logger31.debug("ResponseStore snapshot failed:", e);
-      return [];
-    }
-  }
-  function betterLines(store4, dom) {
-    const pair = (lines) => lines.some((l) => l.role === "user") && lines.some((l) => l.role === "assistant");
-    if (pair(store4))
-      return store4;
-    if (pair(dom))
-      return dom;
-    return store4.length ? store4 : dom;
-  }
-  function parseSnap(raw) {
-    if (!raw)
-      return null;
-    try {
-      const parsed = JSON.parse(raw);
-      if (!parsed || !Array.isArray(parsed.lines) || !parsed.lines.length)
-        return null;
-      return {
-        title: typeof parsed.title === "string" ? parsed.title : "",
-        theme: parsed.theme === "light" ? "light" : "dark",
-        lines: lastRound(parsed.lines.filter((line) => !!line && (line.role === "user" || line.role === "assistant") && typeof line.text === "string"))
-      };
-    } catch {
-      return null;
-    }
-  }
-  function snapOf(id) {
-    return thumbs.get(id) ?? parseSnap(settings26.plain.pages?.[id]);
-  }
-  function rememberPage(id, snap) {
-    const json = JSON.stringify(snap);
-    const prev = settings26.plain.pages ?? {};
-    if (prev[id] === json)
-      return;
-    settings26.store.pages = { ...prev, [id]: json };
-  }
-  function applyLineStyle(el, role, theme) {
-    el.style.display = "-webkit-box";
-    el.style.webkitBoxOrient = "vertical";
-    el.style.overflow = "hidden";
-    el.style.width = "fit-content";
-    el.style.overflowWrap = "anywhere";
-    el.style.fontSize = "11px";
-    el.style.lineHeight = "1.35";
-    if (role === "user") {
-      el.style.alignSelf = "flex-end";
-      el.style.maxWidth = "78%";
-      el.style.padding = "6px 9px";
-      el.style.borderRadius = "14px 14px 4px 14px";
-      el.style.background = theme === "light" ? "#e8e6e0" : "#2f2f2f";
-      el.style.color = theme === "light" ? "#171717" : "#fff";
-      el.style.webkitLineClamp = "2";
-    } else {
-      el.style.alignSelf = "flex-start";
-      el.style.maxWidth = "94%";
-      el.style.padding = "0";
-      el.style.background = "transparent";
-      el.style.color = theme === "light" ? "#3f3f3f" : "#c4c4c4";
-      el.style.webkitLineClamp = "4";
-    }
-  }
-  function buildPageShot(snap) {
-    const page = node("span", cl26("page"));
-    page.dataset.theme = snap.theme;
-    for (const line of lastRound(snap.lines)) {
-      const el = node("span", cl26("page-line", line.role === "user" && "page-line-user"), line.text);
-      el.dataset.role = line.role;
-      applyLineStyle(el, line.role, snap.theme);
-      page.append(el);
-    }
-    return page;
-  }
-  function captureId(id) {
-    if (!id)
-      return;
-    const fromStore = linesFromStore(id);
-    let fromDom = [];
-    if (id === currentVisit()) {
-      const pane = chatPane();
-      if (pane)
-        fromDom = extractLines(pane);
-    }
-    const lines = betterLines(fromStore, fromDom);
-    if (!lines.length)
-      return;
-    const snap = {
-      title: titleOf(id),
-      theme: detectTheme(),
-      lines: lastRound(lines)
-    };
-    thumbs.set(id, snap);
-    rememberPage(id, snap);
-  }
-  var capturing = false;
-  function captureCurrent() {
-    if (capturing || open2)
-      return;
-    capturing = true;
-    try {
-      const current = currentVisit();
-      if (current)
-        captureId(current);
-      for (const id of capVisits(readVisits())) {
-        if (id && id !== current)
-          captureId(id);
-      }
-    } catch (e) {
-      logger31.debug("snapshot failed:", e);
-    } finally {
-      capturing = false;
-    }
-  }
-  function scheduleCapture() {
-    if (open2)
-      return;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (!open2)
-          captureCurrent();
-      });
-    });
-  }
-  function bump(id) {
-    if (!id)
-      return;
-    if (isHomeId(id) && !settings26.store.includeHome)
-      return;
-    writeVisits(capVisits([id, ...readVisits()]));
-    if (isHomeId(id)) {
-      if (shouldRememberProject(id))
-        rememberProject(id);
-      return;
-    }
-    const conv = lookup(id);
-    rememberTitle(id, conv?.title || (id === currentVisit() ? pageTitle() : undefined));
-    if (shouldRememberProject(id))
-      rememberProject(id);
-  }
-  function shouldRememberProject(id) {
-    if (!id || workspaceFetchedEmpty(id))
-      return false;
-    return !!workspaceOf(id);
-  }
-  function hydrate() {
-    invalidateSidebar();
-    const current = currentVisit();
-    const merged = current == null ? [...idsFromHistory(), ...readVisits()] : [current, ...idsFromHistory(), ...readVisits()];
-    writeVisits(capVisits(merged));
-    reconcileSidebarCache();
-    if (current) {
-      rememberTitle(current, lookup(current)?.title || pageTitle());
-      if (shouldRememberProject(current))
-        rememberProject(current);
-    }
-    for (const id of capVisits(readVisits())) {
-      if (id)
-        requestWorkspace(id);
-    }
-  }
-  function topics() {
-    return capVisits(readVisits()).map((id) => ({
-      id,
-      title: titleOf(id),
-      project: projectNameOf(id)
-    }));
-  }
-  function parseHref(href) {
-    try {
-      const u = new URL(href, location.origin);
-      const parsed = RoutingStore.urlToRoute(u.pathname, new URLSearchParams(u.search), u.hash.replace(/^#/, ""));
-      if (parsed?.page && parsed.page !== "unknown")
-        return parsed;
-    } catch (e) {
-      logger31.debug("urlToRoute failed:", e);
-    }
-    return null;
-  }
-  function applyChatPage(id, workspaceId) {
-    try {
-      const chat = ChatPageStore.useChatPageStore.getState();
-      chat.setConversationId(id || undefined);
-      chat.setProjectId(asWorkspaceId(workspaceId) || undefined);
-    } catch (e) {
-      logger31.debug("ChatPageStore update failed:", e);
-    }
-  }
-  function navigateTo(id) {
-    try {
-      const routing = RoutingStore.useRoutingStore.getState();
-      const { route } = routing;
-      const teamId = route.teamId ?? null;
-      if (isHomeId(id) || !id) {
-        const ws = workspaceFromHomeId(id) || asWorkspaceId(workspaceOf(id));
-        const hereWs = asWorkspaceId(route.workspaceId) || projectIdFromUrl();
-        const hereChat = route.conversationId || chatIdFromUrl();
-        if (!ws) {
-          if (!hereChat && (route.page === "main" || !hereWs))
-            return;
-          routing.push({ page: "main", teamId });
-          applyChatPage("");
-          return;
-        }
-        if (!hereChat && hereWs === ws)
-          return;
-        routing.push({ page: "workspace", workspaceId: ws, tab: "conversations", teamId });
-        applyChatPage("", ws);
-        return;
-      }
-      const workspaceId = workspaceOf(id);
-      const href = hrefFor(id, workspaceId);
-      const parsed = parseHref(href);
-      const dest = workspaceId ? {
-        page: "workspace",
-        workspaceId,
-        tab: "conversations",
-        conversationId: id,
-        teamId
-      } : {
-        page: "chat",
-        conversationId: id,
-        temporary: lookup(id)?.temporary ?? false,
-        teamId
-      };
-      if (parsed?.page === "workspace" && asWorkspaceId(parsed.workspaceId)) {
-        dest.page = "workspace";
-        dest.workspaceId = asWorkspaceId(parsed.workspaceId);
-        dest.conversationId = parsed.conversationId || id;
-        dest.tab = parsed.tab || "conversations";
-        if (parsed.filePath)
-          dest.filePath = parsed.filePath;
-      } else if (parsed?.page === "chat" && parsed.conversationId && !workspaceId) {
-        dest.page = "chat";
-        dest.conversationId = parsed.conversationId;
-        dest.temporary = parsed.temporary ?? dest.temporary;
-      }
-      if (dest.page === "workspaces" || dest.page === "workspace" && !asWorkspaceId(dest.workspaceId)) {
-        dest.page = "chat";
-        dest.conversationId = id;
-        delete dest.workspaceId;
-        delete dest.tab;
-      }
-      if (routeConvId(route) === dest.conversationId && (asWorkspaceId(route.workspaceId) || "") === (asWorkspaceId(dest.workspaceId) || "") && route.page === dest.page)
-        return;
-      routing.push(dest);
-      applyChatPage(id, asWorkspaceId(dest.workspaceId));
-      if (dest.page !== "workspace") {
-        try {
-          const { fetchGetConversationWithWorkspaces, fetchGetConversation } = ConversationStore.useConversationStore.getState();
-          const fetchConv = fetchGetConversationWithWorkspaces ?? fetchGetConversation;
-          fetchConv?.(id).then((conv) => {
-            const ws = asWorkspaceId(ConversationStore.resolveConversationProjectWorkspaceId?.(conv)) || convWorkspaceId(id);
-            if (!ws)
-              return;
-            const now = RoutingStore.useRoutingStore.getState();
-            if (routeConvId(now.route) !== id)
-              return;
-            now.replace({
-              page: "workspace",
-              workspaceId: ws,
-              tab: "conversations",
-              conversationId: id,
-              teamId
-            });
-            applyChatPage(id, ws);
-            rememberProject(id);
-          }).catch((e) => logger31.debug("workspace resolve failed:", e));
-        } catch (e) {
-          logger31.debug("workspace fetch skipped:", e);
-        }
-      }
-    } catch (e) {
-      logger31.error("Failed to navigate:", e);
-      try {
-        location.assign(hrefFor(id, workspaceOf(id) || undefined));
-      } catch (navErr) {
-        logger31.error("Fallback navigation failed:", navErr);
-      }
-    }
-  }
-  function isTrigger(e) {
-    if (TRIGGER_CODES.has(e.code) || e.keyCode === 192)
-      return true;
-    return TRIGGER_KEYS.has(e.key);
-  }
-  function isCtrlKey(e) {
-    return e.key === "Control" || e.code === "ControlLeft" || e.code === "ControlRight";
-  }
-  function begin(reverse, fromHold) {
-    held = fromHold;
-    open2 = false;
-    captureCurrent();
-    open2 = true;
-    selected = 0;
-    try {
-      hydrate();
-      const current = currentVisit();
-      if (current != null)
-        bump(current);
-      if (topics().length > 1)
-        selected = reverse ? topics().length - 1 : 1;
-    } catch (e) {
-      logger31.error("Failed to open switcher:", e);
-    }
-    paint2();
-  }
-  function cycle2(reverse) {
-    const { length } = topics();
-    if (!length)
-      return;
-    selected = (selected + (reverse ? -1 : 1) + length) % length;
-    paint2();
-  }
-  function commit() {
-    if (!open2)
-      return;
-    const target = topics()[selected];
-    open2 = false;
-    held = false;
-    paint2();
-    if (target)
-      navigateTo(target.id);
-  }
-  function cancel() {
-    if (!open2)
-      return;
-    open2 = false;
-    held = false;
-    paint2();
-  }
-  function onKeyDown3(e) {
-    if (isCtrlKey(e)) {
-      ctrlHeld = true;
-      return;
-    }
-    const combo = (e.ctrlKey || ctrlHeld) && !e.altKey && !e.metaKey && isTrigger(e) && !e.repeat;
-    if (combo) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      try {
-        if (open2)
-          cycle2(e.shiftKey);
-        else
-          begin(e.shiftKey, true);
-      } catch (err) {
-        logger31.error("Hotkey failed:", err);
-      }
-      return;
-    }
-    if (!open2)
-      return;
-    if (e.key === "Escape") {
-      e.preventDefault();
-      cancel();
-      return;
-    }
-    if (e.key === "Tab" && (e.ctrlKey || ctrlHeld)) {
-      e.preventDefault();
-      cycle2(e.shiftKey);
-    }
-  }
-  function onKeyUp(e) {
-    if (!isCtrlKey(e))
-      return;
-    ctrlHeld = false;
-    if (open2 && held)
-      commit();
-  }
-  function onBeforeInput(e) {
-    if (!ctrlHeld && !open2)
-      return;
-    const { data } = e;
-    if (data && TRIGGER_KEYS.has(data))
-      e.preventDefault();
-  }
-  function onWindowBlur() {
-    ctrlHeld = false;
-  }
-  function onVisibility2() {
-    if (document.hidden) {
-      ctrlHeld = false;
-      cancel();
-    }
-  }
-  function pick(index) {
-    selected = index;
-    commit();
-  }
-  function node(tag, className, text) {
-    const el = document.createElement(tag);
-    if (className)
-      el.className = className;
-    if (text)
-      el.textContent = text;
-    return el;
-  }
-  function fillShot(box, id) {
-    const snap = snapOf(id);
-    if (!snap) {
-      const fallback = node("span", cl26("fallback"));
-      fallback.append(faviconImg(cl26("favicon")));
-      box.append(fallback);
-      return;
-    }
-    const shot = node("span", cl26("shot"));
-    shot.append(buildPageShot(snap));
-    box.append(shot);
-  }
-  var GROK_BG_PATH2 = "M0 256C0 166.392 0 121.587 17.439 87.3615C32.7787 57.2556 57.2556 32.7787 87.3615 17.439C121.587 0 166.392 0 256 0C345.608 0 390.413 0 424.638 17.439C454.744 32.7787 479.221 57.2556 494.561 87.3615C512 121.587 512 166.392 512 256C512 345.608 512 390.413 494.561 424.638C479.221 454.744 454.744 479.221 424.638 494.561C390.413 512 345.608 512 256 512C166.392 512 121.587 512 87.3615 494.561C57.2556 479.221 32.7787 454.744 17.439 424.638C0 390.413 0 345.608 0 256Z";
-  var GROK_MARK_P12 = "M210.484 312.759L343.465 210.383C349.984 205.364 359.302 207.322 362.408 215.117C378.758 256.231 371.454 305.64 338.925 339.563C306.397 373.487 261.137 380.927 219.768 363.983L174.577 385.803C239.394 432.008 318.104 420.581 367.289 369.251C406.303 328.564 418.386 273.104 407.088 223.091L407.19 223.198C390.807 149.726 411.218 120.359 453.03 60.3072C454.02 58.8833 455.01 57.4595 456 56L400.978 113.382V113.204L210.45 312.794";
-  var GROK_MARK_P22 = "M183.042 337.641C136.519 291.294 144.54 219.567 184.236 178.203C213.59 147.59 261.683 135.096 303.666 153.464L348.755 131.75C340.632 125.627 330.221 119.042 318.275 114.414C264.277 91.2407 199.63 102.774 155.735 148.516C113.513 192.549 100.236 260.254 123.036 318.027C140.069 361.206 112.148 391.748 84.0229 422.575C74.0561 433.503 64.0553 444.431 56 456L183.007 337.677";
-  var GROK_ICON_DATA = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="${GROK_BG_PATH2}" fill="#050505"/><path d="${GROK_MARK_P12}" fill="#FCFCFC"/><path d="${GROK_MARK_P22}" fill="#FCFCFC"/></svg>`)}`;
-  var ACCENTS = [
-    "rgb(37, 99, 235)",
-    "rgb(14, 165, 233)",
-    "rgb(20, 184, 166)",
-    "rgb(249, 115, 22)",
-    "rgb(100, 116, 139)"
-  ];
-  function accentOf(id) {
-    if (!id)
-      return ACCENTS[4];
-    let hash = 0;
-    for (let i = 0;i < id.length; i++)
-      hash = hash * 31 + id.charCodeAt(i) >>> 0;
-    return ACCENTS[hash % ACCENTS.length];
-  }
-  function detectTheme() {
-    const html = document.documentElement;
-    const { body } = document;
-    const tokens = `${html.className} ${body?.className ?? ""} ${html.getAttribute("data-theme") ?? ""} ${html.getAttribute("data-color-scheme") ?? ""}`.toLowerCase();
-    if (/(^|[\s_-])(dark|night)([\s_-]|$)/.test(tokens) || html.classList.contains("dark") || html.getAttribute("dark") != null)
-      return "dark";
-    if (/(^|[\s_-])(light|day)([\s_-]|$)/.test(tokens) || html.classList.contains("light"))
-      return "light";
-    try {
-      const bg = getComputedStyle(body || html).backgroundColor;
-      const m = bg.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)/);
-      if (m) {
-        const r = Number(m[1]) / 255;
-        const g = Number(m[2]) / 255;
-        const b = Number(m[3]) / 255;
-        const lin = [r, g, b].map((c) => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-        const lum = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
-        return lum < 0.42 ? "dark" : "light";
-      }
-    } catch {}
-    const scheme = getComputedStyle(html).colorScheme;
-    if (scheme.includes("light") && !scheme.includes("dark"))
-      return "light";
-    return "dark";
-  }
-  function grokFaviconSrc() {
-    try {
-      if (/\.grok\.com$|^grok\.com$/.test(location.hostname)) {
-        const link = document.querySelector('link[rel*="icon"]:not(#void-chat-state-favicon)');
-        const href = link?.href;
-        if (href && !href.startsWith("data:"))
-          return href;
-        return `${location.origin}/images/favicon.svg`;
-      }
-    } catch {}
-    return GROK_ICON_DATA;
-  }
-  function faviconImg(className) {
-    const img = document.createElement("img");
-    img.className = className;
-    img.alt = "";
-    img.draggable = false;
-    img.src = grokFaviconSrc();
-    img.addEventListener("error", () => {
-      if (img.src === GROK_ICON_DATA) {
-        img.dataset.broken = "true";
-        return;
-      }
-      img.src = GROK_ICON_DATA;
-    });
-    return img;
-  }
-  function folderIcon() {
-    const svg2 = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg2.setAttribute("class", cl26("folder"));
-    svg2.setAttribute("viewBox", "0 0 24 24");
-    svg2.setAttribute("fill", "none");
-    svg2.setAttribute("stroke", "currentColor");
-    svg2.setAttribute("stroke-width", "2");
-    svg2.setAttribute("stroke-linecap", "round");
-    svg2.setAttribute("stroke-linejoin", "round");
-    svg2.setAttribute("aria-hidden", "true");
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z");
-    svg2.append(path);
-    return svg2;
-  }
-  function applyTheme(panel) {
-    const theme = detectTheme();
-    panel.setAttribute("data-theme", theme);
-    panel.style.colorScheme = theme;
-  }
-  function buildHost() {
-    const root = node("div", cl26("root"));
-    root.id = "void-rt-host";
-    root.setAttribute("role", "presentation");
-    root.addEventListener("click", cancel);
-    const panel = node("div", cl26("panel"));
-    panel.setAttribute("role", "listbox");
-    panel.setAttribute("aria-label", "Recent conversations");
-    panel.addEventListener("click", (e) => e.stopPropagation());
-    panel.append(node("div", cl26("list")));
-    root.append(panel);
-    return root;
-  }
-  function renderList(items) {
-    if (!host)
-      return;
-    const panel = host.querySelector(`.${cl26("panel")}`);
-    if (!panel)
-      return;
-    let list = panel.querySelector(`.${cl26("list")}`);
-    if (!list) {
-      panel.replaceChildren();
-      list = node("div", cl26("list"));
-      panel.append(list);
-    }
-    list.replaceChildren();
-    items.forEach((topic, i) => {
-      const btn = node("button", cl26("card"));
-      btn.type = "button";
-      btn.tabIndex = -1;
-      btn.setAttribute("role", "option");
-      btn.setAttribute("aria-label", topic.project ? `${topic.title}, ${topic.project}` : topic.title);
-      btn.style.setProperty("--void-rt-card-accent", accentOf(topic.id));
-      btn.addEventListener("pointerenter", () => {
-        if (selected === i)
-          return;
-        selected = i;
-        syncActive();
-      });
-      btn.addEventListener("focus", () => {
-        if (selected === i)
-          return;
-        selected = i;
-        syncActive();
-      });
-      btn.addEventListener("click", () => pick(i));
-      const shot = node("span", cl26("thumb"));
-      shot.setAttribute("aria-hidden", "true");
-      fillShot(shot, topic.id);
-      const meta = node("span", cl26("meta"));
-      meta.append(node("span", cl26("name"), topic.title));
-      if (topic.project) {
-        const proj = node("span", cl26("host"));
-        proj.append(folderIcon(), node("span", cl26("host-name"), topic.project));
-        meta.append(proj);
-      }
-      btn.append(shot, meta);
-      list.append(btn);
-    });
-  }
-  function syncActive() {
-    if (!host)
-      return;
-    const cards = host.querySelectorAll(`.${cl26("card")}`);
-    cards.forEach((card, i) => {
-      const on = i === selected;
-      card.setAttribute("data-active", on ? "true" : "false");
-      card.setAttribute("aria-selected", on ? "true" : "false");
-      card.tabIndex = on ? 0 : -1;
-      if (on)
-        card.setAttribute("aria-current", "true");
-      else
-        card.removeAttribute("aria-current");
-    });
-    cards[selected]?.scrollIntoView({ inline: "nearest", block: "nearest" });
-  }
-  function paint2() {
-    document.documentElement.classList.toggle("void-rt-open", open2);
-    if (!open2) {
-      detachHost();
-      return;
-    }
-    const items = topics();
-    const key = items.map((t) => `${t.id}\x00${t.title}\x00${t.project}`).join("|") || "__empty__";
-    if (!host) {
-      host = buildHost();
-      mountOverlay(host);
-    }
-    const panel = host.querySelector(`.${cl26("panel")}`);
-    if (!panel)
-      return;
-    applyTheme(panel);
-    panel.style.setProperty("--void-rt-count", String(Math.max(1, items.length)));
-    if (!items.length) {
-      if (paintedKey !== "__empty__") {
-        panel.replaceChildren(node("div", cl26("empty"), "Open a few chats, then hold Ctrl+` to switch."));
-        paintedKey = "__empty__";
-      }
-      requestAnimationFrame(() => panel.setAttribute("data-visible", "true"));
-      return;
-    }
-    if (paintedKey === "__empty__" || !panel.querySelector(`.${cl26("list")}`)) {
-      panel.replaceChildren(node("div", cl26("list")));
-      paintedKey = "";
-    }
-    if (paintedKey !== key) {
-      renderList(items);
-      paintedKey = key;
-    }
-    syncActive();
-    requestAnimationFrame(() => panel.setAttribute("data-visible", "true"));
-  }
-  function detachHost() {
-    document.documentElement.classList.remove("void-rt-open");
-    paintedKey = "";
-    if (host) {
-      try {
-        host.hidePopover();
-      } catch {}
-      host.remove();
-      host = null;
-    }
-    document.getElementById("void-rt-host")?.remove();
-    document.querySelectorAll("dialog.void-rt-root, [popover].void-rt-root").forEach((el) => {
-      const p = el;
-      try {
-        p.hidePopover?.();
-      } catch {}
-      try {
-        p.close?.();
-      } catch {}
-      el.remove();
-    });
-  }
-  function mountOverlay(root) {
-    root.style.cssText = "position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:none;overflow:hidden;z-index:2147483647;display:block;background:transparent;pointer-events:auto;";
-    document.documentElement.append(root);
-    document.documentElement.classList.add("void-rt-open");
-    if (typeof root.showPopover !== "function")
-      return;
-    root.setAttribute("popover", "manual");
-    try {
-      root.showPopover();
-    } catch {
-      root.removeAttribute("popover");
-    }
-  }
-  var recentTopics_default = definePlugin({
-    name: "RecentTopics",
-    icon: LayoutGridIcon,
-    description: "Switch recently opened conversations with Ctrl+` like Arc's tab switcher.",
-    authors: [Devs.p],
-    tags: ["chat", "ui"],
-    enabledByDefault: true,
-    settings: settings26,
-    managedStyle: "recentTopics",
-    _mark({ response }) {
-      try {
-        if (!response || response.isControl)
-          return null;
-        const sender2 = String(response.sender ?? "").toLowerCase();
-        const human = sender2 === "human" || sender2 === "user";
-        const text = human ? pickUserText(response.query || "", response.message || "") : plainText(response.message || "");
-        if (!text)
-          return null;
-        return React.createElement("span", {
-          className: "void-rt-mark",
-          "data-role": human ? "user" : "assistant",
-          hidden: true
-        }, text);
-      } catch {
-        return null;
-      }
-    },
-    patches: [
-      {
-        find: "response-family:handleEditSave",
-        all: true,
-        replacement: {
-          match: /\(0,\i\.jsx\)\(\i\.MessageBubble,\{isUser:\i,isIncognito:\i,responseId:(\i)\.responseId/,
-          replace: "$self._mark({response:$1}),$&"
-        }
-      }
-    ],
-    start() {
-      detachHost();
-      open2 = false;
-      held = false;
-      ctrlHeld = false;
-      try {
-        hydrate();
-        const current = currentVisit();
-        if (current != null)
-          bump(current);
-        scheduleCapture();
-      } catch (e) {
-        logger31.error("Hydrate failed:", e);
-      }
-      if (!keys2) {
-        keys2 = new AbortController;
-        const { signal } = keys2;
-        window.addEventListener("keydown", onKeyDown3, { capture: true, signal });
-        window.addEventListener("keyup", onKeyUp, { capture: true, signal });
-        window.addEventListener("blur", onWindowBlur, { signal });
-        document.addEventListener("visibilitychange", onVisibility2, { signal });
-        document.addEventListener("beforeinput", onBeforeInput, { capture: true, signal });
-      }
-    },
-    stop() {
-      keys2?.abort();
-      keys2 = null;
-      open2 = false;
-      held = false;
-      ctrlHeld = false;
-      thumbs.clear();
-      detachHost();
-    },
-    onSettingsChange() {
-      try {
-        writeVisits(capVisits(readVisits()));
-      } catch (e) {
-        logger31.error("Settings update failed:", e);
-      }
-    },
-    zustand: {
-      RoutingStore: {
-        selector: (s) => routeConvId(s.route),
-        handler(id) {
-          if (open2)
-            return;
-          const current = currentVisit();
-          if (current == null)
-            return;
-          if (id && isHomeId(current) && !isHomeId(id))
-            return;
-          bump(current);
-          scheduleCapture();
-        }
-      },
-      ChatPageStore: {
-        selector: (s) => `${s.conversationId ?? ""}|${s.projectId ?? ""}`,
-        handler() {
-          if (open2)
-            return;
-          const id = currentVisit();
-          if (id == null)
-            return;
-          bump(id);
-          scheduleCapture();
-        }
-      },
-      ResponseStore: {
-        selector: (s) => {
-          const id = currentVisit();
-          if (!id || isHomeId(id))
-            return "";
-          const list = s.byConversationId[id];
-          const last = list?.[list.length - 1];
-          return last ? `${last.responseId}:${last.message?.length ?? 0}` : "";
-        },
-        handler() {
-          if (open2)
-            return;
-          scheduleCapture();
-        }
-      }
-    }
-  });
-
-  // src/plugins/composerOpacity/index.ts
-  var STYLE_NAME9 = "composerOpacity";
-  var SHELL = ".query-bar";
-  var FRAME = "form:has(.query-bar),form:has(.query-bar)>:first-child";
-  var FRAME_KIDS = "form:has(.query-bar)>:first-child>*";
-  var BACKDROP = ".chat-input-backdrop,.pointer-events-none.absolute.bottom-0.z-0[class*=bg-gradient-to-t]";
-  var RADIUS = "var(--border-t-radius,10rem) var(--border-t-radius,10rem) var(--border-b-radius,10rem) var(--border-b-radius,10rem)";
+  // src/plugins/widerChat/index.ts
+  var STYLE_NAME9 = "widerChat";
   var settings27 = definePluginSettings({
-    opacity: {
-      type: 5 /* SLIDER */,
-      description: "Background opacity of the chat input. 100 is fully opaque.",
-      min: 0,
-      max: 100,
-      default: 100
-    },
-    blur: {
-      type: 5 /* SLIDER */,
-      description: "Backdrop blur in pixels. Helps when opacity is below 100.",
-      min: 0,
-      max: 40,
-      default: 16
+    width: {
+      type: 1 /* NUMBER */,
+      description: "Maximum chat width in rem.",
+      default: 64
     }
   });
-  function apply5() {
-    const pct = clamp(settings27.store.opacity, 0, 100);
-    const blur = clamp(settings27.store.blur, 0, 40);
-    const alpha = pct / 100;
-    const frost = pct < 100 && blur > 0 ? `-webkit-backdrop-filter:blur(${blur}px)!important;backdrop-filter:blur(${blur}px)!important;` : "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;";
-    registerStyle(STYLE_NAME9, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + `background-color:hsl(var(--surface-l1)/${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}");
+  function applyWidth() {
+    const w = settings27.store.width;
+    registerStyle(STYLE_NAME9, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
-  var composerOpacity_default = definePlugin({
-    name: "ComposerOpacity",
-    icon: BlendIcon,
-    description: "Customizable chat input background opacity so content behind the bar cannot show through.",
-    authors: [Devs.p],
-    tags: ["ui", "chat"],
-    enabledByDefault: true,
+  var widerChat_default = definePlugin({
+    name: "WiderChat",
+    icon: UnfoldHorizontalIcon,
+    description: "Adjustable chat width for big monitors.",
+    authors: [Devs.Prism],
+    tags: ["chat", "ui"],
     settings: settings27,
-    start: apply5,
-    onSettingsChange: apply5,
+    start: applyWidth,
+    onSettingsChange: applyWidth,
     stop() {
       unregisterStyle(STYLE_NAME9);
     }
   });
 
   // virtual:~plugins
-  settings_default.updatedAt = 1789262431000;
   fixChrome_default.updatedAt = 1787789817000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1787870966000;
+  settings_default.updatedAt = 1789262431000;
   chatBarButtons_default.updatedAt = 1781101259000;
   contextMenu_default.updatedAt = 1781702684000;
-  starry_default.updatedAt = 1787870966000;
-  widerChat_default.updatedAt = 1787870966000;
-  noGrokBot_default.updatedAt = 1787789817000;
-  responseNotification_default.updatedAt = 1789246749000;
-  noSidebarIdentity_default.updatedAt = 1788577403000;
-  usageDisplay_default.updatedAt = 1789172854000;
-  settingsFlyout_default.updatedAt = 1788095208000;
-  userQuotes_default.updatedAt = 1788108581000;
-  exportChat_default.updatedAt = 1787870966000;
-  chatStateFavicons_default.updatedAt = 1787789817000;
-  betterImagine_default.updatedAt = 1787870966000;
-  consoleJanitor_default.updatedAt = 1787789817000;
-  experiments_default.updatedAt = 1788047438000;
-  betterFiles_default.updatedAt = 1789246749000;
-  cloneChats_default.updatedAt = 1787870966000;
-  noShareLink_default.updatedAt = 1787789817000;
-  chatListStatus_default.updatedAt = 1789176375000;
   autoCollapse_default.updatedAt = 1787789817000;
-  betterLinks_default.updatedAt = 1787870966000;
-  stableComposer_default.updatedAt = 1789125421000;
   autoRetry_default.updatedAt = 1787789817000;
-  compactModeSelect_default.updatedAt = 1789172854000;
-  inputHistory_default.updatedAt = 1789266420000;
-  noSidebarPlugins_default.updatedAt = 1789180630000;
-  downloadTTS_default.updatedAt = 1787870966000;
-  incognito_default.updatedAt = 1787870966000;
-  streamerMode_default.updatedAt = 1787870966000;
-  customInstructions_default.updatedAt = 1789208142000;
-  noDictation_default.updatedAt = 1788037550000;
-  oneko_default.updatedAt = 1787870966000;
-  betterSidebar_default.updatedAt = 1789254776000;
-  placeholder_default.updatedAt = 1789207633000;
-  messageTimestamps_default.updatedAt = 1789246749000;
   betterCanvas_default.updatedAt = 1789258440000;
+  betterFiles_default.updatedAt = 1789246749000;
+  betterImagine_default.updatedAt = 1787870966000;
+  betterLinks_default.updatedAt = 1787870966000;
+  betterSidebar_default.updatedAt = 1789254776000;
+  chatListStatus_default.updatedAt = 1789176375000;
+  chatStateFavicons_default.updatedAt = 1787789817000;
   cleaner_default.updatedAt = 1789246749000;
+  cloneChats_default.updatedAt = 1787870966000;
+  compactModeSelect_default.updatedAt = 1789172854000;
+  composerOpacity_default.updatedAt = 1788044121000;
+  consoleJanitor_default.updatedAt = 1787789817000;
+  customInstructions_default.updatedAt = 1789208142000;
+  downloadTTS_default.updatedAt = 1787870966000;
+  experiments_default.updatedAt = 1788047438000;
+  exportChat_default.updatedAt = 1787870966000;
+  incognito_default.updatedAt = 1787870966000;
+  inputHistory_default.updatedAt = 1789266420000;
+  messageTimestamps_default.updatedAt = 1789246749000;
+  noDictation_default.updatedAt = 1788037550000;
+  noGrokBot_default.updatedAt = 1787789817000;
+  noShareLink_default.updatedAt = 1787789817000;
+  noSidebarIdentity_default.updatedAt = 1788577403000;
+  noSidebarPlugins_default.updatedAt = 1789180630000;
+  oneko_default.updatedAt = 1787870966000;
+  placeholder_default.updatedAt = 1789207633000;
   pluginsFlyout_default.updatedAt = 1788051053000;
   recentTopics_default.updatedAt = 1788966070000;
-  composerOpacity_default.updatedAt = 1788044121000;
-  var __plugins_default = { [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [starry_default.name]: starry_default, [widerChat_default.name]: widerChat_default, [noGrokBot_default.name]: noGrokBot_default, [responseNotification_default.name]: responseNotification_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [usageDisplay_default.name]: usageDisplay_default, [settingsFlyout_default.name]: settingsFlyout_default, [userQuotes_default.name]: userQuotes_default, [exportChat_default.name]: exportChat_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [betterImagine_default.name]: betterImagine_default, [consoleJanitor_default.name]: consoleJanitor_default, [experiments_default.name]: experiments_default, [betterFiles_default.name]: betterFiles_default, [cloneChats_default.name]: cloneChats_default, [noShareLink_default.name]: noShareLink_default, [chatListStatus_default.name]: chatListStatus_default, [autoCollapse_default.name]: autoCollapse_default, [betterLinks_default.name]: betterLinks_default, [stableComposer_default.name]: stableComposer_default, [autoRetry_default.name]: autoRetry_default, [compactModeSelect_default.name]: compactModeSelect_default, [inputHistory_default.name]: inputHistory_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [downloadTTS_default.name]: downloadTTS_default, [incognito_default.name]: incognito_default, [streamerMode_default.name]: streamerMode_default, [customInstructions_default.name]: customInstructions_default, [noDictation_default.name]: noDictation_default, [oneko_default.name]: oneko_default, [betterSidebar_default.name]: betterSidebar_default, [placeholder_default.name]: placeholder_default, [messageTimestamps_default.name]: messageTimestamps_default, [betterCanvas_default.name]: betterCanvas_default, [cleaner_default.name]: cleaner_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [composerOpacity_default.name]: composerOpacity_default };
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/api/Notices.css
+  responseNotification_default.updatedAt = 1789246749000;
+  settingsFlyout_default.updatedAt = 1788095208000;
+  stableComposer_default.updatedAt = 1789125421000;
+  starry_default.updatedAt = 1787870966000;
+  streamerMode_default.updatedAt = 1787870966000;
+  usageDisplay_default.updatedAt = 1789172854000;
+  userQuotes_default.updatedAt = 1788108581000;
+  widerChat_default.updatedAt = 1787870966000;
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [compactModeSelect_default.name]: compactModeSelect_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
     display: flex;
@@ -18707,11 +18795,11 @@ html.void-rt-open [data-sidebar="gap"] {
 
   // src/api/Notices.tsx
   var NoticeType;
-  ((NoticeType2) => {
-    NoticeType2["INFO"] = "info";
-    NoticeType2["WARNING"] = "warning";
-    NoticeType2["ERROR"] = "error";
-    NoticeType2["SUCCESS"] = "success";
+  ((NoticeType) => {
+    NoticeType["INFO"] = "info";
+    NoticeType["WARNING"] = "warning";
+    NoticeType["ERROR"] = "error";
+    NoticeType["SUCCESS"] = "success";
   })(NoticeType ||= {});
   var cl27 = classNameFactory("void-notice-");
   var ICONS = {
@@ -18774,145 +18862,145 @@ html.void-rt-open [data-sidebar="gap"] {
   // src/turbopack/common/index.ts
   var exports_common = {};
   __export(exports_common, {
-    useTransition: () => useTransition,
-    useSyncExternalStore: () => useSyncExternalStore,
-    useState: () => useState,
-    useRef: () => useRef,
-    useReducer: () => useReducer,
-    useReducedMotion: () => useReducedMotion,
-    useMemo: () => useMemo,
-    useLayoutEffect: () => useLayoutEffect,
-    useId: () => useId,
-    useEffect: () => useEffect,
-    useDeferredValue: () => useDeferredValue,
-    useContext: () => useContext,
-    useCallback: () => useCallback,
-    onceReady: () => onceReady,
-    createElement: () => createElement,
-    TooltipTrigger: () => TooltipTrigger,
-    TooltipProvider: () => TooltipProvider,
-    TooltipContent: () => TooltipContent,
-    Tooltip: () => Tooltip,
-    ToggleGroupItem: () => ToggleGroupItem,
-    ToggleGroup: () => ToggleGroup,
-    Toaster: () => Toaster,
-    Textarea: () => Textarea,
-    TextToSpeechStore: () => TextToSpeechStore,
-    TabsTrigger: () => TabsTrigger,
-    TabsList: () => TabsList,
-    TabsContent: () => TabsContent,
-    Tabs: () => Tabs,
-    TableRow: () => TableRow,
-    TableHeader: () => TableHeader,
-    TableHead: () => TableHead,
-    TableCell: () => TableCell,
-    TableBody: () => TableBody,
-    Table: () => Table,
-    Switch: () => Switch,
-    SubscriptionsStore: () => SubscriptionsStore,
-    Spinner: () => Spinner,
-    Slider: () => Slider,
-    Skeleton: () => Skeleton,
-    SidebarComponents: () => SidebarComponents,
-    SettingsTitle: () => SettingsTitle,
-    SettingsStore: () => SettingsStore,
-    SettingsRow: () => SettingsRow,
-    SettingsDialogStore: () => SettingsDialogStore,
-    SettingsDescription: () => SettingsDescription,
-    SessionStore: () => SessionStore,
-    Separator: () => Separator,
-    SelectValue: () => SelectValue,
-    SelectTrigger: () => SelectTrigger,
-    SelectItem: () => SelectItem,
-    SelectContent: () => SelectContent,
-    Select: () => Select,
-    RoutingStore: () => RoutingStore,
-    ResponsiveDialog: () => ResponsiveDialog,
-    ResponseStore: () => ResponseStore,
-    React: () => React,
-    Portal: () => Portal,
-    PopoverTrigger: () => PopoverTrigger,
-    PopoverContent: () => PopoverContent,
-    PopoverArrow: () => PopoverArrow,
-    Popover: () => Popover,
-    MotionDiv: () => MotionDiv,
-    ModesStore: () => ModesStore,
-    MessageStore: () => MessageStore,
-    MediaStore: () => MediaStore,
-    LazyComponent: () => LazyComponent,
-    Label: () => Label,
-    Input: () => Input,
-    HoverCardTrigger: () => HoverCardTrigger,
-    HoverCardContent: () => HoverCardContent,
-    HoverCard: () => HoverCard,
-    Fragment: () => Fragment,
-    FilesPageStore: () => FilesPageStore,
-    FileUtils: () => FileUtils,
-    FeatureStore: () => FeatureStore,
-    DropdownMenuTrigger: () => DropdownMenuTrigger,
-    DropdownMenuSubTrigger: () => DropdownMenuSubTrigger,
-    DropdownMenuSubContent: () => DropdownMenuSubContent,
-    DropdownMenuSub: () => DropdownMenuSub,
-    DropdownMenuSeparator: () => DropdownMenuSeparator,
-    DropdownMenuRadioItem: () => DropdownMenuRadioItem,
-    DropdownMenuRadioGroup: () => DropdownMenuRadioGroup,
-    DropdownMenuPortal: () => DropdownMenuPortal,
-    DropdownMenuItem: () => DropdownMenuItem,
-    DropdownMenuContent: () => DropdownMenuContent,
-    DropdownMenuCheckboxItem: () => DropdownMenuCheckboxItem,
-    DropdownMenu: () => DropdownMenu,
-    DrawerTrigger: () => DrawerTrigger,
-    DrawerTitle: () => DrawerTitle,
-    DrawerHeader: () => DrawerHeader,
-    DrawerFooter: () => DrawerFooter,
-    DrawerDescription: () => DrawerDescription,
-    DrawerContent: () => DrawerContent,
-    Drawer: () => Drawer,
-    DialogTrigger: () => DialogTrigger,
-    DialogTitle: () => DialogTitle,
-    DialogPortal: () => DialogPortal,
-    DialogOverlay: () => DialogOverlay,
-    DialogHeader: () => DialogHeader,
-    DialogFooter: () => DialogFooter,
-    DialogDescription: () => DialogDescription,
-    DialogContent: () => DialogContent,
-    DialogClose: () => DialogClose,
-    Dialog: () => Dialog,
-    ConversationStore: () => ConversationStore,
-    CommandList: () => CommandList,
-    CommandItem: () => CommandItem,
-    CommandInput: () => CommandInput,
-    CommandGroup: () => CommandGroup,
-    CommandEmpty: () => CommandEmpty,
-    Command: () => Command,
-    ClassNames: () => ClassNames,
-    Checkbox: () => Checkbox,
-    ChatPageStore: () => ChatPageStore,
-    CardTitle: () => CardTitle,
-    CardHeader: () => CardHeader,
-    CardContent: () => CardContent,
-    Card: () => Card,
-    ButtonWithTooltipOptimized: () => ButtonWithTooltipOptimized,
-    ButtonWithTooltip: () => ButtonWithTooltip,
-    ButtonWithPopover: () => ButtonWithPopover,
-    Button: () => Button,
-    Badge: () => Badge,
-    Avatar: () => Avatar,
-    ApiClients: () => ApiClients,
-    AnimatePresence: () => AnimatePresence,
-    AlertDialogTrigger: () => AlertDialogTrigger,
-    AlertDialogTitle: () => AlertDialogTitle,
-    AlertDialogHeader: () => AlertDialogHeader,
-    AlertDialogFooter: () => AlertDialogFooter,
-    AlertDialogDescription: () => AlertDialogDescription,
-    AlertDialogContent: () => AlertDialogContent,
-    AlertDialogCancel: () => AlertDialogCancel,
-    AlertDialogAction: () => AlertDialogAction,
-    AlertDialog: () => AlertDialog,
-    AccordionTrigger: () => AccordionTrigger,
-    AccordionItem: () => AccordionItem,
+    Accordion: () => Accordion,
     AccordionContent: () => AccordionContent,
-    Accordion: () => Accordion
+    AccordionItem: () => AccordionItem,
+    AccordionTrigger: () => AccordionTrigger,
+    AlertDialog: () => AlertDialog,
+    AlertDialogAction: () => AlertDialogAction,
+    AlertDialogCancel: () => AlertDialogCancel,
+    AlertDialogContent: () => AlertDialogContent,
+    AlertDialogDescription: () => AlertDialogDescription,
+    AlertDialogFooter: () => AlertDialogFooter,
+    AlertDialogHeader: () => AlertDialogHeader,
+    AlertDialogTitle: () => AlertDialogTitle,
+    AlertDialogTrigger: () => AlertDialogTrigger,
+    AnimatePresence: () => AnimatePresence,
+    ApiClients: () => ApiClients,
+    Avatar: () => Avatar,
+    Badge: () => Badge,
+    Button: () => Button,
+    ButtonWithPopover: () => ButtonWithPopover,
+    ButtonWithTooltip: () => ButtonWithTooltip,
+    ButtonWithTooltipOptimized: () => ButtonWithTooltipOptimized,
+    Card: () => Card,
+    CardContent: () => CardContent,
+    CardHeader: () => CardHeader,
+    CardTitle: () => CardTitle,
+    ChatPageStore: () => ChatPageStore,
+    Checkbox: () => Checkbox,
+    ClassNames: () => ClassNames,
+    Command: () => Command,
+    CommandEmpty: () => CommandEmpty,
+    CommandGroup: () => CommandGroup,
+    CommandInput: () => CommandInput,
+    CommandItem: () => CommandItem,
+    CommandList: () => CommandList,
+    ConversationStore: () => ConversationStore,
+    Dialog: () => Dialog,
+    DialogClose: () => DialogClose,
+    DialogContent: () => DialogContent,
+    DialogDescription: () => DialogDescription,
+    DialogFooter: () => DialogFooter,
+    DialogHeader: () => DialogHeader,
+    DialogOverlay: () => DialogOverlay,
+    DialogPortal: () => DialogPortal,
+    DialogTitle: () => DialogTitle,
+    DialogTrigger: () => DialogTrigger,
+    Drawer: () => Drawer,
+    DrawerContent: () => DrawerContent,
+    DrawerDescription: () => DrawerDescription,
+    DrawerFooter: () => DrawerFooter,
+    DrawerHeader: () => DrawerHeader,
+    DrawerTitle: () => DrawerTitle,
+    DrawerTrigger: () => DrawerTrigger,
+    DropdownMenu: () => DropdownMenu,
+    DropdownMenuCheckboxItem: () => DropdownMenuCheckboxItem,
+    DropdownMenuContent: () => DropdownMenuContent,
+    DropdownMenuItem: () => DropdownMenuItem,
+    DropdownMenuPortal: () => DropdownMenuPortal,
+    DropdownMenuRadioGroup: () => DropdownMenuRadioGroup,
+    DropdownMenuRadioItem: () => DropdownMenuRadioItem,
+    DropdownMenuSeparator: () => DropdownMenuSeparator,
+    DropdownMenuSub: () => DropdownMenuSub,
+    DropdownMenuSubContent: () => DropdownMenuSubContent,
+    DropdownMenuSubTrigger: () => DropdownMenuSubTrigger,
+    DropdownMenuTrigger: () => DropdownMenuTrigger,
+    FeatureStore: () => FeatureStore,
+    FileUtils: () => FileUtils,
+    FilesPageStore: () => FilesPageStore,
+    Fragment: () => Fragment,
+    HoverCard: () => HoverCard,
+    HoverCardContent: () => HoverCardContent,
+    HoverCardTrigger: () => HoverCardTrigger,
+    Input: () => Input,
+    Label: () => Label,
+    LazyComponent: () => LazyComponent,
+    MediaStore: () => MediaStore,
+    MessageStore: () => MessageStore,
+    ModesStore: () => ModesStore,
+    MotionDiv: () => MotionDiv,
+    Popover: () => Popover,
+    PopoverArrow: () => PopoverArrow,
+    PopoverContent: () => PopoverContent,
+    PopoverTrigger: () => PopoverTrigger,
+    Portal: () => Portal,
+    React: () => React,
+    ResponseStore: () => ResponseStore,
+    ResponsiveDialog: () => ResponsiveDialog,
+    RoutingStore: () => RoutingStore,
+    Select: () => Select,
+    SelectContent: () => SelectContent,
+    SelectItem: () => SelectItem,
+    SelectTrigger: () => SelectTrigger,
+    SelectValue: () => SelectValue,
+    Separator: () => Separator,
+    SessionStore: () => SessionStore,
+    SettingsDescription: () => SettingsDescription,
+    SettingsDialogStore: () => SettingsDialogStore,
+    SettingsRow: () => SettingsRow,
+    SettingsStore: () => SettingsStore,
+    SettingsTitle: () => SettingsTitle,
+    SidebarComponents: () => SidebarComponents,
+    Skeleton: () => Skeleton,
+    Slider: () => Slider,
+    Spinner: () => Spinner,
+    SubscriptionsStore: () => SubscriptionsStore,
+    Switch: () => Switch,
+    Table: () => Table,
+    TableBody: () => TableBody,
+    TableCell: () => TableCell,
+    TableHead: () => TableHead,
+    TableHeader: () => TableHeader,
+    TableRow: () => TableRow,
+    Tabs: () => Tabs,
+    TabsContent: () => TabsContent,
+    TabsList: () => TabsList,
+    TabsTrigger: () => TabsTrigger,
+    TextToSpeechStore: () => TextToSpeechStore,
+    Textarea: () => Textarea,
+    Toaster: () => Toaster,
+    ToggleGroup: () => ToggleGroup,
+    ToggleGroupItem: () => ToggleGroupItem,
+    Tooltip: () => Tooltip,
+    TooltipContent: () => TooltipContent,
+    TooltipProvider: () => TooltipProvider,
+    TooltipTrigger: () => TooltipTrigger,
+    createElement: () => createElement,
+    onceReady: () => onceReady,
+    useCallback: () => useCallback,
+    useContext: () => useContext,
+    useDeferredValue: () => useDeferredValue,
+    useEffect: () => useEffect,
+    useId: () => useId,
+    useLayoutEffect: () => useLayoutEffect,
+    useMemo: () => useMemo,
+    useReducedMotion: () => useReducedMotion,
+    useReducer: () => useReducer,
+    useRef: () => useRef,
+    useState: () => useState,
+    useSyncExternalStore: () => useSyncExternalStore,
+    useTransition: () => useTransition
   });
 
   // src/VoidPP.ts

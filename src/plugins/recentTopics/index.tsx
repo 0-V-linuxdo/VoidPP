@@ -28,7 +28,10 @@ const TRIGGER_CODES = new Set(["Backquote", "IntlBackslash"]);
 const TRIGGER_KEYS = new Set(["`", "~", "·", "｀", "～", "Dead", "Process"]);
 const TITLE_TAIL = /\s*[·|—–-]\s*Grok.*$/i;
 const SKIP_LABEL = /^(more|history|today|yesterday|projects|new chat|new conversation|see all(?: chats| conversations)?|show all(?: chats| conversations)?|view all(?: chats| conversations)?|all chats|all conversations|查看全部|显示全部|查看所有|全部会话|所有对话)$/i;
-const SKIP_NOISE = /^(copy|share|retry|edit|more|thinking|analyzing|searching|continue from here|what can i help with\??)$/i;
+const SKIP_NOISE = /^(copy|share|retry|edit|more|thinking|analyzing|searching|continue from here|what can i help with\??|files|add files for grok to use in this project)$/i;
+const FILES_CHROME = /add files for grok to use in this project/i;
+const PANE_SKIP = "[data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
+const MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
 const TIME_TOKEN = /(?:^|\s)\d{1,2}:\d{2}\s*(?:am|pm)\b/gi;
 const STATUS_TOKEN = /\b(?:connected to computer|continuing the(?: task)?|worked for \d+\s*m(?:\s*\d+\s*s)?|worked for \d+\s*s)\b/gi;
 const COUNT_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => ({ label: String(n), value: n, default: n === 5 }));
@@ -681,10 +684,16 @@ function requestWorkspace(id: string) {
 function chatPane(): HTMLElement | null {
     const main = document.querySelector("main");
     if (!main) return null;
+    const skip = (n: HTMLElement) => !!n.closest(PANE_SKIP);
+    const msg = main.querySelector<HTMLElement>(MSG_SEL);
+    if (msg) {
+        const col = msg.closest<HTMLElement>("[class*='overflow-y-auto'], [class*='overflow-auto']");
+        if (col && !skip(col)) return col;
+    }
     let best: HTMLElement | null = null;
     let bestScore = 0;
     for (const n of main.querySelectorAll<HTMLElement>("[class*='overflow-y-auto'], [class*='overflow-auto']")) {
-        if (n.closest("[data-sidebar], .void-rt-root, #void-rt-host")) continue;
+        if (skip(n)) continue;
         const r = n.getBoundingClientRect();
         if (r.width < 240 || r.height < 120) continue;
         const score = r.width * r.height;
@@ -716,22 +725,36 @@ function chromeOff(el: HTMLElement): HTMLElement {
 }
 
 function userBubble(root: HTMLElement): HTMLElement | null {
-    const tagged = root.querySelector<HTMLElement>("[data-void-rt-role='user'], .void-rt-user-msg");
+    const tagged = root.matches("[data-testid='user-message']")
+        ? root
+        : root.querySelector<HTMLElement>("[data-testid='user-message'], [data-void-rt-role='user'], .void-rt-user-msg");
     if (tagged) return tagged;
-    const cands = [...root.querySelectorAll<HTMLElement>("[class*='justify-end'], [class*='self-end'], [class*='ml-auto'], [class*='ms-auto'], [class*='items-end']")];
-    if (/justify-end|self-end|ml-auto|ms-auto|items-end/.test(root.className)) cands.unshift(root);
+    const cands = [...root.querySelectorAll<HTMLElement>("[class*='justify-end'], [class*='self-end'], [class*='ml-auto'], [class*='ms-auto']")];
+    if (/justify-end|self-end|ml-auto|ms-auto/.test(root.className)) cands.unshift(root);
     if (!cands.length) return null;
     const inner = cands.filter(el => !cands.some(other => other !== el && el.contains(other)));
-    inner.sort((a, b) => (a.innerText?.length ?? 0) - (b.innerText?.length ?? 0));
+    inner.sort((a, b) => (b.innerText?.length ?? 0) - (a.innerText?.length ?? 0));
     return inner[0] ?? null;
 }
 
 function extractTurn(kid: HTMLElement): PageLine[] {
+    const tagged = [...kid.querySelectorAll<HTMLElement>(MSG_SEL)];
+    if (kid.matches(MSG_SEL)) tagged.unshift(kid);
+    if (tagged.length) {
+        const lines: PageLine[] = [];
+        for (const el of tagged) {
+            const role = el.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
+            const text = scrubText(chromeOff(el).innerText ?? "");
+            if (text) lines.push({ role, text });
+        }
+        return lines;
+    }
     const bubble = userBubble(kid);
-    const userText = bubble ? scrubText(chromeOff(bubble).innerText ?? "") : "";
+    if (!bubble) return [];
+    const userText = scrubText(chromeOff(bubble).innerText ?? "");
     const rest = chromeOff(kid);
-    if (bubble && bubble !== kid) {
-        rest.querySelectorAll("[class*='justify-end'], [class*='self-end'], [class*='ml-auto']").forEach(n => n.remove());
+    if (bubble !== kid) {
+        rest.querySelectorAll(`${MSG_SEL}, [class*='justify-end'], [class*='self-end'], [class*='ml-auto']`).forEach(n => n.remove());
     }
     let asstText = scrubText(rest.innerText ?? "");
     if (userText && asstText.includes(userText)) asstText = scrubText(asstText.replace(userText, " "));
@@ -756,6 +779,16 @@ function extractMarks(root: ParentNode): PageLine[] {
 function extractLines(pane: HTMLElement): PageLine[] {
     const fromMarks = extractMarks(pane);
     if (fromMarks.length) return fromMarks;
+    const tagged = [...pane.querySelectorAll<HTMLElement>(MSG_SEL)];
+    if (tagged.length) {
+        const out: PageLine[] = [];
+        for (const el of tagged) {
+            const role = el.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
+            const text = scrubText(chromeOff(el).innerText ?? "");
+            if (text) out.push({ role, text });
+        }
+        return lastRound(out);
+    }
     const source = messageList(pane);
     const kids = [...source.children].filter((c): c is HTMLElement => c instanceof HTMLElement);
     const out: PageLine[] = [];
@@ -763,11 +796,17 @@ function extractLines(pane: HTMLElement): PageLine[] {
     return lastRound(out);
 }
 
+function looksLikeChrome(text: string): boolean {
+    if (FILES_CHROME.test(text)) return true;
+    const packed = text.replaceAll(/\s+/g, "").toLowerCase();
+    return packed.startsWith("filesaddfiles");
+}
+
 function scrubText(raw: string): string {
     let t = raw.replaceAll(/\s+/g, " ").trim();
     t = t.replace(TIME_TOKEN, " ").replace(STATUS_TOKEN, " ");
     t = t.replaceAll(/\s+/g, " ").trim();
-    if (!t || SKIP_NOISE.test(t)) return "";
+    if (!t || SKIP_NOISE.test(t) || looksLikeChrome(t)) return "";
     return t;
 }
 
@@ -909,11 +948,13 @@ function parseSnap(raw: string | undefined): PageSnap | null {
     try {
         const parsed = JSON.parse(raw) as PageSnap;
         if (!parsed || !Array.isArray(parsed.lines) || !parsed.lines.length) return null;
+        const lines = lastRound(parsed.lines.filter((line): line is PageLine =>
+            !!line && (line.role === "user" || line.role === "assistant") && typeof line.text === "string"));
+        if (!lines.length) return null;
         return {
             title: typeof parsed.title === "string" ? parsed.title : "",
             theme: parsed.theme === "light" ? "light" : "dark",
-            lines: lastRound(parsed.lines.filter((line): line is PageLine =>
-                !!line && (line.role === "user" || line.role === "assistant") && typeof line.text === "string")),
+            lines,
         };
     } catch {
         return null;
@@ -921,7 +962,15 @@ function parseSnap(raw: string | undefined): PageSnap | null {
 }
 
 function snapOf(id: string): PageSnap | null {
-    return thumbs.get(id) ?? parseSnap(settings.plain.pages?.[id]);
+    if (!id || isHomeId(id)) return null;
+    const snap = thumbs.get(id) ?? parseSnap(settings.plain.pages?.[id]);
+    if (!snap) return null;
+    const lines = lastRound(snap.lines);
+    if (!lines.length) {
+        thumbs.delete(id);
+        return null;
+    }
+    return { ...snap, lines };
 }
 
 function rememberPage(id: string, snap: PageSnap) {
@@ -929,6 +978,30 @@ function rememberPage(id: string, snap: PageSnap) {
     const prev = settings.plain.pages ?? {};
     if (prev[id] === json) return;
     settings.store.pages = { ...prev, [id]: json };
+}
+
+function forgetPage(id: string) {
+    thumbs.delete(id);
+    const prev = settings.plain.pages ?? {};
+    if (!(id in prev)) return;
+    const next = { ...prev };
+    delete next[id];
+    settings.store.pages = next;
+}
+
+function prunePages() {
+    const prev = settings.plain.pages ?? {};
+    const next: Record<string, string> = {};
+    let changed = false;
+    for (const [id, raw] of Object.entries(prev)) {
+        if (isHomeId(id) || !parseSnap(raw)) {
+            thumbs.delete(id);
+            changed = true;
+            continue;
+        }
+        next[id] = raw;
+    }
+    if (changed) settings.store.pages = next;
 }
 
 function applyLineStyle(el: HTMLElement, role: "user" | "assistant", theme: "dark" | "light") {
@@ -971,18 +1044,26 @@ function buildPageShot(snap: PageSnap): HTMLElement {
 
 function captureId(id: string) {
     if (!id) return;
+    if (isHomeId(id)) {
+        forgetPage(id);
+        return;
+    }
     const fromStore = linesFromStore(id);
+    const live = id === currentVisit();
     let fromDom: PageLine[] = [];
-    if (id === currentVisit()) {
+    if (live) {
         const pane = chatPane();
         if (pane) fromDom = extractLines(pane);
     }
-    const lines = betterLines(fromStore, fromDom);
-    if (!lines.length) return;
+    const lines = lastRound(betterLines(fromStore, fromDom));
+    if (!lines.length) {
+        if (live) forgetPage(id);
+        return;
+    }
     const snap: PageSnap = {
         title: titleOf(id),
         theme: detectTheme(),
-        lines: lastRound(lines),
+        lines,
     };
     thumbs.set(id, snap);
     rememberPage(id, snap);
@@ -1035,6 +1116,7 @@ function shouldRememberProject(id: string): boolean {
 
 function hydrate() {
     invalidateSidebar();
+    prunePages();
     const current = currentVisit();
     const merged = current == null
         ? [...idsFromHistory(), ...readVisits()]
