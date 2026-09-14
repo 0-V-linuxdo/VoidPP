@@ -32,6 +32,8 @@ const OWN_HOOKS = new Set(["useChatPageStore", "useConversationStore", "useRespo
 const SIDEBAR = '[data-sidebar="sidebar"], [data-sidebar="content"]';
 const HOST = '[data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]';
 const ROW = 'a[href*="/c/"], a[href*="/chat/"], a[href*="chat="]';
+const PRIMARY_PATH = new Set(["/", "/chat", "/imagine", "/library", "/automations"]);
+const CONV_PATH = /^\/(?:c|chat|project)\/[^/]+/i;
 const SPIN_PATH = "M21 12a9 9 0 1 1-6.219-8.56";
 
 type Kind = "streaming" | "done" | "error";
@@ -331,6 +333,11 @@ function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
     schedule();
 }
 
+function hrefOf(el: Element): string {
+    const a = el instanceof HTMLAnchorElement ? el : el.closest("a[href]") ?? el.querySelector("a[href]");
+    return a?.getAttribute("href") ?? el.getAttribute("href") ?? "";
+}
+
 function idFromHref(href: string): string {
     if (!href) return "";
     try {
@@ -346,13 +353,25 @@ function idFromHref(href: string): string {
 }
 
 function hrefId(el: Element): string {
-    const a = el instanceof HTMLAnchorElement ? el : el.closest("a[href]") ?? el.querySelector("a[href]");
-    return idFromHref(a?.getAttribute("href") ?? el.getAttribute("href") ?? "");
+    return idFromHref(hrefOf(el));
+}
+
+function isPrimaryNav(el: Element): boolean {
+    const href = hrefOf(el);
+    if (!href) return false;
+    try {
+        const path = new URL(href, location.origin).pathname.replace(/\/+$/, "") || "/";
+        if (CONV_PATH.test(path)) return false;
+        return PRIMARY_PATH.has(path);
+    } catch {
+        return false;
+    }
 }
 
 function rowHost(el: HTMLElement, root: Element): HTMLElement | null {
     if (el.classList.contains(MARK)) return null;
     if (el.closest('[data-sidebar="menu-action"], [data-sidebar="footer"], [data-sidebar="header"]')) return null;
+    if (isPrimaryNav(el)) return null;
     if (!hrefId(el)) return null;
     const wrapped = el.closest<HTMLElement>(HOST);
     return wrapped && root.contains(wrapped) ? wrapped : el;
@@ -408,14 +427,23 @@ function rowForId(root: Element, id: string): HTMLElement | null {
     if (!isConvId(id)) return null;
     for (const a of root.querySelectorAll<HTMLElement>(`a[href*="${id}"]`)) {
         if (hrefId(a) !== id) continue;
+        if (isPrimaryNav(a)) continue;
         const host = rowHost(a, root);
         if (host) return host;
     }
     return null;
 }
 
+function sweepPrimaryMarks() {
+    for (const mark of document.querySelectorAll<HTMLElement>(`.${MARK}`)) {
+        const host = mark.parentElement;
+        if (host && isPrimaryNav(host)) clearMark(host);
+    }
+}
+
 function paint() {
     if (!started) return;
+    sweepPrimaryMarks();
     refreshMarks();
     const usedIds = new Set<string>();
     const seen = new Set<HTMLElement>();
