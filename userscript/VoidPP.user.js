@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.13] v1.0.0
+// @version      [20260914.14] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -15,6 +15,8 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_deleteValue
+// @grant        GM_addValueChangeListener
+// @grant        GM_removeValueChangeListener
 // @grant        GM_setClipboard
 // @connect      raw.githubusercontent.com
 // @connect      cdn.jsdelivr.net
@@ -30,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.13] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7347,9 +7349,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2d174ad"}`
-    }, `(${"2d174ad"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4c2b2e2"}`
+    }, `(${"4c2b2e2"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11371,6 +11373,8 @@ html.void-rt-open [data-sidebar="gap"] {
   var DENIED_MAX = 40;
   var DENIED_HOLD_MS = 60000;
   var SETTLE_MS = 200;
+  var EFFECT_GM_KEY = "VoidPP.rt.effect";
+  var EFFECT_LS_KEY = "voidpp.rt.v1";
   var settings14 = definePluginSettings({
     maxRecent: {
       type: 4 /* SELECT */,
@@ -11430,7 +11434,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return out;
   }
   function readVisits() {
-    return settings14.plain.visits ?? [];
+    return effect.visits;
   }
   function maxCount() {
     const n = Number(settings14.store.maxRecent);
@@ -11491,9 +11495,222 @@ html.void-rt-open [data-sidebar="gap"] {
     settings14.store[key] = next;
     return true;
   }
+  function emptyEffect() {
+    return { v: 1, visits: [], deniedIds: [], deniedAt: {}, ts: 0 };
+  }
+  function asStringList(value) {
+    if (!Array.isArray(value))
+      return [];
+    return value.filter((id) => typeof id === "string" && !!id);
+  }
+  function asStringRecord(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value))
+      return {};
+    const out = {};
+    for (const [id, raw] of Object.entries(value)) {
+      if (typeof raw === "string" && raw)
+        out[id] = raw;
+      else if (typeof raw === "number" && Number.isFinite(raw))
+        out[id] = String(raw);
+    }
+    return out;
+  }
+  function parseEffect(raw) {
+    if (raw == null)
+      return null;
+    let data = raw;
+    if (typeof raw === "string") {
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+    if (!data || typeof data !== "object")
+      return null;
+    const rec = data;
+    return {
+      v: 1,
+      visits: asStringList(rec.visits),
+      deniedIds: asStringList(rec.deniedIds),
+      deniedAt: asStringRecord(rec.deniedAt),
+      ts: Number(rec.ts) || 0
+    };
+  }
+  function mergeDeniedAt(a, b) {
+    const out = { ...a };
+    for (const [id, ts] of Object.entries(b)) {
+      if (!out[id] || Number(ts) >= Number(out[id]))
+        out[id] = ts;
+    }
+    return out;
+  }
+  function readEffectDisk() {
+    if (typeof GM_getValue === "function") {
+      try {
+        const gm = parseEffect(GM_getValue(EFFECT_GM_KEY, null));
+        if (gm)
+          return gm;
+      } catch {}
+    }
+    try {
+      return parseEffect(localStorage.getItem(EFFECT_LS_KEY));
+    } catch {
+      return null;
+    }
+  }
+  function writeEffectDisk(snap) {
+    if (applyingRemote)
+      return;
+    const json = JSON.stringify(snap);
+    if (typeof GM_setValue === "function") {
+      try {
+        GM_setValue(EFFECT_GM_KEY, json);
+        return;
+      } catch {}
+    }
+    try {
+      localStorage.setItem(EFFECT_LS_KEY, json);
+    } catch {}
+  }
+  function persistEffect(nextVisits) {
+    if (applyingRemote)
+      return false;
+    if (persisting) {
+      if (nextVisits)
+        effect.visits = nextVisits;
+      return false;
+    }
+    persisting = true;
+    try {
+      const disk = readEffectDisk() ?? emptyEffect();
+      const prevVisits = effect.visits;
+      const prevDenied = effect.deniedIds;
+      const prevAt = effect.deniedAt;
+      const deniedAt = mergeDeniedAt(disk.deniedAt, effect.deniedAt);
+      let deniedIds = unique([...disk.deniedIds, ...effect.deniedIds].filter((id) => id && !isHomeId(id)));
+      deniedIds = deniedIds.filter((id) => {
+        if (!revivedIds.has(id))
+          return true;
+        return Number(disk.deniedAt[id] || 0) > Number(effect.deniedAt[id] || 0);
+      }).slice(0, DENIED_MAX);
+      const keepAt = {};
+      for (const id of deniedIds) {
+        if (deniedAt[id])
+          keepAt[id] = deniedAt[id];
+      }
+      effect.deniedIds = deniedIds;
+      effect.deniedAt = keepAt;
+      const visits = capVisits(unique([...nextVisits ?? [], ...effect.visits, ...disk.visits]));
+      deniedIds = unique(effect.deniedIds.filter((id) => id && !isHomeId(id))).slice(0, DENIED_MAX);
+      const nextAt = {};
+      for (const id of deniedIds) {
+        if (effect.deniedAt[id])
+          nextAt[id] = effect.deniedAt[id];
+        else if (keepAt[id])
+          nextAt[id] = keepAt[id];
+      }
+      const snap = {
+        v: 1,
+        visits,
+        deniedIds,
+        deniedAt: nextAt,
+        ts: Date.now()
+      };
+      const differsDisk = !sameList(disk.visits, snap.visits) || !sameList(disk.deniedIds, snap.deniedIds) || !sameRecord(disk.deniedAt, snap.deniedAt);
+      const changed = !sameList(prevVisits, snap.visits) || !sameList(prevDenied, snap.deniedIds) || !sameRecord(prevAt, snap.deniedAt);
+      effect = snap;
+      if (differsDisk)
+        writeEffectDisk(snap);
+      revivedIds.clear();
+      return changed;
+    } finally {
+      persisting = false;
+    }
+  }
+  function onRemoteEffect(raw) {
+    const snap = parseEffect(raw);
+    if (!snap)
+      return;
+    applyingRemote = true;
+    try {
+      const deniedAt = mergeDeniedAt(effect.deniedAt, snap.deniedAt);
+      const deniedIds = unique([...effect.deniedIds, ...snap.deniedIds].filter((id) => id && !isHomeId(id))).slice(0, DENIED_MAX);
+      const keepAt = {};
+      for (const id of deniedIds) {
+        if (deniedAt[id])
+          keepAt[id] = deniedAt[id];
+      }
+      effect.deniedIds = deniedIds;
+      effect.deniedAt = keepAt;
+      effect.visits = capVisits(unique([currentVisit() ?? "", ...snap.visits, ...effect.visits]));
+      effect.ts = Math.max(effect.ts, snap.ts);
+      if (open2)
+        paint();
+    } finally {
+      applyingRemote = false;
+    }
+  }
+  function onEffectStorage(e) {
+    if (e.key !== EFFECT_LS_KEY)
+      return;
+    onRemoteEffect(e.newValue);
+  }
+  function bindEffectSync() {
+    if (typeof GM_addValueChangeListener === "function") {
+      try {
+        gmListenerId = GM_addValueChangeListener(EFFECT_GM_KEY, (_key, _old, value, remote) => {
+          if (remote)
+            onRemoteEffect(value);
+        });
+      } catch {}
+      return;
+    }
+    window.addEventListener("storage", onEffectStorage);
+  }
+  function unbindEffectSync() {
+    if (gmListenerId && typeof GM_removeValueChangeListener === "function") {
+      try {
+        GM_removeValueChangeListener(gmListenerId);
+      } catch {}
+      gmListenerId = 0;
+    }
+    window.removeEventListener("storage", onEffectStorage);
+  }
+  function initEffect() {
+    if (effectHydrated)
+      return;
+    const disk = readEffectDisk();
+    if (disk) {
+      effect = disk;
+    } else {
+      const fromSettings = {
+        visits: asStringList(settings14.plain.visits),
+        deniedIds: asStringList(settings14.plain.deniedIds),
+        deniedAt: asStringRecord(settings14.plain.deniedAt)
+      };
+      effect = {
+        v: 1,
+        visits: fromSettings.visits,
+        deniedIds: fromSettings.deniedIds,
+        deniedAt: fromSettings.deniedAt,
+        ts: 0
+      };
+      if (fromSettings.visits.length || fromSettings.deniedIds.length)
+        persistEffect(fromSettings.visits);
+    }
+    effectHydrated = true;
+    bindEffectSync();
+  }
   var writing = false;
   var pendingVisits = null;
   var bumpTimer = 0;
+  var effect = emptyEffect();
+  var effectHydrated = false;
+  var persisting = false;
+  var applyingRemote = false;
+  var gmListenerId = 0;
+  var revivedIds = new Set;
   function writeVisits(next) {
     pendingVisits = next;
     if (writing)
@@ -11510,7 +11727,8 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function commitVisits(next) {
-    const visits = capVisits(next);
+    const changedVisits = persistEffect(next);
+    const visits = readVisits();
     const rawWs = pruneRecord(settings14.plain.workspaceByConv, visits);
     const workspaceByConv = {};
     for (const [id, value] of Object.entries(rawWs)) {
@@ -11546,11 +11764,7 @@ html.void-rt-open [data-sidebar="gap"] {
         continue;
       keepIcons[id] = snap;
     }
-    let changed = false;
-    if (!sameList(readVisits(), visits)) {
-      settings14.store.visits = visits;
-      changed = true;
-    }
+    let changed = changedVisits;
     const titles = {};
     for (const [id, name] of Object.entries(pruneRecord(settings14.plain.titles, visits))) {
       const t = usableTitle(name);
@@ -12768,41 +12982,34 @@ html.void-rt-open [data-sidebar="gap"] {
     });
   }
   function readDenied() {
-    return settings14.plain.deniedIds ?? [];
+    return effect.deniedIds;
   }
   function isDenied(id) {
     return !!id && !isHomeId(id) && readDenied().includes(id);
   }
   function deniedFresh(id) {
-    const n = Number(settings14.plain.deniedAt?.[id] || "");
+    const n = Number(effect.deniedAt[id] || "");
     return Number.isFinite(n) && n > 0 && Date.now() - n < DENIED_HOLD_MS;
-  }
-  function writeDenied(ids) {
-    const next = unique(ids.filter((id) => id && !isHomeId(id))).slice(0, DENIED_MAX);
-    const prevAt = settings14.plain.deniedAt ?? {};
-    const at = {};
-    for (const id of next) {
-      if (prevAt[id])
-        at[id] = prevAt[id];
-    }
-    if (!sameList(readDenied(), next))
-      settings14.store.deniedIds = next;
-    if (!sameRecord(prevAt, at))
-      settings14.store.deniedAt = at;
   }
   function tombstone(id) {
     if (!id || isHomeId(id))
       return;
-    writeDenied([id, ...readDenied()]);
-    const at = { ...settings14.plain.deniedAt, [id]: String(Date.now()) };
-    if (!sameRecord(settings14.plain.deniedAt, at))
-      settings14.store.deniedAt = at;
+    revivedIds.delete(id);
+    effect.deniedIds = unique([id, ...effect.deniedIds]).slice(0, DENIED_MAX);
+    effect.deniedAt = { ...effect.deniedAt, [id]: String(Date.now()) };
     forgetPage(id);
+    persistEffect();
   }
   function revive(id) {
     if (!id || !isDenied(id))
       return;
-    writeDenied(readDenied().filter((x) => x !== id));
+    revivedIds.add(id);
+    effect.deniedIds = effect.deniedIds.filter((x) => x !== id);
+    const at = { ...effect.deniedAt };
+    delete at[id];
+    effect.deniedAt = at;
+    if (!persisting)
+      persistEffect();
   }
   function reviveIfAlive(id) {
     if (!id || isHomeId(id) || !isDenied(id))
@@ -12863,6 +13070,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return !!workspaceOf(id);
   }
   function hydrate() {
+    initEffect();
     invalidateSidebar();
     prunePages();
     const current = currentVisit();
@@ -13476,6 +13684,7 @@ html.void-rt-open [data-sidebar="gap"] {
       held = false;
       ctrlHeld = false;
       try {
+        initEffect();
         hydrate();
         const current = currentVisit();
         if (current != null)
@@ -13499,6 +13708,7 @@ html.void-rt-open [data-sidebar="gap"] {
         window.clearTimeout(bumpTimer);
         bumpTimer = 0;
       }
+      unbindEffectSync();
       keys2?.abort();
       keys2 = null;
       open2 = false;
@@ -19197,7 +19407,7 @@ div:has(> #grok-bot-nav-button) {
   streamerMode_default.updatedAt = 0;
   inputHistory_default.updatedAt = 1789266420000;
   downloadTTS_default.updatedAt = 0;
-  recentTopics_default.updatedAt = 1789389281000;
+  recentTopics_default.updatedAt = 1789390152000;
   betterLinks_default.updatedAt = 0;
   experiments_default.updatedAt = 0;
   customInstructions_default.updatedAt = 0;

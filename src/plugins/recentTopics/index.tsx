@@ -47,6 +47,8 @@ const ICON_SKIP = ".void-cls,[data-sidebar='menu-action'],[data-sidebar='menu-ba
 const DENIED_MAX = 40;
 const DENIED_HOLD_MS = 60_000;
 const SETTLE_MS = 200;
+const EFFECT_GM_KEY = "VoidPP.rt.effect";
+const EFFECT_LS_KEY = "voidpp.rt.v1";
 
 const settings = definePluginSettings({
     maxRecent: {
@@ -79,6 +81,14 @@ interface PageSnap {
     title: string;
     theme: "dark" | "light";
     lines: PageLine[];
+}
+
+interface EffectSnap {
+    v: 1;
+    visits: string[];
+    deniedIds: string[];
+    deniedAt: Record<string, string>;
+    ts: number;
 }
 
 const thumbs = new Map<string, PageSnap>();
@@ -145,7 +155,7 @@ function unique(ids: string[]): string[] {
 }
 
 function readVisits(): string[] {
-    return settings.plain.visits ?? [];
+    return effect.visits;
 }
 
 function maxCount(): number {
@@ -202,9 +212,208 @@ function assignRecord(key: "titles" | "workspaceByConv" | "projectNames" | "proj
     return true;
 }
 
+function emptyEffect(): EffectSnap {
+    return { v: 1, visits: [], deniedIds: [], deniedAt: {}, ts: 0 };
+}
+
+function asStringList(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((id): id is string => typeof id === "string" && !!id);
+}
+
+function asStringRecord(value: unknown): Record<string, string> {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+    const out: Record<string, string> = {};
+    for (const [id, raw] of Object.entries(value as Record<string, unknown>)) {
+        if (typeof raw === "string" && raw) out[id] = raw;
+        else if (typeof raw === "number" && Number.isFinite(raw)) out[id] = String(raw);
+    }
+    return out;
+}
+
+function parseEffect(raw: unknown): EffectSnap | null {
+    if (raw == null) return null;
+    let data: unknown = raw;
+    if (typeof raw === "string") {
+        try { data = JSON.parse(raw); } catch { return null; }
+    }
+    if (!data || typeof data !== "object") return null;
+    const rec = data as Record<string, unknown>;
+    return {
+        v: 1,
+        visits: asStringList(rec.visits),
+        deniedIds: asStringList(rec.deniedIds),
+        deniedAt: asStringRecord(rec.deniedAt),
+        ts: Number(rec.ts) || 0,
+    };
+}
+
+function mergeDeniedAt(a: Record<string, string>, b: Record<string, string>): Record<string, string> {
+    const out = { ...a };
+    for (const [id, ts] of Object.entries(b)) {
+        if (!out[id] || Number(ts) >= Number(out[id])) out[id] = ts;
+    }
+    return out;
+}
+
+function readEffectDisk(): EffectSnap | null {
+    if (typeof GM_getValue === "function") {
+        try {
+            const gm = parseEffect(GM_getValue(EFFECT_GM_KEY, null));
+            if (gm) return gm;
+        } catch { /* ignore */ }
+    }
+    try {
+        return parseEffect(localStorage.getItem(EFFECT_LS_KEY));
+    } catch {
+        return null;
+    }
+}
+
+function writeEffectDisk(snap: EffectSnap) {
+    if (applyingRemote) return;
+    const json = JSON.stringify(snap);
+    if (typeof GM_setValue === "function") {
+        try {
+            GM_setValue(EFFECT_GM_KEY, json);
+            return;
+        } catch { /* fallback */ }
+    }
+    try { localStorage.setItem(EFFECT_LS_KEY, json); } catch { /* ignore */ }
+}
+
+function persistEffect(nextVisits?: string[]): boolean {
+    if (applyingRemote) return false;
+    if (persisting) {
+        if (nextVisits) effect.visits = nextVisits;
+        return false;
+    }
+    persisting = true;
+    try {
+        const disk = readEffectDisk() ?? emptyEffect();
+        const prevVisits = effect.visits;
+        const prevDenied = effect.deniedIds;
+        const prevAt = effect.deniedAt;
+        const deniedAt = mergeDeniedAt(disk.deniedAt, effect.deniedAt);
+        let deniedIds = unique([...disk.deniedIds, ...effect.deniedIds].filter(id => id && !isHomeId(id)));
+        deniedIds = deniedIds.filter(id => {
+            if (!revivedIds.has(id)) return true;
+            return Number(disk.deniedAt[id] || 0) > Number(effect.deniedAt[id] || 0);
+        }).slice(0, DENIED_MAX);
+        const keepAt: Record<string, string> = {};
+        for (const id of deniedIds) {
+            if (deniedAt[id]) keepAt[id] = deniedAt[id];
+        }
+        effect.deniedIds = deniedIds;
+        effect.deniedAt = keepAt;
+        const visits = capVisits(unique([...(nextVisits ?? []), ...effect.visits, ...disk.visits]));
+        deniedIds = unique(effect.deniedIds.filter(id => id && !isHomeId(id))).slice(0, DENIED_MAX);
+        const nextAt: Record<string, string> = {};
+        for (const id of deniedIds) {
+            if (effect.deniedAt[id]) nextAt[id] = effect.deniedAt[id];
+            else if (keepAt[id]) nextAt[id] = keepAt[id];
+        }
+        const snap: EffectSnap = {
+            v: 1,
+            visits,
+            deniedIds,
+            deniedAt: nextAt,
+            ts: Date.now(),
+        };
+        const differsDisk = !sameList(disk.visits, snap.visits)
+            || !sameList(disk.deniedIds, snap.deniedIds)
+            || !sameRecord(disk.deniedAt, snap.deniedAt);
+        const changed = !sameList(prevVisits, snap.visits)
+            || !sameList(prevDenied, snap.deniedIds)
+            || !sameRecord(prevAt, snap.deniedAt);
+        effect = snap;
+        if (differsDisk) writeEffectDisk(snap);
+        revivedIds.clear();
+        return changed;
+    } finally {
+        persisting = false;
+    }
+}
+
+function onRemoteEffect(raw: unknown) {
+    const snap = parseEffect(raw);
+    if (!snap) return;
+    applyingRemote = true;
+    try {
+        const deniedAt = mergeDeniedAt(effect.deniedAt, snap.deniedAt);
+        const deniedIds = unique([...effect.deniedIds, ...snap.deniedIds].filter(id => id && !isHomeId(id))).slice(0, DENIED_MAX);
+        const keepAt: Record<string, string> = {};
+        for (const id of deniedIds) {
+            if (deniedAt[id]) keepAt[id] = deniedAt[id];
+        }
+        effect.deniedIds = deniedIds;
+        effect.deniedAt = keepAt;
+        effect.visits = capVisits(unique([currentVisit() ?? "", ...snap.visits, ...effect.visits]));
+        effect.ts = Math.max(effect.ts, snap.ts);
+        if (open) paint();
+    } finally {
+        applyingRemote = false;
+    }
+}
+
+function onEffectStorage(e: StorageEvent) {
+    if (e.key !== EFFECT_LS_KEY) return;
+    onRemoteEffect(e.newValue);
+}
+
+function bindEffectSync() {
+    if (typeof GM_addValueChangeListener === "function") {
+        try {
+            gmListenerId = GM_addValueChangeListener(EFFECT_GM_KEY, (_key, _old, value, remote) => {
+                if (remote) onRemoteEffect(value);
+            });
+        } catch { /* ignore */ }
+        return;
+    }
+    window.addEventListener("storage", onEffectStorage);
+}
+
+function unbindEffectSync() {
+    if (gmListenerId && typeof GM_removeValueChangeListener === "function") {
+        try { GM_removeValueChangeListener(gmListenerId); } catch { /* ignore */ }
+        gmListenerId = 0;
+    }
+    window.removeEventListener("storage", onEffectStorage);
+}
+
+function initEffect() {
+    if (effectHydrated) return;
+    const disk = readEffectDisk();
+    if (disk) {
+        effect = disk;
+    } else {
+        const fromSettings = {
+            visits: asStringList(settings.plain.visits),
+            deniedIds: asStringList(settings.plain.deniedIds),
+            deniedAt: asStringRecord(settings.plain.deniedAt),
+        };
+        effect = {
+            v: 1,
+            visits: fromSettings.visits,
+            deniedIds: fromSettings.deniedIds,
+            deniedAt: fromSettings.deniedAt,
+            ts: 0,
+        };
+        if (fromSettings.visits.length || fromSettings.deniedIds.length) persistEffect(fromSettings.visits);
+    }
+    effectHydrated = true;
+    bindEffectSync();
+}
+
 let writing = false;
 let pendingVisits: string[] | null = null;
 let bumpTimer = 0;
+let effect = emptyEffect();
+let effectHydrated = false;
+let persisting = false;
+let applyingRemote = false;
+let gmListenerId = 0;
+const revivedIds = new Set<string>();
 
 function writeVisits(next: string[]) {
     pendingVisits = next;
@@ -222,7 +431,8 @@ function writeVisits(next: string[]) {
 }
 
 function commitVisits(next: string[]) {
-    const visits = capVisits(next);
+    const changedVisits = persistEffect(next);
+    const visits = readVisits();
     const rawWs = pruneRecord(settings.plain.workspaceByConv, visits);
     const workspaceByConv: Record<string, string> = {};
     for (const [id, value] of Object.entries(rawWs)) {
@@ -252,11 +462,7 @@ function commitVisits(next: string[]) {
         if (!usedWs.has(id) || !snap || isChromeSnap(snap)) continue;
         keepIcons[id] = snap;
     }
-    let changed = false;
-    if (!sameList(readVisits(), visits)) {
-        settings.store.visits = visits;
-        changed = true;
-    }
+    let changed = changedVisits;
     const titles: Record<string, string> = {};
     for (const [id, name] of Object.entries(pruneRecord(settings.plain.titles, visits))) {
         const t = usableTitle(name);
@@ -1396,7 +1602,7 @@ function scheduleCapture() {
 }
 
 function readDenied(): string[] {
-    return settings.plain.deniedIds ?? [];
+    return effect.deniedIds;
 }
 
 function isDenied(id: string): boolean {
@@ -1404,32 +1610,27 @@ function isDenied(id: string): boolean {
 }
 
 function deniedFresh(id: string): boolean {
-    const n = Number(settings.plain.deniedAt?.[id] || "");
+    const n = Number(effect.deniedAt[id] || "");
     return Number.isFinite(n) && n > 0 && Date.now() - n < DENIED_HOLD_MS;
-}
-
-function writeDenied(ids: string[]) {
-    const next = unique(ids.filter(id => id && !isHomeId(id))).slice(0, DENIED_MAX);
-    const prevAt = settings.plain.deniedAt ?? {};
-    const at: Record<string, string> = {};
-    for (const id of next) {
-        if (prevAt[id]) at[id] = prevAt[id];
-    }
-    if (!sameList(readDenied(), next)) settings.store.deniedIds = next;
-    if (!sameRecord(prevAt, at)) settings.store.deniedAt = at;
 }
 
 function tombstone(id: string) {
     if (!id || isHomeId(id)) return;
-    writeDenied([id, ...readDenied()]);
-    const at = { ...settings.plain.deniedAt, [id]: String(Date.now()) };
-    if (!sameRecord(settings.plain.deniedAt, at)) settings.store.deniedAt = at;
+    revivedIds.delete(id);
+    effect.deniedIds = unique([id, ...effect.deniedIds]).slice(0, DENIED_MAX);
+    effect.deniedAt = { ...effect.deniedAt, [id]: String(Date.now()) };
     forgetPage(id);
+    persistEffect();
 }
 
 function revive(id: string) {
     if (!id || !isDenied(id)) return;
-    writeDenied(readDenied().filter(x => x !== id));
+    revivedIds.add(id);
+    effect.deniedIds = effect.deniedIds.filter(x => x !== id);
+    const at = { ...effect.deniedAt };
+    delete at[id];
+    effect.deniedAt = at;
+    if (!persisting) persistEffect();
 }
 
 function reviveIfAlive(id: string): boolean {
@@ -1482,6 +1683,7 @@ function shouldRememberProject(id: string): boolean {
 }
 
 function hydrate() {
+    initEffect();
     invalidateSidebar();
     prunePages();
     const current = currentVisit();
@@ -2106,6 +2308,7 @@ export default definePlugin({
         held = false;
         ctrlHeld = false;
         try {
+            initEffect();
             hydrate();
             const current = currentVisit();
             if (current != null) bump(current);
@@ -2129,6 +2332,7 @@ export default definePlugin({
             window.clearTimeout(bumpTimer);
             bumpTimer = 0;
         }
+        unbindEffectSync();
         keys?.abort();
         keys = null;
         open = false;
