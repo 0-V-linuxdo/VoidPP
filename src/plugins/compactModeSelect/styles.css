@@ -20,10 +20,20 @@
     box-shadow: none;
 }
 
+.void-cms-pin:is(:hover, :focus-visible) {
+    background: unset;
+    box-shadow: unset;
+}
+
 .query-bar .void-cms-on {
     color: #ff7a17;
     background: transparent !important;
     box-shadow: none !important;
+}
+
+.query-bar .void-cms-on:is(:hover, :focus-visible) {
+    background: unset !important;
+    box-shadow: unset !important;
 }
 
 .void-cms-label {
@@ -85,8 +95,8 @@ html.void-cms-picking .query-bar [data-query-bar-mode-select] {
     pointer-events: auto !important;
 }
 
-html.void-cms-picking [role="tooltip"],
-html.void-cms-picking [data-radix-tooltip-content] {
+html.void-cms-picking .query-bar [data-query-bar-mode-select] [role="tooltip"],
+html.void-cms-picking .query-bar [data-query-bar-mode-select] [data-radix-tooltip-content] {
     display: none !important;
 }
 
