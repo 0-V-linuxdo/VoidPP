@@ -23,13 +23,12 @@
 }
 
 .query-bar .void-cms-on:not(:hover):not(:focus-visible) {
-    background: transparent !important;
+    background-color: transparent !important;
     box-shadow: none !important;
 }
 
-.void-cms-pin:is(:hover, :focus-visible),
-.query-bar .void-cms-on:is(:hover, :focus-visible) {
-    background: hsl(var(--button-ghost-hover));
+.query-bar .void-cms-pin:is(:hover, :focus-visible) {
+    background-color: var(--button-ghost-hover, rgb(255 255 255 / 8%)) !important;
 }
 
 .void-cms-label {
