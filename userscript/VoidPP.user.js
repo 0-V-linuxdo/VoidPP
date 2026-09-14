@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.11] v1.0.0
+// @version      [20260914.12] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -30,7 +30,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.11] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.12] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7347,9 +7347,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"aadca2f"}`
-    }, `(${"aadca2f"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"40fc559"}`
+    }, `(${"40fc559"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11368,6 +11368,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var SPIN_D = "M21 12a9 9 0 1 1-6.219-8.56";
   var PATH_OK = /^[MmLlHhVvCcSsQqTtAaZzeE0-9.,+\s-]+$/;
   var ICON_SKIP = ".void-cls,[data-sidebar='menu-action'],[data-sidebar='menu-badge']";
+  var DENIED_MAX = 40;
   var settings14 = definePluginSettings({
     maxRecent: {
       type: 4 /* SELECT */,
@@ -11446,6 +11447,8 @@ html.void-rt-open [data-sidebar="gap"] {
       if (id === HOME_KEY && dirtyGlobalWs && current !== HOME_KEY)
         id = homeId(dirtyGlobalWs);
       if (seen.has(id))
+        continue;
+      if (isDenied(id) && !reviveIfAlive(id))
         continue;
       if (isHomeId(id)) {
         if (!allowHome)
@@ -11562,9 +11565,10 @@ html.void-rt-open [data-sidebar="gap"] {
     if (usableTitle(lookup(id)?.title) !== t)
       return;
     const prev = settings14.plain.titles ?? {};
-    if (prev[id] === t)
-      return;
-    settings14.store.titles = { ...prev, [id]: t };
+    if (prev[id] !== t)
+      settings14.store.titles = { ...prev, [id]: t };
+    if (isDenied(id))
+      revive(id);
   }
   function isHomeId(id) {
     return id === HOME_KEY || id.startsWith(HOME_SEP);
@@ -11675,8 +11679,9 @@ html.void-rt-open [data-sidebar="gap"] {
       const ids = [];
       const add = (r) => {
         const id = routeConvId(r);
-        if (id != null)
-          ids.push(id);
+        if (id == null || isDenied(id))
+          return;
+        ids.push(id);
       };
       add(route);
       for (let i = (historyStack?.length ?? 0) - 1;i >= 0; i--)
@@ -12648,6 +12653,8 @@ html.void-rt-open [data-sidebar="gap"] {
     }
     if (isAccessDeniedPage() && id === chatIdFromUrl())
       return;
+    if (isDenied(id) && !reviveIfAlive(id))
+      return;
     const fromStore = linesFromStore(id);
     const live = id === chatIdFromUrl();
     let fromDom = [];
@@ -12704,10 +12711,41 @@ html.void-rt-open [data-sidebar="gap"] {
       });
     });
   }
+  function readDenied() {
+    return settings14.plain.deniedIds ?? [];
+  }
+  function isDenied(id) {
+    return !!id && !isHomeId(id) && readDenied().includes(id);
+  }
+  function writeDenied(ids) {
+    const next = unique(ids.filter((id) => id && !isHomeId(id))).slice(0, DENIED_MAX);
+    if (sameList(readDenied(), next))
+      return;
+    settings14.store.deniedIds = next;
+  }
+  function tombstone(id) {
+    if (!id || isHomeId(id))
+      return;
+    writeDenied([id, ...readDenied()]);
+    forgetPage(id);
+  }
+  function revive(id) {
+    if (!id || !isDenied(id))
+      return;
+    writeDenied(readDenied().filter((x) => x !== id));
+  }
+  function reviveIfAlive(id) {
+    if (!id || isHomeId(id) || !isDenied(id))
+      return false;
+    if (!usableTitle(lookup(id)?.title))
+      return false;
+    revive(id);
+    return true;
+  }
   function dropVisit(id) {
     if (!id || isHomeId(id))
       return;
-    forgetPage(id);
+    tombstone(id);
     writeVisits(readVisits().filter((x) => x !== id));
   }
   function bump(id) {
@@ -12719,6 +12757,8 @@ html.void-rt-open [data-sidebar="gap"] {
       dropVisit(id);
       return;
     }
+    if (!isHomeId(id) && isDenied(id) && !reviveIfAlive(id))
+      return;
     writeVisits(capVisits([id, ...readVisits()]));
     if (isHomeId(id)) {
       if (shouldRememberProject(id))
@@ -12740,9 +12780,9 @@ html.void-rt-open [data-sidebar="gap"] {
     const current = currentVisit();
     const denied = !!current && !isHomeId(current) && current === chatIdFromUrl() && isAccessDeniedPage();
     if (denied && current)
-      forgetPage(current);
+      tombstone(current);
     const merged = current == null || denied ? [...idsFromHistory(), ...readVisits()] : [current, ...idsFromHistory(), ...readVisits()];
-    writeVisits(capVisits(denied && current ? merged.filter((id) => id !== current) : merged));
+    writeVisits(capVisits(merged));
     reconcileSidebarCache();
     if (current && !denied) {
       rememberTitle(current, lookup(current)?.title);
@@ -19064,7 +19104,7 @@ div:has(> #grok-bot-nav-button) {
   streamerMode_default.updatedAt = 0;
   inputHistory_default.updatedAt = 1789266420000;
   downloadTTS_default.updatedAt = 0;
-  recentTopics_default.updatedAt = 1789387995000;
+  recentTopics_default.updatedAt = 1789388781000;
   betterLinks_default.updatedAt = 0;
   experiments_default.updatedAt = 0;
   customInstructions_default.updatedAt = 0;

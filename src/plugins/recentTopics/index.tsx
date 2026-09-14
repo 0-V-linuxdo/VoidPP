@@ -44,6 +44,7 @@ const FOLDER_D = "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.
 const SPIN_D = "M21 12a9 9 0 1 1-6.219-8.56";
 const PATH_OK = /^[MmLlHhVvCcSsQqTtAaZzeE0-9.,+\s-]+$/;
 const ICON_SKIP = ".void-cls,[data-sidebar='menu-action'],[data-sidebar='menu-badge']";
+const DENIED_MAX = 40;
 
 const settings = definePluginSettings({
     maxRecent: {
@@ -58,6 +59,7 @@ const settings = definePluginSettings({
     },
 }).withPrivateSettings<{
     visits: string[];
+    deniedIds: string[];
     titles: Record<string, string>;
     workspaceByConv: Record<string, string>;
     projectNames: Record<string, string>;
@@ -159,6 +161,7 @@ function capVisits(ids: string[]): string[] {
         let id = raw;
         if (id === HOME_KEY && dirtyGlobalWs && current !== HOME_KEY) id = homeId(dirtyGlobalWs);
         if (seen.has(id)) continue;
+        if (isDenied(id) && !reviveIfAlive(id)) continue;
         if (isHomeId(id)) {
             if (!allowHome) continue;
             if (id !== HOME_KEY && !workspaceFromHomeId(id)) continue;
@@ -258,8 +261,8 @@ function rememberTitle(id: string, title?: string) {
     if (!id || isHomeId(id) || !t) return;
     if (usableTitle(lookup(id)?.title) !== t) return;
     const prev = settings.plain.titles ?? {};
-    if (prev[id] === t) return;
-    settings.store.titles = { ...prev, [id]: t };
+    if (prev[id] !== t) settings.store.titles = { ...prev, [id]: t };
+    if (isDenied(id)) revive(id);
 }
 
 function isHomeId(id: string) {
@@ -369,7 +372,8 @@ function idsFromHistory(): string[] {
         const ids: string[] = [];
         const add = (r?: GrokRoute) => {
             const id = routeConvId(r);
-            if (id != null) ids.push(id);
+            if (id == null || isDenied(id)) return;
+            ids.push(id);
         };
         add(route);
         for (let i = (historyStack?.length ?? 0) - 1; i >= 0; i--) add(historyStack[i]);
@@ -1287,6 +1291,7 @@ function captureId(id: string) {
         return;
     }
     if (isAccessDeniedPage() && id === chatIdFromUrl()) return;
+    if (isDenied(id) && !reviveIfAlive(id)) return;
     const fromStore = linesFromStore(id);
     const live = id === chatIdFromUrl();
     let fromDom: PageLine[] = [];
@@ -1338,9 +1343,41 @@ function scheduleCapture() {
     });
 }
 
+function readDenied(): string[] {
+    return settings.plain.deniedIds ?? [];
+}
+
+function isDenied(id: string): boolean {
+    return !!id && !isHomeId(id) && readDenied().includes(id);
+}
+
+function writeDenied(ids: string[]) {
+    const next = unique(ids.filter(id => id && !isHomeId(id))).slice(0, DENIED_MAX);
+    if (sameList(readDenied(), next)) return;
+    settings.store.deniedIds = next;
+}
+
+function tombstone(id: string) {
+    if (!id || isHomeId(id)) return;
+    writeDenied([id, ...readDenied()]);
+    forgetPage(id);
+}
+
+function revive(id: string) {
+    if (!id || !isDenied(id)) return;
+    writeDenied(readDenied().filter(x => x !== id));
+}
+
+function reviveIfAlive(id: string): boolean {
+    if (!id || isHomeId(id) || !isDenied(id)) return false;
+    if (!usableTitle(lookup(id)?.title)) return false;
+    revive(id);
+    return true;
+}
+
 function dropVisit(id: string) {
     if (!id || isHomeId(id)) return;
-    forgetPage(id);
+    tombstone(id);
     writeVisits(readVisits().filter(x => x !== id));
 }
 
@@ -1351,6 +1388,7 @@ function bump(id: string) {
         dropVisit(id);
         return;
     }
+    if (!isHomeId(id) && isDenied(id) && !reviveIfAlive(id)) return;
     writeVisits(capVisits([id, ...readVisits()]));
     if (isHomeId(id)) {
         if (shouldRememberProject(id)) rememberProject(id);
@@ -1370,11 +1408,11 @@ function hydrate() {
     prunePages();
     const current = currentVisit();
     const denied = !!current && !isHomeId(current) && current === chatIdFromUrl() && isAccessDeniedPage();
-    if (denied && current) forgetPage(current);
+    if (denied && current) tombstone(current);
     const merged = current == null || denied
         ? [...idsFromHistory(), ...readVisits()]
         : [current, ...idsFromHistory(), ...readVisits()];
-    writeVisits(capVisits(denied && current ? merged.filter(id => id !== current) : merged));
+    writeVisits(capVisits(merged));
     reconcileSidebarCache();
     if (current && !denied) {
         rememberTitle(current, lookup(current)?.title);
