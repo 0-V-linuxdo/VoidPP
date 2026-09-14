@@ -1061,17 +1061,14 @@ function captureId(id: string) {
         return;
     }
     const fromStore = linesFromStore(id);
-    const live = id === currentVisit();
+    const live = id === chatIdFromUrl();
     let fromDom: PageLine[] = [];
     if (live) {
         const pane = chatPane();
         if (pane) fromDom = extractLines(pane);
     }
     const lines = lastRound(betterLines(fromStore, fromDom));
-    if (!lines.length) {
-        if (live) forgetPage(id);
-        return;
-    }
+    if (!lines.length) return;
     const snap: PageSnap = {
         title: titleOf(id),
         theme: detectTheme(),
