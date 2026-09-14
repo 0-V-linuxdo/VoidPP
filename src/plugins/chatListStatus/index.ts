@@ -15,7 +15,7 @@ import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import type { ZustandStore } from "@grok-types/zustand";
 import { ChatPageStore, ConversationStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
 import { getModuleCache, isBlacklisted, onModuleLoad, silenceWarns, syncLazyModules } from "@turbopack/patchTurbopack";
-import { findByPropsLazy, isZustandStore } from "@turbopack/turbopack";
+import { isZustandStore } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { StartAt } from "@utils/types";
@@ -28,15 +28,11 @@ const LIVE_WORD = /^(working|running|in[_-]?progress|executing|processing|pendin
 const LIVE_FLAG = /^(isWorking|isRunning|inProgress|isInProgress|isExecuting|working)$/;
 const SKIP_KEY = /^(message|content|html|query|text|title|thinkingTrace)$/i;
 const EXTRA_HINT = /computer|sandbox|agent|task|working/i;
-const OWN_HOOKS = new Set(["useChatPageStore", "useConversationStore", "useResponseStore", "useRoutingStore", "useBotsStore"]);
-const SIDEBAR = '[data-sidebar="sidebar"]';
+const OWN_HOOKS = new Set(["useChatPageStore", "useConversationStore", "useResponseStore", "useRoutingStore"]);
+const SIDEBAR = '[data-sidebar="sidebar"], [data-sidebar="content"]';
 const HOST = '[data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]';
-const ROW = 'a[href*="/c/"], a[href*="/chat/"], a[href*="chat="], a[href*="/bot/"]';
+const ROW = 'a[href*="/c/"], a[href*="/chat/"], a[href*="chat="]';
 const SPIN_PATH = "M21 12a9 9 0 1 1-6.219-8.56";
-const PATH_CHAT = /^\/(?:c|chat)\/([^/?#]+)/i;
-const PATH_BOT = /^\/bot\/([^/?#]+)/i;
-const PATH_ID = /^\/(?:c|chat|bot)\/([^/?#]+)/i;
-const BotsStore = findByPropsLazy("useBotsStore");
 
 type Kind = "streaming" | "done" | "error";
 
@@ -52,10 +48,9 @@ let extraBusy = false;
 let started = false;
 let obs: MutationObserver | null = null;
 let extraOff: (() => void) | null = null;
-let botsOff: (() => void) | null = null;
 
 function isConvId(value: unknown): value is string {
-    return typeof value === "string" && value.length >= 8 && /^[a-z0-9_-]+$/i.test(value) && !value.includes("draft");
+    return typeof value === "string" && value.length >= 8 && /^[a-z0-9_-]+$/i.test(value);
 }
 
 function isLiveStatus(value: unknown): boolean {
@@ -111,7 +106,7 @@ function collectConvIds(value: unknown, out: Set<string>, depth = 0) {
         return;
     }
     const rec = value as Record<string, any>;
-    const id = rec.conversationId ?? rec.optimisticConversationId ?? rec.chat ?? rec.conversation_id ?? rec.agentId;
+    const id = rec.conversationId ?? rec.optimisticConversationId ?? rec.chat ?? rec.conversation_id;
     if (isConvId(id) && isLiveBag(rec)) out.add(id);
     let n = 0;
     for (const [key, child] of Object.entries(rec)) {
@@ -122,55 +117,33 @@ function collectConvIds(value: unknown, out: Set<string>, depth = 0) {
     }
 }
 
-function addId(ids: string[], value: unknown) {
-    if (isConvId(value) && !ids.includes(value)) ids.push(value);
-}
-
-function currentChatIds(): string[] {
+function currentIds(): string[] {
     const ids: string[] = [];
+    const add = (value: unknown) => {
+        if (isConvId(value) && !ids.includes(value)) ids.push(value);
+    };
     try {
         const page = ChatPageStore.useChatPageStore.getState();
-        addId(ids, page.conversationId);
-        addId(ids, page.optimisticConversationId);
+        add(page.conversationId);
+        add(page.optimisticConversationId);
     } catch (e) {
         logger.debug("page ids unavailable:", e);
     }
     try {
         const { route } = RoutingStore.useRoutingStore.getState();
-        addId(ids, route.conversationId);
-        addId(ids, route.chat);
+        add(route.conversationId);
+        add(route.chat);
     } catch (e) {
-        logger.debug("route chat ids unavailable:", e);
+        logger.debug("route ids unavailable:", e);
     }
     try {
         const url = new URL(location.href);
-        addId(ids, url.searchParams.get("chat"));
-        addId(ids, url.searchParams.get("conversationId"));
-        addId(ids, url.pathname.match(PATH_CHAT)?.[1]);
+        add(url.searchParams.get("chat"));
+        add(url.searchParams.get("conversationId"));
+        add(url.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]);
     } catch (e) {
-        logger.debug("url chat ids unavailable:", e);
+        logger.debug("url ids unavailable:", e);
     }
-    return ids;
-}
-
-function currentAgentIds(): string[] {
-    const ids: string[] = [];
-    try {
-        addId(ids, RoutingStore.useRoutingStore.getState().route.agentId);
-    } catch (e) {
-        logger.debug("route agent id unavailable:", e);
-    }
-    try {
-        addId(ids, new URL(location.href).pathname.match(PATH_BOT)?.[1]);
-    } catch (e) {
-        logger.debug("url agent id unavailable:", e);
-    }
-    return ids;
-}
-
-function currentIds(): string[] {
-    const ids = currentChatIds();
-    for (const id of currentAgentIds()) addId(ids, id);
     return ids;
 }
 
@@ -253,25 +226,7 @@ function extraLiveIds(ids: Set<string>) {
             for (const id of found) ids.add(id);
             continue;
         }
-        for (const id of currentChatIds()) ids.add(id);
-    }
-}
-
-function botLiveIds(ids: Set<string>) {
-    try {
-        const s = BotsStore.useBotsStore.getState();
-        for (const [id, turn] of Object.entries(s.liveTurnByAgentId ?? {})) {
-            if (turn && isConvId(id)) ids.add(id);
-        }
-        for (const [id, pending] of Object.entries(s.pendingSendsByAgentId ?? {})) {
-            if (!isConvId(id) || !Array.isArray(pending) || !pending.some(send => send && !send.failed)) continue;
-            ids.add(id);
-        }
-        for (const agent of s.agents ?? []) {
-            if (agent?.runState === "running" && isConvId(agent.agentId)) ids.add(agent.agentId);
-        }
-    } catch (e) {
-        logger.debug("bots store unavailable:", e);
+        for (const id of currentIds()) ids.add(id);
     }
 }
 
@@ -279,13 +234,13 @@ function liveIds(): Set<string> {
     const ids = new Set<string>();
     try {
         const page = ChatPageStore.useChatPageStore.getState();
-        const chats = currentChatIds();
+        const currents = currentIds();
         if (page.streamedMessageId || page.showStreamingIndicator || isLiveBag(page.sidePanelContent) || isLiveBag(page.metadata)) {
-            for (const id of chats) ids.add(id);
+            for (const id of currents) ids.add(id);
         }
         const { byId, byConversationId, inflightPromisesByConversationId } = ResponseStore.useResponseStore.getState();
         if (isLiveResponse(byId[page.streamedMessageId ?? ""]) || isLiveResponse(byId[page.lastMessageId ?? ""]) || isLiveResponse(byId[page.sidePanelResponseId ?? ""])) {
-            for (const id of chats) ids.add(id);
+            for (const id of currents) ids.add(id);
         }
         for (const id of Object.keys(inflightPromisesByConversationId ?? {})) ids.add(id);
         for (const [id, list] of Object.entries(byConversationId ?? {})) {
@@ -303,7 +258,6 @@ function liveIds(): Set<string> {
         logger.debug("conversation store unavailable:", e);
     }
     extraLiveIds(ids);
-    botLiveIds(ids);
     return ids;
 }
 
@@ -324,12 +278,6 @@ function errorOf(id: string): boolean {
         }
     } catch (e) {
         logger.debug("error lookup failed:", e);
-    }
-    try {
-        const pending = BotsStore.useBotsStore.getState().pendingSendsByAgentId?.[id];
-        if (Array.isArray(pending) && pending.some(send => send?.failed)) return true;
-    } catch (e) {
-        logger.debug("bot error lookup failed:", e);
     }
     return false;
 }
@@ -389,7 +337,7 @@ function idFromHref(href: string): string {
         const u = new URL(href, location.origin);
         const id = u.searchParams.get("chat")
             || u.searchParams.get("conversationId")
-            || u.pathname.match(PATH_ID)?.[1]
+            || u.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]
             || "";
         return isConvId(id) ? id : "";
     } catch {
@@ -402,15 +350,9 @@ function hrefId(el: Element): string {
     return idFromHref(a?.getAttribute("href") ?? el.getAttribute("href") ?? "");
 }
 
-function isPrimaryNav(el: HTMLElement): boolean {
-    const href = (el.getAttribute("href") ?? el.querySelector("a[href]")?.getAttribute("href") ?? "").replace(/[?#].*$/, "");
-    return href === "/" || href === "/imagine" || href === "/library" || href === "/automations";
-}
-
 function rowHost(el: HTMLElement, root: Element): HTMLElement | null {
     if (el.classList.contains(MARK)) return null;
     if (el.closest('[data-sidebar="menu-action"], [data-sidebar="footer"], [data-sidebar="header"]')) return null;
-    if (isPrimaryNav(el)) return null;
     if (!hrefId(el)) return null;
     const wrapped = el.closest<HTMLElement>(HOST);
     return wrapped && root.contains(wrapped) ? wrapped : el;
@@ -575,13 +517,13 @@ function conversationKey(s: ConversationStoreState): string {
 
 function routeKey(s: RoutingStoreState): string {
     const { route } = s;
-    return `${route.conversationId ?? ""}|${route.chat ?? ""}|${route.workspaceId ?? ""}|${route.agentId ?? ""}`;
+    return `${route.conversationId ?? ""}|${route.chat ?? ""}|${route.workspaceId ?? ""}`;
 }
 
 export default definePlugin({
     name: "ChatListStatus",
     icon: LoaderCircleIcon,
-    description: "Show Grok reply status on sidebar chats and bots: spinner, blue dot, or error.",
+    description: "Show Grok reply status on sidebar chats: spinner, blue dot, or error.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
@@ -593,11 +535,6 @@ export default definePlugin({
         started = true;
         attachExtraStores();
         extraOff = onModuleLoad(() => queueExtraScan());
-        try {
-            botsOff = BotsStore.useBotsStore.subscribe(() => schedule());
-        } catch (e) {
-            logger.debug("bots store subscribe failed:", e);
-        }
         observe();
         schedule();
     },
@@ -612,8 +549,6 @@ export default definePlugin({
         obs = null;
         extraOff?.();
         extraOff = null;
-        botsOff?.();
-        botsOff = null;
         for (const unsub of extraUnsubs) unsub();
         extraUnsubs.length = 0;
         extraStores.length = 0;
