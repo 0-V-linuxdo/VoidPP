@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.20] v1.0.0
+// @version      [20260914.21] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.20] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.21] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7349,9 +7349,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.20] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4c4e0fa"}`
-    }, `(${"4c4e0fa"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f27d33c"}`
+    }, `(${"f27d33c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7675,7 +7675,7 @@ button .void-info-hint {
   // voidpp-css:/tmp/VoidPP/src/plugins/betterNavigator/styles.css
   registerStyle("betterNavigator", `.void-bn-host {
     pointer-events: none;
-    z-index: 40;
+    z-index: 50;
 }
 
 .void-bn-self {
@@ -7745,16 +7745,16 @@ button .void-info-hint {
     position: absolute;
     top: 0;
     right: 0;
+    z-index: 50;
     box-sizing: border-box;
     width: min(18rem, 70vw);
     max-height: min(70vh, 28rem);
     overflow: auto;
-    padding: 0.5rem;
+    padding: 0.375rem;
     border: 1px solid hsl(var(--border-l1));
-    border-radius: 0.75rem;
-    background: hsl(var(--surface-l2));
+    border-radius: 1.25rem;
+    background: hsl(var(--surface-l1));
     color: hsl(var(--fg-primary));
-    box-shadow: 0 8px 24px hsl(var(--fg-primary)/12%);
     opacity: 0;
     visibility: hidden;
     transform: translateX(0.5rem);
@@ -7787,37 +7787,36 @@ button .void-info-hint {
 
 .void-bn-item {
     display: flex;
-    align-items: center;
-    gap: 0.375rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.125rem;
     width: 100%;
-    padding: 0.4rem 0.5rem;
+    padding: 0.5rem 0.625rem;
     border: 0;
-    border-radius: 0.375rem;
+    border-radius: 0.75rem;
     background: transparent;
-    color: hsl(var(--fg-secondary));
+    color: hsl(var(--fg-primary));
     font: inherit;
     font-size: 0.875rem;
-    line-height: 1.3;
+    line-height: 1.4;
+    letter-spacing: -0.2px;
     text-align: start;
     cursor: pointer;
 }
 
 .void-bn-item:hover,
-.void-bn-item:focus-visible {
-    background: hsl(var(--fg-primary)/8%);
-    color: hsl(var(--fg-primary));
-}
-
+.void-bn-item:focus-visible,
 .void-bn-item.void-bn-active {
-    background: hsl(var(--fg-primary)/10%);
+    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
     color: hsl(var(--fg-primary));
-    font-weight: 500;
 }
 
-.void-bn-emoji {
+.void-bn-role {
     flex: none;
-    font-size: 1rem;
-    line-height: 1;
+    color: hsl(var(--fg-secondary));
+    font-size: 0.75rem;
+    line-height: 1.4;
+    letter-spacing: -0.2px;
 }
 
 .void-bn-label {
@@ -7833,9 +7832,29 @@ button .void-info-hint {
     border-radius: 0.75rem;
 }
 
-body:has(button[aria-label^="Go to response "][data-state="delayed-open"]) [role="tooltip"],
-body:has(button[aria-label^="Go to response "][data-state="instant-open"]) [role="tooltip"],
-body:has(button[aria-label^="Go to response "][data-state="open"]) [role="tooltip"] {
+html.void-bn-hidetip:is(
+    :has([aria-label^="Go to response "][data-state]:not([data-state="closed"])),
+    :has([data-state]:not([data-state="closed"]) [aria-label^="Go to response "]),
+    :has(.void-bn-rail:hover),
+    :has(.void-bn-host:hover)
+) :is(
+    [role="tooltip"],
+    [data-radix-tooltip-content],
+    [data-radix-hover-card-content]
+) {
+    display: none !important;
+}
+
+html.void-bn-hidetip:is(
+    :has([aria-label^="Go to response "][data-state]:not([data-state="closed"])),
+    :has([data-state]:not([data-state="closed"]) [aria-label^="Go to response "]),
+    :has(.void-bn-rail:hover),
+    :has(.void-bn-host:hover)
+) [data-radix-popper-content-wrapper]:is(
+    :has([role="tooltip"]),
+    :has([data-radix-tooltip-content]),
+    :has([data-radix-hover-card-content])
+) {
     display: none !important;
 }
 `);
@@ -7846,15 +7865,22 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
   var TICK_SEL = "button[aria-label^='Go to response ']";
   var PREV_SEL = "button[aria-label='Navigate to previous message']";
   var PANE_SKIP = "[data-sidebar], [class*='pane-card']";
+  var HIDE_CLASS = "void-bn-hidetip";
   var SUMMARY_MAX = 60;
   var FLASH_MS = 2000;
   var THRESHOLD = 0.4;
   var OFFSET_PX = 72;
   var SLOT_CLASS = "void-bn-rail";
+  var ZH = /^zh\b/i;
   var settings6 = definePluginSettings({
     showAssistant: {
       type: 3 /* BOOLEAN */,
       description: "List assistant replies in the navigator, not only your messages.",
+      default: true
+    },
+    hideNativeHover: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide Grok's single-message hover preview on the native ticks.",
       default: true
     },
     jumpEffect: {
@@ -7871,8 +7897,8 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
   var ro = null;
   var host = null;
   var rail = null;
-  var paneTouched = null;
-  var panePrevPos = "";
+  var frameTouched = null;
+  var framePrevPos = "";
   var paintedKey = "";
   var lastNav = [];
   var flashTimer = 0;
@@ -7881,6 +7907,10 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
   function isVisible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
+  }
+  function scrolls(el) {
+    const oy = getComputedStyle(el).overflowY;
+    return oy === "auto" || oy === "scroll";
   }
   function nativeTicks() {
     return [...document.querySelectorAll(TICK_SEL)].filter(isVisible);
@@ -7917,6 +7947,33 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
       }
     }
     return best;
+  }
+  function chatColumn() {
+    const slot = nativeSlot();
+    const slotParent = slot?.parentElement;
+    if (slotParent && !scrolls(slotParent))
+      return slotParent;
+    const pane = chatPane();
+    if (!pane)
+      return null;
+    for (let n = pane;n && n !== document.body; n = n.parentElement) {
+      if (n.className.includes("@container/chat"))
+        return n;
+    }
+    for (let n = pane.parentElement;n && n !== document.body; n = n.parentElement) {
+      if (scrolls(n))
+        continue;
+      const r = n.getBoundingClientRect();
+      if (r.height >= 240 && r.width >= 240)
+        return n;
+    }
+    return pane.parentElement;
+  }
+  function roleLabel(role) {
+    const zh = ZH.test(document.documentElement.lang) || ZH.test(navigator.language);
+    if (role === "user")
+      return zh ? "你" : "You";
+    return "Grok";
   }
   function summarize(el) {
     const clone = el.cloneNode(true);
@@ -8009,13 +8066,13 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
       btn.type = "button";
       btn.className = cl17("item");
       btn.dataset.voidBnI = String(i);
-      const emoji = document.createElement("span");
-      emoji.className = cl17("emoji");
-      emoji.textContent = item.role === "user" ? "❓" : "\uD83E\uDD16";
+      const role = document.createElement("span");
+      role.className = cl17("role");
+      role.textContent = roleLabel(item.role);
       const label = document.createElement("span");
       label.className = cl17("label");
       label.textContent = item.text;
-      btn.append(emoji, label);
+      btn.append(role, label);
       btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -8044,12 +8101,21 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
     });
     return wrap;
   }
-  function restorePane() {
-    if (!paneTouched)
+  function restoreFrame() {
+    if (!frameTouched)
       return;
-    paneTouched.style.position = panePrevPos;
-    paneTouched = null;
-    panePrevPos = "";
+    frameTouched.style.position = framePrevPos;
+    frameTouched = null;
+    framePrevPos = "";
+  }
+  function pinFrame(frame) {
+    if (scrolls(frame))
+      return;
+    if (getComputedStyle(frame).position !== "static")
+      return;
+    frameTouched = frame;
+    framePrevPos = frame.style.position;
+    frame.style.position = "relative";
   }
   function unmount() {
     rail?.classList.remove(SLOT_CLASS);
@@ -8057,14 +8123,10 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
     host = null;
     rail = null;
     paintedKey = "";
-    restorePane();
+    restoreFrame();
   }
-  function relPos(col) {
-    if (getComputedStyle(col).position !== "static")
-      return;
-    paneTouched = col;
-    panePrevPos = col.style.position;
-    col.style.position = "relative";
+  function syncHideTip() {
+    document.documentElement.classList.toggle(HIDE_CLASS, !!settings6.store.hideNativeHover);
   }
   function paint() {
     const nav = collect();
@@ -8098,12 +8160,13 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
       slot.appendChild(box);
       rail = slot;
     } else {
-      const col = chatPane();
-      if (!col)
+      const frame = chatColumn();
+      if (!frame)
         return;
-      relPos(col);
+      pinFrame(frame);
+      box.classList.add(SLOT_CLASS);
       box.append(tickRail(nav), menuEl(nav, []));
-      col.appendChild(box);
+      frame.appendChild(box);
     }
     const list = box.querySelector(".void-bn-list");
     if (list instanceof HTMLElement)
@@ -8118,6 +8181,7 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
       return;
     ac = new AbortController;
     const { signal } = ac;
+    syncHideTip();
     paint();
     mo = new MutationObserver(debouncedPaint);
     mo.observe(document.body, { childList: true, subtree: true });
@@ -8141,6 +8205,7 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
     unmount();
     clearFlash();
     lastNav = [];
+    document.documentElement.classList.remove(HIDE_CLASS);
   }
   var betterNavigator_default = definePlugin({
     name: "BetterNavigator",
@@ -8156,6 +8221,7 @@ body:has(button[aria-label^="Go to response "][data-state="open"]) [role="toolti
     start,
     stop,
     onSettingsChange() {
+      syncHideTip();
       paintedKey = "";
       paint();
     }
@@ -19938,7 +20004,7 @@ div:has(> #grok-bot-nav-button) {
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1781101259000;
   contextMenu_default.updatedAt = 1781702684000;
-  betterNavigator_default.updatedAt = 0;
+  betterNavigator_default.updatedAt = 1789400304000;
   noSidebarIdentity_default.updatedAt = 1788577403000;
   cleaner_default.updatedAt = 1789246749000;
   betterSidebar_default.updatedAt = 1789254776000;

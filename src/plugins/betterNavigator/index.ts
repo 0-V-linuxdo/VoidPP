@@ -18,16 +18,23 @@ const MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']
 const TICK_SEL = "button[aria-label^='Go to response ']";
 const PREV_SEL = "button[aria-label='Navigate to previous message']";
 const PANE_SKIP = "[data-sidebar], [class*='pane-card']";
+const HIDE_CLASS = "void-bn-hidetip";
 const SUMMARY_MAX = 60;
 const FLASH_MS = 2000;
 const THRESHOLD = 0.4;
 const OFFSET_PX = 72;
 const SLOT_CLASS = "void-bn-rail";
+const ZH = /^zh\b/i;
 
 const settings = definePluginSettings({
     showAssistant: {
         type: OptionType.BOOLEAN,
         description: "List assistant replies in the navigator, not only your messages.",
+        default: true,
+    },
+    hideNativeHover: {
+        type: OptionType.BOOLEAN,
+        description: "Hide Grok's single-message hover preview on the native ticks.",
         default: true,
     },
     jumpEffect: {
@@ -53,8 +60,8 @@ let mo: MutationObserver | null = null;
 let ro: ResizeObserver | null = null;
 let host: HTMLElement | null = null;
 let rail: HTMLElement | null = null;
-let paneTouched: HTMLElement | null = null;
-let panePrevPos = "";
+let frameTouched: HTMLElement | null = null;
+let framePrevPos = "";
 let paintedKey = "";
 let lastNav: NavItem[] = [];
 let flashTimer = 0;
@@ -64,6 +71,11 @@ let raf = 0;
 function isVisible(el: Element): boolean {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
+}
+
+function scrolls(el: HTMLElement): boolean {
+    const oy = getComputedStyle(el).overflowY;
+    return oy === "auto" || oy === "scroll";
 }
 
 function nativeTicks(): HTMLButtonElement[] {
@@ -99,6 +111,30 @@ function chatPane(): HTMLElement | null {
         }
     }
     return best;
+}
+
+function chatColumn(): HTMLElement | null {
+    const slot = nativeSlot();
+    const slotParent = slot?.parentElement;
+    if (slotParent && !scrolls(slotParent)) return slotParent;
+
+    const pane = chatPane();
+    if (!pane) return null;
+    for (let n: HTMLElement | null = pane; n && n !== document.body; n = n.parentElement) {
+        if (n.className.includes("@container/chat")) return n;
+    }
+    for (let n: HTMLElement | null = pane.parentElement; n && n !== document.body; n = n.parentElement) {
+        if (scrolls(n)) continue;
+        const r = n.getBoundingClientRect();
+        if (r.height >= 240 && r.width >= 240) return n;
+    }
+    return pane.parentElement;
+}
+
+function roleLabel(role: Role): string {
+    const zh = ZH.test(document.documentElement.lang) || ZH.test(navigator.language);
+    if (role === "user") return zh ? "你" : "You";
+    return "Grok";
 }
 
 function summarize(el: HTMLElement): string {
@@ -188,13 +224,13 @@ function menuEl(nav: NavItem[], ticks: HTMLButtonElement[]): HTMLElement {
         btn.type = "button";
         btn.className = cl("item");
         btn.dataset.voidBnI = String(i);
-        const emoji = document.createElement("span");
-        emoji.className = cl("emoji");
-        emoji.textContent = item.role === "user" ? "❓" : "🤖";
+        const role = document.createElement("span");
+        role.className = cl("role");
+        role.textContent = roleLabel(item.role);
         const label = document.createElement("span");
         label.className = cl("label");
         label.textContent = item.text;
-        btn.append(emoji, label);
+        btn.append(role, label);
         btn.addEventListener("click", e => {
             e.preventDefault();
             e.stopPropagation();
@@ -225,11 +261,19 @@ function tickRail(nav: NavItem[]): HTMLElement {
     return wrap;
 }
 
-function restorePane() {
-    if (!paneTouched) return;
-    paneTouched.style.position = panePrevPos;
-    paneTouched = null;
-    panePrevPos = "";
+function restoreFrame() {
+    if (!frameTouched) return;
+    frameTouched.style.position = framePrevPos;
+    frameTouched = null;
+    framePrevPos = "";
+}
+
+function pinFrame(frame: HTMLElement) {
+    if (scrolls(frame)) return;
+    if (getComputedStyle(frame).position !== "static") return;
+    frameTouched = frame;
+    framePrevPos = frame.style.position;
+    frame.style.position = "relative";
 }
 
 function unmount() {
@@ -238,14 +282,11 @@ function unmount() {
     host = null;
     rail = null;
     paintedKey = "";
-    restorePane();
+    restoreFrame();
 }
 
-function relPos(col: HTMLElement) {
-    if (getComputedStyle(col).position !== "static") return;
-    paneTouched = col;
-    panePrevPos = col.style.position;
-    col.style.position = "relative";
+function syncHideTip() {
+    document.documentElement.classList.toggle(HIDE_CLASS, !!settings.store.hideNativeHover);
 }
 
 function paint() {
@@ -282,11 +323,12 @@ function paint() {
         slot.appendChild(box);
         rail = slot;
     } else {
-        const col = chatPane();
-        if (!col) return;
-        relPos(col);
+        const frame = chatColumn();
+        if (!frame) return;
+        pinFrame(frame);
+        box.classList.add(SLOT_CLASS);
         box.append(tickRail(nav), menuEl(nav, []));
-        col.appendChild(box);
+        frame.appendChild(box);
     }
 
     const list = box.querySelector(".void-bn-list");
@@ -302,6 +344,7 @@ function start() {
     if (ac) return;
     ac = new AbortController();
     const { signal } = ac;
+    syncHideTip();
     paint();
     mo = new MutationObserver(debouncedPaint);
     mo.observe(document.body, { childList: true, subtree: true });
@@ -325,6 +368,7 @@ function stop() {
     unmount();
     clearFlash();
     lastNav = [];
+    document.documentElement.classList.remove(HIDE_CLASS);
 }
 
 export default definePlugin({
@@ -341,6 +385,7 @@ export default definePlugin({
     start,
     stop,
     onSettingsChange() {
+        syncHideTip();
         paintedKey = "";
         paint();
     },
