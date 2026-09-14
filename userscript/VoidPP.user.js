@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.22] v1.0.0
+// @version      [20260914.23] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.22] v1.0.0 — A modification for grok.com
+ * Void++ [20260914.23] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7349,9 +7349,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"16359a8"}`
-    }, `(${"16359a8"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260914.23] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8aa6783"}`
+    }, `(${"8aa6783"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7690,6 +7690,7 @@ button .void-info-hint {
     top: 0;
     right: 100%;
     height: 100%;
+    pointer-events: none;
 }
 
 .void-bn-fill {
@@ -7704,7 +7705,14 @@ button .void-info-hint {
     flex-direction: column;
     align-items: flex-end;
     gap: 0;
+    max-height: min(70vh, 32rem);
+    overflow-y: auto;
     pointer-events: auto;
+    scrollbar-width: none;
+}
+
+.void-bn-ticks::-webkit-scrollbar {
+    display: none;
 }
 
 .void-bn-tick {
@@ -7718,6 +7726,10 @@ button .void-info-hint {
     border: 0;
     background: transparent;
     cursor: pointer;
+}
+
+.void-bn-dense .void-bn-tick {
+    height: 0.45rem;
 }
 
 .void-bn-tick::after {
@@ -7767,6 +7779,8 @@ button .void-info-hint {
     right: calc(100% + 0.25rem);
 }
 
+.void-bn-open .void-bn-menu,
+.void-bn-rail.void-bn-open .void-bn-menu,
 .void-bn-rail:hover .void-bn-menu,
 .void-bn-rail:focus-within .void-bn-menu,
 .void-bn-host:hover .void-bn-menu,
@@ -7774,6 +7788,14 @@ button .void-info-hint {
     opacity: 1;
     visibility: visible;
     transform: translateX(0);
+}
+
+.void-bn-meta {
+    padding: 0.25rem 0.625rem 0.375rem;
+    color: hsl(var(--fg-secondary));
+    font-size: 0.75rem;
+    line-height: 1.4;
+    letter-spacing: -0.2px;
 }
 
 .void-bn-list {
@@ -7805,7 +7827,8 @@ button .void-info-hint {
 
 .void-bn-item:hover,
 .void-bn-item:focus-visible,
-.void-bn-item.void-bn-active {
+.void-bn-item.void-bn-active,
+.void-bn-item.void-bn-aim {
     background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
     color: hsl(var(--fg-primary));
 }
@@ -7829,30 +7852,16 @@ button .void-info-hint {
     border-radius: 0.75rem;
 }
 
-html.void-bn-hidetip:is(
-    :has([aria-label^="Go to response "][data-state]:not([data-state="closed"])),
-    :has([data-state]:not([data-state="closed"]) [aria-label^="Go to response "]),
-    :has(.void-bn-rail:hover),
-    :has(.void-bn-host:hover)
-) :is(
-    [role="tooltip"],
-    [data-radix-tooltip-content],
-    [data-radix-hover-card-content]
-) {
+html.void-bn-hidetip:has(button[aria-label^="Go to response "][data-state]:not([data-state="closed"])) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])),
+html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-label^="Go to response "]) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])) {
     display: none !important;
 }
 
-html.void-bn-hidetip:is(
-    :has([aria-label^="Go to response "][data-state]:not([data-state="closed"])),
-    :has([data-state]:not([data-state="closed"]) [aria-label^="Go to response "]),
-    :has(.void-bn-rail:hover),
-    :has(.void-bn-host:hover)
-) [data-radix-popper-content-wrapper]:is(
-    :has([role="tooltip"]),
-    :has([data-radix-tooltip-content]),
-    :has([data-radix-hover-card-content])
-) {
-    display: none !important;
+@media (prefers-reduced-motion: reduce) {
+    .void-bn-menu,
+    .void-bn-tick::after {
+        transition: none;
+    }
 }
 `);
 
@@ -7862,11 +7871,28 @@ html.void-bn-hidetip:is(
   var TICK_SEL = "button[aria-label^='Go to response ']";
   var PREV_SEL = "button[aria-label='Navigate to previous message']";
   var PANE_SKIP = "[data-sidebar], [class*='pane-card']";
+  var STRIP_SEL = [
+    "button",
+    "svg",
+    "nav",
+    "time",
+    ".void-timestamp",
+    "[class*='timestamp']",
+    "details",
+    "[data-testid*='think']",
+    "[class*='thinking']",
+    "[class*='Thought']",
+    "[aria-label*='Thought']",
+    "[role='toolbar']"
+  ].join(",");
+  var NOISE_TEXT = /^(copy|share|retry|edit|more|thinking|analyzing|searching|thoughts?)$/i;
   var HIDE_CLASS = "void-bn-hidetip";
   var SUMMARY_MAX = 60;
   var FLASH_MS = 2000;
   var THRESHOLD = 0.4;
   var OFFSET_PX = 72;
+  var LOCK_MS = 800;
+  var DENSE_N = 16;
   var SLOT_CLASS = "void-bn-rail";
   var settings6 = definePluginSettings({
     showAssistant: {
@@ -7891,6 +7917,7 @@ html.void-bn-hidetip:is(
   var ac = null;
   var mo = null;
   var ro = null;
+  var io = null;
   var host = null;
   var rail = null;
   var frameTouched = null;
@@ -7900,6 +7927,10 @@ html.void-bn-hidetip:is(
   var flashTimer = 0;
   var flashing = null;
   var raf = 0;
+  var activeIdx = 0;
+  var lockIdx = -1;
+  var lockUntil = 0;
+  var overMenu = false;
   function isVisible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
@@ -7908,6 +7939,16 @@ html.void-bn-hidetip:is(
     const oy = getComputedStyle(el).overflowY;
     return oy === "auto" || oy === "scroll";
   }
+  function isTypingTarget(t) {
+    if (!(t instanceof HTMLElement))
+      return false;
+    if (t.isContentEditable)
+      return true;
+    if (t.closest(".query-bar, [contenteditable='true']"))
+      return true;
+    const tag = t.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+  }
   function nativeTicks() {
     return [...document.querySelectorAll(TICK_SEL)].filter(isVisible);
   }
@@ -7915,7 +7956,10 @@ html.void-bn-hidetip:is(
     const tick = document.querySelector(TICK_SEL);
     const prev = document.querySelector(PREV_SEL);
     const start = tick ?? prev;
-    return start?.closest(".absolute") ?? null;
+    const slot = start?.closest(".absolute") ?? null;
+    if (!slot || !isVisible(slot))
+      return null;
+    return slot;
   }
   function chatPane() {
     const main = document.querySelector("main");
@@ -7965,13 +8009,33 @@ html.void-bn-hidetip:is(
     }
     return pane.parentElement;
   }
+  function hasMedia(el) {
+    if (el.querySelector("img, video, canvas"))
+      return "image";
+    if (el.querySelector("a[download], [data-testid*='file'], [class*='attachment']"))
+      return "file";
+    return "";
+  }
   function summarize(el) {
     const clone = el.cloneNode(true);
-    clone.querySelectorAll("button, svg, nav, time, .void-timestamp").forEach((n) => n.remove());
+    clone.querySelectorAll(STRIP_SEL).forEach((n) => n.remove());
     const text = (clone.textContent ?? "").replaceAll(/\s+/g, " ").trim();
-    if (!text)
+    if (NOISE_TEXT.test(text))
       return "";
-    return text.length > SUMMARY_MAX ? `${text.slice(0, SUMMARY_MAX)}…` : text;
+    const media = hasMedia(el);
+    if (!text) {
+      if (media === "image")
+        return "\uD83D\uDDBC";
+      if (media === "file")
+        return "\uD83D\uDCCE";
+      return "";
+    }
+    const clipped = text.length > SUMMARY_MAX ? `${text.slice(0, SUMMARY_MAX)}…` : text;
+    if (media === "image")
+      return `\uD83D\uDDBC ${clipped}`;
+    if (media === "file")
+      return `\uD83D\uDCCE ${clipped}`;
+    return clipped;
   }
   function collect() {
     const root = chatPane() ?? document;
@@ -7990,6 +8054,12 @@ html.void-bn-hidetip:is(
     }
     return out;
   }
+  function structKey(mode, nav) {
+    return `${mode}:${nav.length}:${nav.map((n) => n.role).join("")}`;
+  }
+  function sameEls(nav) {
+    return nav.length === lastNav.length && nav.every((n, i) => n.el === lastNav[i]?.el && n.role === lastNav[i]?.role);
+  }
   function clearFlash() {
     if (flashTimer)
       window.clearTimeout(flashTimer);
@@ -8005,8 +8075,38 @@ html.void-bn-hidetip:is(
     el.classList.add("void-bn-flash");
     flashTimer = window.setTimeout(clearFlash, FLASH_MS);
   }
+  function nativeTickFor(item, index, ticks) {
+    if (!ticks.length)
+      return;
+    if (ticks.length === lastNav.length)
+      return ticks[index];
+    if (item.role !== "assistant")
+      return;
+    let seen = -1;
+    for (let i = 0;i <= index; i++) {
+      if (lastNav[i]?.role === "assistant")
+        seen++;
+    }
+    return ticks[seen];
+  }
+  function navIndexFromTick(tickIndex) {
+    if (nativeTicks().length === lastNav.length)
+      return tickIndex;
+    let seen = 0;
+    for (let i = 0;i < lastNav.length; i++) {
+      if (lastNav[i].role !== "assistant")
+        continue;
+      if (seen === tickIndex)
+        return i;
+      seen++;
+    }
+    return Math.min(tickIndex, Math.max(0, lastNav.length - 1));
+  }
   function jump(item, index, ticks) {
-    const tick = settings6.store.showAssistant && ticks.length === lastNav.length ? ticks[index] : undefined;
+    lockIdx = index;
+    lockUntil = performance.now() + LOCK_MS;
+    applyActive(index);
+    const tick = nativeTickFor(item, index, ticks);
     if (tick) {
       tick.click();
       window.setTimeout(() => flash(item.el), 180);
@@ -8016,8 +8116,37 @@ html.void-bn-hidetip:is(
     item.el.scrollIntoView({ behavior: "smooth", block: "start" });
     window.setTimeout(() => flash(item.el), 180);
   }
-  function setActive(list, nav) {
-    const cutoff = window.innerHeight * THRESHOLD;
+  function markAim(index) {
+    host?.querySelectorAll(".void-bn-item").forEach((node) => {
+      node.classList.toggle("void-bn-aim", Number(node.dataset.voidBnI) === index);
+    });
+  }
+  function applyActive(index) {
+    activeIdx = index;
+    host?.querySelectorAll(".void-bn-item").forEach((node) => {
+      node.classList.toggle("void-bn-active", Number(node.dataset.voidBnI) === index);
+    });
+    host?.querySelectorAll(".void-bn-tick").forEach((node) => {
+      node.classList.toggle("void-bn-current", Number(node.dataset.voidBnI) === index);
+    });
+    const meta = host?.querySelector(".void-bn-meta");
+    if (meta)
+      meta.textContent = `${index + 1} / ${lastNav.length}`;
+    const tick = host?.querySelectorAll(".void-bn-tick")[index];
+    tick?.scrollIntoView({ block: "nearest" });
+    if (!overMenu) {
+      const row = host?.querySelector(`.void-bn-item[data-void-bn-i="${index}"]`);
+      row?.scrollIntoView({ block: "nearest" });
+    }
+  }
+  function setActive(nav) {
+    if (performance.now() < lockUntil && lockIdx >= 0) {
+      applyActive(lockIdx);
+      return;
+    }
+    const pane = chatPane();
+    const top = pane?.getBoundingClientRect().top ?? 0;
+    const cutoff = top + (pane?.clientHeight ?? window.innerHeight) * THRESHOLD;
     let active = 0;
     for (let i = 0;i < nav.length; i++) {
       const { el } = nav[i];
@@ -8028,26 +8157,64 @@ html.void-bn-hidetip:is(
       else
         break;
     }
-    list.querySelectorAll("[data-void-bn-i]").forEach((node, i) => {
-      node.classList.toggle("void-bn-active", i === active);
-    });
-    host?.querySelectorAll(".void-bn-tick").forEach((node, i) => {
-      node.classList.toggle("void-bn-current", i === active);
-    });
+    applyActive(active);
   }
-  function onScroll() {
+  function alignMenu(index) {
+    const menu = host?.querySelector(".void-bn-menu");
+    if (!menu || !host)
+      return;
+    const origin = rail ?? host;
+    const selfTick = host.querySelectorAll(".void-bn-tick")[index];
+    const ticks = nativeTicks();
+    const native = ticks.length === lastNav.length ? ticks[index] : nativeTickFor(lastNav[index], index, ticks);
+    const tick = selfTick ?? native;
+    const row = menu.querySelector(`.void-bn-item[data-void-bn-i="${index}"]`);
+    row?.scrollIntoView({ block: "nearest" });
+    markAim(index);
+    if (!tick)
+      return;
+    const top = tick.getBoundingClientRect().top - origin.getBoundingClientRect().top;
+    const mh = menu.offsetHeight;
+    const max = mh > 0 ? Math.max(0, origin.clientHeight - mh) : 0;
+    menu.style.top = `${Math.min(Math.max(0, top - 6), max)}px`;
+  }
+  function requestActive() {
     if (raf)
       return;
     raf = requestAnimationFrame(() => {
       raf = 0;
-      const list = host?.querySelector(".void-bn-list");
-      if (list instanceof HTMLElement && lastNav.length)
-        setActive(list, lastNav);
+      if (lastNav.length)
+        setActive(lastNav);
+    });
+  }
+  function bindIO(nav) {
+    io?.disconnect();
+    const root = chatPane();
+    io = new IntersectionObserver(requestActive, {
+      root,
+      threshold: [0, 0.15, 0.35, 0.5, 0.75, 1]
+    });
+    for (const item of nav)
+      io.observe(item.el);
+  }
+  function patchLabels(nav) {
+    host?.querySelectorAll(".void-bn-item .void-bn-label").forEach((node, i) => {
+      if (nav[i] && node.textContent !== nav[i].text)
+        node.textContent = nav[i].text;
     });
   }
   function menuEl(nav, ticks) {
     const menu = document.createElement("div");
     menu.className = cl17("menu");
+    menu.addEventListener("pointerenter", () => {
+      overMenu = true;
+    });
+    menu.addEventListener("pointerleave", () => {
+      overMenu = false;
+    });
+    const meta = document.createElement("div");
+    meta.className = cl17("meta");
+    meta.textContent = `1 / ${nav.length}`;
     const ul = document.createElement("ul");
     ul.className = cl17("list");
     nav.forEach((item, i) => {
@@ -8071,22 +8238,24 @@ html.void-bn-hidetip:is(
       li.appendChild(btn);
       ul.appendChild(li);
     });
-    menu.appendChild(ul);
+    menu.append(meta, ul);
     return menu;
   }
   function tickRail(nav) {
     const wrap = document.createElement("div");
-    wrap.className = cl17("ticks");
+    wrap.className = `${cl17("ticks")}${nav.length > DENSE_N ? ` ${cl17("dense")}` : ""}`;
     nav.forEach((item, i) => {
       const tick = document.createElement("button");
       tick.type = "button";
       tick.className = `${cl17("tick")} ${item.role === "user" ? cl17("tick-user") : cl17("tick-asst")}`;
       tick.dataset.voidBnI = String(i);
+      tick.setAttribute("aria-label", `Go to message ${i + 1} of ${nav.length}`);
       tick.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
         jump(item, i, []);
       });
+      tick.addEventListener("pointerenter", () => alignMenu(i));
       wrap.appendChild(tick);
     });
     return wrap;
@@ -8108,32 +8277,88 @@ html.void-bn-hidetip:is(
     frame.style.position = "relative";
   }
   function unmount() {
-    rail?.classList.remove(SLOT_CLASS);
+    rail?.classList.remove(SLOT_CLASS, "void-bn-open");
     host?.remove();
     host = null;
     rail = null;
     paintedKey = "";
+    overMenu = false;
     restoreFrame();
   }
   function syncHideTip() {
     document.documentElement.classList.toggle(HIDE_CLASS, !!settings6.store.hideNativeHover);
+  }
+  function setOpen(on) {
+    host?.classList.toggle("void-bn-open", on);
+    rail?.classList.toggle("void-bn-open", on);
+    if (!on)
+      markAim(-1);
+  }
+  function onPointerOver(e) {
+    const t = e.target;
+    if (!(t instanceof Element))
+      return;
+    const native = t.closest(TICK_SEL);
+    if (native) {
+      const idx = nativeTicks().indexOf(native);
+      if (idx >= 0)
+        alignMenu(navIndexFromTick(idx));
+      return;
+    }
+    const self = t.closest(".void-bn-tick");
+    if (self?.dataset.voidBnI != null)
+      alignMenu(Number(self.dataset.voidBnI));
+  }
+  function onKeyDown(e) {
+    if (!lastNav.length || !host?.isConnected)
+      return;
+    if (isTypingTarget(e.target))
+      return;
+    if (e.key === "Escape") {
+      if (host.classList.contains("void-bn-open") || rail?.classList.contains("void-bn-open")) {
+        e.preventDefault();
+        setOpen(false);
+      }
+      return;
+    }
+    const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
+    if (!arrow)
+      return;
+    const hovered = host.matches(":hover") || !!rail?.matches(":hover") || host.classList.contains("void-bn-open");
+    if (!e.altKey && !hovered)
+      return;
+    e.preventDefault();
+    const dir = e.key === "ArrowUp" ? -1 : 1;
+    const next = Math.min(lastNav.length - 1, Math.max(0, activeIdx + dir));
+    setOpen(true);
+    jump(lastNav[next], next, nativeTicks());
+    alignMenu(next);
+  }
+  function onPointerDown(e) {
+    const t = e.target;
+    if (!(t instanceof Node))
+      return;
+    if (host?.contains(t) || rail?.contains(t))
+      return;
+    setOpen(false);
   }
   function paint() {
     const nav = collect();
     if (!nav.length) {
       lastNav = [];
       unmount();
+      io?.disconnect();
+      io = null;
       return;
     }
     const ticks = nativeTicks();
     const slot = nativeSlot();
     const mode = ticks.length ? "native" : slot ? "fill" : "self";
-    const nextKey = `${mode}:${nav.length}:${nav.map((n) => `${n.role}:${n.text}`).join("|")}`;
-    if (nextKey === paintedKey && host?.isConnected) {
+    const nextKey = structKey(mode, nav);
+    if (nextKey === paintedKey && host?.isConnected && sameEls(nav)) {
       lastNav = nav;
-      const list = host.querySelector(".void-bn-list");
-      if (list instanceof HTMLElement)
-        setActive(list, nav);
+      patchLabels(nav);
+      setActive(nav);
       return;
     }
     unmount();
@@ -8158,12 +8383,11 @@ html.void-bn-hidetip:is(
       box.append(tickRail(nav), menuEl(nav, []));
       frame.appendChild(box);
     }
-    const list = box.querySelector(".void-bn-list");
-    if (list instanceof HTMLElement)
-      setActive(list, nav);
     host = box;
     lastNav = nav;
     paintedKey = nextKey;
+    bindIO(nav);
+    setActive(nav);
   }
   var debouncedPaint = debounce(paint, 160);
   function start() {
@@ -8174,8 +8398,11 @@ html.void-bn-hidetip:is(
     syncHideTip();
     paint();
     mo = new MutationObserver(debouncedPaint);
-    mo.observe(document.body, { childList: true, subtree: true });
-    document.addEventListener("scroll", onScroll, { capture: true, passive: true, signal });
+    const root = document.querySelector("main") ?? document.body;
+    mo.observe(root, { childList: true, subtree: true });
+    document.addEventListener("keydown", onKeyDown, { capture: true, signal });
+    document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
+    document.addEventListener("pointerover", onPointerOver, { capture: true, passive: true, signal });
     const main = document.querySelector("main");
     if (main) {
       ro = new ResizeObserver(debouncedPaint);
@@ -8189,6 +8416,8 @@ html.void-bn-hidetip:is(
     mo = null;
     ro?.disconnect();
     ro = null;
+    io?.disconnect();
+    io = null;
     if (raf)
       cancelAnimationFrame(raf);
     raf = 0;
@@ -9486,7 +9715,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   function isFavoritesPage() {
     return RoutingStore.useRoutingStore.getState().route?.page === "imagine-favorites";
   }
-  function isTypingTarget(t) {
+  function isTypingTarget2(t) {
     if (!(t instanceof HTMLElement))
       return false;
     if (t.isContentEditable)
@@ -9494,12 +9723,12 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     const tag = t.tagName;
     return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
   }
-  function onKeyDown(e) {
+  function onKeyDown2(e) {
     if (!isImaginePage())
       return;
     if (e.ctrlKey || e.metaKey || e.altKey)
       return;
-    if (isTypingTarget(e.target))
+    if (isTypingTarget2(e.target))
       return;
     if (e.key === "i" || e.key === "I") {
       setFilter(currentFilter === "image" ? "all" : "image");
@@ -9561,7 +9790,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         return;
       abortCtrl = new AbortController;
       const { signal } = abortCtrl;
-      document.addEventListener("keydown", onKeyDown, { capture: true, signal });
+      document.addEventListener("keydown", onKeyDown2, { capture: true, signal });
       document.addEventListener("visibilitychange", onVisibilityChange, { signal });
     },
     stop() {
@@ -11228,7 +11457,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     else
       hideHud();
   }
-  function onKeyDown2(e) {
+  function onKeyDown3(e) {
     if (imeEvent(e))
       return;
     if (e.ctrlKey || e.metaKey)
@@ -11268,7 +11497,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     e.stopImmediatePropagation();
     cycle(older, el);
   }
-  function onPointerDown(e) {
+  function onPointerDown2(e) {
     if (!recalling)
       return;
     const el = chatEditor(e.target);
@@ -11460,13 +11689,13 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       invalidateApply();
       keys = new AbortController;
       const { signal } = keys;
-      document.addEventListener("keydown", onKeyDown2, { capture: true, signal });
+      document.addEventListener("keydown", onKeyDown3, { capture: true, signal });
       document.addEventListener("input", onInput, { capture: true, signal });
       document.addEventListener("compositionstart", onCompositionStart, { capture: true, signal });
       document.addEventListener("compositionend", onCompositionEnd, { capture: true, signal });
       document.addEventListener("submit", onSubmit, { capture: true, signal });
       document.addEventListener("click", onClick, { capture: true, signal });
-      document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
+      document.addEventListener("pointerdown", onPointerDown2, { capture: true, signal });
     },
     stop() {
       keys?.abort();
@@ -13829,7 +14058,7 @@ html.void-rt-open [data-sidebar="gap"] {
     held = false;
     paint2();
   }
-  function onKeyDown3(e) {
+  function onKeyDown4(e) {
     if (isCtrlKey(e)) {
       ctrlHeld = true;
       return;
@@ -14332,7 +14561,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (!keys2) {
         keys2 = new AbortController;
         const { signal } = keys2;
-        window.addEventListener("keydown", onKeyDown3, { capture: true, signal });
+        window.addEventListener("keydown", onKeyDown4, { capture: true, signal });
         window.addEventListener("keyup", onKeyUp, { capture: true, signal });
         window.addEventListener("blur", onWindowBlur, { signal });
         document.addEventListener("visibilitychange", onVisibility, { signal });
@@ -19994,7 +20223,7 @@ div:has(> #grok-bot-nav-button) {
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1781101259000;
   contextMenu_default.updatedAt = 1781702684000;
-  betterNavigator_default.updatedAt = 1789401109000;
+  betterNavigator_default.updatedAt = 1789401335000;
   noSidebarIdentity_default.updatedAt = 1788577403000;
   cleaner_default.updatedAt = 1789246749000;
   betterSidebar_default.updatedAt = 1789254776000;
