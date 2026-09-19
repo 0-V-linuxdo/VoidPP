@@ -318,6 +318,7 @@ function stashGlyphs(items: HTMLElement[]) {
 
 async function harvestIcons() {
     if (harvesting || picking || harvested.size > 0) return;
+    if (document.documentElement.hasAttribute("data-void-mode-sync-restore")) return;
     const trigger = nativeTrigger();
     if (!trigger) return;
     harvesting = true;
@@ -526,15 +527,16 @@ function PinnedModes() {
     return (
         <div className={classes(cl("pins"), hideNative && cl("hide-native"))}>
             {items.map(m => (
-                <ChatBarButton
-                    key={m.id}
-                    size="sm"
-                    icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels} />}
-                    tooltip={m.label}
-                    onClick={onPin(m.id)}
-                    className={classes(cl("pin"), selectedModeId === m.id && cl("on"), showLabels && cl("labeled"), "hover:bg-button-ghost-hover")}
-                    aria-label={m.label}
-                />
+                <span key={m.id} className={cl("pin-host")} data-void-mode-id={m.id}>
+                    <ChatBarButton
+                        size="sm"
+                        icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels} />}
+                        tooltip={m.label}
+                        onClick={onPin(m.id)}
+                        className={classes(cl("pin"), selectedModeId === m.id && cl("on"), showLabels && cl("labeled"), "hover:bg-button-ghost-hover")}
+                        aria-label={m.label}
+                    />
+                </span>
             ))}
         </div>
     );

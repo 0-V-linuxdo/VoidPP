@@ -8,6 +8,10 @@
     display: contents;
 }
 
+.void-cms-pin-host {
+    display: contents;
+}
+
 .void-cms-pin {
     width: 2.25rem;
     height: 2.25rem;
@@ -22,7 +26,7 @@
     color: #ff7a17;
 }
 
-.query-bar .void-cms-on:not(:hover):not(:focus-visible) {
+.query-bar .void-cms-on:not(:hover, :focus-visible) {
     background-color: transparent !important;
     box-shadow: none !important;
 }
