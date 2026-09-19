@@ -53,14 +53,15 @@ export default definePlugin({
             },
         },
         {
-            find: 'ENABLE_GROK_WEB_PLUGIN_MARKETPLACE)&&{id:"skills-and-connectors"',
+            find: 'WD_REFRESH&&{id:"skills-and-connectors"',
             replacement: {
-                match: /ENABLE_GROK_WEB_PLUGIN_MARKETPLACE\)&&\{id:"skills-and-connectors"/,
-                replace: 'ENABLE_GROK_WEB_PLUGIN_MARKETPLACE)&&!1&&{id:"skills-and-connectors"',
+                match: /WD_REFRESH&&\{id:"skills-and-connectors"/,
+                replace: 'WD_REFRESH&&!1&&{id:"skills-and-connectors"',
             },
         },
         {
-            find: '"user-dropdown.help"',
+            find: "avatar_menu_click",
+            all: true,
             replacement: {
                 match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,100}"user-dropdown\.help")/,
                 replace: "$self._renderItem(),",

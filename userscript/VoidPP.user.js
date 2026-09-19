@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260914.31] v1.0.0
+// @version      [20260919.1] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260914.31] v1.0.0 — A modification for grok.com
+ * Void++ [20260919.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7381,9 +7381,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260914.31] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"0a605fe"}`
-    }, `(${"0a605fe"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260919.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ae59cd4"}`
+    }, `(${"ae59cd4"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9641,7 +9641,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     [data-sidebar="sidebar"] .void-chats-plus,
     [data-sidebar="sidebar"] button[aria-label="Add project"],
     [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"] > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
         opacity: 0 !important;
         transition: opacity 0.15s ease;
     }
@@ -9653,7 +9653,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-chats-plus,
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="Add project"],
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]):is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
     [data-sidebar="sidebar"] :has(> :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus)):is(:hover, :focus-within) > :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus),
     [data-sidebar="sidebar"] [data-void-bots-plus]:is(:hover, :focus-visible, [data-state="open"]),
     [data-sidebar="sidebar"] .void-bots-plus:is(:hover, :focus-visible, [data-state="open"]),
@@ -9674,7 +9674,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     [data-sidebar="sidebar"] .void-chats-plus,
     [data-sidebar="sidebar"] button[aria-label="Add project"],
     [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"] > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
         transition: none;
     }
 }
@@ -15293,14 +15293,15 @@ div:has(> #grok-bot-nav-button) {
         }
       },
       {
-        find: 'ENABLE_GROK_WEB_PLUGIN_MARKETPLACE)&&{id:"skills-and-connectors"',
+        find: 'WD_REFRESH&&{id:"skills-and-connectors"',
         replacement: {
-          match: /ENABLE_GROK_WEB_PLUGIN_MARKETPLACE\)&&\{id:"skills-and-connectors"/,
-          replace: 'ENABLE_GROK_WEB_PLUGIN_MARKETPLACE)&&!1&&{id:"skills-and-connectors"'
+          match: /WD_REFRESH&&\{id:"skills-and-connectors"/,
+          replace: 'WD_REFRESH&&!1&&{id:"skills-and-connectors"'
         }
       },
       {
-        find: '"user-dropdown.help"',
+        find: "avatar_menu_click",
+        all: true,
         replacement: {
           match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,100}"user-dropdown\.help")/,
           replace: "$self._renderItem(),"
@@ -20694,7 +20695,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   incognito_default.updatedAt = 1787870966000;
   inputHistory_default.updatedAt = 1789266420000;
   messageTimestamps_default.updatedAt = 1789246749000;
-  modeSync_default.updatedAt = 1789407517000;
+  modeSync_default.updatedAt = 1789407564000;
   noDictation_default.updatedAt = 1788037550000;
   noGrokBot_default.updatedAt = 1787789817000;
   noShareLink_default.updatedAt = 1787789817000;

@@ -14,7 +14,7 @@
     [data-sidebar="sidebar"] .void-chats-plus,
     [data-sidebar="sidebar"] button[aria-label="Add project"],
     [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"] > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
         opacity: 0 !important;
         transition: opacity 0.15s ease;
     }
@@ -26,7 +26,7 @@
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-chats-plus,
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="Add project"],
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]):is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
     [data-sidebar="sidebar"] :has(> :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus)):is(:hover, :focus-within) > :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus),
     [data-sidebar="sidebar"] [data-void-bots-plus]:is(:hover, :focus-visible, [data-state="open"]),
     [data-sidebar="sidebar"] .void-bots-plus:is(:hover, :focus-visible, [data-state="open"]),
@@ -47,7 +47,7 @@
     [data-sidebar="sidebar"] .void-chats-plus,
     [data-sidebar="sidebar"] button[aria-label="Add project"],
     [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"] > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
         transition: none;
     }
 }
