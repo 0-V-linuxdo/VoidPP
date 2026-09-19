@@ -4,10 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import type { VoidPPEventMap } from "@api/Events";
 import { definePluginSettings } from "@api/Settings";
 import { ListOrderedIcon } from "@components/icons";
 import type { ModelId, ModelMode } from "@grok-types/enums/models";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
+import type { GatewayConversation, GatewayTurnArgs } from "@grok-types/stores/MessageStore";
 import type { ModesStoreState } from "@grok-types/stores/ModesStore";
 import type { ResponseStoreState } from "@grok-types/stores/ResponseStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
@@ -15,6 +17,7 @@ import { ChatPageStore, MessageStore, ModesStore, ResponseStore, RoutingStore } 
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
+import { mapGetOrCreate } from "@utils/misc";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 
 const logger = new Logger("ModeSync");
@@ -27,8 +30,12 @@ const RESTORE_ATTR = "data-void-mode-sync-restore";
 const LOAD_TAIL_MS = 400;
 const CHAT_WRAP = ["sendResponse", "establishNewConversation"] as const;
 const RESP_WRAP = ["streamResponse", "streamCreateAndRespond"] as const;
+const MSG_WRAP = ["queueMessage"] as const;
 const GW_TYPES = new Set(["response.create", "conversation.queue.add", "conversation.queue.interject"]);
 const GW_MODE_KEYS = ["mode", "modeId", "mode_id", "modelMode", "model_mode"] as const;
+const QUEUE_ADD = "conversation.queue.add";
+const QUEUE_REMOVE = "conversation.queue.remove";
+const GW_OK = Object.freeze({ ok: true });
 
 const settings = definePluginSettings({
     stickyOnNavigate: {
@@ -53,7 +60,14 @@ interface ChatLease {
     setFailedGatewayLeaseConversationId?: (id: string | null) => void;
 }
 
+interface HeldTurn {
+    id: string;
+    args: GatewayTurnArgs;
+}
+
 const EMPTY: Intent = { modeId: "", modelMode: "", activeModelId: "" };
+const held = new Map<string, HeldTurn[]>();
+let diverting: GatewayTurnArgs | null = null;
 
 let applying = false;
 let userPicking = false;
@@ -270,19 +284,68 @@ function decodeBody(raw: unknown): string | null {
     return null;
 }
 
-function conversationLastModel(cid: string): string {
+function conversation(cid: string): GatewayConversation | undefined {
     try {
-        const conv = MessageStore.useMessageStore.getState().conversations[cid] as { lastModel?: string } | undefined;
-        return String(conv?.lastModel ?? "");
+        return MessageStore.useMessageStore.getState().conversations[cid];
     } catch {
-        return "";
+        return undefined;
+    }
+}
+
+function inflightMode(cid: string): string {
+    const conv = conversation(cid);
+    return String(conv?.activeGeneration?.sentModeId ?? conv?.lastModel ?? "");
+}
+
+function isTurnArgs(v: unknown): v is GatewayTurnArgs {
+    return !!v && typeof v === "object" && typeof (v as { convId?: unknown }).convId === "string";
+}
+
+function holdQueueEvent(cid: string, event: unknown): boolean {
+    if (!event || typeof event !== "object") return false;
+    const { type, queue_item_id: id } = event as { type?: unknown; queue_item_id?: unknown };
+    if (typeof id !== "string") return false;
+    if (type === QUEUE_ADD && diverting) {
+        mapGetOrCreate(held, cid, () => []).push({ id, args: diverting });
+        diverting = null;
+        logger.info("held", id, "for", liveIntent().modeId);
+        return true;
+    }
+    const list = held.get(cid);
+    if (type !== QUEUE_REMOVE || !list) return false;
+    const idx = list.findIndex(h => h.id === id);
+    if (idx < 0) return false;
+    list.splice(idx, 1);
+    return true;
+}
+
+function flushTurn(cid: string, turn: HeldTurn, parentId: string) {
+    const state = MessageStore.useMessageStore.getState();
+    state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
+    state.sendMessage({ ...turn.args, parentId });
+    logger.info("flushed", turn.id, "as", liveIntent().modeId);
+}
+
+function flushHeld(responseId: string) {
+    for (const [cid, list] of held) {
+        const conv = conversation(cid);
+        if (!conv?.nodes[responseId]) continue;
+        const queued = list.filter(h => conv.queue.some(q => q.queue_item_id === h.id));
+        if (!queued.length) {
+            held.delete(cid);
+            return;
+        }
+        held.set(cid, queued);
+        if (conv.queue.some(q => !queued.some(h => h.id === q.queue_item_id))) return;
+        queueMicrotask(() => flushTurn(cid, queued[0], responseId));
+        return;
     }
 }
 
 function sendWithModeTransport(orig: SendFn, ctx: unknown, args: unknown[], live: Intent) {
     const first = args[0];
     const cid = first && typeof first === "object" && !Array.isArray(first) ? (first as { conversationId?: unknown }).conversationId : undefined;
-    if (!live.modeId || typeof cid !== "string" || !cid || conversationLastModel(cid) === live.modeId) {
+    if (!live.modeId || typeof cid !== "string" || !cid || String(conversation(cid)?.lastModel ?? "") === live.modeId) {
         return orig.apply(ctx, args);
     }
     const chat = ChatPageStore.useChatPageStore.getState() as ChatPageStoreState & ChatLease;
@@ -321,10 +384,12 @@ function wrapGatewaySend() {
         origGwSend = mgr.send;
         const orig = origGwSend;
         const wrapped: SendFn = function voidModeSyncGwSend(this: unknown, ...args: unknown[]) {
+            const [cid, event] = args;
+            if (typeof cid === "string" && holdQueueEvent(cid, event)) return Promise.resolve(GW_OK);
             const live = liveIntent();
             if (live.modeId) {
                 applyIntent(live);
-                patchGwEvent(args[1], live);
+                patchGwEvent(event, live);
             }
             return orig.apply(mgr, args);
         };
@@ -346,7 +411,33 @@ function unwrapGatewaySend() {
     gwHost = null;
 }
 
-function wrapOne(label: string, getState: () => any, setState: (partial: object) => void, key: string) {
+function makeSendWrapper(label: string, orig: SendFn): SendFn {
+    return function voidModeSyncSend(this: unknown, ...args: unknown[]) {
+        const live = liveIntent();
+        if (live.modeId) {
+            applyIntent(live);
+            patchSendArgs(args, live);
+        }
+        if (label === "chat.sendResponse") return sendWithModeTransport(orig, this, args, liveIntent());
+        return orig.apply(this, args);
+    };
+}
+
+function makeQueueWrapper(orig: SendFn): SendFn {
+    return function voidModeSyncQueue(this: unknown, ...args: unknown[]) {
+        const [first] = args;
+        const live = liveIntent();
+        if (!isTurnArgs(first) || !live.modeId || inflightMode(first.convId) === live.modeId) return orig.apply(this, args);
+        diverting = first;
+        try {
+            return orig.apply(this, args);
+        } finally {
+            diverting = null;
+        }
+    };
+}
+
+function wrapOne(label: string, getState: () => any, setState: (partial: object) => void, key: string, make: (orig: SendFn) => SendFn = orig => makeSendWrapper(label, orig)) {
     let state: any;
     try {
         state = getState();
@@ -357,16 +448,7 @@ function wrapOne(label: string, getState: () => any, setState: (partial: object)
     if (typeof current !== "function") return;
     if (wrappedFns.get(label) === current) return;
     origFns.set(label, current);
-    const orig = current;
-    const wrapped: SendFn = function voidModeSyncSend(this: unknown, ...args: unknown[]) {
-        const live = liveIntent();
-        if (live.modeId) {
-            applyIntent(live);
-            patchSendArgs(args, live);
-        }
-        if (label === "chat.sendResponse") return sendWithModeTransport(orig, this, args, liveIntent());
-        return orig.apply(this, args);
-    };
+    const wrapped = make(current);
     wrappedFns.set(label, wrapped);
     setState({ [key]: wrapped });
 }
@@ -376,6 +458,7 @@ function wrapSendFns() {
     wrapOne("chat.establishNewConversation", () => ChatPageStore.useChatPageStore.getState(), p => ChatPageStore.useChatPageStore.setState(p), "establishNewConversation");
     wrapOne("resp.streamResponse", () => ResponseStore.useResponseStore.getState(), p => ResponseStore.useResponseStore.setState(p), "streamResponse");
     wrapOne("resp.streamCreateAndRespond", () => ResponseStore.useResponseStore.getState(), p => ResponseStore.useResponseStore.setState(p), "streamCreateAndRespond");
+    wrapOne("msg.queueMessage", () => MessageStore.useMessageStore.getState(), p => MessageStore.useMessageStore.setState(p), "queueMessage", makeQueueWrapper);
     wrapGatewaySend();
 }
 
@@ -398,6 +481,7 @@ function unwrapStore(getState: () => any, setState: (partial: object) => void, k
 function unwrapSendFns() {
     unwrapStore(() => ChatPageStore.useChatPageStore.getState(), p => ChatPageStore.useChatPageStore.setState(p), CHAT_WRAP, "chat");
     unwrapStore(() => ResponseStore.useResponseStore.getState(), p => ResponseStore.useResponseStore.setState(p), RESP_WRAP, "resp");
+    unwrapStore(() => MessageStore.useMessageStore.getState(), p => MessageStore.useMessageStore.setState(p), MSG_WRAP, "msg");
     unwrapGatewaySend();
     origFns.clear();
     wrappedFns.clear();
@@ -553,10 +637,11 @@ function onPicker(id: string) {
     fightHydrate();
 }
 
-function onStreamEnd() {
+function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
     wrapSendFns();
     const live = liveIntent();
     if (live.modeId) applyIntent(live);
+    flushHeld(responseId);
 }
 
 function onChatPage(cur: string, prev: string) {
@@ -607,6 +692,8 @@ export default definePlugin({
         unhookFetch();
         unhookXhr();
         unwrapSendFns();
+        held.clear();
+        diverting = null;
         applying = false;
         userPicking = false;
         awaitingMenu = false;

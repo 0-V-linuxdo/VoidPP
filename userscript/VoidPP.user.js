@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260919.4] v1.0.0
+// @version      [20260920.1] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260919.4] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7296,9 +7296,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260919.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8bc85f8"}`
-    }, `(${"8bc85f8"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"424d40b"}`
+    }, `(${"424d40b"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14488,8 +14488,12 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   var LOAD_TAIL_MS = 400;
   var CHAT_WRAP = ["sendResponse", "establishNewConversation"];
   var RESP_WRAP = ["streamResponse", "streamCreateAndRespond"];
+  var MSG_WRAP = ["queueMessage"];
   var GW_TYPES = new Set(["response.create", "conversation.queue.add", "conversation.queue.interject"]);
   var GW_MODE_KEYS = ["mode", "modeId", "mode_id", "modelMode", "model_mode"];
+  var QUEUE_ADD = "conversation.queue.add";
+  var QUEUE_REMOVE = "conversation.queue.remove";
+  var GW_OK = Object.freeze({ ok: true });
   var settings20 = definePluginSettings({
     stickyOnNavigate: {
       type: 3 /* BOOLEAN */,
@@ -14499,6 +14503,8 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   });
   var Gateway = findByPropsLazy("gatewayConnectionManager");
   var EMPTY = { modeId: "", modelMode: "", activeModelId: "" };
+  var held = new Map;
+  var diverting = null;
   var applying2 = false;
   var userPicking = false;
   var awaitingMenu = false;
@@ -14713,18 +14719,68 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       return new TextDecoder().decode(raw);
     return null;
   }
-  function conversationLastModel(cid) {
+  function conversation(cid) {
     try {
-      const conv = MessageStore.useMessageStore.getState().conversations[cid];
-      return String(conv?.lastModel ?? "");
+      return MessageStore.useMessageStore.getState().conversations[cid];
     } catch {
-      return "";
+      return;
+    }
+  }
+  function inflightMode(cid) {
+    const conv = conversation(cid);
+    return String(conv?.activeGeneration?.sentModeId ?? conv?.lastModel ?? "");
+  }
+  function isTurnArgs(v) {
+    return !!v && typeof v === "object" && typeof v.convId === "string";
+  }
+  function holdQueueEvent(cid, event) {
+    if (!event || typeof event !== "object")
+      return false;
+    const { type, queue_item_id: id } = event;
+    if (typeof id !== "string")
+      return false;
+    if (type === QUEUE_ADD && diverting) {
+      mapGetOrCreate(held, cid, () => []).push({ id, args: diverting });
+      diverting = null;
+      logger29.info("held", id, "for", liveIntent().modeId);
+      return true;
+    }
+    const list = held.get(cid);
+    if (type !== QUEUE_REMOVE || !list)
+      return false;
+    const idx = list.findIndex((h) => h.id === id);
+    if (idx < 0)
+      return false;
+    list.splice(idx, 1);
+    return true;
+  }
+  function flushTurn(cid, turn, parentId) {
+    const state2 = MessageStore.useMessageStore.getState();
+    state2.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
+    state2.sendMessage({ ...turn.args, parentId });
+    logger29.info("flushed", turn.id, "as", liveIntent().modeId);
+  }
+  function flushHeld(responseId) {
+    for (const [cid, list] of held) {
+      const conv = conversation(cid);
+      if (!conv?.nodes[responseId])
+        continue;
+      const queued = list.filter((h) => conv.queue.some((q) => q.queue_item_id === h.id));
+      if (!queued.length) {
+        held.delete(cid);
+        return;
+      }
+      held.set(cid, queued);
+      if (conv.queue.some((q) => !queued.some((h) => h.id === q.queue_item_id)))
+        return;
+      queueMicrotask(() => flushTurn(cid, queued[0], responseId));
+      return;
     }
   }
   function sendWithModeTransport(orig, ctx, args, live) {
     const first = args[0];
     const cid = first && typeof first === "object" && !Array.isArray(first) ? first.conversationId : undefined;
-    if (!live.modeId || typeof cid !== "string" || !cid || conversationLastModel(cid) === live.modeId) {
+    if (!live.modeId || typeof cid !== "string" || !cid || String(conversation(cid)?.lastModel ?? "") === live.modeId) {
       return orig.apply(ctx, args);
     }
     const chat = ChatPageStore.useChatPageStore.getState();
@@ -14769,10 +14825,13 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       origGwSend = mgr.send;
       const orig = origGwSend;
       const wrapped = function voidModeSyncGwSend(...args) {
+        const [cid, event] = args;
+        if (typeof cid === "string" && holdQueueEvent(cid, event))
+          return Promise.resolve(GW_OK);
         const live = liveIntent();
         if (live.modeId) {
           applyIntent(live);
-          patchGwEvent(args[1], live);
+          patchGwEvent(event, live);
         }
         return orig.apply(mgr, args);
       };
@@ -14793,7 +14852,33 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     wrappedGwSend = null;
     gwHost = null;
   }
-  function wrapOne(label, getState, setState, key) {
+  function makeSendWrapper(label, orig) {
+    return function voidModeSyncSend(...args) {
+      const live = liveIntent();
+      if (live.modeId) {
+        applyIntent(live);
+        patchSendArgs(args, live);
+      }
+      if (label === "chat.sendResponse")
+        return sendWithModeTransport(orig, this, args, liveIntent());
+      return orig.apply(this, args);
+    };
+  }
+  function makeQueueWrapper(orig) {
+    return function voidModeSyncQueue(...args) {
+      const [first] = args;
+      const live = liveIntent();
+      if (!isTurnArgs(first) || !live.modeId || inflightMode(first.convId) === live.modeId)
+        return orig.apply(this, args);
+      diverting = first;
+      try {
+        return orig.apply(this, args);
+      } finally {
+        diverting = null;
+      }
+    };
+  }
+  function wrapOne(label, getState, setState, key, make = (orig) => makeSendWrapper(label, orig)) {
     let state2;
     try {
       state2 = getState();
@@ -14806,17 +14891,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     if (wrappedFns.get(label) === current)
       return;
     origFns.set(label, current);
-    const orig = current;
-    const wrapped = function voidModeSyncSend(...args) {
-      const live = liveIntent();
-      if (live.modeId) {
-        applyIntent(live);
-        patchSendArgs(args, live);
-      }
-      if (label === "chat.sendResponse")
-        return sendWithModeTransport(orig, this, args, liveIntent());
-      return orig.apply(this, args);
-    };
+    const wrapped = make(current);
     wrappedFns.set(label, wrapped);
     setState({ [key]: wrapped });
   }
@@ -14825,6 +14900,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     wrapOne("chat.establishNewConversation", () => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "establishNewConversation");
     wrapOne("resp.streamResponse", () => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), "streamResponse");
     wrapOne("resp.streamCreateAndRespond", () => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), "streamCreateAndRespond");
+    wrapOne("msg.queueMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "queueMessage", makeQueueWrapper);
     wrapGatewaySend();
   }
   function unwrapStore(getState, setState, keys2, prefix) {
@@ -14847,6 +14923,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   function unwrapSendFns() {
     unwrapStore(() => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), CHAT_WRAP, "chat");
     unwrapStore(() => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), RESP_WRAP, "resp");
+    unwrapStore(() => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), MSG_WRAP, "msg");
     unwrapGatewaySend();
     origFns.clear();
     wrappedFns.clear();
@@ -15005,11 +15082,12 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     }
     fightHydrate();
   }
-  function onStreamEnd6() {
+  function onStreamEnd6({ responseId }) {
     wrapSendFns();
     const live = liveIntent();
     if (live.modeId)
       applyIntent(live);
+    flushHeld(responseId);
   }
   function onChatPage(cur, prev) {
     wrapSendFns();
@@ -15057,6 +15135,8 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       unhookFetch();
       unhookXhr();
       unwrapSendFns();
+      held.clear();
+      diverting = null;
       applying2 = false;
       userPicking = false;
       awaitingMenu = false;
@@ -18488,7 +18568,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var wsIcons = {};
   var open2 = false;
   var selected = 0;
-  var held = false;
+  var held2 = false;
   var ctrlHeld = false;
   var keys2 = null;
   var host2 = null;
@@ -20333,7 +20413,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return e.key === "Control" || e.code === "ControlLeft" || e.code === "ControlRight";
   }
   function begin(reverse, fromHold) {
-    held = fromHold;
+    held2 = fromHold;
     open2 = false;
     captureCurrent();
     open2 = true;
@@ -20367,7 +20447,7 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     const target = topics()[selected];
     open2 = false;
-    held = false;
+    held2 = false;
     paint3();
     if (target)
       navigateTo(target.id);
@@ -20376,7 +20456,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!open2)
       return;
     open2 = false;
-    held = false;
+    held2 = false;
     paint3();
   }
   function onKeyDown5(e) {
@@ -20414,7 +20494,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!isCtrlKey(e))
       return;
     ctrlHeld = false;
-    if (open2 && held)
+    if (open2 && held2)
       commit();
   }
   function onBeforeInput(e) {
@@ -20867,7 +20947,7 @@ html.void-rt-open [data-sidebar="gap"] {
     start() {
       detachHost();
       open2 = false;
-      held = false;
+      held2 = false;
       ctrlHeld = false;
       try {
         initEffect();
@@ -20898,7 +20978,7 @@ html.void-rt-open [data-sidebar="gap"] {
       keys2?.abort();
       keys2 = null;
       open2 = false;
-      held = false;
+      held2 = false;
       ctrlHeld = false;
       thumbs.clear();
       detachHost();
@@ -21036,7 +21116,7 @@ html.void-rt-open [data-sidebar="gap"] {
   downloadTTS_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
-  modeSync_default.updatedAt = 1789811419000;
+  modeSync_default.updatedAt = 1789817189000;
   customInstructions_default.updatedAt = 1789208142000;
   noDictation_default.updatedAt = 1788037550000;
   oneko_default.updatedAt = 1787870966000;

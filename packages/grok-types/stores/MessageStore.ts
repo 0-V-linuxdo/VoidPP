@@ -23,14 +23,44 @@ export interface GatewayNode {
     content?: GrokResponse & { conversationId: string };
 }
 
+export interface GatewayQueueItem {
+    queue_item_id: string;
+    position: number;
+    parent_response_id: string | null;
+}
+
+export interface GatewayActiveGeneration {
+    userId: string;
+    assistantId: string;
+    responseId: string | null;
+    sentModeId?: string;
+}
+
 export interface GatewayConversation {
     nodes: Record<string, GatewayNode>;
     rootChildIds: string[];
     defaultLeafId: string | null;
+    queue: GatewayQueueItem[];
+    activeGeneration: GatewayActiveGeneration | null;
+    lastModel?: string;
+}
+
+export interface GatewayTurnArgs {
+    convId: string;
+    parentId: string | null;
+    text: string;
+    fileAttachmentIds?: string[];
+    botMentions?: unknown;
+    parentQuotedText?: string;
+    parentQuoteSource?: unknown;
+    linkQuery?: unknown;
 }
 
 export interface MessageStoreState {
     conversations: Record<string, GatewayConversation>;
+    queueMessage: (args: GatewayTurnArgs) => void;
+    sendMessage: (args: GatewayTurnArgs) => { userId: string; assistantId: string };
+    removeQueuedMessage: (args: { convId: string; queueItemId: string }) => void;
 }
 
 export interface MessageStoreModule {
