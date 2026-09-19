@@ -24,6 +24,10 @@ const STRIP_SEL = [
     "details", "[data-testid*='think']", "[class*='thinking']", "[class*='Thought']",
     "[aria-label*='Thought']", "[role='toolbar']",
 ].join(",");
+const MEDIA_SEL = "img, picture, video, canvas";
+const FILE_SEL = "a[download], [data-testid*='file'], [class*='attachment']";
+const DECORATIVE_SRC = /shields\.io|iconify\.design|badgen\.net|favicon|api\.iconify/i;
+const GROK_ASSET = /assets\.grok\.com/i;
 const NOISE_TEXT = /^(copy|share|retry|edit|more|thinking|analyzing|searching|thoughts?)$/i;
 const HIDE_CLASS = "void-bn-hidetip";
 const SUMMARY_MAX = 60;
@@ -175,27 +179,40 @@ function composerTop(): number {
     return bar.getBoundingClientRect().top;
 }
 
-function hasMedia(el: HTMLElement): "image" | "file" | "" {
-    if (el.querySelector("img, video, canvas")) return "image";
-    if (el.querySelector("a[download], [data-testid*='file'], [class*='attachment']")) return "file";
+function isDecorativeMedia(node: Element): boolean {
+    if (node instanceof HTMLVideoElement || node instanceof HTMLCanvasElement) return false;
+    const img = node instanceof HTMLImageElement ? node : node.querySelector("img");
+    if (!img) return true;
+    const src = img.getAttribute("src") || img.getAttribute("srcset") || "";
+    if (GROK_ASSET.test(src) || img.closest(FILE_SEL)) return false;
+    if (DECORATIVE_SRC.test(src)) return true;
+    const w = Number(img.getAttribute("width")) || 0;
+    const h = Number(img.getAttribute("height")) || 0;
+    return (w > 0 && w <= 48) || (h > 0 && h <= 48);
+}
+
+function hasMedia(root: HTMLElement): "image" | "file" | "" {
+    if (root.querySelector(FILE_SEL)) return "file";
+    for (const node of root.querySelectorAll(MEDIA_SEL)) {
+        if (isDecorativeMedia(node)) continue;
+        return "image";
+    }
     return "";
 }
 
 function summarize(el: HTMLElement): string {
     const clone = el.cloneNode(true) as HTMLElement;
     clone.querySelectorAll(STRIP_SEL).forEach(n => n.remove());
+    const media = hasMedia(clone);
+    clone.querySelectorAll(MEDIA_SEL).forEach(n => n.remove());
     const text = (clone.textContent ?? "").replaceAll(/\s+/g, " ").trim();
     if (NOISE_TEXT.test(text)) return "";
-    const media = hasMedia(el);
     if (!text) {
-        if (media === "image") return "🖼";
-        if (media === "file") return "📎";
+        if (media === "image") return "图片";
+        if (media === "file") return "附件";
         return "";
     }
-    const clipped = text.length > SUMMARY_MAX ? `${text.slice(0, SUMMARY_MAX)}…` : text;
-    if (media === "image") return `🖼 ${clipped}`;
-    if (media === "file") return `📎 ${clipped}`;
-    return clipped;
+    return text.length > SUMMARY_MAX ? `${text.slice(0, SUMMARY_MAX)}…` : text;
 }
 
 function collect(): NavItem[] {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260919.1] v1.0.0
+// @version      [20260919.2] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260919.1] v1.0.0 — A modification for grok.com
+ * Void++ [20260919.2] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7381,9 +7381,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260919.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ae59cd4"}`
-    }, `(${"ae59cd4"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260919.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"0ec90c2"}`
+    }, `(${"0ec90c2"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8940,6 +8940,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     "[aria-label*='Thought']",
     "[role='toolbar']"
   ].join(",");
+  var MEDIA_SEL = "img, picture, video, canvas";
+  var FILE_SEL = "a[download], [data-testid*='file'], [class*='attachment']";
+  var DECORATIVE_SRC = /shields\.io|iconify\.design|badgen\.net|favicon|api\.iconify/i;
+  var GROK_ASSET = /assets\.grok\.com/i;
   var NOISE_TEXT = /^(copy|share|retry|edit|more|thinking|analyzing|searching|thoughts?)$/i;
   var HIDE_CLASS = "void-bn-hidetip";
   var SUMMARY_MAX = 60;
@@ -9083,33 +9087,47 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return window.innerHeight;
     return bar.getBoundingClientRect().top;
   }
-  function hasMedia(el) {
-    if (el.querySelector("img, video, canvas"))
-      return "image";
-    if (el.querySelector("a[download], [data-testid*='file'], [class*='attachment']"))
+  function isDecorativeMedia(node) {
+    if (node instanceof HTMLVideoElement || node instanceof HTMLCanvasElement)
+      return false;
+    const img = node instanceof HTMLImageElement ? node : node.querySelector("img");
+    if (!img)
+      return true;
+    const src = img.getAttribute("src") || img.getAttribute("srcset") || "";
+    if (GROK_ASSET.test(src) || img.closest(FILE_SEL))
+      return false;
+    if (DECORATIVE_SRC.test(src))
+      return true;
+    const w = Number(img.getAttribute("width")) || 0;
+    const h = Number(img.getAttribute("height")) || 0;
+    return w > 0 && w <= 48 || h > 0 && h <= 48;
+  }
+  function hasMedia(root) {
+    if (root.querySelector(FILE_SEL))
       return "file";
+    for (const node of root.querySelectorAll(MEDIA_SEL)) {
+      if (isDecorativeMedia(node))
+        continue;
+      return "image";
+    }
     return "";
   }
   function summarize(el) {
     const clone = el.cloneNode(true);
     clone.querySelectorAll(STRIP_SEL).forEach((n) => n.remove());
+    const media = hasMedia(clone);
+    clone.querySelectorAll(MEDIA_SEL).forEach((n) => n.remove());
     const text = (clone.textContent ?? "").replaceAll(/\s+/g, " ").trim();
     if (NOISE_TEXT.test(text))
       return "";
-    const media = hasMedia(el);
     if (!text) {
       if (media === "image")
-        return "\uD83D\uDDBC";
+        return "图片";
       if (media === "file")
-        return "\uD83D\uDCCE";
+        return "附件";
       return "";
     }
-    const clipped = text.length > SUMMARY_MAX ? `${text.slice(0, SUMMARY_MAX)}…` : text;
-    if (media === "image")
-      return `\uD83D\uDDBC ${clipped}`;
-    if (media === "file")
-      return `\uD83D\uDCCE ${clipped}`;
-    return clipped;
+    return text.length > SUMMARY_MAX ? `${text.slice(0, SUMMARY_MAX)}…` : text;
   }
   function collect() {
     const root = chatPane() ?? document;
@@ -20680,7 +20698,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterImagine_default.updatedAt = 1787870966000;
   betterLinks_default.updatedAt = 1787870966000;
   betterNavigator_default.updatedAt = 1789404663000;
-  betterSidebar_default.updatedAt = 1789254776000;
+  betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789406712000;
   chatStateFavicons_default.updatedAt = 1787789817000;
   cleaner_default.updatedAt = 1789246749000;
@@ -20700,7 +20718,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noGrokBot_default.updatedAt = 1787789817000;
   noShareLink_default.updatedAt = 1787789817000;
   noSidebarIdentity_default.updatedAt = 1788577403000;
-  noSidebarPlugins_default.updatedAt = 1789180630000;
+  noSidebarPlugins_default.updatedAt = 1789807577000;
   oneko_default.updatedAt = 1787870966000;
   placeholder_default.updatedAt = 1789207633000;
   pluginsFlyout_default.updatedAt = 1788051053000;
