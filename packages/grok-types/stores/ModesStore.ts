@@ -25,7 +25,7 @@ export interface ModesStoreState {
     /** Ensure the modes list is loaded (no-op if already loaded). */
     ensureLoaded: () => Promise<void>;
     /** Set the selected mode by ID. */
-    setSelectedModeId: (id: string) => void;
+    setSelectedModeId: (id: string, opts?: { source?: "user" | "sync" }) => void;
     /** Internal: Reconcile the selected mode ID against available modes. */
     _reconcileSelectedModeId: () => void;
 }

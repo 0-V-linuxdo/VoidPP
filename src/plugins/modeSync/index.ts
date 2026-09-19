@@ -11,7 +11,8 @@ import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { ModesStoreState } from "@grok-types/stores/ModesStore";
 import type { ResponseStoreState } from "@grok-types/stores/ResponseStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
-import { ChatPageStore, ModesStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
+import { ChatPageStore, MessageStore, ModesStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
+import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
@@ -26,6 +27,8 @@ const RESTORE_ATTR = "data-void-mode-sync-restore";
 const LOAD_TAIL_MS = 400;
 const CHAT_WRAP = ["sendResponse", "establishNewConversation"] as const;
 const RESP_WRAP = ["streamResponse", "streamCreateAndRespond"] as const;
+const GW_TYPES = new Set(["response.create", "conversation.queue.add", "conversation.queue.interject"]);
+const GW_MODE_KEYS = ["mode", "modeId", "mode_id", "modelMode", "model_mode"] as const;
 
 const settings = definePluginSettings({
     stickyOnNavigate: {
@@ -37,10 +40,17 @@ const settings = definePluginSettings({
 
 type SendFn = (...args: any[]) => any;
 
+const Gateway: { gatewayConnectionManager?: { send: SendFn } } = findByPropsLazy("gatewayConnectionManager");
+
 interface Intent {
     modeId: string;
     modelMode: string;
     activeModelId: string;
+}
+
+interface ChatLease {
+    failedGatewayLeaseConversationId?: string | null;
+    setFailedGatewayLeaseConversationId?: (id: string | null) => void;
 }
 
 const EMPTY: Intent = { modeId: "", modelMode: "", activeModelId: "" };
@@ -56,6 +66,9 @@ let origXhrSend: typeof XMLHttpRequest.prototype.send | null = null;
 const xhrMeta = new WeakMap<XMLHttpRequest, string>();
 const origFns = new Map<string, SendFn>();
 const wrappedFns = new Map<string, SendFn>();
+let origGwSend: SendFn | null = null;
+let wrappedGwSend: SendFn | null = null;
+let gwHost: { send: SendFn } | null = null;
 let abort: AbortController | null = null;
 let lastNavKey = "";
 let loadTail: ReturnType<typeof setTimeout> | null = null;
@@ -128,9 +141,9 @@ function applyIntent(next: Intent) {
     applying = true;
     try {
         const modes = ModesStore.useModesStore.getState();
-        if (modes.selectedModeId !== next.modeId) modes.setSelectedModeId(next.modeId);
+        if (modes.selectedModeId !== next.modeId) modes.setSelectedModeId(next.modeId, { source: "sync" });
         const chat = ChatPageStore.useChatPageStore.getState();
-        if (next.modelMode && next.modelMode !== "build" && chat.modelMode !== next.modelMode) chat.setModelMode(next.modelMode as ModelMode);
+        if (next.modelMode && chat.modelMode !== next.modelMode) chat.setModelMode(next.modelMode as ModelMode);
         if (next.activeModelId && chat.activeModelId !== next.activeModelId) chat.setActiveModelId(next.activeModelId as ModelId);
     } catch (e) {
         logger.debug("apply failed", e);
@@ -139,14 +152,18 @@ function applyIntent(next: Intent) {
     }
 }
 
+function captureIntent(modeId: string, cur: Intent): Intent {
+    const same = cur.modelMode === modeId;
+    return {
+        modeId,
+        modelMode: same ? cur.modelMode : modeId,
+        activeModelId: same ? cur.activeModelId : "",
+    };
+}
+
 function rememberMode(modeId: string) {
     if (!modeId) return;
-    const cur = snapshot();
-    intent = {
-        modeId,
-        modelMode: cur.modelMode === modeId ? cur.modelMode : modeId,
-        activeModelId: cur.modelMode === modeId ? cur.activeModelId : "",
-    };
+    intent = captureIntent(modeId, snapshot());
     userPicking = false;
     awaitingMenu = false;
     applyIntent(intent);
@@ -156,7 +173,7 @@ function rememberMode(modeId: string) {
 function rememberSnapshot() {
     const next = snapshot();
     if (!next.modeId) return;
-    intent = next;
+    intent = captureIntent(next.modeId, next);
     userPicking = false;
     awaitingMenu = false;
     logger.info("intent", intent.modeId);
@@ -198,23 +215,6 @@ function onNavigate() {
     syncRestoreFlag();
 }
 
-function apiModelMode(id: string, existing: unknown): unknown {
-    if (!id) return existing;
-    try {
-        const conv = ChatPageStore.modelModeToModelConfigModelMode;
-        if (typeof conv === "function") {
-            const mapped = conv(id as ModelMode);
-            if (mapped) return mapped;
-        }
-    } catch (e) {
-        logger.debug("mode map failed", e);
-    }
-    if (typeof existing === "string" && existing.startsWith("MODEL_MODE_")) {
-        return `MODEL_MODE_${id.toUpperCase().replaceAll("-", "_")}`;
-    }
-    return id;
-}
-
 function isChatSend(rec: Record<string, unknown>): boolean {
     return "message" in rec || "modeId" in rec || "modelMode" in rec;
 }
@@ -224,10 +224,12 @@ function patchPayload(raw: unknown, live: Intent): boolean {
     const rec = raw as Record<string, unknown>;
     if (!isChatSend(rec)) return false;
     const before = rec.modeId;
+    const hadModelMode = rec.modelMode;
+    const hadModelName = rec.modelName;
     rec.modeId = live.modeId;
-    if ("modelMode" in rec) rec.modelMode = apiModelMode(live.modelMode || live.modeId, rec.modelMode);
-    if ("modelName" in rec && live.activeModelId) rec.modelName = live.activeModelId;
-    return rec.modeId !== before || rec.modelMode !== undefined;
+    if ("modelMode" in rec) rec.modelMode = undefined;
+    if ("modelName" in rec) rec.modelName = undefined;
+    return rec.modeId !== before || hadModelMode !== undefined || hadModelName !== undefined;
 }
 
 function patchSendArgs(args: unknown[], live: Intent) {
@@ -268,6 +270,82 @@ function decodeBody(raw: unknown): string | null {
     return null;
 }
 
+function conversationLastModel(cid: string): string {
+    try {
+        const conv = MessageStore.useMessageStore.getState().conversations[cid] as { lastModel?: string } | undefined;
+        return String(conv?.lastModel ?? "");
+    } catch {
+        return "";
+    }
+}
+
+function sendWithModeTransport(orig: SendFn, ctx: unknown, args: unknown[], live: Intent) {
+    const first = args[0];
+    const cid = first && typeof first === "object" && !Array.isArray(first) ? (first as { conversationId?: unknown }).conversationId : undefined;
+    if (!live.modeId || typeof cid !== "string" || !cid || conversationLastModel(cid) === live.modeId) {
+        return orig.apply(ctx, args);
+    }
+    const chat = ChatPageStore.useChatPageStore.getState() as ChatPageStoreState & ChatLease;
+    const set = chat.setFailedGatewayLeaseConversationId;
+    if (typeof set !== "function") return orig.apply(ctx, args);
+    const prev = chat.failedGatewayLeaseConversationId ?? null;
+    set(cid);
+    try {
+        return orig.apply(ctx, args);
+    } finally {
+        set(prev);
+    }
+}
+
+function patchGwEvent(event: unknown, live: Intent) {
+    if (!event || typeof event !== "object" || Array.isArray(event) || !live.modeId) return;
+    const rec = event as Record<string, unknown>;
+    if (typeof rec.type !== "string" || !GW_TYPES.has(rec.type)) return;
+    for (const key of GW_MODE_KEYS) {
+        if (key in rec) rec[key] = live.modeId;
+    }
+    const { item } = rec;
+    if (!item || typeof item !== "object" || Array.isArray(item)) return;
+    const it = item as Record<string, unknown>;
+    for (const key of GW_MODE_KEYS) {
+        if (key in it) it[key] = live.modeId;
+    }
+}
+
+function wrapGatewaySend() {
+    try {
+        const mgr = Gateway.gatewayConnectionManager;
+        if (!mgr || typeof mgr.send !== "function") return;
+        if (wrappedGwSend && mgr.send === wrappedGwSend) return;
+        gwHost = mgr;
+        origGwSend = mgr.send;
+        const orig = origGwSend;
+        const wrapped: SendFn = function voidModeSyncGwSend(this: unknown, ...args: unknown[]) {
+            const live = liveIntent();
+            if (live.modeId) {
+                applyIntent(live);
+                patchGwEvent(args[1], live);
+            }
+            return orig.apply(mgr, args);
+        };
+        wrappedGwSend = wrapped;
+        mgr.send = wrapped;
+    } catch (e) {
+        logger.debug("gateway wrap failed", e);
+    }
+}
+
+function unwrapGatewaySend() {
+    try {
+        if (gwHost && origGwSend && gwHost.send === wrappedGwSend) gwHost.send = origGwSend;
+    } catch (e) {
+        logger.debug("gateway unwrap failed", e);
+    }
+    origGwSend = null;
+    wrappedGwSend = null;
+    gwHost = null;
+}
+
 function wrapOne(label: string, getState: () => any, setState: (partial: object) => void, key: string) {
     let state: any;
     try {
@@ -286,6 +364,7 @@ function wrapOne(label: string, getState: () => any, setState: (partial: object)
             applyIntent(live);
             patchSendArgs(args, live);
         }
+        if (label === "chat.sendResponse") return sendWithModeTransport(orig, this, args, liveIntent());
         return orig.apply(this, args);
     };
     wrappedFns.set(label, wrapped);
@@ -297,6 +376,7 @@ function wrapSendFns() {
     wrapOne("chat.establishNewConversation", () => ChatPageStore.useChatPageStore.getState(), p => ChatPageStore.useChatPageStore.setState(p), "establishNewConversation");
     wrapOne("resp.streamResponse", () => ResponseStore.useResponseStore.getState(), p => ResponseStore.useResponseStore.setState(p), "streamResponse");
     wrapOne("resp.streamCreateAndRespond", () => ResponseStore.useResponseStore.getState(), p => ResponseStore.useResponseStore.setState(p), "streamCreateAndRespond");
+    wrapGatewaySend();
 }
 
 function unwrapStore(getState: () => any, setState: (partial: object) => void, keys: readonly string[], prefix: string) {
@@ -318,6 +398,7 @@ function unwrapStore(getState: () => any, setState: (partial: object) => void, k
 function unwrapSendFns() {
     unwrapStore(() => ChatPageStore.useChatPageStore.getState(), p => ChatPageStore.useChatPageStore.setState(p), CHAT_WRAP, "chat");
     unwrapStore(() => ResponseStore.useResponseStore.getState(), p => ResponseStore.useResponseStore.setState(p), RESP_WRAP, "resp");
+    unwrapGatewaySend();
     origFns.clear();
     wrappedFns.clear();
 }
