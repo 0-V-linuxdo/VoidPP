@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { RoutingStore } from "@turbopack/common/stores";
+
 export const EDITOR_SEL = '.tiptap.ProseMirror[contenteditable="true"]';
 export const STOP_SELECTORS = [
     'button[aria-label="Stop model response"]',
@@ -17,11 +19,33 @@ export const SEND_SELECTORS = [
     'button[type="submit"]',
 ] as const;
 
+const CHAT_PAGES = new Set(["main", "chat", "workspace", "bot"]);
+
+export function isChatSurface(): boolean {
+    try {
+        const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+        if (page) {
+            if (page.startsWith("imagine") || page === "images") return false;
+            return CHAT_PAGES.has(page);
+        }
+    } catch { /* route not ready */ }
+    try {
+        const path = location.pathname.replace(/\/+$/, "") || "/";
+        if (path.startsWith("/imagine") || path.startsWith("/images")) return false;
+        if (path === "/" || path.startsWith("/c/") || path === "/chat" || path.startsWith("/chat/") || path.startsWith("/project/") || path === "/bot" || path.startsWith("/bot/")) return true;
+    } catch { /* */ }
+    return false;
+}
+
 export function isVisible(el: Element | null | undefined): el is HTMLElement {
     if (!(el instanceof HTMLElement) || !el.isConnected) return false;
     if (!el.getClientRects().length) return false;
     const style = getComputedStyle(el);
     return style.visibility !== "hidden" && style.display !== "none";
+}
+
+export function isClickable(el: HTMLElement): boolean {
+    return getComputedStyle(el).pointerEvents !== "none";
 }
 
 export function isStopControl(el: Element): boolean {
@@ -32,15 +56,18 @@ export function isStopControl(el: Element): boolean {
 
 export function getActiveEditor(): HTMLElement | null {
     const list = Array.from(document.querySelectorAll<HTMLElement>(EDITOR_SEL));
-    return list.find(isVisible) ?? list[0] ?? null;
+    const usable = list.filter(el => isVisible(el) && isClickable(el));
+    return usable.find(el => el.closest(".query-bar")) ?? usable[0] ?? null;
 }
 
-export function getComposerRoot(): Element {
+export function getComposerRoot(): Element | null {
     const editor = getActiveEditor();
-    return editor?.closest("form")
-        ?? editor?.closest("div.relative")
-        ?? editor?.parentElement
-        ?? document.body;
+    if (!editor) return null;
+    return editor.closest("form")
+        ?? editor.closest(".query-bar")
+        ?? editor.closest("div.relative")
+        ?? editor.parentElement
+        ?? null;
 }
 
 export function collectStopButtons(root: ParentNode): HTMLElement[] {
@@ -59,7 +86,9 @@ export function collectStopButtons(root: ParentNode): HTMLElement[] {
 }
 
 export function getStopButton(): HTMLElement | null {
-    return collectStopButtons(document).find(isVisible) ?? null;
+    const root = getComposerRoot();
+    if (!root) return null;
+    return collectStopButtons(root).find(isVisible) ?? null;
 }
 
 export function isDisabledControl(el: HTMLElement): boolean {
@@ -71,12 +100,12 @@ export function isDisabledControl(el: HTMLElement): boolean {
 }
 
 export function getSubmitButton(): HTMLElement | null {
-    for (const root of [getComposerRoot(), document]) {
-        for (const sel of SEND_SELECTORS) {
-            for (const node of root.querySelectorAll(sel)) {
-                if (!(node instanceof HTMLElement) || isStopControl(node)) continue;
-                if (isVisible(node) || isDisabledControl(node)) return node;
-            }
+    const root = getComposerRoot();
+    if (!root) return null;
+    for (const sel of SEND_SELECTORS) {
+        for (const node of root.querySelectorAll(sel)) {
+            if (!(node instanceof HTMLElement) || isStopControl(node)) continue;
+            if (isVisible(node) || isDisabledControl(node)) return node;
         }
     }
     return null;

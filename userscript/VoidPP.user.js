@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.30] v1.0.0
+// @version      [20260920.31] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.30] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.31] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7399,9 +7399,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.30] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"bd381db"}`
-    }, `(${"bd381db"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.31] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"447b5e0"}`
+    }, `(${"447b5e0"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7637,7 +7637,8 @@ button .void-info-hint {
         ]
       },
       {
-        find: 'imagine-query-bar-placeholder","Type to imagine"',
+        find: ["Type to imagine", "Generation mode"],
+        noWarn: true,
         replacement: {
           match: /("Generation mode"\)\}\)\}\),)(\i(?:&&!?\i){0,4}&&\(0,\i\.jsx\)\(\i\.DictationButton,)/,
           replace: "$1$self.renderImagineButtons(),$2"
@@ -11253,6 +11254,25 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     'button[aria-label*="Submit"]',
     'button[type="submit"]'
   ];
+  var CHAT_PAGES = new Set(["main", "chat", "workspace", "bot"]);
+  function isChatSurface() {
+    try {
+      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+      if (page) {
+        if (page.startsWith("imagine") || page === "images")
+          return false;
+        return CHAT_PAGES.has(page);
+      }
+    } catch {}
+    try {
+      const path = location.pathname.replace(/\/+$/, "") || "/";
+      if (path.startsWith("/imagine") || path.startsWith("/images"))
+        return false;
+      if (path === "/" || path.startsWith("/c/") || path === "/chat" || path.startsWith("/chat/") || path.startsWith("/project/") || path === "/bot" || path.startsWith("/bot/"))
+        return true;
+    } catch {}
+    return false;
+  }
   function isVisible2(el) {
     if (!(el instanceof HTMLElement) || !el.isConnected)
       return false;
@@ -11261,6 +11281,9 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const style = getComputedStyle(el);
     return style.visibility !== "hidden" && style.display !== "none";
   }
+  function isClickable(el) {
+    return getComputedStyle(el).pointerEvents !== "none";
+  }
   function isStopControl(el) {
     const label = el.getAttribute("aria-label") ?? "";
     const text = el.textContent ?? "";
@@ -11268,11 +11291,14 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   }
   function getActiveEditor() {
     const list = Array.from(document.querySelectorAll(EDITOR_SEL));
-    return list.find(isVisible2) ?? list[0] ?? null;
+    const usable = list.filter((el) => isVisible2(el) && isClickable(el));
+    return usable.find((el) => el.closest(".query-bar")) ?? usable[0] ?? null;
   }
   function getComposerRoot() {
     const editor = getActiveEditor();
-    return editor?.closest("form") ?? editor?.closest("div.relative") ?? editor?.parentElement ?? document.body;
+    if (!editor)
+      return null;
+    return editor.closest("form") ?? editor.closest(".query-bar") ?? editor.closest("div.relative") ?? editor.parentElement ?? null;
   }
   function collectStopButtons(root) {
     const candidates = [];
@@ -11291,7 +11317,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     return candidates;
   }
   function getStopButton() {
-    return collectStopButtons(document).find(isVisible2) ?? null;
+    const root = getComposerRoot();
+    if (!root)
+      return null;
+    return collectStopButtons(root).find(isVisible2) ?? null;
   }
   function isDisabledControl(el) {
     if (el instanceof HTMLButtonElement && el.disabled)
@@ -11305,14 +11334,15 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     return el.classList.contains("opacity-50") || el.classList.contains("cursor-not-allowed");
   }
   function getSubmitButton() {
-    for (const root of [getComposerRoot(), document]) {
-      for (const sel of SEND_SELECTORS) {
-        for (const node of root.querySelectorAll(sel)) {
-          if (!(node instanceof HTMLElement) || isStopControl(node))
-            continue;
-          if (isVisible2(node) || isDisabledControl(node))
-            return node;
-        }
+    const root = getComposerRoot();
+    if (!root)
+      return null;
+    for (const sel of SEND_SELECTORS) {
+      for (const node of root.querySelectorAll(sel)) {
+        if (!(node instanceof HTMLElement) || isStopControl(node))
+          continue;
+        if (isVisible2(node) || isDisabledControl(node))
+          return node;
       }
     }
     return null;
@@ -11482,11 +11512,13 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var buttonObs = null;
   var inputCtrl = null;
   var unsubRoute = null;
+  var unsubRoutePage = null;
   var unsubPage = null;
   var unsubStream = null;
   var unsubResponse = null;
   var raf3 = 0;
   var started3 = false;
+  var watching = false;
   function currentStyle() {
     const value = settings11.store.style;
     return isIconStyle(value) ? value : DEFAULT_STYLE;
@@ -11589,8 +11621,13 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   }
   function officialInterruptedDom2() {
     try {
-      const root = document.querySelector("main") ?? document.body;
-      return USER_INTERRUPT4.test(root.textContent ?? "");
+      if (!isChatSurface())
+        return false;
+      for (const node of document.querySelectorAll("[data-testid='assistant-message']")) {
+        if (USER_INTERRUPT4.test(node.textContent ?? ""))
+          return true;
+      }
+      return false;
     } catch (e) {
       logger22.debug("interrupt DOM unavailable:", e);
       return false;
@@ -11683,6 +11720,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function evaluateState() {
     if (!started3)
       return;
+    if (!isChatSurface()) {
+      pauseWatching();
+      return;
+    }
     const conv = currentConversationId();
     if (lastConvId && conv && lastConvId !== conv) {
       onConversationSwitch(conv);
@@ -11826,9 +11867,15 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       raf3 = 0;
       if (!started3)
         return;
+      if (!isChatSurface()) {
+        pauseWatching();
+        return;
+      }
+      if (!watching)
+        resumeWatching();
       bindEditorInput();
       const root = getComposerRoot();
-      if (!composerObs || !root.isConnected) {
+      if (root && (!composerObs || !root.isConnected)) {
         observeComposer();
         observeButtons();
       }
@@ -11881,6 +11928,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function observeComposer() {
     composerObs?.disconnect();
     const root = getComposerRoot();
+    if (!root) {
+      composerObs = null;
+      return;
+    }
     composerObs = new MutationObserver(onDomMutate);
     composerObs.observe(root, {
       childList: true,
@@ -11894,6 +11945,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function observeButtons() {
     buttonObs?.disconnect();
     const target = getComposerRoot();
+    if (!target) {
+      buttonObs = null;
+      return;
+    }
     buttonObs = new MutationObserver(onDomMutate);
     buttonObs.observe(target, {
       childList: true,
@@ -11903,12 +11958,52 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       attributeOldValue: true
     });
   }
+  function pauseWatching() {
+    if (!watching && !globalObs && !composerObs && !buttonObs)
+      return;
+    watching = false;
+    globalObs?.disconnect();
+    globalObs = null;
+    composerObs?.disconnect();
+    composerObs = null;
+    buttonObs?.disconnect();
+    buttonObs = null;
+    resetStreamFlags();
+    lastConvId = "";
+    restoreOfficial();
+  }
+  function resumeWatching() {
+    if (!started3)
+      return;
+    watching = true;
+    startFaviconGuard();
+    rebuildIcons();
+    if (!globalObs) {
+      globalObs = new MutationObserver(onDomMutate);
+      globalObs.observe(document.body, { childList: true, subtree: true });
+    }
+    observeComposer();
+    observeButtons();
+    bindEditorInput();
+  }
+  function onSurfaceChange() {
+    if (!started3)
+      return;
+    if (isChatSurface()) {
+      resumeWatching();
+      scheduleEvaluate();
+      return;
+    }
+    pauseWatching();
+  }
   function attachStores() {
     unsubRoute?.();
+    unsubRoutePage?.();
     unsubPage?.();
     unsubStream?.();
     unsubResponse?.();
     unsubRoute = null;
+    unsubRoutePage = null;
     unsubPage = null;
     unsubStream = null;
     unsubResponse = null;
@@ -11916,9 +12011,14 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const routeStore = RoutingStore.useRoutingStore;
       if (typeof routeStore?.subscribe === "function") {
         unsubRoute = routeStore.subscribe((s) => s.route.conversationId, (id, prev) => {
-          if (!id || id === prev)
+          if (!id || id === prev || !isChatSurface())
             return;
           onConversationSwitch(String(id));
+        });
+        unsubRoutePage = routeStore.subscribe((s) => s.route.page, (page, prev) => {
+          if (page === prev)
+            return;
+          onSurfaceChange();
         });
       }
     } catch (e) {
@@ -11933,12 +12033,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const pageStore = ChatPageStore.useChatPageStore;
       if (typeof pageStore?.subscribe === "function") {
         unsubPage = pageStore.subscribe((s) => s.conversationId, (id, prev) => {
-          if (!id || id === prev)
+          if (!id || id === prev || !isChatSurface())
             return;
           onConversationSwitch(id);
         });
         unsubStream = pageStore.subscribe((s) => `${s.streamedMessageId ?? ""}|${s.showStreamingIndicator ? "1" : "0"}`, (next, prev) => {
-          if (next === prev)
+          if (next === prev || !isChatSurface())
             return;
           scheduleEvaluate();
         });
@@ -11949,7 +12049,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     try {
       const responseStore = ResponseStore.useResponseStore;
       if (typeof responseStore?.subscribe === "function") {
-        unsubResponse = responseStore.subscribe(() => scheduleEvaluate());
+        unsubResponse = responseStore.subscribe(() => {
+          if (!isChatSurface())
+            return;
+          scheduleEvaluate();
+        });
       }
     } catch (e) {
       logger22.debug("ResponseStore subscribe failed:", e);
@@ -11981,22 +12085,18 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     start() {
       started3 = true;
       officialHref = captureOfficial();
-      rebuildIcons();
-      startFaviconGuard();
       inputCtrl?.abort();
       inputCtrl = new AbortController;
       window.addEventListener("popstate", scheduleEvaluate, { signal: inputCtrl.signal });
-      globalObs?.disconnect();
-      globalObs = new MutationObserver(onDomMutate);
-      globalObs.observe(document.body, { childList: true, subtree: true });
-      bindEditorInput();
-      observeComposer();
-      observeButtons();
       attachStores();
-      evaluateState();
+      if (isChatSurface()) {
+        resumeWatching();
+        evaluateState();
+      }
     },
     stop() {
       started3 = false;
+      watching = false;
       if (raf3)
         cancelAnimationFrame(raf3);
       raf3 = 0;
@@ -12004,6 +12104,8 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       inputCtrl = null;
       unsubRoute?.();
       unsubRoute = null;
+      unsubRoutePage?.();
+      unsubRoutePage = null;
       unsubPage?.();
       unsubPage = null;
       unsubStream?.();
@@ -13763,7 +13865,7 @@ html.void-cms-picked .void-cms-ghost {
     const blur = clamp(settings15.store.blur, 0, 40);
     const alpha = pct / 100;
     const frost = pct < 100 && blur > 0 ? `-webkit-backdrop-filter:blur(${blur}px)!important;backdrop-filter:blur(${blur}px)!important;` : "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;";
-    registerStyle(STYLE_NAME3, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + `background-color:hsl(var(--surface-l1)/${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}");
+    registerStyle(STYLE_NAME3, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + "pointer-events:auto!important;" + `background-color:hsl(var(--surface-l1)/${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}");
   }
   var composerOpacity_default = definePlugin({
     name: "ComposerOpacity",
@@ -23529,7 +23631,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1788577403000;
   noSidebarPlugins_default.updatedAt = 1789807577000;
   oneko_default.updatedAt = 1787870966000;
-  placeholder_default.updatedAt = 1789920106000;
+  placeholder_default.updatedAt = 1789920706000;
   pluginsFlyout_default.updatedAt = 1788051053000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1789246749000;

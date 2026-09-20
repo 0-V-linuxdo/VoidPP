@@ -50,7 +50,8 @@ export default definePlugin({
             ],
         },
         {
-            find: 'imagine-query-bar-placeholder","Type to imagine"',
+            find: ["Type to imagine", "Generation mode"],
+            noWarn: true,
             replacement: {
                 match: /("Generation mode"\)\}\)\}\),)(\i(?:&&!?\i){0,4}&&\(0,\i\.jsx\)\(\i\.DictationButton,)/,
                 replace: "$1$self.renderImagineButtons(),$2",

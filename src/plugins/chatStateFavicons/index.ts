@@ -20,6 +20,7 @@ import {
     getActiveEditor,
     getComposerRoot,
     getStopButton,
+    isChatSurface,
     isInputEmpty,
     isStopControl,
     submitIsGray,
@@ -56,11 +57,13 @@ let composerObs: MutationObserver | null = null;
 let buttonObs: MutationObserver | null = null;
 let inputCtrl: AbortController | null = null;
 let unsubRoute: (() => void) | null = null;
+let unsubRoutePage: (() => void) | null = null;
 let unsubPage: (() => void) | null = null;
 let unsubStream: (() => void) | null = null;
 let unsubResponse: (() => void) | null = null;
 let raf = 0;
 let started = false;
+let watching = false;
 
 function currentStyle(): IconStyle {
     const value = settings.store.style;
@@ -159,8 +162,11 @@ function storeStreaming(): boolean {
 
 function officialInterruptedDom(): boolean {
     try {
-        const root = document.querySelector("main") ?? document.body;
-        return USER_INTERRUPT.test(root.textContent ?? "");
+        if (!isChatSurface()) return false;
+        for (const node of document.querySelectorAll("[data-testid='assistant-message']")) {
+            if (USER_INTERRUPT.test(node.textContent ?? "")) return true;
+        }
+        return false;
     } catch (e) {
         logger.debug("interrupt DOM unavailable:", e);
         return false;
@@ -252,6 +258,10 @@ function hasError(): boolean {
 
 function evaluateState() {
     if (!started) return;
+    if (!isChatSurface()) {
+        pauseWatching();
+        return;
+    }
     const conv = currentConversationId();
     if (lastConvId && conv && lastConvId !== conv) {
         onConversationSwitch(conv);
@@ -388,9 +398,14 @@ function scheduleEvaluate() {
     raf = requestAnimationFrame(() => {
         raf = 0;
         if (!started) return;
+        if (!isChatSurface()) {
+            pauseWatching();
+            return;
+        }
+        if (!watching) resumeWatching();
         bindEditorInput();
         const root = getComposerRoot();
-        if (!composerObs || !root.isConnected) {
+        if (root && (!composerObs || !root.isConnected)) {
             observeComposer();
             observeButtons();
         }
@@ -445,6 +460,10 @@ function bindEditorInput() {
 function observeComposer() {
     composerObs?.disconnect();
     const root = getComposerRoot();
+    if (!root) {
+        composerObs = null;
+        return;
+    }
     composerObs = new MutationObserver(onDomMutate);
     composerObs.observe(root, {
         childList: true,
@@ -459,6 +478,10 @@ function observeComposer() {
 function observeButtons() {
     buttonObs?.disconnect();
     const target = getComposerRoot();
+    if (!target) {
+        buttonObs = null;
+        return;
+    }
     buttonObs = new MutationObserver(onDomMutate);
     buttonObs.observe(target, {
         childList: true,
@@ -469,12 +492,52 @@ function observeButtons() {
     });
 }
 
+function pauseWatching() {
+    if (!watching && !globalObs && !composerObs && !buttonObs) return;
+    watching = false;
+    globalObs?.disconnect();
+    globalObs = null;
+    composerObs?.disconnect();
+    composerObs = null;
+    buttonObs?.disconnect();
+    buttonObs = null;
+    resetStreamFlags();
+    lastConvId = "";
+    restoreOfficial();
+}
+
+function resumeWatching() {
+    if (!started) return;
+    watching = true;
+    startFaviconGuard();
+    rebuildIcons();
+    if (!globalObs) {
+        globalObs = new MutationObserver(onDomMutate);
+        globalObs.observe(document.body, { childList: true, subtree: true });
+    }
+    observeComposer();
+    observeButtons();
+    bindEditorInput();
+}
+
+function onSurfaceChange() {
+    if (!started) return;
+    if (isChatSurface()) {
+        resumeWatching();
+        scheduleEvaluate();
+        return;
+    }
+    pauseWatching();
+}
+
 function attachStores() {
     unsubRoute?.();
+    unsubRoutePage?.();
     unsubPage?.();
     unsubStream?.();
     unsubResponse?.();
     unsubRoute = null;
+    unsubRoutePage = null;
     unsubPage = null;
     unsubStream = null;
     unsubResponse = null;
@@ -482,8 +545,12 @@ function attachStores() {
         const routeStore = RoutingStore.useRoutingStore;
         if (typeof routeStore?.subscribe === "function") {
             unsubRoute = routeStore.subscribe(s => s.route.conversationId, (id, prev) => {
-                if (!id || id === prev) return;
+                if (!id || id === prev || !isChatSurface()) return;
                 onConversationSwitch(String(id));
+            });
+            unsubRoutePage = routeStore.subscribe(s => s.route.page, (page, prev) => {
+                if (page === prev) return;
+                onSurfaceChange();
             });
         }
     } catch (e) {
@@ -498,11 +565,11 @@ function attachStores() {
         const pageStore = ChatPageStore.useChatPageStore;
         if (typeof pageStore?.subscribe === "function") {
             unsubPage = pageStore.subscribe(s => s.conversationId, (id, prev) => {
-                if (!id || id === prev) return;
+                if (!id || id === prev || !isChatSurface()) return;
                 onConversationSwitch(id);
             });
             unsubStream = pageStore.subscribe(s => `${s.streamedMessageId ?? ""}|${s.showStreamingIndicator ? "1" : "0"}`, (next, prev) => {
-                if (next === prev) return;
+                if (next === prev || !isChatSurface()) return;
                 scheduleEvaluate();
             });
         }
@@ -512,7 +579,10 @@ function attachStores() {
     try {
         const responseStore = ResponseStore.useResponseStore;
         if (typeof responseStore?.subscribe === "function") {
-            unsubResponse = responseStore.subscribe(() => scheduleEvaluate());
+            unsubResponse = responseStore.subscribe(() => {
+                if (!isChatSurface()) return;
+                scheduleEvaluate();
+            });
         }
     } catch (e) {
         logger.debug("ResponseStore subscribe failed:", e);
@@ -546,29 +616,27 @@ export default definePlugin({
     start() {
         started = true;
         officialHref = captureOfficial();
-        rebuildIcons();
-        startFaviconGuard();
         inputCtrl?.abort();
         inputCtrl = new AbortController();
         window.addEventListener("popstate", scheduleEvaluate, { signal: inputCtrl.signal });
-        globalObs?.disconnect();
-        globalObs = new MutationObserver(onDomMutate);
-        globalObs.observe(document.body, { childList: true, subtree: true });
-        bindEditorInput();
-        observeComposer();
-        observeButtons();
         attachStores();
-        evaluateState();
+        if (isChatSurface()) {
+            resumeWatching();
+            evaluateState();
+        }
     },
 
     stop() {
         started = false;
+        watching = false;
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
         inputCtrl?.abort();
         inputCtrl = null;
         unsubRoute?.();
         unsubRoute = null;
+        unsubRoutePage?.();
+        unsubRoutePage = null;
         unsubPage?.();
         unsubPage = null;
         unsubStream?.();
