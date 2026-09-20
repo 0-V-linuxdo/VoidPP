@@ -80,7 +80,7 @@ function PhrasesEditor() {
         <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
             <Flex alignItems="center" gap="0.375rem">
                 <Text size="sm" weight="medium">Phrases</Text>
-                <InfoHint>One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input stays on one line and replaces the last overflowing word with an ellipsis; the home greeting can wrap. Empty list uses Grok's defaults.</InfoHint>
+                <InfoHint>One phrase per line. The non-project home greeting uses these and may wrap. Project chat input uses the first phrase on one line and replaces the last overflowing word with an ellipsis. Home and other non-project chats keep Grok's short placeholders. Empty list uses Grok's defaults.</InfoHint>
             </Flex>
             <div className={cl("textarea-wrap")}>
                 <Textarea
@@ -101,6 +101,14 @@ function isNonProjectHome(): boolean {
     } catch {
         const path = location.pathname.replace(/\/+$/, "") || "/";
         return path === "/";
+    }
+}
+
+function isProjectChat(): boolean {
+    try {
+        return Boolean(RoutingStore.useRoutingStore.getState().route.workspaceId);
+    } catch {
+        return false;
     }
 }
 
@@ -290,7 +298,7 @@ function bindSize(p: HTMLElement | null) {
 }
 
 function paintInput() {
-    if (!started) {
+    if (!started || !isProjectChat()) {
         bindSize(null);
         clearInputOverlay();
         return;
@@ -326,13 +334,13 @@ function scheduleInput() {
 export default definePlugin({
     name: "Placeholder",
     icon: TextCursorInputIcon,
-    description: "Replace the rotating chat input placeholder and the non-project home greeting. Rotate the greeting on visit, a timer, or a click.",
+    description: "Replace the non-project home greeting and the project chat input placeholder. Rotate the greeting on visit, a timer, or a click.",
     authors: [Devs.p],
     tags: ["chat"],
     settings,
 
     _phrases() {
-        return phrases();
+        return isProjectChat() ? phrases() : null;
     },
 
     _inputPlaceholder(value: unknown) {

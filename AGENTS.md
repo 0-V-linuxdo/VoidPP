@@ -56,9 +56,10 @@ Do not `setAttribute("data-placeholder", …)`. Tiptap Placeholder `Decoration.n
 
 Correct path:
 
-- `_phrases()` / `_inputPlaceholder()` keep the full phrase. Settings and the home Hero stay full text; Hero may wrap. Do not put a clamped string into `_phrases()` — resize and folder chips will not refresh the decoration.
+- Home (`page === "main"` and no `workspaceId`) and other non-project chats keep Grok's short query-bar placeholders. `_phrases()` / `_inputPlaceholder()` / `placeholderInput` run only when `workspaceId` is set. Feeding a custom long phrase into the home query-bar stacks Grok's root-node `::before` on top of the paragraph overlay (`Askenot`). Hero still paints from the stored phrase list and may wrap.
+- `_phrases()` / `_inputPlaceholder()` keep the full phrase. Settings and the home Hero stay full text. Do not put a clamped string into `_phrases()` — resize and folder chips will not refresh the decoration.
 - Measure the empty `p` (`clientWidth` of the `inset-inline:0` box) with a same-font, `white-space:nowrap` probe. A wrapping probe under-measures and the clamp bails out (`do for` with no `…`).
 - `clampToWidth` drops whole trailing words and appends `…`. Do not cut inside a word.
-- Paint the clamped string with `registerStyle("placeholderInput")` on `::before { content:"…" !important }` (same overlay idea as the Hero). ResizeObserver plus `data-placeholder` / `class` mutations reschedule. Typing drops `is-editor-empty` and the overlay unregisters.
+- Paint the clamped string with `registerStyle("placeholderInput")` on `::before { content:"…" !important }` (same overlay idea as the Hero). ResizeObserver plus `data-placeholder` / `class` mutations reschedule. Typing drops `is-editor-empty` and the overlay unregisters. Leaving a project unregisters the overlay.
 
 Do not touch ComposerOpacity, InputHistory, BetterCanvas, or real-input autosize for this.
