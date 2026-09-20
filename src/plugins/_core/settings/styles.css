@@ -55,7 +55,6 @@ button .void-info-hint {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    contain: content;
 }
 
 .void-settings-row-body {

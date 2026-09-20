@@ -36,7 +36,7 @@ export function InfoHint({ children }: { children: ReactNode }) {
                     <InfoIcon size={16} />
                 </span>
             </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={8}>
+            <TooltipContent side="right" sideOffset={8} className="void-info-hint-content">
                 {children}
             </TooltipContent>
         </Tooltip>

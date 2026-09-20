@@ -1,3 +1,7 @@
+.void-setting-select-content {
+    z-index: 1000 !important;
+}
+
 .void-setting-slider-row {
     align-items: center;
     width: 100%;

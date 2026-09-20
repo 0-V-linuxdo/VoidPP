@@ -88,7 +88,7 @@ const SelectField: Field<PluginSettingSelectDef & PluginSettingCommon> = ({ id, 
                 <SelectTrigger>
                     <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className={cl("select-content")}>
                     {options.map(o => (
                         <SelectItem key={String(o.value)} value={String(o.value)}>
                             {o.label}

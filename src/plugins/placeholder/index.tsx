@@ -7,7 +7,7 @@
 import "./styles.css";
 
 import { definePluginSettings } from "@api/Settings";
-import { Flex, Paragraph, Text, Textarea } from "@components";
+import { Flex, InfoHint, Text, Textarea } from "@components";
 import { TextCursorInputIcon } from "@components/icons";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React } from "@turbopack/common/react";
@@ -32,7 +32,7 @@ function parsePhrases(raw: unknown): string[] {
 }
 
 function escapeForCssContent(text: string): string {
-    return text.replaceAll('\\', "\\\\").replaceAll('"', "\\\"").replaceAll('\n', "\\A ");
+    return text.replaceAll("\\", "\\\\").replaceAll('"', "\\\"").replaceAll("\n", "\\A ");
 }
 
 const settings = definePluginSettings({
@@ -71,9 +71,9 @@ function PhrasesEditor() {
     const { phrases } = settings.use(["phrases"]);
     return (
         <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
-            <Flex flexDirection="column" gap="0">
+            <Flex alignItems="center" gap="0.375rem">
                 <Text size="sm" weight="medium">Phrases</Text>
-                <Paragraph>One phrase per line. Used for the input placeholder and the non-project home greeting. Empty list uses Grok's defaults.</Paragraph>
+                <InfoHint>One phrase per line. Used for the input placeholder and the non-project home greeting. Empty list uses Grok's defaults.</InfoHint>
             </Flex>
             <div className={cl("textarea-wrap")}>
                 <Textarea

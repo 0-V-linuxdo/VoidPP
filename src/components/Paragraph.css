@@ -16,3 +16,7 @@
     width: 1rem;
     height: 1rem;
 }
+
+.void-info-hint-content {
+    z-index: 1000 !important;
+}

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.8] v1.0.0
+// @version      [20260920.9] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.8] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.9] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4077,6 +4077,10 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     width: 1rem;
     height: 1rem;
 }
+
+.void-info-hint-content {
+    z-index: 1000 !important;
+}
 `);
 
   // src/turbopack/common/utils.ts
@@ -4132,7 +4136,8 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       size: 16
     }))), /* @__PURE__ */ React.createElement(TooltipContent, {
       side: "right",
-      sideOffset: 8
+      sideOffset: 8,
+      className: "void-info-hint-content"
     }, children));
   }
   function SectionHeader({ title, description, className }) {
@@ -4962,7 +4967,6 @@ button .void-info-hint {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    contain: content;
 }
 
 .void-settings-row-body {
@@ -5948,7 +5952,11 @@ button .void-info-hint {
 `);
 
   // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/SettingField.css
-  registerStyle("SettingField", `.void-setting-slider-row {
+  registerStyle("SettingField", `.void-setting-select-content {
+    z-index: 1000 !important;
+}
+
+.void-setting-slider-row {
     align-items: center;
     width: 100%;
 }
@@ -6081,7 +6089,9 @@ button .void-info-hint {
       action: /* @__PURE__ */ React.createElement(Select, {
         value: String(value ?? ""),
         onValueChange: (v) => update(valueMap.get(v) ?? v)
-      }, /* @__PURE__ */ React.createElement(SelectTrigger, null, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, options.map((o) => /* @__PURE__ */ React.createElement(SelectItem, {
+      }, /* @__PURE__ */ React.createElement(SelectTrigger, null, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, {
+        className: cl9("select-content")
+      }, options.map((o) => /* @__PURE__ */ React.createElement(SelectItem, {
         key: String(o.value),
         value: String(o.value)
       }, o.label))))
@@ -7380,9 +7390,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"95cf8d5"}`
-    }, `(${"95cf8d5"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e862cca"}`
+    }, `(${"e862cca"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -15822,12 +15832,12 @@ div:has(> #grok-bot-nav-button) {
       gap: "0.5rem",
       className: cl24("root")
     }, /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "0"
+      alignItems: "center",
+      gap: "0.375rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "medium"
-    }, "Phrases"), /* @__PURE__ */ React.createElement(Paragraph, null, "One phrase per line. Used for the input placeholder and the non-project home greeting. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
+    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. Used for the input placeholder and the non-project home greeting. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
       className: cl24("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
       className: cl24("textarea"),
@@ -21316,7 +21326,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1788577403000;
   noSidebarPlugins_default.updatedAt = 1789807577000;
   oneko_default.updatedAt = 1787870966000;
-  placeholder_default.updatedAt = 1789896428000;
+  placeholder_default.updatedAt = 1789896933000;
   pluginsFlyout_default.updatedAt = 1788051053000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1789246749000;
