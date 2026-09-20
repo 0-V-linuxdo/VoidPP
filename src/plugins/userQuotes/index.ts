@@ -17,7 +17,7 @@ const settings = definePluginSettings({
     italic: {
         type: OptionType.BOOLEAN,
         description: "Render quoted lines in italic.",
-        default: false,
+        default: true,
     },
     quotes: {
         type: OptionType.BOOLEAN,
