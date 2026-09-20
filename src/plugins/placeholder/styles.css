@@ -5,6 +5,7 @@
 .void-ph-textarea-wrap {
     border: 1px solid hsl(var(--border-l2));
     border-radius: 0.75rem;
+    background: hsl(var(--surface-l2));
 }
 
 .void-ph-textarea-wrap:focus-within {
