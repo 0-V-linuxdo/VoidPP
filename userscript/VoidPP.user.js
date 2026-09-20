@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.2] v1.0.0
+// @version      [20260920.3] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.2] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7296,9 +7296,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b7f65f8"}`
-    }, `(${"b7f65f8"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"182613b"}`
+    }, `(${"182613b"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -19863,7 +19863,13 @@ html.void-rt-open [data-sidebar="gap"] {
       if (asst >= 0 && user >= 0)
         break;
     }
-    const pick = user >= 0 && asst >= 0 && user < asst ? [cleaned[user], cleaned[asst]] : user >= 0 && (asst < 0 || user > asst) ? [cleaned[user]] : asst >= 0 ? [cleaned[asst]] : cleaned.slice(-1);
+    let pick = cleaned.slice(-1);
+    if (user >= 0 && asst >= 0 && user < asst)
+      pick = [cleaned[user], cleaned[asst]];
+    else if (user >= 0 && (asst < 0 || user > asst))
+      pick = [cleaned[user]];
+    else if (asst >= 0)
+      pick = [cleaned[asst]];
     return pick.map((line) => ({
       role: line.role,
       text: clipLine(line.text, line.role === "user" ? 72 : 140)
@@ -21096,7 +21102,7 @@ html.void-rt-open [data-sidebar="gap"] {
   downloadTTS_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
-  modeSync_default.updatedAt = 1789857414000;
+  modeSync_default.updatedAt = 1789880538000;
   customInstructions_default.updatedAt = 1789208142000;
   noDictation_default.updatedAt = 1788037550000;
   oneko_default.updatedAt = 1787870966000;
@@ -21107,7 +21113,7 @@ html.void-rt-open [data-sidebar="gap"] {
   betterCanvas_default.updatedAt = 1789258440000;
   cleaner_default.updatedAt = 1789246749000;
   pluginsFlyout_default.updatedAt = 1788051053000;
-  recentTopics_default.updatedAt = 1789393932000;
+  recentTopics_default.updatedAt = 1789881195000;
   composerOpacity_default.updatedAt = 1788044121000;
   var __plugins_default = { [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [starry_default.name]: starry_default, [widerChat_default.name]: widerChat_default, [noGrokBot_default.name]: noGrokBot_default, [responseNotification_default.name]: responseNotification_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [usageDisplay_default.name]: usageDisplay_default, [settingsFlyout_default.name]: settingsFlyout_default, [userQuotes_default.name]: userQuotes_default, [exportChat_default.name]: exportChat_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [betterImagine_default.name]: betterImagine_default, [consoleJanitor_default.name]: consoleJanitor_default, [experiments_default.name]: experiments_default, [betterFiles_default.name]: betterFiles_default, [cloneChats_default.name]: cloneChats_default, [noShareLink_default.name]: noShareLink_default, [chatListStatus_default.name]: chatListStatus_default, [autoCollapse_default.name]: autoCollapse_default, [betterLinks_default.name]: betterLinks_default, [stableComposer_default.name]: stableComposer_default, [autoRetry_default.name]: autoRetry_default, [compactModeSelect_default.name]: compactModeSelect_default, [inputHistory_default.name]: inputHistory_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [downloadTTS_default.name]: downloadTTS_default, [incognito_default.name]: incognito_default, [streamerMode_default.name]: streamerMode_default, [modeSync_default.name]: modeSync_default, [customInstructions_default.name]: customInstructions_default, [noDictation_default.name]: noDictation_default, [oneko_default.name]: oneko_default, [betterSidebar_default.name]: betterSidebar_default, [placeholder_default.name]: placeholder_default, [messageTimestamps_default.name]: messageTimestamps_default, [betterNavigator_default.name]: betterNavigator_default, [betterCanvas_default.name]: betterCanvas_default, [cleaner_default.name]: cleaner_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [composerOpacity_default.name]: composerOpacity_default };
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/api/Notices.css

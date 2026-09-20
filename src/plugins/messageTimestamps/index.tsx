@@ -64,11 +64,11 @@ let origFetch: typeof fetch | null = null;
 let origXhrOpen: typeof XMLHttpRequest.prototype.open | null = null;
 let origXhrSend: typeof XMLHttpRequest.prototype.send | null = null;
 let origList: typeof ApiClients.chatApi.chatListResponses | null = null;
-let hookedWindow: Window | null = null;
+let hookedWindow: typeof globalThis | null = null;
 const xhrMeta = new WeakMap<XMLHttpRequest, string>();
 
-function pageWindow(): Window {
-    return (typeof unsafeWindow !== "undefined" ? unsafeWindow : window) as Window;
+function pageWindow(): typeof globalThis {
+    return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
 }
 
 function stamps(): Map<string, number> {
@@ -344,7 +344,7 @@ function hookFetch() {
             }
             return res;
         });
-    };
+    } as typeof fetch;
 }
 
 function unhookFetch() {
