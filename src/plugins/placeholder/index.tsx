@@ -24,8 +24,8 @@ const HERO_STYLE = "placeholderHero";
 const INPUT_STYLE = "placeholderInput";
 const HERO_SEL = "h1[data-void-ph-hero]";
 const EDITOR_SEL = ".query-bar .tiptap";
-const EMPTY_SEL = `${EDITOR_SEL} p.is-editor-empty, ${EDITOR_SEL} p.is-empty`;
-const EMPTY_BEFORE = `${EDITOR_SEL} p.is-editor-empty:first-child::before,${EDITOR_SEL} p.is-empty:first-child::before`;
+const EMPTY_SEL = `${EDITOR_SEL} p.is-editor-empty, ${EDITOR_SEL} p.is-empty:only-child`;
+const EMPTY_BEFORE = `${EDITOR_SEL} p.is-editor-empty:first-child::before,${EDITOR_SEL} p.is-empty:only-child::before`;
 const WIDTH_PAD = 8;
 
 const DEFAULT_PHRASES = [

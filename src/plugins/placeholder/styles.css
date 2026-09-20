@@ -32,22 +32,23 @@
 }
 
 /* Empty query-bar: official ::before is float + height:0, so a long
-   phrase wraps and trips overflow-y:auto. Lock one line. Overlay CSS
-   (placeholderInput) replaces attr(data-placeholder) — Tiptap owns
-   that attr and rewrites it on every transaction. Typing drops
-   is-editor-empty and restores the official autosize. */
+   phrase wraps and trips overflow-y:auto. Lock one line only when the
+   editor is wholly empty. p.is-empty:first-child matches a blank first
+   line after Enter and must not be used. Overlay CSS (placeholderInput)
+   replaces attr(data-placeholder). Typing drops is-editor-empty and
+   restores the official autosize. */
 .query-bar .tiptap:has(> p.is-editor-empty),
 .query-bar .tiptap:has(> p.is-empty:only-child) {
     overflow-y: hidden !important;
 }
 
 .query-bar .tiptap p.is-editor-empty:first-child,
-.query-bar .tiptap p.is-empty:first-child {
+.query-bar .tiptap p.is-empty:only-child {
     position: relative;
 }
 
 .query-bar .tiptap p.is-editor-empty:first-child::before,
-.query-bar .tiptap p.is-empty:first-child::before {
+.query-bar .tiptap p.is-empty:only-child::before {
     float: none !important;
     height: auto !important;
     position: absolute;
@@ -57,4 +58,5 @@
     overflow: hidden;
     white-space: nowrap;
     pointer-events: none;
+    color: hsl(var(--fg-secondary));
 }
