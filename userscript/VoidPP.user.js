@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.25] v1.0.0
+// @version      [20260920.26] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.25] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.26] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7399,9 +7399,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.25] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ef1861f"}`
-    }, `(${"ef1861f"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.26] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4318549"}`
+    }, `(${"4318549"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14231,12 +14231,43 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 }
 
 .void-csi-preview {
-    width: 2rem;
-    height: 2rem;
+    width: var(--void-csi-avatar-size, 2rem);
+    height: var(--void-csi-avatar-size, 2rem);
     flex-shrink: 0;
     border-radius: 999px;
     object-fit: cover;
     background: hsl(var(--surface-l2));
+}
+
+[data-sidebar="footer"] img[alt="pfp"] {
+    width: var(--void-csi-avatar-size, 2rem) !important;
+    height: var(--void-csi-avatar-size, 2rem) !important;
+    min-width: var(--void-csi-avatar-size, 2rem) !important;
+    min-height: var(--void-csi-avatar-size, 2rem) !important;
+    max-width: var(--void-csi-avatar-size, 2rem) !important;
+    max-height: var(--void-csi-avatar-size, 2rem) !important;
+    object-fit: cover !important;
+    flex-shrink: 0 !important;
+}
+
+[data-sidebar="footer"] :has(> img[alt="pfp"]):not(button, .void-sidebar-card) {
+    width: var(--void-csi-avatar-size, 2rem) !important;
+    height: var(--void-csi-avatar-size, 2rem) !important;
+    min-width: var(--void-csi-avatar-size, 2rem) !important;
+    min-height: var(--void-csi-avatar-size, 2rem) !important;
+    max-width: var(--void-csi-avatar-size, 2rem) !important;
+    max-height: var(--void-csi-avatar-size, 2rem) !important;
+    flex-shrink: 0 !important;
+}
+
+[data-collapsible="icon"] [data-sidebar="footer"] img[alt="pfp"],
+[data-collapsible="icon"] [data-sidebar="footer"] :has(> img[alt="pfp"]):not(button, .void-sidebar-card) {
+    width: 2rem !important;
+    height: 2rem !important;
+    min-width: 2rem !important;
+    min-height: 2rem !important;
+    max-width: 2rem !important;
+    max-height: 2rem !important;
 }
 
 .void-csi-url {
@@ -14311,8 +14342,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var ORIG = "data-void-csi-orig";
   var SOURCE_PX = 1024;
   var AVATAR_PX = 256;
+  var SIZE_MIN = 24;
+  var SIZE_MAX = 64;
+  var SIZE_DEFAULT = 40;
   var ZOOM_MIN = 1;
   var ZOOM_MAX = 4;
+  var SIZE_VAR = "--void-csi-avatar-size";
   var cl23 = classNameFactory("void-csi-");
   var settings17 = definePluginSettings({
     displayName: {
@@ -14327,6 +14362,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       default: "",
       placeholder: "Paste a picture, or https://…",
       component: AvatarUrlField
+    },
+    avatarSize: {
+      type: 5 /* SLIDER */,
+      description: "Sidebar avatar diameter in pixels when the sidebar is expanded. Official size is 32. Collapsed rail stays 32.",
+      min: SIZE_MIN,
+      max: SIZE_MAX,
+      default: SIZE_DEFAULT
     },
     applyToMenu: {
       type: 3 /* BOOLEAN */,
@@ -14905,11 +14947,19 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     dropNames(document);
     unhide(document);
   }
+  function applySize() {
+    const n = clamp(Math.round(num(settings17.store.avatarSize, SIZE_DEFAULT)), SIZE_MIN, SIZE_MAX);
+    document.documentElement.style.setProperty(SIZE_VAR, `${n}px`);
+  }
+  function clearSize() {
+    document.documentElement.style.removeProperty(SIZE_VAR);
+  }
   function apply3() {
     if (!started5 || painting)
       return;
     painting = true;
     try {
+      applySize();
       paintFooter();
       paintMenu();
     } finally {
@@ -14979,6 +15029,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       treeObs?.disconnect();
       treeObs = null;
       restoreAll();
+      clearSize();
       failed.clear();
     }
   });
@@ -23290,7 +23341,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   composerOpacity_default.updatedAt = 1788044121000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customInstructions_default.updatedAt = 1789898438000;
-  customSidebarIdentity_default.updatedAt = 1789916536000;
+  customSidebarIdentity_default.updatedAt = 1789918178000;
   downloadTTS_default.updatedAt = 1787870966000;
   experiments_default.updatedAt = 1788047438000;
   exportChat_default.updatedAt = 1787870966000;

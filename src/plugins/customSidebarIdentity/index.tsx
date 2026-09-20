@@ -24,8 +24,12 @@ const MARK = "data-void-csi";
 const ORIG = "data-void-csi-orig";
 const SOURCE_PX = 1024;
 const AVATAR_PX = 256;
+const SIZE_MIN = 24;
+const SIZE_MAX = 64;
+const SIZE_DEFAULT = 40;
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 4;
+const SIZE_VAR = "--void-csi-avatar-size";
 const cl = classNameFactory("void-csi-");
 
 interface PrivateSettings {
@@ -48,6 +52,13 @@ const settings = definePluginSettings({
         default: "",
         placeholder: "Paste a picture, or https://…",
         component: AvatarUrlField,
+    },
+    avatarSize: {
+        type: OptionType.SLIDER,
+        description: "Sidebar avatar diameter in pixels when the sidebar is expanded. Official size is 32. Collapsed rail stays 32.",
+        min: SIZE_MIN,
+        max: SIZE_MAX,
+        default: SIZE_DEFAULT,
     },
     applyToMenu: {
         type: OptionType.BOOLEAN,
@@ -580,10 +591,20 @@ function restoreAll() {
     unhide(document);
 }
 
+function applySize() {
+    const n = clamp(Math.round(num(settings.store.avatarSize, SIZE_DEFAULT)), SIZE_MIN, SIZE_MAX);
+    document.documentElement.style.setProperty(SIZE_VAR, `${n}px`);
+}
+
+function clearSize() {
+    document.documentElement.style.removeProperty(SIZE_VAR);
+}
+
 function apply() {
     if (!started || painting) return;
     painting = true;
     try {
+        applySize();
         paintFooter();
         paintMenu();
     } finally {
@@ -656,6 +677,7 @@ export default definePlugin({
         treeObs?.disconnect();
         treeObs = null;
         restoreAll();
+        clearSize();
         failed.clear();
     },
 });
