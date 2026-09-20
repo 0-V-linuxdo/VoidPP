@@ -43,12 +43,43 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 }
 
 .void-csi-preview {
-    width: 2rem;
-    height: 2rem;
+    width: var(--void-csi-avatar-size, 2rem);
+    height: var(--void-csi-avatar-size, 2rem);
     flex-shrink: 0;
     border-radius: 999px;
     object-fit: cover;
     background: hsl(var(--surface-l2));
+}
+
+[data-sidebar="footer"] img[alt="pfp"] {
+    width: var(--void-csi-avatar-size, 2rem) !important;
+    height: var(--void-csi-avatar-size, 2rem) !important;
+    min-width: var(--void-csi-avatar-size, 2rem) !important;
+    min-height: var(--void-csi-avatar-size, 2rem) !important;
+    max-width: var(--void-csi-avatar-size, 2rem) !important;
+    max-height: var(--void-csi-avatar-size, 2rem) !important;
+    object-fit: cover !important;
+    flex-shrink: 0 !important;
+}
+
+[data-sidebar="footer"] :has(> img[alt="pfp"]):not(button):not(.void-sidebar-card) {
+    width: var(--void-csi-avatar-size, 2rem) !important;
+    height: var(--void-csi-avatar-size, 2rem) !important;
+    min-width: var(--void-csi-avatar-size, 2rem) !important;
+    min-height: var(--void-csi-avatar-size, 2rem) !important;
+    max-width: var(--void-csi-avatar-size, 2rem) !important;
+    max-height: var(--void-csi-avatar-size, 2rem) !important;
+    flex-shrink: 0 !important;
+}
+
+[data-collapsible="icon"] [data-sidebar="footer"] img[alt="pfp"],
+[data-collapsible="icon"] [data-sidebar="footer"] :has(> img[alt="pfp"]):not(button):not(.void-sidebar-card) {
+    width: 2rem !important;
+    height: 2rem !important;
+    min-width: 2rem !important;
+    min-height: 2rem !important;
+    max-width: 2rem !important;
+    max-height: 2rem !important;
 }
 
 .void-csi-url {
