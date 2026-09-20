@@ -34,6 +34,7 @@ Install by clicking the badge (jsDelivr, no GitHub `CSP: sandbox`). Tampermonkey
 | <img src="https://api.iconify.design/lucide/text-quote.svg?color=%238b949e" width="16" height="16" alt=""> UserQuotes | On | Keep quoted lines in your own bubbles marked with a visible left bar after markdown hides `>`. |
 | <img src="https://api.iconify.design/lucide/blocks.svg?color=%238b949e" width="16" height="16" alt=""> NoSidebarPlugins | On | Move the sidebar Plugins button into the avatar menu (next to Void++ / Help). |
 | <img src="https://api.iconify.design/lucide/lightbulb.svg?color=%238b949e" width="16" height="16" alt=""> NoBuildStarters | On | Hide the Build mode Ideas chips above the input. |
+| <img src="https://api.iconify.design/lucide/circle-check.svg?color=%238b949e" width="16" height="16" alt=""> CompleteToast | On | Toast when another chat finishes; click to open it. Optional `keepUntilDismissed` keeps it until X or opening that chat. |
 | <img src="https://api.iconify.design/lucide/panel-left.svg?color=%238b949e" width="16" height="16" alt=""> BetterSidebar | On | Sidebar improvements: section-header action hover, New chat plus on Chats, Bots/Projects default collapsed, and Chats default expanded (`titleRowHover`, `chatsPlus`, `botsDefaultCollapsed`, `chatsDefaultExpanded`, `projectsDefaultCollapsed`). |
 
 #### Settings UI

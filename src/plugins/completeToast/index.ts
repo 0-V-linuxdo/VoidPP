@@ -7,7 +7,7 @@
 import "./styles.css";
 
 import type { VoidPPEventMap } from "@api/Events";
-import { definePluginSettings } from "@api/Settings";
+import { definePluginSettings, mergePluginSettings } from "@api/Settings";
 import { CircleCheckIcon } from "@components/icons";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { GrokConversation } from "@grok-types/stores/ConversationStore";
@@ -42,9 +42,14 @@ const TOASTED_MAX = 80;
 const DURATION_MAX = 20;
 
 const settings = definePluginSettings({
+    keepUntilDismissed: {
+        type: OptionType.BOOLEAN,
+        description: "Don't auto-close the toast. Dismiss with X, or by opening the chat.",
+        default: false,
+    },
     duration: {
         type: OptionType.SLIDER,
-        description: "Seconds before the toast closes. 0 keeps it until dismissed.",
+        description: "Seconds before the toast closes. Ignored when Keep Until Dismissed is on.",
         min: 0,
         max: DURATION_MAX,
         default: 6,
@@ -432,13 +437,25 @@ function dismissIfCurrent() {
     if (toast && (onBotPage() || isCurrentToast())) hide();
 }
 
+function shouldPersist() {
+    return !!settings.store.keepUntilDismissed
+        || clamp(settings.store.duration, 0, DURATION_MAX) <= 0;
+}
+
 function armTimer() {
     clearTimer();
-    const sec = clamp(settings.store.duration, 0, DURATION_MAX);
-    if (sec <= 0) return;
-    const ms = sec * 1000;
+    if (shouldPersist()) return;
+    const ms = clamp(settings.store.duration, 0, DURATION_MAX) * 1000;
     hideAt = Date.now() + ms;
     hideTimer = setTimeout(hide, ms);
+}
+
+function migratePersist() {
+    if (settings.store.duration !== 0 || settings.store.keepUntilDismissed) return;
+    mergePluginSettings("CompleteToast", {
+        keepUntilDismissed: true,
+        duration: 6,
+    });
 }
 
 function pauseTimer() {
@@ -509,12 +526,6 @@ function show(cid: string, rid: string) {
     }, { signal });
     root.addEventListener("pointerenter", pauseTimer, { signal });
     root.addEventListener("pointerleave", resumeTimer, { signal });
-    root.addEventListener("keydown", e => {
-        if (e.key === "Escape") {
-            e.stopPropagation();
-            hide();
-        }
-    }, { signal });
     document.body.append(root);
     host = root;
     armTimer();
@@ -673,6 +684,7 @@ export default definePlugin({
     cleanupSelectors: [`.${HOST}`, `#${HOST}`],
 
     start() {
+        migratePersist();
         started = true;
         live.clear();
         toasted.clear();
