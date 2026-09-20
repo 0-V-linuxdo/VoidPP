@@ -45,3 +45,21 @@ Do not rename:
 - CSS / dataset prefix `void-`
 - AccountSwitcher crypto key `VoidCryptoRootHKDF`
 - `@name Void++` / `@namespace https://github.com/0-V-linuxdo/VoidPP`
+
+## Placeholder
+
+Query-bar empty placeholder is Tiptap `p.is-editor-empty::before { content: attr(data-placeholder) }`. Official `float` + `height:0` plus editor `overflow-y:auto` lets a long phrase wrap and show a scrollbar. Empty editor must stay one line: `overflow-y:hidden` and `::before { position:absolute; inset-inline:0; white-space:nowrap }`.
+
+Do not `setAttribute("data-placeholder", …)`. Tiptap Placeholder `Decoration.node` rewrites that attr on every transaction (focus/selection). A DOM clamp flashes, then the full phrase returns; CSS `text-overflow:clip` then silently crops the tail with no ellipsis.
+
+`text-overflow:ellipsis` + `nowrap` clips at the glyph, not the word (`do f...`). `ellipsis-word` never shipped. `word-break:keep-all` is a no-op under `nowrap`.
+
+Correct path:
+
+- `_phrases()` / `_inputPlaceholder()` keep the full phrase. Do not feed a clamped string into Tiptap — resize and folder chips will not recompute through the decoration. Settings and the home Hero stay full text; Hero may wrap (`pre-wrap`).
+- Measure the empty `p` (`clientWidth` minus a small pad) against the `::before` inset box. Probe must be `white-space:nowrap` with the real `::before` font; a wrapping probe under-measures and clamp returns the full sentence (`do for`, no `…`).
+- `clampToWidth` drops whole trailing words and replaces the last overflowing word with `…`.
+- Paint the clamped string with `registerStyle` on `::before { content:"…" !important }` (same overlay idea as the Hero). Official `attr()` is overridden, so Decoration can rewrite the attr freely.
+- ResizeObserver plus `data-placeholder`/`class` mutations reschedule. Typing drops `is-editor-empty` and the overlay unregisters.
+
+Do not touch ComposerOpacity, InputHistory, BetterCanvas, or real-input autosize for this.
