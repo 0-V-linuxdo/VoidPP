@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.29] v1.0.0
+// @version      [20260920.30] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.29] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.30] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7399,9 +7399,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.29] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a3b43dc"}`
-    }, `(${"a3b43dc"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.30] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"bd381db"}`
+    }, `(${"bd381db"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -17775,20 +17775,23 @@ div:has(> #grok-bot-nav-button) {
     box-shadow: none;
 }
 
-/* Empty query-bar: keep the Tiptap placeholder on one line so a long
-   phrase cannot grow the composer or trip overflow-y:auto. Official
-   ::before is float + height:0, which paints wrapped overflow.
-   JS word-clamps data-placeholder; this is the overflow safety net.
-   Typing drops is-editor-empty and restores the official autosize. */
-.query-bar .tiptap:has(> p.is-editor-empty) {
+/* Empty query-bar: official ::before is float + height:0, so a long
+   phrase wraps and trips overflow-y:auto. Lock one line. Overlay CSS
+   (placeholderInput) replaces attr(data-placeholder) — Tiptap owns
+   that attr and rewrites it on every transaction. Typing drops
+   is-editor-empty and restores the official autosize. */
+.query-bar .tiptap:has(> p.is-editor-empty),
+.query-bar .tiptap:has(> p.is-empty:only-child) {
     overflow-y: hidden !important;
 }
 
-.query-bar .tiptap p.is-editor-empty:first-child {
+.query-bar .tiptap p.is-editor-empty:first-child,
+.query-bar .tiptap p.is-empty:first-child {
     position: relative;
 }
 
-.query-bar .tiptap p.is-editor-empty:first-child::before {
+.query-bar .tiptap p.is-editor-empty:first-child::before,
+.query-bar .tiptap p.is-empty:first-child::before {
     float: none !important;
     height: auto !important;
     position: absolute;
@@ -17797,7 +17800,6 @@ div:has(> #grok-bot-nav-button) {
     max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
-    text-overflow: clip;
     pointer-events: none;
 }
 `);
@@ -17822,7 +17824,12 @@ div:has(> #grok-bot-nav-button) {
   // src/plugins/placeholder/index.tsx
   var cl26 = classNameFactory("void-ph-");
   var HERO_STYLE = "placeholderHero";
+  var INPUT_STYLE = "placeholderInput";
   var HERO_SEL = "h1[data-void-ph-hero]";
+  var EDITOR_SEL3 = ".query-bar .tiptap";
+  var EMPTY_SEL = `${EDITOR_SEL3} p.is-editor-empty, ${EDITOR_SEL3} p.is-empty`;
+  var EMPTY_BEFORE = `${EDITOR_SEL3} p.is-editor-empty:first-child::before,${EDITOR_SEL3} p.is-empty:first-child::before`;
+  var WIDTH_PAD = 8;
   var DEFAULT_PHRASES = [
     "Ask not what your country can do for you — ask what you can do for your country.",
     "It always seems impossible until it is done.",
@@ -17932,11 +17939,7 @@ div:has(> #grok-bot-nav-button) {
   var observed = null;
   var raf5 = 0;
   var probe = null;
-  var painting2 = false;
-  var EDITOR_SEL3 = ".query-bar .tiptap";
-  var EMPTY_SEL = `${EDITOR_SEL3} p.is-editor-empty, ${EDITOR_SEL3} p.is-empty`;
-  var FULL_ATTR = "data-void-ph-full";
-  var WIDTH_PAD = 12;
+  var lastInputCss = "";
   function pickNextIndex(listLen, advance) {
     if (listLen <= 0)
       return 0;
@@ -18065,17 +18068,11 @@ div:has(> #grok-bot-nav-button) {
     node.textContent = text;
     return node.getBoundingClientRect().width;
   }
-  function sourceText(p) {
-    const attr = p.getAttribute("data-placeholder") ?? "";
-    const stored = p.getAttribute(FULL_ATTR);
-    if (!stored)
-      return attr;
-    if (attr === stored)
-      return stored;
-    const stem = attr.endsWith(ELLIPSIS) ? attr.slice(0, -(ELLIPSIS.length + (attr.endsWith(` ${ELLIPSIS}`) ? 1 : 0))).trimEnd() : attr;
-    if (stem && stored.startsWith(stem))
-      return stored;
-    return attr;
+  function clearInputOverlay() {
+    if (!lastInputCss)
+      return;
+    lastInputCss = "";
+    unregisterStyle(INPUT_STYLE);
   }
   function bindSize(p) {
     const editor = p?.closest(EDITOR_SEL3) ?? p;
@@ -18091,27 +18088,30 @@ div:has(> #grok-bot-nav-button) {
       sizeObs.observe(p);
   }
   function paintInput() {
-    if (!started6)
-      return;
-    const p = document.querySelector(EMPTY_SEL);
-    if (!(p instanceof HTMLElement)) {
+    if (!started6) {
       bindSize(null);
+      clearInputOverlay();
+      return;
+    }
+    const p = document.querySelector(EMPTY_SEL);
+    const list = phrases();
+    if (!(p instanceof HTMLElement) || !list) {
+      bindSize(p instanceof HTMLElement ? p : null);
+      clearInputOverlay();
       return;
     }
     bindSize(p);
-    const full = sourceText(p);
-    if (!full)
+    const full = p.getAttribute("data-placeholder") || list[0] || "";
+    if (!full) {
+      clearInputOverlay();
       return;
-    painting2 = true;
-    try {
-      if (p.getAttribute(FULL_ATTR) !== full)
-        p.setAttribute(FULL_ATTR, full);
-      const next = clampToWidth(full, Math.max(0, p.clientWidth - WIDTH_PAD), (t) => measureFor(p, t));
-      if (p.getAttribute("data-placeholder") !== next)
-        p.setAttribute("data-placeholder", next);
-    } finally {
-      painting2 = false;
     }
+    const shown = clampToWidth(full, Math.max(0, p.clientWidth - WIDTH_PAD), (t) => measureFor(p, t));
+    const css = `${EMPTY_BEFORE}{content:"${escapeForCssContent(shown)}"!important}`;
+    if (css === lastInputCss)
+      return;
+    lastInputCss = css;
+    registerStyle(INPUT_STYLE, css);
   }
   function scheduleInput() {
     if (!started6 || raf5)
@@ -18120,16 +18120,6 @@ div:has(> #grok-bot-nav-button) {
       raf5 = 0;
       paintInput();
     });
-  }
-  function restoreInput() {
-    for (const el of document.querySelectorAll(`[${FULL_ATTR}]`)) {
-      if (!(el instanceof HTMLElement))
-        continue;
-      const full = el.getAttribute(FULL_ATTR);
-      if (full)
-        el.setAttribute("data-placeholder", full);
-      el.removeAttribute(FULL_ATTR);
-    }
   }
   var placeholder_default = definePlugin({
     name: "Placeholder",
@@ -18152,8 +18142,6 @@ div:has(> #grok-bot-nav-button) {
       clicks = new AbortController;
       document.addEventListener("click", onManualClick, { signal: clicks.signal });
       treeObs2 = new MutationObserver((muts) => {
-        if (painting2)
-          return;
         for (const m of muts) {
           const t = m.target;
           if (t instanceof Element && t.closest(".query-bar")) {
@@ -18193,10 +18181,10 @@ div:has(> #grok-bot-nav-button) {
       raf5 = 0;
       probe?.remove();
       probe = null;
-      painting2 = false;
+      lastInputCss = "";
       stopTimer();
       wasHome = false;
-      restoreInput();
+      unregisterStyle(INPUT_STYLE);
       unregisterStyle(HERO_STYLE);
     },
     onSettingsChange() {
@@ -23541,7 +23529,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1788577403000;
   noSidebarPlugins_default.updatedAt = 1789807577000;
   oneko_default.updatedAt = 1787870966000;
-  placeholder_default.updatedAt = 1789919543000;
+  placeholder_default.updatedAt = 1789920106000;
   pluginsFlyout_default.updatedAt = 1788051053000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1789246749000;

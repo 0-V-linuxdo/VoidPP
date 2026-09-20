@@ -31,20 +31,23 @@
     box-shadow: none;
 }
 
-/* Empty query-bar: keep the Tiptap placeholder on one line so a long
-   phrase cannot grow the composer or trip overflow-y:auto. Official
-   ::before is float + height:0, which paints wrapped overflow.
-   JS word-clamps data-placeholder; this is the overflow safety net.
-   Typing drops is-editor-empty and restores the official autosize. */
-.query-bar .tiptap:has(> p.is-editor-empty) {
+/* Empty query-bar: official ::before is float + height:0, so a long
+   phrase wraps and trips overflow-y:auto. Lock one line. Overlay CSS
+   (placeholderInput) replaces attr(data-placeholder) — Tiptap owns
+   that attr and rewrites it on every transaction. Typing drops
+   is-editor-empty and restores the official autosize. */
+.query-bar .tiptap:has(> p.is-editor-empty),
+.query-bar .tiptap:has(> p.is-empty:only-child) {
     overflow-y: hidden !important;
 }
 
-.query-bar .tiptap p.is-editor-empty:first-child {
+.query-bar .tiptap p.is-editor-empty:first-child,
+.query-bar .tiptap p.is-empty:first-child {
     position: relative;
 }
 
-.query-bar .tiptap p.is-editor-empty:first-child::before {
+.query-bar .tiptap p.is-editor-empty:first-child::before,
+.query-bar .tiptap p.is-empty:first-child::before {
     float: none !important;
     height: auto !important;
     position: absolute;
@@ -53,6 +56,5 @@
     max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
-    text-overflow: clip;
     pointer-events: none;
 }

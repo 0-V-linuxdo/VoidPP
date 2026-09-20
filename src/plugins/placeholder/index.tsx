@@ -17,11 +17,16 @@ import { classNameFactory, registerStyle, unregisterStyle } from "@utils/css";
 import { clamp } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
 
-import { clampToWidth, ELLIPSIS } from "./clamp";
+import { clampToWidth } from "./clamp";
 
 const cl = classNameFactory("void-ph-");
 const HERO_STYLE = "placeholderHero";
+const INPUT_STYLE = "placeholderInput";
 const HERO_SEL = "h1[data-void-ph-hero]";
+const EDITOR_SEL = ".query-bar .tiptap";
+const EMPTY_SEL = `${EDITOR_SEL} p.is-editor-empty, ${EDITOR_SEL} p.is-empty`;
+const EMPTY_BEFORE = `${EDITOR_SEL} p.is-editor-empty:first-child::before,${EDITOR_SEL} p.is-empty:first-child::before`;
+const WIDTH_PAD = 8;
 
 const DEFAULT_PHRASES = [
     "Ask not what your country can do for you — ask what you can do for your country.",
@@ -135,12 +140,7 @@ let sizeObs: ResizeObserver | null = null;
 let observed: Element | null = null;
 let raf = 0;
 let probe: HTMLSpanElement | null = null;
-let painting = false;
-
-const EDITOR_SEL = ".query-bar .tiptap";
-const EMPTY_SEL = `${EDITOR_SEL} p.is-editor-empty, ${EDITOR_SEL} p.is-empty`;
-const FULL_ATTR = "data-void-ph-full";
-const WIDTH_PAD = 12;
+let lastInputCss = "";
 
 function pickNextIndex(listLen: number, advance: boolean): number {
     if (listLen <= 0) return 0;
@@ -272,14 +272,10 @@ function measureFor(el: HTMLElement, text: string): number {
     return node.getBoundingClientRect().width;
 }
 
-function sourceText(p: HTMLElement): string {
-    const attr = p.getAttribute("data-placeholder") ?? "";
-    const stored = p.getAttribute(FULL_ATTR);
-    if (!stored) return attr;
-    if (attr === stored) return stored;
-    const stem = attr.endsWith(ELLIPSIS) ? attr.slice(0, -(ELLIPSIS.length + (attr.endsWith(` ${ELLIPSIS}`) ? 1 : 0))).trimEnd() : attr;
-    if (stem && stored.startsWith(stem)) return stored;
-    return attr;
+function clearInputOverlay() {
+    if (!lastInputCss) return;
+    lastInputCss = "";
+    unregisterStyle(INPUT_STYLE);
 }
 
 function bindSize(p: HTMLElement | null) {
@@ -294,23 +290,29 @@ function bindSize(p: HTMLElement | null) {
 }
 
 function paintInput() {
-    if (!started) return;
-    const p = document.querySelector(EMPTY_SEL);
-    if (!(p instanceof HTMLElement)) {
+    if (!started) {
         bindSize(null);
+        clearInputOverlay();
+        return;
+    }
+    const p = document.querySelector(EMPTY_SEL);
+    const list = phrases();
+    if (!(p instanceof HTMLElement) || !list) {
+        bindSize(p instanceof HTMLElement ? p : null);
+        clearInputOverlay();
         return;
     }
     bindSize(p);
-    const full = sourceText(p);
-    if (!full) return;
-    painting = true;
-    try {
-        if (p.getAttribute(FULL_ATTR) !== full) p.setAttribute(FULL_ATTR, full);
-        const next = clampToWidth(full, Math.max(0, p.clientWidth - WIDTH_PAD), t => measureFor(p, t));
-        if (p.getAttribute("data-placeholder") !== next) p.setAttribute("data-placeholder", next);
-    } finally {
-        painting = false;
+    const full = p.getAttribute("data-placeholder") || list[0] || "";
+    if (!full) {
+        clearInputOverlay();
+        return;
     }
+    const shown = clampToWidth(full, Math.max(0, p.clientWidth - WIDTH_PAD), t => measureFor(p, t));
+    const css = `${EMPTY_BEFORE}{content:"${escapeForCssContent(shown)}"!important}`;
+    if (css === lastInputCss) return;
+    lastInputCss = css;
+    registerStyle(INPUT_STYLE, css);
 }
 
 function scheduleInput() {
@@ -319,15 +321,6 @@ function scheduleInput() {
         raf = 0;
         paintInput();
     });
-}
-
-function restoreInput() {
-    for (const el of document.querySelectorAll(`[${FULL_ATTR}]`)) {
-        if (!(el instanceof HTMLElement)) continue;
-        const full = el.getAttribute(FULL_ATTR);
-        if (full) el.setAttribute("data-placeholder", full);
-        el.removeAttribute(FULL_ATTR);
-    }
 }
 
 export default definePlugin({
@@ -353,7 +346,6 @@ export default definePlugin({
         clicks = new AbortController();
         document.addEventListener("click", onManualClick, { signal: clicks.signal });
         treeObs = new MutationObserver(muts => {
-            if (painting) return;
             for (const m of muts) {
                 const t = m.target;
                 if (t instanceof Element && t.closest(".query-bar")) {
@@ -392,10 +384,10 @@ export default definePlugin({
         raf = 0;
         probe?.remove();
         probe = null;
-        painting = false;
+        lastInputCss = "";
         stopTimer();
         wasHome = false;
-        restoreInput();
+        unregisterStyle(INPUT_STYLE);
         unregisterStyle(HERO_STYLE);
     },
 
