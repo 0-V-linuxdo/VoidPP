@@ -19,6 +19,10 @@
     animation: void-ct-in 0.18s ease;
 }
 
+.void-ct-card:is(:hover, :focus-within) {
+    background: hsl(var(--surface-l2));
+}
+
 .void-ct-main {
     display: flex;
     flex: 1;
@@ -31,10 +35,6 @@
     color: inherit;
     text-align: start;
     cursor: pointer;
-}
-
-.void-ct-main:hover {
-    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
 }
 
 .void-ct-icon {
@@ -87,7 +87,7 @@
 }
 
 .void-ct-x:hover {
-    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
+    background: hsl(var(--button-ghost-hover));
     color: hsl(var(--fg-primary));
     opacity: 1;
 }
