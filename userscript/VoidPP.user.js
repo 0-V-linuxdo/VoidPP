@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.22] v1.0.0
+// @version      [20260920.23] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.22] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.23] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7399,9 +7399,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2f04ce8"}`
-    }, `(${"2f04ce8"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.23] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8799cfa"}`
+    }, `(${"8799cfa"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14222,9 +14222,31 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         transition: none;
     }
 }
+
+.void-csi-avatar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.void-csi-preview {
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    border-radius: 999px;
+    object-fit: cover;
+    background: hsl(var(--surface-l2));
+}
+
+.void-csi-url {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+}
 `);
 
-  // src/plugins/customSidebarIdentity/index.ts
+  // src/plugins/customSidebarIdentity/index.tsx
   var FOOTER = '[data-sidebar="footer"]';
   var MENU = '[role="menu"]';
   var PFP = 'img[alt="pfp"]';
@@ -14232,6 +14254,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var HIDE_CLASS2 = "void-csi-hide";
   var MARK2 = "data-void-csi";
   var ORIG = "data-void-csi-orig";
+  var AVATAR_PX = 256;
+  var cl23 = classNameFactory("void-csi-");
   var settings17 = definePluginSettings({
     displayName: {
       type: 0 /* STRING */,
@@ -14240,10 +14264,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       placeholder: "Shown next to the sidebar avatar"
     },
     avatarUrl: {
-      type: 0 /* STRING */,
-      description: "Image URL or data:image…. Empty keeps the official avatar.",
+      type: 6 /* COMPONENT */,
+      description: "Image URL, data:image…, or paste a picture. Empty keeps the official avatar.",
       default: "",
-      placeholder: "https://… or data:image/…"
+      placeholder: "Paste a picture, or https://…",
+      component: AvatarUrlField
     },
     applyToMenu: {
       type: 3 /* BOOLEAN */,
@@ -14251,6 +14276,114 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       default: true
     }
   });
+  function imageFile(data) {
+    if (!data)
+      return null;
+    for (const file of data.files) {
+      if (file.type.startsWith("image/"))
+        return file;
+    }
+    for (const item of data.items) {
+      if (item.kind === "file" && item.type.startsWith("image/"))
+        return item.getAsFile();
+    }
+    return null;
+  }
+  function readDataUrl(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader;
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+  async function fileToUrl(file) {
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, AVATAR_PX / Math.max(bmp.width, bmp.height));
+      const w = Math.max(1, Math.round(bmp.width * scale));
+      const h = Math.max(1, Math.round(bmp.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        bmp.close();
+        return readDataUrl(file);
+      }
+      ctx.drawImage(bmp, 0, 0, w, h);
+      bmp.close();
+      const url = canvas.toDataURL("image/png");
+      return url.startsWith("data:image/") ? url : readDataUrl(file);
+    } catch {
+      return readDataUrl(file);
+    }
+  }
+  async function takeImage(data) {
+    const file = imageFile(data);
+    if (!file)
+      return false;
+    const url = await fileToUrl(file);
+    if (!url?.startsWith("data:image/"))
+      return false;
+    settings17.store.avatarUrl = url;
+    return true;
+  }
+  function AvatarUrlField() {
+    const { avatarUrl } = settings17.use(["avatarUrl"]);
+    const raw = String(avatarUrl ?? "");
+    const pasted = raw.startsWith("data:image/");
+    const preview = pasted || /^https?:\/\//.test(raw) ? raw : "";
+    return /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0.5rem"
+    }, /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0"
+    }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Avatar Url"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Image URL, data:image…, or paste a picture. Empty keeps the official avatar.")), /* @__PURE__ */ React.createElement("div", {
+      className: cl23("avatar"),
+      onPaste: (e) => {
+        if (imageFile(e.clipboardData)) {
+          e.preventDefault();
+          takeImage(e.clipboardData);
+        }
+      },
+      onDragOver: (e) => {
+        if (imageFile(e.dataTransfer))
+          e.preventDefault();
+      },
+      onDrop: (e) => {
+        if (imageFile(e.dataTransfer)) {
+          e.preventDefault();
+          takeImage(e.dataTransfer);
+        }
+      }
+    }, preview && /* @__PURE__ */ React.createElement("img", {
+      className: cl23("preview"),
+      src: preview,
+      alt: "",
+      referrerPolicy: "no-referrer"
+    }), /* @__PURE__ */ React.createElement(Input, {
+      type: "text",
+      className: cl23("url"),
+      value: pasted ? "" : raw,
+      placeholder: pasted ? "Pasted image. Type a URL or paste another picture to replace." : "Paste a picture, or https://…",
+      onChange: (e) => {
+        settings17.store.avatarUrl = e.target.value;
+      },
+      onPaste: (e) => {
+        if (imageFile(e.clipboardData)) {
+          e.preventDefault();
+          takeImage(e.clipboardData);
+        }
+      },
+      onKeyDown: (e) => {
+        if (pasted && !e.currentTarget.value && (e.key === "Backspace" || e.key === "Delete")) {
+          settings17.store.avatarUrl = "";
+        }
+      }
+    })));
+  }
   var failed = new Set;
   var treeObs = null;
   var raf4 = 0;
@@ -14522,7 +14655,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/downloadTTS/index.tsx
-  var cl23 = classNameFactory("void-download-tts-");
+  var cl24 = classNameFactory("void-download-tts-");
   var logger26 = new Logger("DownloadTTS");
   async function fetchAndDownload() {
     const { currentStreamId } = TextToSpeechStore.useTextToSpeechStore.getState();
@@ -14555,7 +14688,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       variant: "tertiary"
     }, loading ? /* @__PURE__ */ React.createElement(Spinner, {
       size: "sm",
-      className: cl23("spinner")
+      className: cl24("spinner")
     }) : /* @__PURE__ */ React.createElement(DownloadIcon, {
       size: 16
     }));
@@ -14959,7 +15092,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 
   // src/plugins/inputHistory/index.tsx
   var logger28 = new Logger("InputHistory");
-  var cl24 = classNameFactory("void-ih-");
+  var cl25 = classNameFactory("void-ih-");
   var EDITOR_SEL2 = '.query-bar .tiptap.ProseMirror[contenteditable="true"]';
   var ZWSP = /\u200B/g;
   var MAX_MIN = 10;
@@ -15164,17 +15297,17 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     scheduleApplyEnd(gen);
   }
   function hudEl() {
-    let el = document.querySelector(`.${cl24("hud")}`);
+    let el = document.querySelector(`.${cl25("hud")}`);
     if (el)
       return el;
     el = document.createElement("div");
-    el.className = cl24("hud");
+    el.className = cl25("hud");
     el.setAttribute("aria-live", "polite");
     document.body.appendChild(el);
     return el;
   }
   function hideHud() {
-    document.querySelector(`.${cl24("hud")}`)?.classList.remove(cl24("hud-on"));
+    document.querySelector(`.${cl25("hud")}`)?.classList.remove(cl25("hud-on"));
   }
   function showHud(label, editor) {
     const bar = editor.closest(".query-bar");
@@ -15186,7 +15319,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const r = bar.getBoundingClientRect();
       el.style.left = `${r.left + r.width / 2}px`;
       el.style.top = `${r.top - HUD_GAP_PX}px`;
-      el.classList.add(cl24("hud-on"));
+      el.classList.add(cl25("hud-on"));
     });
   }
   function pushEntry(text) {
@@ -15348,23 +15481,23 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl24("panel")
+      className: cl25("panel")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.35rem",
-      className: cl24("toolbar")
+      className: cl25("toolbar")
     }, list.length > 0 && /* @__PURE__ */ React.createElement(Input, {
       type: "text",
       placeholder: "Search prompts",
       value: query,
       onChange: (e) => setQuery(e.target.value),
-      className: cl24("search")
+      className: cl25("search")
     }), /* @__PURE__ */ React.createElement(Flex, {
-      className: cl24("meta"),
+      className: cl25("meta"),
       alignItems: "center",
       gap: "0.5rem"
     }, /* @__PURE__ */ React.createElement(Paragraph, {
-      className: cl24("count")
+      className: cl25("count")
     }, needle ? pluralize(visible.length, "match", "matches") : pluralize(list.length, "stored prompt")), /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
       size: "sm",
@@ -15372,20 +15505,20 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       disabled: !list.length,
       onClick: () => setConfirm(true)
     }, "Clear history"))), list.length === 0 && /* @__PURE__ */ React.createElement(Paragraph, {
-      className: cl24("empty")
+      className: cl25("empty")
     }, "No stored prompts."), list.length > 0 && visible.length === 0 && /* @__PURE__ */ React.createElement(Paragraph, {
-      className: cl24("empty")
+      className: cl25("empty")
     }, "No matches."), visible.length > 0 && /* @__PURE__ */ React.createElement("div", {
-      className: cl24("list")
+      className: cl25("list")
     }, visible.map((row) => {
       const expanded = openId === row.index;
       return /* @__PURE__ */ React.createElement("div", {
         key: row.index,
-        className: cl24("item", expanded && "item-on")
+        className: cl25("item", expanded && "item-on")
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl24("index")
+        className: cl25("index")
       }, row.index + 1), /* @__PURE__ */ React.createElement("div", {
-        className: cl24("main"),
+        className: cl25("main"),
         role: "button",
         tabIndex: 0,
         onClick: () => setOpenId(expanded ? null : row.index),
@@ -15396,9 +15529,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           setOpenId(expanded ? null : row.index);
         }
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl24("body", !expanded && "clamp")
+        className: cl25("body", !expanded && "clamp")
       }, row.text)), /* @__PURE__ */ React.createElement("div", {
-        className: cl24("actions")
+        className: cl25("actions")
       }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
         variant: "tertiary",
         size: "sm",
@@ -17258,7 +17391,7 @@ div:has(> #grok-bot-nav-button) {
 `);
 
   // src/plugins/placeholder/index.tsx
-  var cl25 = classNameFactory("void-ph-");
+  var cl26 = classNameFactory("void-ph-");
   var HERO_STYLE = "placeholderHero";
   var HERO_SEL = "h1[data-void-ph-hero]";
   var DEFAULT_PHRASES = [
@@ -17311,7 +17444,7 @@ div:has(> #grok-bot-nav-button) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl25("root")
+      className: cl26("root")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.375rem"
@@ -17319,9 +17452,9 @@ div:has(> #grok-bot-nav-button) {
       size: "sm",
       weight: "medium"
     }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. Used for the input placeholder and the non-project home greeting. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl25("textarea-wrap")
+      className: cl26("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
-      className: cl25("textarea"),
+      className: cl26("textarea"),
       value: phrases ?? DEFAULT_PHRASES,
       onChange: (e) => {
         settings24.store.phrases = e.target.value;
@@ -17884,7 +18017,7 @@ html.void-rt-open [data-sidebar="gap"] {
 
   // src/plugins/recentTopics/index.tsx
   var logger31 = new Logger("RecentTopics");
-  var cl26 = classNameFactory("void-rt-");
+  var cl27 = classNameFactory("void-rt-");
   var HOME_KEY = "home";
   var HOME_SEP = "home:";
   var TRIGGER_CODES = new Set(["Backquote", "IntlBackslash"]);
@@ -19451,10 +19584,10 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function buildPageShot(snap) {
-    const page = node("span", cl26("page"));
+    const page = node("span", cl27("page"));
     page.dataset.theme = snap.theme;
     for (const line of lastRound(snap.lines)) {
-      const el = node("span", cl26("page-line", line.role === "user" && "page-line-user"), line.text);
+      const el = node("span", cl27("page-line", line.role === "user" && "page-line-user"), line.text);
       el.dataset.role = line.role;
       applyLineStyle(el, line.role, snap.theme);
       page.append(el);
@@ -19896,12 +20029,12 @@ html.void-rt-open [data-sidebar="gap"] {
   function fillShot(box, id) {
     const snap = snapOf(id);
     if (!snap) {
-      const fallback = node("span", cl26("fallback"));
-      fallback.append(faviconImg(cl26("favicon")));
+      const fallback = node("span", cl27("fallback"));
+      fallback.append(faviconImg(cl27("favicon")));
       box.append(fallback);
       return;
     }
-    const shot = node("span", cl26("shot"));
+    const shot = node("span", cl27("shot"));
     shot.append(buildPageShot(snap));
     box.append(shot);
   }
@@ -19978,7 +20111,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function folderIcon() {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", cl26("folder"));
+    svg.setAttribute("class", cl27("folder"));
     svg.setAttribute("viewBox", "0 0 24 24");
     svg.setAttribute("fill", "none");
     svg.setAttribute("stroke", "currentColor");
@@ -20061,16 +20194,16 @@ html.void-rt-open [data-sidebar="gap"] {
     panel.style.colorScheme = theme;
   }
   function buildHost() {
-    const root = node("div", cl26("root"));
+    const root = node("div", cl27("root"));
     root.id = "void-rt-host";
     root.setAttribute("role", "presentation");
     root.addEventListener("click", cancel);
     root.addEventListener("pointermove", onHoverMove, { passive: true });
-    const panel = node("div", cl26("panel"));
+    const panel = node("div", cl27("panel"));
     panel.setAttribute("role", "listbox");
     panel.setAttribute("aria-label", "Recent conversations");
     panel.addEventListener("click", (e) => e.stopPropagation());
-    panel.append(node("div", cl26("list")));
+    panel.append(node("div", cl27("list")));
     root.append(panel);
     return root;
   }
@@ -20101,18 +20234,18 @@ html.void-rt-open [data-sidebar="gap"] {
   function renderList(items) {
     if (!host3)
       return;
-    const panel = host3.querySelector(`.${cl26("panel")}`);
+    const panel = host3.querySelector(`.${cl27("panel")}`);
     if (!panel)
       return;
-    let list = panel.querySelector(`.${cl26("list")}`);
+    let list = panel.querySelector(`.${cl27("list")}`);
     if (!list) {
       panel.replaceChildren();
-      list = node("div", cl26("list"));
+      list = node("div", cl27("list"));
       panel.append(list);
     }
     list.replaceChildren();
     items.forEach((topic, i) => {
-      const btn = node("button", cl26("card"));
+      const btn = node("button", cl27("card"));
       btn.type = "button";
       btn.tabIndex = -1;
       btn.setAttribute("role", "option");
@@ -20121,14 +20254,14 @@ html.void-rt-open [data-sidebar="gap"] {
       btn.addEventListener("pointerenter", () => selectCard(i));
       btn.addEventListener("focus", () => selectCard(i));
       btn.addEventListener("click", () => pick(i));
-      const shot = node("span", cl26("thumb"));
+      const shot = node("span", cl27("thumb"));
       shot.setAttribute("aria-hidden", "true");
       fillShot(shot, topic.id);
-      const meta = node("span", cl26("meta"));
-      meta.append(node("span", cl26("name"), topic.title));
+      const meta = node("span", cl27("meta"));
+      meta.append(node("span", cl27("name"), topic.title));
       if (topic.project) {
-        const proj = node("span", cl26("host"));
-        proj.append(projectIconOf(topic.ws), node("span", cl26("host-name"), topic.project));
+        const proj = node("span", cl27("host"));
+        proj.append(projectIconOf(topic.ws), node("span", cl27("host-name"), topic.project));
         meta.append(proj);
       }
       btn.append(shot, meta);
@@ -20138,7 +20271,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function patchList(items) {
     if (!host3)
       return;
-    const cards = [...host3.querySelectorAll(`.${cl26("card")}`)];
+    const cards = [...host3.querySelectorAll(`.${cl27("card")}`)];
     if (cards.length !== items.length) {
       renderList(items);
       return;
@@ -20147,24 +20280,24 @@ html.void-rt-open [data-sidebar="gap"] {
       const card = cards[i];
       card.setAttribute("aria-label", topic.project ? `${topic.title}, ${topic.project}` : topic.title);
       card.style.setProperty("--void-rt-card-accent", accentOf(topic.id));
-      const name = card.querySelector(`.${cl26("name")}`);
+      const name = card.querySelector(`.${cl27("name")}`);
       if (name)
         name.textContent = topic.title;
-      const meta = card.querySelector(`.${cl26("meta")}`);
+      const meta = card.querySelector(`.${cl27("meta")}`);
       if (!meta)
         return;
-      let row = meta.querySelector(`.${cl26("host")}`);
+      let row = meta.querySelector(`.${cl27("host")}`);
       if (!topic.project) {
         row?.remove();
         return;
       }
       if (!row) {
-        row = node("span", cl26("host"));
-        row.append(projectIconOf(topic.ws), node("span", cl26("host-name"), topic.project));
+        row = node("span", cl27("host"));
+        row.append(projectIconOf(topic.ws), node("span", cl27("host-name"), topic.project));
         meta.append(row);
         return;
       }
-      const label = row.querySelector(`.${cl26("host-name")}`);
+      const label = row.querySelector(`.${cl27("host-name")}`);
       if (label)
         label.textContent = topic.project;
       const next = projectIconOf(topic.ws);
@@ -20178,7 +20311,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function syncActive() {
     if (!host3)
       return;
-    const cards = host3.querySelectorAll(`.${cl26("card")}`);
+    const cards = host3.querySelectorAll(`.${cl27("card")}`);
     cards.forEach((card, i) => {
       const on = i === selected;
       card.setAttribute("data-active", on ? "true" : "false");
@@ -20205,22 +20338,22 @@ html.void-rt-open [data-sidebar="gap"] {
       host3 = buildHost();
       mountOverlay(host3);
     }
-    const panel = host3.querySelector(`.${cl26("panel")}`);
+    const panel = host3.querySelector(`.${cl27("panel")}`);
     if (!panel)
       return;
     applyTheme(panel);
     panel.style.setProperty("--void-rt-count", String(Math.max(1, items.length)));
     if (!items.length) {
       if (paintedIds !== "__empty__") {
-        panel.replaceChildren(node("div", cl26("empty"), "Open a few chats, then hold Ctrl+` to switch."));
+        panel.replaceChildren(node("div", cl27("empty"), "Open a few chats, then hold Ctrl+` to switch."));
         paintedIds = "__empty__";
         paintedMeta = "";
       }
       requestAnimationFrame(() => panel.setAttribute("data-visible", "true"));
       return;
     }
-    if (paintedIds === "__empty__" || !panel.querySelector(`.${cl26("list")}`)) {
-      panel.replaceChildren(node("div", cl26("list")));
+    if (paintedIds === "__empty__" || !panel.querySelector(`.${cl27("list")}`)) {
+      panel.replaceChildren(node("div", cl27("list")));
       paintedIds = "";
       paintedMeta = "";
     }
@@ -20733,7 +20866,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }));
 
   // src/plugins/settingsFlyout/index.tsx
-  var cl27 = classNameFactory("void-sf-");
+  var cl28 = classNameFactory("void-sf-");
   var settings27 = definePluginSettings({
     showOpenSettings: {
       type: 3 /* BOOLEAN */,
@@ -20832,7 +20965,7 @@ html.void-rt-open [data-sidebar="gap"] {
         key: t.id,
         onSelect: () => openTab(t.id)
       }, /* @__PURE__ */ React.createElement(Icon, {
-        className: cl27("menu-icon")
+        className: cl28("menu-icon")
       }), t.name);
     });
   }
@@ -20842,7 +20975,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "secondary",
-      className: cl27("group")
+      className: cl28("group")
     }, "Void++"), tabItems(tabs));
   }
   function SettingsMenu({ onOpen }) {
@@ -20866,13 +20999,13 @@ html.void-rt-open [data-sidebar="gap"] {
     const voidppFirst = cfg.voidppPosition !== "below";
     const hasBoth = grokTabs.length > 0 && voidppTabs.length > 0;
     return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(CogIcon, {
-      className: cl27("menu-icon")
+      className: cl28("menu-icon")
     }), "Settings"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, {
-      className: cl27("menu")
+      className: cl28("menu")
     }, showOpen && /* @__PURE__ */ React.createElement(DropdownMenuItem, {
       onSelect: (e) => openTab(undefined, onOpen, e)
     }, /* @__PURE__ */ React.createElement(CogIcon, {
-      className: cl27("menu-icon")
+      className: cl28("menu-icon")
     }), "Open Settings"), showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
       tabs: voidppTabs
     }), voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), tabItems(grokTabs), !voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), !voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
@@ -22068,7 +22201,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
   // src/plugins/usageDisplay/index.tsx
   var logger34 = new Logger("UsageDisplay");
-  var cl28 = classNameFactory("void-ud-");
+  var cl29 = classNameFactory("void-ud-");
   var settings30 = definePluginSettings({
     usageStats: {
       type: 3 /* BOOLEAN */,
@@ -22289,17 +22422,17 @@ button:has(.void-ud-trigger > .void-ud-label) {
       width: RING_SIZE,
       height: RING_SIZE,
       viewBox: `0 0 ${RING_SIZE} ${RING_SIZE}`,
-      className: classes(cl28("ring"), cl28(`ring-${tone}`))
+      className: classes(cl29("ring"), cl29(`ring-${tone}`))
     }, /* @__PURE__ */ React.createElement("circle", {
       cx: RING_CENTER,
       cy: RING_CENTER,
       r: RING_RADIUS,
-      className: cl28("ring-track")
+      className: cl29("ring-track")
     }), /* @__PURE__ */ React.createElement("circle", {
       cx: RING_CENTER,
       cy: RING_CENTER,
       r: RING_RADIUS,
-      className: cl28("ring-fill"),
+      className: cl29("ring-fill"),
       strokeDasharray: RING_CIRCUMFERENCE,
       strokeDashoffset: RING_CIRCUMFERENCE * (1 - fraction),
       transform: `rotate(-90 ${RING_CENTER} ${RING_CENTER})`
@@ -22326,12 +22459,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
       };
     }, []);
     return /* @__PURE__ */ React.createElement("span", {
-      className: classes(cl28("trigger"), label == null && cl28("icon-only"))
+      className: classes(cl29("trigger"), label == null && cl29("icon-only"))
     }, /* @__PURE__ */ React.createElement(ProgressRing, {
       percent: isFree ? null : percent,
       tone: isFree ? "waiting" : tone
     }), label != null && /* @__PURE__ */ React.createElement("span", {
-      className: cl28("label")
+      className: cl29("label")
     }, label));
   }
   function WeekBlock({ isFree, percent, resetAt, loading, labeled }) {
@@ -22346,14 +22479,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: 2,
-      className: cl28("week")
+      className: cl29("week")
     }, labeled && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
     }, isBotPage() ? "Grok Bot" : "Week"), /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "semibold",
-      className: cl28("used")
+      className: cl29("used")
     }, usedLabel(isFree, percent, loading)), resetAt != null && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
@@ -22365,14 +22498,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: 2,
-      className: cl28("today")
+      className: cl29("today")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
     }, "Today"), !isFree && /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "semibold",
-      className: cl28("used")
+      className: cl29("used")
     }, formatDelta(delta ?? (percent != null ? 0 : null)), " of weekly quota"));
   }
   function UsagePanel() {
@@ -22406,7 +22539,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: 8,
-      className: cl28("panel")
+      className: cl29("panel")
     }, showToday && /* @__PURE__ */ React.createElement(TodayBlock, {
       isFree,
       percent
@@ -22424,7 +22557,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       alignItems: "center",
       justifyContent: "space-between",
       gap: "0.75rem",
-      className: cl28("toggle")
+      className: cl29("toggle")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
@@ -22451,25 +22584,25 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "flex-start",
       gap: "0.5rem",
-      className: cl28("formula")
+      className: cl29("formula")
     }, terms.map((term, i) => /* @__PURE__ */ React.createElement(React.Fragment, {
       key: term.label
     }, i > 0 && /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       alignItems: "center",
-      className: cl28("formula-op-col")
+      className: cl29("formula-op-col")
     }, /* @__PURE__ */ React.createElement("span", {
-      className: cl28("formula-op")
+      className: cl29("formula-op")
     }, ops[i - 1]), /* @__PURE__ */ React.createElement("span", {
-      className: cl28("formula-op")
+      className: cl29("formula-op")
     }, ops[i - 1])), /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       alignItems: "center",
-      className: cl28("formula-term")
+      className: cl29("formula-term")
     }, /* @__PURE__ */ React.createElement("span", {
-      className: cl28("formula-label")
+      className: cl29("formula-label")
     }, term.label), /* @__PURE__ */ React.createElement("span", {
-      className: cl28("formula-value")
+      className: cl29("formula-value")
     }, term.value)))));
   }
   function DayFormula({ rec, today }) {
@@ -22497,7 +22630,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }), caption != null && /* @__PURE__ */ React.createElement(Text2, {
         size: "xs",
         color: "muted",
-        className: cl28("formula-caption")
+        className: cl29("formula-caption")
       }, caption));
     }
     return /* @__PURE__ */ React.createElement(Formula, {
@@ -22522,7 +22655,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.35rem",
-      className: cl28("repair")
+      className: cl29("repair")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
@@ -22536,7 +22669,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       step: 0.1,
       value: draft,
       onChange: (e) => setDraft(e.target.value),
-      className: cl28("repair-input"),
+      className: cl29("repair-input"),
       "aria-label": "Weekly percent before reset"
     }), /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
@@ -22567,7 +22700,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         node.scrollLeft = node.scrollWidth;
     }, [bars.length]);
     useEffect(() => {
-      chartRef.current?.querySelector(`.${cl28("bar-on")}`)?.scrollIntoView({ inline: "nearest", block: "nearest" });
+      chartRef.current?.querySelector(`.${cl29("bar-on")}`)?.scrollIntoView({ inline: "nearest", block: "nearest" });
     }, [selected]);
     return /* @__PURE__ */ React.createElement(VoidPPDialogShell, {
       title: "Usage by date",
@@ -22577,10 +22710,10 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }, /* @__PURE__ */ React.createElement(StatsToggle, null), !usageStats ? /* @__PURE__ */ React.createElement(Paragraph, null, "Turn on daily usage stats to keep a per-day log. Hover shows today after a delay.") : days.length === 0 ? /* @__PURE__ */ React.createElement(Paragraph, null, "No days recorded yet. Stats start from the moment you enable tracking.") : /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.75rem",
-      className: cl28("history")
+      className: cl29("history")
     }, /* @__PURE__ */ React.createElement(Flex, {
       ref: chartRef,
-      className: cl28("chart"),
+      className: cl29("chart"),
       alignItems: "stretch",
       gap: "0.35rem",
       tabIndex: 0,
@@ -22609,22 +22742,22 @@ button:has(.void-ud-trigger > .void-ud-label) {
         role: "option",
         "aria-selected": on,
         "aria-label": `${rec.date === todayKey ? "Today" : formatDayLabel(rec.date)}, ${formatDelta(delta)}`,
-        className: classes(cl28("bar"), on && cl28("bar-on"), empty && cl28("bar-empty")),
+        className: classes(cl29("bar"), on && cl29("bar-on"), empty && cl29("bar-empty")),
         onClick: () => setSelected(rec.date)
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl28("bar-value")
+        className: cl29("bar-value")
       }, empty ? " " : formatPercent(delta)), /* @__PURE__ */ React.createElement("span", {
-        className: cl28("bar-track")
+        className: cl29("bar-track")
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl28("bar-fill"),
+        className: cl29("bar-fill"),
         style: { height: `${pct}%` }
       })), /* @__PURE__ */ React.createElement("span", {
-        className: cl28("bar-label")
+        className: cl29("bar-label")
       }, rec.date === todayKey ? "Today" : formatDayNumber(rec.date)));
     })), active != null && /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.35rem",
-      className: cl28("detail")
+      className: cl29("detail")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "semibold"
@@ -22822,7 +22955,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   composerOpacity_default.updatedAt = 1788044121000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customInstructions_default.updatedAt = 1789898438000;
-  customSidebarIdentity_default.updatedAt = 1789915911000;
+  customSidebarIdentity_default.updatedAt = 1789915998000;
   downloadTTS_default.updatedAt = 1787870966000;
   experiments_default.updatedAt = 1788047438000;
   exportChat_default.updatedAt = 1787870966000;
@@ -22919,7 +23052,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     NoticeType["ERROR"] = "error";
     NoticeType["SUCCESS"] = "success";
   })(NoticeType ||= {});
-  var cl29 = classNameFactory("void-notice-");
+  var cl30 = classNameFactory("void-notice-");
   var ICONS = {
     ["info" /* INFO */]: () => /* @__PURE__ */ React.createElement(CircleAlertIcon, {
       size: 18
@@ -22937,11 +23070,11 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var activeNoticeId = null;
   function Notice({ message, type, action, onClose }) {
     return /* @__PURE__ */ React.createElement("div", {
-      className: cl29("root")
+      className: cl30("root")
     }, /* @__PURE__ */ React.createElement("span", {
-      className: cl29("icon")
+      className: cl30("icon")
     }, ICONS[type ?? "info" /* INFO */]()), /* @__PURE__ */ React.createElement("span", {
-      className: cl29("message")
+      className: cl30("message")
     }, message), action && /* @__PURE__ */ React.createElement(Button, {
       variant: "primary",
       size: "sm",
@@ -22951,7 +23084,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       variant: "tertiary",
       size: "sm",
       shape: "square",
-      className: cl29("close"),
+      className: cl30("close"),
       onClick: onClose
     }, /* @__PURE__ */ React.createElement(Cross2Icon, {
       size: 16

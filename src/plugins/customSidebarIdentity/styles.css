@@ -34,3 +34,25 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         transition: none;
     }
 }
+
+.void-csi-avatar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.void-csi-preview {
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    border-radius: 999px;
+    object-fit: cover;
+    background: hsl(var(--surface-l2));
+}
+
+.void-csi-url {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+}

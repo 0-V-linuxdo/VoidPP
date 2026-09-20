@@ -7,8 +7,11 @@
 import "./styles.css";
 
 import { definePluginSettings } from "@api/Settings";
+import { Flex, Input, SettingsDescription, SettingsTitle } from "@components";
 import { UserRoundPenIcon } from "@components/icons";
+import { React } from "@turbopack/common/react";
 import { Devs } from "@utils/constants";
+import { classNameFactory } from "@utils/css";
 import definePlugin, { OptionType } from "@utils/types";
 
 const FOOTER = '[data-sidebar="footer"]';
@@ -18,6 +21,8 @@ const NAME_CLASS = "void-csi-name";
 const HIDE_CLASS = "void-csi-hide";
 const MARK = "data-void-csi";
 const ORIG = "data-void-csi-orig";
+const AVATAR_PX = 256;
+const cl = classNameFactory("void-csi-");
 
 const settings = definePluginSettings({
     displayName: {
@@ -27,10 +32,11 @@ const settings = definePluginSettings({
         placeholder: "Shown next to the sidebar avatar",
     },
     avatarUrl: {
-        type: OptionType.STRING,
-        description: "Image URL or data:image…. Empty keeps the official avatar.",
+        type: OptionType.COMPONENT,
+        description: "Image URL, data:image…, or paste a picture. Empty keeps the official avatar.",
         default: "",
-        placeholder: "https://… or data:image/…",
+        placeholder: "Paste a picture, or https://…",
+        component: AvatarUrlField,
     },
     applyToMenu: {
         type: OptionType.BOOLEAN,
@@ -38,6 +44,97 @@ const settings = definePluginSettings({
         default: true,
     },
 });
+
+function imageFile(data: DataTransfer | null): File | null {
+    if (!data) return null;
+    for (const file of data.files) {
+        if (file.type.startsWith("image/")) return file;
+    }
+    for (const item of data.items) {
+        if (item.kind === "file" && item.type.startsWith("image/")) return item.getAsFile();
+    }
+    return null;
+}
+
+function readDataUrl(file: File): Promise<string | null> {
+    return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+    });
+}
+
+async function fileToUrl(file: File): Promise<string | null> {
+    try {
+        const bmp = await createImageBitmap(file);
+        const scale = Math.min(1, AVATAR_PX / Math.max(bmp.width, bmp.height));
+        const w = Math.max(1, Math.round(bmp.width * scale));
+        const h = Math.max(1, Math.round(bmp.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+            bmp.close();
+            return readDataUrl(file);
+        }
+        ctx.drawImage(bmp, 0, 0, w, h);
+        bmp.close();
+        const url = canvas.toDataURL("image/png");
+        return url.startsWith("data:image/") ? url : readDataUrl(file);
+    } catch {
+        return readDataUrl(file);
+    }
+}
+
+async function takeImage(data: DataTransfer | null) {
+    const file = imageFile(data);
+    if (!file) return false;
+    const url = await fileToUrl(file);
+    if (!url?.startsWith("data:image/")) return false;
+    settings.store.avatarUrl = url;
+    return true;
+}
+
+function AvatarUrlField() {
+    const { avatarUrl } = settings.use(["avatarUrl"]);
+    const raw = String(avatarUrl ?? "");
+    const pasted = raw.startsWith("data:image/");
+    const preview = pasted || /^https?:\/\//.test(raw) ? raw : "";
+
+    return (
+        <Flex flexDirection="column" gap="0.5rem">
+            <Flex flexDirection="column" gap="0">
+                <SettingsTitle>Avatar Url</SettingsTitle>
+                <SettingsDescription>
+                    Image URL, data:image…, or paste a picture. Empty keeps the official avatar.
+                </SettingsDescription>
+            </Flex>
+            <div
+                className={cl("avatar")}
+                onPaste={(e: React.ClipboardEvent<HTMLDivElement>) => { if (imageFile(e.clipboardData)) { e.preventDefault(); void takeImage(e.clipboardData); } }}
+                onDragOver={(e: React.DragEvent<HTMLDivElement>) => { if (imageFile(e.dataTransfer)) e.preventDefault(); }}
+                onDrop={(e: React.DragEvent<HTMLDivElement>) => { if (imageFile(e.dataTransfer)) { e.preventDefault(); void takeImage(e.dataTransfer); } }}
+            >
+                {preview && <img className={cl("preview")} src={preview} alt="" referrerPolicy="no-referrer" />}
+                <Input
+                    type="text"
+                    className={cl("url")}
+                    value={pasted ? "" : raw}
+                    placeholder={pasted ? "Pasted image. Type a URL or paste another picture to replace." : "Paste a picture, or https://…"}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => { settings.store.avatarUrl = e.target.value; }}
+                    onPaste={(e: React.ClipboardEvent<HTMLInputElement>) => { if (imageFile(e.clipboardData)) { e.preventDefault(); void takeImage(e.clipboardData); } }}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        if (pasted && !e.currentTarget.value && (e.key === "Backspace" || e.key === "Delete")) {
+                            settings.store.avatarUrl = "";
+                        }
+                    }}
+                />
+            </div>
+        </Flex>
+    );
+}
 
 const failed = new Set<string>();
 let treeObs: MutationObserver | null = null;
