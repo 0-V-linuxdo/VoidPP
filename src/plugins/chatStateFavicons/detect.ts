@@ -59,8 +59,7 @@ export function collectStopButtons(root: ParentNode): HTMLElement[] {
 }
 
 export function getStopButton(): HTMLElement | null {
-    const candidates = collectStopButtons(document);
-    return candidates.find(isVisible) ?? candidates[0] ?? null;
+    return collectStopButtons(document).find(isVisible) ?? null;
 }
 
 export function isDisabledControl(el: HTMLElement): boolean {

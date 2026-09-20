@@ -7,6 +7,7 @@
 import type { VoidPPEventMap } from "@api/Events";
 import { definePluginSettings } from "@api/Settings";
 import { AppWindowIcon } from "@components/icons";
+import type { GrokResponse } from "@grok-types";
 import { ChatPageStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
@@ -27,7 +28,9 @@ import { buildIcons, DEFAULT_STYLE, type FaviconKind, type IconStyle, isIconStyl
 
 const logger = new Logger("ChatStateFavicons");
 const ICON_ID = "void-chat-state-favicon";
-const LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting"]);
+const LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
+const DEAD_RESPONSE = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
+const USER_INTERRUPT = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
 
 const settings = definePluginSettings({
     style: {
@@ -54,6 +57,8 @@ let buttonObs: MutationObserver | null = null;
 let inputCtrl: AbortController | null = null;
 let unsubRoute: (() => void) | null = null;
 let unsubPage: (() => void) | null = null;
+let unsubStream: (() => void) | null = null;
+let unsubResponse: (() => void) | null = null;
 let raf = 0;
 let started = false;
 
@@ -109,27 +114,72 @@ function rebuildIcons() {
     applyHref(icons[kind]);
 }
 
-function liveResponse(id: string | undefined, byId: Record<string, { state?: string; partial?: boolean; sender?: string }>): boolean {
+function errorBlob(value: unknown): string {
+    if (value == null) return "";
+    if (typeof value === "string") return value;
+    if (typeof value !== "object") return String(value);
+    const rec = value as Record<string, any>;
+    return [rec.message, rec.code, rec.type, rec.name].filter(Boolean).map(String).join(" ");
+}
+
+function isUserInterrupt(r: GrokResponse | undefined): boolean {
+    if (!r) return false;
+    const state = (r.state ?? "").trim().toLowerCase();
+    if (state === "interrupted" || state === "stopped") return true;
+    return USER_INTERRUPT.test(errorBlob(r.error)) || USER_INTERRUPT.test(String(r.message ?? ""));
+}
+
+function isDeadResponse(r: GrokResponse | undefined): boolean {
+    if (!r) return false;
+    if (isUserInterrupt(r)) return true;
+    const state = (r.state ?? "").trim().toLowerCase();
+    return DEAD_RESPONSE.has(state) || (r.error != null && !LIVE_RESPONSE.has(state));
+}
+
+function liveResponse(id: string | undefined, byId: Record<string, GrokResponse>): boolean {
     if (!id) return false;
     const response = byId[id];
-    if (!response) return false;
+    if (!response || isDeadResponse(response)) return false;
     if (response.partial) return true;
-    return LIVE_RESPONSE.has(response.state ?? "");
+    return LIVE_RESPONSE.has((response.state ?? "").trim().toLowerCase());
 }
 
 function storeStreaming(): boolean {
     try {
         const page = ChatPageStore.useChatPageStore.getState();
-        if (page.streamedMessageId || page.showStreamingIndicator) return true;
         const { byId } = ResponseStore.useResponseStore.getState();
-        return liveResponse(page.streamedMessageId, byId) || liveResponse(page.lastMessageId, byId);
+        if (liveResponse(page.streamedMessageId, byId) || liveResponse(page.lastMessageId, byId)) return true;
+        if (!page.showStreamingIndicator) return false;
+        return !isDeadResponse(byId[page.streamedMessageId ?? ""]) && !isDeadResponse(byId[page.lastMessageId ?? ""]);
     } catch (e) {
         logger.debug("stream stores unavailable:", e);
         return false;
     }
 }
 
+function officialInterruptedDom(): boolean {
+    try {
+        const root = document.querySelector("main") ?? document.body;
+        return USER_INTERRUPT.test(root.textContent ?? "");
+    } catch (e) {
+        logger.debug("interrupt DOM unavailable:", e);
+        return false;
+    }
+}
+
+function currentChatInterrupted(): boolean {
+    try {
+        const page = ChatPageStore.useChatPageStore.getState();
+        const { byId } = ResponseStore.useResponseStore.getState();
+        if (isUserInterrupt(byId[page.streamedMessageId ?? ""]) || isUserInterrupt(byId[page.lastMessageId ?? ""])) return true;
+    } catch (e) {
+        logger.debug("interrupt lookup failed:", e);
+    }
+    return officialInterruptedDom();
+}
+
 function isStreaming(): boolean {
+    if (currentChatInterrupted()) return false;
     if (storeStreaming()) return true;
     return getStopButton() != null;
 }
@@ -192,7 +242,8 @@ function hasError(): boolean {
         const id = page.streamedMessageId ?? page.lastMessageId;
         if (!id) return false;
         const response = byId[id];
-        return response?.state === "error" || response?.error != null;
+        if (!response || isUserInterrupt(response)) return false;
+        return response.state === "error" || response.error != null;
     } catch (e) {
         logger.debug("ResponseStore unavailable:", e);
         return false;
@@ -208,17 +259,20 @@ function evaluateState() {
     }
     if (conv) lastConvId = conv;
 
+    const empty = isInputEmpty();
+    if (currentChatInterrupted()) {
+        resetStreamFlags();
+        setKind(empty ? "wait" : primedReady ? "ready" : "wait");
+        return;
+    }
+
     const contextKey = getContextKey();
     const streaming = isStreaming();
-    const empty = isInputEmpty();
     const gray = submitIsGray();
 
     if (hasError() && !streaming) {
         setKind("error");
-        wasStreaming = false;
-        justFinished = false;
-        streamContext = null;
-        lastWasError = false;
+        resetStreamFlags();
         return;
     }
 
@@ -347,10 +401,11 @@ function scheduleEvaluate() {
 function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
     try {
         const response = ResponseStore.useResponseStore.getState().byId[responseId];
-        lastWasError = response?.state === "error" || response?.error != null;
+        lastWasError = !!response && !isUserInterrupt(response) && (response.state === "error" || response.error != null);
     } catch (e) {
         logger.debug("ResponseStore unavailable:", e);
     }
+    scheduleEvaluate();
 }
 
 function startFaviconGuard() {
@@ -417,6 +472,12 @@ function observeButtons() {
 function attachStores() {
     unsubRoute?.();
     unsubPage?.();
+    unsubStream?.();
+    unsubResponse?.();
+    unsubRoute = null;
+    unsubPage = null;
+    unsubStream = null;
+    unsubResponse = null;
     try {
         const routeStore = RoutingStore.useRoutingStore;
         if (typeof routeStore?.subscribe === "function") {
@@ -440,9 +501,21 @@ function attachStores() {
                 if (!id || id === prev) return;
                 onConversationSwitch(id);
             });
+            unsubStream = pageStore.subscribe(s => `${s.streamedMessageId ?? ""}|${s.showStreamingIndicator ? "1" : "0"}`, (next, prev) => {
+                if (next === prev) return;
+                scheduleEvaluate();
+            });
         }
     } catch (e) {
         logger.debug("ChatPageStore subscribe failed:", e);
+    }
+    try {
+        const responseStore = ResponseStore.useResponseStore;
+        if (typeof responseStore?.subscribe === "function") {
+            unsubResponse = responseStore.subscribe(() => scheduleEvaluate());
+        }
+    } catch (e) {
+        logger.debug("ResponseStore subscribe failed:", e);
     }
 }
 
@@ -498,6 +571,10 @@ export default definePlugin({
         unsubRoute = null;
         unsubPage?.();
         unsubPage = null;
+        unsubStream?.();
+        unsubStream = null;
+        unsubResponse?.();
+        unsubResponse = null;
         globalObs?.disconnect();
         globalObs = null;
         composerObs?.disconnect();

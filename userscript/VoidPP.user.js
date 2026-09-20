@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.16] v1.0.0
+// @version      [20260920.17] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.16] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.17] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7390,9 +7390,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2a5d151"}`
-    }, `(${"2a5d151"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"3d14173"}`
+    }, `(${"3d14173"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11165,8 +11165,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     return candidates;
   }
   function getStopButton() {
-    const candidates = collectStopButtons(document);
-    return candidates.find(isVisible2) ?? candidates[0] ?? null;
+    return collectStopButtons(document).find(isVisible2) ?? null;
   }
   function isDisabledControl(el) {
     if (el instanceof HTMLButtonElement && el.disabled)
@@ -11331,7 +11330,9 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   // src/plugins/chatStateFavicons/index.ts
   var logger21 = new Logger("ChatStateFavicons");
   var ICON_ID = "void-chat-state-favicon";
-  var LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting"]);
+  var LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
+  var DEAD_RESPONSE = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
+  var USER_INTERRUPT3 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
   var settings11 = definePluginSettings({
     style: {
       type: 4 /* SELECT */,
@@ -11356,6 +11357,8 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var inputCtrl = null;
   var unsubRoute = null;
   var unsubPage = null;
+  var unsubStream = null;
+  var unsubResponse = null;
   var raf3 = 0;
   var started3 = false;
   function currentStyle() {
@@ -11408,29 +11411,79 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     icons = buildIcons(currentStyle(), officialHref);
     applyHref(icons[kind]);
   }
+  function errorBlob2(value) {
+    if (value == null)
+      return "";
+    if (typeof value === "string")
+      return value;
+    if (typeof value !== "object")
+      return String(value);
+    const rec = value;
+    return [rec.message, rec.code, rec.type, rec.name].filter(Boolean).map(String).join(" ");
+  }
+  function isUserInterrupt3(r) {
+    if (!r)
+      return false;
+    const state = (r.state ?? "").trim().toLowerCase();
+    if (state === "interrupted" || state === "stopped")
+      return true;
+    return USER_INTERRUPT3.test(errorBlob2(r.error)) || USER_INTERRUPT3.test(String(r.message ?? ""));
+  }
+  function isDeadResponse2(r) {
+    if (!r)
+      return false;
+    if (isUserInterrupt3(r))
+      return true;
+    const state = (r.state ?? "").trim().toLowerCase();
+    return DEAD_RESPONSE.has(state) || r.error != null && !LIVE_RESPONSE.has(state);
+  }
   function liveResponse(id, byId) {
     if (!id)
       return false;
     const response = byId[id];
-    if (!response)
+    if (!response || isDeadResponse2(response))
       return false;
     if (response.partial)
       return true;
-    return LIVE_RESPONSE.has(response.state ?? "");
+    return LIVE_RESPONSE.has((response.state ?? "").trim().toLowerCase());
   }
   function storeStreaming() {
     try {
       const page = ChatPageStore.useChatPageStore.getState();
-      if (page.streamedMessageId || page.showStreamingIndicator)
-        return true;
       const { byId } = ResponseStore.useResponseStore.getState();
-      return liveResponse(page.streamedMessageId, byId) || liveResponse(page.lastMessageId, byId);
+      if (liveResponse(page.streamedMessageId, byId) || liveResponse(page.lastMessageId, byId))
+        return true;
+      if (!page.showStreamingIndicator)
+        return false;
+      return !isDeadResponse2(byId[page.streamedMessageId ?? ""]) && !isDeadResponse2(byId[page.lastMessageId ?? ""]);
     } catch (e) {
       logger21.debug("stream stores unavailable:", e);
       return false;
     }
   }
+  function officialInterruptedDom2() {
+    try {
+      const root = document.querySelector("main") ?? document.body;
+      return USER_INTERRUPT3.test(root.textContent ?? "");
+    } catch (e) {
+      logger21.debug("interrupt DOM unavailable:", e);
+      return false;
+    }
+  }
+  function currentChatInterrupted2() {
+    try {
+      const page = ChatPageStore.useChatPageStore.getState();
+      const { byId } = ResponseStore.useResponseStore.getState();
+      if (isUserInterrupt3(byId[page.streamedMessageId ?? ""]) || isUserInterrupt3(byId[page.lastMessageId ?? ""]))
+        return true;
+    } catch (e) {
+      logger21.debug("interrupt lookup failed:", e);
+    }
+    return officialInterruptedDom2();
+  }
   function isStreaming() {
+    if (currentChatInterrupted2())
+      return false;
     if (storeStreaming())
       return true;
     return getStopButton() != null;
@@ -11493,7 +11546,9 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       if (!id)
         return false;
       const response = byId[id];
-      return response?.state === "error" || response?.error != null;
+      if (!response || isUserInterrupt3(response))
+        return false;
+      return response.state === "error" || response.error != null;
     } catch (e) {
       logger21.debug("ResponseStore unavailable:", e);
       return false;
@@ -11509,16 +11564,18 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     if (conv)
       lastConvId = conv;
+    const empty = isInputEmpty();
+    if (currentChatInterrupted2()) {
+      resetStreamFlags();
+      setKind(empty ? "wait" : primedReady ? "ready" : "wait");
+      return;
+    }
     const contextKey = getContextKey();
     const streaming = isStreaming();
-    const empty = isInputEmpty();
     const gray = submitIsGray();
     if (hasError() && !streaming) {
       setKind("error");
-      wasStreaming = false;
-      justFinished = false;
-      streamContext = null;
-      lastWasError = false;
+      resetStreamFlags();
       return;
     }
     if (streaming && empty) {
@@ -11655,10 +11712,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function onStreamEnd3({ responseId }) {
     try {
       const response = ResponseStore.useResponseStore.getState().byId[responseId];
-      lastWasError = response?.state === "error" || response?.error != null;
+      lastWasError = !!response && !isUserInterrupt3(response) && (response.state === "error" || response.error != null);
     } catch (e) {
       logger21.debug("ResponseStore unavailable:", e);
     }
+    scheduleEvaluate();
   }
   function startFaviconGuard() {
     faviconObs?.disconnect();
@@ -11722,6 +11780,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function attachStores() {
     unsubRoute?.();
     unsubPage?.();
+    unsubStream?.();
+    unsubResponse?.();
+    unsubRoute = null;
+    unsubPage = null;
+    unsubStream = null;
+    unsubResponse = null;
     try {
       const routeStore = RoutingStore.useRoutingStore;
       if (typeof routeStore?.subscribe === "function") {
@@ -11747,9 +11811,22 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
             return;
           onConversationSwitch(id);
         });
+        unsubStream = pageStore.subscribe((s) => `${s.streamedMessageId ?? ""}|${s.showStreamingIndicator ? "1" : "0"}`, (next, prev) => {
+          if (next === prev)
+            return;
+          scheduleEvaluate();
+        });
       }
     } catch (e) {
       logger21.debug("ChatPageStore subscribe failed:", e);
+    }
+    try {
+      const responseStore = ResponseStore.useResponseStore;
+      if (typeof responseStore?.subscribe === "function") {
+        unsubResponse = responseStore.subscribe(() => scheduleEvaluate());
+      }
+    } catch (e) {
+      logger21.debug("ResponseStore subscribe failed:", e);
     }
   }
   function restoreOfficial() {
@@ -11803,6 +11880,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       unsubRoute = null;
       unsubPage?.();
       unsubPage = null;
+      unsubStream?.();
+      unsubStream = null;
+      unsubResponse?.();
+      unsubResponse = null;
       globalObs?.disconnect();
       globalObs = null;
       composerObs?.disconnect();
@@ -21427,14 +21508,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
   chatBarButtons_default.updatedAt = 1781101259000;
   contextMenu_default.updatedAt = 1781702684000;
   autoCollapse_default.updatedAt = 1787789817000;
-  autoRetry_default.updatedAt = 1787789817000;
+  autoRetry_default.updatedAt = 1789906500000;
   betterCanvas_default.updatedAt = 1789258440000;
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1787870966000;
   betterLinks_default.updatedAt = 1787870966000;
   betterNavigator_default.updatedAt = 1789808696000;
   betterSidebar_default.updatedAt = 1789807577000;
-  chatListStatus_default.updatedAt = 1789406712000;
+  chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789899681000;
   cleaner_default.updatedAt = 1789246749000;
   cloneChats_default.updatedAt = 1787870966000;
