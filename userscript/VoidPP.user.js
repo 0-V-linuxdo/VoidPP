@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.9] v1.0.0
+// @version      [20260920.10] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.9] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.10] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7390,9 +7390,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e862cca"}`
-    }, `(${"e862cca"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"7518a54"}`
+    }, `(${"7518a54"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -15750,6 +15750,7 @@ div:has(> #grok-bot-nav-button) {
 .void-ph-textarea-wrap {
     border: 1px solid hsl(var(--border-l2));
     border-radius: 0.75rem;
+    background: hsl(var(--surface-l2));
 }
 
 .void-ph-textarea-wrap:focus-within {
@@ -21293,7 +21294,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1787870966000;
-  settings_default.updatedAt = 1789262431000;
+  settings_default.updatedAt = 1789897669000;
   chatBarButtons_default.updatedAt = 1781101259000;
   contextMenu_default.updatedAt = 1781702684000;
   autoCollapse_default.updatedAt = 1787789817000;
@@ -21326,7 +21327,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1788577403000;
   noSidebarPlugins_default.updatedAt = 1789807577000;
   oneko_default.updatedAt = 1787870966000;
-  placeholder_default.updatedAt = 1789896933000;
+  placeholder_default.updatedAt = 1789897857000;
   pluginsFlyout_default.updatedAt = 1788051053000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1789246749000;
