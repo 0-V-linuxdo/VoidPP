@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.13] v1.0.0
+// @version      [20260920.14] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.13] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7390,9 +7390,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f3214b6"}`
-    }, `(${"f3214b6"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"cb0dd46"}`
+    }, `(${"cb0dd46"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21241,19 +21241,33 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
   // src/plugins/userQuotes/index.ts
   var STYLE_NAME8 = "userQuotes";
-  var CSS3 = `
-[data-testid="user-message"] blockquote:not(.twitter-tweet) {
-    margin: 0 !important;
-    border-inline-start-color: hsl(var(--fg-secondary)) !important;
-    border-inline-start-width: 0.25rem !important;
-    border-inline-start-style: solid !important;
-    padding-inline-start: 0.75rem !important;
-}
-
-[data-testid="user-message"] blockquote:not(.twitter-tweet) > * {
-    margin-block: 0 !important;
-}
-`;
+  var SEL = '[data-testid="user-message"] blockquote:not(.twitter-tweet)';
+  var settings29 = definePluginSettings({
+    italic: {
+      type: 3 /* BOOLEAN */,
+      description: "Render quoted lines in italic.",
+      default: false
+    },
+    quotes: {
+      type: 3 /* BOOLEAN */,
+      description: "Wrap quoted lines in decorative quotation marks.",
+      default: false
+    }
+  });
+  function apply6() {
+    const rules = [
+      `${SEL}{margin:0!important;border-inline-start-color:hsl(var(--fg-secondary))!important;border-inline-start-width:0.25rem!important;border-inline-start-style:solid!important;padding-inline-start:0.75rem!important}`,
+      `${SEL}>*{margin-block:0!important}`
+    ];
+    if (!settings29.store.italic)
+      rules.push(`${SEL}{font-style:inherit!important}`);
+    if (!settings29.store.quotes) {
+      rules.push(`${SEL}{quotes:none!important}`);
+      rules.push(`${SEL}::before,${SEL}::after,${SEL} p::before,${SEL} p::after{content:none!important}`);
+    }
+    registerStyle(STYLE_NAME8, rules.join(`
+`));
+  }
   var userQuotes_default = definePlugin({
     name: "UserQuotes",
     icon: TextQuoteIcon,
@@ -21261,6 +21275,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
+    settings: settings29,
     patches: [
       {
         find: '["###### ",',
@@ -21270,9 +21285,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
       }
     ],
-    start() {
-      registerStyle(STYLE_NAME8, CSS3);
-    },
+    start: apply6,
+    onSettingsChange: apply6,
     stop() {
       unregisterStyle(STYLE_NAME8);
     }
@@ -21280,7 +21294,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
   // src/plugins/widerChat/index.ts
   var STYLE_NAME9 = "widerChat";
-  var settings29 = definePluginSettings({
+  var settings30 = definePluginSettings({
     width: {
       type: 1 /* NUMBER */,
       description: "Maximum chat width in rem.",
@@ -21288,7 +21302,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
   function applyWidth() {
-    const w = settings29.store.width;
+    const w = settings30.store.width;
     registerStyle(STYLE_NAME9, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
   var widerChat_default = definePlugin({
@@ -21297,7 +21311,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     description: "Adjustable chat width for big monitors.",
     authors: [Devs.Prism],
     tags: ["chat", "ui"],
-    settings: settings29,
+    settings: settings30,
     start: applyWidth,
     onSettingsChange: applyWidth,
     stop() {
@@ -21352,7 +21366,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
   usageDisplay_default.updatedAt = 1789172854000;
-  userQuotes_default.updatedAt = 1788108581000;
+  userQuotes_default.updatedAt = 1789904332000;
   widerChat_default.updatedAt = 1787870966000;
   var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterNavigator_default.name]: betterNavigator_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [compactModeSelect_default.name]: compactModeSelect_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [modeSync_default.name]: modeSync_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
