@@ -1,0 +1,117 @@
+.void-ct-host {
+    contain: content;
+    position: fixed;
+    top: 3.5rem;
+    right: 1rem;
+    z-index: 80;
+    width: min(22rem, calc(100vw - 1.5rem));
+}
+
+.void-ct-card {
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    background: hsl(var(--surface-l1));
+    box-shadow:
+        inset 0 0 0 1px hsl(var(--border-l1)),
+        0 0.5rem 1.5rem hsl(0deg 0% 0% / 16%);
+    animation: void-ct-in 0.18s ease;
+}
+
+.void-ct-main {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.25rem 0.75rem 0.85rem;
+    border: none;
+    background: none;
+    color: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.void-ct-main:hover {
+    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
+}
+
+.void-ct-icon {
+    flex: none;
+    display: flex;
+    color: hsl(var(--fg-primary));
+}
+
+.void-ct-body {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.void-ct-title,
+.void-ct-preview {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.void-ct-title {
+    color: hsl(var(--fg-primary));
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.void-ct-preview {
+    color: hsl(var(--fg-secondary));
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+
+.void-ct-x {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    margin: 0.35rem 0.35rem 0.35rem 0;
+    border: none;
+    border-radius: 0.5rem;
+    background: none;
+    color: hsl(var(--fg-secondary));
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.void-ct-x:hover {
+    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
+    color: hsl(var(--fg-primary));
+    opacity: 1;
+}
+
+.void-ct-main:focus-visible,
+.void-ct-x:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px hsl(var(--fg-primary));
+}
+
+@keyframes void-ct-in {
+    from {
+        opacity: 0;
+        transform: translateY(-0.4rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .void-ct-card {
+        animation: none;
+    }
+}
