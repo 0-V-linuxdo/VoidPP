@@ -17,7 +17,7 @@ const SAVE_DEBOUNCE_MS = 100;
 
 type Listener = (path: string) => void;
 
-export function parseStoredSettings(raw: unknown): Record<string, unknown> | null {
+export function parseStoredSettings(raw?: unknown): Record<string, unknown> | null {
     if (isObject(raw)) return raw;
     if (typeof raw !== "string" || !raw) return null;
     try {

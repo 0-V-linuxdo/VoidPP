@@ -5,7 +5,7 @@
  */
 
 import type { SettingsDescriptionProps, SettingsRowProps, SettingsTitleProps } from "@grok-types";
-import { classNameFactory, classes } from "@utils/css";
+import { classes, classNameFactory } from "@utils/css";
 import type { ComponentType } from "react";
 
 import { React } from "./react";

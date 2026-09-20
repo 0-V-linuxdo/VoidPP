@@ -25,7 +25,7 @@ import { classes, classNameFactory } from "@utils/css";
 import { useFiltered } from "@utils/react";
 
 import PluginCard from "../PluginCard";
-import { PLUGIN_CATEGORY_TABS, isRecentlyUpdated, pluginMatchesCategory, type ListFilter, type PluginCategory } from "../utils";
+import { isRecentlyUpdated, type ListFilter, PLUGIN_CATEGORY_TABS, type PluginCategory, pluginMatchesCategory } from "../utils";
 import PluginDialog from "./PluginDialog";
 import { SearchFilterBar } from "./SearchFilterBar";
 

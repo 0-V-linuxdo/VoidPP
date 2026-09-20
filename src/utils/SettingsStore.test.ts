@@ -27,7 +27,7 @@ describe("parseStoredSettings", () => {
 
     test("returns null for empty, invalid, or non-object values", () => {
         expect(parseStoredSettings(null)).toBe(null);
-        expect(parseStoredSettings(undefined)).toBe(null);
+        expect(parseStoredSettings()).toBe(null);
         expect(parseStoredSettings("")).toBe(null);
         expect(parseStoredSettings("not json")).toBe(null);
         expect(parseStoredSettings("[]")).toBe(null);

@@ -8,11 +8,11 @@ import "./styles.css";
 
 import { definePluginSettings } from "@api/Settings";
 import { LayoutGridIcon } from "@components/icons";
+import type { GrokResponse } from "@grok-types";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { GrokConversation } from "@grok-types/stores/ConversationStore";
 import type { ResponseStoreState } from "@grok-types/stores/ResponseStore";
 import type { GrokRoute, RoutingStoreState } from "@grok-types/stores/RoutingStore";
-import type { GrokResponse } from "@grok-types";
 import { React } from "@turbopack/common/react";
 import { ChatPageStore, ConversationStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
@@ -1312,13 +1312,13 @@ function scrubText(raw: string): string {
 
 function plainText(md: string): string {
     const t = md
-        .replace(/```[\s\S]*?```/g, " ")
-        .replace(/`([^`]+)`/g, "$1")
-        .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
-        .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-        .replace(/^#{1,6}\s+/gm, "")
-        .replace(/[*_~]{1,3}/g, "")
-        .replace(/^>\s+/gm, "");
+        .replaceAll(/```[\s\S]*?```/g, " ")
+        .replaceAll(/`([^`]+)`/g, "$1")
+        .replaceAll(/!\[[^\]]*\]\([^)]*\)/g, " ")
+        .replaceAll(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+        .replaceAll(/^#{1,6}\s+/gm, "")
+        .replaceAll(/[*_~]{1,3}/g, "")
+        .replaceAll(/^>\s+/gm, "");
     return scrubText(t);
 }
 
@@ -1393,7 +1393,7 @@ function responsesOf(id: string): GrokResponse[] {
         if (walked.length) return walked;
     }
     const cached = byConversationId[id];
-    if (cached?.length) return [...cached].sort((a, b) => String(a.createTime ?? "").localeCompare(String(b.createTime ?? "")));
+    if (cached?.length) return [...cached].toSorted((a, b) => String(a.createTime ?? "").localeCompare(String(b.createTime ?? "")));
     try {
         const chat = ChatPageStore.useChatPageStore.getState();
         if (chat.conversationId === id) {
