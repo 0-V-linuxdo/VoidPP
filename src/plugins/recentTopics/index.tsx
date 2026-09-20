@@ -1340,13 +1340,10 @@ function lastRound(lines: PageLine[]): PageLine[] {
         if (user < 0 && cleaned[i].role === "user") user = i;
         if (asst >= 0 && user >= 0) break;
     }
-    const pick: PageLine[] = user >= 0 && asst >= 0 && user < asst
-        ? [cleaned[user], cleaned[asst]]
-        : user >= 0 && (asst < 0 || user > asst)
-            ? [cleaned[user]]
-            : asst >= 0
-                ? [cleaned[asst]]
-                : cleaned.slice(-1);
+    let pick = cleaned.slice(-1);
+    if (user >= 0 && asst >= 0 && user < asst) pick = [cleaned[user], cleaned[asst]];
+    else if (user >= 0 && (asst < 0 || user > asst)) pick = [cleaned[user]];
+    else if (asst >= 0) pick = [cleaned[asst]];
     return pick.map(line => ({
         role: line.role,
         text: clipLine(line.text, line.role === "user" ? 72 : 140),
