@@ -4,20 +4,20 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { pageWindow } from "@utils/misc";
+
 import { bootstrapPreviewFrame, isGrokPreviewFrame } from "./plugins/betterCanvas";
 import * as VoidPP from "./VoidPP";
 
-const target = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-
 if (isGrokPreviewFrame()) {
     bootstrapPreviewFrame();
-} else if (window === window.top && !(target as { VoidPP?: unknown; Void?: unknown }).VoidPP && !(target as { Void?: unknown }).Void) {
-    Object.defineProperty(target, "VoidPP", {
+} else if (window === window.top && !(pageWindow as { VoidPP?: unknown; Void?: unknown }).VoidPP && !(pageWindow as { Void?: unknown }).Void) {
+    Object.defineProperty(pageWindow, "VoidPP", {
         value: VoidPP,
         writable: false,
         configurable: true,
     });
-    Object.defineProperty(target, "Void", {
+    Object.defineProperty(pageWindow, "Void", {
         value: VoidPP,
         writable: false,
         configurable: true,

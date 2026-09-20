@@ -18,7 +18,7 @@ import { ConversationStore, MessageStore, ResponseStore } from "@turbopack/commo
 import { ApiClients } from "@turbopack/common/utils";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
-import { createExternalStore, debounce } from "@utils/misc";
+import { createExternalStore, debounce, pageWindow } from "@utils/misc";
 import { useExternalStore } from "@utils/react";
 import definePlugin, { OptionType } from "@utils/types";
 
@@ -64,12 +64,7 @@ let origFetch: typeof fetch | null = null;
 let origXhrOpen: typeof XMLHttpRequest.prototype.open | null = null;
 let origXhrSend: typeof XMLHttpRequest.prototype.send | null = null;
 let origList: typeof ApiClients.chatApi.chatListResponses | null = null;
-let hookedWindow: typeof globalThis | null = null;
 const xhrMeta = new WeakMap<XMLHttpRequest, string>();
-
-function pageWindow(): typeof globalThis {
-    return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-}
 
 function stamps(): Map<string, number> {
     if (cache) return cache;
@@ -329,12 +324,10 @@ function requestUrl(input: RequestInfo | URL): string {
 
 function hookFetch() {
     if (origFetch) return;
-    const w = pageWindow();
-    origFetch = w.fetch;
-    hookedWindow = w;
-    w.fetch = function voidMessageTimestampsFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    origFetch = pageWindow.fetch;
+    pageWindow.fetch = function voidMessageTimestampsFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
         const url = requestUrl(input);
-        const promise = origFetch!.call(w, input, init);
+        const promise = origFetch!.call(pageWindow, input, init);
         if (!RESPONSE_URL.test(url)) return promise;
         return promise.then(res => {
             try {
@@ -348,10 +341,9 @@ function hookFetch() {
 }
 
 function unhookFetch() {
-    if (!origFetch || !hookedWindow) return;
-    hookedWindow.fetch = origFetch;
+    if (!origFetch) return;
+    pageWindow.fetch = origFetch;
     origFetch = null;
-    hookedWindow = null;
 }
 
 function ingestXhr(xhr: XMLHttpRequest) {
@@ -369,7 +361,7 @@ function ingestXhr(xhr: XMLHttpRequest) {
 
 function hookXhr() {
     if (origXhrOpen) return;
-    const XHR = pageWindow().XMLHttpRequest;
+    const XHR = pageWindow.XMLHttpRequest;
     origXhrOpen = XHR.prototype.open;
     origXhrSend = XHR.prototype.send;
     XHR.prototype.open = function voidMessageTimestampsOpen(this: XMLHttpRequest, method: string, url: string | URL, ...rest: unknown[]): void {
@@ -397,7 +389,7 @@ function hookXhr() {
 
 function unhookXhr() {
     if (!origXhrOpen || !origXhrSend) return;
-    const XHR = pageWindow().XMLHttpRequest;
+    const XHR = pageWindow.XMLHttpRequest;
     XHR.prototype.open = origXhrOpen;
     XHR.prototype.send = origXhrSend;
     origXhrOpen = null;

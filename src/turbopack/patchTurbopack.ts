@@ -5,16 +5,16 @@
  */
 
 import { Logger } from "@utils/Logger";
+import { pageWindow } from "@utils/misc";
 import type { Patch } from "@utils/types";
 
 import { fnSourceCache, getFnSource } from "./fnSource";
 import { injectionProxies, installInjectionSeam, proxyWithInjections, resolveInjections, setInjectionContext } from "./injection";
 import { matchesAllPatterns, matchesPattern } from "./match";
 import { chunkFingerprint, patchResults, patchStats, patchTimings, validateMisses } from "./patchReport";
-import { type ModuleFactory, type PageWindow, type PatchedModuleFactory, type PatchResult, SYM_ORIGINAL, SYM_PATCHED, SYM_PATCHED_BY, SYM_PATCHED_CODE, type TurbopackHelpers, type TurbopackModule, type TurbopackPushable } from "./types";
+import { type ModuleFactory, type PatchedModuleFactory, type PatchResult, SYM_ORIGINAL, SYM_PATCHED, SYM_PATCHED_BY, SYM_PATCHED_CODE, type TurbopackHelpers, type TurbopackModule, type TurbopackPushable } from "./types";
 
 const logger = new Logger("TurbopackPatcher", "#e78284");
-const pageWindow = (typeof unsafeWindow !== "undefined" ? unsafeWindow : window) as PageWindow;
 
 const FACTORY_PROBE_ID = 0x7ffffffe;
 

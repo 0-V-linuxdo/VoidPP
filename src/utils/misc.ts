@@ -6,6 +6,8 @@
 
 import { isObject } from "./guards";
 
+export const pageWindow: typeof globalThis = typeof unsafeWindow !== "undefined" ? unsafeWindow : globalThis;
+
 export function mergeDefaults<T extends object>(target: T, defaults: T): T {
     for (const [key, defaultValue] of Object.entries(defaults)) {
         const value = (target as Record<string, unknown>)[key];

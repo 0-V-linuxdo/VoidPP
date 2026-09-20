@@ -70,8 +70,6 @@ export interface TurbopackPushable {
     [key: string]: any;
 }
 
-export type PageWindow = Window & typeof globalThis & { TURBOPACK: TurbopackPushable | any[] | undefined };
-
 export type PatchReplacementStatus = "applied" | "noEffect" | "error" | "reverted";
 
 export interface PatchResult {

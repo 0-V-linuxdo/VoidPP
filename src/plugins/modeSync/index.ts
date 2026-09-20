@@ -17,7 +17,7 @@ import { ChatPageStore, MessageStore, ModesStore, ResponseStore, RoutingStore } 
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
-import { mapGetOrCreate } from "@utils/misc";
+import { mapGetOrCreate, pageWindow } from "@utils/misc";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 
 const logger = new Logger("ModeSync");
@@ -69,7 +69,6 @@ let userPicking = false;
 let awaitingMenu = false;
 let intent: Intent = { ...EMPTY };
 let origFetch: typeof fetch | null = null;
-let hookedWindow: typeof globalThis | null = null;
 let origXhrOpen: typeof XMLHttpRequest.prototype.open | null = null;
 let origXhrSend: typeof XMLHttpRequest.prototype.send | null = null;
 const xhrMeta = new WeakMap<XMLHttpRequest, string>();
@@ -81,10 +80,6 @@ let gwHost: { send: SendFn } | null = null;
 let abort: AbortController | null = null;
 let lastNavKey = "";
 let loadTail: ReturnType<typeof setTimeout> | null = null;
-
-function pageWindow(): typeof globalThis {
-    return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-}
 
 function snapshot(): Intent {
     try {
@@ -508,39 +503,36 @@ function patchFetchArgs(input: RequestInfo | URL, init?: RequestInit): [RequestI
 
 function hookFetch() {
     if (origFetch) return;
-    const w = pageWindow();
-    origFetch = w.fetch;
-    hookedWindow = w;
-    w.fetch = function voidModeSyncFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    origFetch = pageWindow.fetch;
+    pageWindow.fetch = function voidModeSyncFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
         try {
             const patched = patchFetchArgs(input, init);
             if (patched && typeof (patched as Promise<unknown>).then === "function") {
                 return (patched as Promise<[RequestInfo | URL, RequestInit | undefined]>).then(
-                    ([i, n]) => origFetch!.call(w, i, n),
-                    () => origFetch!.call(w, input, init),
+                    ([i, n]) => origFetch!.call(pageWindow, i, n),
+                    () => origFetch!.call(pageWindow, input, init),
                 );
             }
             if (patched) {
                 const [i, n] = patched as [RequestInfo | URL, RequestInit | undefined];
-                return origFetch!.call(w, i, n);
+                return origFetch!.call(pageWindow, i, n);
             }
         } catch (e) {
             logger.debug("fetch patch failed", e);
         }
-        return origFetch!.call(w, input, init);
+        return origFetch!.call(pageWindow, input, init);
     } as typeof fetch;
 }
 
 function unhookFetch() {
-    if (!origFetch || !hookedWindow) return;
-    hookedWindow.fetch = origFetch;
+    if (!origFetch) return;
+    pageWindow.fetch = origFetch;
     origFetch = null;
-    hookedWindow = null;
 }
 
 function hookXhr() {
     if (origXhrOpen) return;
-    const XHR = pageWindow().XMLHttpRequest;
+    const XHR = pageWindow.XMLHttpRequest;
     origXhrOpen = XHR.prototype.open;
     origXhrSend = XHR.prototype.send;
     XHR.prototype.open = function voidModeSyncOpen(this: XMLHttpRequest, method: string, url: string | URL, ...rest: unknown[]): void {
@@ -566,7 +558,7 @@ function hookXhr() {
 
 function unhookXhr() {
     if (!origXhrOpen) return;
-    const XHR = pageWindow().XMLHttpRequest;
+    const XHR = pageWindow.XMLHttpRequest;
     XHR.prototype.open = origXhrOpen;
     if (origXhrSend) XHR.prototype.send = origXhrSend;
     origXhrOpen = null;

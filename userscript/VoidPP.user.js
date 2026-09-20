@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.3] v1.0.0
+// @version      [20260920.4] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.3] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -52,6 +52,207 @@
         set: __exportSetter.bind(all, name)
       });
   };
+
+  // src/utils/guards.ts
+  function isTruthy(item) {
+    return Boolean(item);
+  }
+  function isNonNullish(item) {
+    return item != null;
+  }
+  function isObject(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
+  // src/utils/misc.ts
+  var pageWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : globalThis;
+  function mergeDefaults(target, defaults) {
+    for (const [key, defaultValue] of Object.entries(defaults)) {
+      const value = target[key];
+      if (isObject(value)) {
+        mergeDefaults(value, defaultValue);
+      } else if (value === undefined) {
+        target[key] = defaultValue;
+      }
+    }
+    return target;
+  }
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  async function copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      if (typeof GM_setClipboard === "function") {
+        GM_setClipboard(text);
+      }
+    }
+  }
+  function onlyOnce(fn) {
+    let result;
+    let f = fn;
+    return (...args) => {
+      if (!f)
+        return result;
+      result = f(...args);
+      f = null;
+      return result;
+    };
+  }
+  function debounce(fn, ms) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), ms);
+    };
+  }
+  var FETCH_TIMEOUT_MS = 30000;
+  function fetchExternal(url) {
+    if (typeof GM_xmlhttpRequest === "undefined") {
+      const controller = new AbortController;
+      const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+    }
+    return new Promise((resolve, reject) => {
+      GM_xmlhttpRequest({
+        method: "GET",
+        url,
+        responseType: "blob",
+        timeout: FETCH_TIMEOUT_MS,
+        onload(resp) {
+          resolve(new Response(resp.response, {
+            status: resp.status,
+            statusText: resp.statusText
+          }));
+        },
+        ontimeout() {
+          reject(new Error("fetch timeout"));
+        },
+        onerror() {
+          reject(new Error("fetch error"));
+        },
+        onabort() {
+          reject(new Error("fetch aborted"));
+        }
+      });
+    });
+  }
+  function createExternalStore() {
+    const listeners = new Set;
+    let version = 0;
+    return {
+      notify() {
+        version++;
+        for (const fn of listeners)
+          fn();
+      },
+      subscribe(callback) {
+        listeners.add(callback);
+        return () => {
+          listeners.delete(callback);
+        };
+      },
+      getSnapshot() {
+        return version;
+      }
+    };
+  }
+  function createSelectionStore() {
+    const set = new Set;
+    const store = createExternalStore();
+    return {
+      ...store,
+      has: (id) => set.has(id),
+      toggle(id) {
+        if (set.has(id))
+          set.delete(id);
+        else
+          set.add(id);
+        store.notify();
+      },
+      add(id) {
+        if (!set.has(id)) {
+          set.add(id);
+          store.notify();
+        }
+      },
+      remove(id) {
+        if (set.delete(id))
+          store.notify();
+      },
+      clear() {
+        if (set.size) {
+          set.clear();
+          store.notify();
+        }
+      },
+      all: () => [...set],
+      size: () => set.size
+    };
+  }
+  var pad = (n) => String(n).padStart(2, "0");
+  function hms(totalSeconds) {
+    return [Math.floor(totalSeconds / 3600), Math.floor(totalSeconds % 3600 / 60), totalSeconds % 60];
+  }
+  function formatCountdown(totalSeconds) {
+    if (totalSeconds <= 0)
+      return "0:00";
+    const [h, m, s] = hms(totalSeconds);
+    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+  }
+  function formatDuration(totalSeconds) {
+    if (totalSeconds <= 0)
+      return "0m";
+    const [h, m] = hms(totalSeconds);
+    if (h > 0 && m > 0)
+      return `${h}h ${m}m`;
+    return h > 0 ? `${h}h` : `${m}m`;
+  }
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+  function errorMessage(err) {
+    return err instanceof Error ? err.message : String(err);
+  }
+  var FILENAME_ILLEGAL = /[<>:"/\\|?*\x00-\x1f]/g;
+  var WHITESPACE_RUN = /\s+/g;
+  function sanitizeFilename(title, fallback = "file") {
+    return title.replaceAll(FILENAME_ILLEGAL, "").trim().replaceAll(WHITESPACE_RUN, "-") || fallback;
+  }
+  function mapGetOrCreate(map, key, create) {
+    let value = map.get(key);
+    if (value === undefined) {
+      value = create();
+      map.set(key, value);
+    }
+    return value;
+  }
+  function safeUrl(url) {
+    try {
+      const { protocol } = new URL(url);
+      return protocol === "https:" || protocol === "http:" || protocol === "mailto:" ? url : null;
+    } catch {
+      return null;
+    }
+  }
+  function randomId(prefix = "") {
+    const tail = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    return prefix ? `${prefix}-${tail}` : tail;
+  }
+  function sortedEntries(map) {
+    return [...map.entries()].toSorted(([, a], [, b]) => (a.order ?? 0) - (b.order ?? 0));
+  }
+  function sendBrowserNotification(title, body, icon = "/favicon.ico") {
+    if (Notification.permission === "granted") {
+      new Notification(title, { body, icon });
+    } else if (Notification.permission !== "denied") {
+      Notification.requestPermission().then((p) => {
+        if (p === "granted")
+          new Notification(title, { body, icon });
+      }).catch(() => {});
+    }
+  }
 
   // src/utils/Logger.ts
   var isBrowser = typeof window !== "undefined";
@@ -455,7 +656,6 @@
 
   // src/turbopack/patchTurbopack.ts
   var logger3 = new Logger("TurbopackPatcher", "#e78284");
-  var pageWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
   var FACTORY_PROBE_ID = 2147483646;
   var motionSymbol = Symbol.for("motionComponentSymbol");
   var compileCounter = 0;
@@ -1708,206 +1908,6 @@ ${sourceUrl}`;
       store.delete(key);
       store.transaction.oncomplete = () => resolve();
     });
-  }
-
-  // src/utils/guards.ts
-  function isTruthy(item) {
-    return Boolean(item);
-  }
-  function isNonNullish(item) {
-    return item != null;
-  }
-  function isObject(value) {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
-  }
-
-  // src/utils/misc.ts
-  function mergeDefaults(target, defaults) {
-    for (const [key, defaultValue] of Object.entries(defaults)) {
-      const value = target[key];
-      if (isObject(value)) {
-        mergeDefaults(value, defaultValue);
-      } else if (value === undefined) {
-        target[key] = defaultValue;
-      }
-    }
-    return target;
-  }
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-  async function copyToClipboard(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      if (typeof GM_setClipboard === "function") {
-        GM_setClipboard(text);
-      }
-    }
-  }
-  function onlyOnce(fn) {
-    let result;
-    let f = fn;
-    return (...args) => {
-      if (!f)
-        return result;
-      result = f(...args);
-      f = null;
-      return result;
-    };
-  }
-  function debounce(fn, ms) {
-    let timer;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => fn(...args), ms);
-    };
-  }
-  var FETCH_TIMEOUT_MS = 30000;
-  function fetchExternal(url) {
-    if (typeof GM_xmlhttpRequest === "undefined") {
-      const controller = new AbortController;
-      const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-      return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
-    }
-    return new Promise((resolve, reject) => {
-      GM_xmlhttpRequest({
-        method: "GET",
-        url,
-        responseType: "blob",
-        timeout: FETCH_TIMEOUT_MS,
-        onload(resp) {
-          resolve(new Response(resp.response, {
-            status: resp.status,
-            statusText: resp.statusText
-          }));
-        },
-        ontimeout() {
-          reject(new Error("fetch timeout"));
-        },
-        onerror() {
-          reject(new Error("fetch error"));
-        },
-        onabort() {
-          reject(new Error("fetch aborted"));
-        }
-      });
-    });
-  }
-  function createExternalStore() {
-    const listeners = new Set;
-    let version = 0;
-    return {
-      notify() {
-        version++;
-        for (const fn of listeners)
-          fn();
-      },
-      subscribe(callback) {
-        listeners.add(callback);
-        return () => {
-          listeners.delete(callback);
-        };
-      },
-      getSnapshot() {
-        return version;
-      }
-    };
-  }
-  function createSelectionStore() {
-    const set = new Set;
-    const store = createExternalStore();
-    return {
-      ...store,
-      has: (id) => set.has(id),
-      toggle(id) {
-        if (set.has(id))
-          set.delete(id);
-        else
-          set.add(id);
-        store.notify();
-      },
-      add(id) {
-        if (!set.has(id)) {
-          set.add(id);
-          store.notify();
-        }
-      },
-      remove(id) {
-        if (set.delete(id))
-          store.notify();
-      },
-      clear() {
-        if (set.size) {
-          set.clear();
-          store.notify();
-        }
-      },
-      all: () => [...set],
-      size: () => set.size
-    };
-  }
-  var pad = (n) => String(n).padStart(2, "0");
-  function hms(totalSeconds) {
-    return [Math.floor(totalSeconds / 3600), Math.floor(totalSeconds % 3600 / 60), totalSeconds % 60];
-  }
-  function formatCountdown(totalSeconds) {
-    if (totalSeconds <= 0)
-      return "0:00";
-    const [h, m, s] = hms(totalSeconds);
-    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
-  }
-  function formatDuration(totalSeconds) {
-    if (totalSeconds <= 0)
-      return "0m";
-    const [h, m] = hms(totalSeconds);
-    if (h > 0 && m > 0)
-      return `${h}h ${m}m`;
-    return h > 0 ? `${h}h` : `${m}m`;
-  }
-  function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
-  }
-  function errorMessage(err) {
-    return err instanceof Error ? err.message : String(err);
-  }
-  var FILENAME_ILLEGAL = /[<>:"/\\|?*\x00-\x1f]/g;
-  var WHITESPACE_RUN = /\s+/g;
-  function sanitizeFilename(title, fallback = "file") {
-    return title.replaceAll(FILENAME_ILLEGAL, "").trim().replaceAll(WHITESPACE_RUN, "-") || fallback;
-  }
-  function mapGetOrCreate(map, key, create) {
-    let value = map.get(key);
-    if (value === undefined) {
-      value = create();
-      map.set(key, value);
-    }
-    return value;
-  }
-  function safeUrl(url) {
-    try {
-      const { protocol } = new URL(url);
-      return protocol === "https:" || protocol === "http:" || protocol === "mailto:" ? url : null;
-    } catch {
-      return null;
-    }
-  }
-  function randomId(prefix = "") {
-    const tail = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    return prefix ? `${prefix}-${tail}` : tail;
-  }
-  function sortedEntries(map) {
-    return [...map.entries()].toSorted(([, a], [, b]) => (a.order ?? 0) - (b.order ?? 0));
-  }
-  function sendBrowserNotification(title, body, icon = "/favicon.ico") {
-    if (Notification.permission === "granted") {
-      new Notification(title, { body, icon });
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then((p) => {
-        if (p === "granted")
-          new Notification(title, { body, icon });
-      }).catch(() => {});
-    }
   }
 
   // src/api/Events.ts
@@ -7296,9 +7296,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"182613b"}`
-    }, `(${"182613b"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"aaf3dc8"}`
+    }, `(${"aaf3dc8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14510,7 +14510,6 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   var awaitingMenu = false;
   var intent = { ...EMPTY };
   var origFetch = null;
-  var hookedWindow = null;
   var origXhrOpen = null;
   var origXhrSend = null;
   var xhrMeta = new WeakMap;
@@ -14522,9 +14521,6 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   var abort = null;
   var lastNavKey = "";
   var loadTail = null;
-  function pageWindow2() {
-    return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-  }
   function snapshot() {
     try {
       const modes = ModesStore.useModesStore.getState();
@@ -14955,36 +14951,33 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   function hookFetch() {
     if (origFetch)
       return;
-    const w = pageWindow2();
-    origFetch = w.fetch;
-    hookedWindow = w;
-    w.fetch = function voidModeSyncFetch(input, init) {
+    origFetch = pageWindow.fetch;
+    pageWindow.fetch = function voidModeSyncFetch(input, init) {
       try {
         const patched = patchFetchArgs(input, init);
         if (patched && typeof patched.then === "function") {
-          return patched.then(([i, n]) => origFetch.call(w, i, n), () => origFetch.call(w, input, init));
+          return patched.then(([i, n]) => origFetch.call(pageWindow, i, n), () => origFetch.call(pageWindow, input, init));
         }
         if (patched) {
           const [i, n] = patched;
-          return origFetch.call(w, i, n);
+          return origFetch.call(pageWindow, i, n);
         }
       } catch (e) {
         logger29.debug("fetch patch failed", e);
       }
-      return origFetch.call(w, input, init);
+      return origFetch.call(pageWindow, input, init);
     };
   }
   function unhookFetch() {
-    if (!origFetch || !hookedWindow)
+    if (!origFetch)
       return;
-    hookedWindow.fetch = origFetch;
+    pageWindow.fetch = origFetch;
     origFetch = null;
-    hookedWindow = null;
   }
   function hookXhr() {
     if (origXhrOpen)
       return;
-    const XHR = pageWindow2().XMLHttpRequest;
+    const XHR = pageWindow.XMLHttpRequest;
     origXhrOpen = XHR.prototype.open;
     origXhrSend = XHR.prototype.send;
     XHR.prototype.open = function voidModeSyncOpen(method, url, ...rest) {
@@ -15011,7 +15004,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   function unhookXhr() {
     if (!origXhrOpen)
       return;
-    const XHR = pageWindow2().XMLHttpRequest;
+    const XHR = pageWindow.XMLHttpRequest;
     XHR.prototype.open = origXhrOpen;
     if (origXhrSend)
       XHR.prototype.send = origXhrSend;
@@ -16666,11 +16659,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var origXhrOpen2 = null;
   var origXhrSend2 = null;
   var origList = null;
-  var hookedWindow2 = null;
   var xhrMeta2 = new WeakMap;
-  function pageWindow3() {
-    return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-  }
   function stamps() {
     if (cache)
       return cache;
@@ -16945,12 +16934,10 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   function hookFetch2() {
     if (origFetch2)
       return;
-    const w = pageWindow3();
-    origFetch2 = w.fetch;
-    hookedWindow2 = w;
-    w.fetch = function voidMessageTimestampsFetch(input, init) {
+    origFetch2 = pageWindow.fetch;
+    pageWindow.fetch = function voidMessageTimestampsFetch(input, init) {
       const url = requestUrl2(input);
-      const promise = origFetch2.call(w, input, init);
+      const promise = origFetch2.call(pageWindow, input, init);
       if (!RESPONSE_URL.test(url))
         return promise;
       return promise.then((res) => {
@@ -16964,11 +16951,10 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     };
   }
   function unhookFetch2() {
-    if (!origFetch2 || !hookedWindow2)
+    if (!origFetch2)
       return;
-    hookedWindow2.fetch = origFetch2;
+    pageWindow.fetch = origFetch2;
     origFetch2 = null;
-    hookedWindow2 = null;
   }
   function ingestXhr(xhr) {
     if (xhr.status < 200 || xhr.status >= 300)
@@ -16988,7 +16974,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   function hookXhr2() {
     if (origXhrOpen2)
       return;
-    const XHR = pageWindow3().XMLHttpRequest;
+    const XHR = pageWindow.XMLHttpRequest;
     origXhrOpen2 = XHR.prototype.open;
     origXhrSend2 = XHR.prototype.send;
     XHR.prototype.open = function voidMessageTimestampsOpen(method, url, ...rest) {
@@ -17016,7 +17002,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   function unhookXhr2() {
     if (!origXhrOpen2 || !origXhrSend2)
       return;
-    const XHR = pageWindow3().XMLHttpRequest;
+    const XHR = pageWindow.XMLHttpRequest;
     XHR.prototype.open = origXhrOpen2;
     XHR.prototype.send = origXhrSend2;
     origXhrOpen2 = null;
@@ -21108,7 +21094,7 @@ html.void-rt-open [data-sidebar="gap"] {
   oneko_default.updatedAt = 1787870966000;
   betterSidebar_default.updatedAt = 1789807577000;
   placeholder_default.updatedAt = 1789207633000;
-  messageTimestamps_default.updatedAt = 1789246749000;
+  messageTimestamps_default.updatedAt = 1789881199000;
   betterNavigator_default.updatedAt = 1789808696000;
   betterCanvas_default.updatedAt = 1789258440000;
   cleaner_default.updatedAt = 1789246749000;
@@ -21445,16 +21431,15 @@ html.void-rt-open [data-sidebar="gap"] {
   }
 
   // src/index.ts
-  var target = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
   if (isGrokPreviewFrame()) {
     bootstrapPreviewFrame();
-  } else if (window === window.top && !target.VoidPP && !target.Void) {
-    Object.defineProperty(target, "VoidPP", {
+  } else if (window === window.top && !pageWindow.VoidPP && !pageWindow.Void) {
+    Object.defineProperty(pageWindow, "VoidPP", {
       value: exports_VoidPP,
       writable: false,
       configurable: true
     });
-    Object.defineProperty(target, "Void", {
+    Object.defineProperty(pageWindow, "Void", {
       value: exports_VoidPP,
       writable: false,
       configurable: true
