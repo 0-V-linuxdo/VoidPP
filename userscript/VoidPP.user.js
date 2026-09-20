@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.1] v1.0.0
+// @version      [20260920.2] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.1] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.2] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7296,9 +7296,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"424d40b"}`
-    }, `(${"424d40b"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b7f65f8"}`
+    }, `(${"b7f65f8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14777,24 +14777,6 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       return;
     }
   }
-  function sendWithModeTransport(orig, ctx, args, live) {
-    const first = args[0];
-    const cid = first && typeof first === "object" && !Array.isArray(first) ? first.conversationId : undefined;
-    if (!live.modeId || typeof cid !== "string" || !cid || String(conversation(cid)?.lastModel ?? "") === live.modeId) {
-      return orig.apply(ctx, args);
-    }
-    const chat = ChatPageStore.useChatPageStore.getState();
-    const set = chat.setFailedGatewayLeaseConversationId;
-    if (typeof set !== "function")
-      return orig.apply(ctx, args);
-    const prev = chat.failedGatewayLeaseConversationId ?? null;
-    set(cid);
-    try {
-      return orig.apply(ctx, args);
-    } finally {
-      set(prev);
-    }
-  }
   function patchGwEvent(event, live) {
     if (!event || typeof event !== "object" || Array.isArray(event) || !live.modeId)
       return;
@@ -14852,15 +14834,13 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     wrappedGwSend = null;
     gwHost = null;
   }
-  function makeSendWrapper(label, orig) {
+  function makeSendWrapper(orig) {
     return function voidModeSyncSend(...args) {
       const live = liveIntent();
       if (live.modeId) {
         applyIntent(live);
         patchSendArgs(args, live);
       }
-      if (label === "chat.sendResponse")
-        return sendWithModeTransport(orig, this, args, liveIntent());
       return orig.apply(this, args);
     };
   }
@@ -14878,7 +14858,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       }
     };
   }
-  function wrapOne(label, getState, setState, key, make = (orig) => makeSendWrapper(label, orig)) {
+  function wrapOne(label, getState, setState, key, make = makeSendWrapper) {
     let state2;
     try {
       state2 = getState();
@@ -21116,7 +21096,7 @@ html.void-rt-open [data-sidebar="gap"] {
   downloadTTS_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
-  modeSync_default.updatedAt = 1789817189000;
+  modeSync_default.updatedAt = 1789857414000;
   customInstructions_default.updatedAt = 1789208142000;
   noDictation_default.updatedAt = 1788037550000;
   oneko_default.updatedAt = 1787870966000;

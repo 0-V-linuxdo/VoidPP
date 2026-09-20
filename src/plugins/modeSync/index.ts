@@ -55,11 +55,6 @@ interface Intent {
     activeModelId: string;
 }
 
-interface ChatLease {
-    failedGatewayLeaseConversationId?: string | null;
-    setFailedGatewayLeaseConversationId?: (id: string | null) => void;
-}
-
 interface HeldTurn {
     id: string;
     args: GatewayTurnArgs;
@@ -342,24 +337,6 @@ function flushHeld(responseId: string) {
     }
 }
 
-function sendWithModeTransport(orig: SendFn, ctx: unknown, args: unknown[], live: Intent) {
-    const first = args[0];
-    const cid = first && typeof first === "object" && !Array.isArray(first) ? (first as { conversationId?: unknown }).conversationId : undefined;
-    if (!live.modeId || typeof cid !== "string" || !cid || String(conversation(cid)?.lastModel ?? "") === live.modeId) {
-        return orig.apply(ctx, args);
-    }
-    const chat = ChatPageStore.useChatPageStore.getState() as ChatPageStoreState & ChatLease;
-    const set = chat.setFailedGatewayLeaseConversationId;
-    if (typeof set !== "function") return orig.apply(ctx, args);
-    const prev = chat.failedGatewayLeaseConversationId ?? null;
-    set(cid);
-    try {
-        return orig.apply(ctx, args);
-    } finally {
-        set(prev);
-    }
-}
-
 function patchGwEvent(event: unknown, live: Intent) {
     if (!event || typeof event !== "object" || Array.isArray(event) || !live.modeId) return;
     const rec = event as Record<string, unknown>;
@@ -411,14 +388,13 @@ function unwrapGatewaySend() {
     gwHost = null;
 }
 
-function makeSendWrapper(label: string, orig: SendFn): SendFn {
+function makeSendWrapper(orig: SendFn): SendFn {
     return function voidModeSyncSend(this: unknown, ...args: unknown[]) {
         const live = liveIntent();
         if (live.modeId) {
             applyIntent(live);
             patchSendArgs(args, live);
         }
-        if (label === "chat.sendResponse") return sendWithModeTransport(orig, this, args, liveIntent());
         return orig.apply(this, args);
     };
 }
@@ -437,7 +413,7 @@ function makeQueueWrapper(orig: SendFn): SendFn {
     };
 }
 
-function wrapOne(label: string, getState: () => any, setState: (partial: object) => void, key: string, make: (orig: SendFn) => SendFn = orig => makeSendWrapper(label, orig)) {
+function wrapOne(label: string, getState: () => any, setState: (partial: object) => void, key: string, make: (orig: SendFn) => SendFn = makeSendWrapper) {
     let state: any;
     try {
         state = getState();
