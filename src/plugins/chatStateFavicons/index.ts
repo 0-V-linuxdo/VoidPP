@@ -23,7 +23,7 @@ import {
     isStopControl,
     submitIsGray,
 } from "./detect";
-import { buildIcons, type FaviconKind, type IconStyle, isIconStyle, STYLE_OPTIONS } from "./icons";
+import { buildIcons, DEFAULT_STYLE, type FaviconKind, type IconStyle, isIconStyle, STYLE_OPTIONS } from "./icons";
 
 const logger = new Logger("ChatStateFavicons");
 const ICON_ID = "void-chat-state-favicon";
@@ -38,7 +38,7 @@ const settings = definePluginSettings({
 });
 
 let officialHref = "/images/favicon.svg";
-let icons = buildIcons("badge", officialHref);
+let icons = buildIcons(DEFAULT_STYLE, officialHref);
 let kind: FaviconKind = "wait";
 let wasStreaming = false;
 let justFinished = false;
@@ -59,7 +59,7 @@ let started = false;
 
 function currentStyle(): IconStyle {
     const value = settings.store.style;
-    return isIconStyle(value) ? value : "badge";
+    return isIconStyle(value) ? value : DEFAULT_STYLE;
 }
 
 function captureOfficial(): string {

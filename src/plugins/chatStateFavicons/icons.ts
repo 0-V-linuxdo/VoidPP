@@ -8,11 +8,13 @@ export const ICON_STYLES = ["original", "badge", "dot", "hole", "bg"] as const;
 export type IconStyle = (typeof ICON_STYLES)[number];
 export type FaviconKind = "wait" | "rotate" | "done" | "ready" | "error";
 
+export const DEFAULT_STYLE: IconStyle = "hole";
+
 export const STYLE_OPTIONS = [
     { label: "only emoji", value: "original" },
-    { label: "Badge + glyph", value: "badge", default: true },
+    { label: "Badge + glyph", value: "badge" },
     { label: "Color dot", value: "dot" },
-    { label: "Mark tint", value: "hole" },
+    { label: "Mark tint", value: "hole", default: true },
     { label: "Background tint", value: "bg" },
 ] as const;
 

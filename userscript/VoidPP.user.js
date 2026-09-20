@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.11] v1.0.0
+// @version      [20260920.12] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.11] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.12] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7390,9 +7390,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"08bd599"}`
-    }, `(${"08bd599"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6344d48"}`
+    }, `(${"6344d48"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11120,11 +11120,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
 
   // src/plugins/chatStateFavicons/icons.ts
   var ICON_STYLES = ["original", "badge", "dot", "hole", "bg"];
+  var DEFAULT_STYLE = "hole";
   var STYLE_OPTIONS = [
     { label: "only emoji", value: "original" },
-    { label: "Badge + glyph", value: "badge", default: true },
+    { label: "Badge + glyph", value: "badge" },
     { label: "Color dot", value: "dot" },
-    { label: "Mark tint", value: "hole" },
+    { label: "Mark tint", value: "hole", default: true },
     { label: "Background tint", value: "bg" }
   ];
   var KIND_COLOR = {
@@ -11240,7 +11241,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
   });
   var officialHref = "/images/favicon.svg";
-  var icons = buildIcons("badge", officialHref);
+  var icons = buildIcons(DEFAULT_STYLE, officialHref);
   var kind = "wait";
   var wasStreaming = false;
   var justFinished = false;
@@ -11260,7 +11261,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var started3 = false;
   function currentStyle() {
     const value = settings11.store.style;
-    return isIconStyle(value) ? value : "badge";
+    return isIconStyle(value) ? value : DEFAULT_STYLE;
   }
   function captureOfficial() {
     const existing = document.querySelector(`link[rel~="icon"]:not(#${ICON_ID})`);
@@ -21313,7 +21314,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   compactModeSelect_default.updatedAt = 1789811419000;
   composerOpacity_default.updatedAt = 1788044121000;
   consoleJanitor_default.updatedAt = 1787789817000;
-  customInstructions_default.updatedAt = 1789208142000;
+  customInstructions_default.updatedAt = 1789898438000;
   downloadTTS_default.updatedAt = 1787870966000;
   experiments_default.updatedAt = 1788047438000;
   exportChat_default.updatedAt = 1787870966000;
