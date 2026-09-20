@@ -130,8 +130,10 @@ function unhide(scope: ParentNode) {
 }
 
 function hideOfficial(host: Element, keep: Element) {
+    if (host.getAttribute("role") === "menu") return;
     for (const node of host.querySelectorAll("span, p")) {
         if (node === keep || keep.contains(node) || node.contains(keep) || node.classList.contains(NAME_CLASS)) continue;
+        if (node.closest("[role='menuitem'], [role='menuitemcheckbox'], [role='menuitemradio']")) continue;
         if (!node.textContent?.trim()) continue;
         node.classList.add(HIDE_CLASS);
     }
@@ -165,6 +167,14 @@ function paintFooter() {
     syncName(nameHost(footer), trimName(), footer);
 }
 
+function menuNameHost(img: Element, menu: Element): Element {
+    const row = img.closest("div");
+    const wrap = row?.parentElement;
+    if (wrap && wrap !== menu && menu.contains(wrap)) return wrap;
+    if (row && row !== menu) return row;
+    return img.parentElement && img.parentElement !== menu ? img.parentElement : menu;
+}
+
 function isAccountMenu(menu: Element): boolean {
     return !!menu.querySelector(PFP) || !!menu.querySelector('[class*="max-w-[400px]"].truncate');
 }
@@ -187,7 +197,8 @@ function paintMenu() {
             continue;
         }
         const img = menu.querySelector(PFP) ?? menu.querySelector("img");
-        const host = img?.parentElement?.parentElement ?? img?.parentElement ?? menu;
+        if (!img) continue;
+        const host = menuNameHost(img, menu);
         const el = ensureName(host, name);
         hideOfficial(host, el);
         for (const node of menu.querySelectorAll(`.${NAME_CLASS}`)) {

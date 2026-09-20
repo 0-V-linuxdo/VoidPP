@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.21] v1.0.0
+// @version      [20260920.22] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.21] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.22] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7399,9 +7399,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8b3fbcc"}`
-    }, `(${"8b3fbcc"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2f04ce8"}`
+    }, `(${"2f04ce8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14345,8 +14345,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       el.classList.remove(HIDE_CLASS2);
   }
   function hideOfficial(host, keep) {
+    if (host.getAttribute("role") === "menu")
+      return;
     for (const node of host.querySelectorAll("span, p")) {
       if (node === keep || keep.contains(node) || node.contains(keep) || node.classList.contains(NAME_CLASS))
+        continue;
+      if (node.closest("[role='menuitem'], [role='menuitemcheckbox'], [role='menuitemradio']"))
         continue;
       if (!node.textContent?.trim())
         continue;
@@ -14383,6 +14387,15 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       paintImg(img, url);
     syncName(nameHost(footer), trimName(), footer);
   }
+  function menuNameHost(img, menu) {
+    const row = img.closest("div");
+    const wrap = row?.parentElement;
+    if (wrap && wrap !== menu && menu.contains(wrap))
+      return wrap;
+    if (row && row !== menu)
+      return row;
+    return img.parentElement && img.parentElement !== menu ? img.parentElement : menu;
+  }
   function isAccountMenu(menu) {
     return !!menu.querySelector(PFP) || !!menu.querySelector('[class*="max-w-[400px]"].truncate');
   }
@@ -14407,7 +14420,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         continue;
       }
       const img = menu.querySelector(PFP) ?? menu.querySelector("img");
-      const host = img?.parentElement?.parentElement ?? img?.parentElement ?? menu;
+      if (!img)
+        continue;
+      const host = menuNameHost(img, menu);
       const el = ensureName(host, name);
       hideOfficial(host, el);
       for (const node of menu.querySelectorAll(`.${NAME_CLASS}`)) {
@@ -22807,7 +22822,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   composerOpacity_default.updatedAt = 1788044121000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customInstructions_default.updatedAt = 1789898438000;
-  customSidebarIdentity_default.updatedAt = 0;
+  customSidebarIdentity_default.updatedAt = 1789915911000;
   downloadTTS_default.updatedAt = 1787870966000;
   experiments_default.updatedAt = 1788047438000;
   exportChat_default.updatedAt = 1787870966000;
