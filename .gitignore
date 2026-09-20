@@ -13,4 +13,5 @@ assets/logos/app-icon/*
 .DS_Store
 .claude
 .voidpp-cache
+.void-cache
 .env
