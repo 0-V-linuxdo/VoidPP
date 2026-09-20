@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.17] v1.0.0
+// @version      [20260920.18] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.17] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.18] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7390,9 +7390,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"3d14173"}`
-    }, `(${"3d14173"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.18] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"bd1ea54"}`
+    }, `(${"bd1ea54"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8816,7 +8816,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     width: 0.375rem;
     border-radius: 9999px;
     background: hsl(var(--fg-tertiary)/50%);
-    transition: width 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
+    transition: width 0.15s ease, background-color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 
 .void-bn-tick-asst::after {
@@ -8827,6 +8827,18 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     width: 1rem;
     background: hsl(var(--fg-primary));
     opacity: 1;
+}
+
+.void-bn-tick-live::after {
+    height: 0;
+    background: none;
+    border-radius: 0;
+    border-top: 1px dashed hsl(var(--fg-tertiary)/50%);
+}
+
+.void-bn-tick-live.void-bn-current::after {
+    background: none;
+    border-top-color: hsl(var(--fg-primary));
 }
 
 .void-bn-menu {
@@ -8948,8 +8960,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
 `);
 
   // src/plugins/betterNavigator/index.ts
+  var logger19 = new Logger("BetterNavigator");
   var cl18 = classNameFactory("void-bn-");
   var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
+  var ASST_SEL = "[data-testid='assistant-message']";
   var TICK_SEL = "button[aria-label^='Go to response ']";
   var PREV_SEL = "button[aria-label='Navigate to previous message']";
   var NEXT_SEL = "button[aria-label='Navigate to next message']";
@@ -8968,12 +8982,18 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     "[aria-label*='Thought']",
     "[role='toolbar']"
   ].join(",");
+  var THINK_SEL = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
+  var STOP_SEL = 'button[aria-label="Stop model response"], button[aria-label*="Stop"], button[aria-label*="停止"]';
   var MEDIA_SEL = "img, picture, video, canvas";
   var FILE_SEL = "a[download], [data-testid*='file'], [class*='attachment']";
   var DECORATIVE_SRC = /shields\.io|iconify\.design|badgen\.net|favicon|api\.iconify/i;
   var GROK_ASSET = /assets\.grok\.com/i;
   var NOISE_TEXT = /^(copy|share|retry|edit|more|thinking|analyzing|searching|thoughts?)$/i;
+  var USER_INTERRUPT2 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
+  var LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
+  var DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
   var HIDE_CLASS = "void-bn-hidetip";
+  var LIVE_LABEL = "正在输出…";
   var SUMMARY_MAX = 60;
   var FLASH_MS = 2000;
   var FLASH_REDUCED_MS = 1000;
@@ -9157,9 +9177,71 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     return text.length > SUMMARY_MAX ? `${text.slice(0, SUMMARY_MAX)}…` : text;
   }
+  function errorBlob(value) {
+    if (value == null)
+      return "";
+    if (typeof value === "string")
+      return value;
+    if (typeof value !== "object")
+      return String(value);
+    const rec = value;
+    return [rec.message, rec.code, rec.type, rec.name].filter(Boolean).map(String).join(" ");
+  }
+  function isUserInterrupt2(r) {
+    if (!r)
+      return false;
+    const state = (r.state ?? "").trim().toLowerCase();
+    if (state === "interrupted" || state === "stopped")
+      return true;
+    return USER_INTERRUPT2.test(errorBlob(r.error)) || USER_INTERRUPT2.test(String(r.message ?? ""));
+  }
+  function isDeadResponse(r) {
+    if (!r)
+      return false;
+    if (isUserInterrupt2(r))
+      return true;
+    const state = (r.state ?? "").trim().toLowerCase();
+    return DEAD.has(state) || r.error != null && !LIVE.has(state);
+  }
+  function storeLive() {
+    try {
+      const page = ChatPageStore.useChatPageStore.getState();
+      if (!page.streamedMessageId && !page.showStreamingIndicator)
+        return false;
+      const streamed = ResponseStore.useResponseStore.getState().byId[page.streamedMessageId ?? ""];
+      if (isDeadResponse(streamed))
+        return false;
+      return true;
+    } catch (e) {
+      logger19.debug("stream stores unavailable:", e);
+      return null;
+    }
+  }
+  function stopVisible() {
+    for (const el of document.querySelectorAll(STOP_SEL)) {
+      if (isVisible(el))
+        return true;
+    }
+    return false;
+  }
+  function liveAssistantEl() {
+    const root = chatPane() ?? document;
+    const last = [...root.querySelectorAll(ASST_SEL)].findLast((el) => document.body.contains(el));
+    if (!last)
+      return null;
+    if (USER_INTERRUPT2.test(last.textContent ?? ""))
+      return null;
+    const live = storeLive();
+    if (live)
+      return last;
+    if (live == null && (stopVisible() || last.querySelector(THINK_SEL)))
+      return last;
+    return null;
+  }
   function collect() {
     const root = chatPane() ?? document;
     const showAsst = settings9.store.showAssistant;
+    const liveEl = showAsst ? liveAssistantEl() : null;
     const out = [];
     for (const el of root.querySelectorAll(MSG_SEL)) {
       if (!document.body.contains(el))
@@ -9167,10 +9249,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const role = el.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
       if (!showAsst && role === "assistant")
         continue;
-      const text = summarize(el);
+      const live = el === liveEl;
+      const text = summarize(el) || (live ? LIVE_LABEL : "");
       if (!text)
         continue;
-      out.push({ el, role, text });
+      out.push({ el, role, text, live });
     }
     return out;
   }
@@ -9394,6 +9477,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         node.textContent = nav[i].text;
     });
   }
+  function patchLive(nav) {
+    host?.querySelectorAll(".void-bn-tick").forEach((node, i) => {
+      node.classList.toggle("void-bn-tick-live", !!nav[i]?.live);
+    });
+    patchLabels(nav);
+  }
   function menuEl(nav) {
     const menu = document.createElement("div");
     menu.className = cl18("menu");
@@ -9434,11 +9523,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   }
   function tickRail(nav) {
     const wrap = document.createElement("div");
-    wrap.className = `${cl18("ticks")}${nav.length > DENSE_N ? ` ${cl18("dense")}` : ""}`;
+    wrap.className = cl18("ticks", { dense: nav.length > DENSE_N });
     nav.forEach((item, i) => {
       const tick = document.createElement("button");
       tick.type = "button";
-      tick.className = `${cl18("tick")} ${item.role === "user" ? cl18("tick-user") : cl18("tick-asst")}`;
+      tick.className = cl18("tick", item.role === "user" ? "tick-user" : "tick-asst", { "tick-live": item.live });
       tick.dataset.voidBnI = String(i);
       tick.setAttribute("aria-label", `Go to message ${i + 1} of ${nav.length}`);
       tick.addEventListener("click", (e) => {
@@ -9577,13 +9666,13 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const nextKey = structKey(mode, nav);
     if (nextKey === paintedKey && host?.isConnected && sameEls(nav)) {
       lastNav = nav;
-      patchLabels(nav);
+      patchLive(nav);
       setActive(nav);
       return;
     }
     unmount();
     const box = document.createElement("div");
-    box.className = `${cl18("host")} ${cl18(mode)}`;
+    box.className = cl18("host", mode);
     if (mode === "native" && slot) {
       slot.classList.add(SLOT_CLASS);
       box.appendChild(menuEl(nav));
@@ -9610,6 +9699,21 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     setActive(nav);
   }
   var debouncedPaint = debounce(paint, 160);
+  function pageKey(s) {
+    return `${s.streamedMessageId ?? ""}|${s.showStreamingIndicator ? 1 : 0}`;
+  }
+  function responseKey(s) {
+    try {
+      const id = ChatPageStore.useChatPageStore.getState().streamedMessageId ?? "";
+      const r = s.byId[id];
+      return `${id}:${r?.state ?? ""}:${r?.partial ? 1 : 0}`;
+    } catch {
+      return "";
+    }
+  }
+  function onStreamEnd2(_data) {
+    paint();
+  }
   function start() {
     if (ac)
       return;
@@ -9667,6 +9771,19 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       syncHideTip();
       paintedKey = "";
       paint();
+    },
+    events: {
+      streamEnd: onStreamEnd2
+    },
+    zustand: {
+      ChatPageStore: {
+        selector: pageKey,
+        handler: paint
+      },
+      ResponseStore: {
+        selector: responseKey,
+        handler: paint
+      }
     }
   });
 
@@ -9801,7 +9918,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   }
 
   // src/plugins/betterSidebar/index.tsx
-  var logger19 = new Logger("BetterSidebar");
+  var logger20 = new Logger("BetterSidebar");
   var cl19 = classNameFactory("void-sidebar-");
   var settings10 = definePluginSettings({
     clickToToggle: {
@@ -10114,7 +10231,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
     }
     const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
-    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger19.error("Failed to delete", id, e))));
+    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger20.error("Failed to delete", id, e))));
   }
   function SelectCheckbox({ id, route }) {
     const enabled = settings10.use(["batchSelect"]).batchSelect;
@@ -10371,15 +10488,15 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
 `);
 
   // src/plugins/chatListStatus/index.ts
-  var logger20 = new Logger("ChatListStatus");
+  var logger21 = new Logger("ChatListStatus");
   var MARK = "void-cls";
-  var LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
-  var DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
+  var LIVE2 = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
+  var DEAD2 = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
   var LIVE_WORD = /^(working|running|in[_-]?progress|executing|processing|pending|continuing|started)$/i;
   var LIVE_FLAG = /^(isWorking|isRunning|inProgress|isInProgress|isExecuting|working)$/;
   var SKIP_KEY = /^(message|content|html|query|text|title|thinkingTrace)$/i;
   var EXTRA_HINT = /computer|sandbox|agent|task|working/i;
-  var USER_INTERRUPT2 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
+  var USER_INTERRUPT3 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
   var OWN_HOOKS = new Set(["useChatPageStore", "useConversationStore", "useResponseStore", "useRoutingStore"]);
   var SIDEBAR = '[data-sidebar="sidebar"], [data-sidebar="content"]';
   var HOST = '[data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]';
@@ -10406,9 +10523,9 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     if (typeof value !== "string")
       return false;
     const status = value.trim().toLowerCase();
-    if (!status || DEAD.has(status))
+    if (!status || DEAD2.has(status))
       return false;
-    return LIVE.has(status) || LIVE_WORD.test(status);
+    return LIVE2.has(status) || LIVE_WORD.test(status);
   }
   function isLiveBag(value, depth = 0) {
     if (value == null || depth > 5)
@@ -10443,7 +10560,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     return false;
   }
-  function errorBlob(value) {
+  function errorBlob2(value) {
     if (value == null)
       return "";
     if (typeof value === "string")
@@ -10453,24 +10570,24 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const rec = value;
     return [rec.message, rec.code, rec.type, rec.name].filter(Boolean).map(String).join(" ");
   }
-  function isUserInterrupt2(r) {
+  function isUserInterrupt3(r) {
     if (!r)
       return false;
     const state = (r.state ?? "").trim().toLowerCase();
     if (state === "interrupted" || state === "stopped")
       return true;
-    return USER_INTERRUPT2.test(errorBlob(r.error)) || USER_INTERRUPT2.test(String(r.message ?? ""));
+    return USER_INTERRUPT3.test(errorBlob2(r.error)) || USER_INTERRUPT3.test(String(r.message ?? ""));
   }
-  function isDeadResponse(r) {
+  function isDeadResponse2(r) {
     if (!r)
       return false;
-    if (isUserInterrupt2(r))
+    if (isUserInterrupt3(r))
       return true;
     const state = (r.state ?? "").trim().toLowerCase();
-    return DEAD.has(state) || r.error != null && !LIVE.has(state);
+    return DEAD2.has(state) || r.error != null && !LIVE2.has(state);
   }
   function isLiveResponse(r) {
-    if (!r || isDeadResponse(r))
+    if (!r || isDeadResponse2(r))
       return false;
     if (r.partial)
       return true;
@@ -10479,10 +10596,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const state = (r.state ?? "").trim().toLowerCase();
     if (!state)
       return false;
-    return LIVE.has(state);
+    return LIVE2.has(state);
   }
   function isErrorResponse(r) {
-    return !!r && !isUserInterrupt2(r) && (r.state === "error" || r.error != null);
+    return !!r && !isUserInterrupt3(r) && (r.state === "error" || r.error != null);
   }
   function lastAssistant(id, byConversationId) {
     const list = byConversationId[id];
@@ -10543,14 +10660,14 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       add(page.conversationId);
       add(page.optimisticConversationId);
     } catch (e) {
-      logger20.debug("page ids unavailable:", e);
+      logger21.debug("page ids unavailable:", e);
     }
     try {
       const { route } = RoutingStore.useRoutingStore.getState();
       add(route.conversationId);
       add(route.chat);
     } catch (e) {
-      logger20.debug("route ids unavailable:", e);
+      logger21.debug("route ids unavailable:", e);
     }
     try {
       const url = new URL(location.href);
@@ -10558,7 +10675,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       add(url.searchParams.get("conversationId"));
       add(url.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]);
     } catch (e) {
-      logger20.debug("url ids unavailable:", e);
+      logger21.debug("url ids unavailable:", e);
     }
     return ids;
   }
@@ -10606,7 +10723,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       extraSeen.add(val);
       extraStores.push(val);
       extraUnsubs.push(val.subscribe(() => schedule()));
-      logger20.info("extra store", key);
+      logger21.info("extra store", key);
     }
   }
   function attachExtraStores() {
@@ -10660,12 +10777,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return true;
     if (!page.showStreamingIndicator)
       return false;
-    return !isDeadResponse(byId[page.streamedMessageId ?? ""]) && !isDeadResponse(byId[page.lastMessageId ?? ""]);
+    return !isDeadResponse2(byId[page.streamedMessageId ?? ""]) && !isDeadResponse2(byId[page.lastMessageId ?? ""]);
   }
   function officialInterruptedDom() {
     try {
       const root = document.querySelector("main") ?? document.body;
-      return USER_INTERRUPT2.test(root.textContent ?? "");
+      return USER_INTERRUPT3.test(root.textContent ?? "");
     } catch {
       return false;
     }
@@ -10674,10 +10791,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     try {
       const page = ChatPageStore.useChatPageStore.getState();
       const { byId, byConversationId } = ResponseStore.useResponseStore.getState();
-      if (isUserInterrupt2(byId[page.streamedMessageId ?? ""]) || isUserInterrupt2(byId[page.lastMessageId ?? ""]))
+      if (isUserInterrupt3(byId[page.streamedMessageId ?? ""]) || isUserInterrupt3(byId[page.lastMessageId ?? ""]))
         return true;
       for (const cid of currentIds()) {
-        if (isUserInterrupt2(lastAssistant(cid, byConversationId)))
+        if (isUserInterrupt3(lastAssistant(cid, byConversationId)))
           return true;
       }
     } catch {}
@@ -10704,7 +10821,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
           ids.add(id);
       }
     } catch (e) {
-      logger20.debug("stream stores unavailable:", e);
+      logger21.debug("stream stores unavailable:", e);
     }
     try {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
@@ -10715,7 +10832,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       for (const conversation of Object.values(byIdWithWorkspaces ?? {}))
         considerConversation(ids, conversation);
     } catch (e) {
-      logger20.debug("conversation store unavailable:", e);
+      logger21.debug("conversation store unavailable:", e);
     }
     extraLiveIds(ids);
     if (currentChatInterrupted()) {
@@ -10735,7 +10852,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         return isErrorResponse(byId[page.lastMessageId]);
       }
     } catch (e) {
-      logger20.debug("error lookup failed:", e);
+      logger21.debug("error lookup failed:", e);
     }
     return false;
   }
@@ -10744,13 +10861,13 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const { byConversationId, byId } = ResponseStore.useResponseStore.getState();
       const last = lastAssistant(id, byConversationId);
       if (last)
-        return isUserInterrupt2(last);
+        return isUserInterrupt3(last);
       const page = ChatPageStore.useChatPageStore.getState();
       if (page.conversationId === id || page.optimisticConversationId === id) {
-        return isUserInterrupt2(byId[page.lastMessageId ?? ""]) || isUserInterrupt2(byId[page.streamedMessageId ?? ""]);
+        return isUserInterrupt3(byId[page.lastMessageId ?? ""]) || isUserInterrupt3(byId[page.streamedMessageId ?? ""]);
       }
     } catch (e) {
-      logger20.debug("interrupt lookup failed:", e);
+      logger21.debug("interrupt lookup failed:", e);
     }
     return false;
   }
@@ -10782,11 +10899,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       }
       return currentIds()[0] ?? "";
     } catch (e) {
-      logger20.debug("conv lookup failed:", e);
+      logger21.debug("conv lookup failed:", e);
       return "";
     }
   }
-  function onStreamEnd2({ responseId }) {
+  function onStreamEnd3({ responseId }) {
     const cid = convOfResponse(responseId);
     if (!cid)
       return;
@@ -10794,13 +10911,13 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     try {
       response = ResponseStore.useResponseStore.getState().byId[responseId];
     } catch (e) {
-      logger20.debug("streamEnd lookup failed:", e);
+      logger21.debug("streamEnd lookup failed:", e);
     }
     if (liveIds().has(cid)) {
       schedule();
       return;
     }
-    if (currentIds().includes(cid) || isUserInterrupt2(response)) {
+    if (currentIds().includes(cid) || isUserInterrupt3(response)) {
       marks.delete(cid);
       schedule();
       return;
@@ -10984,7 +11101,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     const live = [...marks].filter(([, kind]) => kind === "streaming").map(([id]) => id);
     if (live.length && !rowById.size)
-      logger20.info("live ids with no rows", live);
+      logger21.info("live ids with no rows", live);
   }
   function schedule() {
     if (!started2 || raf2)
@@ -11027,10 +11144,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const node = document.querySelector(SIDEBAR) ?? document.body;
     obs.observe(node, node === document.body ? { childList: true, subtree: true } : { childList: true, subtree: true, attributes: true, attributeFilter: ["href"] });
   }
-  function pageKey(s) {
+  function pageKey2(s) {
     return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.streamedMessageId ?? ""}|${s.lastMessageId ?? ""}|${s.sidePanelResponseId ?? ""}|${s.showStreamingIndicator ? 1 : 0}`;
   }
-  function responseKey(s) {
+  function responseKey2(s) {
     const inflight = Object.keys(s.inflightPromisesByConversationId ?? {}).join(",");
     const bits = [];
     for (const [id, list] of Object.entries(s.byConversationId ?? {})) {
@@ -11092,15 +11209,15 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       rowById.clear();
     },
     events: {
-      streamEnd: onStreamEnd2
+      streamEnd: onStreamEnd3
     },
     zustand: {
       ChatPageStore: {
-        selector: pageKey,
+        selector: pageKey2,
         handler: schedule
       },
       ResponseStore: {
-        selector: responseKey,
+        selector: responseKey2,
         handler: schedule
       },
       ConversationStore: {
@@ -11328,11 +11445,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   }
 
   // src/plugins/chatStateFavicons/index.ts
-  var logger21 = new Logger("ChatStateFavicons");
+  var logger22 = new Logger("ChatStateFavicons");
   var ICON_ID = "void-chat-state-favicon";
   var LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD_RESPONSE = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
-  var USER_INTERRUPT3 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
+  var USER_INTERRUPT4 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
   var settings11 = definePluginSettings({
     style: {
       type: 4 /* SELECT */,
@@ -11411,7 +11528,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     icons = buildIcons(currentStyle(), officialHref);
     applyHref(icons[kind]);
   }
-  function errorBlob2(value) {
+  function errorBlob3(value) {
     if (value == null)
       return "";
     if (typeof value === "string")
@@ -11421,18 +11538,18 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const rec = value;
     return [rec.message, rec.code, rec.type, rec.name].filter(Boolean).map(String).join(" ");
   }
-  function isUserInterrupt3(r) {
+  function isUserInterrupt4(r) {
     if (!r)
       return false;
     const state = (r.state ?? "").trim().toLowerCase();
     if (state === "interrupted" || state === "stopped")
       return true;
-    return USER_INTERRUPT3.test(errorBlob2(r.error)) || USER_INTERRUPT3.test(String(r.message ?? ""));
+    return USER_INTERRUPT4.test(errorBlob3(r.error)) || USER_INTERRUPT4.test(String(r.message ?? ""));
   }
-  function isDeadResponse2(r) {
+  function isDeadResponse3(r) {
     if (!r)
       return false;
-    if (isUserInterrupt3(r))
+    if (isUserInterrupt4(r))
       return true;
     const state = (r.state ?? "").trim().toLowerCase();
     return DEAD_RESPONSE.has(state) || r.error != null && !LIVE_RESPONSE.has(state);
@@ -11441,7 +11558,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     if (!id)
       return false;
     const response = byId[id];
-    if (!response || isDeadResponse2(response))
+    if (!response || isDeadResponse3(response))
       return false;
     if (response.partial)
       return true;
@@ -11455,18 +11572,18 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         return true;
       if (!page.showStreamingIndicator)
         return false;
-      return !isDeadResponse2(byId[page.streamedMessageId ?? ""]) && !isDeadResponse2(byId[page.lastMessageId ?? ""]);
+      return !isDeadResponse3(byId[page.streamedMessageId ?? ""]) && !isDeadResponse3(byId[page.lastMessageId ?? ""]);
     } catch (e) {
-      logger21.debug("stream stores unavailable:", e);
+      logger22.debug("stream stores unavailable:", e);
       return false;
     }
   }
   function officialInterruptedDom2() {
     try {
       const root = document.querySelector("main") ?? document.body;
-      return USER_INTERRUPT3.test(root.textContent ?? "");
+      return USER_INTERRUPT4.test(root.textContent ?? "");
     } catch (e) {
-      logger21.debug("interrupt DOM unavailable:", e);
+      logger22.debug("interrupt DOM unavailable:", e);
       return false;
     }
   }
@@ -11474,10 +11591,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     try {
       const page = ChatPageStore.useChatPageStore.getState();
       const { byId } = ResponseStore.useResponseStore.getState();
-      if (isUserInterrupt3(byId[page.streamedMessageId ?? ""]) || isUserInterrupt3(byId[page.lastMessageId ?? ""]))
+      if (isUserInterrupt4(byId[page.streamedMessageId ?? ""]) || isUserInterrupt4(byId[page.lastMessageId ?? ""]))
         return true;
     } catch (e) {
-      logger21.debug("interrupt lookup failed:", e);
+      logger22.debug("interrupt lookup failed:", e);
     }
     return officialInterruptedDom2();
   }
@@ -11494,14 +11611,14 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       if (route.conversationId)
         return String(route.conversationId);
     } catch (e) {
-      logger21.debug("RoutingStore unavailable:", e);
+      logger22.debug("RoutingStore unavailable:", e);
     }
     try {
       const id = ChatPageStore.useChatPageStore.getState().conversationId;
       if (id)
         return id;
     } catch (e) {
-      logger21.debug("ChatPageStore unavailable:", e);
+      logger22.debug("ChatPageStore unavailable:", e);
     }
     return conversationToken();
   }
@@ -11546,11 +11663,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       if (!id)
         return false;
       const response = byId[id];
-      if (!response || isUserInterrupt3(response))
+      if (!response || isUserInterrupt4(response))
         return false;
       return response.state === "error" || response.error != null;
     } catch (e) {
-      logger21.debug("ResponseStore unavailable:", e);
+      logger22.debug("ResponseStore unavailable:", e);
       return false;
     }
   }
@@ -11709,12 +11826,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       evaluateState();
     });
   }
-  function onStreamEnd3({ responseId }) {
+  function onStreamEnd4({ responseId }) {
     try {
       const response = ResponseStore.useResponseStore.getState().byId[responseId];
-      lastWasError = !!response && !isUserInterrupt3(response) && (response.state === "error" || response.error != null);
+      lastWasError = !!response && !isUserInterrupt4(response) && (response.state === "error" || response.error != null);
     } catch (e) {
-      logger21.debug("ResponseStore unavailable:", e);
+      logger22.debug("ResponseStore unavailable:", e);
     }
     scheduleEvaluate();
   }
@@ -11796,11 +11913,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         });
       }
     } catch (e) {
-      logger21.debug("RoutingStore subscribe failed:", e);
+      logger22.debug("RoutingStore subscribe failed:", e);
       try {
         unsubRoute = RoutingStore.useRoutingStore.subscribe(() => scheduleEvaluate());
       } catch (err) {
-        logger21.debug("RoutingStore full subscribe failed:", err);
+        logger22.debug("RoutingStore full subscribe failed:", err);
       }
     }
     try {
@@ -11818,7 +11935,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         });
       }
     } catch (e) {
-      logger21.debug("ChatPageStore subscribe failed:", e);
+      logger22.debug("ChatPageStore subscribe failed:", e);
     }
     try {
       const responseStore = ResponseStore.useResponseStore;
@@ -11826,7 +11943,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         unsubResponse = responseStore.subscribe(() => scheduleEvaluate());
       }
     } catch (e) {
-      logger21.debug("ResponseStore subscribe failed:", e);
+      logger22.debug("ResponseStore subscribe failed:", e);
     }
   }
   function restoreOfficial() {
@@ -11901,7 +12018,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     },
     onSettingsChange: rebuildIcons,
     events: {
-      streamEnd: onStreamEnd3
+      streamEnd: onStreamEnd4
     }
   });
 
@@ -12011,7 +12128,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
 `);
 
   // src/plugins/cloneChats/index.tsx
-  var logger22 = new Logger("CloneChats");
+  var logger23 = new Logger("CloneChats");
   async function cloneChat(conversationId) {
     const lastResponseId = ResponseStore.useResponseStore.getState().nodesByConversationId[conversationId]?.at(-1)?.responseId;
     if (!lastResponseId)
@@ -12034,7 +12151,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function CloneItem({ conversationId }) {
     const streaming = useIsStreaming(conversationId);
     return /* @__PURE__ */ React.createElement(MenuItem, {
-      onSelect: () => cloneChat(conversationId).catch((e) => logger22.error("Failed to clone chat:", e)),
+      onSelect: () => cloneChat(conversationId).catch((e) => logger23.error("Failed to clone chat:", e)),
       disabled: streaming
     }, /* @__PURE__ */ React.createElement(CopyIcon, {
       size: 16,
@@ -12231,7 +12348,7 @@ html.void-cms-picked .void-cms-ghost {
 `);
 
   // src/plugins/compactModeSelect/index.tsx
-  var logger23 = new Logger("CompactModeSelect");
+  var logger24 = new Logger("CompactModeSelect");
   var cl20 = classNameFactory("void-cms-");
   var MODES = [
     { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
@@ -12538,7 +12655,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger23.warn("Failed to harvest mode icons:", e);
+      logger24.warn("Failed to harvest mode icons:", e);
     } finally {
       setPicking(false);
       harvesting = false;
@@ -12554,21 +12671,21 @@ html.void-cms-picked .void-cms-ghost {
       if (!menu) {
         const trigger = nativeTrigger();
         if (!trigger) {
-          logger23.warn("Native mode selector not found");
+          logger24.warn("Native mode selector not found");
           return;
         }
         clickEl(trigger);
         menu = await waitForMenu();
       }
       if (!menu) {
-        logger23.warn("Native mode item not found:", id);
+        logger24.warn("Native mode item not found:", id);
         return;
       }
       cloak(menu);
       stashGlyphs(menu.items);
       const item = menu.items.find((el) => matchItem(el, id));
       if (!item) {
-        logger23.warn("Native mode item not found:", id);
+        logger24.warn("Native mode item not found:", id);
         const trigger = nativeTrigger();
         if (modeMenu() && trigger)
           clickEl(trigger);
@@ -12580,7 +12697,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger23.warn("Failed to select mode:", e);
+      logger24.warn("Failed to select mode:", e);
     } finally {
       setPicking(false);
     }
@@ -13225,7 +13342,7 @@ html.void-cms-picked .void-cms-ghost {
 
   // src/plugins/downloadTTS/index.tsx
   var cl22 = classNameFactory("void-download-tts-");
-  var logger24 = new Logger("DownloadTTS");
+  var logger25 = new Logger("DownloadTTS");
   async function fetchAndDownload() {
     const { currentStreamId } = TextToSpeechStore.useTextToSpeechStore.getState();
     if (!currentStreamId)
@@ -13245,7 +13362,7 @@ html.void-cms-picked .void-cms-ghost {
       try {
         await fetchAndDownload();
       } catch (e) {
-        logger24.error("Failed to download TTS audio:", e);
+        logger25.error("Failed to download TTS audio:", e);
       }
     });
     return /* @__PURE__ */ React.createElement(Button, {
@@ -13286,7 +13403,7 @@ html.void-cms-picked .void-cms-ghost {
 `);
 
   // src/plugins/exportChat/index.tsx
-  var logger25 = new Logger("ExportChat");
+  var logger26 = new Logger("ExportChat");
   function buildExportMessage(r) {
     return {
       id: r.responseId,
@@ -13461,7 +13578,7 @@ html.void-cms-picked .void-cms-ghost {
       className: "void-export-icon"
     }), "Export"), /* @__PURE__ */ React.createElement(MenuSubContent, null, FORMATS.map(({ fmt, label }) => /* @__PURE__ */ React.createElement(MenuItem, {
       key: fmt,
-      onSelect: () => exportChat(conversationId, fmt).catch((e) => logger25.error("Failed to export chat", e))
+      onSelect: () => exportChat(conversationId, fmt).catch((e) => logger26.error("Failed to export chat", e))
     }, label))));
   }
   var exportChat_default = definePlugin({
@@ -13660,7 +13777,7 @@ html.void-cms-picked .void-cms-ghost {
 `);
 
   // src/plugins/inputHistory/index.tsx
-  var logger26 = new Logger("InputHistory");
+  var logger27 = new Logger("InputHistory");
   var cl23 = classNameFactory("void-ih-");
   var EDITOR_SEL2 = '.query-bar .tiptap.ProseMirror[contenteditable="true"]';
   var ZWSP = /\u200B/g;
@@ -13812,7 +13929,7 @@ html.void-cms-picked .void-cms-ghost {
         return;
       }
     } catch (err) {
-      logger26.debug("placeCaret pm failed:", err);
+      logger27.debug("placeCaret pm failed:", err);
     }
     const native = window.getSelection();
     if (!native)
@@ -13860,7 +13977,7 @@ html.void-cms-picked .void-cms-ghost {
       else
         document.execCommand("insertText", false, text);
     } catch (err) {
-      logger26.debug("insertText failed:", err);
+      logger27.debug("insertText failed:", err);
     }
     placeCaret(el, atStart);
     scheduleApplyEnd(gen);
@@ -14108,7 +14225,7 @@ html.void-cms-picked .void-cms-ghost {
         tooltipContent: "Copy",
         "aria-label": "Copy",
         onClick: () => {
-          copyToClipboard(row.text).catch((err) => logger26.error("copy failed:", err));
+          copyToClipboard(row.text).catch((err) => logger27.error("copy failed:", err));
         }
       }, /* @__PURE__ */ React.createElement(CopyIcon, {
         size: 16
@@ -14496,7 +14613,7 @@ html.void-cms-picked .void-cms-ghost {
   }
 
   // src/plugins/messageTimestamps/index.tsx
-  var logger27 = new Logger("MessageTimestamps");
+  var logger28 = new Logger("MessageTimestamps");
   var STAMP_MAX = 5000;
   var RESPONSE_URL = /\/(?:load-responses|share_links|response-node)(?:\/|\?|$)/i;
   var settings17 = definePluginSettings({
@@ -14571,7 +14688,7 @@ html.void-cms-picked .void-cms-ghost {
           return cid;
       }
     } catch (e) {
-      logger27.debug("conversation id lookup failed", e);
+      logger28.debug("conversation id lookup failed", e);
     }
     return "";
   }
@@ -14611,7 +14728,7 @@ html.void-cms-picked .void-cms-ghost {
         }
       }
     } catch (e) {
-      logger27.debug("message store unavailable", e);
+      logger28.debug("message store unavailable", e);
     }
     return out;
   }
@@ -14621,7 +14738,7 @@ html.void-cms-picked .void-cms-ghost {
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id]?.status === "complete";
     } catch (e) {
-      logger27.debug("message store unavailable", e);
+      logger28.debug("message store unavailable", e);
       return false;
     }
   }
@@ -14642,7 +14759,7 @@ html.void-cms-picked .void-cms-ghost {
         break;
       }
     } catch (e) {
-      logger27.debug("stable key lookup failed", e);
+      logger28.debug("stable key lookup failed", e);
     }
     return keys;
   }
@@ -14683,7 +14800,7 @@ html.void-cms-picked .void-cms-ghost {
       }
       return Object.values(byId ?? {});
     } catch (e) {
-      logger27.debug("response store unavailable", e);
+      logger28.debug("response store unavailable", e);
       return [];
     }
   }
@@ -14707,7 +14824,7 @@ html.void-cms-picked .void-cms-ghost {
       ];
       return neighborTime(id, records) ?? conversationCreateTime(id);
     } catch (e) {
-      logger27.debug("node neighbor lookup failed", e);
+      logger28.debug("node neighbor lookup failed", e);
     }
     return neighborTime(id, storeRecords(id)) ?? conversationCreateTime(id);
   }
@@ -14723,7 +14840,7 @@ html.void-cms-picked .void-cms-ghost {
         return ms != null && !isFresh(ms) ? ms : null;
       }
     } catch (e) {
-      logger27.debug("conversation time lookup failed", e);
+      logger28.debug("conversation time lookup failed", e);
     }
     return null;
   }
@@ -14735,7 +14852,7 @@ html.void-cms-picked .void-cms-ghost {
       if (hit)
         return { ...rec, ...hit };
     } catch (e) {
-      logger27.debug("byId lookup failed", e);
+      logger28.debug("byId lookup failed", e);
     }
     return rec;
   }
@@ -14802,7 +14919,7 @@ html.void-cms-picked .void-cms-ghost {
         try {
           res.clone().json().then(ingest, () => {});
         } catch (e) {
-          logger27.debug("fetch ingest failed", e);
+          logger28.debug("fetch ingest failed", e);
         }
         return res;
       });
@@ -14839,7 +14956,7 @@ html.void-cms-picked .void-cms-ghost {
       try {
         xhrMeta.set(this, requestUrl(url));
       } catch (e) {
-        logger27.debug("xhr open failed", e);
+        logger28.debug("xhr open failed", e);
       }
       return origXhrOpen.call(this, method, url, ...rest);
     };
@@ -14850,7 +14967,7 @@ html.void-cms-picked .void-cms-ghost {
           try {
             ingestXhr(this);
           } catch (e) {
-            logger27.debug("xhr ingest failed", e);
+            logger28.debug("xhr ingest failed", e);
           }
         }, { once: true });
       }
@@ -14880,7 +14997,7 @@ html.void-cms-picked .void-cms-ghost {
       };
     } catch (e) {
       origList = null;
-      logger27.debug("chatListResponses wrap skipped", e);
+      logger28.debug("chatListResponses wrap skipped", e);
     }
   }
   function unhookListResponses() {
@@ -14889,7 +15006,7 @@ html.void-cms-picked .void-cms-ghost {
     try {
       ApiClients.chatApi.chatListResponses = origList;
     } catch (e) {
-      logger27.debug("chatListResponses unwrap skipped", e);
+      logger28.debug("chatListResponses unwrap skipped", e);
     }
     origList = null;
   }
@@ -14915,7 +15032,7 @@ html.void-cms-picked .void-cms-ghost {
         hookXhr();
         hookListResponses();
       } catch (e) {
-        logger27.warn("Failed to hook network", e);
+        logger28.warn("Failed to hook network", e);
       }
     },
     stop() {
@@ -14940,7 +15057,7 @@ html.void-cms-picked .void-cms-ghost {
               nodes: Object.values(nodesByConversationId ?? {}).flat()
             });
           } catch (e) {
-            logger27.debug("store ingest failed", e);
+            logger28.debug("store ingest failed", e);
           }
         }
       },
@@ -14984,7 +15101,7 @@ html.void-cms-picked .void-cms-ghost {
   });
 
   // src/plugins/modeSync/index.ts
-  var logger28 = new Logger("ModeSync");
+  var logger29 = new Logger("ModeSync");
   var CHAT_POST = /\/rest\/app-chat\/conversations/;
   var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
   var PIN_SEL = "[data-void-mode-id]";
@@ -15096,7 +15213,7 @@ html.void-cms-picked .void-cms-ghost {
       if (next.activeModelId && chat.activeModelId !== next.activeModelId)
         chat.setActiveModelId(next.activeModelId);
     } catch (e) {
-      logger28.debug("apply failed", e);
+      logger29.debug("apply failed", e);
     } finally {
       applying2 = false;
     }
@@ -15116,7 +15233,7 @@ html.void-cms-picked .void-cms-ghost {
     userPicking = false;
     awaitingMenu = false;
     applyIntent(intent);
-    logger28.info("intent", intent.modeId);
+    logger29.info("intent", intent.modeId);
   }
   function rememberSnapshot() {
     const next = snapshot();
@@ -15125,7 +15242,7 @@ html.void-cms-picked .void-cms-ghost {
     intent = captureIntent(next.modeId, next);
     userPicking = false;
     awaitingMenu = false;
-    logger28.info("intent", intent.modeId);
+    logger29.info("intent", intent.modeId);
   }
   function fightHydrate() {
     if (!settings18.store.stickyOnNavigate || applying2 || userPicking || awaitingMenu || !intent.modeId)
@@ -15133,7 +15250,7 @@ html.void-cms-picked .void-cms-ghost {
     const cur = snapshot();
     if (cur.modeId === intent.modeId && (!intent.modelMode || cur.modelMode === intent.modelMode) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
       return;
-    logger28.info("hydrate fought", cur.modeId, "->", intent.modeId);
+    logger29.info("hydrate fought", cur.modeId, "->", intent.modeId);
     applyIntent(intent);
   }
   function navKey() {
@@ -15243,7 +15360,7 @@ html.void-cms-picked .void-cms-ghost {
     if (type === QUEUE_ADD && diverting) {
       mapGetOrCreate(held, cid, () => []).push({ id, args: diverting });
       diverting = null;
-      logger28.info("held", id, "for", liveIntent().modeId);
+      logger29.info("held", id, "for", liveIntent().modeId);
       return true;
     }
     const list = held.get(cid);
@@ -15259,7 +15376,7 @@ html.void-cms-picked .void-cms-ghost {
     const state = MessageStore.useMessageStore.getState();
     state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
     state.sendMessage({ ...turn.args, parentId });
-    logger28.info("flushed", turn.id, "as", liveIntent().modeId);
+    logger29.info("flushed", turn.id, "as", liveIntent().modeId);
   }
   function flushHeld(responseId) {
     for (const [cid, list] of held) {
@@ -15321,7 +15438,7 @@ html.void-cms-picked .void-cms-ghost {
       wrappedGwSend = wrapped;
       mgr.send = wrapped;
     } catch (e) {
-      logger28.debug("gateway wrap failed", e);
+      logger29.debug("gateway wrap failed", e);
     }
   }
   function unwrapGatewaySend() {
@@ -15329,7 +15446,7 @@ html.void-cms-picked .void-cms-ghost {
       if (gwHost && origGwSend && gwHost.send === wrappedGwSend)
         gwHost.send = origGwSend;
     } catch (e) {
-      logger28.debug("gateway unwrap failed", e);
+      logger29.debug("gateway unwrap failed", e);
     }
     origGwSend = null;
     wrappedGwSend = null;
@@ -15421,7 +15538,7 @@ html.void-cms-picked .void-cms-ghost {
     if (!next || next === text)
       return null;
     applyIntent(live);
-    logger28.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
+    logger29.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
     return next;
   }
   function patchFetchArgs(input, init) {
@@ -15468,7 +15585,7 @@ html.void-cms-picked .void-cms-ghost {
           return origFetch2.call(pageWindow, i, n);
         }
       } catch (e) {
-        logger28.debug("fetch patch failed", e);
+        logger29.debug("fetch patch failed", e);
       }
       return origFetch2.call(pageWindow, input, init);
     };
@@ -15489,7 +15606,7 @@ html.void-cms-picked .void-cms-ghost {
       try {
         xhrMeta2.set(this, `${String(method).toUpperCase()} ${requestUrl2(url)}`);
       } catch (e) {
-        logger28.debug("xhr open failed", e);
+        logger29.debug("xhr open failed", e);
       }
       return origXhrOpen2.call(this, method, url, ...rest);
     };
@@ -15560,7 +15677,7 @@ html.void-cms-picked .void-cms-ghost {
     }
     fightHydrate();
   }
-  function onStreamEnd4({ responseId }) {
+  function onStreamEnd5({ responseId }) {
     wrapSendFns();
     const live = liveIntent();
     if (live.modeId)
@@ -15599,7 +15716,7 @@ html.void-cms-picked .void-cms-ghost {
         hookFetch2();
         hookXhr2();
       } catch (e) {
-        logger28.warn("Failed to hook send path", e);
+        logger29.warn("Failed to hook send path", e);
       }
     },
     stop() {
@@ -15622,7 +15739,7 @@ html.void-cms-picked .void-cms-ghost {
       lastNavKey = "";
     },
     events: {
-      streamEnd: onStreamEnd4
+      streamEnd: onStreamEnd5
     },
     zustand: {
       ModesStore: {
@@ -16585,7 +16702,7 @@ html.void-rt-open [data-sidebar="gap"] {
 `);
 
   // src/plugins/recentTopics/index.tsx
-  var logger29 = new Logger("RecentTopics");
+  var logger30 = new Logger("RecentTopics");
   var cl25 = classNameFactory("void-rt-");
   var HOME_KEY = "home";
   var HOME_SEP = "home:";
@@ -17142,7 +17259,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (fromRoute != null && isHomeId(fromRoute))
         return fromRoute;
     } catch (e) {
-      logger29.debug("RoutingStore unavailable:", e);
+      logger30.debug("RoutingStore unavailable:", e);
     }
     return null;
   }
@@ -17161,7 +17278,7 @@ html.void-rt-open [data-sidebar="gap"] {
         add(historyStack[i]);
       return unique(ids);
     } catch (e) {
-      logger29.debug("historyStack unavailable:", e);
+      logger30.debug("historyStack unavailable:", e);
       return [];
     }
   }
@@ -17237,7 +17354,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
       return byId[id] ?? byIdWithWorkspaces[id] ?? list.find((c) => c.conversationId === id);
     } catch (e) {
-      logger29.debug("Conversation lookup failed:", e);
+      logger30.debug("Conversation lookup failed:", e);
       return;
     }
   }
@@ -17295,7 +17412,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const conv = byId[id] ?? byIdWithWorkspaces[id];
       return asWorkspaceId(conv?.workspaceId) || asWorkspaceId(conv?.workspaces);
     } catch (e) {
-      logger29.debug("convWorkspaceId failed:", e);
+      logger30.debug("convWorkspaceId failed:", e);
       return asWorkspaceId(lookup(id)?.workspaceId) || asWorkspaceId(lookup(id)?.workspaces);
     }
   }
@@ -17778,7 +17895,7 @@ html.void-rt-open [data-sidebar="gap"] {
           delete wsNames[ws];
         }
         maybePaint();
-      }).catch((e) => logger29.debug("workspace fetch failed:", e)).finally(() => {
+      }).catch((e) => logger30.debug("workspace fetch failed:", e)).finally(() => {
         pendingWs.delete(id);
       });
     } catch {
@@ -18043,7 +18160,7 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       return responsesToLines(responsesOf(id));
     } catch (e) {
-      logger29.debug("ResponseStore snapshot failed:", e);
+      logger30.debug("ResponseStore snapshot failed:", e);
       return [];
     }
   }
@@ -18215,7 +18332,7 @@ html.void-rt-open [data-sidebar="gap"] {
           captureId(id);
       }
     } catch (e) {
-      logger29.debug("snapshot failed:", e);
+      logger30.debug("snapshot failed:", e);
     } finally {
       capturing = false;
     }
@@ -18354,7 +18471,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (parsed?.page && parsed.page !== "unknown")
         return parsed;
     } catch (e) {
-      logger29.debug("urlToRoute failed:", e);
+      logger30.debug("urlToRoute failed:", e);
     }
     return null;
   }
@@ -18366,7 +18483,7 @@ html.void-rt-open [data-sidebar="gap"] {
         chat.setOptimisticConversationId(undefined);
       chat.setProjectId(asWorkspaceId(workspaceId) || undefined);
     } catch (e) {
-      logger29.debug("ChatPageStore update failed:", e);
+      logger30.debug("ChatPageStore update failed:", e);
     }
   }
   function navigateTo(id) {
@@ -18460,17 +18577,17 @@ html.void-rt-open [data-sidebar="gap"] {
             });
             applyChatPage(id, ws);
             rememberProject(id);
-          }).catch((e) => logger29.debug("workspace resolve failed:", e));
+          }).catch((e) => logger30.debug("workspace resolve failed:", e));
         } catch (e) {
-          logger29.debug("workspace fetch skipped:", e);
+          logger30.debug("workspace fetch skipped:", e);
         }
       }
     } catch (e) {
-      logger29.error("Failed to navigate:", e);
+      logger30.error("Failed to navigate:", e);
       try {
         location.assign(hrefFor(id, workspaceOf(id) || undefined));
       } catch (navErr) {
-        logger29.error("Fallback navigation failed:", navErr);
+        logger30.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -18499,7 +18616,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (topics().length > 1)
         selected = reverse ? topics().length - 1 : 1;
     } catch (e) {
-      logger29.error("Failed to open switcher:", e);
+      logger30.error("Failed to open switcher:", e);
     } finally {
       suspendPaint = false;
     }
@@ -18544,7 +18661,7 @@ html.void-rt-open [data-sidebar="gap"] {
         else
           begin(e.shiftKey, true);
       } catch (err) {
-        logger29.error("Hotkey failed:", err);
+        logger30.error("Hotkey failed:", err);
       }
       return;
     }
@@ -19027,7 +19144,7 @@ html.void-rt-open [data-sidebar="gap"] {
           bump(current);
         scheduleCapture();
       } catch (e) {
-        logger29.error("Hydrate failed:", e);
+        logger30.error("Hydrate failed:", e);
       }
       if (!keys2) {
         keys2 = new AbortController;
@@ -19057,7 +19174,7 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         writeVisits(capVisits(readVisits()));
       } catch (e) {
-        logger29.error("Settings update failed:", e);
+        logger30.error("Settings update failed:", e);
       }
     },
     zustand: {
@@ -19110,7 +19227,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var DEFAULT_CHIME = "data:audio/mpeg;base64,SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2ZjYxLjcuMTAwAAAAAAAAAAAAAAD/+5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABJbmZvAAAADwAAACgAAELvAAwMEhIYGBgfHyUlJSsrMTExODg+Pj5EREpKSlFRV1dXXV1jY2NqanBwcHZ2fHx8g4OJiYmPj5WVlZycoqKiqKiurq61tbu7u8HBx8fHzs7U1NTa2uDg4Ofn7e3t8/P5+fn//wAAAABMYXZjNjEuMTkAAAAAAAAAAAAAAAAkBXwAAAAAAABC75HV3zMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/+5BkAAACVRhUHSTABDSjGMCkpAAV+UdIeawACK0LpksSkAAAEhOaEPa6NHqgJgmK0ewQIGLv//sYTJ34iIgmT1iAIEIWAAAQDGCAY0Qff/1gh3+CHKAgCEuCBzggCGCDv1B+CBwoCAIAh/V+UOQ9zXRtyQAmCYrR6ogQIEc5//wIATFaPYIECBATo9UFAIBgwuCAIChg5BwEHbi4f/8HAwsHwDJSk25HiBkEDmrGDRlRGDE44BKOErcpXEmnGLGAUG05WF48gSBebi1am1KjGgveDHroFZEIH+QlCyxGABCC1VCrlYQwcS/xhYcVnMtqxl77WNr5RzmHzZUqg8/U1m/KljFqTC+2AvdPax+xen21StkMqhq/RpPXb/zWWUNT3/RRXmMps9pZ3O9/63///f////ludLKoDcTe+frn/9WK////f//5///9mm3sjJlqb/oAAADADutHY8i2rvky+59Wnn/WFTxDiS2ttrIhnfxrf7Mnb/W//Qd2f//6FQAGgwIA8wGC8yEK82ysYxBF4xNBYtMMgAYMgIWAAMFABRP/+5JkEQ/EsUDLF3aABDKiOMDtPAAQMQUgD2lnyNOKJE2hNZhgBLlJIHAFEFOSmOwiZInTghEAKPAyAMLQgs8QUegDRAHQegDFRXhKYuQc4Vs6AyopETAMtC5SCl1kjKtSZmiaUjYdQ3xkiBEyasgmatRukZJoomSaa2Z3IaTxs6/SQPKqZNu/2Vrut1oFE1DJXgYfkVJ/DUDvkKlToxygu1h75KqdrK18fst/G52dizb96dnVr6AhuiQkgYmYMlRjQESsq4jt+sq7pEgDDAYAnMBcPoxGW9SoBkAgCzAPAmLppEGcIC9AsAAUWMjCR6ZgX+uMmcxYz0SyC6YUBui82kcFEwYCE74kHeVFVLkakhmmB5ICYhyax52KPWdF51FySSw9AfKi67ZzLKVh+Wk1EhSQTzKoOs3TPtlu6qRdXbL//4vdw6Euzej3qgBhvXWL31LDddiITD0UykDG3Wld90OQxTW6DaFlYKlkTE9ntf+HP7XNp+v9uvp/9nM8Mf/0qgAAWpTMLFIjAHD9M9NeQ+ewYYCiFWDIwWaP2luULS7X//uSZBAEQ7AqyJs+yAA2Yojmc08WDBDPKu6YVoDyj+OJx5Wg4votW6k/BszLpY8MCsAl24JWLAZAmadDzPUgiikv9f27mVvKrzP+f+eFXHv5Y5V5rWX813/3/953v8zn7+UsD4SH7Fg4Bj0+nfrYEXu/i/+j+QkfxWsIABAALAJSkwCNArTQceWqi5hKXoOEIaa+WkYu0/NG+pNU2j/q7rLMHW06PyLvCaKu+S57d00yBVGWbrCCoAmCw2HuVlmHwJIlOqoS9iE0wdAqnhtKmG6duLiSrOa+XU9jP8qHkYWWEADDtNT0aVkocilq5lSCXTht3M+ohle26/tQoEKDlSpiK5LXmoNR9+rT/knf///SSpgIVjoAAA/O35oqA1eRICqJxwqCAuL4Ajqy9tbROzs1Nx423n7XVgXYEt8MWxcJBZ1c//qvSo539TP+uojBJFtONfDgGDAvArNG8XwMC7DABEN0LEApdEwRAAHVRgCDvxeH1Y+nPccMHZvd5vRcZXOapV6llhp9mtaZl5p4fLbDiHK91/2b/v/QkHQNF1ytzP/7kmQqAIM8M8q7zDLkQGKIxXdsGg4orRzvaQfBNZSiye2sach/TduWyiQFZ1p72f9v/p1OH6KwIAADgeC4HgAzj6B1TOB4uuDAIOKENDAy0Jth4DZYsh15xnyjOvVb9hc/arPnYNQMmcJBj6VQiIs7txQ7+tQD1gEBQCRkDACTAxACMJQI87Bh3jESAFDgZzAQAnQfBJAEvAL9UaZSFyUUliBCD4bi0JlMr61G123YjK8nLTofOu6U6FQ8JNUwxLgYHTkI2KJURTY8tae2+F/ruHxhYw0PrEqJJQDUuzq8n/1/2qX/1e33gEgA0B+XYMEUHU2PQajZREaKTDSkMfEEJgiiddKBgDBRKEPzCLyfR2jc1WshyM7TPB6cBsf3DsOoGsW13193/9f8Q+b72X/bt8bl3UwaAAxQNpVzZIYAABmBuEQa75oZ+SRhAJhRdPPBUaf8oqOXhUKjRNQxCoDhyD6uUxAsUMEkExhQ7BKIFFbF8wHObTZGk6KlOgtmbZS1mKVkfrbsyVMuFRuxoUJNgClF3+M/9tFSPd6QgJBm0Bj/+5JkNYjjLCtJU9po8EpCiKFj3AANkKkctemAAVYK4oa88AAzAGm38T4amApEPwIXwaDU4zABeOSJUIEDrq7YrEU/4AoG8tzdHHYu79vCgxYK4jXIelk9Z5lAh0QFDhi1z7RTyVQCfFoGwYKAHBgoA4GCySObCToBhuB6GH8FYYKwBiDac4NBVMJwEgwFgBAcAACAE0GYHa2TADEPMiKF6MYQQk0z6I5YQAJgAtw5wohOGJdLYyRxSFNaVt6JfZJkj6zhiTCK0ldddkK7pJGDFakCsbvQYIYFZgcg3mBaLYauqEJhFg9mEaDWYD4M40DWCQCACDAYrIIZgSgEpFhcAuk9Q9MxLq08IkROyHRGrAsSovgGgl/JNHXBkwZ9DTBXeMt7M7S9RH/3KgABEnU2I3M4QslnQ2IxYBCQAWZIRki0OwYtGJmRuAFQk3Rk5ZxEysYxETRoWcE/kMAjEA4JqLPD8hHgb+HIBYaI6DCwYwFKC5xcAaAAcAG4BgAfghIACsyAHDEnyuXBZAuQcAAyw29YuYCpADmBv08/FjHAeTLj//uSZDuABgFfVn5mYAZeQ8nPzeAAEFVDQv24ABjKCKcrtCACBaMZBxQcsTIof+mLgJxB0GNg1aTtSSf/GYPG4lAiDEXIuT5RFtLQ6xYTXO//FwGpuQQnGLhcNEkC2gZMnZJzEx/////LpV35BIAAAMSEgFAFAHA5AYDAAABCpmriAUWTRBIACILOJ9EB1UOqtJbJMxgZZIeHJZDLiSGVxvLsceQGatzl3/48UPTuuZUlh5u3avf/n09vOWWPxoYveNZm9/4fy38+X70iAAABTgkDNgoMma5hlh7HkhU1WctaVO0ZgT6rlDAG7D5AjU6WSKmpdMWWuYmBEwFEZE1JoixZFygWRJjUomiR+s9MiLFYZ4MTOkklr+pL9aJ5NZDieSSfbX60S6fKJGC5SqyJdJ1zEZUgpdZfSNkkknZnRWYmqLf0kkkkaq/60WWYiAHAIAASQttRwClAL1AQVK1iD3KbK2FAWzjc1ayz1qt/Zop9AY/Ev/3Ld/2dn//7nf/WigACVKC4g0AZgoFxtJBp4GCQYR5gYAiCyYsJIQCd9bKCjP/7kmQQgAQEUEwbuVLyQmW6GmWCXs3A11WsMRaxUZapKYGLRoHCeFBxh8NxqjmYhGIfZ3GLHI9K3FVBUmH5l8PuEBYF1XpE8C35fbzpd297pQFRQcyZqnuYkbaqujD4uPntPWo8MMbmJNBeAiJznaitZm866XOYo6M3a3/RHnGu6tlARAIUwI2wAJukeM07FeWJrnY4utwO9YJBMcY695mbk8GgAgHDP5pSl5mW7+w4URzEcQyef3m6whG7EO+hG///Di24AQByOSVq1tyBD5oM+J6OzIrmzlijmFDVDlg29hl+Xga7Enennmq1rSJqEpUry1HRTlT6iNLZv60dA3NKlwtB8IxKPgiZdgaZtZ7a71HT0B0dfH9fJTz/Mr4rKqvzKs0BboqjxIO9cFaukq4l/SSWggs5GbIQFDnw2FRXvzFiZtQN2ck8u1Mw7Td+mtZ1alDamW6qWzFPTZbpsu/zKVQNZBSk5SzKsK7EwmbV3RVu1Utq8DYYCHKvvuYD/KAhDv/+6v+GqgBqACAJEIDBgRAwmt8NsaOx4Jg6AqGASBP/+5JkDIwDpDVJE9pCcEVDKRFzLyYOwNccL2BtgSWP5SnMoKCXFAwCQOACAzd1hHRAyhQLb4Bw+afiC1VY1DUqLzPdXkMuh5ASBjkszis1hFXBTdbNK7U0C49Md1UtLTfMDaul+ueOqQ0dZk8vvs92yb84kHDSZJIPFCTWKRiGgKCyaL4JBQPqZrWHEoLYcW8JjBGCfRj8gxQjSyOJOFe8gXPt42q21IC5g1wJaC3K95Z7GFuZoI3UZbOtzt9YIlvxreJfsBAwAwHDAsALIQnDlHKRPH8MMBGDGDMA+YB4EAhAfQfMFMC5BYqhiiQDK3ZwveazOCuGfLyQM8UZfScq09lp6wxijLJFdmZxUcaYixeYlcbhUzWp6fWe+aNKesRFI+G079hiCCmANUPW5ckyoQCFGkFn/+V//6kESAAFbd+QzQiLATNzIAb7IkPAaO0VAGpUKGwgUqHtpRLKr4MZIct41ZJccIwYXo2z1jfh57r/1i/mShMb+mf/1C3/7v+////3VUAD4Acl13U3FgFEQTnJB4HBUbGEgTrDKHJWMREp//uSZA6Ag0U1y1O5GnBOAykad0woDQzXIE9sqcE0DOMBnuxAJ0Q7pq4PszEoMo5iWsDofsQ3zndP561rXcPxqYs8cS9zZIAAwQiFT6vZsW8yJewiZ8BVj1n/tfeoCYeDhTHGLERLehWPCav/6jH/QAABABTCFrSAwFmumcYKnCrAmF4EAQyOhwoFesS3QoLZhbfjLnrYLHfhR52WFH9ezzIHX5TfqZe2ip16T8r3+oSbrbwG7/9n//9X2f0/WAsgGAeBKBgTTA1B+Mjc9U2eESzDWBMMBsBWTmASAICgAjBg+cBkWNCDozDBI2ryne5qzzXJHeubuwBem0RIpblungg1SCm7EYnCJsUOJwBIOpLXQg4qGzClLmqUyi7XR2yUNaezo3GnGNAdGZGpivHuebGKIehwiPBwNShCGmeDjUADzC285Tuw0UBbz17y25RK5DBcv7cqPvXTOp+2+YPrK3JUnGJZu9hcqw1fDlNXr1pT/+0AAjABFKwBwBUGgCGAEDSYcpXBo2hemEKAUPWl30BajRWPNDGLnVpuIsy5TWmtSv/7kmQXgJLhNkrT2SlgS6UZB3dIKgvM0SlO5WVJRIyiwY7sCKIZw2xyw1AUrqYQERMMAadR27rq6kV0ZHV009t5RBJlftT3o7HdSnUUqLb29QBAA4AACAGGalkjMQ6z4gFSIzQUWCoQwoldxihrYhTkDm0rkspaVDUvsO7kiJPxMBKDiyriRgbAJCFuNrjHT/+3NwNv+GeJvmblRRgBwIAFkgASjC4JmAQ3HDWcm11oGCgejqzSy9hclhyvBysaLkMugxT0bmqzVUCxMtd9julVGZiBMKYBQ7Ys2OTD3f/SKqTWvKIPVPna4q/ceV4ue3XP8XudVOaSFKirGaRggFx3N17aPq9zMYxOMMCAMZmcCqFAGfi2wJ3hoif1/okVg0tuwwuaWVpNHZfS7rTLdcaTC3Mzi32fqBvHnapZbnS0EtIlTStWzuB539FrFWAIglEQ7LAAmOVAAYFCZ0GNH9ISYwAiWSPAQGki04MSoB2r5HZWF/WfHTDpHfP2Tk/F17NVtU5DVXlLKXOrFO/soczOo7HeyF2TWAwxrm6+nHLt3Gv/+5JkKoGSvijM64wbalEFGPd1hWoKrNFNrSxv8TwUIwnttLDtfWwEEBwASLCF3RIHDNZAzoV2DEsITAYICECyQHIuiQ1gdHBrsTuBQD5P25TUudb57Y1NrrKdDQUjg9ZjAzYXf9DdtMiaWs5ho///////0f/1f6YA75JY3NW9CCUOjUg6IFoScLTwQFTQMYPR2JBqbNn4m6xJdBOOEsnqU6dZUOfMQqTTEJVua9S0/528Pdcksjtm5VSRuvqTxJKnOfXkWP/JNllFEpbVAGlWBgTTAlAWMOMRM1kgjAUKaZeIBiwYyXqrFxXIAs8HDFuKT63qO/LXsprF7BA0WxwYUIdzSswMRPxKhOEDcwNTY6okOnv/6bT3ZlsamioAgWlskB9oZRuPNbzGZxN2CGUv068BUsSlUlL/q/QCOE3FoTaOGtB2XKfJxH3mtQCAQdFYSAEh1H07E4QgHSkZY/FLPwe7kNug1VrzNUry9hVCjNBIAjIcFIkKbuA+Mal0mn6RSFfXoSEF4CDFUov18p3ZMNOYePBzVnjcB5eFGEhqrY0q//uSREKABEo5zUtiZw5+xzljcwhuStzRMa49q4mOnGZpyIsJqZZbOQAV2gALgZGUKjA8TazKnAHBGQAYv7F2SLDq7IAmRAprCJivILYI2NTeXw5H3XmIpMSyvL4bRPTrfBdEFOI9aRa92h17dS/UvU9yMVY3QMPO7VLi0jHGHyJ2JbGKWfqUWfGiv1FKLhQHwXsZOlJXv1wLsHALBzvowcAKCIWfCPMAACIkACZ4AUzPh0Dm6k0cQPIkFF3wQqaDWAPnMc5unIuWFigsLBqLG3jG6wG4mJYab3Iqm0kLRq2bb7pIAAmB3HWel+oyqu1jhipAxNf/+kay+UeJrbACQBBCVcAOE4A6FTby+P6JkFEwaAatjJ5VH2vEgBURiS1o86VJTV53C13lazcta9mLqy25ecJl0dVpi85jnbRpHS6WQMUNtHaZGyLJUtz6X0DB3ChhX//dgokDDOUBQpAICFRaAAKNSAL2+AFNoQAIZ1lycNmaYXgAXxVuaLEnLhtQ0iBOlaBFX8PJBwHAGtCPeo8HG57ceLAZKi5YQom0Pflfe//7kmQgAQKeJ8vrpkOyT+Z5TXHlagqg0S+uME3BHIzotPwwLty6Dq6+dfxh9YlA3msgt9fRPP50AAgKABl7MAUrPVdAEgniHEYcAbJ0/VU5lksgGQITAX7NRbmdtRKd3TFKR99/t5bWKsbuGDlRb1TuY5CW6lAUc/7dDs2ujyiLbnOqk0rbqKsACFIkLfIlKCp6mAGMa5lgBBbIGXskc13nGhkoB1A6Erhi1cu+juWjG1aRwm9WttjBkNRQ1hOprvrtnNy3U+mwI/aZ55pkbmEsrIVuFcyc+V2cd9NcAjkksb1kAAH6N6uiYdIxhAW3aLU7T2QkgibDglmwDSdrJcfoIQX40quwJTt61+XuKSq5iuFp0fYVXj4nUem1hEJPrUqm2AYAMRABLEACYAcBAEmAOCIYzxW5pfBXiQjg0B8qUtNF3kdtR4mBKliOaFfG1IdkadwVuvCkYE6kpPW8Q+ZjGIZbGFkrdXxwd6jZqxDrVh1zLYlNCxIIW13hRaZIAAABQACwIQJmJBF+TLMNgHZYsWwQDBcZPb2vWiQABoNKa7L/+5JkPwCC1ihI089bUEmkCQ11gmoKnHMfLHXhSUGMoondPJhytvQJxigg2K33nlMBRjZdnHdZRtLtYmb6k1aGcx+bb/1f////8iAAQAP4AQTC9CoQ55X/h/jZ5jaIwCAWXI3tPSrdJEIaGukOhUpmVYgI9xcIsbEei6jNh8rq+p2xyVoOE5cagTQn33v7rqbT8YtxXB3lbDAJ4b70+r9AgARgHhwEwKFRo9H53J2higLoBeIbmKCqwB0lgoXKD9GQtjkG9dkaiW9uaXn+pzjXBvQ3PcOKZTSIMa2fmbF6zRciZY82S/Lf+S///////30BgAcYDDTzAEDTCIVD37DTunBjGUQzBIGESi2CzKy/GeEQ17PT8vJUJ4gzA6kvTj6wngGeVnlGCKJINiIqzACra0lIDvKpLhQLTKAbD87e1Vh7///6wFIBDAwBgAjATAJC4yhqqF6mE4CERSzBBYYcYxYFi4wME8OEJJmA7gtxPmOR3G1W8rTOhsOPPd5AV5XPY20FrzleZ/U2j/b0ADEAApGwAiMTAAlAN5mWhaGj0B2T//uSZFkAwqodx7usE1BH4siie08mCoyfIU9kqcE9i6JJz2hACUDQHZbxV6mQcDfKow+FGnWf2e1T2qbXbPM+a5GqryfnfwtVp9R+V50OYFMzJShTs6zKIoZ1LY/SYgcBa/9OkCABEgyAQYYgEJnOMG4WMmYcIDgZRS1jT7mfBPMu4f415PIVuzVWwvP92q1q/9uHcVJW8a2ohG7ywDbQ9Vysijz6hCWlyZV5L7P//////9YMwCkAACEkwNBIwmFU+WcQ67pcxVDowEAdEdIlfBftWsZAQWD6q/RErOoE+zNr6LE3nOlCeCGZmeyS3T5VfElgFFysze4uuZWRH2Y79kcWD7BIqCyjAIFSUNjFWJzYD8jBYXSECC3icCDoKEx1UvyIzIeHBKBR5JUKUne7NZQyIxhuBdaB2EdaVjtUrwoWFgNc+xzPi9X9myz3f2gGNAACECBwEwuMh+nd56jdBiSHoIAggBFORgiazJx0BBYQrr9dFwZW6Oxw4Hff7q7mQlvvEmYzhSY2EIa5o6EFDmXJjAibpAAFXO47IfxVgrbAAv/7kmR3gAKFKMe7rytQSwLoknUvaApAoRxuvG1JHIrjadykmADABpuNs9UgJAOZbE8euMKYvAgY4ogEa8uZiM2skrqkyWhRtVxMYN7mbK2DaVT/ggOik1AwxndWV19fX/17vYj///2evjYBAFIAj8WwBINpn4HNG0cDiYZQAxgTgAgYCRRFgKEDXxAYTxxiItYVy/8LhuQS+3Wprk7VmYEdi7cprV2Q1ZYXnZrnOxYPocyTzWdaO+YzapZW3mlg82sgCF1YgP7/7spa0tEyaKjp5XDhMul+1QtKVd0SEH1owaADOdpwRKKZw6q4My8j2XI0bLm/pbu1t6f/q2//oDgBbdodEAnHCOfn0+FmLYaGAQBgUCF4KmDgHlJCARQN8Gv45Y0Au+cz5ictPtRMK0qCTp6SWWytJeQVDmSIuxcZD/mx9+qpFlXU/65BFAAQACCko1EBUAwYERoEcpghSRUDkLAh0OvBlKVERLBcPgxSbutTOYHWMbvMP9KMvOoc7OLGgJCI00DUx9XXuyf/+rVv9wy3/Z20f/RVAAgAAVkADBT/+5JknAECuChGM9k6cD3BqU1yaVAJxJ8YzrxtQTELIundMKBwKDmaQ4Idm1EYihOLEAZNK1ihMfKiqgR9Q2ytIdjCsMNbV8JCGe63XxlpuLiHXZTssct5YmNhY4ff71eJ9Me2wXg9bUk31G6BnGbZpr436evxiOkBhBQLQAAN0SURieH5xQaYGFwiOggfqH1euIm2TkjE5WYAWoioifQz9yT9irDCVWSHWyooWD4a5PKrHjek9JwCBCFoByoiYZju0AahIDkYlrrIYjodG90enmQMhxQlAFo8qVrRSQkKOw8CUrgOxFcZTlnz6+f/3fuwH0d8u/w6RLM1r4svlrVTCvHFGsSINUpHLHga////9n/I//9AQARAAAUrQKAAAC0wCW48RRUxXA4iaKgRIf8MGwUlKUwcIvVaia245ap8xPmtaMa7VpcWWSWMhx/C+cGetrfWPmvtBHpQ1QxAah0X//////////1KAG1AHw8GAFIAMMCRfPu8gO9ZTMPwwBABoyJ95oIYMEQKDwdKOj2tKJy8fFSJddr+lx1cBiXIvbLJ//uSZMMAAuAoxtO5eUBJo+j6dwwoSmB3IU6x7YFPDuLd3DygCHkdI2Kigk2M2tQ3+ETGZ0j/+1kGZ////+z9nrYAqgcMgaSi4ZPVyYr5IFxBJGgqKWgVynZYJVxNmAzlOlCme6hkiq/OX+qQ08wva0hx3qGQA0WZY3EZ8wSD2inVR9P3d6t3//+/6KaQKgGJyNuyBQBMKAeP8IJOV5mMUQnMDAORqUi1BGJ0EOQ0BU41LZ9MaYfR4mY0R3nf0sCVgavSsq8uUJxNFIB9NJG2qIVD1a7Pdbvu/1erXExv+3/6P9LhYCEUVmL8GBoWmc7PH1zMmOQECZzcFv2+FqwcMtK6VIBFOFja1a2uWkqzMFzAFzBa9V5+hSFAv91l4hygw20MAvR1adun9X9yUf1+n/6f/7YEBvgoCYwJgFzCHBIOFsXE4/AwQ4okHBjAYCyWl5TKQb8RzETd5kbws9pIkyFvZXl9rCpepHfiRugwI/tDcoY2pWHDv/TxmccBASKr3LNDLDMRD69oOvX3+QdEVFWuz0o5Vc27K6G/Y+a7kG+fSP/7kmTbgMKsKEbLrBtQTAMIcXcvJgsAgRruvE1BPQuiCdwwmO6iCYRgwAZrQFZ9+npjmBgR2TKbqmBy4MHZj4Z2MwJ1tbVPqzp7WmLwV+EG4yXgzV749kdCzLqCEdTb7qd733p8Vmmp/1F67PryOaV9CvUn932ACBlWjGLNmIwTAszW6QuM+E28wgQWDdUtepugCLOo1BQyQcDQG0KLNyi9PBV2nn6OmpKlhpCeqGVPO02VqUNZSAh6BNTVPbpb/467jasNJHOSxSYs6vv+7R1p//L/+53SPX2bGp6jNYEAgBMBQUNyTZMH4+GAlZgOAizel1oSKXGq34DA4RI8t8ajah5ww3Vw33lqQa2TI3nl5wwslFVopdo7dSNX7v2fqLf/60f6qkx9GyoBKaBsA5iYCYehqFsBmhKf4YNIMpkgIOsLRMGrOAQaWvD0gb63N5z7rym3fxtdymIzBqAGzen9RJ/XcJcL9llixLqcLPPFjhhCruzfa1Kt+Y/30O/3GcU463uORPX7fpckCmqZCyAlBM1iJQ58Psw2AIuGo8wGXJf/+5Jk9gDDbR/Dq9kacFLC+HF3DyYMxG8SzPsAQTMLIcXcPJgSIdAtOGjCEEzEp+0zvuSEtxLrT0+ospGU+CRE6Y2CrF2++h3uo/lGUhRH03eLx2vt3opL6apm3rHRQgoGCaMGaU0wB3vCWmL8Ake9iaRcRFgKDMwOXmMOhCGdtJGhRUoHvVNALtw67k9ffrCdXUyMEAICl9ijdtEZZYjSkwyCYds0dTLO9lUz7TAqeKODBwFQsYUKhMq5qRatSmRC86uOXpvDuEm8i776xX51hT7dOoIGq6SNgZKg0LFc5VLsDDUW9LhqWTbX5YSNVBNPoTTPnjWx539Nny+c7/0sreAYbAmwNpVLpvv6s0tC6LCBUS/2PKopKJlpOHEkeRvv4kuQMqqdTEFNRTMuMTAwVVVVVVVVJNBQsuYJAexkSNemvmmyYZINR3ZmSYpuhOOhUdBmhaZnDjtWdmmeuWSyWQzGNv7lVyU4a6FCvZKr1u2xBsa6FYX+lt2nnChUFyL1RVLpFKGtFzDBYdngApP5ZHmPf33MfANTH4HWKsZ9QlaY//uSZPsMQwYXxBM+wBBPwqiSdM9mDvhvCA17QEFKiqJZ3DCYejhDuBFkV8qHkoBmXxAGGkPDAQqyEoU+82vTpYypZSn5eNLwaoZpuMdl+Hscu7uZocgOPwVSB2i7zfS0qHIX6dOtOgg4kk1iB1y2k9feAlaf+9+5typj1MUkEQEV8y5vDAkSz4/Pj125jFUMwxhnWj60xLt+EXkx2WsymFXFYm1OPoMlMxdSTn+PU47gVbFauxynjH1SGJzm0CpI2Mev9qfXT26rS7QG+4wHWH2ZTchjlVjXmRSn3N9iZsAERm7jqzWTGMVHE8soQ4YLfYBDcfTYiiictvNAKG/Rn+zB3MXdpnrYQoeXJBohdy2u1bKuQ7//0VtdZo//3e//UkxBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqi2xtRmA0FkdVTUZ3vAhmLIAyTqzDDQoYBwOB6UdbNq30URXVsT3it1pNmUP5MbnZ2PsnZwGBbrXn1xgxxlOhgm1iLYUlN9qlqbufyroFEwXtKJtUXAdriSJhCFJdP/7kmT1AAN+F8KL2cEAVgKoYncMJgwwXRLO4eTBBYri5cGxmOphx12xySy0o+PknoOoKpegyXSK1pVkKntYwSrJEAiKWqAgbmibMHyaNmMoIE0TGRHhW5YOkLFVNZS9ZSI04w1a279PPvDuYsUuI13jt0KY2W+H1Z0PKGPe9707FoP5SlCyyv91jdlv9Wuz9nX/06VmgAg2VWhWkkk8LIAKB5yKfRqOjZgOBCqoqATrPnEX/Q8ZBGX1VhX71V7tlfbruCyiQGo7nxqtKAwguObpsHlBgXuke79f/5Lq6P9rp7++7/6aAIFVT//3ghtbBs02YhoJSqoIc6GxGtJ+0mhyAV6jMu9RBAV5eYYKMH13o09je6y76+/9+jf//3fot0UWTIHI1zCcBhOkoJU2V1QjEBB3MEgE4iAzOEUVFUEWir5CQhgkIoATLwjMFPA88Bxifor/c5KQqAY5C/ktvyqMrAHlrWJbOXJ3lDh3HW9VN0+OH9+mxhEDivExdiQVQSAxFL0rmlgBzVGlqvoYVLjzK0WzZbRHmkj2ixcXMOB++eX/+5Jk7YAD0RxBgz7QEFQjCFF3DyYKIGEfrr0tIOmKoyWxlYiPQSYTBVyUAAaqG3dx6BEVzL5iO1I0MHC/21fefcyyQAmBoFqx+BqMADR5xOokEJ7eVNYyIIRCqQrS7/xjf7NH/pWrYdR19/6Uf9Vl/WExKmsBw2YLoWxq0ndmyoCUYawBJ+mBGKji+VhmTihSmMtbZudaagmN17dmP2dzd6Jym2oE/czfp5+ISxdsO5SW/U3qnsDzwTcUPlB0We259TvZmCan+QJkFzmw3WVM2e1tBwj0K2uamxbhtFeuxFmoSjAoGTLoijtM9zEsBiICUji+0vJWqAJky3DbtDLRbMO3b/4l+NLxMaX3JJGUwhUr3+9SdEDPD7Sy8X/t/u/Z6U6qvZ93/p8t6jMJzS7DBOGxNjCTw0gVuTCvCqNLtkpwihwSji/xA4mCt+PI7IQvRBDau098BUMzJZJqWPqvlc8xLoVFITGFFHTfaLRqNTf279VodNhoiWYI5WgMn1FR7FiSOF72k6FitYlWD6WCzjtSl28oDD2ZkDgKkm58YlKl//uSZP+MhEEgQYs+wCBGQpi5cGl0DaxlDEx7IEExDmGF14k4PQwIlrTc0VEigAgrVTxJokIQM/scyXRBGEVgK0cgCRZLZr7hAM65XcXpW5Vha4rtRiGA0V1xd7r9+/X0iYtTX6Sm1us8phkiilQlvT5pFl7bEPr3eKdJDiIIwbzAaDmMcNlU0fzaDCLBXDgJCqAKhikzB6hKOiPDLnRia91pgRRcpU4+5pyXk5KBoZvQ+dPNIZiuffiWOhQaJQpr1NtlGpvNetpFtDmcpoeR1vqFj3dJLA6RZCnLTl5uQ2G1uf9b+skBomdZOHnB1mJgCA4D3labQssh9HV9qYPBsTpTaazIM1Prokg3mTpy6JZvnmecqWrU9ydYr02SG+lfRZX9/aYq/6Ltul6dW0yqi56sYLYgZlBvUHHoCwBiMDqsTJBC/xaVUypgAGXlK2b4L5lrMIBgOGH5pZyp21NWE9GCuv2bmJfKWQAoPFXmt2sqTSeLDdX+5jLl7OtFatrX3tiyr9Fi9ODe17HJ9SMWccZo6+teH6NMeNbc9nS/NXt/3v/7kmT6jIQCGUEDXsgQTWKohnDIYg0gYQos+YGBKgrhQb6kYN/6dvyd8KVxey4EiIJ/d8MyRroGGxyU/hgiLwsrgCLTNI8MawEqNie/BQA0iKMhInPO9v06P1s+7X16f9F7vbv8WehVTL3uBdB0YKgQRrsLKmgmkiYVYKxyQmyQhPVjQhb8cOUAV9LG5JyPAy14nevS/CQxPC/L4Ahpbr2R6fp56EOCr13pPHqu5y12rmYJZ+f/WYtMo+eNKgZTwP/xP+irfkNZO3bX9up+fd72sg461udhumuhft3f/sjuWvnp4toXoFxspJKtAayBgfNB2kG3YfftV7pY8dHiEAgIgxFs3zqya07O0YNgNJIz27+d7+jq6Vf/d/1J/3L9aUf9umoOyEAR1DAtARNqs5I0VzwjBvBJMA4BIwBwEwgBFImHWqJPFwLKul+l0W5NMiu67jPsxHjy55NbRDgYY0OfhzRkth9WQhf8c/0LK9er5VX8rJJ2tmTvTB/ck9fNrPbt6meeZa/M6X7W/qx8Mvh/szsVyyI3mdk8iJyuUyf8obb/+5Bk+I9D5xhBAx7QEj0iGLlwI2YPcGMECHsgSPMK4p2xMZj/g+yrr0Asqt2EKjMPDc/sow4sJsqUYIJwlE0nS8jW01t0vHvmmG098qDotoLWnZmvcHcTs8mheLfVxXts1XLR/tU25+KV1b0UaDYEFxEzTAmAAOBA0s2uhDwwWk4UEGTLASvT6b0tQjIySAVhhI9HphFKlUu8RYjDWh6m+Ima6hWI78ehvBWEsxHezRK7z/8zkd253LarCLl+1g3Lf6tl15V4r/+t5NZ1FuWGT7+8T5HDaWCPft37dfqY9SEjtQ1P9ufIuda/GVNWLAQBmH5UcXneYdgYogqYgGIIjkKQHE1SvDdJelMdr/b/Oxbv/204FmrG2O0t766LNlMlQdveTfKI16mjvtTbpTu++znkFGxAtf3GakwA8zVUyiAzAPAkNFMQo5FYkwjBYnhAh/ulAj1AIKi19dm9HQwzKt+H88ePD6bN8Itlh3o2LC+PM8VLJSa0UQrFnvAy1HIWADxhRjHFzixS5qTZo0UrF9trYYIpawWqWk814/F7xoj/+5Jk/YzEHWbBi88bwkVCuHJxiDYPpG8EL2XlCTUK4QHOsEigACDplQUvm+HnCyGyRMccCQrMzatKMCg0B4CTl5UIz3ilGO4E7YYxlAynLaj/EXOG1n7UkMQy3hJQaNXxe7u921Uz0o2ye17H2dtKP96Pu2NR/15sKIVslT6MGAVPmCsNgWEMLQJBgBTyQC6rdEyhK2NCCKkxb1aVQ57wwnAkyH6xJO2NrxSrE+tyAGFhYoqMLUCEegePABhYgFBi0ihckPQAZCOm8kXG1Bg+meqaPYOYtUvS8ahEja4Yl2ZYdSLIR5VcYw18lNhz4ViwoCQxJaLHqD4vlF2rVHD39GCAfVJwtA9Z1HNWA6+1xnSL2/2dbWWq/dzPR/29f/YuIghAMMAgCcwYQ5jYLTNAWTphqAEjwP4kCCqkrlsCzQqgKGQDyheCqLsuhOOZMxiP4w/Vp5I/hfcOY+ssjeecORcAjUIuzted5btXd0+t8KLb6FWM6UCk9PL1l7o7TQlYwYZatNLqq6OxphLTFQyoJIbRbOakiwjSnIVSfHkbI1lu//uSZPIBw5MYQzPdeIBIYrhAcekmDYhdDM6Z7IDvCqIJxaCISVdekTndDiZZQFpsNxri7GUVAY67Yq5Swhk4onCVaEBZlrdIvZnc6F9qZQIWsrM2zbS2Btjmw5zjAJMML91EW1xd1X01RG9IXscUr7HoX1X28t7rn0JfdoZY9ymLL0ALCuDAghzjLyDc11zDEKjAIE0DZKxNqLLwrGLwkk1IVWBPXUPaR1tKEO4MQG4/RrjWwGXW/x0GBGxpMeqKipU6Pv6TxpIDLGQUHBsoc7TCQiWJLYtKgIkJkhhBj6lt6yEzwvGANr1AQeOA73NvhZqdS10jgyI5+kLxkiQIoHMHQ1cKRSvNx8fjwLBs11d0oNschL9D8qlITUmKtIezPbx4vff4kIrVTaiVf67zWdQ8ov2MemsRhQQllMAQOQweU5zKvJiMDUC8mgJHSETBhDchgYWC61qyyymsx6vTwin19aVWqdmQsCVT89VqQ5GFTxC5W7l9ulk9HuNq6V/76a9Bqr+Dan/eou1lelJLr7WgY+wVYg673ft8dFqdyJ5m5f/7kmT/jMSoY0AL2BrySQKYYXBrZg3gXQgsdYEBHAqhybSgmN22hWmvq2svZl/Pkf2NFWAEUZYbUTbrYvUa4OhK6ogBZDn1CoT7Ipkmf/OsDCnVyjtnr33/edK7+x/5nV6nIQ3f+pNnWv/u+oWA5MAoBYwTQvzONXkNSYQMOFdMBkAkdAUWcuYhqdBSqUYyGhJgvT/U+32HSPbJ4zjITcEaCLbnsli/HYd4NUf0jUxCAjKOzaZHFrI7uaQkeYdSJ2jLmp552Q7Ry39+tkkpUnUyctCZqDRWIvdsh8VA37+VyNCnigfGxcrZnwgSa1aUop385SXBnJXyMhMIUywo00tjj/HEmRvq+wJ6b6fUYBWuptvTrf7kIFh87WPkr7JWR3J/6dnkGevRjOytn2dXxo1CORp6qkaSgBcwQAZDUEO7MicYMwSwCBoCEwCwABUAIwAQEGHypIBSIxrL4CvclawoUhrXiLC/Z4hAi/Ihqa2JqXCQFmiqKMuruoufT4vzvG2zu69rFSKfVyOHzPhf5MFhRZpe5Mp6Opii17g6c8+LJxT/+5Jk9IwD1hhBCz7AEjiCGLptIyYSDaD+DzxpyN6KogmzKOC5ZTEThVSrqueh338iPWwuZU3aunbDH4TXSz+CQ+KCoQ14u104gIOjZg4HfyB3DEYJHEiqqWd7ZluMIKu75yhZQ2w+OM9M10VehP7/TsLVkBUGLgLQl2nuyLuncKdEWWRcisJgOgNGoOQ4Yl4vQJAFFAClL0e2RLrfCErPbWKLRddr0EPzG6K5925NfUcSCGPQ5MYWbETl4iADaBfmrlmtTayz/fcKf0wnPAaCNw5gLIMnHJbIxnp41DGQ5EnUoRLyeRjCA51bM5h4UW4MrdK0qP9oXuOhyEb8G45tLgAICnEkkq1lpRo24DsL9i1wWpHGJXpdjH/ZCX0aAmlaSQylL5juRfs/Q9tmXV9Xr37X/+6Lf6OiIMeAIEYAhgHATmnIG2ZEwUYYBoW6j8mTtL1MLGgDjLoex+nIZhuMLZJSPiFSrU2DlJUxtU/2qlnbPFvlEcjik4/oUJ/I083nGVtiU617SIm9/p2WmXyGkmaecZav76QHe5t9YvOqt0Iq//uSZPWNhFljQAPPGvJBQqhibMU4D8FxAi8EW0jdimK1oZTg5x11q9BxhryoK5tlLSi+xMCWtJmgMEYYeMm6e0Rgpopn08DWVaShbnxJJ43oqyHO7d+cW6q1XUM9rzNqgk0DtuOHC/u+dv/ey+KofvpvS269LdKLdvv+ubXYZGgEEdTAdBMNKsJkyEwrysBsQgDJ0KuTXLmNySoUR0p03GU8EiyRlc68CS821EqREF07UrMylekwUyHpGPUZ2Mjm5eskc+7UsoRyz/znPS0JUhlJS95kmORBzuXLl+b82LuvHPtiQ3qzna2lekq1lqhkrpEs97K5J5FZD56GRT9Cw1Kgs2Ze8BksicydJngEC5QKE7osJMdzKs9088WO61WA4tOJZcjxSxXZ+MTtFam1VVIRp/XY79+xj4xYu7YCSOSoq0tSo0YCBudgKEYuIAKgGyJ1HpdEah7oaP5OrKuOxguo4XzFljR/RRhLBCXcJgi6UylbnTl+46p/sbOxn1/ldDrFoC6UlzWr8/5kRfm+UzJpTY5Fc65Ww14dJTQ1tJyqSv/7kmTzjKQfZsCLzxriP+KYYW0iJhBdqQAPPGuI/YphlbSUmH/L+532vt4PiUWbskFO9VW8NLDEriBSTIVsBAan7/pqPjmQfxByQTtLxqjZQ4dRfeUbOi6zXs6+zb/1qsqQ3UuP/f//6PV8YFCFpVAUGioczx6bsHiYNAIj+hChOloJcuRdhF45vo0lLFCTzOsPp41axY6oLkAxJZWx4lFRGJGlnnhDUzjF2UoYpJ5eNI8OTPGM/eKTLDedKITqsaGqgu/nfI06l1YX1WY/PLUoDg06StlkUK1TUl/I3HQd78Fb0O5e6KpIQ0nrqdwQIg/7IDQs00lbWNEXcVZBhNo7H6FY65Kqc37lBQSjxCSCDKDJVj3ip0Ay+5byzS4CUoXpTWtVJJ4pKKLh1xr1kKpjJITFYSqsQ5+Hb00uaMCSAKfH3wEFWb+vmgMaIAeZuhB9ZGLByQtKFJCrEAWI5ojSia0fUbqqUTOBRvw7RguBR9hWe9gEWJGCd6DqR90m6MhgEFq0k3ECmPfQPCREmEBKquLicW3WEUg0J1NYx0HWuZb/+5Jk74wD1lhBC68aci3hOLkHJgIQTWMALrxpyVeIYMW0rOAKu1xdxG+vDjMzb4wyc8gsWggKIxI2yBIcRpO0/sURGO8WCjpk/HlHNGZO8mghZeqW0NRQuryWgZc+9b2XLWxLc7FjO9Sfm7VpJZDYSyKAIABkBRAKxipf5rExxgwEK6VM1CURB4EIKISJ8qDzXTi/QqlmHNIGYLYdZZA5VNp/RMKNGhgBdRmGUGTCtMKLWuSqaoGNxggxmFJ2Dx4MKXSMmFdNR5Lcijd+g09YOsNCRvJxDwq2YOkTUoONsWPj0A9SRAVsa9HyGCrejufBWBjD9BLfkqxy2xlW+/3K4weh+bYO8sT2BoJJrMeo31GN+47hD5AQiwALxZ3QzTMUwxW9ArXcte5FAQXopSKb63zG92wEL+yrejI98ioAPTSsX5RAKoNNd7I2AzQUBFB4w+sld+LQRTPanQYxAbPrfTVoUS8lRpPpdPHnDiWmWYtNO8UmQIjn336klIPFRuogVaQXtA0d8vO776HkD9eo9DJ3A1P/PV59H6TP70YPLfdx//uSZO4AwyAYQ8ubSJBF4phAbMMoEa1ZAE68ackAiGGFowjg4CU/XtXdoCKW3VlrtnfnwctusWFDCcUed3MGzCzjvnqziwWzc2zWNU8fYtZ/uF49Q801nASmpKvnB1N1Iylo5jP2uDtdxKo1S1aliZuaZYeT4tpcOQ9Tqw4gHCgoOoX08uAhYhIDE85TaA0JQcAXLCG4Lzw+W2ybZn7EYlAm728tIigLTZejgtgmf7kRK6x66bjBoJ02CMO4jKOxT4xj3jliUwcqMxjlfVKZAzMqfOeadzNv1o/arsL09otJKnliaa/r6/AFNkDpF8zrdqEx83J4EOKEC2kWUkFGOY4HOKWY7za+Mo6EIBCBmljQ3KasluK1P3LS7IKJFWiYWUlTmvSWlIkdY4VSxezqCDN5JYqxI3xSxhumQAHACyYeDI6JW42MTIwsAUAgFH2VypMRlIyjJjOatozV0p72w27zqzGUBiwsejAo1Q1tEfEYyCLcvThZESExWtmIeF5FLFNzPk2mmUPbzlYrkTH5yugc3OEVaNnSNnyRTTmdzaJ06v/7kmTxDINtFkIzhnsyS8KoMGzIKA8FJQZOMGnJJQihVbMIoKzMmjOj2bRe5UjLfVTvc2jHtS8MiwSlnAGxSqzEgcI8MVW+Dhh+tD+podMpOiL9jJ1sqAiiEK6cQAZeg65601uVptS5o65lHUOkfaLwzr3bZ5QoMf0qUlbqaidA8ILTBIID0YxzWJhTA4GmromsHetThp5UAZNCLZOhAGk8cFxR15b7niJconN7BpuzxnJXeBvfOpL0x2QnRQjLiuD1vm/x393bm1tjLmRw0z5MIdMenrD86j05f/PNEF5qqkudQ4SkRgqHsr2mcmrcGLsp0pWpd4aEo8qlJEGYDJId2ElTXpQDF0XBBQydOKnSm/TNbObdr0UMGAcVFDR7NDlwFoqht4peIUjhspUTUy9LYpOuYPnGE1CpTUvUdpCKBiXJxBeUJsCTWPES83A8SwlVqPCVQSOkwUOEQ+GhfYYyR/IgL5PECQhoZltbW3rUt3ccwqXtDUDEUquh/3ZNJJsvq5986f97tlPh98+0zL76JymRHSnadKeZNeNZ9T1ue7T/+5Jk8o2D9mhAC68a4kPiqGZpIiYQHaj+DrxtSUKIoMG0nKhmLwmZ/+9nkSEM2x2HcZL45bu3cQOheK/0VHCT9sDL1gENGas66nRB6GOUrKFCjKFaXfkX9kVfKsUCAVb7v/dq8X9Pf7kslert+r9Gjr3E3tipQIKzyoBB8oNRyEqBhAB6okNVDi9qRj8oFI8xuMtH8rIz1Ov4sNla7Wgx10B7iVku8c1OmUZHd0apINr6vJijaEHjHFda0RWfU/QiNkzQdoCiK5vDTVG6dHhBoSNNCRuRUx4pmRaq1BnJMKGPcQiFDJCEEZi0doS5gjSuScBsruTsiR0HIiPdQm0nj4EBLJUneajLGPk8BFwhAntoujZxz9xJm+6sCKNDSj5JNBFDetZpsypmf7BfcU7IhTsER4k2YXO9eSpqh88q1ugislKuvJjUnhZVygEBhQAZgSCRyCiZj8lZgIAiVbxNJe1vYfg9JGRtbvuZDk5JXiMIsXJlJhCNH0W59SBIazCnK+xR40REdXJulmTM1pdQmsVX17FM0hOs6h2FG3urmrji//uSZOcPg39DQIOvGnIxwpiWZGIoEYGM/A68bYknCGEFtJSg7IfW9+5wnQsqlMjGO70jrWRUi7r5lDqZcLqmw5wGx5N7/AqfMB9sRO2qocE5mLkDroluZqAGLu4jc27NTWCFx0qklWT0Oe6kvTdmr7krUzP1fr0gDmU3tddrTXFb0fGG1OuStp0hRLb4iCsEYAEp07YHJT8TDZClx2NIKKTqjUAw2fXEertYYW2K7nVroUQKefqa+AEfuYvbX+2y0yZcymIItAo8StwyvnedtDFkyHsbIbSatuGONzliREOab18w2QNnCFDdNjWU4m9fd6PMdQvrXmOEJl6XhGqv10CWfrzr/HXGBx2Kgc1VTDPSn39N/doN9ZZLivv2bNWesec0jKO3vyvQ72Sj+5T302I0blLpVRADIcB5hoWxkHRplEJ5haErlNRWIsKmEyWYg5yJdIXaAEkRhEY4yNXcBKgUDTprEbAiBMTxrLrDzKbvG70iX5VXFLrDzEzUdJQ/uZX1kZ2g2vuXN6irm2PrnqNeoaZS6Qqkmueae+6vjWUgzv/7kmTqDIPpXsADphwyQIIoQGzCKg6VIQIuMGuI1Yph4aGImOHbWFuFHSsKr9/FXQ76gdq1uORJHm5hkAuQiAlCcoCLtfazcpJdN5XZ7P94PsTtd1OCSYE8qh6YXbjmUY+9u/sVS8lSYRM3UOk3MW0WkpgVnZkmcbrpcsWvUwJJP0kLd6VNAAQIAQAQABpZI1MY4S5hBBJ6qRDAGvQwiHRomgkEKVODHTCYHX026QpmVgVcAwBSI2VOah5gDkAqYgMOUO48xecQeGRxeBygpEhpBR1JqoQvQGrQbGw9kPGZEWLMmUk1MhE6DNCwDLjRFlmiJwvGSabXQRlAbYyh4cA5ZEyZMTxNGRsTPWqy0xzyUHAQwiozZGkkQQxNSkovHZig+gpaa1WIsRAi5IkHMCXIoakQIeipJJMumLF4yeyddFVddayuT5YIITBdIuUS2RQvE4RcnSfMUTUyUkuihU6loJ1f///nCuRRH///9FFjIQCgl1GpUilI9YxSpv3ni7EE+muymlnViPHSRp7QiA/SXa8muEGPBJRWlisHCQiT0of/+5Jk9QAEJWQ/hXUAAkliGDCtiAAdUhEK2ckAAlo6oIc0sAAjTd2VuJii0tjd9ons3NT5oeNPmp1D/fVJrJ2fUY6Ns06mS71Ltip9VxyKuLnqP4VX3Ne6msafo8x7JefZzX37ZprGqMtelDmtv6Um5as469p5R0R8////Ebf///////9YLf/ii0xBTUVEjdE1FxOmIfxBiFPCVD1FydqVDUNZbCoIgiS0RCoVYRCoVItVISXVUKFnJIkQSBoOlQWgq6VOwaeDQdKgqVBU6IjwNA0sFR4KnREHCwNRL/1B2VOiUNKBpQNHip0SgrBqDT53//BXYCBWAkAYdrkkSTF1kxMT3mly60DAQoeCp0FQVLA0oGjxU6VO//+Ij0FYKuUqTEFNRTMuMTAwqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uSZIqP8z0WsAc9IAArgWWx5gwAAAABpAAAACAAADSAAAAEqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqg==";
 
   // src/plugins/responseNotification/index.ts
-  var logger30 = new Logger("ResponseNotification");
+  var logger31 = new Logger("ResponseNotification");
   var LIVE_STATES = new Set(["streaming", "optimistic", "reconnecting"]);
   var RETRY_MS = 80;
   var SAMPLE_VOLUME = 0.5;
@@ -19165,7 +19282,7 @@ html.void-rt-open [data-sidebar="gap"] {
       audioCtx = new AudioContext;
       return audioCtx;
     } catch (e) {
-      logger30.debug("AudioContext unavailable:", e);
+      logger31.debug("AudioContext unavailable:", e);
       audioCtx = null;
       return null;
     }
@@ -19212,14 +19329,14 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function playUrl(ctx, url) {
     loadBuffer(ctx, url).then((buf) => playBuffer(ctx, buf), (err) => {
-      logger30.info("sample play failed:", err);
+      logger31.info("sample play failed:", err);
       if (url !== DEFAULT_CHIME)
-        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger30.info("default chime failed:", e));
+        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger31.info("default chime failed:", e));
     });
   }
   function playSound() {
     if (!userGestured) {
-      logger30.info("sound skipped, no user gesture yet");
+      logger31.info("sound skipped, no user gesture yet");
       return;
     }
     const ctx = getCtx();
@@ -19227,7 +19344,7 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     const url = settings24.store.soundUrl?.trim() || DEFAULT_CHIME;
     if (ctx.state === "suspended")
-      ctx.resume().then(() => playUrl(ctx, url), () => logger30.info("AudioContext resume failed"));
+      ctx.resume().then(() => playUrl(ctx, url), () => logger31.info("AudioContext resume failed"));
     else
       playUrl(ctx, url);
   }
@@ -19241,7 +19358,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return !isErrorResponse2(response) && !isLiveResponse2(response);
   }
   function notify(responseId, state) {
-    logger30.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
+    logger31.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
     if (settings24.store.onlyWhenHidden && document.visibilityState === "visible")
       return;
     if (settings24.store.sound)
@@ -19267,8 +19384,8 @@ html.void-rt-open [data-sidebar="gap"] {
         notifyOnce(id, cur[id]?.state);
     }
   }
-  function onStreamEnd5({ responseId }) {
-    logger30.info("streamEnd", responseId);
+  function onStreamEnd6({ responseId }) {
+    logger31.info("streamEnd", responseId);
     if (retryTimer)
       clearTimeout(retryTimer);
     const attempt = (retried) => {
@@ -19276,21 +19393,21 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         response = ResponseStore.useResponseStore.getState().byId[responseId];
       } catch (e) {
-        logger30.info("ResponseStore unavailable:", e);
+        logger31.info("ResponseStore unavailable:", e);
       }
       if (shouldNotify(response)) {
         notifyOnce(responseId, response?.state ?? "gateway");
         return;
       }
       if (isErrorResponse2(response)) {
-        logger30.info("skip error", responseId);
+        logger31.info("skip error", responseId);
         return;
       }
       if (!retried) {
         retryTimer = setTimeout(() => attempt(true), RETRY_MS);
         return;
       }
-      logger30.info("skip", responseId, response?.state ?? "unset");
+      logger31.info("skip", responseId, response?.state ?? "unset");
     };
     attempt(false);
   }
@@ -19324,7 +19441,7 @@ html.void-rt-open [data-sidebar="gap"] {
       audioCtx = null;
     },
     events: {
-      streamEnd: onStreamEnd5
+      streamEnd: onStreamEnd6
     },
     zustand: {
       ResponseStore: {
@@ -20485,7 +20602,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var CHART_SCALE_MIN = 20;
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   var DAY_MS2 = 86400000;
-  var logger31 = new Logger("UsageDisplay");
+  var logger32 = new Logger("UsageDisplay");
   function isRecord2(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
@@ -20541,7 +20658,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      logger31.debug("Failed to read usage stats", error);
+      logger32.debug("Failed to read usage stats", error);
       return memory.get(key) ?? null;
     }
   }
@@ -20553,7 +20670,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      logger31.debug("Failed to persist usage stats", error);
+      logger32.debug("Failed to persist usage stats", error);
       memory.set(key, value);
     }
   }
@@ -20565,7 +20682,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      logger31.debug("Failed to clear usage stats", error);
+      logger32.debug("Failed to clear usage stats", error);
       memory.delete(key);
     }
   }
@@ -20585,7 +20702,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }
       return { version: STATS_VERSION, userId, days };
     } catch (error) {
-      logger31.debug("Failed to read usage stats", error);
+      logger32.debug("Failed to read usage stats", error);
       return emptyStore(userId);
     }
   }
@@ -20769,7 +20886,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
 
   // src/plugins/usageDisplay/index.tsx
-  var logger32 = new Logger("UsageDisplay");
+  var logger33 = new Logger("UsageDisplay");
   var cl27 = classNameFactory("void-ud-");
   var settings28 = definePluginSettings({
     usageStats: {
@@ -20872,7 +20989,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       await hook.getState().refreshUsage();
       return normalizeBotUsage(hook.getState().usage);
     } catch (error) {
-      logger32.warn("Failed to fetch Grok Bot usage", error);
+      logger33.warn("Failed to fetch Grok Bot usage", error);
       return null;
     }
   }
@@ -20920,7 +21037,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
         const pageUsage = readNativeUsage();
         const remote = await fetchOfficialUsage().then((usage) => ({ ok: true, usage })).catch((error) => {
-          logger32.warn("Failed to fetch official usage", error);
+          logger33.warn("Failed to fetch official usage", error);
           return { ok: false };
         });
         if (currentPoolId() !== poolId)
@@ -20948,7 +21065,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     if (!document.hidden && Date.now() - state.lastFetchAt > STALE_MS)
       refresh("visible");
   }
-  function onStreamEnd6() {
+  function onStreamEnd7() {
     refresh("stream");
   }
   function readPlan() {
@@ -21402,7 +21519,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
           refresh("route");
         });
       } catch (error) {
-        logger32.warn("RoutingStore subscribe failed", error);
+        logger33.warn("RoutingStore subscribe failed", error);
       }
     },
     stop() {
@@ -21411,7 +21528,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     },
     chatBarButton: { ...BUTTON_BASE, tooltip: () => /* @__PURE__ */ React.createElement(SafeUsagePanel, null) },
     events: {
-      streamEnd: onStreamEnd6
+      streamEnd: onStreamEnd7
     },
     onSettingsChange() {
       if (settings28.store.usageStats)
@@ -21516,7 +21633,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1789808696000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
-  chatStateFavicons_default.updatedAt = 1789899681000;
+  chatStateFavicons_default.updatedAt = 1789907520000;
   cleaner_default.updatedAt = 1789246749000;
   cloneChats_default.updatedAt = 1787870966000;
   compactModeSelect_default.updatedAt = 1789811419000;
@@ -21822,14 +21939,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // src/VoidPP.ts
-  var logger33 = new Logger("TurbopackPatcher", "#e78284");
+  var logger34 = new Logger("TurbopackPatcher", "#e78284");
   var FALLBACK_MS = 15000;
   var ORPHAN_REPORT_DELAY_MS = 5000;
   function safely(name, fn) {
     try {
       fn();
     } catch (e) {
-      logger33.error(`${name} failed:`, e);
+      logger34.error(`${name} failed:`, e);
     }
   }
   function deferOrphanReport() {
@@ -21850,7 +21967,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       safely("initStreamEvents", initStreamEvents);
       safely("_resolveReady", _resolveReady);
       safely("startAllPlugins", () => startAllPlugins("TurbopackReady" /* TurbopackReady */));
-      logger33.info(`${getModuleCache().size} modules loaded, ready`);
+      logger34.info(`${getModuleCache().size} modules loaded, ready`);
       safely("retryFailedPlugins", retryFailedPlugins);
       safely("deferOrphanReport", deferOrphanReport);
       safely("checkBuildFingerprint", checkBuildFingerprint);

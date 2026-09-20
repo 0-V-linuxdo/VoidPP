@@ -6,15 +6,21 @@
 
 import "./styles.css";
 
+import type { VoidPPEventMap } from "@api/Events";
 import { definePluginSettings } from "@api/Settings";
 import { ScrollTextIcon } from "@components/icons";
+import type { ChatPageStoreState, GrokResponse, ResponseStoreState } from "@grok-types";
+import { ChatPageStore, ResponseStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
+import { Logger } from "@utils/Logger";
 import { debounce } from "@utils/misc";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 
+const logger = new Logger("BetterNavigator");
 const cl = classNameFactory("void-bn-");
 const MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
+const ASST_SEL = "[data-testid='assistant-message']";
 const TICK_SEL = "button[aria-label^='Go to response ']";
 const PREV_SEL = "button[aria-label='Navigate to previous message']";
 const NEXT_SEL = "button[aria-label='Navigate to next message']";
@@ -24,12 +30,18 @@ const STRIP_SEL = [
     "details", "[data-testid*='think']", "[class*='thinking']", "[class*='Thought']",
     "[aria-label*='Thought']", "[role='toolbar']",
 ].join(",");
+const THINK_SEL = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
+const STOP_SEL = 'button[aria-label="Stop model response"], button[aria-label*="Stop"], button[aria-label*="停止"]';
 const MEDIA_SEL = "img, picture, video, canvas";
 const FILE_SEL = "a[download], [data-testid*='file'], [class*='attachment']";
 const DECORATIVE_SRC = /shields\.io|iconify\.design|badgen\.net|favicon|api\.iconify/i;
 const GROK_ASSET = /assets\.grok\.com/i;
 const NOISE_TEXT = /^(copy|share|retry|edit|more|thinking|analyzing|searching|thoughts?)$/i;
+const USER_INTERRUPT = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
+const LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
+const DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
 const HIDE_CLASS = "void-bn-hidetip";
+const LIVE_LABEL = "正在输出…";
 const SUMMARY_MAX = 60;
 const FLASH_MS = 2000;
 const FLASH_REDUCED_MS = 1000;
@@ -68,6 +80,7 @@ interface NavItem {
     el: HTMLElement;
     role: Role;
     text: string;
+    live?: boolean;
 }
 
 let ac: AbortController | null = null;
@@ -215,17 +228,72 @@ function summarize(el: HTMLElement): string {
     return text.length > SUMMARY_MAX ? `${text.slice(0, SUMMARY_MAX)}…` : text;
 }
 
+function errorBlob(value: unknown): string {
+    if (value == null) return "";
+    if (typeof value === "string") return value;
+    if (typeof value !== "object") return String(value);
+    const rec = value as Record<string, any>;
+    return [rec.message, rec.code, rec.type, rec.name].filter(Boolean).map(String).join(" ");
+}
+
+function isUserInterrupt(r: GrokResponse | undefined): boolean {
+    if (!r) return false;
+    const state = (r.state ?? "").trim().toLowerCase();
+    if (state === "interrupted" || state === "stopped") return true;
+    return USER_INTERRUPT.test(errorBlob(r.error)) || USER_INTERRUPT.test(String(r.message ?? ""));
+}
+
+function isDeadResponse(r: GrokResponse | undefined): boolean {
+    if (!r) return false;
+    if (isUserInterrupt(r)) return true;
+    const state = (r.state ?? "").trim().toLowerCase();
+    return DEAD.has(state) || (r.error != null && !LIVE.has(state));
+}
+
+function storeLive(): boolean | null {
+    try {
+        const page = ChatPageStore.useChatPageStore.getState();
+        if (!page.streamedMessageId && !page.showStreamingIndicator) return false;
+        const streamed = ResponseStore.useResponseStore.getState().byId[page.streamedMessageId ?? ""];
+        if (isDeadResponse(streamed)) return false;
+        return true;
+    } catch (e) {
+        logger.debug("stream stores unavailable:", e);
+        return null;
+    }
+}
+
+function stopVisible(): boolean {
+    for (const el of document.querySelectorAll<HTMLElement>(STOP_SEL)) {
+        if (isVisible(el)) return true;
+    }
+    return false;
+}
+
+function liveAssistantEl(): HTMLElement | null {
+    const root = chatPane() ?? document;
+    const last = [...root.querySelectorAll<HTMLElement>(ASST_SEL)].findLast(el => document.body.contains(el));
+    if (!last) return null;
+    if (USER_INTERRUPT.test(last.textContent ?? "")) return null;
+    const live = storeLive();
+    if (live) return last;
+    if (live == null && (stopVisible() || last.querySelector(THINK_SEL))) return last;
+    return null;
+}
+
 function collect(): NavItem[] {
     const root = chatPane() ?? document;
     const showAsst = settings.store.showAssistant;
+    const liveEl = showAsst ? liveAssistantEl() : null;
     const out: NavItem[] = [];
     for (const el of root.querySelectorAll<HTMLElement>(MSG_SEL)) {
         if (!document.body.contains(el)) continue;
         const role: Role = el.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
         if (!showAsst && role === "assistant") continue;
-        const text = summarize(el);
+        const live = el === liveEl;
+        const text = summarize(el) || (live ? LIVE_LABEL : "");
         if (!text) continue;
-        out.push({ el, role, text });
+        out.push({ el, role, text, live });
     }
     return out;
 }
@@ -443,6 +511,13 @@ function patchLabels(nav: NavItem[]) {
     });
 }
 
+function patchLive(nav: NavItem[]) {
+    host?.querySelectorAll<HTMLElement>(".void-bn-tick").forEach((node, i) => {
+        node.classList.toggle("void-bn-tick-live", !!nav[i]?.live);
+    });
+    patchLabels(nav);
+}
+
 function menuEl(nav: NavItem[]): HTMLElement {
     const menu = document.createElement("div");
     menu.className = cl("menu");
@@ -480,11 +555,11 @@ function menuEl(nav: NavItem[]): HTMLElement {
 
 function tickRail(nav: NavItem[]): HTMLElement {
     const wrap = document.createElement("div");
-    wrap.className = `${cl("ticks")}${nav.length > DENSE_N ? ` ${cl("dense")}` : ""}`;
+    wrap.className = cl("ticks", { dense: nav.length > DENSE_N });
     nav.forEach((item, i) => {
         const tick = document.createElement("button");
         tick.type = "button";
-        tick.className = `${cl("tick")} ${item.role === "user" ? cl("tick-user") : cl("tick-asst")}`;
+        tick.className = cl("tick", item.role === "user" ? "tick-user" : "tick-asst", { "tick-live": item.live });
         tick.dataset.voidBnI = String(i);
         tick.setAttribute("aria-label", `Go to message ${i + 1} of ${nav.length}`);
         tick.addEventListener("click", e => {
@@ -623,14 +698,14 @@ function paint() {
     const nextKey = structKey(mode, nav);
     if (nextKey === paintedKey && host?.isConnected && sameEls(nav)) {
         lastNav = nav;
-        patchLabels(nav);
+        patchLive(nav);
         setActive(nav);
         return;
     }
 
     unmount();
     const box = document.createElement("div");
-    box.className = `${cl("host")} ${cl(mode)}`;
+    box.className = cl("host", mode);
 
     if (mode === "native" && slot) {
         slot.classList.add(SLOT_CLASS);
@@ -659,6 +734,24 @@ function paint() {
 }
 
 const debouncedPaint = debounce(paint, 160);
+
+function pageKey(s: ChatPageStoreState): string {
+    return `${s.streamedMessageId ?? ""}|${s.showStreamingIndicator ? 1 : 0}`;
+}
+
+function responseKey(s: ResponseStoreState): string {
+    try {
+        const id = ChatPageStore.useChatPageStore.getState().streamedMessageId ?? "";
+        const r = s.byId[id];
+        return `${id}:${r?.state ?? ""}:${r?.partial ? 1 : 0}`;
+    } catch {
+        return "";
+    }
+}
+
+function onStreamEnd(_data: VoidPPEventMap["streamEnd"]) {
+    paint();
+}
 
 function start() {
     if (ac) return;
@@ -717,5 +810,18 @@ export default definePlugin({
         syncHideTip();
         paintedKey = "";
         paint();
+    },
+    events: {
+        streamEnd: onStreamEnd,
+    },
+    zustand: {
+        ChatPageStore: {
+            selector: pageKey,
+            handler: paint,
+        },
+        ResponseStore: {
+            selector: responseKey,
+            handler: paint,
+        },
     },
 });

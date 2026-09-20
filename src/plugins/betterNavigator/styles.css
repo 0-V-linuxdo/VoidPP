@@ -64,7 +64,7 @@
     width: 0.375rem;
     border-radius: 9999px;
     background: hsl(var(--fg-tertiary)/50%);
-    transition: width 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
+    transition: width 0.15s ease, background-color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 
 .void-bn-tick-asst::after {
@@ -75,6 +75,18 @@
     width: 1rem;
     background: hsl(var(--fg-primary));
     opacity: 1;
+}
+
+.void-bn-tick-live::after {
+    height: 0;
+    background: none;
+    border-radius: 0;
+    border-top: 1px dashed hsl(var(--fg-tertiary)/50%);
+}
+
+.void-bn-tick-live.void-bn-current::after {
+    background: none;
+    border-top-color: hsl(var(--fg-primary));
 }
 
 .void-bn-menu {
