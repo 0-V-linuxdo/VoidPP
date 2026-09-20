@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.27] v1.0.0
+// @version      [20260920.28] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.27] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.28] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7399,9 +7399,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e179565"}`
-    }, `(${"e179565"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"74ae114"}`
+    }, `(${"74ae114"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -17777,8 +17777,8 @@ div:has(> #grok-bot-nav-button) {
 
 /* Empty query-bar: keep the Tiptap placeholder on one line so a long
    phrase cannot grow the composer or trip overflow-y:auto. Official
-   ::before is float + height:0, which paints wrapped overflow and
-   shows a leftover scrollbar. Absolute + nowrap ellipsizes instead.
+   ::before is float + height:0, which paints wrapped overflow.
+   JS word-clamps data-placeholder; this is the overflow safety net.
    Typing drops is-editor-empty and restores the official autosize. */
 .query-bar .tiptap:has(> p.is-editor-empty) {
     overflow-y: hidden !important;
@@ -17797,10 +17797,42 @@ div:has(> #grok-bot-nav-button) {
     max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
-    text-overflow: ellipsis;
+    text-overflow: clip;
     pointer-events: none;
 }
 `);
+
+  // src/plugins/placeholder/clamp.ts
+  var ELLIPSIS = "…";
+  var BREAK_CHAR = /[\s\u00a0\u2000-\u200b\u2010-\u2015\u2212\u3000/,.;:!?…]/u;
+  var TRAILING_BREAK = /[\s\u00a0\u2000-\u200b\u2010-\u2015\u2212\u3000/,.;:!?…]+$/u;
+  var LAST_WORD = /[^\s\u00a0\u2000-\u200b\u2010-\u2015\u2212\u3000/,.;:!?…]+$/u;
+  function isBreak(ch) {
+    return !ch || BREAK_CHAR.test(ch);
+  }
+  function clampToWidth(text, maxPx, measure) {
+    if (!(maxPx > 0) || measure(text) <= maxPx)
+      return text;
+    let lo = 0;
+    let hi = text.length;
+    while (lo < hi) {
+      const mid = lo + hi + 1 >> 1;
+      if (measure(text.slice(0, mid) + ELLIPSIS) <= maxPx)
+        lo = mid;
+      else
+        hi = mid - 1;
+    }
+    if (lo <= 0)
+      return ELLIPSIS;
+    const cut = text.slice(0, lo);
+    let kept = cut;
+    if (!isBreak(cut.at(-1)) && !isBreak(text[lo]))
+      kept = cut.replace(LAST_WORD, "");
+    kept = kept.replace(TRAILING_BREAK, "");
+    if (kept)
+      return kept + ELLIPSIS;
+    return cut.replace(/\s+$/u, "") + ELLIPSIS;
+  }
 
   // src/plugins/placeholder/index.tsx
   var cl26 = classNameFactory("void-ph-");
@@ -17863,7 +17895,7 @@ div:has(> #grok-bot-nav-button) {
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "medium"
-    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input shows a single line and ellipsizes overflow; the home greeting can wrap. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
+    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input stays on one line and omits whole words with an ellipsis; the home greeting can wrap. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
       className: cl26("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
       className: cl26("textarea"),
@@ -17910,6 +17942,14 @@ div:has(> #grok-bot-nav-button) {
   var wasHome = false;
   var timerId;
   var clicks = null;
+  var treeObs2 = null;
+  var sizeObs = null;
+  var observed = null;
+  var raf5 = 0;
+  var measureCtx = null;
+  var EDITOR_SEL3 = ".query-bar .tiptap";
+  var EMPTY_SEL = `${EDITOR_SEL3} p.is-editor-empty`;
+  var FULL_ATTR = "data-void-ph-full";
   function pickNextIndex(listLen, advance) {
     if (listLen <= 0)
       return 0;
@@ -18012,6 +18052,75 @@ div:has(> #grok-bot-nav-button) {
       return;
     paintHero(true);
   }
+  function measureFor(el, text) {
+    if (!measureCtx)
+      measureCtx = document.createElement("canvas").getContext("2d");
+    if (!measureCtx)
+      return text.length * 8;
+    const cs = getComputedStyle(el);
+    measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const extra = Number.parseFloat(cs.letterSpacing);
+    const tracking = Number.isFinite(extra) ? extra * Math.max(0, text.length - 1) : 0;
+    return measureCtx.measureText(text).width + tracking;
+  }
+  function sourceText(p) {
+    const attr = p.getAttribute("data-placeholder") ?? "";
+    const stored = p.getAttribute(FULL_ATTR);
+    if (!stored)
+      return attr;
+    if (attr === stored)
+      return stored;
+    const stem = attr.endsWith(ELLIPSIS) ? attr.slice(0, -ELLIPSIS.length) : attr;
+    if (stem && stored.startsWith(stem))
+      return stored;
+    return attr;
+  }
+  function bindSize(el) {
+    if (el === observed)
+      return;
+    sizeObs?.disconnect();
+    observed = el;
+    if (!el)
+      return;
+    sizeObs ??= new ResizeObserver(scheduleInput);
+    sizeObs.observe(el);
+  }
+  function paintInput() {
+    if (!started6)
+      return;
+    const p = document.querySelector(EMPTY_SEL);
+    if (!(p instanceof HTMLElement)) {
+      bindSize(null);
+      return;
+    }
+    bindSize(p);
+    const full = sourceText(p);
+    if (!full)
+      return;
+    if (p.getAttribute(FULL_ATTR) !== full)
+      p.setAttribute(FULL_ATTR, full);
+    const next = clampToWidth(full, Math.max(0, p.clientWidth - 1), (t) => measureFor(p, t));
+    if (p.getAttribute("data-placeholder") !== next)
+      p.setAttribute("data-placeholder", next);
+  }
+  function scheduleInput() {
+    if (!started6 || raf5)
+      return;
+    raf5 = requestAnimationFrame(() => {
+      raf5 = 0;
+      paintInput();
+    });
+  }
+  function restoreInput() {
+    for (const el of document.querySelectorAll(`[${FULL_ATTR}]`)) {
+      if (!(el instanceof HTMLElement))
+        continue;
+      const full = el.getAttribute(FULL_ATTR);
+      if (full)
+        el.setAttribute("data-placeholder", full);
+      el.removeAttribute(FULL_ATTR);
+    }
+  }
   var placeholder_default = definePlugin({
     name: "Placeholder",
     icon: TextCursorInputIcon,
@@ -18032,24 +18141,60 @@ div:has(> #grok-bot-nav-button) {
       wasHome = false;
       clicks = new AbortController;
       document.addEventListener("click", onManualClick, { signal: clicks.signal });
+      treeObs2 = new MutationObserver((muts) => {
+        for (const m of muts) {
+          const t = m.target;
+          if (t instanceof Element && t.closest(".query-bar")) {
+            scheduleInput();
+            return;
+          }
+          if (m.type !== "childList")
+            continue;
+          for (const n of m.addedNodes) {
+            if (n instanceof Element && (n.matches(".query-bar") || n.querySelector(".query-bar"))) {
+              scheduleInput();
+              return;
+            }
+          }
+        }
+      });
+      treeObs2.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["data-placeholder", "class"]
+      });
       syncHero(true);
+      scheduleInput();
     },
     stop() {
       started6 = false;
       clicks?.abort();
       clicks = null;
+      treeObs2?.disconnect();
+      treeObs2 = null;
+      sizeObs?.disconnect();
+      sizeObs = null;
+      observed = null;
+      if (raf5)
+        cancelAnimationFrame(raf5);
+      raf5 = 0;
+      measureCtx = null;
       stopTimer();
       wasHome = false;
+      restoreInput();
       unregisterStyle(HERO_STYLE);
     },
     onSettingsChange() {
       syncHero(false);
+      scheduleInput();
     },
     zustand: {
       RoutingStore: {
         selector: routeKey3,
         handler() {
           syncHero(true);
+          scheduleInput();
         }
       }
     },
@@ -23367,7 +23512,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   composerOpacity_default.updatedAt = 1788044121000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customInstructions_default.updatedAt = 1789898438000;
-  customSidebarIdentity_default.updatedAt = 1789918597000;
+  customSidebarIdentity_default.updatedAt = 1789918488000;
   downloadTTS_default.updatedAt = 1787870966000;
   experiments_default.updatedAt = 1788047438000;
   exportChat_default.updatedAt = 1787870966000;
@@ -23382,7 +23527,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1788577403000;
   noSidebarPlugins_default.updatedAt = 1789807577000;
   oneko_default.updatedAt = 1787870966000;
-  placeholder_default.updatedAt = 1789918597000;
+  placeholder_default.updatedAt = 1789918820000;
   pluginsFlyout_default.updatedAt = 1788051053000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1789246749000;

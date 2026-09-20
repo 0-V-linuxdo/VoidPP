@@ -17,6 +17,8 @@ import { classNameFactory, registerStyle, unregisterStyle } from "@utils/css";
 import { clamp } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
 
+import { clampToWidth, ELLIPSIS } from "./clamp";
+
 const cl = classNameFactory("void-ph-");
 const HERO_STYLE = "placeholderHero";
 const HERO_SEL = "h1[data-void-ph-hero]";
@@ -73,7 +75,7 @@ function PhrasesEditor() {
         <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
             <Flex alignItems="center" gap="0.375rem">
                 <Text size="sm" weight="medium">Phrases</Text>
-                <InfoHint>One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input shows a single line and ellipsizes overflow; the home greeting can wrap. Empty list uses Grok's defaults.</InfoHint>
+                <InfoHint>One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input stays on one line and omits whole words with an ellipsis; the home greeting can wrap. Empty list uses Grok's defaults.</InfoHint>
             </Flex>
             <div className={cl("textarea-wrap")}>
                 <Textarea
@@ -128,6 +130,15 @@ let started = false;
 let wasHome = false;
 let timerId: ReturnType<typeof setInterval> | undefined;
 let clicks: AbortController | null = null;
+let treeObs: MutationObserver | null = null;
+let sizeObs: ResizeObserver | null = null;
+let observed: Element | null = null;
+let raf = 0;
+let measureCtx: CanvasRenderingContext2D | null = null;
+
+const EDITOR_SEL = ".query-bar .tiptap";
+const EMPTY_SEL = `${EDITOR_SEL} p.is-editor-empty`;
+const FULL_ATTR = "data-void-ph-full";
 
 function pickNextIndex(listLen: number, advance: boolean): number {
     if (listLen <= 0) return 0;
@@ -232,6 +243,67 @@ function onManualClick(e: Event) {
     paintHero(true);
 }
 
+function measureFor(el: HTMLElement, text: string): number {
+    if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+    if (!measureCtx) return text.length * 8;
+    const cs = getComputedStyle(el);
+    measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const extra = Number.parseFloat(cs.letterSpacing);
+    const tracking = Number.isFinite(extra) ? extra * Math.max(0, text.length - 1) : 0;
+    return measureCtx.measureText(text).width + tracking;
+}
+
+function sourceText(p: HTMLElement): string {
+    const attr = p.getAttribute("data-placeholder") ?? "";
+    const stored = p.getAttribute(FULL_ATTR);
+    if (!stored) return attr;
+    if (attr === stored) return stored;
+    const stem = attr.endsWith(ELLIPSIS) ? attr.slice(0, -ELLIPSIS.length) : attr;
+    if (stem && stored.startsWith(stem)) return stored;
+    return attr;
+}
+
+function bindSize(el: HTMLElement | null) {
+    if (el === observed) return;
+    sizeObs?.disconnect();
+    observed = el;
+    if (!el) return;
+    sizeObs ??= new ResizeObserver(scheduleInput);
+    sizeObs.observe(el);
+}
+
+function paintInput() {
+    if (!started) return;
+    const p = document.querySelector(EMPTY_SEL);
+    if (!(p instanceof HTMLElement)) {
+        bindSize(null);
+        return;
+    }
+    bindSize(p);
+    const full = sourceText(p);
+    if (!full) return;
+    if (p.getAttribute(FULL_ATTR) !== full) p.setAttribute(FULL_ATTR, full);
+    const next = clampToWidth(full, Math.max(0, p.clientWidth - 1), t => measureFor(p, t));
+    if (p.getAttribute("data-placeholder") !== next) p.setAttribute("data-placeholder", next);
+}
+
+function scheduleInput() {
+    if (!started || raf) return;
+    raf = requestAnimationFrame(() => {
+        raf = 0;
+        paintInput();
+    });
+}
+
+function restoreInput() {
+    for (const el of document.querySelectorAll(`[${FULL_ATTR}]`)) {
+        if (!(el instanceof HTMLElement)) continue;
+        const full = el.getAttribute(FULL_ATTR);
+        if (full) el.setAttribute("data-placeholder", full);
+        el.removeAttribute(FULL_ATTR);
+    }
+}
+
 export default definePlugin({
     name: "Placeholder",
     icon: TextCursorInputIcon,
@@ -254,26 +326,62 @@ export default definePlugin({
         wasHome = false;
         clicks = new AbortController();
         document.addEventListener("click", onManualClick, { signal: clicks.signal });
+        treeObs = new MutationObserver(muts => {
+            for (const m of muts) {
+                const t = m.target;
+                if (t instanceof Element && t.closest(".query-bar")) {
+                    scheduleInput();
+                    return;
+                }
+                if (m.type !== "childList") continue;
+                for (const n of m.addedNodes) {
+                    if (n instanceof Element && (n.matches(".query-bar") || n.querySelector(".query-bar"))) {
+                        scheduleInput();
+                        return;
+                    }
+                }
+            }
+        });
+        treeObs.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["data-placeholder", "class"],
+        });
         syncHero(true);
+        scheduleInput();
     },
 
     stop() {
         started = false;
         clicks?.abort();
         clicks = null;
+        treeObs?.disconnect();
+        treeObs = null;
+        sizeObs?.disconnect();
+        sizeObs = null;
+        observed = null;
+        if (raf) cancelAnimationFrame(raf);
+        raf = 0;
+        measureCtx = null;
         stopTimer();
         wasHome = false;
+        restoreInput();
         unregisterStyle(HERO_STYLE);
     },
 
     onSettingsChange() {
         syncHero(false);
+        scheduleInput();
     },
 
     zustand: {
         RoutingStore: {
             selector: routeKey,
-            handler() { syncHero(true); },
+            handler() {
+                syncHero(true);
+                scheduleInput();
+            },
         },
     },
 

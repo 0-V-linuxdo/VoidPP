@@ -33,8 +33,8 @@
 
 /* Empty query-bar: keep the Tiptap placeholder on one line so a long
    phrase cannot grow the composer or trip overflow-y:auto. Official
-   ::before is float + height:0, which paints wrapped overflow and
-   shows a leftover scrollbar. Absolute + nowrap ellipsizes instead.
+   ::before is float + height:0, which paints wrapped overflow.
+   JS word-clamps data-placeholder; this is the overflow safety net.
    Typing drops is-editor-empty and restores the official autosize. */
 .query-bar .tiptap:has(> p.is-editor-empty) {
     overflow-y: hidden !important;
@@ -53,6 +53,6 @@
     max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
-    text-overflow: ellipsis;
+    text-overflow: clip;
     pointer-events: none;
 }
