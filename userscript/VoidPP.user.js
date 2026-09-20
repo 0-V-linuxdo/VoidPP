@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.20] v1.0.0
+// @version      [20260920.21] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.20] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.21] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -2866,6 +2866,15 @@ ${sourceUrl}`;
     d: "m17 17 5 5"
   }), /* @__PURE__ */ React.createElement("path", {
     d: "m22 17-5 5"
+  }));
+  var UserRoundPenIcon = (props = {}) => svg(props, /* @__PURE__ */ React.createElement("path", {
+    d: "M2 21a8 8 0 0 1 10.821-7.487"
+  }), /* @__PURE__ */ React.createElement("path", {
+    d: "M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "10",
+    cy: "8",
+    r: "5"
   }));
   var CatIcon = (props = {}) => svg(props, /* @__PURE__ */ React.createElement("path", {
     d: "M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.89-6.42-.5-7 1.39-.58 4.72.23 6.5 2.23A9.04 9.04 0 0 1 12 5Z"
@@ -7390,9 +7399,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.20] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2b2280a"}`
-    }, `(${"2b2280a"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8b3fbcc"}`
+    }, `(${"8b3fbcc"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14176,6 +14185,321 @@ html.void-cms-picked .void-cms-ghost {
     ]
   });
 
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customSidebarIdentity/styles.css
+  registerStyle("customSidebarIdentity", `.void-csi-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    color: hsl(var(--fg-primary));
+    user-select: none;
+}
+
+.void-sidebar-card > .void-csi-name,
+[data-sidebar="footer"] button .void-csi-name {
+    flex: 1;
+}
+
+.void-csi-hide {
+    display: none !important;
+}
+
+html.void-streamer-sidebar-name .void-csi-name {
+    filter: blur(6px);
+    transition: filter 0.2s ease;
+}
+
+html.void-streamer-sidebar-name .void-sidebar-card:hover .void-csi-name,
+html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover .void-csi-name {
+    filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.void-streamer-sidebar-name .void-csi-name {
+        transition: none;
+    }
+}
+`);
+
+  // src/plugins/customSidebarIdentity/index.ts
+  var FOOTER = '[data-sidebar="footer"]';
+  var MENU = '[role="menu"]';
+  var PFP = 'img[alt="pfp"]';
+  var NAME_CLASS = "void-csi-name";
+  var HIDE_CLASS2 = "void-csi-hide";
+  var MARK2 = "data-void-csi";
+  var ORIG = "data-void-csi-orig";
+  var settings17 = definePluginSettings({
+    displayName: {
+      type: 0 /* STRING */,
+      description: "Display name next to the sidebar avatar. Empty keeps the official name.",
+      default: "",
+      placeholder: "Shown next to the sidebar avatar"
+    },
+    avatarUrl: {
+      type: 0 /* STRING */,
+      description: "Image URL or data:image…. Empty keeps the official avatar.",
+      default: "",
+      placeholder: "https://… or data:image/…"
+    },
+    applyToMenu: {
+      type: 3 /* BOOLEAN */,
+      description: "Also replace the avatar and name at the top of the account dropdown.",
+      default: true
+    }
+  });
+  var failed = new Set;
+  var treeObs = null;
+  var raf4 = 0;
+  var painting = false;
+  var started5 = false;
+  function trimName() {
+    return String(settings17.store.displayName ?? "").trim();
+  }
+  function avatarSrc() {
+    const raw = String(settings17.store.avatarUrl ?? "").trim();
+    if (!raw || failed.has(raw))
+      return null;
+    if (raw.startsWith("data:image/"))
+      return raw;
+    try {
+      const { protocol } = new URL(raw);
+      if (protocol === "https:" || protocol === "http:")
+        return raw;
+    } catch {
+      return null;
+    }
+    return null;
+  }
+  function footerBtn(footer) {
+    return footer.querySelector('button[data-slot="button"], button[data-state]');
+  }
+  function restoreImg(img) {
+    const orig = img.getAttribute(ORIG);
+    img.removeEventListener("error", onImgError);
+    img.removeAttribute(MARK2);
+    if (orig == null)
+      return;
+    img.src = orig;
+    img.removeAttribute(ORIG);
+  }
+  function onImgError(e) {
+    const img = e.currentTarget;
+    if (!(img instanceof HTMLImageElement))
+      return;
+    const url = img.getAttribute("src") ?? "";
+    if (url)
+      failed.add(url);
+    restoreImg(img);
+  }
+  function paintImg(img, url) {
+    if (!url) {
+      restoreImg(img);
+      return;
+    }
+    const current = img.getAttribute("src") ?? "";
+    if (img.getAttribute(MARK2) === "1") {
+      if (current === url)
+        return;
+      if (current)
+        img.setAttribute(ORIG, current);
+    } else if (!img.hasAttribute(ORIG)) {
+      img.setAttribute(ORIG, current);
+    }
+    img.setAttribute(MARK2, "1");
+    if (img.getAttribute("srcset"))
+      img.removeAttribute("srcset");
+    img.referrerPolicy = "no-referrer";
+    img.removeEventListener("error", onImgError);
+    img.addEventListener("error", onImgError);
+    if (current !== url)
+      img.src = url;
+  }
+  function pfps(scope, fallbackRoot) {
+    const tagged = [...scope.querySelectorAll(PFP)];
+    if (tagged.length)
+      return tagged;
+    const img = fallbackRoot?.querySelector("img");
+    return img instanceof HTMLImageElement ? [img] : [];
+  }
+  function ensureName(host, text) {
+    let el = host.querySelector(`:scope > .${NAME_CLASS}`);
+    if (!el) {
+      el = document.createElement("span");
+      el.className = NAME_CLASS;
+      host.appendChild(el);
+    }
+    if (el.textContent !== text)
+      el.textContent = text;
+    return el;
+  }
+  function dropNames(scope) {
+    for (const el of scope.querySelectorAll(`.${NAME_CLASS}`))
+      el.remove();
+  }
+  function unhide(scope) {
+    for (const el of scope.querySelectorAll(`.${HIDE_CLASS2}`))
+      el.classList.remove(HIDE_CLASS2);
+  }
+  function hideOfficial(host, keep) {
+    for (const node of host.querySelectorAll("span, p")) {
+      if (node === keep || keep.contains(node) || node.contains(keep) || node.classList.contains(NAME_CLASS))
+        continue;
+      if (!node.textContent?.trim())
+        continue;
+      node.classList.add(HIDE_CLASS2);
+    }
+  }
+  function syncName(host, text, scope) {
+    if (!host || !text) {
+      dropNames(scope);
+      unhide(scope);
+      return;
+    }
+    const el = ensureName(host, text);
+    for (const node of scope.querySelectorAll(`.${NAME_CLASS}`)) {
+      if (node !== el)
+        node.remove();
+    }
+  }
+  function nameHost(footer) {
+    const card = footer.querySelector(".void-sidebar-card");
+    if (card)
+      return card;
+    const btn = footerBtn(footer);
+    if (!btn?.querySelector(".min-w-0"))
+      return null;
+    return btn;
+  }
+  function paintFooter() {
+    const footer = document.querySelector(FOOTER);
+    if (!footer)
+      return;
+    const url = avatarSrc();
+    for (const img of pfps(footer, footerBtn(footer)))
+      paintImg(img, url);
+    syncName(nameHost(footer), trimName(), footer);
+  }
+  function isAccountMenu(menu) {
+    return !!menu.querySelector(PFP) || !!menu.querySelector('[class*="max-w-[400px]"].truncate');
+  }
+  function paintMenu() {
+    const url = avatarSrc();
+    const name = trimName();
+    for (const menu of document.querySelectorAll(MENU)) {
+      if (!isAccountMenu(menu))
+        continue;
+      if (!settings17.store.applyToMenu) {
+        dropNames(menu);
+        unhide(menu);
+        for (const img of menu.querySelectorAll(`img[${MARK2}]`))
+          restoreImg(img);
+        continue;
+      }
+      for (const img of pfps(menu, menu))
+        paintImg(img, url);
+      if (!name) {
+        dropNames(menu);
+        unhide(menu);
+        continue;
+      }
+      const img = menu.querySelector(PFP) ?? menu.querySelector("img");
+      const host = img?.parentElement?.parentElement ?? img?.parentElement ?? menu;
+      const el = ensureName(host, name);
+      hideOfficial(host, el);
+      for (const node of menu.querySelectorAll(`.${NAME_CLASS}`)) {
+        if (node !== el)
+          node.remove();
+      }
+    }
+  }
+  function restoreAll() {
+    for (const img of document.querySelectorAll(`img[${MARK2}]`))
+      restoreImg(img);
+    dropNames(document);
+    unhide(document);
+  }
+  function apply3() {
+    if (!started5 || painting)
+      return;
+    painting = true;
+    try {
+      paintFooter();
+      paintMenu();
+    } finally {
+      painting = false;
+    }
+  }
+  function schedule2() {
+    if (!started5 || raf4)
+      return;
+    raf4 = requestAnimationFrame(() => {
+      raf4 = 0;
+      apply3();
+    });
+  }
+  function onMut(muts) {
+    if (painting || !started5)
+      return;
+    for (const m of muts) {
+      if (m.type !== "attributes") {
+        schedule2();
+        return;
+      }
+      const el = m.target;
+      if (!(el instanceof HTMLImageElement))
+        continue;
+      if (el.closest(FOOTER) || settings17.store.applyToMenu && el.closest(MENU)) {
+        schedule2();
+        return;
+      }
+    }
+  }
+  function bind() {
+    treeObs?.disconnect();
+    treeObs = new MutationObserver(onMut);
+    treeObs.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["src", "srcset"]
+    });
+  }
+  var customSidebarIdentity_default = definePlugin({
+    name: "CustomSidebarIdentity",
+    icon: UserRoundPenIcon,
+    description: "Replace the sidebar avatar and display name. Empty fields keep the official values.",
+    authors: [Devs.p],
+    tags: ["ui"],
+    enabledByDefault: false,
+    settings: settings17,
+    managedStyle: "customSidebarIdentity",
+    cleanupSelectors: [`.${NAME_CLASS}`],
+    start() {
+      started5 = true;
+      failed.clear();
+      bind();
+      apply3();
+    },
+    onSettingsChange() {
+      failed.clear();
+      apply3();
+    },
+    stop() {
+      started5 = false;
+      if (raf4)
+        cancelAnimationFrame(raf4);
+      raf4 = 0;
+      treeObs?.disconnect();
+      treeObs = null;
+      restoreAll();
+      failed.clear();
+    }
+  });
+
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/downloadTTS/styles.css
   registerStyle("downloadTTS", `.void-download-tts-spinner {
     pointer-events: none;
@@ -14629,7 +14953,7 @@ html.void-cms-picked .void-cms-ghost {
   var HUD_GAP_PX = 8;
   var APPLY_QUIET_MS = 120;
   var CAPTURE_DEDUPE_MS = 2000;
-  var settings17 = definePluginSettings({
+  var settings18 = definePluginSettings({
     maxEntries: {
       type: 5 /* SLIDER */,
       description: "Maximum stored prompts.",
@@ -14654,15 +14978,15 @@ html.void-cms-picked .void-cms-ghost {
   var applyEl = null;
   var applyAtStart = true;
   function getEntries() {
-    const raw = settings17.plain.entries;
+    const raw = settings18.plain.entries;
     return Array.isArray(raw) ? raw.filter((x) => typeof x === "string") : [];
   }
   function cap(entries) {
-    const max = clamp(settings17.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
+    const max = clamp(settings18.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
     return entries.length > max ? entries.slice(entries.length - max) : entries;
   }
   function setEntries(entries) {
-    settings17.store.entries = entries;
+    settings18.store.entries = entries;
   }
   function normalize(text) {
     return text.replaceAll(ZWSP, "").replace(/\n$/, "").trim();
@@ -14999,7 +15323,7 @@ html.void-cms-picked .void-cms-ghost {
     resetBrowse(next.length);
   }
   function HistoryPanel() {
-    const { entries } = settings17.use(["entries"]);
+    const { entries } = settings18.use(["entries"]);
     const list = entries ?? [];
     const [query, setQuery] = useState("");
     const [openId, setOpenId] = useState(null);
@@ -15107,7 +15431,7 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
-    settings: settings17,
+    settings: settings18,
     managedStyle: "inputHistory",
     cleanupSelectors: [".void-ih-hud"],
     start() {
@@ -15458,7 +15782,7 @@ html.void-cms-picked .void-cms-ghost {
   var logger29 = new Logger("MessageTimestamps");
   var STAMP_MAX = 5000;
   var RESPONSE_URL = /\/(?:load-responses|share_links|response-node)(?:\/|\?|$)/i;
-  var settings18 = definePluginSettings({
+  var settings19 = definePluginSettings({
     showDate: {
       type: 3 /* BOOLEAN */,
       description: "Show the full date for messages older than today.",
@@ -15481,7 +15805,7 @@ html.void-cms-picked .void-cms-ghost {
     if (cache)
       return cache;
     cache = new Map;
-    const raw = settings18.plain.stamps;
+    const raw = settings19.plain.stamps;
     if (raw && typeof raw === "object") {
       for (const [id, ms] of Object.entries(raw)) {
         if (typeof ms === "number" && Number.isFinite(ms))
@@ -15494,7 +15818,7 @@ html.void-cms-picked .void-cms-ghost {
     const next = {};
     for (const [id, ms] of stamps())
       next[id] = ms;
-    settings18.store.stamps = next;
+    settings19.store.stamps = next;
   }
   var persist2 = debounce(persistNow, 400);
   function remember(id, ms, sender, state, force = false) {
@@ -15867,7 +16191,7 @@ html.void-cms-picked .void-cms-ghost {
     description: "Shows timestamps on chat messages.",
     authors: [Devs.Prism, Devs.p],
     tags: ["chat"],
-    settings: settings18,
+    settings: settings19,
     start() {
       try {
         hookFetch();
@@ -15918,7 +16242,7 @@ html.void-cms-picked .void-cms-ghost {
     _renderTimestamp: ErrorBoundary.wrap(({ response, isUser }) => {
       useExternalStore(tick);
       const human = isUser === true || isHumanSender(response.sender);
-      if (settings18.store.hideOwnMessages && human)
+      if (settings19.store.hideOwnMessages && human)
         return null;
       const ms = resolveMs(response, isUser);
       if (ms == null)
@@ -15928,7 +16252,7 @@ html.void-cms-picked .void-cms-ghost {
         size: "xs",
         color: "muted",
         className: "void-timestamp"
-      }, formatTimestamp(ms, settings18.store.showDate));
+      }, formatTimestamp(ms, settings19.store.showDate));
     }),
     patches: [
       {
@@ -15958,7 +16282,7 @@ html.void-cms-picked .void-cms-ghost {
   var QUEUE_ADD = "conversation.queue.add";
   var QUEUE_REMOVE = "conversation.queue.remove";
   var GW_OK = Object.freeze({ ok: true });
-  var settings19 = definePluginSettings({
+  var settings20 = definePluginSettings({
     stickyOnNavigate: {
       type: 3 /* BOOLEAN */,
       description: "Keep the selected mode when switching chats.",
@@ -16021,7 +16345,7 @@ html.void-cms-picked .void-cms-ghost {
     }
   }
   function syncRestoreFlag() {
-    if (!settings19.store.stickyOnNavigate) {
+    if (!settings20.store.stickyOnNavigate) {
       setRestoreFlag(false);
       return;
     }
@@ -16087,7 +16411,7 @@ html.void-cms-picked .void-cms-ghost {
     logger30.info("intent", intent.modeId);
   }
   function fightHydrate() {
-    if (!settings19.store.stickyOnNavigate || applying2 || userPicking || awaitingMenu || !intent.modeId)
+    if (!settings20.store.stickyOnNavigate || applying2 || userPicking || awaitingMenu || !intent.modeId)
       return;
     const cur = snapshot();
     if (cur.modeId === intent.modeId && (!intent.modelMode || cur.modelMode === intent.modelMode) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
@@ -16113,7 +16437,7 @@ html.void-cms-picked .void-cms-ghost {
     wrapSendFns();
     if (!intent.modeId)
       intent = snapshot();
-    if (!settings19.store.stickyOnNavigate || !intent.modeId)
+    if (!settings20.store.stickyOnNavigate || !intent.modeId)
       return;
     setRestoreFlag(true);
     applyIntent(intent);
@@ -16544,7 +16868,7 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
-    settings: settings19,
+    settings: settings20,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
       intent = snapshot();
@@ -16644,16 +16968,16 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
 }
 `;
   var REFINEMENT_CSS = `.${REFINEMENT_MARK}{display:none!important}`;
-  var settings20 = definePluginSettings({
+  var settings21 = definePluginSettings({
     hideDictationRefinement: {
       type: 3 /* BOOLEAN */,
       description: 'Hide "Dictation Refinement" in the Grok Settings dialog (Behavior tab).',
       default: true
     }
   });
-  function apply3() {
+  function apply4() {
     const rules = [BUTTON_CSS];
-    if (settings20.store.hideDictationRefinement)
+    if (settings21.store.hideDictationRefinement)
       rules.push(REFINEMENT_CSS);
     registerStyle(STYLE_NAME4, rules.join(`
 `));
@@ -16665,7 +16989,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings20,
+    settings: settings21,
     patches: [
       {
         find: 'settings.behavior.dictation-refinement.description","How much Grok refines your speech-to-text transcriptions',
@@ -16675,8 +16999,8 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         }
       }
     ],
-    start: apply3,
-    onSettingsChange: apply3,
+    start: apply4,
+    onSettingsChange: apply4,
     stop() {
       unregisterStyle(STYLE_NAME4);
     }
@@ -16710,7 +17034,7 @@ div:has(> #grok-bot-nav-button) {
 
   // src/plugins/noShareLink/index.ts
   var STYLE_NAME6 = "noShareLink";
-  var settings21 = definePluginSettings({
+  var settings22 = definePluginSettings({
     hideShareProject: {
       type: 3 /* BOOLEAN */,
       description: "Inside a project: hide the top-right Share Project button.",
@@ -16722,12 +17046,12 @@ div:has(> #grok-bot-nav-button) {
       default: true
     }
   });
-  function apply4() {
+  function apply5() {
     const rules = [];
-    if (settings21.store.hideShareProject) {
+    if (settings22.store.hideShareProject) {
       rules.push('button[aria-label="Share Project"]{display:none!important}');
     }
-    if (settings21.store.hideCreateShareLink) {
+    if (settings22.store.hideCreateShareLink) {
       rules.push('button[aria-label="Create share link"]{display:none!important}');
     }
     registerStyle(STYLE_NAME6, rules.join(`
@@ -16740,9 +17064,9 @@ div:has(> #grok-bot-nav-button) {
     authors: [Devs.p],
     tags: ["ui", "privacy"],
     enabledByDefault: true,
-    settings: settings21,
-    start: apply4,
-    onSettingsChange: apply4,
+    settings: settings22,
+    start: apply5,
+    onSettingsChange: apply5,
     stop() {
       unregisterStyle(STYLE_NAME6);
     }
@@ -16750,11 +17074,11 @@ div:has(> #grok-bot-nav-button) {
 
   // src/plugins/noSidebarIdentity/index.ts
   var STYLE_NAME7 = "noSidebarIdentity";
-  var FOOTER = '[data-sidebar="footer"]';
-  var STACK = `${FOOTER} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
-  var TEXT_WRAP = `${FOOTER} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
+  var FOOTER2 = '[data-sidebar="footer"]';
+  var STACK = `${FOOTER2} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
+  var TEXT_WRAP = `${FOOTER2} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER2} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
   var MENU_EMAIL = '[role="menu"] [class*="max-w-[400px]"].truncate';
-  var settings22 = definePluginSettings({
+  var settings23 = definePluginSettings({
     hideUsername: {
       type: 3 /* BOOLEAN */,
       description: "Hide the username next to the sidebar avatar.",
@@ -16766,19 +17090,19 @@ div:has(> #grok-bot-nav-button) {
       default: true
     }
   });
-  function apply5() {
+  function apply6() {
     const rules = [];
-    if (settings22.store.hideUsername) {
+    if (settings23.store.hideUsername) {
       rules.push(`${STACK}>:first-child{display:none!important}`);
-      rules.push(`${FOOTER} .void-sidebar-name{display:none!important}`);
+      rules.push(`${FOOTER2} .void-sidebar-name{display:none!important}`);
     }
-    if (settings22.store.hideEmail) {
+    if (settings23.store.hideEmail) {
       rules.push(`${STACK}>:nth-child(2){display:none!important}`);
       rules.push(`${MENU_EMAIL}{display:none!important}`);
     }
-    if (settings22.store.hideUsername && settings22.store.hideEmail) {
+    if (settings23.store.hideUsername && settings23.store.hideEmail) {
       rules.push(`${TEXT_WRAP}{display:none!important}`);
-      rules.push(`${FOOTER} .void-sidebar-info{display:none!important}`);
+      rules.push(`${FOOTER2} .void-sidebar-info{display:none!important}`);
     }
     registerStyle(STYLE_NAME7, rules.join(`
 `));
@@ -16790,7 +17114,7 @@ div:has(> #grok-bot-nav-button) {
     authors: [Devs.p],
     tags: ["ui", "privacy"],
     enabledByDefault: true,
-    settings: settings22,
+    settings: settings23,
     patches: [
       {
         find: '"max-w-[400px] truncate"',
@@ -16801,8 +17125,8 @@ div:has(> #grok-bot-nav-button) {
         }
       }
     ],
-    start: apply5,
-    onSettingsChange: apply5,
+    start: apply6,
+    onSettingsChange: apply6,
     stop() {
       unregisterStyle(STYLE_NAME7);
     }
@@ -16936,7 +17260,7 @@ div:has(> #grok-bot-nav-button) {
     return text.replaceAll("\\", "\\\\").replaceAll('"', "\\\"").replaceAll(`
 `, "\\A ");
   }
-  var settings23 = definePluginSettings({
+  var settings24 = definePluginSettings({
     mode: {
       type: 4 /* SELECT */,
       description: "When to rotate the home greeting.",
@@ -16968,7 +17292,7 @@ div:has(> #grok-bot-nav-button) {
     }
   }).withPrivateSettings();
   function PhrasesEditor() {
-    const { phrases } = settings23.use(["phrases"]);
+    const { phrases } = settings24.use(["phrases"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
@@ -16985,7 +17309,7 @@ div:has(> #grok-bot-nav-button) {
       className: cl25("textarea"),
       value: phrases ?? DEFAULT_PHRASES,
       onChange: (e) => {
-        settings23.store.phrases = e.target.value;
+        settings24.store.phrases = e.target.value;
       },
       placeholder: DEFAULT_PHRASES
     })));
@@ -17001,41 +17325,41 @@ div:has(> #grok-bot-nav-button) {
   }
   function phrases() {
     try {
-      const lines = parsePhrases(settings23.store.phrases ?? DEFAULT_PHRASES);
+      const lines = parsePhrases(settings24.store.phrases ?? DEFAULT_PHRASES);
       return lines.length ? lines : null;
     } catch {
       return null;
     }
   }
   function rotateMode() {
-    const value = String(settings23.store.mode ?? "refresh");
+    const value = String(settings24.store.mode ?? "refresh");
     if (value === "interval" || value === "manual")
       return value;
     return "refresh";
   }
   function rotateOrder() {
-    return settings23.store.order === "random" ? "random" : "sequential";
+    return settings24.store.order === "random" ? "random" : "sequential";
   }
   function intervalMs() {
-    return clamp(Number(settings23.store.intervalSec ?? 10), 1, 3600) * 1000;
+    return clamp(Number(settings24.store.intervalSec ?? 10), 1, 3600) * 1000;
   }
   function routeKey3(s) {
     return `${s.route.page ?? ""}|${s.route.workspaceId ?? ""}`;
   }
-  var started5 = false;
+  var started6 = false;
   var wasHome = false;
   var timerId;
   var clicks = null;
   function pickNextIndex(listLen, advance) {
     if (listLen <= 0)
       return 0;
-    const current = Number(settings23.store.greetIndex ?? -1);
-    const last = Number(settings23.store.lastRandom ?? -1);
+    const current = Number(settings24.store.greetIndex ?? -1);
+    const last = Number(settings24.store.lastRandom ?? -1);
     if (listLen === 1) {
       if (current !== 0)
-        settings23.store.greetIndex = 0;
+        settings24.store.greetIndex = 0;
       if (last !== 0)
-        settings23.store.lastRandom = 0;
+        settings24.store.lastRandom = 0;
       return 0;
     }
     if (!advance)
@@ -17046,17 +17370,17 @@ div:has(> #grok-bot-nav-button) {
       let guard = 0;
       while (next === prev && guard++ < 10)
         next = Math.floor(Math.random() * listLen);
-      settings23.store.greetIndex = next;
-      settings23.store.lastRandom = next;
+      settings24.store.greetIndex = next;
+      settings24.store.lastRandom = next;
       return next;
     }
     const prev = current >= -1 && current < listLen ? current : -1;
     const next = (prev + 1) % listLen;
-    settings23.store.greetIndex = next;
+    settings24.store.greetIndex = next;
     return next;
   }
   function paintHero(advance) {
-    if (!started5 || !isNonProjectHome()) {
+    if (!started6 || !isNonProjectHome()) {
       unregisterStyle(HERO_STYLE);
       return;
     }
@@ -17078,7 +17402,7 @@ div:has(> #grok-bot-nav-button) {
   }
   function startTimerIfNeeded() {
     stopTimer();
-    if (!started5 || !isNonProjectHome())
+    if (!started6 || !isNonProjectHome())
       return;
     if (rotateMode() !== "interval")
       return;
@@ -17099,7 +17423,7 @@ div:has(> #grok-bot-nav-button) {
     unregisterStyle(HERO_STYLE);
   }
   function syncHero(fromRoute) {
-    if (!started5)
+    if (!started6)
       return;
     if (!isNonProjectHome()) {
       leaveHome();
@@ -17113,7 +17437,7 @@ div:has(> #grok-bot-nav-button) {
     }
   }
   function onManualClick(e) {
-    if (!started5 || !isNonProjectHome())
+    if (!started6 || !isNonProjectHome())
       return;
     if (rotateMode() !== "manual")
       return;
@@ -17134,7 +17458,7 @@ div:has(> #grok-bot-nav-button) {
     description: "Replace the rotating chat input placeholder and the non-project home greeting. Rotate the greeting on visit, a timer, or a click.",
     authors: [Devs.p],
     tags: ["chat"],
-    settings: settings23,
+    settings: settings24,
     _phrases() {
       return phrases();
     },
@@ -17144,14 +17468,14 @@ div:has(> #grok-bot-nav-button) {
       return this._phrases()?.[0] ?? value;
     },
     start() {
-      started5 = true;
+      started6 = true;
       wasHome = false;
       clicks = new AbortController;
       document.addEventListener("click", onManualClick, { signal: clicks.signal });
       syncHero(true);
     },
     stop() {
-      started5 = false;
+      started6 = false;
       clicks?.abort();
       clicks = null;
       stopTimer();
@@ -17574,7 +17898,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var HOVER_ARM_PX = 4;
   var EFFECT_GM_KEY = "VoidPP.rt.effect";
   var EFFECT_LS_KEY = "voidpp.rt.v1";
-  var settings24 = definePluginSettings({
+  var settings25 = definePluginSettings({
     maxRecent: {
       type: 4 /* SELECT */,
       description: "How many recently opened conversations to show.",
@@ -17642,13 +17966,13 @@ html.void-rt-open [data-sidebar="gap"] {
     return effect.visits;
   }
   function maxCount() {
-    const n = Number(settings24.store.maxRecent);
+    const n = Number(settings25.store.maxRecent);
     return Number.isFinite(n) && n > 0 ? n : 5;
   }
   function capVisits(ids) {
-    const allowHome = settings24.store.includeHome;
+    const allowHome = settings25.store.includeHome;
     const current = currentVisit();
-    const dirtyGlobalWs = asWorkspaceId2(settings24.plain.workspaceByConv?.[HOME_KEY]);
+    const dirtyGlobalWs = asWorkspaceId2(settings25.plain.workspaceByConv?.[HOME_KEY]);
     const seen = new Set;
     const out = [];
     for (const raw of ids) {
@@ -17695,9 +18019,9 @@ html.void-rt-open [data-sidebar="gap"] {
     return keys.every((k) => src[k] === b[k]);
   }
   function assignRecord(key, next) {
-    if (sameRecord(settings24.plain[key], next))
+    if (sameRecord(settings25.plain[key], next))
       return false;
-    settings24.store[key] = next;
+    settings25.store[key] = next;
     return true;
   }
   function emptyEffect() {
@@ -17889,9 +18213,9 @@ html.void-rt-open [data-sidebar="gap"] {
       effect = disk;
     } else {
       const fromSettings = {
-        visits: asStringList(settings24.plain.visits),
-        deniedIds: asStringList(settings24.plain.deniedIds),
-        deniedAt: asStringRecord(settings24.plain.deniedAt)
+        visits: asStringList(settings25.plain.visits),
+        deniedIds: asStringList(settings25.plain.deniedIds),
+        deniedAt: asStringRecord(settings25.plain.deniedAt)
       };
       effect = {
         v: 1,
@@ -17933,7 +18257,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function commitVisits(next) {
     const changedVisits = persistEffect(next);
     const visits = readVisits();
-    const rawWs = pruneRecord(settings24.plain.workspaceByConv, visits);
+    const rawWs = pruneRecord(settings25.plain.workspaceByConv, visits);
     const workspaceByConv = {};
     for (const [id, value] of Object.entries(rawWs)) {
       if (id === HOME_KEY)
@@ -17942,7 +18266,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (ws)
         workspaceByConv[id] = ws;
     }
-    const pages = pruneRecord(settings24.plain.pages, visits);
+    const pages = pruneRecord(settings25.plain.pages, visits);
     const usedWs = new Set(Object.values(workspaceByConv));
     for (const id of visits) {
       const ws = workspaceFromHomeId(id);
@@ -17954,7 +18278,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const keepProjects = {};
     const keepIcons = {};
     const idx = sidebarIndex();
-    for (const [id, name] of Object.entries(settings24.plain.projectNames ?? {})) {
+    for (const [id, name] of Object.entries(settings25.plain.projectNames ?? {})) {
       const n = usableName(name);
       if (!usedWs.has(id) || !n)
         continue;
@@ -17963,14 +18287,14 @@ html.void-rt-open [data-sidebar="gap"] {
         continue;
       keepProjects[id] = n;
     }
-    for (const [id, snap] of Object.entries(settings24.plain.projectIcons ?? {})) {
+    for (const [id, snap] of Object.entries(settings25.plain.projectIcons ?? {})) {
       if (!usedWs.has(id) || !snap || isChromeSnap(snap))
         continue;
       keepIcons[id] = snap;
     }
     let changed = changedVisits;
     const titles = {};
-    for (const [id, name] of Object.entries(pruneRecord(settings24.plain.titles, visits))) {
+    for (const [id, name] of Object.entries(pruneRecord(settings25.plain.titles, visits))) {
       const t = usableTitle(name);
       if (t)
         titles[id] = t;
@@ -17997,10 +18321,10 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     if (id === chatIdFromUrl() && isAccessDeniedPage())
       return;
-    const prev = settings24.plain.titles ?? {};
+    const prev = settings25.plain.titles ?? {};
     if (prev[id] === t)
       return;
-    settings24.store.titles = { ...prev, [id]: t };
+    settings25.store.titles = { ...prev, [id]: t };
   }
   function isHomeId(id) {
     return id === HOME_KEY || id.startsWith(HOME_SEP);
@@ -18204,9 +18528,9 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!id || isHomeId(id))
       return "New chat";
     if (isDenied(id))
-      return usableTitle(settings24.plain.titles?.[id]) || "Untitled";
+      return usableTitle(settings25.plain.titles?.[id]) || "Untitled";
     const conv = lookup(id);
-    return usableTitle(conv?.title) || usableTitle(settings24.plain.titles?.[id]) || titleFromPage(id) || "Untitled";
+    return usableTitle(conv?.title) || usableTitle(settings25.plain.titles?.[id]) || titleFromPage(id) || "Untitled";
   }
   function liveWorkspaceId() {
     const fromUrl = asWorkspaceId2(projectIdFromUrl());
@@ -18438,18 +18762,18 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!ws)
       return;
     const snap = liveIconSnap(ws);
-    const prev = settings24.plain.projectIcons ?? {};
+    const prev = settings25.plain.projectIcons ?? {};
     if (snap) {
       wsIcons[ws] = snap;
       if (prev[ws] !== snap)
-        settings24.store.projectIcons = { ...prev, [ws]: snap };
+        settings25.store.projectIcons = { ...prev, [ws]: snap };
       return;
     }
     if (prev[ws] && isChromeSnap(prev[ws])) {
       const next = { ...prev };
       delete next[ws];
       delete wsIcons[ws];
-      settings24.store.projectIcons = next;
+      settings25.store.projectIcons = next;
     }
   }
   function projectNameFromAncestors(el) {
@@ -18561,12 +18885,12 @@ html.void-rt-open [data-sidebar="gap"] {
     return "";
   }
   function dropWorkspace(id) {
-    const prev = settings24.plain.workspaceByConv ?? {};
+    const prev = settings25.plain.workspaceByConv ?? {};
     if (!prev[id])
       return;
     const next = { ...prev };
     delete next[id];
-    settings24.store.workspaceByConv = next;
+    settings25.store.workspaceByConv = next;
   }
   function workspaceOf2(id) {
     if (!id)
@@ -18581,7 +18905,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const fromSidebar = sidebarIndex().wsByConv[id] || workspaceFromDom(id);
     if (fromSidebar)
       return fromSidebar;
-    const cached = asWorkspaceId2(settings24.plain.workspaceByConv?.[id]);
+    const cached = asWorkspaceId2(settings25.plain.workspaceByConv?.[id]);
     if (cached)
       return cached;
     const fromHist = workspaceFromHistory(id);
@@ -18612,7 +18936,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!ws)
       return "";
     const idx = sidebarIndex();
-    const named = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || wsNames[ws] || settings24.plain.projectNames?.[ws] || "");
+    const named = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || wsNames[ws] || settings25.plain.projectNames?.[ws] || "");
     if (!named)
       return "";
     const live = liveWorkspaceId();
@@ -18627,28 +18951,28 @@ html.void-rt-open [data-sidebar="gap"] {
     const ws = workspaceOf2(id);
     if (!ws)
       return;
-    const prevWs = settings24.plain.workspaceByConv ?? {};
+    const prevWs = settings25.plain.workspaceByConv ?? {};
     if (prevWs[id] !== ws)
-      settings24.store.workspaceByConv = { ...prevWs, [id]: ws };
+      settings25.store.workspaceByConv = { ...prevWs, [id]: ws };
     const idx = sidebarIndex();
     const sidebarName = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || "");
     const liveName = ws === liveWorkspaceId() ? readOpenProjectName() : "";
-    const cached = usableName(wsNames[ws] || settings24.plain.projectNames?.[ws] || "");
+    const cached = usableName(wsNames[ws] || settings25.plain.projectNames?.[ws] || "");
     const fallback = !isBrandLabel(liveName) ? usableName(liveName) : "";
     const name = sidebarName || fallback || cached;
     rememberProjectIcon(ws);
     if (!name)
       return;
     wsNames[ws] = name;
-    const prevNames = settings24.plain.projectNames ?? {};
+    const prevNames = settings25.plain.projectNames ?? {};
     if (prevNames[ws] !== name)
-      settings24.store.projectNames = { ...prevNames, [ws]: name };
+      settings25.store.projectNames = { ...prevNames, [ws]: name };
   }
   function reconcileSidebarCache() {
     const idx = sidebarIndex();
-    const prevWs = { ...settings24.plain.workspaceByConv };
-    const prevNames = { ...settings24.plain.projectNames };
-    const prevIcons = { ...settings24.plain.projectIcons };
+    const prevWs = { ...settings25.plain.workspaceByConv };
+    const prevNames = { ...settings25.plain.projectNames };
+    const prevIcons = { ...settings25.plain.projectIcons };
     let wsChanged = false;
     let namesChanged = false;
     let iconsChanged = false;
@@ -18692,11 +19016,11 @@ html.void-rt-open [data-sidebar="gap"] {
       namesChanged = true;
     }
     if (wsChanged)
-      settings24.store.workspaceByConv = prevWs;
+      settings25.store.workspaceByConv = prevWs;
     if (namesChanged)
-      settings24.store.projectNames = prevNames;
+      settings25.store.projectNames = prevNames;
     if (iconsChanged)
-      settings24.store.projectIcons = prevIcons;
+      settings25.store.projectIcons = prevIcons;
   }
   function requestWorkspace(id) {
     if (!id || isHomeId(id) || pendingWs.has(id))
@@ -18724,16 +19048,16 @@ html.void-rt-open [data-sidebar="gap"] {
           maybePaint();
           return;
         }
-        const prev = settings24.plain.workspaceByConv ?? {};
+        const prev = settings25.plain.workspaceByConv ?? {};
         if (prev[id] !== ws)
-          settings24.store.workspaceByConv = { ...prev, [id]: ws };
+          settings25.store.workspaceByConv = { ...prev, [id]: ws };
         const live = liveWorkspaceId();
         const liveName = usableName(readOpenProjectName());
-        const names = settings24.plain.projectNames ?? {};
+        const names = settings25.plain.projectNames ?? {};
         if (live && ws !== live && liveName && names[ws] === liveName) {
           const next = { ...names };
           delete next[ws];
-          settings24.store.projectNames = next;
+          settings25.store.projectNames = next;
           delete wsNames[ws];
         }
         maybePaint();
@@ -19045,7 +19369,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function snapOf(id) {
     if (!id || isHomeId(id))
       return null;
-    const snap = thumbs.get(id) ?? parseSnap(settings24.plain.pages?.[id]);
+    const snap = thumbs.get(id) ?? parseSnap(settings25.plain.pages?.[id]);
     if (!snap)
       return null;
     const lines = lastRound(snap.lines);
@@ -19057,22 +19381,22 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function rememberPage(id, snap) {
     const json = JSON.stringify(snap);
-    const prev = settings24.plain.pages ?? {};
+    const prev = settings25.plain.pages ?? {};
     if (prev[id] === json)
       return;
-    settings24.store.pages = { ...prev, [id]: json };
+    settings25.store.pages = { ...prev, [id]: json };
   }
   function forgetPage(id) {
     thumbs.delete(id);
-    const prev = settings24.plain.pages ?? {};
+    const prev = settings25.plain.pages ?? {};
     if (!(id in prev))
       return;
     const next = { ...prev };
     delete next[id];
-    settings24.store.pages = next;
+    settings25.store.pages = next;
   }
   function prunePages() {
-    const prev = settings24.plain.pages ?? {};
+    const prev = settings25.plain.pages ?? {};
     const next = {};
     let changed = false;
     for (const [id, raw] of Object.entries(prev)) {
@@ -19084,7 +19408,7 @@ html.void-rt-open [data-sidebar="gap"] {
       next[id] = raw;
     }
     if (changed)
-      settings24.store.pages = next;
+      settings25.store.pages = next;
   }
   function applyLineStyle(el, role, theme) {
     el.style.display = "-webkit-box";
@@ -19144,7 +19468,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const lines = lastRound(betterLines(fromStore, fromDom));
     if (!lines.length)
       return;
-    const prev = thumbs.get(id) ?? parseSnap(settings24.plain.pages?.[id]);
+    const prev = thumbs.get(id) ?? parseSnap(settings25.plain.pages?.[id]);
     const prevLines = prev ? lastRound(prev.lines) : [];
     const nextRank = linesRank(lines);
     const prevRank = linesRank(prevLines);
@@ -19254,7 +19578,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function bump(id) {
     if (!id)
       return;
-    if (isHomeId(id) && !settings24.store.includeHome)
+    if (isHomeId(id) && !settings25.store.includeHome)
       return;
     if (!isHomeId(id) && id === chatIdFromUrl() && isAccessDeniedPage()) {
       dropVisit(id);
@@ -19708,7 +20032,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return svg;
   }
   function projectIconOf(ws) {
-    const raw = ws ? wsIcons[ws] || settings24.plain.projectIcons?.[ws] || liveIconSnap(ws) || "" : "";
+    const raw = ws ? wsIcons[ws] || settings25.plain.projectIcons?.[ws] || liveIconSnap(ws) || "" : "";
     const snap = raw && !isChromeSnap(raw) ? raw : "";
     if (snap) {
       wsIcons[ws] = snap;
@@ -19943,7 +20267,7 @@ html.void-rt-open [data-sidebar="gap"] {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings24,
+    settings: settings25,
     managedStyle: "recentTopics",
     _mark({ response }) {
       try {
@@ -20083,7 +20407,7 @@ html.void-rt-open [data-sidebar="gap"] {
       }
     }, "Play preview"));
   }
-  var settings25 = definePluginSettings({
+  var settings26 = definePluginSettings({
     sound: {
       type: 3 /* BOOLEAN */,
       description: "Play a notification sound.",
@@ -20131,7 +20455,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function onUserGesture() {
     userGestured = true;
-    if (settings25.store.browserNotification && Notification.permission === "default")
+    if (settings26.store.browserNotification && Notification.permission === "default")
       Notification.requestPermission();
     const ctx = getCtx();
     if (!ctx)
@@ -20184,7 +20508,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const ctx = getCtx();
     if (!ctx)
       return;
-    const url = settings25.store.soundUrl?.trim() || DEFAULT_CHIME;
+    const url = settings26.store.soundUrl?.trim() || DEFAULT_CHIME;
     if (ctx.state === "suspended")
       ctx.resume().then(() => playUrl(ctx, url), () => logger32.info("AudioContext resume failed"));
     else
@@ -20201,11 +20525,11 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function notify(responseId, state) {
     logger32.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
-    if (settings25.store.onlyWhenHidden && document.visibilityState === "visible")
+    if (settings26.store.onlyWhenHidden && document.visibilityState === "visible")
       return;
-    if (settings25.store.sound)
+    if (settings26.store.sound)
       playSound();
-    if (settings25.store.browserNotification)
+    if (settings26.store.browserNotification)
       sendBrowserNotification("Grok", "Response complete.");
   }
   function notifyOnce(responseId, state) {
@@ -20259,7 +20583,7 @@ html.void-rt-open [data-sidebar="gap"] {
     description: "Notify when Grok finishes responding.",
     authors: [Devs.Prism, Devs.p],
     tags: ["chat"],
-    settings: settings25,
+    settings: settings26,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
       if (gestureCtrl)
@@ -20395,7 +20719,7 @@ html.void-rt-open [data-sidebar="gap"] {
 
   // src/plugins/settingsFlyout/index.tsx
   var cl27 = classNameFactory("void-sf-");
-  var settings26 = definePluginSettings({
+  var settings27 = definePluginSettings({
     showOpenSettings: {
       type: 3 /* BOOLEAN */,
       description: 'Show "Open Settings" (last used tab).',
@@ -20507,7 +20831,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }, "Void++"), tabItems(tabs));
   }
   function SettingsMenu({ onOpen }) {
-    const cfg = settings26.use([
+    const cfg = settings27.use([
       "showOpenSettings",
       "voidppPosition",
       "plugins",
@@ -20549,7 +20873,7 @@ html.void-rt-open [data-sidebar="gap"] {
     tags: ["ui", "settings"],
     enabledByDefault: true,
     requiresRestart: true,
-    settings: settings26,
+    settings: settings27,
     start() {
       migratePluginSetting("SettingsFlyout", "voidppPosition", "voidPosition");
     },
@@ -20607,18 +20931,18 @@ html.void-rt-open [data-sidebar="gap"] {
     return [n >> 16 & 255, n >> 8 & 255, n & 255];
   }
   function ColorRow2() {
-    const { starColor } = settings27.use(["starColor"]);
+    const { starColor } = settings28.use(["starColor"]);
     return /* @__PURE__ */ React.createElement(ColorSettingRow, {
       value: starColor,
       onChange: (v) => {
-        settings27.store.starColor = v;
+        settings28.store.starColor = v;
       },
       title: "Star color",
       description: "Color of the twinkling stars."
     });
   }
   function StarryBackground() {
-    const { starColor } = settings27.use(["starColor"]);
+    const { starColor } = settings28.use(["starColor"]);
     return /* @__PURE__ */ React.createElement("div", {
       "aria-hidden": true,
       className: "fixed inset-0 -z-10 pointer-events-none"
@@ -20627,7 +20951,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }));
   }
   var WrappedStarry = ErrorBoundary.wrap(StarryBackground);
-  var settings27 = definePluginSettings({
+  var settings28 = definePluginSettings({
     starColor: {
       type: 6 /* COMPONENT */,
       default: DEFAULT_COLOR,
@@ -20640,7 +20964,7 @@ html.void-rt-open [data-sidebar="gap"] {
     description: "Adds Grok's native twinkling starry background to the main page.",
     authors: [Devs.Prism],
     tags: ["ui"],
-    settings: settings27,
+    settings: settings28,
     _StarryBg() {
       return /* @__PURE__ */ React.createElement(WrappedStarry, {
         key: "void-starry-bg"
@@ -20764,7 +21088,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     projects: "void-streamer-projects",
     conversations: "void-streamer-conversations"
   };
-  var settings28 = definePluginSettings({
+  var settings29 = definePluginSettings({
     sidebarAvatar: {
       type: 3 /* BOOLEAN */,
       description: "Blur your avatar in the sidebar.",
@@ -20809,7 +21133,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   function syncClasses() {
     const { classList } = document.documentElement;
     for (const [key, cls] of Object.entries(CSS_CLASSES)) {
-      classList.toggle(cls, !!settings28.store[key]);
+      classList.toggle(cls, !!settings29.store[key]);
     }
   }
   var streamerMode_default = definePlugin({
@@ -20818,7 +21142,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     description: "Blurs personal information for privacy while streaming.",
     authors: [Devs.Prism],
     tags: ["privacy"],
-    settings: settings28,
+    settings: settings29,
     start: syncClasses,
     onSettingsChange: syncClasses,
     stop() {
@@ -21730,7 +22054,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   // src/plugins/usageDisplay/index.tsx
   var logger34 = new Logger("UsageDisplay");
   var cl28 = classNameFactory("void-ud-");
-  var settings29 = definePluginSettings({
+  var settings30 = definePluginSettings({
     usageStats: {
       type: 3 /* BOOLEAN */,
       description: "Record daily usage. Hover shows today after a delay; click opens history.",
@@ -21845,12 +22169,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
     SettingsStore3.markAsChanged();
   }
   function snapshotToday() {
-    if (!settings29.store.usageStats)
+    if (!settings30.store.usageStats)
       return;
     syncAccount();
     if (!state.userId)
       return;
-    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings29.store.retainDays));
+    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings30.store.retainDays));
   }
   async function refresh(reason = "manual") {
     if (refreshPromise)
@@ -21968,7 +22292,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function ButtonIcon() {
     useExternalStore(store3);
-    const { showPercent } = settings29.use(["showPercent"]);
+    const { showPercent } = settings30.use(["showPercent"]);
     const weekly = state.usage?.weekly;
     const percent = weekly?.usedPercent ?? null;
     const tone = usageTone(percent);
@@ -22038,7 +22362,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function UsagePanel() {
     useExternalStore(store3);
-    const { usageStats, hoverStatsDelay } = settings29.use(["usageStats", "hoverStatsDelay"]);
+    const { usageStats, hoverStatsDelay } = settings30.use(["usageStats", "hoverStatsDelay"]);
     const delay = hoverDelayOf(hoverStatsDelay);
     const [showToday, setShowToday] = useState(usageStats && delay <= 0);
     const weekly = state.usage?.weekly;
@@ -22080,7 +22404,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }));
   }
   function StatsToggle() {
-    const { usageStats } = settings29.use(["usageStats"]);
+    const { usageStats } = settings30.use(["usageStats"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       justifyContent: "space-between",
@@ -22098,7 +22422,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }, "Record local daily usage on this device.")), /* @__PURE__ */ React.createElement(Switch, {
       checked: !!usageStats,
       onCheckedChange: (value) => {
-        settings29.store.usageStats = value;
+        settings30.store.usageStats = value;
         store3.notify();
         if (value)
           refresh("manual");
@@ -22207,14 +22531,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
       onClick: () => {
         if (pre == null)
           return;
-        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings29.store.retainDays));
+        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings30.store.retainDays));
         store3.notify();
       }
     }, "Repair")));
   }
   function StatsModal({ onClose }) {
     useExternalStore(store3);
-    const { usageStats } = settings29.use(["usageStats"]);
+    const { usageStats } = settings30.use(["usageStats"]);
     const days = usageStats && state.userId ? listDays(state.userId) : [];
     const todayKey = localDateKey(Date.now());
     const bars = days.length ? fillChartDays(days) : [];
@@ -22350,7 +22674,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
-    settings: settings29,
+    settings: settings30,
     start() {
       migrateUsageStats();
       try {
@@ -22373,7 +22697,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       streamEnd: onStreamEnd8
     },
     onSettingsChange() {
-      if (settings29.store.usageStats)
+      if (settings30.store.usageStats)
         refresh("manual");
     }
   });
@@ -22381,7 +22705,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   // src/plugins/userQuotes/index.ts
   var STYLE_NAME8 = "userQuotes";
   var SEL = '[data-testid="user-message"] blockquote:not(.twitter-tweet)';
-  var settings30 = definePluginSettings({
+  var settings31 = definePluginSettings({
     italic: {
       type: 3 /* BOOLEAN */,
       description: "Render quoted lines in italic.",
@@ -22393,14 +22717,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
       default: false
     }
   });
-  function apply6() {
+  function apply7() {
     const rules = [
       `${SEL}{margin:0!important;border-inline-start-color:hsl(var(--fg-secondary))!important;border-inline-start-width:0.25rem!important;border-inline-start-style:solid!important;padding-inline-start:0.75rem!important}`,
       `${SEL}>*{margin-block:0!important}`
     ];
-    if (!settings30.store.italic)
+    if (!settings31.store.italic)
       rules.push(`${SEL}{font-style:inherit!important}`);
-    if (!settings30.store.quotes) {
+    if (!settings31.store.quotes) {
       rules.push(`${SEL}{quotes:none!important}`);
       rules.push(`${SEL}::before,${SEL}::after,${SEL} p::before,${SEL} p::after{content:none!important}`);
     }
@@ -22414,7 +22738,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings30,
+    settings: settings31,
     patches: [
       {
         find: '["###### ",',
@@ -22424,8 +22748,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
       }
     ],
-    start: apply6,
-    onSettingsChange: apply6,
+    start: apply7,
+    onSettingsChange: apply7,
     stop() {
       unregisterStyle(STYLE_NAME8);
     }
@@ -22433,7 +22757,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
   // src/plugins/widerChat/index.ts
   var STYLE_NAME9 = "widerChat";
-  var settings31 = definePluginSettings({
+  var settings32 = definePluginSettings({
     width: {
       type: 1 /* NUMBER */,
       description: "Maximum chat width in rem.",
@@ -22441,7 +22765,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
   function applyWidth() {
-    const w = settings31.store.width;
+    const w = settings32.store.width;
     registerStyle(STYLE_NAME9, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
   var widerChat_default = definePlugin({
@@ -22450,7 +22774,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     description: "Adjustable chat width for big monitors.",
     authors: [Devs.Prism],
     tags: ["chat", "ui"],
-    settings: settings31,
+    settings: settings32,
     start: applyWidth,
     onSettingsChange: applyWidth,
     stop() {
@@ -22479,10 +22803,11 @@ button:has(.void-ud-trigger > .void-ud-label) {
   cleaner_default.updatedAt = 1789246749000;
   cloneChats_default.updatedAt = 1787870966000;
   compactModeSelect_default.updatedAt = 1789811419000;
-  completeToast_default.updatedAt = 1789913428000;
+  completeToast_default.updatedAt = 1789914745000;
   composerOpacity_default.updatedAt = 1788044121000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customInstructions_default.updatedAt = 1789898438000;
+  customSidebarIdentity_default.updatedAt = 0;
   downloadTTS_default.updatedAt = 1787870966000;
   experiments_default.updatedAt = 1788047438000;
   exportChat_default.updatedAt = 1787870966000;
@@ -22508,7 +22833,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   usageDisplay_default.updatedAt = 1789172854000;
   userQuotes_default.updatedAt = 1789905284000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterNavigator_default.name]: betterNavigator_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [compactModeSelect_default.name]: compactModeSelect_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [modeSync_default.name]: modeSync_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterNavigator_default.name]: betterNavigator_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [compactModeSelect_default.name]: compactModeSelect_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [modeSync_default.name]: modeSync_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;

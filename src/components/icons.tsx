@@ -353,6 +353,13 @@ export const UserRoundXIcon = (props: IconProps = {}) =>
         <path d="m22 17-5 5" />,
     );
 
+export const UserRoundPenIcon = (props: IconProps = {}) =>
+    svg(props,
+        <path d="M2 21a8 8 0 0 1 10.821-7.487" />,
+        <path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />,
+        <circle cx="10" cy="8" r="5" />,
+    );
+
 export const CatIcon = (props: IconProps = {}) =>
     svg(props,
         <path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.89-6.42-.5-7 1.39-.58 4.72.23 6.5 2.23A9.04 9.04 0 0 1 12 5Z" />,

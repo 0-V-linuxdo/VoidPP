@@ -1,0 +1,36 @@
+.void-csi-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    color: hsl(var(--fg-primary));
+    user-select: none;
+}
+
+.void-sidebar-card > .void-csi-name,
+[data-sidebar="footer"] button .void-csi-name {
+    flex: 1;
+}
+
+.void-csi-hide {
+    display: none !important;
+}
+
+html.void-streamer-sidebar-name .void-csi-name {
+    filter: blur(6px);
+    transition: filter 0.2s ease;
+}
+
+html.void-streamer-sidebar-name .void-sidebar-card:hover .void-csi-name,
+html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover .void-csi-name {
+    filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.void-streamer-sidebar-name .void-csi-name {
+        transition: none;
+    }
+}
