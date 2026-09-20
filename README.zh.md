@@ -33,6 +33,7 @@
 | <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | 开 | 队列发出去用当前选中的模型。切会话保持 picker，直到 load-responses 结束（`stickyOnNavigate`）。 |
 | <img src="https://api.iconify.design/lucide/text-quote.svg?color=%238b949e" width="16" height="16" alt=""> UserQuotes | 开 | 自己气泡里的引用行画出可见左竖条，避免 `>` 被 markdown 吃掉后看起来像消失。 |
 | <img src="https://api.iconify.design/lucide/blocks.svg?color=%238b949e" width="16" height="16" alt=""> NoSidebarPlugins | 开 | 把侧栏 Plugins 按钮挪到头像折叠菜单（Void++ / Help 旁边）。 |
+| <img src="https://api.iconify.design/lucide/lightbulb.svg?color=%238b949e" width="16" height="16" alt=""> NoBuildStarters | 开 | 隐藏 Build 模式输入框上方的 Ideas 胶囊栏。 |
 | <img src="https://api.iconify.design/lucide/panel-left.svg?color=%238b949e" width="16" height="16" alt=""> BetterSidebar | 开 | 侧栏增强：分组标题按钮仅在悬停该分组时显示，Chats 标题增加 New chat 加号，Bots/Projects 分区默认折叠，Chats 分区默认展开（`titleRowHover`、`chatsPlus`、`botsDefaultCollapsed`、`chatsDefaultExpanded`、`projectsDefaultCollapsed`）。 |
 
 #### 设置 UI
