@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.12] v1.0.0
+// @version      [20260920.13] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.12] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.13] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7390,9 +7390,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6344d48"}`
-    }, `(${"6344d48"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f3214b6"}`
+    }, `(${"f3214b6"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21243,10 +21243,15 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var STYLE_NAME8 = "userQuotes";
   var CSS3 = `
 [data-testid="user-message"] blockquote:not(.twitter-tweet) {
-    border-inline-start-color: hsl(var(--fg-tertiary)) !important;
-    border-inline-start-width: 0.125rem !important;
+    margin: 0 !important;
+    border-inline-start-color: hsl(var(--fg-secondary)) !important;
+    border-inline-start-width: 0.25rem !important;
     border-inline-start-style: solid !important;
     padding-inline-start: 0.75rem !important;
+}
+
+[data-testid="user-message"] blockquote:not(.twitter-tweet) > * {
+    margin-block: 0 !important;
 }
 `;
   var userQuotes_default = definePlugin({
@@ -21256,6 +21261,15 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
+    patches: [
+      {
+        find: '["###### ",',
+        replacement: {
+          match: /blockquote:(\(\{children:\i\}\)=>\(0,\i\.jsxs?\)\()"p"/,
+          replace: 'blockquote:$1"blockquote"'
+        }
+      }
+    ],
     start() {
       registerStyle(STYLE_NAME8, CSS3);
     },
@@ -21308,7 +21322,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1789808696000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789406712000;
-  chatStateFavicons_default.updatedAt = 1787789817000;
+  chatStateFavicons_default.updatedAt = 1789899681000;
   cleaner_default.updatedAt = 1789246749000;
   cloneChats_default.updatedAt = 1787870966000;
   compactModeSelect_default.updatedAt = 1789811419000;

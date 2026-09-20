@@ -13,10 +13,15 @@ const STYLE_NAME = "userQuotes";
 
 const CSS = `
 [data-testid="user-message"] blockquote:not(.twitter-tweet) {
-    border-inline-start-color: hsl(var(--fg-tertiary)) !important;
-    border-inline-start-width: 0.125rem !important;
+    margin: 0 !important;
+    border-inline-start-color: hsl(var(--fg-secondary)) !important;
+    border-inline-start-width: 0.25rem !important;
     border-inline-start-style: solid !important;
     padding-inline-start: 0.75rem !important;
+}
+
+[data-testid="user-message"] blockquote:not(.twitter-tweet) > * {
+    margin-block: 0 !important;
 }
 `;
 
@@ -27,6 +32,16 @@ export default definePlugin({
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
+
+    patches: [
+        {
+            find: '["###### ",',
+            replacement: {
+                match: /blockquote:(\(\{children:\i\}\)=>\(0,\i\.jsxs?\)\()"p"/,
+                replace: 'blockquote:$1"blockquote"',
+            },
+        },
+    ],
 
     start() {
         registerStyle(STYLE_NAME, CSS);
