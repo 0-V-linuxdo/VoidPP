@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.7] v1.0.0
+// @version      [20260920.8] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.7] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7380,9 +7380,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a05bcd0"}`
-    }, `(${"a05bcd0"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"95cf8d5"}`
+    }, `(${"95cf8d5"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -15781,9 +15781,34 @@ div:has(> #grok-bot-nav-button) {
 `).map((s) => s.trim()).filter(Boolean);
   }
   function escapeForCssContent(text) {
-    return text.replaceAll(/\\/g, "\\\\").replaceAll(/"/g, "\\\"").replaceAll(/\n/g, "\\A ");
+    return text.replaceAll("\\", "\\\\").replaceAll('"', "\\\"").replaceAll(`
+`, "\\A ");
   }
   var settings22 = definePluginSettings({
+    mode: {
+      type: 4 /* SELECT */,
+      description: "When to rotate the home greeting.",
+      options: [
+        { label: "Each visit to home", value: "refresh", default: true },
+        { label: "Timer while on home", value: "interval" },
+        { label: "Click the title", value: "manual" }
+      ]
+    },
+    order: {
+      type: 4 /* SELECT */,
+      description: "Order of the greeting list.",
+      options: [
+        { label: "Sequential", value: "sequential", default: true },
+        { label: "Random", value: "random" }
+      ]
+    },
+    intervalSec: {
+      type: 5 /* SLIDER */,
+      description: "Seconds between rotations (timer mode).",
+      min: 1,
+      max: 3600,
+      default: 10
+    },
     phrases: {
       type: 6 /* COMPONENT */,
       default: DEFAULT_PHRASES,
@@ -15830,39 +15855,131 @@ div:has(> #grok-bot-nav-button) {
       return null;
     }
   }
+  function rotateMode() {
+    const value = String(settings22.store.mode ?? "refresh");
+    if (value === "interval" || value === "manual")
+      return value;
+    return "refresh";
+  }
+  function rotateOrder() {
+    return settings22.store.order === "random" ? "random" : "sequential";
+  }
+  function intervalMs() {
+    return clamp(Number(settings22.store.intervalSec ?? 10), 1, 3600) * 1000;
+  }
   function routeKey2(s) {
     return `${s.route.page ?? ""}|${s.route.workspaceId ?? ""}`;
   }
+  var started4 = false;
   var wasHome = false;
+  var timerId;
+  var clicks = null;
+  function pickNextIndex(listLen, advance) {
+    if (listLen <= 0)
+      return 0;
+    const current = Number(settings22.store.greetIndex ?? -1);
+    const last = Number(settings22.store.lastRandom ?? -1);
+    if (listLen === 1) {
+      if (current !== 0)
+        settings22.store.greetIndex = 0;
+      if (last !== 0)
+        settings22.store.lastRandom = 0;
+      return 0;
+    }
+    if (!advance)
+      return current >= 0 && current < listLen ? current : 0;
+    if (rotateOrder() === "random") {
+      const prev = current >= 0 && current < listLen ? current : last;
+      let next = Math.floor(Math.random() * listLen);
+      let guard = 0;
+      while (next === prev && guard++ < 10)
+        next = Math.floor(Math.random() * listLen);
+      settings22.store.greetIndex = next;
+      settings22.store.lastRandom = next;
+      return next;
+    }
+    const prev = current >= -1 && current < listLen ? current : -1;
+    const next = (prev + 1) % listLen;
+    settings22.store.greetIndex = next;
+    return next;
+  }
   function paintHero(advance) {
+    if (!started4 || !isNonProjectHome()) {
+      unregisterStyle(HERO_STYLE);
+      return;
+    }
     const list = phrases();
     if (!list) {
       unregisterStyle(HERO_STYLE);
       return;
     }
-    const cur = Number(settings22.store.greetIndex ?? -1);
-    let index = cur >= 0 && cur < list.length ? cur : 0;
-    if (advance) {
-      index = ((cur >= 0 ? cur : -1) + 1) % list.length;
-      settings22.store.greetIndex = index;
-    }
+    const index = pickNextIndex(list.length, advance);
     const content = escapeForCssContent(list[index] ?? list[0] ?? "");
-    registerStyle(HERO_STYLE, `${HERO_SEL}{font-size:0!important;line-height:0!important;color:transparent!important;visibility:hidden!important}` + `${HERO_SEL}>*{display:none!important}` + `${HERO_SEL}::before{content:"${content}";display:block!important;visibility:visible!important;` + "font-size:1.5rem!important;line-height:1.35!important;font-weight:600!important;" + "letter-spacing:-0.48px!important;color:hsl(var(--fg-primary))!important;" + "white-space:pre-wrap!important;text-align:center!important;width:100%!important;margin:0 auto!important}");
+    const clickable = rotateMode() === "manual" && list.length > 1;
+    registerStyle(HERO_STYLE, `${HERO_SEL}{font-size:0!important;line-height:0!important;color:transparent!important}` + `${HERO_SEL}>*{display:none!important}` + `${HERO_SEL}::before{content:"${content}";display:block!important;` + "font-size:1.5rem!important;line-height:1.35!important;font-weight:600!important;" + "letter-spacing:-0.48px!important;color:hsl(var(--fg-primary))!important;" + "white-space:pre-wrap!important;text-align:center!important;width:100%!important;margin:0 auto!important}" + (clickable ? `${HERO_SEL}{cursor:pointer!important;user-select:none!important}` : ""));
   }
-  function syncHero(advance) {
+  function stopTimer() {
+    if (timerId === undefined)
+      return;
+    clearInterval(timerId);
+    timerId = undefined;
+  }
+  function startTimerIfNeeded() {
+    stopTimer();
+    if (!started4 || !isNonProjectHome())
+      return;
+    if (rotateMode() !== "interval")
+      return;
+    const list = phrases();
+    if (!list || list.length <= 1)
+      return;
+    timerId = setInterval(() => paintHero(true), intervalMs());
+  }
+  function enterHome() {
+    const first = !wasHome;
+    wasHome = true;
+    paintHero(first && rotateMode() === "refresh");
+    startTimerIfNeeded();
+  }
+  function leaveHome() {
+    wasHome = false;
+    stopTimer();
+    unregisterStyle(HERO_STYLE);
+  }
+  function syncHero(fromRoute) {
+    if (!started4)
+      return;
     if (!isNonProjectHome()) {
-      wasHome = false;
-      unregisterStyle(HERO_STYLE);
+      leaveHome();
       return;
     }
-    const shouldAdvance = advance && !wasHome;
-    wasHome = true;
-    paintHero(shouldAdvance);
+    if (fromRoute)
+      enterHome();
+    else {
+      paintHero(false);
+      startTimerIfNeeded();
+    }
+  }
+  function onManualClick(e) {
+    if (!started4 || !isNonProjectHome())
+      return;
+    if (rotateMode() !== "manual")
+      return;
+    const list = phrases();
+    if (!list || list.length <= 1)
+      return;
+    const el = e.target instanceof Element ? e.target : null;
+    if (!el?.closest(HERO_SEL))
+      return;
+    const sel = window.getSelection?.();
+    if (sel && String(sel).trim())
+      return;
+    paintHero(true);
   }
   var placeholder_default = definePlugin({
     name: "Placeholder",
     icon: TextCursorInputIcon,
-    description: "Replace the rotating chat input placeholder and the non-project home greeting.",
+    description: "Replace the rotating chat input placeholder and the non-project home greeting. Rotate the greeting on visit, a timer, or a click.",
     authors: [Devs.p],
     tags: ["chat"],
     settings: settings22,
@@ -15875,10 +15992,17 @@ div:has(> #grok-bot-nav-button) {
       return this._phrases()?.[0] ?? value;
     },
     start() {
+      started4 = true;
       wasHome = false;
+      clicks = new AbortController;
+      document.addEventListener("click", onManualClick, { signal: clicks.signal });
       syncHero(true);
     },
     stop() {
+      started4 = false;
+      clicks?.abort();
+      clicks = null;
+      stopTimer();
       wasHome = false;
       unregisterStyle(HERO_STYLE);
     },
@@ -21192,7 +21316,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1788577403000;
   noSidebarPlugins_default.updatedAt = 1789807577000;
   oneko_default.updatedAt = 1787870966000;
-  placeholder_default.updatedAt = 1789207633000;
+  placeholder_default.updatedAt = 1789896428000;
   pluginsFlyout_default.updatedAt = 1788051053000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1789246749000;
