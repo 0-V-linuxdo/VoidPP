@@ -48,7 +48,7 @@ Do not rename:
 
 ## Placeholder
 
-Query-bar empty placeholder is Tiptap `p.is-editor-empty::before { content: attr(data-placeholder) }`. Official `float` + `height:0` plus editor `overflow-y:auto` lets a long phrase wrap and show a scrollbar. Empty editor must stay one line: `overflow-y:hidden` and `::before { position:absolute; inset-inline:0; white-space:nowrap }`.
+Query-bar empty placeholder is Tiptap `p.is-editor-empty::before { content: attr(data-placeholder) }`. Official `float` + `height:0` plus editor `overflow-y:auto` lets a long phrase wrap and show a scrollbar. Empty editor must stay one line: `overflow-y:hidden` and `::before` `position:absolute; white-space:nowrap`.
 
 Do not `setAttribute("data-placeholder", …)`. Tiptap Placeholder `Decoration.node` rewrites that attr on every transaction (focus/selection). A DOM clamp flashes, then the full phrase returns; CSS `text-overflow:clip` then silently crops the tail with no ellipsis.
 
@@ -56,10 +56,9 @@ Do not `setAttribute("data-placeholder", …)`. Tiptap Placeholder `Decoration.n
 
 Correct path:
 
-- `_phrases()` / `_inputPlaceholder()` keep the full phrase. Do not feed a clamped string into Tiptap — resize and folder chips will not recompute through the decoration. Settings and the home Hero stay full text; Hero may wrap (`pre-wrap`).
-- Measure the empty `p` (`clientWidth` minus a small pad) against the `::before` inset box. Probe must be `white-space:nowrap` with the real `::before` font; a wrapping probe under-measures and clamp returns the full sentence (`do for`, no `…`).
-- `clampToWidth` drops whole trailing words and replaces the last overflowing word with `…`.
-- Paint the clamped string with `registerStyle` on `::before { content:"…" !important }` (same overlay idea as the Hero). Official `attr()` is overridden, so Decoration can rewrite the attr freely.
-- ResizeObserver plus `data-placeholder`/`class` mutations reschedule. Typing drops `is-editor-empty` and the overlay unregisters.
+- `_phrases()` / `_inputPlaceholder()` keep the full phrase. Settings and the home Hero stay full text; Hero may wrap. Do not put a clamped string into `_phrases()` — resize and folder chips will not refresh the decoration.
+- Measure the empty `p` (`clientWidth` of the `inset-inline:0` box) with a same-font, `white-space:nowrap` probe. A wrapping probe under-measures and the clamp bails out (`do for` with no `…`).
+- `clampToWidth` drops whole trailing words and appends `…`. Do not cut inside a word.
+- Paint the clamped string with `registerStyle("placeholderInput")` on `::before { content:"…" !important }` (same overlay idea as the Hero). ResizeObserver plus `data-placeholder` / `class` mutations reschedule. Typing drops `is-editor-empty` and the overlay unregisters.
 
 Do not touch ComposerOpacity, InputHistory, BetterCanvas, or real-input autosize for this.
