@@ -23,11 +23,12 @@ import definePlugin, { StartAt } from "@utils/types";
 const logger = new Logger("ChatListStatus");
 const MARK = "void-cls";
 const LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
-const DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed"]);
+const DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
 const LIVE_WORD = /^(working|running|in[_-]?progress|executing|processing|pending|continuing|started)$/i;
 const LIVE_FLAG = /^(isWorking|isRunning|inProgress|isInProgress|isExecuting|working)$/;
 const SKIP_KEY = /^(message|content|html|query|text|title|thinkingTrace)$/i;
 const EXTRA_HINT = /computer|sandbox|agent|task|working/i;
+const USER_INTERRUPT = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
 const OWN_HOOKS = new Set(["useChatPageStore", "useConversationStore", "useResponseStore", "useRoutingStore"]);
 const SIDEBAR = '[data-sidebar="sidebar"], [data-sidebar="content"]';
 const HOST = '[data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]';
@@ -86,18 +87,48 @@ function isLiveBag(value: unknown, depth = 0): boolean {
     return false;
 }
 
-function isLiveResponse(r: GrokResponse | undefined): boolean {
+function errorBlob(value: unknown): string {
+    if (value == null) return "";
+    if (typeof value === "string") return value;
+    if (typeof value !== "object") return String(value);
+    const rec = value as Record<string, any>;
+    return [rec.message, rec.code, rec.type, rec.name].filter(Boolean).map(String).join(" ");
+}
+
+function isUserInterrupt(r: GrokResponse | undefined): boolean {
     if (!r) return false;
+    const state = (r.state ?? "").trim().toLowerCase();
+    if (state === "interrupted" || state === "stopped") return true;
+    return USER_INTERRUPT.test(errorBlob(r.error)) || USER_INTERRUPT.test(String(r.message ?? ""));
+}
+
+function isDeadResponse(r: GrokResponse | undefined): boolean {
+    if (!r) return false;
+    if (isUserInterrupt(r)) return true;
+    const state = (r.state ?? "").trim().toLowerCase();
+    return DEAD.has(state) || (r.error != null && !LIVE.has(state));
+}
+
+function isLiveResponse(r: GrokResponse | undefined): boolean {
+    if (!r || isDeadResponse(r)) return false;
     if (r.partial) return true;
     if (isLiveBag(r.steps) || isLiveBag(r.toolResponses) || isLiveBag(r.fastToolResponse) || isLiveBag(r.metadata)) return true;
-    const state = r.state ?? "";
+    const state = (r.state ?? "").trim().toLowerCase();
     if (!state) return false;
-    if (LIVE.has(state)) return true;
-    return !DEAD.has(state.toLowerCase());
+    return LIVE.has(state);
 }
 
 function isErrorResponse(r: GrokResponse | undefined): boolean {
-    return !!r && (r.state === "error" || r.error != null);
+    return !!r && !isUserInterrupt(r) && (r.state === "error" || r.error != null);
+}
+
+function lastAssistant(id: string, byConversationId: Record<string, GrokResponse[] | undefined>): GrokResponse | undefined {
+    const list = byConversationId[id];
+    if (!list?.length) return;
+    for (let i = list.length - 1; i >= 0; i--) {
+        if (String(list[i].sender ?? "").toLowerCase() !== "human") return list[i];
+    }
+    return;
 }
 
 function collectConvIds(value: unknown, out: Set<string>, depth = 0) {
@@ -163,7 +194,7 @@ function currentIds(): string[] {
 
 function considerConversation(ids: Set<string>, conversation: GrokConversation | undefined) {
     if (!conversation?.conversationId) return;
-    if (conversation.state === "open" || isLiveBag(conversation.taskResult)) ids.add(conversation.conversationId);
+    if (isLiveBag(conversation.taskResult)) ids.add(conversation.conversationId);
 }
 
 function looksExtraStore(name: string, state: object): boolean {
@@ -242,19 +273,47 @@ function extraLiveIds(ids: Set<string>) {
     }
 }
 
+function pageLooksLive(page: ChatPageStoreState, byId: Record<string, GrokResponse>): boolean {
+    if (isLiveResponse(byId[page.streamedMessageId ?? ""]) || isLiveResponse(byId[page.lastMessageId ?? ""]) || isLiveResponse(byId[page.sidePanelResponseId ?? ""])) return true;
+    if (!page.showStreamingIndicator) return false;
+    return !isDeadResponse(byId[page.streamedMessageId ?? ""]) && !isDeadResponse(byId[page.lastMessageId ?? ""]);
+}
+
+function officialInterruptedDom(): boolean {
+    try {
+        const root = document.querySelector("main") ?? document.body;
+        return USER_INTERRUPT.test(root.textContent ?? "");
+    } catch {
+        return false;
+    }
+}
+
+function currentChatInterrupted(): boolean {
+    try {
+        const page = ChatPageStore.useChatPageStore.getState();
+        const { byId, byConversationId } = ResponseStore.useResponseStore.getState();
+        if (isUserInterrupt(byId[page.streamedMessageId ?? ""]) || isUserInterrupt(byId[page.lastMessageId ?? ""])) return true;
+        for (const cid of currentIds()) {
+            if (isUserInterrupt(lastAssistant(cid, byConversationId))) return true;
+        }
+    } catch { /* stores */ }
+    return officialInterruptedDom();
+}
+
 function liveIds(): Set<string> {
     const ids = new Set<string>();
     try {
         const page = ChatPageStore.useChatPageStore.getState();
         const currents = currentIds();
-        if (page.streamedMessageId || page.showStreamingIndicator || isLiveBag(page.sidePanelContent) || isLiveBag(page.metadata)) {
-            for (const id of currents) ids.add(id);
-        }
         const { byId, byConversationId, inflightPromisesByConversationId } = ResponseStore.useResponseStore.getState();
-        if (isLiveResponse(byId[page.streamedMessageId ?? ""]) || isLiveResponse(byId[page.lastMessageId ?? ""]) || isLiveResponse(byId[page.sidePanelResponseId ?? ""])) {
+        if (pageLooksLive(page, byId) || isLiveBag(page.sidePanelContent) || isLiveBag(page.metadata)) {
             for (const id of currents) ids.add(id);
         }
-        for (const id of Object.keys(inflightPromisesByConversationId ?? {})) ids.add(id);
+        for (const id of Object.keys(inflightPromisesByConversationId ?? {})) {
+            const last = lastAssistant(id, byConversationId);
+            if (last && !isLiveResponse(last)) continue;
+            ids.add(id);
+        }
         for (const [id, list] of Object.entries(byConversationId ?? {})) {
             if (list?.some(isLiveResponse)) ids.add(id);
         }
@@ -270,26 +329,38 @@ function liveIds(): Set<string> {
         logger.debug("conversation store unavailable:", e);
     }
     extraLiveIds(ids);
+    if (currentChatInterrupted()) {
+        for (const id of currentIds()) ids.delete(id);
+    }
     return ids;
 }
 
 function errorOf(id: string): boolean {
     try {
         const { byConversationId, byId } = ResponseStore.useResponseStore.getState();
-        const list = byConversationId[id];
-        if (list?.length) {
-            for (let i = list.length - 1; i >= 0; i--) {
-                const r = list[i];
-                if (String(r.sender ?? "").toLowerCase() === "human") continue;
-                return isErrorResponse(r);
-            }
-        }
+        const last = lastAssistant(id, byConversationId);
+        if (last) return isErrorResponse(last);
         const page = ChatPageStore.useChatPageStore.getState();
         if ((page.conversationId === id || page.optimisticConversationId === id) && page.lastMessageId) {
             return isErrorResponse(byId[page.lastMessageId]);
         }
     } catch (e) {
         logger.debug("error lookup failed:", e);
+    }
+    return false;
+}
+
+function interruptOf(id: string): boolean {
+    try {
+        const { byConversationId, byId } = ResponseStore.useResponseStore.getState();
+        const last = lastAssistant(id, byConversationId);
+        if (last) return isUserInterrupt(last);
+        const page = ChatPageStore.useChatPageStore.getState();
+        if (page.conversationId === id || page.optimisticConversationId === id) {
+            return isUserInterrupt(byId[page.lastMessageId ?? ""]) || isUserInterrupt(byId[page.streamedMessageId ?? ""]);
+        }
+    } catch (e) {
+        logger.debug("interrupt lookup failed:", e);
     }
     return false;
 }
@@ -301,6 +372,10 @@ function refreshMarks() {
     for (const [id, kind] of marks) {
         let next = kind;
         if (kind === "streaming" && !live.has(id)) {
+            if (interruptOf(id) || opened.has(id)) {
+                marks.delete(id);
+                continue;
+            }
             next = errorOf(id) ? "error" : "done";
             marks.set(id, next);
         }
@@ -324,22 +399,22 @@ function convOfResponse(responseId: string): string {
 function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
     const cid = convOfResponse(responseId);
     if (!cid) return;
+    let response: GrokResponse | undefined;
+    try {
+        response = ResponseStore.useResponseStore.getState().byId[responseId];
+    } catch (e) {
+        logger.debug("streamEnd lookup failed:", e);
+    }
     if (liveIds().has(cid)) {
         schedule();
         return;
     }
-    if (currentIds().includes(cid)) {
+    if (currentIds().includes(cid) || isUserInterrupt(response)) {
         marks.delete(cid);
         schedule();
         return;
     }
-    try {
-        const response = ResponseStore.useResponseStore.getState().byId[responseId];
-        marks.set(cid, isErrorResponse(response) ? "error" : "done");
-    } catch (e) {
-        logger.debug("streamEnd failed:", e);
-        marks.set(cid, "done");
-    }
+    marks.set(cid, isErrorResponse(response) ? "error" : "done");
     schedule();
 }
 

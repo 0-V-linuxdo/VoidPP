@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.15] v1.0.0
+// @version      [20260920.16] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.15] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.16] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7390,9 +7390,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"03d2663"}`
-    }, `(${"03d2663"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2a5d151"}`
+    }, `(${"2a5d151"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7717,6 +7717,7 @@ button .void-info-hint {
   // src/plugins/autoRetry/index.ts
   var logger16 = new Logger("AutoRetry");
   var CONTENT_MODERATED = "grok:content-moderated";
+  var USER_INTERRUPT = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
   var settings6 = definePluginSettings({
     retryModeration: {
       type: 3 /* BOOLEAN */,
@@ -7750,7 +7751,25 @@ button .void-info-hint {
   function isModeration(response) {
     return String(response.error?.message ?? "").includes(CONTENT_MODERATED);
   }
+  function interruptBlob(value) {
+    if (value == null)
+      return "";
+    if (typeof value === "string")
+      return value;
+    if (typeof value !== "object")
+      return String(value);
+    const rec = value;
+    return [rec.message, rec.code, rec.type, rec.name].filter(Boolean).map(String).join(" ");
+  }
+  function isUserInterrupt(response) {
+    const state = String(response.state ?? "").trim().toLowerCase();
+    if (state === "interrupted" || state === "stopped" || state === "aborted" || state === "cancelled" || state === "canceled")
+      return true;
+    return USER_INTERRUPT.test(interruptBlob(response.error)) || USER_INTERRUPT.test(String(response.message ?? ""));
+  }
   function shouldRetry(response) {
+    if (isUserInterrupt(response))
+      return false;
     if (isModeration(response))
       return settings6.store.retryModeration;
     return settings6.store.retryNetwork;
@@ -10355,11 +10374,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var logger20 = new Logger("ChatListStatus");
   var MARK = "void-cls";
   var LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
-  var DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed"]);
+  var DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
   var LIVE_WORD = /^(working|running|in[_-]?progress|executing|processing|pending|continuing|started)$/i;
   var LIVE_FLAG = /^(isWorking|isRunning|inProgress|isInProgress|isExecuting|working)$/;
   var SKIP_KEY = /^(message|content|html|query|text|title|thinkingTrace)$/i;
   var EXTRA_HINT = /computer|sandbox|agent|task|working/i;
+  var USER_INTERRUPT2 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
   var OWN_HOOKS = new Set(["useChatPageStore", "useConversationStore", "useResponseStore", "useRoutingStore"]);
   var SIDEBAR = '[data-sidebar="sidebar"], [data-sidebar="content"]';
   var HOST = '[data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]';
@@ -10423,22 +10443,56 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     return false;
   }
-  function isLiveResponse(r) {
+  function errorBlob(value) {
+    if (value == null)
+      return "";
+    if (typeof value === "string")
+      return value;
+    if (typeof value !== "object")
+      return String(value);
+    const rec = value;
+    return [rec.message, rec.code, rec.type, rec.name].filter(Boolean).map(String).join(" ");
+  }
+  function isUserInterrupt2(r) {
     if (!r)
+      return false;
+    const state = (r.state ?? "").trim().toLowerCase();
+    if (state === "interrupted" || state === "stopped")
+      return true;
+    return USER_INTERRUPT2.test(errorBlob(r.error)) || USER_INTERRUPT2.test(String(r.message ?? ""));
+  }
+  function isDeadResponse(r) {
+    if (!r)
+      return false;
+    if (isUserInterrupt2(r))
+      return true;
+    const state = (r.state ?? "").trim().toLowerCase();
+    return DEAD.has(state) || r.error != null && !LIVE.has(state);
+  }
+  function isLiveResponse(r) {
+    if (!r || isDeadResponse(r))
       return false;
     if (r.partial)
       return true;
     if (isLiveBag(r.steps) || isLiveBag(r.toolResponses) || isLiveBag(r.fastToolResponse) || isLiveBag(r.metadata))
       return true;
-    const state = r.state ?? "";
+    const state = (r.state ?? "").trim().toLowerCase();
     if (!state)
       return false;
-    if (LIVE.has(state))
-      return true;
-    return !DEAD.has(state.toLowerCase());
+    return LIVE.has(state);
   }
   function isErrorResponse(r) {
-    return !!r && (r.state === "error" || r.error != null);
+    return !!r && !isUserInterrupt2(r) && (r.state === "error" || r.error != null);
+  }
+  function lastAssistant(id, byConversationId) {
+    const list = byConversationId[id];
+    if (!list?.length)
+      return;
+    for (let i = list.length - 1;i >= 0; i--) {
+      if (String(list[i].sender ?? "").toLowerCase() !== "human")
+        return list[i];
+    }
+    return;
   }
   function collectConvIds(value, out, depth = 0) {
     if (value == null || typeof value !== "object" || depth > 5)
@@ -10511,7 +10565,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function considerConversation(ids, conversation) {
     if (!conversation?.conversationId)
       return;
-    if (conversation.state === "open" || isLiveBag(conversation.taskResult))
+    if (isLiveBag(conversation.taskResult))
       ids.add(conversation.conversationId);
   }
   function looksExtraStore(name, state) {
@@ -10601,22 +10655,50 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       }
     }
   }
+  function pageLooksLive(page, byId) {
+    if (isLiveResponse(byId[page.streamedMessageId ?? ""]) || isLiveResponse(byId[page.lastMessageId ?? ""]) || isLiveResponse(byId[page.sidePanelResponseId ?? ""]))
+      return true;
+    if (!page.showStreamingIndicator)
+      return false;
+    return !isDeadResponse(byId[page.streamedMessageId ?? ""]) && !isDeadResponse(byId[page.lastMessageId ?? ""]);
+  }
+  function officialInterruptedDom() {
+    try {
+      const root = document.querySelector("main") ?? document.body;
+      return USER_INTERRUPT2.test(root.textContent ?? "");
+    } catch {
+      return false;
+    }
+  }
+  function currentChatInterrupted() {
+    try {
+      const page = ChatPageStore.useChatPageStore.getState();
+      const { byId, byConversationId } = ResponseStore.useResponseStore.getState();
+      if (isUserInterrupt2(byId[page.streamedMessageId ?? ""]) || isUserInterrupt2(byId[page.lastMessageId ?? ""]))
+        return true;
+      for (const cid of currentIds()) {
+        if (isUserInterrupt2(lastAssistant(cid, byConversationId)))
+          return true;
+      }
+    } catch {}
+    return officialInterruptedDom();
+  }
   function liveIds() {
     const ids = new Set;
     try {
       const page = ChatPageStore.useChatPageStore.getState();
       const currents = currentIds();
-      if (page.streamedMessageId || page.showStreamingIndicator || isLiveBag(page.sidePanelContent) || isLiveBag(page.metadata)) {
-        for (const id of currents)
-          ids.add(id);
-      }
       const { byId, byConversationId, inflightPromisesByConversationId } = ResponseStore.useResponseStore.getState();
-      if (isLiveResponse(byId[page.streamedMessageId ?? ""]) || isLiveResponse(byId[page.lastMessageId ?? ""]) || isLiveResponse(byId[page.sidePanelResponseId ?? ""])) {
+      if (pageLooksLive(page, byId) || isLiveBag(page.sidePanelContent) || isLiveBag(page.metadata)) {
         for (const id of currents)
           ids.add(id);
       }
-      for (const id of Object.keys(inflightPromisesByConversationId ?? {}))
+      for (const id of Object.keys(inflightPromisesByConversationId ?? {})) {
+        const last = lastAssistant(id, byConversationId);
+        if (last && !isLiveResponse(last))
+          continue;
         ids.add(id);
+      }
       for (const [id, list] of Object.entries(byConversationId ?? {})) {
         if (list?.some(isLiveResponse))
           ids.add(id);
@@ -10636,26 +10718,39 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       logger20.debug("conversation store unavailable:", e);
     }
     extraLiveIds(ids);
+    if (currentChatInterrupted()) {
+      for (const id of currentIds())
+        ids.delete(id);
+    }
     return ids;
   }
   function errorOf(id) {
     try {
       const { byConversationId, byId } = ResponseStore.useResponseStore.getState();
-      const list = byConversationId[id];
-      if (list?.length) {
-        for (let i = list.length - 1;i >= 0; i--) {
-          const r = list[i];
-          if (String(r.sender ?? "").toLowerCase() === "human")
-            continue;
-          return isErrorResponse(r);
-        }
-      }
+      const last = lastAssistant(id, byConversationId);
+      if (last)
+        return isErrorResponse(last);
       const page = ChatPageStore.useChatPageStore.getState();
       if ((page.conversationId === id || page.optimisticConversationId === id) && page.lastMessageId) {
         return isErrorResponse(byId[page.lastMessageId]);
       }
     } catch (e) {
       logger20.debug("error lookup failed:", e);
+    }
+    return false;
+  }
+  function interruptOf(id) {
+    try {
+      const { byConversationId, byId } = ResponseStore.useResponseStore.getState();
+      const last = lastAssistant(id, byConversationId);
+      if (last)
+        return isUserInterrupt2(last);
+      const page = ChatPageStore.useChatPageStore.getState();
+      if (page.conversationId === id || page.optimisticConversationId === id) {
+        return isUserInterrupt2(byId[page.lastMessageId ?? ""]) || isUserInterrupt2(byId[page.streamedMessageId ?? ""]);
+      }
+    } catch (e) {
+      logger20.debug("interrupt lookup failed:", e);
     }
     return false;
   }
@@ -10667,6 +10762,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     for (const [id, kind] of marks) {
       let next = kind;
       if (kind === "streaming" && !live.has(id)) {
+        if (interruptOf(id) || opened.has(id)) {
+          marks.delete(id);
+          continue;
+        }
         next = errorOf(id) ? "error" : "done";
         marks.set(id, next);
       }
@@ -10691,22 +10790,22 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const cid = convOfResponse(responseId);
     if (!cid)
       return;
+    let response;
+    try {
+      response = ResponseStore.useResponseStore.getState().byId[responseId];
+    } catch (e) {
+      logger20.debug("streamEnd lookup failed:", e);
+    }
     if (liveIds().has(cid)) {
       schedule();
       return;
     }
-    if (currentIds().includes(cid)) {
+    if (currentIds().includes(cid) || isUserInterrupt2(response)) {
       marks.delete(cid);
       schedule();
       return;
     }
-    try {
-      const response = ResponseStore.useResponseStore.getState().byId[responseId];
-      marks.set(cid, isErrorResponse(response) ? "error" : "done");
-    } catch (e) {
-      logger20.debug("streamEnd failed:", e);
-      marks.set(cid, "done");
-    }
+    marks.set(cid, isErrorResponse(response) ? "error" : "done");
     schedule();
   }
   function hrefOf(el) {
@@ -21366,7 +21465,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
   usageDisplay_default.updatedAt = 1789172854000;
-  userQuotes_default.updatedAt = 1789905136000;
+  userQuotes_default.updatedAt = 1789905284000;
   widerChat_default.updatedAt = 1787870966000;
   var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterNavigator_default.name]: betterNavigator_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [compactModeSelect_default.name]: compactModeSelect_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [modeSync_default.name]: modeSync_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
