@@ -73,7 +73,7 @@ function PhrasesEditor() {
         <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
             <Flex alignItems="center" gap="0.375rem">
                 <Text size="sm" weight="medium">Phrases</Text>
-                <InfoHint>One phrase per line. Used for the input placeholder and the non-project home greeting. Empty list uses Grok's defaults.</InfoHint>
+                <InfoHint>One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input shows a single line and ellipsizes overflow; the home greeting can wrap. Empty list uses Grok's defaults.</InfoHint>
             </Flex>
             <div className={cl("textarea-wrap")}>
                 <Textarea

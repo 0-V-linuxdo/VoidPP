@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.26] v1.0.0
+// @version      [20260920.27] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.26] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.27] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7399,9 +7399,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.26] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4318549"}`
-    }, `(${"4318549"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e179565"}`
+    }, `(${"e179565"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -17774,6 +17774,32 @@ div:has(> #grok-bot-nav-button) {
     outline: none;
     box-shadow: none;
 }
+
+/* Empty query-bar: keep the Tiptap placeholder on one line so a long
+   phrase cannot grow the composer or trip overflow-y:auto. Official
+   ::before is float + height:0, which paints wrapped overflow and
+   shows a leftover scrollbar. Absolute + nowrap ellipsizes instead.
+   Typing drops is-editor-empty and restores the official autosize. */
+.query-bar .tiptap:has(> p.is-editor-empty) {
+    overflow-y: hidden !important;
+}
+
+.query-bar .tiptap p.is-editor-empty:first-child {
+    position: relative;
+}
+
+.query-bar .tiptap p.is-editor-empty:first-child::before {
+    float: none !important;
+    height: auto !important;
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
 `);
 
   // src/plugins/placeholder/index.tsx
@@ -17837,7 +17863,7 @@ div:has(> #grok-bot-nav-button) {
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "medium"
-    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. Used for the input placeholder and the non-project home greeting. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
+    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input shows a single line and ellipsizes overflow; the home greeting can wrap. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
       className: cl26("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
       className: cl26("textarea"),
@@ -23341,7 +23367,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   composerOpacity_default.updatedAt = 1788044121000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customInstructions_default.updatedAt = 1789898438000;
-  customSidebarIdentity_default.updatedAt = 1789918178000;
+  customSidebarIdentity_default.updatedAt = 1789918597000;
   downloadTTS_default.updatedAt = 1787870966000;
   experiments_default.updatedAt = 1788047438000;
   exportChat_default.updatedAt = 1787870966000;
@@ -23356,7 +23382,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1788577403000;
   noSidebarPlugins_default.updatedAt = 1789807577000;
   oneko_default.updatedAt = 1787870966000;
-  placeholder_default.updatedAt = 1789897857000;
+  placeholder_default.updatedAt = 1789918597000;
   pluginsFlyout_default.updatedAt = 1788051053000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1789246749000;

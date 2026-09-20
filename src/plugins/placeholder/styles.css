@@ -30,3 +30,29 @@
     outline: none;
     box-shadow: none;
 }
+
+/* Empty query-bar: keep the Tiptap placeholder on one line so a long
+   phrase cannot grow the composer or trip overflow-y:auto. Official
+   ::before is float + height:0, which paints wrapped overflow and
+   shows a leftover scrollbar. Absolute + nowrap ellipsizes instead.
+   Typing drops is-editor-empty and restores the official autosize. */
+.query-bar .tiptap:has(> p.is-editor-empty) {
+    overflow-y: hidden !important;
+}
+
+.query-bar .tiptap p.is-editor-empty:first-child {
+    position: relative;
+}
+
+.query-bar .tiptap p.is-editor-empty:first-child::before {
+    float: none !important;
+    height: auto !important;
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
