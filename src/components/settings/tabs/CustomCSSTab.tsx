@@ -7,7 +7,7 @@
 import "./CustomCSSTab.css";
 
 import { getSettingsPluginData, updateSettingsPluginData } from "@api/Settings";
-import { Flex, SectionHeader, Switch } from "@components";
+import { Flex, SettingsDescription, SettingsRow, SettingsTitle, Switch } from "@components";
 import { React, useCallback, useState } from "@turbopack/common/react";
 import { classes, classNameFactory, disableStyle, enableStyle, registerStyle } from "@utils/css";
 
@@ -51,11 +51,15 @@ export default function CustomCSSTab() {
 
     return (
         <Flex flexDirection="column" gap="1rem" className={classes(cl("root"), "void-tab-root")}>
-            <Flex alignItems="center" justifyContent="space-between" className={cl("header")}>
-                <SectionHeader title="Quick CSS" description="Write CSS that applies instantly as you type. Stored only on this device. Disable to keep your code without applying it." />
-                <Switch checked={enabled} onCheckedChange={handleToggle} />
-            </Flex>
-            <CssEditor value={css} onChange={apply} disabled={!enabled} />
+            <SettingsRow action={<Switch checked={enabled} onCheckedChange={handleToggle} />}>
+                <Flex flexDirection="column" gap="0">
+                    <SettingsTitle>Enable Quick CSS</SettingsTitle>
+                    <SettingsDescription>
+                        Write CSS that applies instantly as you type. Stored only on this device. Disable to keep your code without applying it.
+                    </SettingsDescription>
+                </Flex>
+            </SettingsRow>
+            <CssEditor value={css} onChange={apply} disabled={!enabled} placeholder="Paste your CSS here..." />
         </Flex>
     );
 }

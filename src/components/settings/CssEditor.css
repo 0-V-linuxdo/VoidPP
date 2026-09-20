@@ -1,11 +1,16 @@
 .void-css-wrap {
     flex: 1;
     min-height: 0;
-    border: 1px solid hsl(var(--border-l1));
+    border: 1px solid hsl(var(--border-l2));
     border-radius: 0.75rem;
-    background: transparent;
+    background: hsl(var(--surface-l2));
     overflow: auto;
     display: grid;
+}
+
+.void-css-wrap:focus-within {
+    border-color: hsl(var(--fg-primary));
+    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
 }
 
 .void-css-highlight,
