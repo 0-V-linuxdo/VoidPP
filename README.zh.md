@@ -24,7 +24,7 @@
 | <img src="https://api.iconify.design/lucide/link-2-off.svg?color=%238b949e" width="16" height="16" alt=""> NoShareLink | 开 | 分开开关，隐藏「分享项目」和「创建分享链接」。 |
 | <img src="https://api.iconify.design/lucide/mic-off.svg?color=%238b949e" width="16" height="16" alt=""> NoDictation | 开 | 隐藏输入栏语音按钮。可选隐藏设置弹窗 Behavior 里的 Dictation Refinement。 |
 | <img src="https://api.iconify.design/lucide/circle-gauge.svg?color=%238b949e" width="16" height="16" alt=""> UsageDisplay | 开 | 聊天栏显示官方 SuperGrok 周用量。可选日统计（`usageStats`，默认关）：悬停先看本周，再看今日；点击打开按日历史。 |
-| <img src="https://api.iconify.design/lucide/text-cursor-input.svg?color=%238b949e" width="16" height="16" alt=""> Placeholder | 关 | 替换输入框轮换占位文案。 |
+| <img src="https://api.iconify.design/lucide/text-cursor-input.svg?color=%238b949e" width="16" height="16" alt=""> Placeholder | 关 | 替换输入框轮换占位文案，以及非 Project 首页问候语。 |
 | <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | 开 | 工程栏滚动条跟随主题（`themedScrollbar`，默认开）。可选保持右侧栏关闭（`hideRightPanel`，默认关）。 |
 | <img src="https://api.iconify.design/lucide/scroll-text.svg?color=%238b949e" width="16" height="16" alt=""> BetterNavigator | 开 | 把原生消息导航升级成 Notion 式目录。悬停 tick 可同时看到全部消息；一轮对话和右侧栏打开时钉在聊天列上。输入框外 ↑/↓ 按目录逐条跳转（`showAssistant`、`hideNativeHover`、`jumpEffect`）。 |
 | <img src="https://api.iconify.design/lucide/blend.svg?color=%238b949e" width="16" height="16" alt=""> ComposerOpacity | 开 | 调节输入栏背景透明度和模糊。 |

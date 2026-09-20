@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.6] v1.0.0
+// @version      [20260920.7] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.6] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7380,9 +7380,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a992793"}`
-    }, `(${"a992793"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a05bcd0"}`
+    }, `(${"a05bcd0"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -15768,15 +15768,20 @@ div:has(> #grok-bot-nav-button) {
 
   // src/plugins/placeholder/index.tsx
   var cl24 = classNameFactory("void-ph-");
+  var HERO_STYLE = "placeholderHero";
+  var HERO_SEL = "h1[data-void-ph-hero]";
   var DEFAULT_PHRASES = [
-    "What do you want to know?",
-    "How can I help you today?",
-    "What's on your mind?"
+    "Ask not what your country can do for you — ask what you can do for your country.",
+    "It always seems impossible until it is done.",
+    "The best way to predict the future is to create it."
   ].join(`
 `);
   function parsePhrases(raw) {
     return String(raw ?? "").split(`
 `).map((s) => s.trim()).filter(Boolean);
+  }
+  function escapeForCssContent(text) {
+    return text.replaceAll(/\\/g, "\\\\").replaceAll(/"/g, "\\\"").replaceAll(/\n/g, "\\A ");
   }
   var settings22 = definePluginSettings({
     phrases: {
@@ -15797,7 +15802,7 @@ div:has(> #grok-bot-nav-button) {
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "medium"
-    }, "Phrases"), /* @__PURE__ */ React.createElement(Paragraph, null, "One placeholder per line. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
+    }, "Phrases"), /* @__PURE__ */ React.createElement(Paragraph, null, "One phrase per line. Used for the input placeholder and the non-project home greeting. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
       className: cl24("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
       className: cl24("textarea"),
@@ -15808,29 +15813,100 @@ div:has(> #grok-bot-nav-button) {
       placeholder: DEFAULT_PHRASES
     })));
   }
+  function isNonProjectHome() {
+    try {
+      const { page, workspaceId } = RoutingStore.useRoutingStore.getState().route;
+      return page === "main" && !workspaceId;
+    } catch {
+      const path = location.pathname.replace(/\/+$/, "") || "/";
+      return path === "/";
+    }
+  }
+  function phrases() {
+    try {
+      const lines = parsePhrases(settings22.store.phrases ?? DEFAULT_PHRASES);
+      return lines.length ? lines : null;
+    } catch {
+      return null;
+    }
+  }
+  function routeKey2(s) {
+    return `${s.route.page ?? ""}|${s.route.workspaceId ?? ""}`;
+  }
+  var wasHome = false;
+  function paintHero(advance) {
+    const list = phrases();
+    if (!list) {
+      unregisterStyle(HERO_STYLE);
+      return;
+    }
+    const cur = Number(settings22.store.greetIndex ?? -1);
+    let index = cur >= 0 && cur < list.length ? cur : 0;
+    if (advance) {
+      index = ((cur >= 0 ? cur : -1) + 1) % list.length;
+      settings22.store.greetIndex = index;
+    }
+    const content = escapeForCssContent(list[index] ?? list[0] ?? "");
+    registerStyle(HERO_STYLE, `${HERO_SEL}{font-size:0!important;line-height:0!important;color:transparent!important;visibility:hidden!important}` + `${HERO_SEL}>*{display:none!important}` + `${HERO_SEL}::before{content:"${content}";display:block!important;visibility:visible!important;` + "font-size:1.5rem!important;line-height:1.35!important;font-weight:600!important;" + "letter-spacing:-0.48px!important;color:hsl(var(--fg-primary))!important;" + "white-space:pre-wrap!important;text-align:center!important;width:100%!important;margin:0 auto!important}");
+  }
+  function syncHero(advance) {
+    if (!isNonProjectHome()) {
+      wasHome = false;
+      unregisterStyle(HERO_STYLE);
+      return;
+    }
+    const shouldAdvance = advance && !wasHome;
+    wasHome = true;
+    paintHero(shouldAdvance);
+  }
   var placeholder_default = definePlugin({
     name: "Placeholder",
     icon: TextCursorInputIcon,
-    description: "Replace the rotating chat and Grok Bot input placeholder.",
+    description: "Replace the rotating chat input placeholder and the non-project home greeting.",
     authors: [Devs.p],
     tags: ["chat"],
     settings: settings22,
     _phrases() {
-      const lines = parsePhrases(settings22.store.phrases ?? DEFAULT_PHRASES);
-      return lines.length ? lines : null;
+      return phrases();
     },
     _inputPlaceholder(value) {
       if (typeof value !== "string")
         return value;
       return this._phrases()?.[0] ?? value;
     },
+    start() {
+      wasHome = false;
+      syncHero(true);
+    },
+    stop() {
+      wasHome = false;
+      unregisterStyle(HERO_STYLE);
+    },
+    onSettingsChange() {
+      syncHero(false);
+    },
+    zustand: {
+      RoutingStore: {
+        selector: routeKey2,
+        handler() {
+          syncHero(true);
+        }
+      }
+    },
     patches: [
       {
         find: `query-bar-placeholder.whats-on-your-mind","What's on your mind?"`,
-        replacement: {
-          match: /("query-bar-placeholder\.whats-on-your-mind","What's on your mind\?"\)\],\[\i,\i,\i,\i\]\),)(\i)=(\i\(\)),(\i)=(\i)\.map\(\2\)/,
-          replace: "$1$2=$3,$4=($self._phrases()??$5).map($2)"
-        }
+        group: true,
+        replacement: [
+          {
+            match: /:\[g\("query-bar-placeholder\.1",/,
+            replace: ':($self._phrases()??[g("query-bar-placeholder.1",'
+          },
+          {
+            match: /g\("query-bar-placeholder\.whats-on-your-mind","What's on your mind\?"\)(?=\],\[)/,
+            replace: "$&)"
+          }
+        ]
       },
       {
         find: "data-query-bar-mode-select",
@@ -15838,6 +15914,13 @@ div:has(> #grok-bot-nav-button) {
         replacement: {
           match: /("query-bar\.voice-connecting-placeholder","Connecting…"\):)(\i)(?=,isLoading)/,
           replace: "$1$self._inputPlaceholder($2)"
+        }
+      },
+      {
+        find: '"WdRefreshHeading",0,',
+        replacement: {
+          match: /("h1",\{className:\i),children:/,
+          replace: '$1,"data-void-ph-hero":"",children:'
         }
       }
     ]
@@ -21102,7 +21185,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   inputHistory_default.updatedAt = 1789266420000;
   messageTimestamps_default.updatedAt = 1789881463000;
   modeSync_default.updatedAt = 1789881463000;
-  noBuildStarters_default.updatedAt = 0;
+  noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1788037550000;
   noGrokBot_default.updatedAt = 1787789817000;
   noShareLink_default.updatedAt = 1787789817000;
