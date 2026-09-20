@@ -75,7 +75,7 @@ function PhrasesEditor() {
         <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
             <Flex alignItems="center" gap="0.375rem">
                 <Text size="sm" weight="medium">Phrases</Text>
-                <InfoHint>One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input stays on one line and omits whole words with an ellipsis; the home greeting can wrap. Empty list uses Grok's defaults.</InfoHint>
+                <InfoHint>One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input stays on one line and replaces the last overflowing word with an ellipsis; the home greeting can wrap. Empty list uses Grok's defaults.</InfoHint>
             </Flex>
             <div className={cl("textarea-wrap")}>
                 <Textarea
@@ -134,11 +134,13 @@ let treeObs: MutationObserver | null = null;
 let sizeObs: ResizeObserver | null = null;
 let observed: Element | null = null;
 let raf = 0;
-let measureCtx: CanvasRenderingContext2D | null = null;
+let probe: HTMLSpanElement | null = null;
+let painting = false;
 
 const EDITOR_SEL = ".query-bar .tiptap";
-const EMPTY_SEL = `${EDITOR_SEL} p.is-editor-empty`;
+const EMPTY_SEL = `${EDITOR_SEL} p.is-editor-empty, ${EDITOR_SEL} p.is-empty`;
 const FULL_ATTR = "data-void-ph-full";
+const WIDTH_PAD = 12;
 
 function pickNextIndex(listLen: number, advance: boolean): number {
     if (listLen <= 0) return 0;
@@ -243,14 +245,31 @@ function onManualClick(e: Event) {
     paintHero(true);
 }
 
+function ensureProbe(): HTMLSpanElement {
+    if (probe?.isConnected) return probe;
+    probe = document.createElement("span");
+    probe.dataset.voidPhProbe = "";
+    probe.style.cssText = "position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;white-space:nowrap;";
+    document.documentElement.appendChild(probe);
+    return probe;
+}
+
 function measureFor(el: HTMLElement, text: string): number {
-    if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
-    if (!measureCtx) return text.length * 8;
-    const cs = getComputedStyle(el);
-    measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-    const extra = Number.parseFloat(cs.letterSpacing);
-    const tracking = Number.isFinite(extra) ? extra * Math.max(0, text.length - 1) : 0;
-    return measureCtx.measureText(text).width + tracking;
+    const before = getComputedStyle(el, "::before");
+    const base = getComputedStyle(el);
+    const fontSize = before.fontSize && before.fontSize !== "0px" ? before.fontSize : base.fontSize;
+    const node = ensureProbe();
+    node.style.font = before.font && before.font !== "0px" ? before.font : base.font;
+    node.style.fontSize = fontSize;
+    node.style.fontFamily = before.fontFamily || base.fontFamily;
+    node.style.fontWeight = before.fontWeight || base.fontWeight;
+    node.style.fontStyle = before.fontStyle || base.fontStyle;
+    node.style.letterSpacing = before.letterSpacing || base.letterSpacing;
+    node.style.wordSpacing = before.wordSpacing || base.wordSpacing;
+    node.style.fontFeatureSettings = before.fontFeatureSettings || base.fontFeatureSettings;
+    node.style.textTransform = before.textTransform || base.textTransform;
+    node.textContent = text;
+    return node.getBoundingClientRect().width;
 }
 
 function sourceText(p: HTMLElement): string {
@@ -258,18 +277,20 @@ function sourceText(p: HTMLElement): string {
     const stored = p.getAttribute(FULL_ATTR);
     if (!stored) return attr;
     if (attr === stored) return stored;
-    const stem = attr.endsWith(ELLIPSIS) ? attr.slice(0, -ELLIPSIS.length) : attr;
+    const stem = attr.endsWith(ELLIPSIS) ? attr.slice(0, -(ELLIPSIS.length + (attr.endsWith(` ${ELLIPSIS}`) ? 1 : 0))).trimEnd() : attr;
     if (stem && stored.startsWith(stem)) return stored;
     return attr;
 }
 
-function bindSize(el: HTMLElement | null) {
-    if (el === observed) return;
+function bindSize(p: HTMLElement | null) {
+    const editor = p?.closest(EDITOR_SEL) ?? p;
+    if (editor === observed) return;
     sizeObs?.disconnect();
-    observed = el;
-    if (!el) return;
+    observed = editor;
+    if (!editor) return;
     sizeObs ??= new ResizeObserver(scheduleInput);
-    sizeObs.observe(el);
+    sizeObs.observe(editor);
+    if (p && p !== editor) sizeObs.observe(p);
 }
 
 function paintInput() {
@@ -282,9 +303,14 @@ function paintInput() {
     bindSize(p);
     const full = sourceText(p);
     if (!full) return;
-    if (p.getAttribute(FULL_ATTR) !== full) p.setAttribute(FULL_ATTR, full);
-    const next = clampToWidth(full, Math.max(0, p.clientWidth - 1), t => measureFor(p, t));
-    if (p.getAttribute("data-placeholder") !== next) p.setAttribute("data-placeholder", next);
+    painting = true;
+    try {
+        if (p.getAttribute(FULL_ATTR) !== full) p.setAttribute(FULL_ATTR, full);
+        const next = clampToWidth(full, Math.max(0, p.clientWidth - WIDTH_PAD), t => measureFor(p, t));
+        if (p.getAttribute("data-placeholder") !== next) p.setAttribute("data-placeholder", next);
+    } finally {
+        painting = false;
+    }
 }
 
 function scheduleInput() {
@@ -327,6 +353,7 @@ export default definePlugin({
         clicks = new AbortController();
         document.addEventListener("click", onManualClick, { signal: clicks.signal });
         treeObs = new MutationObserver(muts => {
+            if (painting) return;
             for (const m of muts) {
                 const t = m.target;
                 if (t instanceof Element && t.closest(".query-bar")) {
@@ -363,7 +390,9 @@ export default definePlugin({
         observed = null;
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
-        measureCtx = null;
+        probe?.remove();
+        probe = null;
+        painting = false;
         stopTimer();
         wasHome = false;
         restoreInput();

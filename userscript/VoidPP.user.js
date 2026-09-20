@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.28] v1.0.0
+// @version      [20260920.29] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.28] v1.0.0 — A modification for grok.com
+ * Void++ [20260920.29] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7399,9 +7399,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"74ae114"}`
-    }, `(${"74ae114"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260920.29] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a3b43dc"}`
+    }, `(${"a3b43dc"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -17804,34 +17804,19 @@ div:has(> #grok-bot-nav-button) {
 
   // src/plugins/placeholder/clamp.ts
   var ELLIPSIS = "…";
-  var BREAK_CHAR = /[\s\u00a0\u2000-\u200b\u2010-\u2015\u2212\u3000/,.;:!?…]/u;
-  var TRAILING_BREAK = /[\s\u00a0\u2000-\u200b\u2010-\u2015\u2212\u3000/,.;:!?…]+$/u;
-  var LAST_WORD = /[^\s\u00a0\u2000-\u200b\u2010-\u2015\u2212\u3000/,.;:!?…]+$/u;
-  function isBreak(ch) {
-    return !ch || BREAK_CHAR.test(ch);
+  function tokens(text) {
+    return text.trim().split(/\s+/).filter(Boolean);
   }
   function clampToWidth(text, maxPx, measure) {
     if (!(maxPx > 0) || measure(text) <= maxPx)
       return text;
-    let lo = 0;
-    let hi = text.length;
-    while (lo < hi) {
-      const mid = lo + hi + 1 >> 1;
-      if (measure(text.slice(0, mid) + ELLIPSIS) <= maxPx)
-        lo = mid;
-      else
-        hi = mid - 1;
+    const words = tokens(text);
+    for (let n = words.length - 1;n >= 1; n--) {
+      const candidate = `${words.slice(0, n).join(" ")} ${ELLIPSIS}`;
+      if (measure(candidate) <= maxPx)
+        return candidate;
     }
-    if (lo <= 0)
-      return ELLIPSIS;
-    const cut = text.slice(0, lo);
-    let kept = cut;
-    if (!isBreak(cut.at(-1)) && !isBreak(text[lo]))
-      kept = cut.replace(LAST_WORD, "");
-    kept = kept.replace(TRAILING_BREAK, "");
-    if (kept)
-      return kept + ELLIPSIS;
-    return cut.replace(/\s+$/u, "") + ELLIPSIS;
+    return ELLIPSIS;
   }
 
   // src/plugins/placeholder/index.tsx
@@ -17895,7 +17880,7 @@ div:has(> #grok-bot-nav-button) {
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "medium"
-    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input stays on one line and omits whole words with an ellipsis; the home greeting can wrap. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
+    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. Used for the input placeholder and the non-project home greeting. The chat input stays on one line and replaces the last overflowing word with an ellipsis; the home greeting can wrap. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
       className: cl26("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
       className: cl26("textarea"),
@@ -17946,10 +17931,12 @@ div:has(> #grok-bot-nav-button) {
   var sizeObs = null;
   var observed = null;
   var raf5 = 0;
-  var measureCtx = null;
+  var probe = null;
+  var painting2 = false;
   var EDITOR_SEL3 = ".query-bar .tiptap";
-  var EMPTY_SEL = `${EDITOR_SEL3} p.is-editor-empty`;
+  var EMPTY_SEL = `${EDITOR_SEL3} p.is-editor-empty, ${EDITOR_SEL3} p.is-empty`;
   var FULL_ATTR = "data-void-ph-full";
+  var WIDTH_PAD = 12;
   function pickNextIndex(listLen, advance) {
     if (listLen <= 0)
       return 0;
@@ -18052,16 +18039,31 @@ div:has(> #grok-bot-nav-button) {
       return;
     paintHero(true);
   }
+  function ensureProbe() {
+    if (probe?.isConnected)
+      return probe;
+    probe = document.createElement("span");
+    probe.dataset.voidPhProbe = "";
+    probe.style.cssText = "position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;white-space:nowrap;";
+    document.documentElement.appendChild(probe);
+    return probe;
+  }
   function measureFor(el, text) {
-    if (!measureCtx)
-      measureCtx = document.createElement("canvas").getContext("2d");
-    if (!measureCtx)
-      return text.length * 8;
-    const cs = getComputedStyle(el);
-    measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-    const extra = Number.parseFloat(cs.letterSpacing);
-    const tracking = Number.isFinite(extra) ? extra * Math.max(0, text.length - 1) : 0;
-    return measureCtx.measureText(text).width + tracking;
+    const before = getComputedStyle(el, "::before");
+    const base = getComputedStyle(el);
+    const fontSize = before.fontSize && before.fontSize !== "0px" ? before.fontSize : base.fontSize;
+    const node = ensureProbe();
+    node.style.font = before.font && before.font !== "0px" ? before.font : base.font;
+    node.style.fontSize = fontSize;
+    node.style.fontFamily = before.fontFamily || base.fontFamily;
+    node.style.fontWeight = before.fontWeight || base.fontWeight;
+    node.style.fontStyle = before.fontStyle || base.fontStyle;
+    node.style.letterSpacing = before.letterSpacing || base.letterSpacing;
+    node.style.wordSpacing = before.wordSpacing || base.wordSpacing;
+    node.style.fontFeatureSettings = before.fontFeatureSettings || base.fontFeatureSettings;
+    node.style.textTransform = before.textTransform || base.textTransform;
+    node.textContent = text;
+    return node.getBoundingClientRect().width;
   }
   function sourceText(p) {
     const attr = p.getAttribute("data-placeholder") ?? "";
@@ -18070,20 +18072,23 @@ div:has(> #grok-bot-nav-button) {
       return attr;
     if (attr === stored)
       return stored;
-    const stem = attr.endsWith(ELLIPSIS) ? attr.slice(0, -ELLIPSIS.length) : attr;
+    const stem = attr.endsWith(ELLIPSIS) ? attr.slice(0, -(ELLIPSIS.length + (attr.endsWith(` ${ELLIPSIS}`) ? 1 : 0))).trimEnd() : attr;
     if (stem && stored.startsWith(stem))
       return stored;
     return attr;
   }
-  function bindSize(el) {
-    if (el === observed)
+  function bindSize(p) {
+    const editor = p?.closest(EDITOR_SEL3) ?? p;
+    if (editor === observed)
       return;
     sizeObs?.disconnect();
-    observed = el;
-    if (!el)
+    observed = editor;
+    if (!editor)
       return;
     sizeObs ??= new ResizeObserver(scheduleInput);
-    sizeObs.observe(el);
+    sizeObs.observe(editor);
+    if (p && p !== editor)
+      sizeObs.observe(p);
   }
   function paintInput() {
     if (!started6)
@@ -18097,11 +18102,16 @@ div:has(> #grok-bot-nav-button) {
     const full = sourceText(p);
     if (!full)
       return;
-    if (p.getAttribute(FULL_ATTR) !== full)
-      p.setAttribute(FULL_ATTR, full);
-    const next = clampToWidth(full, Math.max(0, p.clientWidth - 1), (t) => measureFor(p, t));
-    if (p.getAttribute("data-placeholder") !== next)
-      p.setAttribute("data-placeholder", next);
+    painting2 = true;
+    try {
+      if (p.getAttribute(FULL_ATTR) !== full)
+        p.setAttribute(FULL_ATTR, full);
+      const next = clampToWidth(full, Math.max(0, p.clientWidth - WIDTH_PAD), (t) => measureFor(p, t));
+      if (p.getAttribute("data-placeholder") !== next)
+        p.setAttribute("data-placeholder", next);
+    } finally {
+      painting2 = false;
+    }
   }
   function scheduleInput() {
     if (!started6 || raf5)
@@ -18142,6 +18152,8 @@ div:has(> #grok-bot-nav-button) {
       clicks = new AbortController;
       document.addEventListener("click", onManualClick, { signal: clicks.signal });
       treeObs2 = new MutationObserver((muts) => {
+        if (painting2)
+          return;
         for (const m of muts) {
           const t = m.target;
           if (t instanceof Element && t.closest(".query-bar")) {
@@ -18179,7 +18191,9 @@ div:has(> #grok-bot-nav-button) {
       if (raf5)
         cancelAnimationFrame(raf5);
       raf5 = 0;
-      measureCtx = null;
+      probe?.remove();
+      probe = null;
+      painting2 = false;
       stopTimer();
       wasHome = false;
       restoreInput();
@@ -23527,7 +23541,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1788577403000;
   noSidebarPlugins_default.updatedAt = 1789807577000;
   oneko_default.updatedAt = 1787870966000;
-  placeholder_default.updatedAt = 1789918820000;
+  placeholder_default.updatedAt = 1789919543000;
   pluginsFlyout_default.updatedAt = 1788051053000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1789246749000;
