@@ -8,8 +8,9 @@ import type { VoidPPEventMap } from "@api/Events";
 import { definePluginSettings } from "@api/Settings";
 import { Button, Flex, Paragraph } from "@components";
 import { BellIcon } from "@components/icons";
+import type { MediaItem, MediaStoreState } from "@grok-types/stores/MediaStore";
 import { createElement } from "@turbopack/common/react";
-import { ResponseStore } from "@turbopack/common/stores";
+import { MediaStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import { fetchExternal, sendBrowserNotification } from "@utils/misc";
@@ -69,6 +70,11 @@ const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Only notify when the tab is hidden.",
         default: true,
+    },
+    imagineGeneration: {
+        type: OptionType.BOOLEAN,
+        description: "Notify when an Imagine generation finishes. Off by default.",
+        default: false,
     },
 });
 
@@ -167,7 +173,9 @@ function notify(responseId: string, state: string | undefined) {
     logger.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
     if (settings.store.onlyWhenHidden && document.visibilityState === "visible") return;
     if (settings.store.sound) playSound();
-    if (settings.store.browserNotification) sendBrowserNotification("Grok", "Response complete.");
+    if (settings.store.browserNotification) {
+        sendBrowserNotification("Grok", state === "imagine" ? "Imagine generation complete." : "Response complete.");
+    }
 }
 
 function notifyOnce(responseId: string, state: string | undefined) {
@@ -213,10 +221,67 @@ function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
     attempt(false);
 }
 
+function onImaginePage(): boolean {
+    try {
+        const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+        if (page.startsWith("imagine")) return true;
+    } catch { /* route not ready */ }
+    try {
+        return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+        return false;
+    }
+}
+
+function isLiveMedia(p: MediaItem | undefined): boolean {
+    if (!p) return false;
+    if (p.complete) return false;
+    if (p.moderated || p.isModerated) return false;
+    if (p.progress != null && p.progress < 100) return true;
+    if (p.inflightId) return true;
+    if (p.blobSrc && !p.mediaUrl) return true;
+    if (p.upscalingInProgress) return true;
+    return false;
+}
+
+function mediaLiveKey(s: MediaStoreState): string {
+    try {
+        const ids = new Set<string>();
+        for (const p of Object.values(s.byId ?? {})) {
+            if (isLiveMedia(p)) ids.add(p.id);
+        }
+        for (const [id, pending] of Object.entries(s.optimisticVideoGenPending ?? {})) {
+            if (pending) ids.add(id);
+        }
+        return [...ids].toSorted().join(",");
+    } catch {
+        return "";
+    }
+}
+
+function syncImagine(current: string, prev: string) {
+    if (!settings.store.imagineGeneration || !prev) return;
+    if (onImaginePage()) return;
+    const now = new Set(current ? current.split(",") : []);
+    for (const id of prev.split(",")) {
+        if (!id || now.has(id)) continue;
+        let item: MediaItem | undefined;
+        try {
+            item = MediaStore.useMediaStore.getState().byId[id];
+        } catch {
+            continue;
+        }
+        if (!item) continue;
+        if (item.complete === false && !item.mediaUrl) continue;
+        if (item.moderated || item.isModerated) continue;
+        notifyOnce(`imagine:${id}`, "imagine");
+    }
+}
+
 export default definePlugin({
     name: "ResponseNotification",
     icon: BellIcon,
-    description: "Notify when Grok finishes responding.",
+    description: "Notify when Grok finishes responding. Optional Imagine generation notify is off by default.",
     authors: [Devs.Prism, Devs.p],
     tags: ["chat"],
     settings,
@@ -249,6 +314,10 @@ export default definePlugin({
     zustand: {
         ResponseStore: {
             handler: onResponses,
+        },
+        MediaStore: {
+            selector: mediaLiveKey,
+            handler: syncImagine,
         },
     },
 });

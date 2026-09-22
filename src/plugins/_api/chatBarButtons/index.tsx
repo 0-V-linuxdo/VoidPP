@@ -53,8 +53,8 @@ export default definePlugin({
             find: ["Type to imagine", "Generation mode"],
             noWarn: true,
             replacement: {
-                match: /("Generation mode"\)\}\)\}\),)(\i(?:&&!?\i){0,4}&&\(0,\i\.jsx\)\(\i\.DictationButton,)/,
-                replace: "$1$self.renderImagineButtons(),$2",
+                match: /("Generation mode"\)\}\)\}\),)/,
+                replace: "$1$self.renderImagineButtons(),",
             },
         },
     ],

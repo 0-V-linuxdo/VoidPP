@@ -81,6 +81,18 @@ let abort: AbortController | null = null;
 let lastNavKey = "";
 let loadTail: ReturnType<typeof setTimeout> | null = null;
 
+function onImaginePage(): boolean {
+    try {
+        const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+        if (page.startsWith("imagine")) return true;
+    } catch { /* route not ready */ }
+    try {
+        return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+        return false;
+    }
+}
+
 function snapshot(): Intent {
     try {
         const modes = ModesStore.useModesStore.getState();
@@ -141,7 +153,7 @@ function syncRestoreFlag() {
 }
 
 function applyIntent(next: Intent) {
-    if (!next.modeId || applying) return;
+    if (!next.modeId || applying || onImaginePage()) return;
     applying = true;
     try {
         const modes = ModesStore.useModesStore.getState();
@@ -224,7 +236,7 @@ function isChatSend(rec: Record<string, unknown>): boolean {
 }
 
 function patchPayload(raw: unknown, live: Intent): boolean {
-    if (!raw || typeof raw !== "object" || Array.isArray(raw) || !live.modeId) return false;
+    if (onImaginePage() || !raw || typeof raw !== "object" || Array.isArray(raw) || !live.modeId) return false;
     const rec = raw as Record<string, unknown>;
     if (!isChatSend(rec)) return false;
     const before = rec.modeId;
@@ -333,7 +345,7 @@ function flushHeld(responseId: string) {
 }
 
 function patchGwEvent(event: unknown, live: Intent) {
-    if (!event || typeof event !== "object" || Array.isArray(event) || !live.modeId) return;
+    if (onImaginePage() || !event || typeof event !== "object" || Array.isArray(event) || !live.modeId) return;
     const rec = event as Record<string, unknown>;
     if (typeof rec.type !== "string" || !GW_TYPES.has(rec.type)) return;
     for (const key of GW_MODE_KEYS) {
@@ -356,6 +368,7 @@ function wrapGatewaySend() {
         origGwSend = mgr.send;
         const orig = origGwSend;
         const wrapped: SendFn = function voidModeSyncGwSend(this: unknown, ...args: unknown[]) {
+            if (onImaginePage()) return orig.apply(mgr, args);
             const [cid, event] = args;
             if (typeof cid === "string" && holdQueueEvent(cid, event)) return Promise.resolve(GW_OK);
             const live = liveIntent();
@@ -385,6 +398,7 @@ function unwrapGatewaySend() {
 
 function makeSendWrapper(orig: SendFn): SendFn {
     return function voidModeSyncSend(this: unknown, ...args: unknown[]) {
+        if (onImaginePage()) return orig.apply(this, args);
         const live = liveIntent();
         if (live.modeId) {
             applyIntent(live);
@@ -396,6 +410,7 @@ function makeSendWrapper(orig: SendFn): SendFn {
 
 function makeQueueWrapper(orig: SendFn): SendFn {
     return function voidModeSyncQueue(this: unknown, ...args: unknown[]) {
+        if (onImaginePage()) return orig.apply(this, args);
         const [first] = args;
         const live = liveIntent();
         if (!isTurnArgs(first) || !live.modeId || inflightMode(first.convId) === live.modeId) return orig.apply(this, args);
@@ -459,6 +474,7 @@ function unwrapSendFns() {
 }
 
 function rewriteIfChatPost(url: string, method: string, text: string | null): string | null {
+    if (onImaginePage()) return null;
     if (method !== "POST" && method !== "PUT") return null;
     if (!CHAT_POST.test(url) || text == null) return null;
     const live = liveIntent();

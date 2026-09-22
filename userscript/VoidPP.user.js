@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260920.35] v1.0.0
+// @version      [20260922.1] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260920.35] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3327,7 +3327,7 @@ ${sourceUrl}`;
   var FRAME_STYLE_ID = "void-better-canvas";
   var MSG = "void-better-canvas";
   var MSG_HELLO = "void-better-canvas-hello";
-  var SCROLLER = '[class*="pane-card"] :is([class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"])';
+  var SCROLLER = ':is([class*="pane-card"],[class*="masonry"],[class*="lightbox"]) :is([class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"]),main:has([aria-label="Generation mode"]) :is([class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"])';
   var IFRAME_SEL = 'iframe[title="Preview"], [class*="pane-card"] iframe';
   var THUMB = "hsl(var(--border-l2))";
   var THUMB_HOVER = "hsl(var(--fg-tertiary))";
@@ -3362,7 +3362,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
   var settings2 = definePluginSettings({
     themedScrollbar: {
       type: 3 /* BOOLEAN */,
-      description: "Make the project pane scrollbar follow Grok's light and dark theme.",
+      description: "Make project pane and Imagine masonry scrollbars follow Grok's light and dark theme.",
       default: true
     },
     hideRightPanel: {
@@ -3513,7 +3513,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
   var betterCanvas_default = definePlugin({
     name: "BetterCanvas",
     icon: FrameIcon,
-    description: "Theme the project pane scrollbar and optionally keep the right panel closed.",
+    description: "Theme the project pane and Imagine masonry scrollbars and optionally keep the right panel closed.",
     authors: [Devs.p],
     tags: ["ui"],
     enabledByDefault: true,
@@ -3719,7 +3719,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     }
     updateSettingsPluginData({ chunkFingerprint: current });
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ColorSettingRow.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/ColorSettingRow.css
   registerStyle("ColorSettingRow", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -3758,7 +3758,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, title), /* @__PURE__ */ React.createElement(SettingsDescription, null, description)));
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ConfirmDialog.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/ConfirmDialog.css
   registerStyle("ConfirmDialog", `.void-confirm-dialog {
     width: 100%;
     max-width: 28rem;
@@ -4007,7 +4007,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     },
     configurable: true
   });
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ErrorCard.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/ErrorCard.css
   registerStyle("ErrorCard", `.void-error-card-root {
     contain: content;
     padding: 1rem;
@@ -4067,7 +4067,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       ...restProps
     }, children);
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/Paragraph.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/Paragraph.css
   registerStyle("Paragraph", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -4159,7 +4159,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       weight: "medium"
     }, title), description && /* @__PURE__ */ React.createElement(Paragraph, null, description));
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/SelectionUI.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/SelectionUI.css
   registerStyle("SelectionUI", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -4899,7 +4899,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/_core/settings/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/_core/settings/styles.css
   registerStyle("settings", `.void-settings-version,
 .void-settings-version * {
     user-select: text;
@@ -5181,7 +5181,7 @@ button .void-info-hint {
     }
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/CustomCSSTab.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/settings/tabs/CustomCSSTab.css
   registerStyle("CustomCSSTab", `.void-css-root {
     height: 100%;
     min-height: 0;
@@ -5192,7 +5192,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/CssEditor.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/settings/CssEditor.css
   registerStyle("CssEditor", `.void-css-wrap {
     flex: 1;
     min-height: 0;
@@ -5468,7 +5468,7 @@ button .void-info-hint {
     }));
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/shared.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/settings/shared.css
   registerStyle("shared", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -5543,7 +5543,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/PluginsTab.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/settings/tabs/PluginsTab.css
   registerStyle("PluginsTab", `.void-plugins-reload-banner {
     padding: 0.625rem 0.75rem;
     border-radius: 0.5rem;
@@ -5584,7 +5584,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/PluginCard.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/settings/PluginCard.css
   registerStyle("PluginCard", `.void-plugin-card-required-icon,
 .void-plugin-card-badge,
 .void-plugin-card-crashed-icon {
@@ -5635,7 +5635,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/BaseCard.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/settings/BaseCard.css
   registerStyle("BaseCard", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -5915,7 +5915,7 @@ button .void-info-hint {
     });
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/PluginDialog.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/settings/tabs/PluginDialog.css
   registerStyle("PluginDialog", `.void-plugin-dialog-settings-list>.px-3 {
     padding-left: 0;
     padding-right: 0;
@@ -5941,7 +5941,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/SettingField.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/settings/SettingField.css
   registerStyle("SettingField", `.void-setting-select-content {
     z-index: 1000 !important;
 }
@@ -6559,7 +6559,7 @@ button .void-info-hint {
     }));
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/ThemesTab.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/settings/tabs/ThemesTab.css
   registerStyle("ThemesTab", `.void-themes-add-error {
     color: hsl(var(--fg-danger));
 }
@@ -6582,7 +6582,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/ThemeCard.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/components/settings/ThemeCard.css
   registerStyle("ThemeCard", `.void-theme-card-name {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -6860,7 +6860,7 @@ button .void-info-hint {
   var PluginsTab2 = ErrorBoundary.wrap(PluginsTab);
   var ThemesTab2 = ErrorBoundary.wrap(ThemesTab);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/experiments/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/experiments/styles.css
   registerStyle("experiments", `.void-experiments-section {
     padding: 0 1.25rem;
 }
@@ -7238,7 +7238,7 @@ button .void-info-hint {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/pluginsFlyout/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/pluginsFlyout/styles.css
   registerStyle("pluginsFlyout", `.void-pf-icon {
     width: 1rem;
     height: 1rem;
@@ -7380,9 +7380,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260920.35] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4afcbc7"}`
-    }, `(${"4afcbc7"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"cad2ca4"}`
+    }, `(${"cad2ca4"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7640,8 +7640,8 @@ button .void-info-hint {
         find: ["Type to imagine", "Generation mode"],
         noWarn: true,
         replacement: {
-          match: /("Generation mode"\)\}\)\}\),)(\i(?:&&!?\i){0,4}&&\(0,\i\.jsx\)\(\i\.DictationButton,)/,
-          replace: "$1$self.renderImagineButtons(),$2"
+          match: /("Generation mode"\)\}\)\}\),)/,
+          replace: "$1$self.renderImagineButtons(),"
         }
       }
     ]
@@ -7704,7 +7704,7 @@ button .void-info-hint {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterNavigator/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/betterNavigator/styles.css
   registerStyle("betterNavigator", `.void-bn-host {
     pointer-events: none;
     z-index: 50;
@@ -8802,7 +8802,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/completeToast/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/completeToast/styles.css
   registerStyle("completeToast", `.void-ct-host {
     contain: layout style;
     position: fixed;
@@ -8957,6 +8957,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       type: 3 /* BOOLEAN */,
       description: "Show a short preview of the finished reply.",
       default: true
+    },
+    imagineGeneration: {
+      type: 3 /* BOOLEAN */,
+      description: "Toast when an Imagine generation finishes while you are not on Imagine.",
+      default: false
     }
   });
   var live = new Set;
@@ -9004,6 +9009,18 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         return true;
     } catch {}
     return false;
+  }
+  function onImaginePage() {
+    try {
+      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+      if (page.startsWith("imagine"))
+        return true;
+    } catch {}
+    try {
+      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+      return false;
+    }
   }
   function currentIds() {
     if (onBotPage())
@@ -9338,7 +9355,14 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
   }
   function dismissIfCurrent() {
-    if (toast && (onBotPage() || isCurrentToast()))
+    if (!toast)
+      return;
+    if (toast.kind === "imagine") {
+      if (onImaginePage())
+        hide();
+      return;
+    }
+    if (onBotPage() || isCurrentToast())
       hide();
   }
   function shouldPersist() {
@@ -9379,11 +9403,13 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     hideAt = Date.now() + remain;
     hideTimer = setTimeout(hide, remain);
   }
-  function show(cid, rid) {
+  function show(cid, rid, kind = "chat", previewText = "") {
     hide();
-    if (onBotPage())
+    if (kind === "chat" && onBotPage())
       return;
-    toast = { cid, rid };
+    if (kind === "imagine" && onImaginePage())
+      return;
+    toast = { cid, rid, kind };
     const root = document.createElement("div");
     root.id = HOST;
     root.className = cl18("host");
@@ -9401,12 +9427,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     body.className = cl18("body");
     const title = document.createElement("span");
     title.className = cl18("title");
-    title.textContent = titleOf(cid);
+    title.textContent = kind === "imagine" ? "Imagine ready" : titleOf(cid);
     body.append(title);
-    const preview = previewOf(cid, rid);
+    const preview = kind === "imagine" ? previewText : previewOf(cid, rid);
     const sub = document.createElement("span");
     sub.className = cl18("preview");
-    sub.textContent = preview || "Response ready";
+    sub.textContent = preview || (kind === "imagine" ? "Generation ready" : "Response ready");
     body.append(sub);
     main.append(icon, body);
     const x = document.createElement("button");
@@ -9420,8 +9446,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const { signal } = keys;
     main.addEventListener("click", () => {
       const id = toast?.cid ?? cid;
+      const k = toast?.kind ?? kind;
       hide();
-      navigateTo(id);
+      if (k === "imagine")
+        navigateToImagine(id);
+      else
+        navigateTo(id);
     }, { signal });
     x.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -9432,6 +9462,94 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     document.body.append(root);
     host2 = root;
     armTimer();
+  }
+  function navigateToImagine(id) {
+    try {
+      const routing = RoutingStore.useRoutingStore.getState();
+      const dest = id ? { page: "imagine-post", postId: id, teamId: routing.route.teamId ?? null } : { page: "imagine", teamId: routing.route.teamId ?? null };
+      routing.push(dest);
+    } catch (e) {
+      logger17.error("Failed to navigate to Imagine:", e);
+      try {
+        location.assign(id ? `/imagine/post/${encodeURIComponent(id)}` : "/imagine");
+      } catch (navErr) {
+        logger17.error("Fallback Imagine navigation failed:", navErr);
+      }
+    }
+  }
+  function isLiveMedia(p) {
+    if (!p)
+      return false;
+    if (p.complete)
+      return false;
+    if (p.moderated || p.isModerated)
+      return false;
+    if (p.progress != null && p.progress < 100)
+      return true;
+    if (p.inflightId)
+      return true;
+    if (p.blobSrc && !p.mediaUrl)
+      return true;
+    if (p.upscalingInProgress)
+      return true;
+    return false;
+  }
+  function liveMediaIds(s) {
+    const ids = new Set;
+    for (const p of Object.values(s.byId ?? {})) {
+      if (isLiveMedia(p))
+        ids.add(p.id);
+    }
+    for (const [id, pending] of Object.entries(s.optimisticVideoGenPending ?? {})) {
+      if (pending)
+        ids.add(id);
+    }
+    return [...ids];
+  }
+  function mediaLiveKey(s) {
+    try {
+      return liveMediaIds(s).toSorted().join(",");
+    } catch {
+      return "";
+    }
+  }
+  function maybeFinishImagine(id) {
+    if (!started2 || !settings8.store.imagineGeneration || !id)
+      return;
+    if (onImaginePage())
+      return;
+    const key = `imagine:${id}`;
+    if (toasted.has(key))
+      return;
+    let item;
+    try {
+      item = MediaStore.useMediaStore.getState().byId[id];
+    } catch (e) {
+      logger17.debug("Imagine item unavailable:", e);
+      return;
+    }
+    if (!item)
+      return;
+    if (item.complete === false && !item.mediaUrl)
+      return;
+    if (item.moderated || item.isModerated)
+      return;
+    markToasted(key);
+    const prompt = (item.prompt ?? item.originalPrompt ?? "").trim();
+    show(id, "", "imagine", settings8.store.showPreview ? prompt.slice(0, PREVIEW_MAX) : "");
+  }
+  function syncImagine(current, prev) {
+    if (!started2 || !settings8.store.imagineGeneration)
+      return;
+    if (!prev)
+      return;
+    const now = new Set(current ? current.split(",") : []);
+    for (const id of prev.split(",")) {
+      if (!id || now.has(id))
+        continue;
+      maybeFinishImagine(id);
+    }
+    dismissIfCurrent();
   }
   function rememberRid(cid, rid) {
     if (rid)
@@ -9588,7 +9706,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var completeToast_default = definePlugin({
     name: "CompleteToast",
     icon: CircleCheckIcon,
-    description: "Toast when another chat finishes, click to open it.",
+    description: "Toast when another chat finishes, click to open it. Optional Imagine generation toast is off by default.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
@@ -9638,6 +9756,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       RoutingStore: {
         selector: routeKey,
         handler: dismissIfCurrent
+      },
+      MediaStore: {
+        selector: mediaLiveKey,
+        handler: syncImagine
       }
     }
   });
@@ -9678,6 +9800,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       type: 3 /* BOOLEAN */,
       description: 'Hide the "Connect your \uD835\uDD4F account" upsell popout.',
       default: true
+    },
+    hideImagineUpgrade: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide the Upgrade button on the Imagine page.",
+      default: true
     }
   });
   var hideComponentPatch = (name, setting, all = true) => ({
@@ -9688,6 +9815,14 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       replace: `"${name}",0,$self.settings.store.${setting}?()=>null:`
     }
   });
+  var IMAGINE_UPGRADE_STYLE = "cleanerImagineUpgrade";
+  var IMAGINE_UPGRADE_CSS = 'form:has([aria-label="Generation mode"]) a[href*="upgrade"],form:has([aria-label="Generation mode"]) button[aria-label="Upgrade"],form:has([aria-label="Generation mode"]) button[aria-label*="Upgrade plan"],[data-wd-toolbar] a[href*="upgrade"],[data-wd-toolbar] button[aria-label="Upgrade"]{display:none!important}';
+  function applyImagineUpgrade() {
+    if (settings9.store.hideImagineUpgrade)
+      registerStyle(IMAGINE_UPGRADE_STYLE, IMAGINE_UPGRADE_CSS);
+    else
+      unregisterStyle(IMAGINE_UPGRADE_STYLE);
+  }
   var cleaner_default = definePlugin({
     name: "Cleaner",
     icon: BrushCleaningIcon,
@@ -9696,6 +9831,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     tags: ["ui"],
     enabledByDefault: true,
     settings: settings9,
+    start: applyImagineUpgrade,
+    onSettingsChange: applyImagineUpgrade,
+    stop() {
+      unregisterStyle(IMAGINE_UPGRADE_STYLE);
+    },
     patches: [
       {
         find: '"user-dropdown.upgrade","Upgrade plan"',
@@ -9741,7 +9881,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/headerHover.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/betterSidebar/headerHover.css
   registerStyle("headerHover", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -9797,7 +9937,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/betterSidebar/styles.css
   registerStyle("betterSidebar", `.group.peer [data-sidebar="sidebar"] + div,
 .group.peer [data-sidebar="content"] > .grow {
     cursor: default !important;
@@ -10368,7 +10508,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterImagine/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/betterImagine/styles.css
   registerStyle("betterImagine", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -10412,7 +10552,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     hideDefaultPreviews: {
       type: 3 /* BOOLEAN */,
       description: "Hide the community image grid and templates on the Imagine home page.",
-      default: true
+      default: false
     },
     noAutoplay: {
       type: 3 /* BOOLEAN */,
@@ -10845,11 +10985,28 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }), "Copy URLs"));
   }
   function isImaginePage() {
-    const page = RoutingStore.useRoutingStore.getState().route?.page;
-    return page === "imagine" || page === "imagine-favorites";
+    try {
+      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+      if (page.startsWith("imagine"))
+        return true;
+    } catch {}
+    try {
+      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+      return false;
+    }
   }
   function isFavoritesPage() {
-    return RoutingStore.useRoutingStore.getState().route?.page === "imagine-favorites";
+    try {
+      if (RoutingStore.useRoutingStore.getState().route?.page === "imagine-favorites")
+        return true;
+    } catch {}
+    try {
+      const path = location.pathname.replace(/\/+$/, "") || "/";
+      return path === "/imagine/favorites" || path.startsWith("/imagine/favorites/");
+    } catch {
+      return false;
+    }
   }
   function isTypingTarget2(t) {
     if (!(t instanceof HTMLElement))
@@ -10867,12 +11024,18 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     if (isTypingTarget2(e.target))
       return;
     if (e.key === "i" || e.key === "I") {
+      if (!isFavoritesPage())
+        return;
       setFilter(currentFilter === "image" ? "all" : "image");
       e.preventDefault();
     } else if (e.key === "v" || e.key === "V") {
+      if (!isFavoritesPage())
+        return;
       setFilter(currentFilter === "video" ? "all" : "video");
       e.preventDefault();
     } else if (e.key === "r" || e.key === "R") {
+      if (!isFavoritesPage())
+        return;
       resetFilters();
       e.preventDefault();
     } else if (e.key === "A") {
@@ -10906,7 +11069,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var betterImagine_default = definePlugin({
     name: "BetterImagine",
     icon: ImagesIcon,
-    description: "Imagine polish: filter, sort, shortcuts, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
+    description: "Imagine polish: filter, sort, shortcuts on Favorites, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
     authors: [Devs.Prism],
     tags: ["ui"],
     settings: settings11,
@@ -11054,6 +11217,18 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var abort = null;
   var lastNavKey = "";
   var loadTail = null;
+  function onImaginePage2() {
+    try {
+      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+      if (page.startsWith("imagine"))
+        return true;
+    } catch {}
+    try {
+      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+      return false;
+    }
+  }
   function snapshot() {
     try {
       const modes = ModesStore.useModesStore.getState();
@@ -11111,7 +11286,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   }
   function applyIntent(next) {
-    if (!next.modeId || applying)
+    if (!next.modeId || applying || onImaginePage2())
       return;
     applying = true;
     try {
@@ -11192,7 +11367,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     return "message" in rec || "modeId" in rec || "modelMode" in rec;
   }
   function patchPayload(raw, live) {
-    if (!raw || typeof raw !== "object" || Array.isArray(raw) || !live.modeId)
+    if (onImaginePage2() || !raw || typeof raw !== "object" || Array.isArray(raw) || !live.modeId)
       return false;
     const rec = raw;
     if (!isChatSend(rec))
@@ -11307,7 +11482,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   }
   function patchGwEvent(event, live) {
-    if (!event || typeof event !== "object" || Array.isArray(event) || !live.modeId)
+    if (onImaginePage2() || !event || typeof event !== "object" || Array.isArray(event) || !live.modeId)
       return;
     const rec = event;
     if (typeof rec.type !== "string" || !GW_TYPES.has(rec.type))
@@ -11336,6 +11511,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       origGwSend = mgr.send;
       const orig = origGwSend;
       const wrapped = function voidModeSyncGwSend(...args) {
+        if (onImaginePage2())
+          return orig.apply(mgr, args);
         const [cid, event] = args;
         if (typeof cid === "string" && holdQueueEvent(cid, event))
           return Promise.resolve(GW_OK);
@@ -11365,6 +11542,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   }
   function makeSendWrapper(orig) {
     return function voidModeSyncSend(...args) {
+      if (onImaginePage2())
+        return orig.apply(this, args);
       const live = liveIntent();
       if (live.modeId) {
         applyIntent(live);
@@ -11375,6 +11554,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   }
   function makeQueueWrapper(orig) {
     return function voidModeSyncQueue(...args) {
+      if (onImaginePage2())
+        return orig.apply(this, args);
       const [first] = args;
       const live = liveIntent();
       if (!isTurnArgs(first) || !live.modeId || inflightMode(first.convId) === live.modeId)
@@ -11438,6 +11619,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     wrappedFns.clear();
   }
   function rewriteIfChatPost(url, method, text) {
+    if (onImaginePage2())
+      return null;
     if (method !== "POST" && method !== "PUT")
       return null;
     if (!CHAT_POST.test(url) || text == null)
@@ -11682,7 +11865,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/messageTimestamps/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/messageTimestamps/styles.css
   registerStyle("messageTimestamps", `.void-timestamp {
     margin-bottom: 0.125rem;
 }
@@ -12656,7 +12839,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/cloneChats/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/cloneChats/styles.css
   registerStyle("cloneChats", `.void-clone-icon {
     margin-inline-end: 0.5rem;
 }
@@ -12707,7 +12890,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/streamerMode/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/streamerMode/styles.css
   registerStyle("streamerMode", `/* stylelint-disable no-descending-specificity */
 
 /* Sidebar avatar */
@@ -12879,7 +13062,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/inputHistory/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/inputHistory/styles.css
   registerStyle("inputHistory", `.void-ih-hud {
     contain: content;
     position: fixed;
@@ -13054,6 +13237,11 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       max: MAX_MAX,
       default: MAX_DEFAULT
     },
+    separateImagine: {
+      type: 3 /* BOOLEAN */,
+      description: "Store Imagine prompts in a separate history from chat.",
+      default: false
+    },
     history: {
       type: 6 /* COMPONENT */,
       component: HistoryPanel
@@ -13070,16 +13258,36 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   var applyTimer;
   var applyEl = null;
   var applyAtStart = true;
-  function getEntries() {
-    const raw = settings17.plain.entries;
+  function isImaginePage2() {
+    try {
+      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+      if (page.startsWith("imagine"))
+        return true;
+    } catch {}
+    try {
+      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+      return false;
+    }
+  }
+  function useImagineBucket() {
+    return !!settings17.store.separateImagine && isImaginePage2();
+  }
+  function listOf(raw) {
     return Array.isArray(raw) ? raw.filter((x) => typeof x === "string") : [];
+  }
+  function getEntries() {
+    return listOf(useImagineBucket() ? settings17.plain.imagineEntries : settings17.plain.entries);
   }
   function cap(entries) {
     const max = clamp(settings17.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
     return entries.length > max ? entries.slice(entries.length - max) : entries;
   }
   function setEntries(entries) {
-    settings17.store.entries = entries;
+    if (useImagineBucket())
+      settings17.store.imagineEntries = entries;
+    else
+      settings17.store.entries = entries;
   }
   function normalize(text) {
     return text.replaceAll(ZWSP, "").replace(/\n$/, "").trim();
@@ -13397,7 +13605,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     if (!ctrl)
       return;
     const bar = ctrl.closest(".query-bar");
-    if (!bar || ctrl.closest("[data-query-bar-mode-select]"))
+    if (!bar || ctrl.closest("[data-query-bar-mode-select]") || ctrl.closest("[role='radiogroup']"))
       return;
     const label = (ctrl.getAttribute("aria-label") ?? "").toLowerCase();
     const submit = ctrl instanceof HTMLButtonElement && ctrl.type === "submit";
@@ -13407,17 +13615,23 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     if (editor instanceof HTMLElement)
       pushEntry(editorText(editor));
   }
-  function removeEntry(index) {
-    const list = getEntries();
+  function removeEntry(index, imagine) {
+    const list = listOf(imagine ? settings17.plain.imagineEntries : settings17.plain.entries);
     if (index < 0 || index >= list.length)
       return;
     const next = list.filter((_, i) => i !== index);
-    setEntries(next);
-    resetBrowse(next.length);
+    if (imagine)
+      settings17.store.imagineEntries = next;
+    else
+      settings17.store.entries = next;
+    if (imagine === useImagineBucket())
+      resetBrowse(next.length);
   }
   function HistoryPanel() {
-    const { entries } = settings17.use(["entries"]);
-    const list = entries ?? [];
+    const { entries, imagineEntries, separateImagine } = settings17.use(["entries", "imagineEntries", "separateImagine"]);
+    const [bucket, setBucket] = useState("chat");
+    const imagine = !!separateImagine && bucket === "imagine";
+    const list = imagine ? imagineEntries ?? [] : entries ?? [];
     const [query, setQuery] = useState("");
     const [openId, setOpenId] = useState(null);
     const [confirm, setConfirm] = useState(false);
@@ -13431,7 +13645,20 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       flexDirection: "column",
       gap: "0.35rem",
       className: cl21("toolbar")
-    }, list.length > 0 && /* @__PURE__ */ React.createElement(Input, {
+    }, !!separateImagine && /* @__PURE__ */ React.createElement(Flex, {
+      alignItems: "center",
+      gap: "0.5rem"
+    }, /* @__PURE__ */ React.createElement(Button, {
+      variant: bucket === "chat" ? "primary" : "secondary",
+      size: "sm",
+      shape: "pill",
+      onClick: () => setBucket("chat")
+    }, "Chat"), /* @__PURE__ */ React.createElement(Button, {
+      variant: bucket === "imagine" ? "primary" : "secondary",
+      size: "sm",
+      shape: "pill",
+      onClick: () => setBucket("imagine")
+    }, "Imagine")), list.length > 0 && /* @__PURE__ */ React.createElement(Input, {
       type: "text",
       placeholder: "Search prompts",
       value: query,
@@ -13497,7 +13724,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
         onClick: () => {
           if (openId === row.index)
             setOpenId(null);
-          removeEntry(row.index);
+          removeEntry(row.index, imagine);
         }
       }, /* @__PURE__ */ React.createElement(Trash2Icon, {
         size: 16
@@ -13505,13 +13732,17 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     })), /* @__PURE__ */ React.createElement(ConfirmDialog, {
       open: confirm,
       onOpenChange: setConfirm,
-      title: "Clear input history",
-      description: "Delete all stored prompts? This cannot be undone.",
+      title: imagine ? "Clear Imagine history" : "Clear input history",
+      description: "Delete all stored prompts in this list? This cannot be undone.",
       confirmText: "Clear",
       danger: true,
       onConfirm: () => {
-        setEntries([]);
-        resetBrowse(0);
+        if (imagine)
+          settings17.store.imagineEntries = [];
+        else
+          settings17.store.entries = [];
+        if (imagine === useImagineBucket())
+          resetBrowse(0);
         setOpenId(null);
         setQuery("");
       }
@@ -13520,7 +13751,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   var inputHistory_default = definePlugin({
     name: "InputHistory",
     icon: HistoryIcon,
-    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell.",
+    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell. Optional separate Imagine history.",
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
@@ -13560,10 +13791,22 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
         setEntries(next);
       if (cursor > next.length)
         cursor = next.length;
+      const imagine = listOf(settings17.plain.imagineEntries);
+      const imagineNext = cap(imagine);
+      if (imagineNext.length !== imagine.length)
+        settings17.store.imagineEntries = imagineNext;
+    },
+    zustand: {
+      RoutingStore: {
+        selector: (s) => String(s.route?.page ?? ""),
+        handler() {
+          resetBrowse(getEntries().length);
+        }
+      }
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customSidebarIdentity/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/customSidebarIdentity/styles.css
   registerStyle("customSidebarIdentity", `.void-csi-name {
     min-width: 0;
     overflow: hidden;
@@ -14412,7 +14655,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/downloadTTS/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/downloadTTS/styles.css
   registerStyle("downloadTTS", `.void-download-tts-spinner {
     pointer-events: none;
 }
@@ -14474,7 +14717,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     _renderDownloadButton: ErrorBoundary.wrap(DownloadButton)
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/recentTopics/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/recentTopics/styles.css
   registerStyle("recentTopics", `.void-rt-root,
 .void-rt-root:popover-open {
     isolation: isolate;
@@ -17480,7 +17723,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customInstructions/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/customInstructions/styles.css
   registerStyle("customInstructions", `.void-ci-root {
     display: flex;
     flex-direction: column;
@@ -17932,6 +18175,11 @@ html.void-rt-open [data-sidebar="gap"] {
       type: 3 /* BOOLEAN */,
       description: "Only notify when the tab is hidden.",
       default: true
+    },
+    imagineGeneration: {
+      type: 3 /* BOOLEAN */,
+      description: "Notify when an Imagine generation finishes. Off by default.",
+      default: false
     }
   });
   var userGestured = false;
@@ -18028,8 +18276,9 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     if (settings22.store.sound)
       playSound();
-    if (settings22.store.browserNotification)
-      sendBrowserNotification("Grok", "Response complete.");
+    if (settings22.store.browserNotification) {
+      sendBrowserNotification("Grok", state === "imagine" ? "Imagine generation complete." : "Response complete.");
+    }
   }
   function notifyOnce(responseId, state) {
     if (notified.has(responseId))
@@ -18076,10 +18325,79 @@ html.void-rt-open [data-sidebar="gap"] {
     };
     attempt(false);
   }
+  function onImaginePage3() {
+    try {
+      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+      if (page.startsWith("imagine"))
+        return true;
+    } catch {}
+    try {
+      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+      return false;
+    }
+  }
+  function isLiveMedia2(p) {
+    if (!p)
+      return false;
+    if (p.complete)
+      return false;
+    if (p.moderated || p.isModerated)
+      return false;
+    if (p.progress != null && p.progress < 100)
+      return true;
+    if (p.inflightId)
+      return true;
+    if (p.blobSrc && !p.mediaUrl)
+      return true;
+    if (p.upscalingInProgress)
+      return true;
+    return false;
+  }
+  function mediaLiveKey2(s) {
+    try {
+      const ids = new Set;
+      for (const p of Object.values(s.byId ?? {})) {
+        if (isLiveMedia2(p))
+          ids.add(p.id);
+      }
+      for (const [id, pending] of Object.entries(s.optimisticVideoGenPending ?? {})) {
+        if (pending)
+          ids.add(id);
+      }
+      return [...ids].toSorted().join(",");
+    } catch {
+      return "";
+    }
+  }
+  function syncImagine2(current, prev) {
+    if (!settings22.store.imagineGeneration || !prev)
+      return;
+    if (onImaginePage3())
+      return;
+    const now = new Set(current ? current.split(",") : []);
+    for (const id of prev.split(",")) {
+      if (!id || now.has(id))
+        continue;
+      let item;
+      try {
+        item = MediaStore.useMediaStore.getState().byId[id];
+      } catch {
+        continue;
+      }
+      if (!item)
+        continue;
+      if (item.complete === false && !item.mediaUrl)
+        continue;
+      if (item.moderated || item.isModerated)
+        continue;
+      notifyOnce(`imagine:${id}`, "imagine");
+    }
+  }
   var responseNotification_default = definePlugin({
     name: "ResponseNotification",
     icon: BellIcon,
-    description: "Notify when Grok finishes responding.",
+    description: "Notify when Grok finishes responding. Optional Imagine generation notify is off by default.",
     authors: [Devs.Prism, Devs.p],
     tags: ["chat"],
     settings: settings22,
@@ -18111,6 +18429,10 @@ html.void-rt-open [data-sidebar="gap"] {
     zustand: {
       ResponseStore: {
         handler: onResponses
+      },
+      MediaStore: {
+        selector: mediaLiveKey2,
+        handler: syncImagine2
       }
     }
   });
@@ -18221,7 +18543,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const blur = clamp(settings23.store.blur, 0, 40);
     const alpha = pct / 100;
     const frost = pct < 100 && blur > 0 ? `-webkit-backdrop-filter:blur(${blur}px)!important;backdrop-filter:blur(${blur}px)!important;` : "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;";
-    registerStyle(STYLE_NAME5, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + "pointer-events:auto!important;" + `background-color:hsl(var(--surface-l1)/${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}");
+    registerStyle(STYLE_NAME5, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + "pointer-events:auto!important;" + `background-color:hsl(var(--surface-l1)/${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}" + `${SHELL}:has([aria-label="Generation mode"]){overflow:visible!important;clip-path:none!important}`);
   }
   var composerOpacity_default = definePlugin({
     name: "ComposerOpacity",
@@ -18238,7 +18560,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/exportChat/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/exportChat/styles.css
   registerStyle("exportChat", `.void-export-icon {
     margin-inline-end: 0.5rem;
 }
@@ -18457,7 +18779,7 @@ html.void-rt-open [data-sidebar="gap"] {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/usageDisplay/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/usageDisplay/styles.css
   registerStyle("usageDisplay", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -20033,7 +20355,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/settingsFlyout/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/settingsFlyout/styles.css
   registerStyle("settingsFlyout", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -21248,7 +21570,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterFiles/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/betterFiles/styles.css
   registerStyle("betterFiles", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -21412,7 +21734,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/chatListStatus/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/chatListStatus/styles.css
   registerStyle("chatListStatus", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -22260,7 +22582,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/compactModeSelect/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/compactModeSelect/styles.css
   registerStyle("compactModeSelect", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -23097,7 +23419,7 @@ div:has(> #grok-bot-nav-button) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/placeholder/styles.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/plugins/placeholder/styles.css
   registerStyle("placeholder", `.void-ph-root {
     contain: layout;
 }
@@ -23231,6 +23553,11 @@ div:has(> #grok-bot-nav-button) {
       type: 6 /* COMPONENT */,
       default: DEFAULT_PHRASES,
       component: PhrasesEditor
+    },
+    imaginePhrases: {
+      type: 6 /* COMPONENT */,
+      default: "",
+      component: ImaginePhrasesEditor
     }
   }).withPrivateSettings();
   function PhrasesEditor() {
@@ -23245,7 +23572,7 @@ div:has(> #grok-bot-nav-button) {
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "medium"
-    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. The non-project home greeting uses these and may wrap. Project chat input uses the first phrase on one line and replaces the last overflowing word with an ellipsis. Home and other non-project chats keep Grok's short placeholders. Empty list uses Grok's defaults.")), /* @__PURE__ */ React.createElement("div", {
+    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. The non-project home greeting uses these and may wrap. Project chat input uses the first phrase on one line and replaces the last overflowing word with an ellipsis. Home and other non-project chats keep Grok's short placeholders. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.")), /* @__PURE__ */ React.createElement("div", {
       className: cl29("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
       className: cl29("textarea"),
@@ -23254,6 +23581,30 @@ div:has(> #grok-bot-nav-button) {
         settings32.store.phrases = e.target.value;
       },
       placeholder: DEFAULT_PHRASES
+    })));
+  }
+  function ImaginePhrasesEditor() {
+    const { imaginePhrases } = settings32.use(["imaginePhrases"]);
+    return /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0.5rem",
+      className: cl29("root")
+    }, /* @__PURE__ */ React.createElement(Flex, {
+      alignItems: "center",
+      gap: "0.375rem"
+    }, /* @__PURE__ */ React.createElement(Text2, {
+      size: "sm",
+      weight: "medium"
+    }, "Imagine phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, `One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's "Type to imagine".`)), /* @__PURE__ */ React.createElement("div", {
+      className: cl29("textarea-wrap")
+    }, /* @__PURE__ */ React.createElement(Textarea, {
+      className: cl29("textarea"),
+      value: imaginePhrases ?? "",
+      onChange: (e) => {
+        settings32.store.imaginePhrases = e.target.value;
+      },
+      placeholder: `A cat astronaut on the moon
+Neon rain in a quiet city`
     })));
   }
   function isNonProjectHome() {
@@ -23272,9 +23623,29 @@ div:has(> #grok-bot-nav-button) {
       return false;
     }
   }
+  function isImaginePage3() {
+    try {
+      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+      if (page.startsWith("imagine"))
+        return true;
+    } catch {}
+    try {
+      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+      return false;
+    }
+  }
   function phrases() {
     try {
       const lines = parsePhrases(settings32.store.phrases ?? DEFAULT_PHRASES);
+      return lines.length ? lines : null;
+    } catch {
+      return null;
+    }
+  }
+  function imaginePhrases() {
+    try {
+      const lines = parsePhrases(settings32.store.imaginePhrases);
       return lines.length ? lines : null;
     } catch {
       return null;
@@ -23453,20 +23824,26 @@ div:has(> #grok-bot-nav-button) {
       sizeObs.observe(p);
   }
   function paintInput() {
-    if (!started6 || !isProjectChat()) {
+    if (!started6) {
       bindSize(null);
       clearInputOverlay();
       return;
     }
+    const imagine = isImaginePage3();
+    if (!isProjectChat() && !imagine) {
+      bindSize(null);
+      clearInputOverlay();
+      return;
+    }
+    const list = imagine ? imaginePhrases() : phrases();
     const p = document.querySelector(EMPTY_SEL);
-    const list = phrases();
     if (!(p instanceof HTMLElement) || !list) {
       bindSize(p instanceof HTMLElement ? p : null);
       clearInputOverlay();
       return;
     }
     bindSize(p);
-    const full = p.getAttribute("data-placeholder") || list[0] || "";
+    const full = list[0] || "";
     if (!full) {
       clearInputOverlay();
       return;
@@ -23489,7 +23866,7 @@ div:has(> #grok-bot-nav-button) {
   var placeholder_default = definePlugin({
     name: "Placeholder",
     icon: TextCursorInputIcon,
-    description: "Replace the non-project home greeting and the project chat input placeholder. Rotate the greeting on visit, a timer, or a click.",
+    description: "Replace the non-project home greeting, the project chat input placeholder, and optional Imagine phrases.",
     authors: [Devs.p],
     tags: ["chat"],
     settings: settings32,
@@ -23599,58 +23976,58 @@ div:has(> #grok-bot-nav-button) {
   });
 
   // virtual:~plugins
-  noTelemetry_default.updatedAt = 1789916536000;
-  settings_default.updatedAt = 1789916536000;
-  fixChrome_default.updatedAt = 1789916536000;
+  noTelemetry_default.updatedAt = 1787870966000;
+  settings_default.updatedAt = 1789897669000;
+  fixChrome_default.updatedAt = 1787789817000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1789921507000;
-  contextMenu_default.updatedAt = 1789916536000;
-  betterNavigator_default.updatedAt = 1789916536000;
-  noSidebarIdentity_default.updatedAt = 1789916536000;
-  completeToast_default.updatedAt = 1789922883000;
-  cleaner_default.updatedAt = 1789916536000;
-  betterSidebar_default.updatedAt = 1789916536000;
-  betterImagine_default.updatedAt = 1789916536000;
-  modeSync_default.updatedAt = 1789916536000;
-  messageTimestamps_default.updatedAt = 1789916536000;
-  autoRetry_default.updatedAt = 1789916536000;
-  userQuotes_default.updatedAt = 1789916536000;
-  cloneChats_default.updatedAt = 1789916536000;
-  streamerMode_default.updatedAt = 1789916536000;
-  inputHistory_default.updatedAt = 1789916536000;
+  contextMenu_default.updatedAt = 1781702684000;
+  betterNavigator_default.updatedAt = 1789908648000;
+  noSidebarIdentity_default.updatedAt = 1788577403000;
+  completeToast_default.updatedAt = 1789923438000;
+  cleaner_default.updatedAt = 1789246749000;
+  betterSidebar_default.updatedAt = 1789807577000;
+  betterImagine_default.updatedAt = 1787870966000;
+  modeSync_default.updatedAt = 1789881463000;
+  messageTimestamps_default.updatedAt = 1789881463000;
+  autoRetry_default.updatedAt = 1789906500000;
+  userQuotes_default.updatedAt = 1789905284000;
+  cloneChats_default.updatedAt = 1787870966000;
+  streamerMode_default.updatedAt = 1787870966000;
+  inputHistory_default.updatedAt = 1789266420000;
   customSidebarIdentity_default.updatedAt = 1789918488000;
-  downloadTTS_default.updatedAt = 1789916536000;
-  recentTopics_default.updatedAt = 1789916536000;
-  betterLinks_default.updatedAt = 1789916536000;
-  experiments_default.updatedAt = 1789916536000;
-  customInstructions_default.updatedAt = 1789916536000;
-  noBuildStarters_default.updatedAt = 1789916536000;
-  responseNotification_default.updatedAt = 1789916536000;
-  incognito_default.updatedAt = 1789916536000;
-  betterCanvas_default.updatedAt = 1789916536000;
-  noSidebarPlugins_default.updatedAt = 1789916536000;
+  downloadTTS_default.updatedAt = 1787870966000;
+  recentTopics_default.updatedAt = 1789881195000;
+  betterLinks_default.updatedAt = 1787870966000;
+  experiments_default.updatedAt = 1788047438000;
+  customInstructions_default.updatedAt = 1789898438000;
+  noBuildStarters_default.updatedAt = 1789894247000;
+  responseNotification_default.updatedAt = 1789246749000;
+  incognito_default.updatedAt = 1787870966000;
+  betterCanvas_default.updatedAt = 1789258440000;
+  noSidebarPlugins_default.updatedAt = 1789807577000;
   composerOpacity_default.updatedAt = 1789921507000;
-  exportChat_default.updatedAt = 1789916536000;
-  autoCollapse_default.updatedAt = 1789916536000;
-  usageDisplay_default.updatedAt = 1789916536000;
-  widerChat_default.updatedAt = 1789916536000;
-  settingsFlyout_default.updatedAt = 1789916536000;
+  exportChat_default.updatedAt = 1787870966000;
+  autoCollapse_default.updatedAt = 1787789817000;
+  usageDisplay_default.updatedAt = 1789172854000;
+  widerChat_default.updatedAt = 1787870966000;
+  settingsFlyout_default.updatedAt = 1788095208000;
   chatStateFavicons_default.updatedAt = 1789921507000;
-  noDictation_default.updatedAt = 1789916536000;
-  betterFiles_default.updatedAt = 1789916536000;
-  noShareLink_default.updatedAt = 1789916536000;
-  chatListStatus_default.updatedAt = 1789916536000;
-  stableComposer_default.updatedAt = 1789916536000;
-  compactModeSelect_default.updatedAt = 1789916536000;
-  consoleJanitor_default.updatedAt = 1789916536000;
-  oneko_default.updatedAt = 1789916536000;
-  starry_default.updatedAt = 1789916536000;
-  pluginsFlyout_default.updatedAt = 1789916536000;
-  noGrokBot_default.updatedAt = 1789916536000;
+  noDictation_default.updatedAt = 1788037550000;
+  betterFiles_default.updatedAt = 1789246749000;
+  noShareLink_default.updatedAt = 1787789817000;
+  chatListStatus_default.updatedAt = 1789906500000;
+  stableComposer_default.updatedAt = 1789125421000;
+  compactModeSelect_default.updatedAt = 1789811419000;
+  consoleJanitor_default.updatedAt = 1787789817000;
+  oneko_default.updatedAt = 1787870966000;
+  starry_default.updatedAt = 1787870966000;
+  pluginsFlyout_default.updatedAt = 1788051053000;
+  noGrokBot_default.updatedAt = 1787789817000;
   placeholder_default.updatedAt = 1789923292000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [betterNavigator_default.name]: betterNavigator_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [completeToast_default.name]: completeToast_default, [cleaner_default.name]: cleaner_default, [betterSidebar_default.name]: betterSidebar_default, [betterImagine_default.name]: betterImagine_default, [modeSync_default.name]: modeSync_default, [messageTimestamps_default.name]: messageTimestamps_default, [autoRetry_default.name]: autoRetry_default, [userQuotes_default.name]: userQuotes_default, [cloneChats_default.name]: cloneChats_default, [streamerMode_default.name]: streamerMode_default, [inputHistory_default.name]: inputHistory_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [recentTopics_default.name]: recentTopics_default, [betterLinks_default.name]: betterLinks_default, [experiments_default.name]: experiments_default, [customInstructions_default.name]: customInstructions_default, [noBuildStarters_default.name]: noBuildStarters_default, [responseNotification_default.name]: responseNotification_default, [incognito_default.name]: incognito_default, [betterCanvas_default.name]: betterCanvas_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [composerOpacity_default.name]: composerOpacity_default, [exportChat_default.name]: exportChat_default, [autoCollapse_default.name]: autoCollapse_default, [usageDisplay_default.name]: usageDisplay_default, [widerChat_default.name]: widerChat_default, [settingsFlyout_default.name]: settingsFlyout_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [noDictation_default.name]: noDictation_default, [betterFiles_default.name]: betterFiles_default, [noShareLink_default.name]: noShareLink_default, [chatListStatus_default.name]: chatListStatus_default, [stableComposer_default.name]: stableComposer_default, [compactModeSelect_default.name]: compactModeSelect_default, [consoleJanitor_default.name]: consoleJanitor_default, [oneko_default.name]: oneko_default, [starry_default.name]: starry_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [noGrokBot_default.name]: noGrokBot_default, [placeholder_default.name]: placeholder_default };
-  // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
+  // voidpp-css:/workspace/artifacts/VoidPP/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
     display: flex;

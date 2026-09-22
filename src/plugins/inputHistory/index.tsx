@@ -9,7 +9,9 @@ import "./styles.css";
 import { definePluginSettings } from "@api/Settings";
 import { Button, ButtonWithTooltip, ConfirmDialog, Flex, Input, Paragraph } from "@components";
 import { CopyIcon, HistoryIcon, Trash2Icon } from "@components/icons";
+import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React, useState } from "@turbopack/common/react";
+import { RoutingStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -31,6 +33,7 @@ const CAPTURE_DEDUPE_MS = 2000;
 
 interface PrivateSettings {
     entries: string[];
+    imagineEntries: string[];
 }
 
 const settings = definePluginSettings({
@@ -40,6 +43,11 @@ const settings = definePluginSettings({
         min: MAX_MIN,
         max: MAX_MAX,
         default: MAX_DEFAULT,
+    },
+    separateImagine: {
+        type: OptionType.BOOLEAN,
+        description: "Store Imagine prompts in a separate history from chat.",
+        default: false,
     },
     history: {
         type: OptionType.COMPONENT,
@@ -60,9 +68,28 @@ let applyTimer: ReturnType<typeof setTimeout> | undefined;
 let applyEl: HTMLElement | null = null;
 let applyAtStart = true;
 
-function getEntries(): string[] {
-    const raw = settings.plain.entries;
+function isImaginePage(): boolean {
+    try {
+        const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+        if (page.startsWith("imagine")) return true;
+    } catch { /* route not ready */ }
+    try {
+        return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+        return false;
+    }
+}
+
+function useImagineBucket(): boolean {
+    return !!settings.store.separateImagine && isImaginePage();
+}
+
+function listOf(raw: unknown): string[] {
     return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
+}
+
+function getEntries(): string[] {
+    return listOf(useImagineBucket() ? settings.plain.imagineEntries : settings.plain.entries);
 }
 
 function cap(entries: string[]): string[] {
@@ -71,7 +98,8 @@ function cap(entries: string[]): string[] {
 }
 
 function setEntries(entries: string[]) {
-    settings.store.entries = entries;
+    if (useImagineBucket()) settings.store.imagineEntries = entries;
+    else settings.store.entries = entries;
 }
 
 function normalize(text: string): string {
@@ -382,7 +410,7 @@ function onClick(e: MouseEvent) {
     const ctrl = t.closest("button, [role='button']");
     if (!ctrl) return;
     const bar = ctrl.closest(".query-bar");
-    if (!bar || ctrl.closest("[data-query-bar-mode-select]")) return;
+    if (!bar || ctrl.closest("[data-query-bar-mode-select]") || ctrl.closest("[role='radiogroup']")) return;
     const label = (ctrl.getAttribute("aria-label") ?? "").toLowerCase();
     const submit = ctrl instanceof HTMLButtonElement && ctrl.type === "submit";
     if (!submit && !label.includes("send") && !label.includes("submit")) return;
@@ -390,17 +418,20 @@ function onClick(e: MouseEvent) {
     if (editor instanceof HTMLElement) pushEntry(editorText(editor));
 }
 
-function removeEntry(index: number) {
-    const list = getEntries();
+function removeEntry(index: number, imagine: boolean) {
+    const list = listOf(imagine ? settings.plain.imagineEntries : settings.plain.entries);
     if (index < 0 || index >= list.length) return;
     const next = list.filter((_, i) => i !== index);
-    setEntries(next);
-    resetBrowse(next.length);
+    if (imagine) settings.store.imagineEntries = next;
+    else settings.store.entries = next;
+    if (imagine === useImagineBucket()) resetBrowse(next.length);
 }
 
 function HistoryPanel() {
-    const { entries } = settings.use(["entries"]);
-    const list = entries ?? [];
+    const { entries, imagineEntries, separateImagine } = settings.use(["entries", "imagineEntries", "separateImagine"]);
+    const [bucket, setBucket] = useState<"chat" | "imagine">("chat");
+    const imagine = !!separateImagine && bucket === "imagine";
+    const list = imagine ? (imagineEntries ?? []) : (entries ?? []);
     const [query, setQuery] = useState("");
     const [openId, setOpenId] = useState<number | null>(null);
     const [confirm, setConfirm] = useState(false);
@@ -413,6 +444,16 @@ function HistoryPanel() {
     return (
         <Flex flexDirection="column" gap="0.5rem" className={cl("panel")}>
             <Flex flexDirection="column" gap="0.35rem" className={cl("toolbar")}>
+                {!!separateImagine && (
+                    <Flex alignItems="center" gap="0.5rem">
+                        <Button variant={bucket === "chat" ? "primary" : "secondary"} size="sm" shape="pill" onClick={() => setBucket("chat")}>
+                            Chat
+                        </Button>
+                        <Button variant={bucket === "imagine" ? "primary" : "secondary"} size="sm" shape="pill" onClick={() => setBucket("imagine")}>
+                            Imagine
+                        </Button>
+                    </Flex>
+                )}
                 {list.length > 0 && (
                     <Input
                         type="text"
@@ -474,7 +515,7 @@ function HistoryPanel() {
                                         aria-label="Delete"
                                         onClick={() => {
                                             if (openId === row.index) setOpenId(null);
-                                            removeEntry(row.index);
+                                            removeEntry(row.index, imagine);
                                         }}
                                     >
                                         <Trash2Icon size={16} />
@@ -488,13 +529,14 @@ function HistoryPanel() {
             <ConfirmDialog
                 open={confirm}
                 onOpenChange={setConfirm}
-                title="Clear input history"
-                description="Delete all stored prompts? This cannot be undone."
+                title={imagine ? "Clear Imagine history" : "Clear input history"}
+                description="Delete all stored prompts in this list? This cannot be undone."
                 confirmText="Clear"
                 danger
                 onConfirm={() => {
-                    setEntries([]);
-                    resetBrowse(0);
+                    if (imagine) settings.store.imagineEntries = [];
+                    else settings.store.entries = [];
+                    if (imagine === useImagineBucket()) resetBrowse(0);
                     setOpenId(null);
                     setQuery("");
                 }}
@@ -506,7 +548,7 @@ function HistoryPanel() {
 export default definePlugin({
     name: "InputHistory",
     icon: HistoryIcon,
-    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell.",
+    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell. Optional separate Imagine history.",
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
@@ -546,5 +588,17 @@ export default definePlugin({
         const next = cap(current);
         if (next.length !== current.length) setEntries(next);
         if (cursor > next.length) cursor = next.length;
+        const imagine = listOf(settings.plain.imagineEntries);
+        const imagineNext = cap(imagine);
+        if (imagineNext.length !== imagine.length) settings.store.imagineEntries = imagineNext;
+    },
+
+    zustand: {
+        RoutingStore: {
+            selector: (s: RoutingStoreState) => String(s.route?.page ?? ""),
+            handler() {
+                resetBrowse(getEntries().length);
+            },
+        },
     },
 });

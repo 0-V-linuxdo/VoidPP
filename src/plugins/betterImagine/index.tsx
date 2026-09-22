@@ -30,7 +30,7 @@ const settings = definePluginSettings({
     hideDefaultPreviews: {
         type: OptionType.BOOLEAN,
         description: "Hide the community image grid and templates on the Imagine home page.",
-        default: true,
+        default: false,
     },
     noAutoplay: {
         type: OptionType.BOOLEAN,
@@ -485,12 +485,27 @@ function CopyActions() {
 }
 
 function isImaginePage(): boolean {
-    const page = RoutingStore.useRoutingStore.getState().route?.page;
-    return page === "imagine" || page === "imagine-favorites";
+    try {
+        const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+        if (page.startsWith("imagine")) return true;
+    } catch { /* route not ready */ }
+    try {
+        return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+        return false;
+    }
 }
 
 function isFavoritesPage(): boolean {
-    return RoutingStore.useRoutingStore.getState().route?.page === "imagine-favorites";
+    try {
+        if (RoutingStore.useRoutingStore.getState().route?.page === "imagine-favorites") return true;
+    } catch { /* route not ready */ }
+    try {
+        const path = location.pathname.replace(/\/+$/, "") || "/";
+        return path === "/imagine/favorites" || path.startsWith("/imagine/favorites/");
+    } catch {
+        return false;
+    }
 }
 
 function isTypingTarget(t: EventTarget | null): boolean {
@@ -506,12 +521,15 @@ function onKeyDown(e: KeyboardEvent) {
     if (isTypingTarget(e.target)) return;
 
     if (e.key === "i" || e.key === "I") {
+        if (!isFavoritesPage()) return;
         setFilter(currentFilter === "image" ? "all" : "image");
         e.preventDefault();
     } else if (e.key === "v" || e.key === "V") {
+        if (!isFavoritesPage()) return;
         setFilter(currentFilter === "video" ? "all" : "video");
         e.preventDefault();
     } else if (e.key === "r" || e.key === "R") {
+        if (!isFavoritesPage()) return;
         resetFilters();
         e.preventDefault();
     } else if (e.key === "A") {
@@ -539,7 +557,7 @@ let abortCtrl: AbortController | null = null;
 export default definePlugin({
     name: "BetterImagine",
     icon: ImagesIcon,
-    description: "Imagine polish: filter, sort, shortcuts, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
+    description: "Imagine polish: filter, sort, shortcuts on Favorites, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
     authors: [Devs.Prism],
     tags: ["ui"],
     settings,

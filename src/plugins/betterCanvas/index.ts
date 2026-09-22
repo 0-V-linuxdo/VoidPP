@@ -17,7 +17,7 @@ const FRAME_STYLE_ID = "void-better-canvas";
 const MSG = "void-better-canvas";
 const MSG_HELLO = "void-better-canvas-hello";
 
-const SCROLLER = '[class*="pane-card"] :is([class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"])';
+const SCROLLER = ':is([class*="pane-card"],[class*="masonry"],[class*="lightbox"]) :is([class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"]),main:has([aria-label="Generation mode"]) :is([class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"])';
 const IFRAME_SEL = 'iframe[title="Preview"], [class*="pane-card"] iframe';
 
 const THUMB = "hsl(var(--border-l2))";
@@ -55,7 +55,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
 const settings = definePluginSettings({
     themedScrollbar: {
         type: OptionType.BOOLEAN,
-        description: "Make the project pane scrollbar follow Grok's light and dark theme.",
+        description: "Make project pane and Imagine masonry scrollbars follow Grok's light and dark theme.",
         default: true,
     },
     hideRightPanel: {
@@ -228,7 +228,7 @@ function apply() {
 export default definePlugin({
     name: "BetterCanvas",
     icon: FrameIcon,
-    description: "Theme the project pane scrollbar and optionally keep the right panel closed.",
+    description: "Theme the project pane and Imagine masonry scrollbars and optionally keep the right panel closed.",
     authors: [Devs.p],
     tags: ["ui"],
     enabledByDefault: true,

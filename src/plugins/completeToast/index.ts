@@ -11,10 +11,11 @@ import { definePluginSettings, mergePluginSettings } from "@api/Settings";
 import { CircleCheckIcon } from "@components/icons";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { GrokConversation } from "@grok-types/stores/ConversationStore";
+import type { MediaItem, MediaStoreState } from "@grok-types/stores/MediaStore";
 import type { GatewayConversation, GatewayNode, MessageStoreState } from "@grok-types/stores/MessageStore";
 import type { GrokResponse, ResponseStoreState } from "@grok-types/stores/ResponseStore";
 import type { GrokRoute, RoutingStoreState } from "@grok-types/stores/RoutingStore";
-import { ChatPageStore, ConversationStore, MessageStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
+import { ChatPageStore, ConversationStore, MediaStore, MessageStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -59,11 +60,17 @@ const settings = definePluginSettings({
         description: "Show a short preview of the finished reply.",
         default: true,
     },
+    imagineGeneration: {
+        type: OptionType.BOOLEAN,
+        description: "Toast when an Imagine generation finishes while you are not on Imagine.",
+        default: false,
+    },
 });
 
 interface Toast {
     cid: string;
     rid: string;
+    kind: "chat" | "imagine";
 }
 
 const live = new Set<string>();
@@ -111,6 +118,18 @@ function onBotPage(): boolean {
         if (path === "/bot" || path.startsWith("/bot/")) return true;
     } catch { /* */ }
     return false;
+}
+
+function onImaginePage(): boolean {
+    try {
+        const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+        if (page.startsWith("imagine")) return true;
+    } catch { /* route not ready */ }
+    try {
+        return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+        return false;
+    }
 }
 
 function currentIds(): string[] {
@@ -434,7 +453,12 @@ function isCurrentToast(): boolean {
 }
 
 function dismissIfCurrent() {
-    if (toast && (onBotPage() || isCurrentToast())) hide();
+    if (!toast) return;
+    if (toast.kind === "imagine") {
+        if (onImaginePage()) hide();
+        return;
+    }
+    if (onBotPage() || isCurrentToast()) hide();
 }
 
 function shouldPersist() {
@@ -477,10 +501,11 @@ function resumeTimer() {
     hideTimer = setTimeout(hide, remain);
 }
 
-function show(cid: string, rid: string) {
+function show(cid: string, rid: string, kind: "chat" | "imagine" = "chat", previewText = "") {
     hide();
-    if (onBotPage()) return;
-    toast = { cid, rid };
+    if (kind === "chat" && onBotPage()) return;
+    if (kind === "imagine" && onImaginePage()) return;
+    toast = { cid, rid, kind };
     const root = document.createElement("div");
     root.id = HOST;
     root.className = cl("host");
@@ -498,12 +523,12 @@ function show(cid: string, rid: string) {
     body.className = cl("body");
     const title = document.createElement("span");
     title.className = cl("title");
-    title.textContent = titleOf(cid);
+    title.textContent = kind === "imagine" ? "Imagine ready" : titleOf(cid);
     body.append(title);
-    const preview = previewOf(cid, rid);
+    const preview = kind === "imagine" ? previewText : previewOf(cid, rid);
     const sub = document.createElement("span");
     sub.className = cl("preview");
-    sub.textContent = preview || "Response ready";
+    sub.textContent = preview || (kind === "imagine" ? "Generation ready" : "Response ready");
     body.append(sub);
     main.append(icon, body);
     const x = document.createElement("button");
@@ -517,8 +542,10 @@ function show(cid: string, rid: string) {
     const { signal } = keys;
     main.addEventListener("click", () => {
         const id = toast?.cid ?? cid;
+        const k = toast?.kind ?? kind;
         hide();
-        navigateTo(id);
+        if (k === "imagine") navigateToImagine(id);
+        else navigateTo(id);
     }, { signal });
     x.addEventListener("click", e => {
         e.stopPropagation();
@@ -529,6 +556,84 @@ function show(cid: string, rid: string) {
     document.body.append(root);
     host = root;
     armTimer();
+}
+
+function navigateToImagine(id: string) {
+    try {
+        const routing = RoutingStore.useRoutingStore.getState();
+        const dest: GrokRoute = id
+            ? { page: "imagine-post", postId: id, teamId: routing.route.teamId ?? null }
+            : { page: "imagine", teamId: routing.route.teamId ?? null };
+        routing.push(dest);
+    } catch (e) {
+        logger.error("Failed to navigate to Imagine:", e);
+        try {
+            location.assign(id ? `/imagine/post/${encodeURIComponent(id)}` : "/imagine");
+        } catch (navErr) {
+            logger.error("Fallback Imagine navigation failed:", navErr);
+        }
+    }
+}
+
+function isLiveMedia(p: MediaItem | undefined): boolean {
+    if (!p) return false;
+    if (p.complete) return false;
+    if (p.moderated || p.isModerated) return false;
+    if (p.progress != null && p.progress < 100) return true;
+    if (p.inflightId) return true;
+    if (p.blobSrc && !p.mediaUrl) return true;
+    if (p.upscalingInProgress) return true;
+    return false;
+}
+
+function liveMediaIds(s: MediaStoreState): string[] {
+    const ids = new Set<string>();
+    for (const p of Object.values(s.byId ?? {})) {
+        if (isLiveMedia(p)) ids.add(p.id);
+    }
+    for (const [id, pending] of Object.entries(s.optimisticVideoGenPending ?? {})) {
+        if (pending) ids.add(id);
+    }
+    return [...ids];
+}
+
+function mediaLiveKey(s: MediaStoreState): string {
+    try {
+        return liveMediaIds(s).toSorted().join(",");
+    } catch {
+        return "";
+    }
+}
+
+function maybeFinishImagine(id: string) {
+    if (!started || !settings.store.imagineGeneration || !id) return;
+    if (onImaginePage()) return;
+    const key = `imagine:${id}`;
+    if (toasted.has(key)) return;
+    let item: MediaItem | undefined;
+    try {
+        item = MediaStore.useMediaStore.getState().byId[id];
+    } catch (e) {
+        logger.debug("Imagine item unavailable:", e);
+        return;
+    }
+    if (!item) return;
+    if (item.complete === false && !item.mediaUrl) return;
+    if (item.moderated || item.isModerated) return;
+    markToasted(key);
+    const prompt = (item.prompt ?? item.originalPrompt ?? "").trim();
+    show(id, "", "imagine", settings.store.showPreview ? prompt.slice(0, PREVIEW_MAX) : "");
+}
+
+function syncImagine(current: string, prev: string) {
+    if (!started || !settings.store.imagineGeneration) return;
+    if (!prev) return;
+    const now = new Set(current ? current.split(",") : []);
+    for (const id of prev.split(",")) {
+        if (!id || now.has(id)) continue;
+        maybeFinishImagine(id);
+    }
+    dismissIfCurrent();
 }
 
 function rememberRid(cid: string, rid: string): string {
@@ -674,7 +779,7 @@ function routeKey(s: RoutingStoreState): string {
 export default definePlugin({
     name: "CompleteToast",
     icon: CircleCheckIcon,
-    description: "Toast when another chat finishes, click to open it.",
+    description: "Toast when another chat finishes, click to open it. Optional Imagine generation toast is off by default.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
@@ -727,6 +832,10 @@ export default definePlugin({
         RoutingStore: {
             selector: routeKey,
             handler: dismissIfCurrent,
+        },
+        MediaStore: {
+            selector: mediaLiveKey,
+            handler: syncImagine,
         },
     },
 });

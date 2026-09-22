@@ -7,6 +7,7 @@
 import { definePluginSettings } from "@api/Settings";
 import { BrushCleaningIcon } from "@components/icons";
 import { Devs } from "@utils/constants";
+import { registerStyle, unregisterStyle } from "@utils/css";
 import definePlugin, { OptionType } from "@utils/types";
 
 const settings = definePluginSettings({
@@ -45,6 +46,11 @@ const settings = definePluginSettings({
         description: "Hide the \"Connect your 𝕏 account\" upsell popout.",
         default: true,
     },
+    hideImagineUpgrade: {
+        type: OptionType.BOOLEAN,
+        description: "Hide the Upgrade button on the Imagine page.",
+        default: true,
+    },
 });
 
 const hideComponentPatch = (name: string, setting: keyof typeof settings.store, all = true) => ({
@@ -56,6 +62,14 @@ const hideComponentPatch = (name: string, setting: keyof typeof settings.store, 
     },
 });
 
+const IMAGINE_UPGRADE_STYLE = "cleanerImagineUpgrade";
+const IMAGINE_UPGRADE_CSS = 'form:has([aria-label="Generation mode"]) a[href*="upgrade"],form:has([aria-label="Generation mode"]) button[aria-label="Upgrade"],form:has([aria-label="Generation mode"]) button[aria-label*="Upgrade plan"],[data-wd-toolbar] a[href*="upgrade"],[data-wd-toolbar] button[aria-label="Upgrade"]{display:none!important}';
+
+function applyImagineUpgrade() {
+    if (settings.store.hideImagineUpgrade) registerStyle(IMAGINE_UPGRADE_STYLE, IMAGINE_UPGRADE_CSS);
+    else unregisterStyle(IMAGINE_UPGRADE_STYLE);
+}
+
 export default definePlugin({
     name: "Cleaner",
     icon: BrushCleaningIcon,
@@ -64,6 +78,12 @@ export default definePlugin({
     tags: ["ui"],
     enabledByDefault: true,
     settings,
+
+    start: applyImagineUpgrade,
+    onSettingsChange: applyImagineUpgrade,
+    stop() {
+        unregisterStyle(IMAGINE_UPGRADE_STYLE);
+    },
 
     patches: [
         {

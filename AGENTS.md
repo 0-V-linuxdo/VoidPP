@@ -62,5 +62,6 @@ Correct path:
 - `clampToWidth` drops whole trailing words and appends `…`. Do not cut inside a word.
 - Paint the clamped string with `registerStyle("placeholderInput")` on `::before { content:"…" !important }` (same overlay idea as the Hero). ResizeObserver plus `data-placeholder` / `class` mutations reschedule. Typing drops `is-editor-empty` and the overlay unregisters. Leaving a project unregisters the overlay.
 - Overlay and lock CSS only when the editor is wholly empty (`p.is-editor-empty` or `p.is-empty:only-child`). Tiptap `is-editor-empty` is the whole document; `is-empty` is this node. Official CSS for "placeholder only on an empty editor" is `p.is-editor-empty:first-child`. `p.is-empty:first-child` matches a blank first line after Enter (`1` on line two). Default `showOnlyCurrent` hangs `data-placeholder` on that node only after focus, so the overlay used to paint the phrase as `--fg-primary` body text. `::before` color is the official muted placeholder (`--fg-secondary`), not `--fg-primary`.
+- Imagine (`page` starts with `imagine`, or pathname `/imagine`) uses `imaginePhrases` (short, one line) via the same overlay. Empty list keeps official `Type to imagine`. Do not feed Imagine into `_phrases()` / `_inputPlaceholder()`.
 
 Do not touch ComposerOpacity, InputHistory, BetterCanvas, or real-input autosize for this.

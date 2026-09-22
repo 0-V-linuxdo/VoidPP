@@ -72,7 +72,12 @@ const settings = definePluginSettings({
         default: DEFAULT_PHRASES,
         component: PhrasesEditor,
     },
-}).withPrivateSettings<{ phrases: string; greetIndex: number; lastRandom: number }>();
+    imaginePhrases: {
+        type: OptionType.COMPONENT,
+        default: "",
+        component: ImaginePhrasesEditor,
+    },
+}).withPrivateSettings<{ phrases: string; imaginePhrases: string; greetIndex: number; lastRandom: number }>();
 
 function PhrasesEditor() {
     const { phrases } = settings.use(["phrases"]);
@@ -80,7 +85,7 @@ function PhrasesEditor() {
         <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
             <Flex alignItems="center" gap="0.375rem">
                 <Text size="sm" weight="medium">Phrases</Text>
-                <InfoHint>One phrase per line. The non-project home greeting uses these and may wrap. Project chat input uses the first phrase on one line and replaces the last overflowing word with an ellipsis. Home and other non-project chats keep Grok's short placeholders. Empty list uses Grok's defaults.</InfoHint>
+                <InfoHint>One phrase per line. The non-project home greeting uses these and may wrap. Project chat input uses the first phrase on one line and replaces the last overflowing word with an ellipsis. Home and other non-project chats keep Grok's short placeholders. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.</InfoHint>
             </Flex>
             <div className={cl("textarea-wrap")}>
                 <Textarea
@@ -88,6 +93,26 @@ function PhrasesEditor() {
                     value={phrases ?? DEFAULT_PHRASES}
                     onChange={e => { settings.store.phrases = e.target.value; }}
                     placeholder={DEFAULT_PHRASES}
+                />
+            </div>
+        </Flex>
+    );
+}
+
+function ImaginePhrasesEditor() {
+    const { imaginePhrases } = settings.use(["imaginePhrases"]);
+    return (
+        <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
+            <Flex alignItems="center" gap="0.375rem">
+                <Text size="sm" weight="medium">Imagine phrases</Text>
+                <InfoHint>One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's "Type to imagine".</InfoHint>
+            </Flex>
+            <div className={cl("textarea-wrap")}>
+                <Textarea
+                    className={cl("textarea")}
+                    value={imaginePhrases ?? ""}
+                    onChange={e => { settings.store.imaginePhrases = e.target.value; }}
+                    placeholder={"A cat astronaut on the moon\nNeon rain in a quiet city"}
                 />
             </div>
         </Flex>
@@ -112,9 +137,30 @@ function isProjectChat(): boolean {
     }
 }
 
+function isImaginePage(): boolean {
+    try {
+        const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+        if (page.startsWith("imagine")) return true;
+    } catch { /* route not ready */ }
+    try {
+        return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+        return false;
+    }
+}
+
 function phrases(): string[] | null {
     try {
         const lines = parsePhrases(settings.store.phrases ?? DEFAULT_PHRASES);
+        return lines.length ? lines : null;
+    } catch {
+        return null;
+    }
+}
+
+function imaginePhrases(): string[] | null {
+    try {
+        const lines = parsePhrases(settings.store.imaginePhrases);
         return lines.length ? lines : null;
     } catch {
         return null;
@@ -298,20 +344,26 @@ function bindSize(p: HTMLElement | null) {
 }
 
 function paintInput() {
-    if (!started || !isProjectChat()) {
+    if (!started) {
         bindSize(null);
         clearInputOverlay();
         return;
     }
+    const imagine = isImaginePage();
+    if (!isProjectChat() && !imagine) {
+        bindSize(null);
+        clearInputOverlay();
+        return;
+    }
+    const list = imagine ? imaginePhrases() : phrases();
     const p = document.querySelector(EMPTY_SEL);
-    const list = phrases();
     if (!(p instanceof HTMLElement) || !list) {
         bindSize(p instanceof HTMLElement ? p : null);
         clearInputOverlay();
         return;
     }
     bindSize(p);
-    const full = p.getAttribute("data-placeholder") || list[0] || "";
+    const full = list[0] || "";
     if (!full) {
         clearInputOverlay();
         return;
@@ -334,7 +386,7 @@ function scheduleInput() {
 export default definePlugin({
     name: "Placeholder",
     icon: TextCursorInputIcon,
-    description: "Replace the non-project home greeting and the project chat input placeholder. Rotate the greeting on visit, a timer, or a click.",
+    description: "Replace the non-project home greeting, the project chat input placeholder, and optional Imagine phrases.",
     authors: [Devs.p],
     tags: ["chat"],
     settings,

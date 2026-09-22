@@ -55,7 +55,8 @@ function apply() {
         + "overflow:hidden!important;"
         + `clip-path:inset(0 round ${RADIUS})!important;`
         + frost
-        + "}",
+        + "}"
+        + `${SHELL}:has([aria-label="Generation mode"]){overflow:visible!important;clip-path:none!important}`,
     );
 }
 
