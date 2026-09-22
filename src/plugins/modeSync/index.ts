@@ -48,6 +48,9 @@ const GW_MODE_KEYS = ["mode", "modeId", "mode_id", "modelMode", "model_mode"] as
 const QUEUE_ADD = "conversation.queue.add";
 const QUEUE_REMOVE = "conversation.queue.remove";
 const QUEUE_INTERJECT = "conversation.queue.interject";
+const WRAP_MARK = Symbol.for("voidpp.modeSync.wrapped");
+const ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
+const REMEMBERED = Symbol.for("voidpp.modeSync.intent");
 const GW_OK = Object.freeze({ ok: true });
 const CATALOG = [
     { id: "auto", label: "Auto" },
@@ -147,7 +150,38 @@ function apiModelMode(s: string): string {
 function coerceModelMode(existing: unknown, live: Intent): string {
     const raw = live.modelMode || live.modeId;
     if (typeof existing === "string" && existing.startsWith("MODEL_MODE_")) return apiModelMode(raw);
+    if ((existing == null || existing === "") && live.modelMode.startsWith("MODEL_MODE_")) return apiModelMode(raw);
     return modeSlug(raw);
+}
+
+function knownMode(raw: string): boolean {
+    const slug = modeSlug(raw);
+    if (!slug) return false;
+    if (CATALOG.some(m => m.id === slug)) return true;
+    try {
+        return ModesStore.useModesStore.getState().modes.some(m => modeSlug(m.id) === slug);
+    } catch {
+        return false;
+    }
+}
+
+function qid(item: unknown): string {
+    if (!item || typeof item !== "object") return "";
+    const rec = item as { queue_item_id?: unknown; queueItemId?: unknown };
+    const id = rec.queue_item_id ?? rec.queueItemId;
+    return typeof id === "string" ? id : "";
+}
+
+function forcedIntent(): Intent | null {
+    const raw = (pageWindow as unknown as Record<symbol, unknown>)[ENQUEUE_FORCE];
+    if (!raw || typeof raw !== "object") return null;
+    const rec = raw as Partial<Intent>;
+    if (!rec.modeId) return null;
+    return {
+        modeId: String(rec.modeId),
+        modelMode: String(rec.modelMode || ""),
+        activeModelId: String(rec.activeModelId || ""),
+    };
 }
 
 function snapshot(): Intent {
@@ -168,6 +202,25 @@ function liveIntent(): Intent {
     if (sendOverride?.modeId) return sendOverride;
     const cur = snapshot();
     return cur.modeId ? cur : intent;
+}
+
+function setIntent(next: Intent) {
+    intent = next.modeId ? next : { ...EMPTY };
+    const host = pageWindow as unknown as Record<symbol, unknown>;
+    if (intent.modeId) host[REMEMBERED] = intent;
+    else delete host[REMEMBERED];
+}
+
+function enqueueIntent(): Intent {
+    const forced = forcedIntent();
+    if (forced?.modeId) return forced;
+    if (userPicking || awaitingMenu) {
+        const cur = snapshot();
+        if (cur.modeId) return cur;
+    }
+    if (intent.modeId) return intent;
+    const cur = snapshot();
+    return cur.modeId ? cur : liveIntent();
 }
 
 function pickerIntent(): Intent {
@@ -272,7 +325,7 @@ function captureIntent(modeId: string, cur: Intent): Intent {
 
 function rememberMode(modeId: string) {
     if (!modeId) return;
-    intent = captureIntent(modeId, snapshot());
+    setIntent(captureIntent(modeId, snapshot()));
     userPicking = false;
     awaitingMenu = false;
     applyIntent(intent);
@@ -282,7 +335,7 @@ function rememberMode(modeId: string) {
 function rememberSnapshot() {
     const next = snapshot();
     if (!next.modeId) return;
-    intent = captureIntent(next.modeId, next);
+    setIntent(captureIntent(next.modeId, next));
     userPicking = false;
     awaitingMenu = false;
     logger.info("intent", intent.modeId);
@@ -318,7 +371,7 @@ function navKey(): string {
 
 function onNavigate() {
     wrapSendFns();
-    if (!intent.modeId) intent = snapshot();
+    if (!intent.modeId) setIntent(snapshot());
     closeMenu();
     schedulePaint();
     if (!settings.store.stickyOnNavigate || !intent.modeId) return;
@@ -339,8 +392,9 @@ function patchPayload(raw: unknown, live: Intent): boolean {
     const beforeMode = rec.modelMode;
     const beforeName = rec.modelName;
     rec.modeId = live.modeId;
-    if ("modelMode" in rec) rec.modelMode = coerceModelMode(rec.modelMode, live);
+    rec.modelMode = coerceModelMode(rec.modelMode, live);
     if (live.activeModelId) rec.modelName = live.activeModelId;
+    else delete rec.modelName;
     return rec.modeId !== before || rec.modelMode !== beforeMode || rec.modelName !== beforeName;
 }
 
@@ -401,7 +455,10 @@ function currentCid(): string {
 
 function inflightMode(cid: string): string {
     const conv = conversation(cid);
-    return String(conv?.activeGeneration?.sentModeId ?? conv?.lastModel ?? "");
+    const sent = String(conv?.activeGeneration?.sentModeId ?? "");
+    if (sent && knownMode(sent)) return modeSlug(sent);
+    const last = String(conv?.lastModel ?? "");
+    return knownMode(last) ? modeSlug(last) : "";
 }
 
 function isTurnArgs(v: unknown): v is GatewayTurnArgs {
@@ -426,16 +483,20 @@ function pruneIntents() {
     } catch {
         convs = [];
     }
-    for (const conv of convs) for (const q of conv.queue) live.add(q.queue_item_id);
+    for (const conv of convs) for (const q of conv.queue) {
+        const id = qid(q);
+        if (id) live.add(id);
+    }
     for (const id of itemIntent.keys()) if (!live.has(id)) itemIntent.delete(id);
 }
 
 function holdQueueEvent(cid: string, event: unknown): boolean {
     if (!event || typeof event !== "object") return false;
-    const { type, queue_item_id: id } = event as { type?: unknown; queue_item_id?: unknown };
-    if (typeof id !== "string") return false;
+    const id = eventQueueId(event);
+    const type = (event as { type?: unknown }).type;
+    if (!id) return false;
     if (type === QUEUE_ADD) {
-        const saved = pendingEnqueue?.intent ?? liveIntent();
+        const saved = pendingEnqueue?.intent ?? (intent.modeId ? intent : liveIntent());
         if (saved.modeId) itemIntent.set(id, { ...saved });
         schedulePaint();
         if (diverting) {
@@ -471,43 +532,90 @@ function flushHeld(responseId: string) {
     for (const [cid, list] of held) {
         const conv = conversation(cid);
         if (!conv?.nodes[responseId]) continue;
-        const queued = list.filter(h => conv.queue.some(q => q.queue_item_id === h.id));
-        if (!queued.length) {
-            held.delete(cid);
-            return;
-        }
+        const queued = list.filter(h => conv.queue.some(q => qid(q) === h.id));
+        if (!queued.length) continue;
         held.set(cid, queued);
-        if (conv.queue.some(q => !queued.some(h => h.id === q.queue_item_id))) return;
+        if (conv.queue.some(q => {
+            const id = qid(q);
+            return !!id && !queued.some(h => h.id === id);
+        })) continue;
         queueMicrotask(() => flushTurn(cid, queued[0], responseId));
-        return;
     }
+}
+
+function writeMode(rec: Record<string, unknown>, live: Intent) {
+    for (const key of GW_MODE_KEYS) {
+        rec[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(rec[key], live) : live.modeId;
+    }
+    if (live.activeModelId) rec.modelName = live.activeModelId;
+    else delete rec.modelName;
 }
 
 function patchGwEvent(event: unknown, live: Intent) {
     if (onImaginePage() || !event || typeof event !== "object" || Array.isArray(event) || !live.modeId) return;
     const rec = event as Record<string, unknown>;
     if (typeof rec.type !== "string" || !GW_TYPES.has(rec.type)) return;
-    for (const key of GW_MODE_KEYS) {
-        if (!(key in rec)) continue;
-        rec[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(rec[key], live) : live.modeId;
-    }
-    if (live.activeModelId && "modelName" in rec) rec.modelName = live.activeModelId;
+    writeMode(rec, live);
     const { item } = rec;
     if (!item || typeof item !== "object" || Array.isArray(item)) return;
-    const it = item as Record<string, unknown>;
-    for (const key of GW_MODE_KEYS) {
-        if (!(key in it)) continue;
-        it[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(it[key], live) : live.modeId;
-    }
-    if (live.activeModelId && "modelName" in it) it.modelName = live.activeModelId;
+    writeMode(item as Record<string, unknown>, live);
 }
 
-function eventItemIntent(event: unknown): Intent | undefined {
-    if (!event || typeof event !== "object") return undefined;
-    const rec = event as { type?: unknown; queue_item_id?: unknown };
-    const id = typeof rec.queue_item_id === "string" ? rec.queue_item_id : "";
-    if ((rec.type === QUEUE_INTERJECT || rec.type === "response.create") && id) return itemIntent.get(id);
+function eventQueueId(event: unknown): string {
+    if (!event || typeof event !== "object") return "";
+    const rec = event as { item?: unknown };
+    return qid(event) || qid(rec.item);
+}
+
+function textOf(rec: Record<string, unknown>): string {
+    for (const key of ["message", "text", "query"]) {
+        const value = rec[key];
+        if (typeof value === "string" && value.trim()) return value.trim();
+    }
+    return "";
+}
+
+function eventText(event: unknown): string {
+    if (!event || typeof event !== "object") return "";
+    const rec = event as Record<string, unknown>;
+    const own = textOf(rec);
+    if (own) return own;
+    const item = rec.item;
+    return item && typeof item === "object" ? textOf(item as Record<string, unknown>) : "";
+}
+
+function itemText(conv: GatewayConversation, id: string): string {
+    const content = conv.nodes?.[id]?.content as { message?: unknown; query?: unknown } | undefined;
+    if (!content) return "";
+    if (typeof content.message === "string" && content.message.trim()) return content.message.trim();
+    if (typeof content.query === "string") return content.query.trim();
+    return "";
+}
+
+function intentForText(cid: string, text: string): Intent | undefined {
+    const body = text.trim();
+    if (!body || !cid) return undefined;
+    for (const turn of held.get(cid) ?? []) {
+        if (turn.args.text.trim() === body && turn.intent.modeId) return turn.intent;
+    }
+    const conv = conversation(cid);
+    if (!conv) return undefined;
+    for (const q of conv.queue) {
+        const id = qid(q);
+        const saved = id ? itemIntent.get(id) : undefined;
+        if (saved?.modeId && itemText(conv, id) === body) return saved;
+    }
     return undefined;
+}
+
+function eventItemIntent(event: unknown, cid: string): Intent | undefined {
+    if (!event || typeof event !== "object") return undefined;
+    const rec = event as { type?: unknown };
+    if (rec.type !== QUEUE_INTERJECT && rec.type !== "response.create") return undefined;
+    const id = eventQueueId(event);
+    const saved = id ? itemIntent.get(id) : undefined;
+    if (saved?.modeId) return saved;
+    return intentForText(cid, eventText(event));
 }
 
 function wrapGatewaySend() {
@@ -522,14 +630,19 @@ function wrapGatewaySend() {
             if (onImaginePage()) return orig.apply(mgr, args);
             const [cid, event] = args;
             if (typeof cid === "string" && holdQueueEvent(cid, event)) return Promise.resolve(GW_OK);
-            const queued = typeof cid === "string" ? eventItemIntent(event) : undefined;
+            const type = event && typeof event === "object" ? String((event as { type?: unknown }).type ?? "") : "";
+            if (type === QUEUE_ADD) {
+                const saved = (typeof cid === "string" ? itemIntent.get(eventQueueId(event)) : undefined) ?? pendingEnqueue?.intent;
+                if (saved?.modeId) patchGwEvent(event, saved);
+                return orig.apply(mgr, args);
+            }
+            const queued = typeof cid === "string" ? eventItemIntent(event, cid) : undefined;
             if (queued?.modeId && !sendOverride) {
                 return withSendIntent(queued, () => {
                     patchGwEvent(event, queued);
                     return orig.apply(mgr, args);
                 });
             }
-            const type = event && typeof event === "object" ? String((event as { type?: unknown }).type ?? "") : "";
             if (!GW_TYPES.has(type)) return orig.apply(mgr, args);
             const live = liveIntent();
             if (live.modeId) {
@@ -559,6 +672,14 @@ function unwrapGatewaySend() {
 function makeSendWrapper(orig: SendFn): SendFn {
     return function voidModeSyncSend(this: unknown, ...args: unknown[]) {
         if (onImaginePage()) return orig.apply(this, args);
+        const [first] = args;
+        const queued = !sendOverride && isTurnArgs(first) ? intentForText(first.convId, first.text) : undefined;
+        if (queued?.modeId) {
+            return withSendIntent(queued, () => {
+                patchSendArgs(args, queued);
+                return orig.apply(this, args);
+            });
+        }
         const live = liveIntent();
         if (live.modeId) {
             applyIntent(live);
@@ -572,16 +693,19 @@ function makeQueueWrapper(orig: SendFn): SendFn {
     return function voidModeSyncQueue(this: unknown, ...args: unknown[]) {
         if (onImaginePage()) return orig.apply(this, args);
         const [first] = args;
-        const cur = snapshot();
-        const live = cur.modeId ? cur : liveIntent();
+        const live = enqueueIntent();
         if (!isTurnArgs(first) || !live.modeId) return orig.apply(this, args);
         pendingEnqueue = { args: first, intent: { ...live } };
-        if (inflightMode(first.convId) !== live.modeId) diverting = first;
+        const inflight = inflightMode(first.convId);
+        if (inflight && inflight !== modeSlug(live.modeId)) diverting = first;
         try {
             return orig.apply(this, args);
         } finally {
-            diverting = null;
-            pendingEnqueue = null;
+            const token = first;
+            queueMicrotask(() => {
+                if (pendingEnqueue?.args === token) pendingEnqueue = null;
+                if (diverting === token) diverting = null;
+            });
         }
     };
 }
@@ -595,9 +719,11 @@ function wrapOne(label: string, getState: () => any, setState: (partial: object)
     }
     const current = state[key] as SendFn | undefined;
     if (typeof current !== "function") return;
+    if ((current as SendFn & Record<symbol, unknown>)[WRAP_MARK] === true) return;
     if (wrappedFns.get(label) === current) return;
     origFns.set(label, current);
     const wrapped = make(current);
+    (wrapped as SendFn & Record<symbol, unknown>)[WRAP_MARK] = true;
     wrappedFns.set(label, wrapped);
     setState({ [key]: wrapped });
 }
@@ -889,10 +1015,10 @@ function unpaint() {
 
 function mountChip(row: HTMLElement, id: string) {
     if (!itemIntent.has(id)) {
-        const live = liveIntent();
-        if (live.modeId) itemIntent.set(id, { ...live });
+        const saved = pendingEnqueue?.intent?.modeId ? pendingEnqueue.intent : (intent.modeId ? intent : undefined);
+        if (saved?.modeId) itemIntent.set(id, { ...saved });
     }
-    const modeId = itemIntent.get(id)?.modeId || liveIntent().modeId;
+    const modeId = itemIntent.get(id)?.modeId || intent.modeId || liveIntent().modeId;
     let chip = row.querySelector<HTMLButtonElement>(`:scope > .${CHIP}`);
     if (!chip) {
         chip = document.createElement("button");
@@ -930,7 +1056,7 @@ function paint() {
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         let id = row.getAttribute(QITEM) || "";
-        if (!id || !items.some(q => q.queue_item_id === id)) id = items[i]?.queue_item_id ?? "";
+        if (!id || !items.some(q => qid(q) === id)) id = qid(items[i]);
         if (!id) continue;
         row.setAttribute(QITEM, id);
         seen.add(id);
@@ -983,6 +1109,10 @@ function onPointerDown(e: PointerEvent) {
     const t = e.target;
     if (!(t instanceof Element)) return;
     if (t.closest(`.${CHIP}, .${QMENU}`)) return;
+    if (t.closest(`${TRIGGER_SEL}, ${PIN_SEL}, ${MENU_SEL}`)) {
+        userPicking = true;
+        if (t.closest(TRIGGER_SEL)) awaitingMenu = true;
+    }
     const send = t.closest(SEND_NOW_SEL);
     if (!send) return;
     const row = send.closest(`[${QITEM}], ${ROW_SEL}`);
@@ -1000,7 +1130,7 @@ function onKeyDown(e: KeyboardEvent) {
 function onPicker(id: string) {
     if (applying || sendOverride) return;
     if (!id) return;
-    if (userPicking || id !== intent.modeId) rememberSnapshot();
+    if (userPicking || awaitingMenu) rememberSnapshot();
 }
 
 function onChatPage() {
@@ -1012,9 +1142,7 @@ function onChatPage() {
         return;
     }
     if (sendOverride || applying) return;
-    const now = snapshot();
-    if (!now.modeId) return;
-    if (now.activeModelId !== intent.activeModelId || now.modelMode !== intent.modelMode) rememberSnapshot();
+    if (loadPending()) fightHydrate();
 }
 
 function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
@@ -1024,8 +1152,11 @@ function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
         for (const [cid, conv] of Object.entries(MessageStore.useMessageStore.getState().conversations)) {
             if (!conv.nodes[responseId]) continue;
             const heldIds = new Set((held.get(cid) ?? []).map(h => h.id));
-            const next = conv.queue.find(q => !heldIds.has(q.queue_item_id));
-            const item = next ? itemIntent.get(next.queue_item_id) : undefined;
+            const next = conv.queue.find(q => {
+                const id = qid(q);
+                return !!id && !heldIds.has(id);
+            });
+            const item = next ? itemIntent.get(qid(next)) : undefined;
             if (item?.modeId) armOverride(item);
             break;
         }
@@ -1037,7 +1168,7 @@ function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
 function queueKey(s: MessageStoreState) {
     const cid = currentCid();
     const q = cid ? s.conversations[cid]?.queue ?? [] : [];
-    return q.map(i => `${i.queue_item_id}:${i.position}`).join(",");
+    return q.map(i => `${qid(i)}:${i.position}`).join(",");
 }
 
 function onQueue() {
@@ -1058,7 +1189,7 @@ export default definePlugin({
     cleanupSelectors: [`.${CHIP}`, `.${QMENU}`],
 
     start() {
-        intent = snapshot();
+        setIntent(snapshot());
         lastNavKey = navKey();
         abort = new AbortController();
         const { signal } = abort;
@@ -1104,7 +1235,7 @@ export default definePlugin({
         applying = false;
         userPicking = false;
         awaitingMenu = false;
-        intent = { ...EMPTY };
+        setIntent(EMPTY);
         lastNavKey = "";
     },
 

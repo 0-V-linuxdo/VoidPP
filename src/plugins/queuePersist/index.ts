@@ -14,6 +14,7 @@ import { ChatPageStore, MessageStore, ModesStore, ResponseStore, RoutingStore, S
 import { Devs } from "@utils/constants";
 import { idbGet, idbSet } from "@utils/idb";
 import { Logger } from "@utils/Logger";
+import { pageWindow } from "@utils/misc";
 import definePlugin, { StartAt } from "@utils/types";
 
 import {
@@ -32,6 +33,9 @@ import {
 } from "./sync";
 
 const logger = new Logger("QueuePersist");
+
+const ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
+const WRAP_MARK = Symbol.for("voidpp.modeSync.wrapped");
 
 const DB_KEY = "queue-persist:v1";
 const LOCAL_ACCOUNT = "local";
@@ -112,6 +116,15 @@ function currentCid(): string {
 }
 
 function liveIntent(): QueueIntent | undefined {
+    const host = pageWindow as unknown as Record<symbol, unknown>;
+    const forced = (host[ENQUEUE_FORCE] ?? host[Symbol.for("voidpp.modeSync.intent")]) as Partial<QueueIntent> | undefined;
+    if (forced?.modeId) {
+        return {
+            modeId: String(forced.modeId),
+            modelMode: String(forced.modelMode || ""),
+            activeModelId: String(forced.activeModelId || ""),
+        };
+    }
     try {
         const modeId = String(ModesStore.useModesStore.getState().selectedModeId || "");
         if (!modeId) return undefined;
@@ -146,8 +159,10 @@ function withIntent<T>(intent: QueueIntent | undefined, fn: () => T): T {
         logger.debug("intent apply failed", e);
     }
     try {
+        if (intent?.modeId) (pageWindow as unknown as Record<symbol, unknown>)[ENQUEUE_FORCE] = intent;
         return fn();
     } finally {
+        delete (pageWindow as unknown as Record<symbol, unknown>)[ENQUEUE_FORCE];
         try {
             if (modes && prevMode && modes.selectedModeId !== prevMode) modes.setSelectedModeId(prevMode, { source: "sync" });
             if (chat && prevModel && String(chat.modelMode || "") !== prevModel) chat.setModelMode(prevModel as ModelMode);
@@ -504,6 +519,9 @@ function wrapQueue() {
     if (typeof current !== "function" || current === wrappedQueue) return;
     origQueue = current;
     const wrapped = makeQueueWrapper(current);
+    if ((current as SendFn & Record<symbol, unknown>)[WRAP_MARK] === true) {
+        (wrapped as SendFn & Record<symbol, unknown>)[WRAP_MARK] = true;
+    }
     wrappedQueue = wrapped;
     MessageStore.useMessageStore.setState({ queueMessage: wrapped as MessageStoreState["queueMessage"] });
 }

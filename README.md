@@ -56,6 +56,7 @@ Install by clicking the badge (jsDelivr, default `voidpp` branch, no GitHub `CSP
 | Feature | Default | What it does |
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | On | Hide inaccessible models in the model selector again. |
+| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | On | Queued rows keep the mode captured for that item. A later turn no longer overwrites the chip or the send. |
 
 #### Settings UI
 

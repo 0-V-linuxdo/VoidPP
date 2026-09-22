@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.22
+// @version      20260922.23
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.22] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.23] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7412,9 +7412,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9fe372d"}`
-    }, `(${"9fe372d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.23] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9a0e192"}`
+    }, `(${"9a0e192"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -17685,6 +17685,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var QUEUE_ADD = "conversation.queue.add";
   var QUEUE_REMOVE = "conversation.queue.remove";
   var QUEUE_INTERJECT = "conversation.queue.interject";
+  var WRAP_MARK = Symbol.for("voidpp.modeSync.wrapped");
+  var ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
+  var REMEMBERED = Symbol.for("voidpp.modeSync.intent");
   var GW_OK = Object.freeze({ ok: true });
   var CATALOG = [
     { id: "auto", label: "Auto" },
@@ -17765,7 +17768,41 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const raw = live.modelMode || live.modeId;
     if (typeof existing === "string" && existing.startsWith("MODEL_MODE_"))
       return apiModelMode(raw);
+    if ((existing == null || existing === "") && live.modelMode.startsWith("MODEL_MODE_"))
+      return apiModelMode(raw);
     return modeSlug(raw);
+  }
+  function knownMode(raw) {
+    const slug = modeSlug(raw);
+    if (!slug)
+      return false;
+    if (CATALOG.some((m) => m.id === slug))
+      return true;
+    try {
+      return ModesStore.useModesStore.getState().modes.some((m) => modeSlug(m.id) === slug);
+    } catch {
+      return false;
+    }
+  }
+  function qid(item) {
+    if (!item || typeof item !== "object")
+      return "";
+    const rec = item;
+    const id = rec.queue_item_id ?? rec.queueItemId;
+    return typeof id === "string" ? id : "";
+  }
+  function forcedIntent() {
+    const raw = pageWindow[ENQUEUE_FORCE];
+    if (!raw || typeof raw !== "object")
+      return null;
+    const rec = raw;
+    if (!rec.modeId)
+      return null;
+    return {
+      modeId: String(rec.modeId),
+      modelMode: String(rec.modelMode || ""),
+      activeModelId: String(rec.activeModelId || "")
+    };
   }
   function snapshot() {
     try {
@@ -17785,6 +17822,28 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return sendOverride;
     const cur = snapshot();
     return cur.modeId ? cur : intent;
+  }
+  function setIntent(next) {
+    intent = next.modeId ? next : { ...EMPTY };
+    const host = pageWindow;
+    if (intent.modeId)
+      host[REMEMBERED] = intent;
+    else
+      delete host[REMEMBERED];
+  }
+  function enqueueIntent() {
+    const forced = forcedIntent();
+    if (forced?.modeId)
+      return forced;
+    if (userPicking || awaitingMenu) {
+      const cur = snapshot();
+      if (cur.modeId)
+        return cur;
+    }
+    if (intent.modeId)
+      return intent;
+    const cur = snapshot();
+    return cur.modeId ? cur : liveIntent();
   }
   function pickerIntent() {
     return intent.modeId ? intent : snapshot();
@@ -17889,7 +17948,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function rememberMode(modeId) {
     if (!modeId)
       return;
-    intent = captureIntent(modeId, snapshot());
+    setIntent(captureIntent(modeId, snapshot()));
     userPicking = false;
     awaitingMenu = false;
     applyIntent(intent);
@@ -17899,7 +17958,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const next = snapshot();
     if (!next.modeId)
       return;
-    intent = captureIntent(next.modeId, next);
+    setIntent(captureIntent(next.modeId, next));
     userPicking = false;
     awaitingMenu = false;
     logger30.info("intent", intent.modeId);
@@ -17932,7 +17991,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function onNavigate() {
     wrapSendFns();
     if (!intent.modeId)
-      intent = snapshot();
+      setIntent(snapshot());
     closeMenu();
     schedulePaint();
     if (!settings20.store.stickyOnNavigate || !intent.modeId)
@@ -17954,10 +18013,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const beforeMode = rec.modelMode;
     const beforeName = rec.modelName;
     rec.modeId = live.modeId;
-    if ("modelMode" in rec)
-      rec.modelMode = coerceModelMode(rec.modelMode, live);
+    rec.modelMode = coerceModelMode(rec.modelMode, live);
     if (live.activeModelId)
       rec.modelName = live.activeModelId;
+    else
+      delete rec.modelName;
     return rec.modeId !== before || rec.modelMode !== beforeMode || rec.modelName !== beforeName;
   }
   function patchSendArgs(args, live) {
@@ -18018,7 +18078,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   function inflightMode(cid) {
     const conv = conversation(cid);
-    return String(conv?.activeGeneration?.sentModeId ?? conv?.lastModel ?? "");
+    const sent = String(conv?.activeGeneration?.sentModeId ?? "");
+    if (sent && knownMode(sent))
+      return modeSlug(sent);
+    const last = String(conv?.lastModel ?? "");
+    return knownMode(last) ? modeSlug(last) : "";
   }
   function isTurnArgs(v) {
     return !!v && typeof v === "object" && typeof v.convId === "string";
@@ -18045,8 +18109,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       convs = [];
     }
     for (const conv of convs)
-      for (const q of conv.queue)
-        live.add(q.queue_item_id);
+      for (const q of conv.queue) {
+        const id = qid(q);
+        if (id)
+          live.add(id);
+      }
     for (const id of itemIntent.keys())
       if (!live.has(id))
         itemIntent.delete(id);
@@ -18054,11 +18121,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function holdQueueEvent(cid, event) {
     if (!event || typeof event !== "object")
       return false;
-    const { type, queue_item_id: id } = event;
-    if (typeof id !== "string")
+    const id = eventQueueId(event);
+    const type = event.type;
+    if (!id)
       return false;
     if (type === QUEUE_ADD) {
-      const saved = pendingEnqueue?.intent ?? liveIntent();
+      const saved = pendingEnqueue?.intent ?? (intent.modeId ? intent : liveIntent());
       if (saved.modeId)
         itemIntent.set(id, { ...saved });
       schedulePaint();
@@ -18096,17 +18164,26 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const conv = conversation(cid);
       if (!conv?.nodes[responseId])
         continue;
-      const queued = list.filter((h) => conv.queue.some((q) => q.queue_item_id === h.id));
-      if (!queued.length) {
-        held.delete(cid);
-        return;
-      }
+      const queued = list.filter((h) => conv.queue.some((q) => qid(q) === h.id));
+      if (!queued.length)
+        continue;
       held.set(cid, queued);
-      if (conv.queue.some((q) => !queued.some((h) => h.id === q.queue_item_id)))
-        return;
+      if (conv.queue.some((q) => {
+        const id = qid(q);
+        return !!id && !queued.some((h) => h.id === id);
+      }))
+        continue;
       queueMicrotask(() => flushTurn(cid, queued[0], responseId));
-      return;
     }
+  }
+  function writeMode(rec, live) {
+    for (const key of GW_MODE_KEYS) {
+      rec[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(rec[key], live) : live.modeId;
+    }
+    if (live.activeModelId)
+      rec.modelName = live.activeModelId;
+    else
+      delete rec.modelName;
   }
   function patchGwEvent(event, live) {
     if (onImaginePage2() || !event || typeof event !== "object" || Array.isArray(event) || !live.modeId)
@@ -18114,33 +18191,76 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const rec = event;
     if (typeof rec.type !== "string" || !GW_TYPES.has(rec.type))
       return;
-    for (const key of GW_MODE_KEYS) {
-      if (!(key in rec))
-        continue;
-      rec[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(rec[key], live) : live.modeId;
-    }
-    if (live.activeModelId && "modelName" in rec)
-      rec.modelName = live.activeModelId;
+    writeMode(rec, live);
     const { item } = rec;
     if (!item || typeof item !== "object" || Array.isArray(item))
       return;
-    const it = item;
-    for (const key of GW_MODE_KEYS) {
-      if (!(key in it))
-        continue;
-      it[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(it[key], live) : live.modeId;
-    }
-    if (live.activeModelId && "modelName" in it)
-      it.modelName = live.activeModelId;
+    writeMode(item, live);
   }
-  function eventItemIntent(event) {
+  function eventQueueId(event) {
+    if (!event || typeof event !== "object")
+      return "";
+    const rec = event;
+    return qid(event) || qid(rec.item);
+  }
+  function textOf(rec) {
+    for (const key of ["message", "text", "query"]) {
+      const value = rec[key];
+      if (typeof value === "string" && value.trim())
+        return value.trim();
+    }
+    return "";
+  }
+  function eventText(event) {
+    if (!event || typeof event !== "object")
+      return "";
+    const rec = event;
+    const own = textOf(rec);
+    if (own)
+      return own;
+    const item = rec.item;
+    return item && typeof item === "object" ? textOf(item) : "";
+  }
+  function itemText2(conv, id) {
+    const content = conv.nodes?.[id]?.content;
+    if (!content)
+      return "";
+    if (typeof content.message === "string" && content.message.trim())
+      return content.message.trim();
+    if (typeof content.query === "string")
+      return content.query.trim();
+    return "";
+  }
+  function intentForText(cid, text) {
+    const body = text.trim();
+    if (!body || !cid)
+      return;
+    for (const turn of held.get(cid) ?? []) {
+      if (turn.args.text.trim() === body && turn.intent.modeId)
+        return turn.intent;
+    }
+    const conv = conversation(cid);
+    if (!conv)
+      return;
+    for (const q of conv.queue) {
+      const id = qid(q);
+      const saved = id ? itemIntent.get(id) : undefined;
+      if (saved?.modeId && itemText2(conv, id) === body)
+        return saved;
+    }
+    return;
+  }
+  function eventItemIntent(event, cid) {
     if (!event || typeof event !== "object")
       return;
     const rec = event;
-    const id = typeof rec.queue_item_id === "string" ? rec.queue_item_id : "";
-    if ((rec.type === QUEUE_INTERJECT || rec.type === "response.create") && id)
-      return itemIntent.get(id);
-    return;
+    if (rec.type !== QUEUE_INTERJECT && rec.type !== "response.create")
+      return;
+    const id = eventQueueId(event);
+    const saved = id ? itemIntent.get(id) : undefined;
+    if (saved?.modeId)
+      return saved;
+    return intentForText(cid, eventText(event));
   }
   function wrapGatewaySend() {
     try {
@@ -18158,14 +18278,20 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         const [cid, event] = args;
         if (typeof cid === "string" && holdQueueEvent(cid, event))
           return Promise.resolve(GW_OK);
-        const queued = typeof cid === "string" ? eventItemIntent(event) : undefined;
+        const type = event && typeof event === "object" ? String(event.type ?? "") : "";
+        if (type === QUEUE_ADD) {
+          const saved = (typeof cid === "string" ? itemIntent.get(eventQueueId(event)) : undefined) ?? pendingEnqueue?.intent;
+          if (saved?.modeId)
+            patchGwEvent(event, saved);
+          return orig.apply(mgr, args);
+        }
+        const queued = typeof cid === "string" ? eventItemIntent(event, cid) : undefined;
         if (queued?.modeId && !sendOverride) {
           return withSendIntent(queued, () => {
             patchGwEvent(event, queued);
             return orig.apply(mgr, args);
           });
         }
-        const type = event && typeof event === "object" ? String(event.type ?? "") : "";
         if (!GW_TYPES.has(type))
           return orig.apply(mgr, args);
         const live = liveIntent();
@@ -18196,6 +18322,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return function voidModeSyncSend(...args) {
       if (onImaginePage2())
         return orig.apply(this, args);
+      const [first] = args;
+      const queued = !sendOverride && isTurnArgs(first) ? intentForText(first.convId, first.text) : undefined;
+      if (queued?.modeId) {
+        return withSendIntent(queued, () => {
+          patchSendArgs(args, queued);
+          return orig.apply(this, args);
+        });
+      }
       const live = liveIntent();
       if (live.modeId) {
         applyIntent(live);
@@ -18209,18 +18343,23 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (onImaginePage2())
         return orig.apply(this, args);
       const [first] = args;
-      const cur = snapshot();
-      const live = cur.modeId ? cur : liveIntent();
+      const live = enqueueIntent();
       if (!isTurnArgs(first) || !live.modeId)
         return orig.apply(this, args);
       pendingEnqueue = { args: first, intent: { ...live } };
-      if (inflightMode(first.convId) !== live.modeId)
+      const inflight = inflightMode(first.convId);
+      if (inflight && inflight !== modeSlug(live.modeId))
         diverting = first;
       try {
         return orig.apply(this, args);
       } finally {
-        diverting = null;
-        pendingEnqueue = null;
+        const token = first;
+        queueMicrotask(() => {
+          if (pendingEnqueue?.args === token)
+            pendingEnqueue = null;
+          if (diverting === token)
+            diverting = null;
+        });
       }
     };
   }
@@ -18234,10 +18373,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const current = state[key];
     if (typeof current !== "function")
       return;
+    if (current[WRAP_MARK] === true)
+      return;
     if (wrappedFns.get(label) === current)
       return;
     origFns.set(label, current);
     const wrapped = make(current);
+    wrapped[WRAP_MARK] = true;
     wrappedFns.set(label, wrapped);
     setState({ [key]: wrapped });
   }
@@ -18532,11 +18674,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   function mountChip(row, id) {
     if (!itemIntent.has(id)) {
-      const live = liveIntent();
-      if (live.modeId)
-        itemIntent.set(id, { ...live });
+      const saved = pendingEnqueue?.intent?.modeId ? pendingEnqueue.intent : intent.modeId ? intent : undefined;
+      if (saved?.modeId)
+        itemIntent.set(id, { ...saved });
     }
-    const modeId = itemIntent.get(id)?.modeId || liveIntent().modeId;
+    const modeId = itemIntent.get(id)?.modeId || intent.modeId || liveIntent().modeId;
     let chip = row.querySelector(`:scope > .${CHIP}`);
     if (!chip) {
       chip = document.createElement("button");
@@ -18576,8 +18718,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     for (let i = 0;i < rows.length; i++) {
       const row = rows[i];
       let id = row.getAttribute(QITEM) || "";
-      if (!id || !items.some((q) => q.queue_item_id === id))
-        id = items[i]?.queue_item_id ?? "";
+      if (!id || !items.some((q) => qid(q) === id))
+        id = qid(items[i]);
       if (!id)
         continue;
       row.setAttribute(QITEM, id);
@@ -18638,6 +18780,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return;
     if (t.closest(`.${CHIP}, .${QMENU}`))
       return;
+    if (t.closest(`${TRIGGER_SEL2}, ${PIN_SEL}, ${MENU_SEL}`)) {
+      userPicking = true;
+      if (t.closest(TRIGGER_SEL2))
+        awaitingMenu = true;
+    }
     const send = t.closest(SEND_NOW_SEL);
     if (!send)
       return;
@@ -18660,7 +18807,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return;
     if (!id)
       return;
-    if (userPicking || id !== intent.modeId)
+    if (userPicking || awaitingMenu)
       rememberSnapshot();
   }
   function onChatPage() {
@@ -18673,11 +18820,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
     if (sendOverride || applying2)
       return;
-    const now = snapshot();
-    if (!now.modeId)
-      return;
-    if (now.activeModelId !== intent.activeModelId || now.modelMode !== intent.modelMode)
-      rememberSnapshot();
+    if (loadPending())
+      fightHydrate();
   }
   function onStreamEnd6({ responseId }) {
     wrapSendFns();
@@ -18687,8 +18831,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         if (!conv.nodes[responseId])
           continue;
         const heldIds = new Set((held.get(cid) ?? []).map((h) => h.id));
-        const next = conv.queue.find((q) => !heldIds.has(q.queue_item_id));
-        const item = next ? itemIntent.get(next.queue_item_id) : undefined;
+        const next = conv.queue.find((q) => {
+          const id = qid(q);
+          return !!id && !heldIds.has(id);
+        });
+        const item = next ? itemIntent.get(qid(next)) : undefined;
         if (item?.modeId)
           armOverride(item);
         break;
@@ -18700,7 +18847,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function queueKey(s) {
     const cid = currentCid2();
     const q = cid ? s.conversations[cid]?.queue ?? [] : [];
-    return q.map((i) => `${i.queue_item_id}:${i.position}`).join(",");
+    return q.map((i) => `${qid(i)}:${i.position}`).join(",");
   }
   function onQueue() {
     pruneIntents();
@@ -18718,7 +18865,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     startAt: "TurbopackReady" /* TurbopackReady */,
     cleanupSelectors: [`.${CHIP}`, `.${QMENU}`],
     start() {
-      intent = snapshot();
+      setIntent(snapshot());
       lastNavKey = navKey();
       abort = new AbortController;
       const { signal } = abort;
@@ -18764,7 +18911,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       applying2 = false;
       userPicking = false;
       awaitingMenu = false;
-      intent = { ...EMPTY };
+      setIntent(EMPTY);
       lastNavKey = "";
     },
     onSettingsChange() {
@@ -19786,6 +19933,8 @@ Neon rain in a quiet city`
 
   // src/plugins/queuePersist/index.ts
   var logger31 = new Logger("QueuePersist");
+  var ENQUEUE_FORCE2 = Symbol.for("voidpp.modeSync.enqueueIntent");
+  var WRAP_MARK2 = Symbol.for("voidpp.modeSync.wrapped");
   var DB_KEY = "queue-persist:v1";
   var LOCAL_ACCOUNT = "local";
   var SETTLE_MS = 450;
@@ -19852,6 +20001,15 @@ Neon rain in a quiet city`
     }
   }
   function liveIntent2() {
+    const host = pageWindow;
+    const forced = host[ENQUEUE_FORCE2] ?? host[Symbol.for("voidpp.modeSync.intent")];
+    if (forced?.modeId) {
+      return {
+        modeId: String(forced.modeId),
+        modelMode: String(forced.modelMode || ""),
+        activeModelId: String(forced.activeModelId || "")
+      };
+    }
     try {
       const modeId = String(ModesStore.useModesStore.getState().selectedModeId || "");
       if (!modeId)
@@ -19890,8 +20048,11 @@ Neon rain in a quiet city`
       logger31.debug("intent apply failed", e);
     }
     try {
+      if (intent?.modeId)
+        pageWindow[ENQUEUE_FORCE2] = intent;
       return fn();
     } finally {
+      delete pageWindow[ENQUEUE_FORCE2];
       try {
         if (modes && prevMode && modes.selectedModeId !== prevMode)
           modes.setSelectedModeId(prevMode, { source: "sync" });
@@ -19904,7 +20065,7 @@ Neon rain in a quiet city`
       }
     }
   }
-  function qid(item) {
+  function qid2(item) {
     const rec = item;
     return String(rec.queue_item_id || rec.queueItemId || "");
   }
@@ -19928,7 +20089,7 @@ Neon rain in a quiet city`
     if (!conv?.queue?.length)
       return [];
     return conv.queue.map((item) => {
-      const id = qid(item);
+      const id = qid2(item);
       const fields = nodeFields(conv, id);
       return {
         id,
@@ -20257,6 +20418,9 @@ Neon rain in a quiet city`
       return;
     origQueue = current;
     const wrapped = makeQueueWrapper2(current);
+    if (current[WRAP_MARK2] === true) {
+      wrapped[WRAP_MARK2] = true;
+    }
     wrappedQueue = wrapped;
     MessageStore.useMessageStore.setState({ queueMessage: wrapped });
   }
@@ -20395,7 +20559,7 @@ Neon rain in a quiet city`
       MessageStore: {
         selector: (s) => Object.entries(s.conversations ?? {}).map(([cid, conv]) => {
           const items = [...conv.queue ?? []].sort((a, b) => a.position - b.position);
-          return `${cid}=${items.map((item) => `${qid(item)}:${item.position}:${nodeFields(conv, qid(item)).text.length}`).join(",")}`;
+          return `${cid}=${items.map((item) => `${qid2(item)}:${item.position}:${nodeFields(conv, qid2(item)).text.length}`).join(",")}`;
         }).sort().join("|"),
         handler: onQueue2
       },
@@ -27125,7 +27289,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1790093417000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterNavigator_default.updatedAt = 1790109238000;
+  betterNavigator_default.updatedAt = 1790111040000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;
