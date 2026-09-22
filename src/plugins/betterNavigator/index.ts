@@ -258,9 +258,20 @@ function isDeadResponse(r: GrokResponse | undefined): boolean {
     return DEAD.has(state) || (r.error != null && !LIVE.has(state));
 }
 
+function nodeTerminal(node: GatewayNode | undefined): boolean {
+    if (!node) return false;
+    if (node.status === "complete" || node.status === "stream-error" || node.status === "send-error") return true;
+    return isDeadResponse(node.content);
+}
+
 function storeLive(): boolean | null {
     try {
         const page = ChatPageStore.useChatPageStore.getState();
+        const cid = page.conversationId || page.optimisticConversationId || "";
+        const gw = cid ? MessageStore.useMessageStore.getState().conversations?.[cid] : undefined;
+        const genId = gw?.activeGeneration?.assistantId ?? "";
+        const genNode = genId ? gw?.nodes?.[genId] : undefined;
+        if (genId && !nodeTerminal(genNode)) return true;
         if (!page.streamedMessageId && !page.showStreamingIndicator) return false;
         const streamed = ResponseStore.useResponseStore.getState().byId[page.streamedMessageId ?? ""];
         if (isDeadResponse(streamed)) return false;
@@ -283,9 +294,10 @@ function liveAssistantEl(): HTMLElement | null {
     const last = [...root.querySelectorAll<HTMLElement>(ASST_SEL)].findLast(el => document.body.contains(el));
     if (!last) return null;
     if (USER_INTERRUPT.test(last.textContent ?? "")) return null;
+    if (stopVisible()) return last;
     const live = storeLive();
     if (live) return last;
-    if (live == null && (stopVisible() || last.querySelector(THINK_SEL))) return last;
+    if (live == null && last.querySelector(THINK_SEL)) return last;
     return null;
 }
 
@@ -325,6 +337,34 @@ function pathToLeaf(gw: GatewayConversation): GatewayNode[] {
     }
     out.reverse();
     return out;
+}
+
+function extendPath(gw: GatewayConversation, path: GatewayNode[]): GatewayNode[] {
+    const nodes = gw.nodes ?? {};
+    const out = path.slice();
+    const seen = new Set(out.map(n => n.id));
+    const gen = gw.activeGeneration;
+    if (!gen?.assistantId) return out;
+    const assistant = nodes[gen.assistantId];
+    if (assistant && nodeTerminal(assistant)) return out;
+    const user = gen.userId ? nodes[gen.userId] : undefined;
+    if (user && user.role === "user" && !seen.has(user.id)) {
+        out.push(user);
+        seen.add(user.id);
+    }
+    if (assistant && assistant.role === "assistant" && !seen.has(assistant.id)) out.push(assistant);
+    return out;
+}
+
+function liveAssistantId(gw: GatewayConversation, path: GatewayNode[]): string {
+    const nodes = gw.nodes ?? {};
+    const genId = gw.activeGeneration?.assistantId ?? "";
+    const genNode = genId ? nodes[genId] : undefined;
+    if (genId && (!genNode || (genNode.role === "assistant" && !nodeTerminal(genNode)))) return genId;
+    for (let i = path.length - 1; i >= 0; i--) {
+        if (path[i].role === "assistant" && nodeLive(path[i]) && !nodeTerminal(path[i])) return path[i].id;
+    }
+    return "";
 }
 
 function responseIdOf(el: HTMLElement): string | undefined {
@@ -401,37 +441,76 @@ function collectDom(): NavItem[] {
     return out;
 }
 
+function itemFromNode(cid: string, node: GatewayNode, liveId: string, liveEl: HTMLElement | null): NavItem | null {
+    if (node.role !== "user" && node.role !== "assistant") return null;
+    const role: Role = node.role;
+    if (!settings.store.showAssistant && role === "assistant") return null;
+    const rec = contentOf(cid, node);
+    if (rec?.isControl) return null;
+    const el = elForId(node.id);
+    const live = role === "assistant" && (node.id === liveId || (!!el && el === liveEl));
+    const key = `${cid}:${node.id}`;
+    let text = labelFromResponse(role, rec);
+    if (!text && el) text = summarize(el);
+    if (!text) text = labelCache.get(key) ?? "";
+    if (!text) text = live ? LIVE_LABEL : LOADING_LABEL;
+    if (text !== LOADING_LABEL && text !== LIVE_LABEL) labelCache.set(key, text);
+    return { id: node.id, el, role, text, live };
+}
+
 function collectLeaf(): NavItem[] {
     const cid = currentCid();
     const gw = gatewayOf(cid);
     if (!gw) return [];
-    const path = pathToLeaf(gw);
+    const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length) return [];
     const showAsst = settings.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
-    let liveId = "";
-    for (let i = path.length - 1; i >= 0; i--) {
-        if (path[i].role === "assistant" && nodeLive(path[i])) {
-            liveId = path[i].id;
-            break;
-        }
-    }
+    const liveId = showAsst ? liveAssistantId(gw, path) : "";
     const out: NavItem[] = [];
     for (const node of path) {
-        if (node.role !== "user" && node.role !== "assistant") continue;
-        const role: Role = node.role;
-        if (!showAsst && role === "assistant") continue;
-        const rec = contentOf(cid, node);
-        if (rec?.isControl) continue;
-        const el = elForId(node.id);
-        const live = node.id === liveId || (!!el && el === liveEl);
-        const key = `${cid}:${node.id}`;
-        let text = labelFromResponse(role, rec);
-        if (!text && el) text = summarize(el);
-        if (!text) text = labelCache.get(key) ?? "";
-        if (!text) text = live ? LIVE_LABEL : LOADING_LABEL;
-        if (text !== LOADING_LABEL && text !== LIVE_LABEL) labelCache.set(key, text);
-        out.push({ id: node.id, el, role, text, live });
+        const item = itemFromNode(cid, node, liveId, liveEl);
+        if (item) out.push(item);
+    }
+    if (liveId && !out.some(n => n.id === liveId)) {
+        const node = gw.nodes?.[liveId];
+        const item = node ? itemFromNode(cid, node, liveId, liveEl) : null;
+        if (item) out.push({ ...item, live: true, text: item.text || LIVE_LABEL });
+        else if (showAsst) {
+            const el = elForId(liveId) ?? liveEl;
+            out.push({ id: liveId, el, role: "assistant", text: (el && summarize(el)) || LIVE_LABEL, live: true });
+        }
+    }
+    return out;
+}
+
+function absorbLive(base: NavItem[], dom: NavItem[]): NavItem[] {
+    if (!base.length) return dom;
+    const out = base.map(n => ({ ...n }));
+    const ids = new Set(out.map(n => n.id).filter((id): id is string => !!id));
+    for (const d of dom) {
+        if (!d.live || d.role !== "assistant") continue;
+        if (d.id && ids.has(d.id)) {
+            const hit = out.find(n => n.id === d.id);
+            if (hit) {
+                hit.live = true;
+                hit.el = hit.el ?? d.el;
+                if (!hit.text || hit.text === LOADING_LABEL) hit.text = d.text || LIVE_LABEL;
+            }
+            continue;
+        }
+        if (out.some(n => n.live && n.role === "assistant")) continue;
+        out.push({ ...d, text: d.text || LIVE_LABEL, live: true });
+        if (d.id) ids.add(d.id);
+    }
+    if (!out.some(n => n.live && n.role === "assistant")) {
+        const liveDom = dom.find(d => d.live && d.role === "assistant");
+        const last = [...out].reverse().find(n => n.role === "assistant");
+        if (liveDom && last && (!liveDom.id || !last.id || liveDom.id === last.id)) {
+            last.live = true;
+            last.el = last.el ?? liveDom.el;
+            if (!last.text || last.text === LOADING_LABEL) last.text = liveDom.text || LIVE_LABEL;
+        }
     }
     return out;
 }
@@ -442,9 +521,9 @@ function collect(): NavItem[] {
     if (!leaf.length) return dom;
     const leafIds = new Set(leaf.map(n => n.id).filter((id): id is string => !!id));
     const domIds = dom.map(n => n.id).filter((id): id is string => !!id);
-    if (domIds.length > 0 && domIds.every(id => leafIds.has(id))) return leaf;
-    if (dom.length > leaf.length) return dom;
-    return leaf;
+    const covered = domIds.length > 0 && domIds.every(id => leafIds.has(id));
+    const base = covered || dom.length <= leaf.length ? leaf : dom;
+    return absorbLive(base, dom);
 }
 
 function structKey(mode: string, nav: NavItem[]): string {
@@ -678,28 +757,32 @@ function setActive(nav: NavItem[]) {
     applyActive(active);
 }
 
-function alignMenu(index: number) {
+function clampMenu() {
     const menu = host?.querySelector<HTMLElement>(".void-bn-menu");
     if (!menu || !host) return;
     const origin = rail ?? host;
-    const selfTick = host.querySelectorAll<HTMLElement>(".void-bn-tick")[index];
-    const ticks = nativeTicks();
-    const native = lastNav[index] ? nativeTickFor(lastNav[index], index, ticks) : undefined;
-    const tick = selfTick ?? native;
-    const row = menu.querySelector<HTMLElement>(`.void-bn-item[data-void-bn-i="${index}"]`);
-    row?.scrollIntoView({ block: "nearest" });
-    markAim(index);
-    const originRect = origin.getBoundingClientRect();
-    const tickRect = tick?.getBoundingClientRect();
     const cap = Math.max(120, composerTop() - 16);
     menu.style.maxHeight = `${Math.min(cap, window.innerHeight * 0.7)}px`;
+    menu.style.top = "";
+    const originRect = origin.getBoundingClientRect();
     const mh = menu.offsetHeight;
     const viewTop = 8;
     const viewBottom = Math.min(window.innerHeight - 8, composerTop() - 8);
-    let abs = (tickRect?.top ?? originRect.top) - 6;
+    const natural = originRect.top + originRect.height / 2 - mh / 2;
+    let abs = natural;
     if (abs + mh > viewBottom) abs = viewBottom - mh;
     if (abs < viewTop) abs = viewTop;
-    menu.style.top = `${abs - originRect.top}px`;
+    const delta = abs - natural;
+    menu.style.marginTop = Math.abs(delta) < 1 ? "" : `${delta}px`;
+}
+
+function alignMenu(index: number) {
+    const menu = host?.querySelector<HTMLElement>(".void-bn-menu");
+    if (!menu || !host) return;
+    const row = menu.querySelector<HTMLElement>(`.void-bn-item[data-void-bn-i="${index}"]`);
+    row?.scrollIntoView({ block: "nearest" });
+    markAim(index);
+    clampMenu();
 }
 
 function requestActive() {
@@ -727,6 +810,37 @@ function patchLabels(nav: NavItem[]) {
     host?.querySelectorAll<HTMLElement>(".void-bn-item .void-bn-label").forEach((node, i) => {
         if (nav[i] && node.textContent !== nav[i].text) node.textContent = nav[i].text;
     });
+}
+
+function clearNativeDash() {
+    document.querySelectorAll<HTMLElement>(".void-bn-native-live").forEach(el => el.classList.remove("void-bn-native-live"));
+    document.querySelectorAll(".void-bn-native-dash").forEach(el => el.remove());
+}
+
+function syncNativeDash(nav: NavItem[]) {
+    clearNativeDash();
+    if (!settings.store.showAssistant) return;
+    let liveI = -1;
+    for (let i = nav.length - 1; i >= 0; i--) {
+        if (nav[i].role === "assistant" && nav[i].live) {
+            liveI = i;
+            break;
+        }
+    }
+    if (liveI < 0) return;
+    const ticks = nativeTicks();
+    if (!ticks.length) return;
+    const mapped = nativeTickFor(nav[liveI], liveI, ticks);
+    if (mapped) {
+        mapped.classList.add("void-bn-native-live");
+        return;
+    }
+    const parent = ticks[ticks.length - 1].parentElement;
+    if (!parent) return;
+    const dash = document.createElement("span");
+    dash.className = "void-bn-native-dash";
+    dash.setAttribute("aria-hidden", "true");
+    parent.appendChild(dash);
 }
 
 function patchLive(nav: NavItem[]) {
@@ -814,6 +928,7 @@ function unmount() {
     paintedKey = "";
     overMenu = false;
     restoreFrame();
+    clearNativeDash();
 }
 
 function syncHideTip() {
@@ -919,8 +1034,10 @@ function paint() {
     if (nextKey === paintedKey && host?.isConnected && sameCatalog(nav)) {
         lastNav = nav;
         patchLive(nav);
+        syncNativeDash(nav);
         bindIO(nav);
         setActive(nav);
+        clampMenu();
         return;
     }
 
@@ -952,6 +1069,8 @@ function paint() {
     paintedKey = nextKey;
     bindIO(nav);
     setActive(nav);
+    syncNativeDash(nav);
+    clampMenu();
 }
 
 const debouncedPaint = debounce(paint, 160);
@@ -975,8 +1094,11 @@ function messageKey(s: MessageStoreState): string {
         const cid = currentCid();
         const gw = s.conversations?.[cid];
         if (!gw) return cid;
-        const path = pathToLeaf(gw);
-        return `${cid}|${gw.defaultLeafId ?? ""}|${path.map(n => `${n.id}:${n.status}`).join(",")}`;
+        const path = extendPath(gw, pathToLeaf(gw));
+        const gen = gw.activeGeneration;
+        const genNode = gen?.assistantId ? gw.nodes?.[gen.assistantId] : undefined;
+        const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}` : "";
+        return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${path.map(n => `${n.id}:${n.status}`).join(",")}`;
     } catch (e) {
         logger.debug("message key failed:", e);
         return "";
@@ -1032,7 +1154,7 @@ function stop() {
 export default definePlugin({
     name: "BetterNavigator",
     icon: ScrollTextIcon,
-    description: "Upgrade Grok's message rail into a Notion-style outline of the whole chat, including messages that are not mounted yet.",
+    description: "Upgrade Grok's message rail into a Notion-style outline of the whole chat, including messages that are not mounted yet. A reply that is still streaming stays listed as a dashed tick.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,

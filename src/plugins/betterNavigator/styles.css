@@ -89,10 +89,44 @@
     border-top-color: hsl(var(--fg-primary));
 }
 
+button.void-bn-native-live {
+    position: relative;
+}
+
+button.void-bn-native-live > * {
+    opacity: 0;
+}
+
+button.void-bn-native-live::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0.75rem;
+    border-top: 1px dashed hsl(var(--fg-tertiary)/70%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.void-bn-native-dash {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 0.75rem;
+    pointer-events: none;
+}
+
+.void-bn-native-dash::before {
+    content: "";
+    width: 0.75rem;
+    border-top: 1px dashed hsl(var(--fg-tertiary)/70%);
+}
+
 .void-bn-menu {
     pointer-events: auto;
     position: absolute;
-    top: 0;
+    top: 50%;
     right: 0;
     z-index: 50;
     box-sizing: border-box;
@@ -106,7 +140,7 @@
     color: hsl(var(--fg-primary));
     opacity: 0;
     visibility: hidden;
-    transform: translateX(0.5rem);
+    transform: translate(0.5rem, -50%);
     transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
     scrollbar-width: thin;
 }
@@ -124,7 +158,7 @@
 .void-bn-host:focus-within .void-bn-menu {
     opacity: 1;
     visibility: visible;
-    transform: translateX(0);
+    transform: translate(0, -50%);
 }
 
 .void-bn-meta {

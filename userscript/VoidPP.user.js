@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.19
+// @version      20260922.20
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.19] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.20] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7412,9 +7412,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.19] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4452a0f"}`
-    }, `(${"4452a0f"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.20] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"19c7b74"}`
+    }, `(${"19c7b74"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8886,10 +8886,44 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     border-top-color: hsl(var(--fg-primary));
 }
 
+button.void-bn-native-live {
+    position: relative;
+}
+
+button.void-bn-native-live > * {
+    opacity: 0;
+}
+
+button.void-bn-native-live::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0.75rem;
+    border-top: 1px dashed hsl(var(--fg-tertiary)/70%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.void-bn-native-dash {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 0.75rem;
+    pointer-events: none;
+}
+
+.void-bn-native-dash::before {
+    content: "";
+    width: 0.75rem;
+    border-top: 1px dashed hsl(var(--fg-tertiary)/70%);
+}
+
 .void-bn-menu {
     pointer-events: auto;
     position: absolute;
-    top: 0;
+    top: 50%;
     right: 0;
     z-index: 50;
     box-sizing: border-box;
@@ -8903,7 +8937,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     color: hsl(var(--fg-primary));
     opacity: 0;
     visibility: hidden;
-    transform: translateX(0.5rem);
+    transform: translate(0.5rem, -50%);
     transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
     scrollbar-width: thin;
 }
@@ -8921,7 +8955,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
 .void-bn-host:focus-within .void-bn-menu {
     opacity: 1;
     visibility: visible;
-    transform: translateX(0);
+    transform: translate(0, -50%);
 }
 
 .void-bn-meta {
@@ -9254,9 +9288,22 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const state = (r.state ?? "").trim().toLowerCase();
     return DEAD.has(state) || r.error != null && !LIVE.has(state);
   }
+  function nodeTerminal(node) {
+    if (!node)
+      return false;
+    if (node.status === "complete" || node.status === "stream-error" || node.status === "send-error")
+      return true;
+    return isDeadResponse(node.content);
+  }
   function storeLive() {
     try {
       const page = ChatPageStore.useChatPageStore.getState();
+      const cid = page.conversationId || page.optimisticConversationId || "";
+      const gw = cid ? MessageStore.useMessageStore.getState().conversations?.[cid] : undefined;
+      const genId = gw?.activeGeneration?.assistantId ?? "";
+      const genNode = genId ? gw?.nodes?.[genId] : undefined;
+      if (genId && !nodeTerminal(genNode))
+        return true;
       if (!page.streamedMessageId && !page.showStreamingIndicator)
         return false;
       const streamed = ResponseStore.useResponseStore.getState().byId[page.streamedMessageId ?? ""];
@@ -9282,10 +9329,12 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return null;
     if (USER_INTERRUPT2.test(last.textContent ?? ""))
       return null;
+    if (stopVisible())
+      return last;
     const live = storeLive();
     if (live)
       return last;
-    if (live == null && (stopVisible() || last.querySelector(THINK_SEL)))
+    if (live == null && last.querySelector(THINK_SEL))
       return last;
     return null;
   }
@@ -9326,6 +9375,37 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     out.reverse();
     return out;
+  }
+  function extendPath(gw, path) {
+    const nodes = gw.nodes ?? {};
+    const out = path.slice();
+    const seen = new Set(out.map((n) => n.id));
+    const gen = gw.activeGeneration;
+    if (!gen?.assistantId)
+      return out;
+    const assistant = nodes[gen.assistantId];
+    if (assistant && nodeTerminal(assistant))
+      return out;
+    const user = gen.userId ? nodes[gen.userId] : undefined;
+    if (user && user.role === "user" && !seen.has(user.id)) {
+      out.push(user);
+      seen.add(user.id);
+    }
+    if (assistant && assistant.role === "assistant" && !seen.has(assistant.id))
+      out.push(assistant);
+    return out;
+  }
+  function liveAssistantId(gw, path) {
+    const nodes = gw.nodes ?? {};
+    const genId = gw.activeGeneration?.assistantId ?? "";
+    const genNode = genId ? nodes[genId] : undefined;
+    if (genId && (!genNode || genNode.role === "assistant" && !nodeTerminal(genNode)))
+      return genId;
+    for (let i = path.length - 1;i >= 0; i--) {
+      if (path[i].role === "assistant" && nodeLive(path[i]) && !nodeTerminal(path[i]))
+        return path[i].id;
+    }
+    return "";
   }
   function responseIdOf(el) {
     if (el.id.startsWith("response-"))
@@ -9412,46 +9492,91 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     return out;
   }
+  function itemFromNode(cid, node, liveId, liveEl) {
+    if (node.role !== "user" && node.role !== "assistant")
+      return null;
+    const role = node.role;
+    if (!settings9.store.showAssistant && role === "assistant")
+      return null;
+    const rec = contentOf(cid, node);
+    if (rec?.isControl)
+      return null;
+    const el = elForId(node.id);
+    const live = role === "assistant" && (node.id === liveId || !!el && el === liveEl);
+    const key = `${cid}:${node.id}`;
+    let text = labelFromResponse(role, rec);
+    if (!text && el)
+      text = summarize(el);
+    if (!text)
+      text = labelCache.get(key) ?? "";
+    if (!text)
+      text = live ? LIVE_LABEL : LOADING_LABEL;
+    if (text !== LOADING_LABEL && text !== LIVE_LABEL)
+      labelCache.set(key, text);
+    return { id: node.id, el, role, text, live };
+  }
   function collectLeaf() {
     const cid = currentCid();
     const gw = gatewayOf(cid);
     if (!gw)
       return [];
-    const path = pathToLeaf(gw);
+    const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length)
       return [];
     const showAsst = settings9.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
-    let liveId = "";
-    for (let i = path.length - 1;i >= 0; i--) {
-      if (path[i].role === "assistant" && nodeLive(path[i])) {
-        liveId = path[i].id;
-        break;
-      }
-    }
+    const liveId = showAsst ? liveAssistantId(gw, path) : "";
     const out = [];
     for (const node of path) {
-      if (node.role !== "user" && node.role !== "assistant")
+      const item = itemFromNode(cid, node, liveId, liveEl);
+      if (item)
+        out.push(item);
+    }
+    if (liveId && !out.some((n) => n.id === liveId)) {
+      const node = gw.nodes?.[liveId];
+      const item = node ? itemFromNode(cid, node, liveId, liveEl) : null;
+      if (item)
+        out.push({ ...item, live: true, text: item.text || LIVE_LABEL });
+      else if (showAsst) {
+        const el = elForId(liveId) ?? liveEl;
+        out.push({ id: liveId, el, role: "assistant", text: el && summarize(el) || LIVE_LABEL, live: true });
+      }
+    }
+    return out;
+  }
+  function absorbLive(base, dom) {
+    if (!base.length)
+      return dom;
+    const out = base.map((n) => ({ ...n }));
+    const ids = new Set(out.map((n) => n.id).filter((id) => !!id));
+    for (const d of dom) {
+      if (!d.live || d.role !== "assistant")
         continue;
-      const role = node.role;
-      if (!showAsst && role === "assistant")
+      if (d.id && ids.has(d.id)) {
+        const hit = out.find((n) => n.id === d.id);
+        if (hit) {
+          hit.live = true;
+          hit.el = hit.el ?? d.el;
+          if (!hit.text || hit.text === LOADING_LABEL)
+            hit.text = d.text || LIVE_LABEL;
+        }
         continue;
-      const rec = contentOf(cid, node);
-      if (rec?.isControl)
+      }
+      if (out.some((n) => n.live && n.role === "assistant"))
         continue;
-      const el = elForId(node.id);
-      const live = node.id === liveId || !!el && el === liveEl;
-      const key = `${cid}:${node.id}`;
-      let text = labelFromResponse(role, rec);
-      if (!text && el)
-        text = summarize(el);
-      if (!text)
-        text = labelCache.get(key) ?? "";
-      if (!text)
-        text = live ? LIVE_LABEL : LOADING_LABEL;
-      if (text !== LOADING_LABEL && text !== LIVE_LABEL)
-        labelCache.set(key, text);
-      out.push({ id: node.id, el, role, text, live });
+      out.push({ ...d, text: d.text || LIVE_LABEL, live: true });
+      if (d.id)
+        ids.add(d.id);
+    }
+    if (!out.some((n) => n.live && n.role === "assistant")) {
+      const liveDom = dom.find((d) => d.live && d.role === "assistant");
+      const last = [...out].reverse().find((n) => n.role === "assistant");
+      if (liveDom && last && (!liveDom.id || !last.id || liveDom.id === last.id)) {
+        last.live = true;
+        last.el = last.el ?? liveDom.el;
+        if (!last.text || last.text === LOADING_LABEL)
+          last.text = liveDom.text || LIVE_LABEL;
+      }
     }
     return out;
   }
@@ -9462,11 +9587,9 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return dom;
     const leafIds = new Set(leaf.map((n) => n.id).filter((id) => !!id));
     const domIds = dom.map((n) => n.id).filter((id) => !!id);
-    if (domIds.length > 0 && domIds.every((id) => leafIds.has(id)))
-      return leaf;
-    if (dom.length > leaf.length)
-      return dom;
-    return leaf;
+    const covered = domIds.length > 0 && domIds.every((id) => leafIds.has(id));
+    const base = covered || dom.length <= leaf.length ? leaf : dom;
+    return absorbLive(base, dom);
   }
   function structKey(mode, nav) {
     return `${chatPath()}:${mode}:${nav.map((n, i) => n.id || `dom${i}:${n.role}`).join(",")}`;
@@ -9716,31 +9839,35 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     applyActive(active);
   }
-  function alignMenu(index) {
+  function clampMenu() {
     const menu = host?.querySelector(".void-bn-menu");
     if (!menu || !host)
       return;
     const origin = rail ?? host;
-    const selfTick = host.querySelectorAll(".void-bn-tick")[index];
-    const ticks = nativeTicks();
-    const native = lastNav[index] ? nativeTickFor(lastNav[index], index, ticks) : undefined;
-    const tick = selfTick ?? native;
-    const row = menu.querySelector(`.void-bn-item[data-void-bn-i="${index}"]`);
-    row?.scrollIntoView({ block: "nearest" });
-    markAim(index);
-    const originRect = origin.getBoundingClientRect();
-    const tickRect = tick?.getBoundingClientRect();
     const cap = Math.max(120, composerTop() - 16);
     menu.style.maxHeight = `${Math.min(cap, window.innerHeight * 0.7)}px`;
+    menu.style.top = "";
+    const originRect = origin.getBoundingClientRect();
     const mh = menu.offsetHeight;
     const viewTop = 8;
     const viewBottom = Math.min(window.innerHeight - 8, composerTop() - 8);
-    let abs = (tickRect?.top ?? originRect.top) - 6;
+    const natural = originRect.top + originRect.height / 2 - mh / 2;
+    let abs = natural;
     if (abs + mh > viewBottom)
       abs = viewBottom - mh;
     if (abs < viewTop)
       abs = viewTop;
-    menu.style.top = `${abs - originRect.top}px`;
+    const delta = abs - natural;
+    menu.style.marginTop = Math.abs(delta) < 1 ? "" : `${delta}px`;
+  }
+  function alignMenu(index) {
+    const menu = host?.querySelector(".void-bn-menu");
+    if (!menu || !host)
+      return;
+    const row = menu.querySelector(`.void-bn-item[data-void-bn-i="${index}"]`);
+    row?.scrollIntoView({ block: "nearest" });
+    markAim(index);
+    clampMenu();
   }
   function requestActive() {
     if (raf)
@@ -9769,6 +9896,39 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       if (nav[i] && node.textContent !== nav[i].text)
         node.textContent = nav[i].text;
     });
+  }
+  function clearNativeDash() {
+    document.querySelectorAll(".void-bn-native-live").forEach((el) => el.classList.remove("void-bn-native-live"));
+    document.querySelectorAll(".void-bn-native-dash").forEach((el) => el.remove());
+  }
+  function syncNativeDash(nav) {
+    clearNativeDash();
+    if (!settings9.store.showAssistant)
+      return;
+    let liveI = -1;
+    for (let i = nav.length - 1;i >= 0; i--) {
+      if (nav[i].role === "assistant" && nav[i].live) {
+        liveI = i;
+        break;
+      }
+    }
+    if (liveI < 0)
+      return;
+    const ticks = nativeTicks();
+    if (!ticks.length)
+      return;
+    const mapped = nativeTickFor(nav[liveI], liveI, ticks);
+    if (mapped) {
+      mapped.classList.add("void-bn-native-live");
+      return;
+    }
+    const parent = ticks[ticks.length - 1].parentElement;
+    if (!parent)
+      return;
+    const dash = document.createElement("span");
+    dash.className = "void-bn-native-dash";
+    dash.setAttribute("aria-hidden", "true");
+    parent.appendChild(dash);
   }
   function patchLive(nav) {
     host?.querySelectorAll(".void-bn-tick").forEach((node, i) => {
@@ -9857,6 +10017,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     paintedKey = "";
     overMenu = false;
     restoreFrame();
+    clearNativeDash();
   }
   function syncHideTip() {
     document.documentElement.classList.toggle(HIDE_CLASS, !!settings9.store.hideNativeHover);
@@ -9962,8 +10123,10 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     if (nextKey === paintedKey && host?.isConnected && sameCatalog(nav)) {
       lastNav = nav;
       patchLive(nav);
+      syncNativeDash(nav);
       bindIO(nav);
       setActive(nav);
+      clampMenu();
       return;
     }
     unmount();
@@ -9993,6 +10156,8 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     paintedKey = nextKey;
     bindIO(nav);
     setActive(nav);
+    syncNativeDash(nav);
+    clampMenu();
   }
   var debouncedPaint = debounce(paint, 160);
   function pageKey(s) {
@@ -10013,8 +10178,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const gw = s.conversations?.[cid];
       if (!gw)
         return cid;
-      const path = pathToLeaf(gw);
-      return `${cid}|${gw.defaultLeafId ?? ""}|${path.map((n) => `${n.id}:${n.status}`).join(",")}`;
+      const path = extendPath(gw, pathToLeaf(gw));
+      const gen = gw.activeGeneration;
+      const genNode = gen?.assistantId ? gw.nodes?.[gen.assistantId] : undefined;
+      const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}` : "";
+      return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${path.map((n) => `${n.id}:${n.status}`).join(",")}`;
     } catch (e) {
       logger19.debug("message key failed:", e);
       return "";
@@ -10068,7 +10236,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var betterNavigator_default = definePlugin({
     name: "BetterNavigator",
     icon: ScrollTextIcon,
-    description: "Upgrade Grok's message rail into a Notion-style outline of the whole chat, including messages that are not mounted yet.",
+    description: "Upgrade Grok's message rail into a Notion-style outline of the whole chat, including messages that are not mounted yet. A reply that is still streaming stays listed as a dashed tick.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
@@ -26167,7 +26335,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1790093417000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterNavigator_default.updatedAt = 1789908648000;
+  betterNavigator_default.updatedAt = 1790108523000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;
