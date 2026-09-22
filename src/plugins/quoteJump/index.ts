@@ -29,6 +29,8 @@ const KEEP = /submit|send|attach|dictat|mode|file/i;
 const FLASH_MS = 1800;
 const WAIT_MS = 50;
 const WAIT_N = 24;
+const NEAR_PX = 80;
+const OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
 
 let abort: AbortController | null = null;
 let gen = 0;
@@ -129,16 +131,49 @@ function idsFrom(el: Element | null, extra?: unknown): string[] {
     return [...new Set(out)];
 }
 
+function isSkipped(n: HTMLElement): boolean {
+    return !!n.closest(PANE_SKIP);
+}
+
+function canScroll(el: HTMLElement): boolean {
+    const oy = getComputedStyle(el).overflowY;
+    if (oy !== "auto" && oy !== "scroll") return false;
+    return el.scrollHeight > el.clientHeight + 1;
+}
+
+function scrollerOf(el: HTMLElement): HTMLElement | null {
+    for (let n: HTMLElement | null = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
+        if (isSkipped(n)) continue;
+        if (canScroll(n)) return n;
+    }
+    return chatPane();
+}
+
 function chatPane(): HTMLElement | null {
     const main = document.querySelector("main");
     if (!main) return null;
-    const skip = (n: HTMLElement) => !!n.closest(PANE_SKIP);
     const msg = main.querySelector<HTMLElement>(MSG);
     if (msg) {
-        const col = msg.closest<HTMLElement>("[class*='overflow-y-auto'], [class*='overflow-auto']");
-        if (col && !skip(col)) return col;
+        for (let n: HTMLElement | null = msg.parentElement; n && n !== document.body; n = n.parentElement) {
+            if (isSkipped(n)) continue;
+            if (canScroll(n)) return n;
+        }
+        const col = msg.closest<HTMLElement>(OVERFLOW_SEL);
+        if (col && !isSkipped(col) && canScroll(col)) return col;
     }
-    return null;
+    let best: HTMLElement | null = null;
+    let bestScore = 0;
+    for (const n of main.querySelectorAll<HTMLElement>(OVERFLOW_SEL)) {
+        if (isSkipped(n) || !canScroll(n)) continue;
+        const r = n.getBoundingClientRect();
+        if (r.width < 240 || r.height < 120) continue;
+        const score = r.width * r.height;
+        if (score > bestScore) {
+            best = n;
+            bestScore = score;
+        }
+    }
+    return best;
 }
 
 function messageEls(): HTMLElement[] {
@@ -246,6 +281,34 @@ function sentQuote(el: Element): HTMLElement | null {
     return null;
 }
 
+function hiddenHost(el: Element): boolean {
+    if (el.closest("button, svg, [role='toolbar']")) return true;
+    const d = el.closest("details");
+    if (d instanceof HTMLDetailsElement && !d.open && !el.closest("summary")) return true;
+    try {
+        const s = getComputedStyle(el);
+        if (s.display === "none" || s.visibility === "hidden") return true;
+    } catch { /* detached */ }
+    return false;
+}
+
+function rawIndexForNorm(raw: string, normIdx: number): number {
+    let i = 0;
+    let n = 0;
+    const compact = raw.replaceAll(/\s+/g, " ").trim();
+    while (i < raw.length && /^\s/.test(raw[i]!)) i++;
+    while (i < raw.length && n < normIdx && n < compact.length) {
+        if (/\s/.test(raw[i]!)) {
+            while (i < raw.length && /\s/.test(raw[i]!)) i++;
+            if (n < compact.length && compact[n] === " ") n++;
+            continue;
+        }
+        i++;
+        n++;
+    }
+    return i;
+}
+
 function findRange(root: HTMLElement, needle: string): Range | null {
     const n = prefixOf(needle);
     if (n.length < 2) return null;
@@ -256,17 +319,18 @@ function findRange(root: HTMLElement, needle: string): Range | null {
         const raw = node.nodeValue || "";
         if (!raw.trim()) continue;
         const el = node.parentElement;
-        if (!el || el.closest("button, svg, [role='toolbar']")) continue;
+        if (!el || hiddenHost(el)) continue;
         let idx = raw.indexOf(clip);
         let len = clip.length;
         if (idx < 0) {
             const compact = raw.replaceAll(/\s+/g, " ").trim();
-            if (!compact.includes(clip) && !(clip.includes(compact) && compact.length >= 8)) continue;
-            idx = Math.max(0, raw.search(/\S/));
+            const at = compact.indexOf(clip);
+            if (at < 0 && !(clip.includes(compact) && compact.length >= 8)) continue;
+            idx = rawIndexForNorm(raw, at < 0 ? 0 : at);
             len = Math.max(2, Math.min(clip.length, raw.length - idx));
         }
         if (idx + len > raw.length) len = raw.length - idx;
-        if (len < 2) continue;
+        if (idx < 0 || len < 2) continue;
         const range = document.createRange();
         range.setStart(node, idx);
         range.setEnd(node, idx + len);
@@ -283,9 +347,14 @@ function findHit(root: HTMLElement, needle: string): HTMLElement | null {
     return el?.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, blockquote, span") ?? el;
 }
 
-function openAncestors(el: HTMLElement) {
+function openAncestors(el: HTMLElement, needle?: string) {
     for (let n: HTMLElement | null = el; n; n = n.parentElement) {
         if (n instanceof HTMLDetailsElement && !n.open) n.open = true;
+    }
+    if (!needle) return;
+    for (const d of el.querySelectorAll("details")) {
+        if (!(d instanceof HTMLDetailsElement) || d.open) continue;
+        if (nodeHasNeedle(d, needle)) d.open = true;
     }
 }
 
@@ -317,26 +386,40 @@ function viewportMidY(): number {
     return window.innerHeight / 2;
 }
 
-function lineRect(range: Range | null, el: HTMLElement): DOMRect {
-    if (range) {
-        const line = range.getClientRects()[0];
-        if (line && (line.height > 0 || line.width > 0)) return line;
+function lineBox(range: Range | null, el: HTMLElement): DOMRect | null {
+    if (range && range.startContainer.isConnected) {
+        for (const line of range.getClientRects()) {
+            if (line.height > 0 || line.width > 0) return line;
+        }
         const box = range.getBoundingClientRect();
         if (box.height > 0 || box.width > 0) return box;
     }
-    return el.getBoundingClientRect();
+    if (!el.isConnected) return null;
+    const box = el.getBoundingClientRect();
+    if (box.height <= 0 && box.width <= 0) return null;
+    if (el.matches(MSG) && box.height > 160) return new DOMRect(box.left, box.top, box.width, Math.min(48, box.height));
+    return box;
 }
 
 function scrollLineToScreenCenter(range: Range | null, el: HTMLElement) {
-    const box = lineRect(range, el);
+    if (!document.body.contains(el)) return;
+    const box = lineBox(range, el);
+    if (!box) {
+        el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        return;
+    }
     const delta = box.top + box.height / 2 - viewportMidY();
-    if (Math.abs(delta) < 1) return;
-    const pane = chatPane();
-    if (pane && pane.contains(el)) {
+    if (Math.abs(delta) < NEAR_PX && box.top < window.innerHeight && box.bottom > 0) return;
+    const pane = scrollerOf(el) ?? chatPane();
+    if (pane && pane.contains(el) && canScroll(pane)) {
         pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
         return;
     }
-    window.scrollBy({ top: delta, behavior: "smooth" });
+    el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+}
+
+function afterLayout(): Promise<void> {
+    return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 }
 
 async function hydrate(cid: string) {
@@ -407,14 +490,20 @@ async function jump(origin: HTMLElement | null) {
         logger.debug("no source message");
         return;
     }
-    openAncestors(el);
+    openAncestors(el, needle);
+    await afterLayout();
+    if (mine !== gen) return;
+    if (!el.isConnected) {
+        el = pickMessage(ids, needle);
+        if (!el) return;
+        openAncestors(el, needle);
+        await afterLayout();
+        if (mine !== gen || !el.isConnected) return;
+    }
     const range = findRange(el, needle);
     const hit = findHit(el, needle) ?? el;
-    requestAnimationFrame(() => {
-        if (mine !== gen) return;
-        scrollLineToScreenCenter(range, hit);
-        highlightRange(range, hit);
-    });
+    scrollLineToScreenCenter(range, hit);
+    highlightRange(range, hit);
 }
 
 function onClick(e: MouseEvent) {
