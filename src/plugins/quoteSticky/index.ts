@@ -79,7 +79,11 @@ function projectId(): string {
 
 function pathCid(): string {
     try {
-        return location.pathname.match(UUID)?.[0] || "";
+        const path = location.pathname;
+        const inPath = path.match(/\/(?:c|chat)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] || "";
+        if (inPath) return inPath;
+        const q = new URLSearchParams(location.search).get("conversationId") || "";
+        return UUID.test(q) ? q : "";
     } catch {
         return "";
     }
@@ -102,11 +106,19 @@ function storeCid(s?: ChatPageStoreState): string {
     }
 }
 
-function chatKey(s?: ChatPageStoreState): string {
+function viewKey(s?: ChatPageStoreState): string {
+    const ids: string[] = [];
     for (const id of [pathCid(), routeCid(), storeCid(s)]) {
-        if (id && UUID.test(id)) return id;
+        if (id && UUID.test(id) && !ids.includes(id)) ids.push(id);
     }
-    return `home:${projectId()}`;
+    if (ids.length > 1) return "";
+    if (ids.length === 1) return ids[0] ?? "";
+    const project = s?.projectId ?? projectId();
+    return `home:${project || ""}`;
+}
+
+function ownKey(): string {
+    return viewKey() || lastKey;
 }
 
 function str(v: unknown): string {
@@ -144,7 +156,7 @@ function popupSig(p: unknown): string {
 }
 
 function chatSel(s: ChatPageStoreState): string {
-    return `${chatKey(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
+    return `${viewKey(s)}|${pathCid()}|${routeCid()}|${storeCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
 }
 
 function hydrateSel(s: ResponseStoreState): string {
@@ -154,9 +166,9 @@ function hydrateSel(s: ResponseStoreState): string {
 function readText(): { key: string; text: string; popup: unknown } {
     try {
         const s = ChatPageStore.useChatPageStore.getState();
-        return { key: chatKey(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
+        return { key: viewKey(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
     } catch {
-        return { key: chatKey(), text: "", popup: undefined };
+        return { key: viewKey(), text: "", popup: undefined };
     }
 }
 
@@ -199,7 +211,10 @@ function clearLive() {
     }
 }
 
-function applyQuote(text: string, popup: unknown) {
+function applyQuote(key: string, text: string, popup: unknown) {
+    if (viewKey() !== key) return;
+    const store = storeCid();
+    if (store && UUID.test(store) && store !== key) return;
     const chat = ChatPageStore.useChatPageStore.getState();
     applying = true;
     try {
@@ -252,9 +267,9 @@ function makeChip(): HTMLElement {
     return el;
 }
 
-function paintFallback(snap: Snap) {
+function paintFallback(key: string, snap: Snap) {
     const bar = document.querySelector(QUERY);
-    if (!(bar instanceof HTMLElement) || onImaginePage()) {
+    if (viewKey() !== key || !(bar instanceof HTMLElement) || onImaginePage()) {
         removeFallback();
         return;
     }
@@ -263,26 +278,34 @@ function paintFallback(snap: Snap) {
         return;
     }
     let el = bar.querySelector(`.${cl("chip")}`);
+    if (el instanceof HTMLElement && el.dataset.voidQsKey !== key) {
+        el.remove();
+        el = null;
+    }
     if (!(el instanceof HTMLElement)) {
         el = makeChip();
+        el.dataset.voidQsKey = key;
         const editor = bar.querySelector(".tiptap, [contenteditable='true']");
         const row = editor?.parentElement;
         if (row && bar.contains(row) && row !== bar) row.prepend(el);
         else if (editor && editor.parentElement === bar) editor.before(el);
         else bar.prepend(el);
     }
+    el.dataset.voidQsKey = key;
     const label = el.querySelector(`.${cl("text")}`);
     if (label) label.textContent = snap.text.replaceAll(/\s+/g, " ").trim();
 }
 
 function restore(key: string) {
-    if (!key || onImaginePage()) return;
+    if (!key || onImaginePage() || viewKey() !== key) {
+        if (viewKey() !== key) removeFallback();
+        return;
+    }
     const snap = saved.get(key);
     if (!snap?.text) {
         removeFallback();
         return;
     }
-    if (chatKey() !== key) return;
     try {
         const chat = ChatPageStore.useChatPageStore.getState();
         const live = String(chat.quotedText || "");
@@ -290,19 +313,23 @@ function restore(key: string) {
         const now = performance.now();
         if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
             lastRestoreAt = now;
-            applyQuote(snap.text, popupFor(snap));
+            applyQuote(key, snap.text, popupFor(snap));
             logger.info("restored", key);
         }
-        paintFallback(snap);
+        paintFallback(key, snap);
     } catch (e) {
         logger.debug("restore failed", e);
-        paintFallback(snap);
+        paintFallback(key, snap);
     }
 }
 
 function ensureChip() {
     if (onImaginePage()) return;
-    const key = chatKey();
+    const key = viewKey();
+    if (!key) {
+        hold();
+        return;
+    }
     const snap = saved.get(key);
     if (!snap?.text) {
         removeFallback();
@@ -311,8 +338,14 @@ function ensureChip() {
     restore(key);
 }
 
+function hold() {
+    stashOutgoing();
+    removeFallback();
+    clearLive();
+}
+
 function dismiss() {
-    const key = chatKey();
+    const key = ownKey();
     applying = true;
     try {
         drop(key);
@@ -329,17 +362,21 @@ function dismiss() {
 
 function onChat() {
     if (applying || onImaginePage()) return;
+    const key = viewKey();
+    if (!key) {
+        hold();
+        return;
+    }
     const now = readText();
-    if (!now.key) return;
-    if (now.key !== lastKey) {
+    if (key !== lastKey) {
         stashOutgoing();
-        lastKey = now.key;
+        lastKey = key;
         lastRestoreAt = 0;
-        const snap = saved.get(now.key);
+        const snap = saved.get(key);
         if (snap?.text) {
             lastText = snap.text;
             lastPopup = snap.popup;
-            restore(now.key);
+            restore(key);
         } else {
             lastText = "";
             lastPopup = undefined;
@@ -349,14 +386,14 @@ function onChat() {
         return;
     }
     if (now.text) {
-        remember(now.key, now.text, now.popup);
+        remember(key, now.text, now.popup);
         lastText = now.text;
         lastPopup = now.popup;
-        if (!officialVisible(now.text)) paintFallback(saved.get(now.key)!);
+        if (!officialVisible(now.text)) paintFallback(key, saved.get(key)!);
         else removeFallback();
         return;
     }
-    restore(now.key);
+    restore(key);
 }
 
 function onNav() {
@@ -390,7 +427,7 @@ function isQuoteDismiss(el: Element): boolean {
     return false;
 }
 
-function markConsumed(key = chatKey()) {
+function markConsumed(key = ownKey()) {
     drop(key);
     removeFallback();
 }
@@ -422,7 +459,7 @@ function isQuoteSend(raw: unknown, want: string): boolean {
 
 function makeSendWrapper(orig: SendFn): SendFn {
     return function voidQuoteStickySend(this: unknown, ...args: unknown[]) {
-        const key = chatKey();
+        const key = ownKey();
         const had = saved.get(key)?.text || readText().text;
         const result = orig.apply(this, args);
         if (had && isQuoteSend(args[0], had)) markConsumed(key);
@@ -431,9 +468,11 @@ function makeSendWrapper(orig: SendFn): SendFn {
 }
 
 function scheduleRestore() {
-    const key = chatKey();
-    if (!saved.get(key)?.text) return;
-    queueMicrotask(() => restore(key));
+    const key = viewKey();
+    if (!key || !saved.get(key)?.text) return;
+    queueMicrotask(() => {
+        if (viewKey() === key) restore(key);
+    });
 }
 
 function makeQuotedTextWrapper(orig: SendFn): SendFn {
@@ -441,13 +480,19 @@ function makeQuotedTextWrapper(orig: SendFn): SendFn {
         const result = orig.apply(this, args);
         if (applying) return result;
         const text = String(args[0] ?? "");
-        const key = chatKey();
+        const agreed = viewKey();
+        const popup = ChatPageStore.useChatPageStore.getState().quotePopupData;
         if (text) {
-            remember(key, text, ChatPageStore.useChatPageStore.getState().quotePopupData);
+            if (!agreed) {
+                if (lastKey && lastText) remember(lastKey, lastText, lastPopup);
+                return result;
+            }
+            if (lastKey && lastKey !== agreed) return result;
+            remember(agreed, text, popup);
             lastText = text;
-            lastPopup = ChatPageStore.useChatPageStore.getState().quotePopupData;
-            lastKey = key;
-        } else if (saved.get(key)?.text) {
+            lastPopup = popup;
+            lastKey = agreed;
+        } else if (agreed && (!lastKey || lastKey === agreed) && saved.get(agreed)?.text) {
             scheduleRestore();
         }
         return result;
@@ -458,15 +503,18 @@ function makePopupWrapper(orig: SendFn): SendFn {
     return function voidQuoteStickyPopup(this: unknown, ...args: unknown[]) {
         const result = orig.apply(this, args);
         if (applying) return result;
-        const key = chatKey();
+        const agreed = viewKey();
         const popup = args[0];
-        const text = String(ChatPageStore.useChatPageStore.getState().quotedText || lastText || "");
-        if (popup != null && text) {
-            remember(key, text, popup);
+        const live = String(ChatPageStore.useChatPageStore.getState().quotedText || "");
+        if (popup != null && agreed && live && (!lastKey || lastKey === agreed)) {
+            remember(agreed, live, popup);
             lastPopup = popup;
-            lastText = text;
-            lastKey = key;
-        } else if (saved.get(key)?.text) {
+            lastText = live;
+            lastKey = agreed;
+        } else if (popup != null && !agreed && lastKey && lastText) {
+            remember(lastKey, lastText, popup);
+            lastPopup = popup;
+        } else if (agreed && (!lastKey || lastKey === agreed) && saved.get(agreed)?.text) {
             scheduleRestore();
         }
         return result;
@@ -519,7 +567,6 @@ function wrapAll() {
     wrapOne("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
     wrapOne("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
     wrapOne("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
-    wrapOne("chat.setChatPageLoaded", chatState, chatSet, "setChatPageLoaded", makeNavWrapper);
     wrapOne("msg.sendMessage", msgState, msgSet, "sendMessage", makeSendWrapper);
     wrapOne("msg.queueMessage", msgState, msgSet, "queueMessage", makeSendWrapper);
 }
@@ -538,7 +585,6 @@ function unwrapAll() {
     unwrapOne(chatState, chatSet, "setQuotePopupData", "chat.setQuotePopupData");
     unwrapOne(chatState, chatSet, "setConversationId", "chat.setConversationId");
     unwrapOne(chatState, chatSet, "setOptimisticConversationId", "chat.setOptimisticConversationId");
-    unwrapOne(chatState, chatSet, "setChatPageLoaded", "chat.setChatPageLoaded");
     unwrapOne(msgState, msgSet, "sendMessage", "msg.sendMessage");
     unwrapOne(msgState, msgSet, "queueMessage", "msg.queueMessage");
     origFns.clear();
@@ -569,7 +615,7 @@ function wrapFetch() {
         const method = String(init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
         const url = requestUrl(input);
         if ((method === "POST" || method === "PUT") && CHAT_POST.test(url) && !STOP_URL.test(url)) {
-            const key = chatKey();
+            const key = ownKey();
             const want = saved.get(key)?.text || readText().text;
             if (want && isQuoteSend(requestBody(input, init), want)) markConsumed(key);
         }
