@@ -1,0 +1,60 @@
+.void-qs-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 100%;
+    min-height: 2rem;
+    margin: 0.25rem 0.75rem 0;
+    padding: 0.125rem 0.25rem 0.125rem 0;
+    color: hsl(var(--fg-secondary));
+    cursor: pointer;
+}
+
+.void-qs-mark {
+    flex: none;
+    width: 2px;
+    align-self: stretch;
+    min-height: 1.25rem;
+    border-radius: 1px;
+    background: hsl(var(--fg-secondary));
+}
+
+.void-qs-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    line-height: 1.25;
+}
+
+.void-qs-x {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.void-qs-x:is(:hover, :focus-visible) {
+    background: hsl(var(--button-ghost-hover));
+    color: hsl(var(--fg-primary));
+}
+
+.void-qs-x:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px hsl(var(--fg-accent));
+}
+
+.void-qs-x svg {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+}

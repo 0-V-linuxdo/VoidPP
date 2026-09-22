@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.14
+// @version      20260922.15
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.14] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.15] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7393,9 +7393,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"54e94c0"}`
-    }, `(${"54e94c0"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d466988"}`
+    }, `(${"d466988"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18658,28 +18658,92 @@ html.void-rt-open [data-sidebar="gap"] {
     ]
   });
 
+  // voidpp-css:/tmp/VoidPP/src/plugins/quoteSticky/styles.css
+  registerStyle("quoteSticky", `.void-qs-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 100%;
+    min-height: 2rem;
+    margin: 0.25rem 0.75rem 0;
+    padding: 0.125rem 0.25rem 0.125rem 0;
+    color: hsl(var(--fg-secondary));
+    cursor: pointer;
+}
+
+.void-qs-mark {
+    flex: none;
+    width: 2px;
+    align-self: stretch;
+    min-height: 1.25rem;
+    border-radius: 1px;
+    background: hsl(var(--fg-secondary));
+}
+
+.void-qs-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    line-height: 1.25;
+}
+
+.void-qs-x {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.void-qs-x:is(:hover, :focus-visible) {
+    background: hsl(var(--button-ghost-hover));
+    color: hsl(var(--fg-primary));
+}
+
+.void-qs-x:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px hsl(var(--fg-accent));
+}
+
+.void-qs-x svg {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+}
+`);
+
   // src/plugins/quoteSticky/index.ts
   var logger27 = new Logger("QuoteSticky");
+  var cl26 = classNameFactory("void-qs-");
   var KEEP = 40;
   var QUERY = ".query-bar";
+  var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
   var DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
   var KEEP_BTN = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
   var CHAT_POST2 = /\/rest\/app-chat\/conversations/;
   var STOP_URL2 = /stop|abort|cancel/i;
-  var QUOTE_KEYS = ["quotedText", "parentQuotedText", "quoted_text", "parent_quoted_text"];
-  var POKE_MS = [0, 50, 200, 500, 1000, 2000, 4000, 8000];
+  var RESTORE_GAP_MS = 80;
+  var X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   var saved = new Map;
   var origFns2 = new Map;
   var wrappedFns2 = new Map;
-  var pokeTimers = [];
   var lastKey = "";
   var lastText = "";
   var lastPopup;
   var applying3 = false;
+  var lastRestoreAt = 0;
   var abort2 = null;
   var observer = null;
   var origFetch3 = null;
-  var pokeRaf = 0;
   var mutRaf = 0;
   function onImaginePage3() {
     try {
@@ -18693,23 +18757,67 @@ html.void-rt-open [data-sidebar="gap"] {
       return false;
     }
   }
-  function chatKey(s) {
+  function projectId() {
     try {
-      const st = s ?? ChatPageStore.useChatPageStore.getState();
-      const cid = String(st.conversationId || st.optimisticConversationId || "");
-      return cid || `home:${st.projectId || ""}`;
+      return String(ChatPageStore.useChatPageStore.getState().projectId || "");
     } catch {
-      return "home:";
+      return "";
     }
   }
-  function clonePopup(p) {
-    if (p == null || typeof p !== "object")
-      return p ?? null;
+  function pathCid() {
     try {
-      return JSON.parse(JSON.stringify(p));
+      return location.pathname.match(UUID)?.[0] || "";
     } catch {
-      return p;
+      return "";
     }
+  }
+  function routeCid() {
+    try {
+      return String(RoutingStore.useRoutingStore.getState().route.conversationId ?? "");
+    } catch {
+      return "";
+    }
+  }
+  function storeCid(s) {
+    try {
+      const st = s ?? ChatPageStore.useChatPageStore.getState();
+      return String(st.conversationId || st.optimisticConversationId || "");
+    } catch {
+      return "";
+    }
+  }
+  function chatKey(s) {
+    for (const id of [pathCid(), routeCid(), storeCid(s)]) {
+      if (id && UUID.test(id))
+        return id;
+    }
+    return `home:${projectId()}`;
+  }
+  function str(v) {
+    if (typeof v === "string")
+      return v;
+    if (v == null)
+      return "";
+    return String(v);
+  }
+  function extractFields(popup, text) {
+    const rec = popup && typeof popup === "object" ? popup : {};
+    const responseId = str(rec.responseId ?? rec.parentResponseId ?? rec.id);
+    return {
+      responseId,
+      parentResponseId: str(rec.parentResponseId ?? rec.responseId ?? rec.id),
+      parentQuotedText: str(rec.parentQuotedText ?? rec.quotedText ?? text),
+      parentQuoteSource: rec.parentQuoteSource ?? rec.source ?? (responseId ? { responseId } : undefined)
+    };
+  }
+  function popupFor(snap) {
+    const fields = { ...snap.fields, quotedText: snap.text, parentQuotedText: snap.fields.parentQuotedText || snap.text };
+    if (snap.popup && typeof snap.popup === "object") {
+      try {
+        return { ...fields, ...snap.popup };
+      } catch {}
+    }
+    return fields;
   }
   function popupSig(p) {
     if (p == null)
@@ -18733,11 +18841,11 @@ html.void-rt-open [data-sidebar="gap"] {
       return { key: chatKey(), text: "", popup: undefined };
     }
   }
-  function remember2(key, snap) {
-    if (!key || !snap.text)
+  function remember2(key, text, popup) {
+    if (!key || !text)
       return;
     saved.delete(key);
-    saved.set(key, { text: snap.text, popup: clonePopup(snap.popup) });
+    saved.set(key, { text, popup, fields: extractFields(popup, text) });
     while (saved.size > KEEP) {
       const oldest = saved.keys().next().value;
       if (oldest === undefined)
@@ -18747,7 +18855,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function stashOutgoing() {
     if (lastKey && lastText)
-      remember2(lastKey, { text: lastText, popup: lastPopup });
+      remember2(lastKey, lastText, lastPopup);
   }
   function drop(key) {
     if (key)
@@ -18781,35 +18889,15 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       if (chat.quotedText !== text)
         chat.setQuotedText(text);
-      const next = clonePopup(popup);
-      if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(next))
-        chat.setQuotePopupData(next);
+      if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(popup))
+        chat.setQuotePopupData(popup);
     } catch (e) {
       logger27.debug("apply failed", e);
     } finally {
       applying3 = false;
     }
   }
-  function restore(key) {
-    if (!key || onImaginePage3())
-      return;
-    const snap = saved.get(key);
-    if (!snap?.text)
-      return;
-    try {
-      if (chatKey() !== key)
-        return;
-      const chat = ChatPageStore.useChatPageStore.getState();
-      const live = String(chat.quotedText || "");
-      if (live === snap.text && popupSig(chat.quotePopupData) === popupSig(snap.popup))
-        return;
-      applyQuote(snap.text, snap.popup);
-      logger27.info("restored", key);
-    } catch (e) {
-      logger27.debug("restore failed", e);
-    }
-  }
-  function chipVisible(text) {
+  function officialVisible(text) {
     const bar = document.querySelector(QUERY);
     if (!(bar instanceof HTMLElement) || !text)
       return false;
@@ -18817,50 +18905,118 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!clip)
       return false;
     for (const n of bar.querySelectorAll("div, span, button")) {
-      if (!(n instanceof HTMLElement))
+      if (!(n instanceof HTMLElement) || n.closest(`.${cl26("chip")}`))
         continue;
       if (n.offsetHeight > 0 && n.offsetHeight <= 72 && (n.textContent || "").includes(clip))
         return true;
     }
     return false;
   }
+  function removeFallback() {
+    for (const n of document.querySelectorAll(`.${cl26("chip")}`))
+      n.remove();
+  }
+  function onFallbackDismiss(e) {
+    e.stopPropagation();
+    dismiss();
+  }
+  function makeChip() {
+    const el = document.createElement("div");
+    el.className = cl26("chip");
+    el.dataset.voidQs = "";
+    const mark = document.createElement("span");
+    mark.className = cl26("mark");
+    mark.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    text.className = cl26("text");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = cl26("x");
+    btn.setAttribute("aria-label", "Remove quote");
+    btn.innerHTML = X_SVG;
+    btn.addEventListener("pointerdown", onFallbackDismiss);
+    el.append(mark, text, btn);
+    return el;
+  }
+  function paintFallback(snap) {
+    const bar = document.querySelector(QUERY);
+    if (!(bar instanceof HTMLElement) || onImaginePage3()) {
+      removeFallback();
+      return;
+    }
+    if (officialVisible(snap.text)) {
+      removeFallback();
+      return;
+    }
+    let el = bar.querySelector(`.${cl26("chip")}`);
+    if (!(el instanceof HTMLElement)) {
+      el = makeChip();
+      const editor = bar.querySelector(".tiptap, [contenteditable='true']");
+      const row = editor?.parentElement;
+      if (row && bar.contains(row) && row !== bar)
+        row.prepend(el);
+      else if (editor && editor.parentElement === bar)
+        editor.before(el);
+      else
+        bar.prepend(el);
+    }
+    const label = el.querySelector(`.${cl26("text")}`);
+    if (label)
+      label.textContent = snap.text.replaceAll(/\s+/g, " ").trim();
+  }
+  function restore(key) {
+    if (!key || onImaginePage3())
+      return;
+    const snap = saved.get(key);
+    if (!snap?.text) {
+      removeFallback();
+      return;
+    }
+    if (chatKey() !== key)
+      return;
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      const live = String(chat.quotedText || "");
+      const same = live === snap.text && popupSig(chat.quotePopupData) === popupSig(popupFor(snap));
+      const now = performance.now();
+      if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
+        lastRestoreAt = now;
+        applyQuote(snap.text, popupFor(snap));
+        logger27.info("restored", key);
+      }
+      paintFallback(snap);
+    } catch (e) {
+      logger27.debug("restore failed", e);
+      paintFallback(snap);
+    }
+  }
   function ensureChip() {
     if (onImaginePage3())
       return;
     const key = chatKey();
     const snap = saved.get(key);
-    if (!snap?.text)
+    if (!snap?.text) {
+      removeFallback();
       return;
+    }
     restore(key);
-    if (chipVisible(snap.text))
-      return;
-    if (pokeRaf)
-      cancelAnimationFrame(pokeRaf);
-    pokeRaf = requestAnimationFrame(() => {
-      pokeRaf = 0;
-      if (chatKey() === key)
-        restore(key);
-    });
   }
-  function clearPokes() {
-    while (pokeTimers.length) {
-      const id = pokeTimers.pop();
-      if (id != null)
-        clearTimeout(id);
+  function dismiss() {
+    const key = chatKey();
+    applying3 = true;
+    try {
+      drop(key);
+      const chat = ChatPageStore.useChatPageStore.getState();
+      if (chat.quotedText)
+        chat.setQuotedText("");
+      if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
+        chat.setQuotePopupData(null);
+    } catch (e) {
+      logger27.debug("dismiss failed", e);
+    } finally {
+      applying3 = false;
     }
-    if (pokeRaf) {
-      cancelAnimationFrame(pokeRaf);
-      pokeRaf = 0;
-    }
-    if (mutRaf) {
-      cancelAnimationFrame(mutRaf);
-      mutRaf = 0;
-    }
-  }
-  function schedulePoke() {
-    clearPokes();
-    for (const ms of POKE_MS)
-      pokeTimers.push(setTimeout(ensureChip, ms));
+    removeFallback();
   }
   function onChat() {
     if (applying3 || onImaginePage3())
@@ -18871,6 +19027,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (now.key !== lastKey) {
       stashOutgoing();
       lastKey = now.key;
+      lastRestoreAt = 0;
       const snap = saved.get(now.key);
       if (snap?.text) {
         lastText = snap.text;
@@ -18880,21 +19037,24 @@ html.void-rt-open [data-sidebar="gap"] {
         lastText = "";
         lastPopup = undefined;
         clearLive();
+        removeFallback();
       }
-      schedulePoke();
       return;
     }
     if (now.text) {
-      remember2(now.key, { text: now.text, popup: now.popup });
+      remember2(now.key, now.text, now.popup);
       lastText = now.text;
       lastPopup = now.popup;
+      if (!officialVisible(now.text))
+        paintFallback(saved.get(now.key));
+      else
+        removeFallback();
       return;
     }
     restore(now.key);
-    ensureChip();
   }
   function onNav() {
-    wrapSendFns2();
+    wrapAll();
     onChat();
   }
   function barButton(el) {
@@ -18902,8 +19062,10 @@ html.void-rt-open [data-sidebar="gap"] {
     return btn instanceof HTMLElement ? btn : null;
   }
   function isQuoteDismiss(el) {
+    if (el.closest(`.${cl26("x")}`))
+      return true;
     const btn = barButton(el);
-    if (!btn)
+    if (!btn || btn.closest(`.${cl26("chip")}`))
       return false;
     const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
     if (KEEP_BTN.test(label))
@@ -18927,6 +19089,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function markConsumed(key = chatKey()) {
     drop(key);
+    removeFallback();
   }
   function onPointerDown4(e) {
     if (!e.isTrusted)
@@ -18934,49 +19097,91 @@ html.void-rt-open [data-sidebar="gap"] {
     const t = e.target;
     if (!(t instanceof Element) || !isQuoteDismiss(t))
       return;
-    markConsumed();
+    dismiss();
   }
-  function quoteFieldIn(raw, want) {
+  function isQuoteSend(raw, want) {
     if (!want || raw == null)
       return false;
     if (typeof raw === "string") {
       if (!raw.startsWith("{") && !raw.startsWith("["))
         return false;
       try {
-        return quoteFieldIn(JSON.parse(raw), want);
+        return isQuoteSend(JSON.parse(raw), want);
       } catch {
         return false;
       }
     }
-    if (typeof raw !== "object")
+    if (typeof raw !== "object" || Array.isArray(raw))
       return false;
-    if (Array.isArray(raw))
-      return raw.some((item) => quoteFieldIn(item, want));
     const rec = raw;
-    const n = want.replaceAll(/\s+/g, " ").trim();
-    for (const key of QUOTE_KEYS) {
-      const v = rec[key];
-      if (typeof v === "string" && v.replaceAll(/\s+/g, " ").trim() === n)
-        return true;
-    }
-    for (const v of Object.values(rec)) {
-      if (v && typeof v === "object" && quoteFieldIn(v, want))
-        return true;
-    }
-    return false;
+    const sending = "message" in rec || "text" in rec || "fileAttachments" in rec || "fileAttachmentIds" in rec;
+    if (!sending)
+      return false;
+    const q = rec.parentQuotedText ?? rec.quotedText;
+    return typeof q === "string" && q.replaceAll(/\s+/g, " ").trim() === want.replaceAll(/\s+/g, " ").trim();
   }
   function makeSendWrapper2(orig) {
     return function voidQuoteStickySend(...args) {
       const key = chatKey();
       const had = saved.get(key)?.text || readText().text;
       const result = orig.apply(this, args);
-      const first = args[0];
-      if (had && quoteFieldIn(first, had))
+      if (had && isQuoteSend(args[0], had))
         markConsumed(key);
       return result;
     };
   }
-  function wrapOne2(label, getState, setState, key) {
+  function scheduleRestore() {
+    const key = chatKey();
+    if (!saved.get(key)?.text)
+      return;
+    queueMicrotask(() => restore(key));
+  }
+  function makeQuotedTextWrapper(orig) {
+    return function voidQuoteStickyQuotedText(...args) {
+      const result = orig.apply(this, args);
+      if (applying3)
+        return result;
+      const text = String(args[0] ?? "");
+      const key = chatKey();
+      if (text) {
+        remember2(key, text, ChatPageStore.useChatPageStore.getState().quotePopupData);
+        lastText = text;
+        lastPopup = ChatPageStore.useChatPageStore.getState().quotePopupData;
+        lastKey = key;
+      } else if (saved.get(key)?.text) {
+        scheduleRestore();
+      }
+      return result;
+    };
+  }
+  function makePopupWrapper(orig) {
+    return function voidQuoteStickyPopup(...args) {
+      const result = orig.apply(this, args);
+      if (applying3)
+        return result;
+      const key = chatKey();
+      const popup = args[0];
+      const text = String(ChatPageStore.useChatPageStore.getState().quotedText || lastText || "");
+      if (popup != null && text) {
+        remember2(key, text, popup);
+        lastPopup = popup;
+        lastText = text;
+        lastKey = key;
+      } else if (saved.get(key)?.text) {
+        scheduleRestore();
+      }
+      return result;
+    };
+  }
+  function makeNavWrapper(orig) {
+    return function voidQuoteStickyNav(...args) {
+      stashOutgoing();
+      const result = orig.apply(this, args);
+      queueMicrotask(onNav);
+      return result;
+    };
+  }
+  function wrapOne2(label, getState, setState, key, make) {
     let state;
     try {
       state = getState();
@@ -18989,13 +19194,30 @@ html.void-rt-open [data-sidebar="gap"] {
     if (wrappedFns2.get(label) === current)
       return;
     origFns2.set(label, current);
-    const wrapped = makeSendWrapper2(current);
+    const wrapped = make(current);
     wrappedFns2.set(label, wrapped);
     setState({ [key]: wrapped });
   }
-  function wrapSendFns2() {
-    wrapOne2("msg.sendMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "sendMessage");
-    wrapOne2("msg.queueMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "queueMessage");
+  function chatState() {
+    return ChatPageStore.useChatPageStore.getState();
+  }
+  function msgState() {
+    return MessageStore.useMessageStore.getState();
+  }
+  function chatSet(p) {
+    ChatPageStore.useChatPageStore.setState(p);
+  }
+  function msgSet(p) {
+    MessageStore.useMessageStore.setState(p);
+  }
+  function wrapAll() {
+    wrapOne2("chat.setQuotedText", chatState, chatSet, "setQuotedText", makeQuotedTextWrapper);
+    wrapOne2("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
+    wrapOne2("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
+    wrapOne2("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
+    wrapOne2("chat.setChatPageLoaded", chatState, chatSet, "setChatPageLoaded", makeNavWrapper);
+    wrapOne2("msg.sendMessage", msgState, msgSet, "sendMessage", makeSendWrapper2);
+    wrapOne2("msg.queueMessage", msgState, msgSet, "queueMessage", makeSendWrapper2);
   }
   function unwrapOne(getState, setState, key, label) {
     const orig = origFns2.get(label);
@@ -19007,9 +19229,14 @@ html.void-rt-open [data-sidebar="gap"] {
         setState({ [key]: orig });
     } catch {}
   }
-  function unwrapSendFns2() {
-    unwrapOne(() => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "sendMessage", "msg.sendMessage");
-    unwrapOne(() => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "queueMessage", "msg.queueMessage");
+  function unwrapAll() {
+    unwrapOne(chatState, chatSet, "setQuotedText", "chat.setQuotedText");
+    unwrapOne(chatState, chatSet, "setQuotePopupData", "chat.setQuotePopupData");
+    unwrapOne(chatState, chatSet, "setConversationId", "chat.setConversationId");
+    unwrapOne(chatState, chatSet, "setOptimisticConversationId", "chat.setOptimisticConversationId");
+    unwrapOne(chatState, chatSet, "setChatPageLoaded", "chat.setChatPageLoaded");
+    unwrapOne(msgState, msgSet, "sendMessage", "msg.sendMessage");
+    unwrapOne(msgState, msgSet, "queueMessage", "msg.queueMessage");
     origFns2.clear();
     wrappedFns2.clear();
   }
@@ -19042,7 +19269,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if ((method === "POST" || method === "PUT") && CHAT_POST2.test(url) && !STOP_URL2.test(url)) {
         const key = chatKey();
         const want = saved.get(key)?.text || readText().text;
-        if (want && quoteFieldIn(requestBody(input, init), want))
+        if (want && isQuoteSend(requestBody(input, init), want))
           markConsumed(key);
       }
       return inner(input, init);
@@ -19074,11 +19301,13 @@ html.void-rt-open [data-sidebar="gap"] {
     tags: ["chat", "ui"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
+    managedStyle: "quoteSticky",
+    cleanupSelectors: [`.${cl26("chip")}`],
     start() {
       const now = readText();
       lastKey = now.key;
       if (now.key && now.text) {
-        remember2(now.key, { text: now.text, popup: now.popup });
+        remember2(now.key, now.text, now.popup);
         lastText = now.text;
         lastPopup = now.popup;
       }
@@ -19086,7 +19315,7 @@ html.void-rt-open [data-sidebar="gap"] {
       document.addEventListener("pointerdown", onPointerDown4, { capture: true, signal: abort2.signal });
       observer = new MutationObserver(onMutate);
       observer.observe(document.documentElement, { childList: true, subtree: true });
-      wrapSendFns2();
+      wrapAll();
       wrapFetch();
     },
     stop() {
@@ -19094,14 +19323,18 @@ html.void-rt-open [data-sidebar="gap"] {
       abort2 = null;
       observer?.disconnect();
       observer = null;
-      clearPokes();
-      unwrapSendFns2();
+      if (mutRaf)
+        cancelAnimationFrame(mutRaf);
+      mutRaf = 0;
+      unwrapAll();
       unwrapFetch();
+      removeFallback();
       saved.clear();
       lastKey = "";
       lastText = "";
       lastPopup = undefined;
       applying3 = false;
+      lastRestoreAt = 0;
     },
     zustand: {
       ChatPageStore: {
@@ -20686,7 +20919,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
   // src/plugins/usageDisplay/index.tsx
   var logger31 = new Logger("UsageDisplay");
-  var cl26 = classNameFactory("void-ud-");
+  var cl27 = classNameFactory("void-ud-");
   var settings24 = definePluginSettings({
     usageStats: {
       type: 3 /* BOOLEAN */,
@@ -20907,17 +21140,17 @@ button:has(.void-ud-trigger > .void-ud-label) {
       width: RING_SIZE,
       height: RING_SIZE,
       viewBox: `0 0 ${RING_SIZE} ${RING_SIZE}`,
-      className: classes(cl26("ring"), cl26(`ring-${tone}`))
+      className: classes(cl27("ring"), cl27(`ring-${tone}`))
     }, /* @__PURE__ */ React.createElement("circle", {
       cx: RING_CENTER,
       cy: RING_CENTER,
       r: RING_RADIUS,
-      className: cl26("ring-track")
+      className: cl27("ring-track")
     }), /* @__PURE__ */ React.createElement("circle", {
       cx: RING_CENTER,
       cy: RING_CENTER,
       r: RING_RADIUS,
-      className: cl26("ring-fill"),
+      className: cl27("ring-fill"),
       strokeDasharray: RING_CIRCUMFERENCE,
       strokeDashoffset: RING_CIRCUMFERENCE * (1 - fraction),
       transform: `rotate(-90 ${RING_CENTER} ${RING_CENTER})`
@@ -20944,12 +21177,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
       };
     }, []);
     return /* @__PURE__ */ React.createElement("span", {
-      className: classes(cl26("trigger"), label == null && cl26("icon-only"))
+      className: classes(cl27("trigger"), label == null && cl27("icon-only"))
     }, /* @__PURE__ */ React.createElement(ProgressRing, {
       percent: isFree ? null : percent,
       tone: isFree ? "waiting" : tone
     }), label != null && /* @__PURE__ */ React.createElement("span", {
-      className: cl26("label")
+      className: cl27("label")
     }, label));
   }
   function WeekBlock({ isFree, percent, resetAt, loading, labeled }) {
@@ -20964,14 +21197,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: 2,
-      className: cl26("week")
+      className: cl27("week")
     }, labeled && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
     }, isBotPage() ? "Grok Bot" : "Week"), /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "semibold",
-      className: cl26("used")
+      className: cl27("used")
     }, usedLabel(isFree, percent, loading)), resetAt != null && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
@@ -20983,14 +21216,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: 2,
-      className: cl26("today")
+      className: cl27("today")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
     }, "Today"), !isFree && /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "semibold",
-      className: cl26("used")
+      className: cl27("used")
     }, formatDelta(delta ?? (percent != null ? 0 : null)), " of weekly quota"));
   }
   function UsagePanel() {
@@ -21024,7 +21257,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: 8,
-      className: cl26("panel")
+      className: cl27("panel")
     }, showToday && /* @__PURE__ */ React.createElement(TodayBlock, {
       isFree,
       percent
@@ -21042,7 +21275,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       alignItems: "center",
       justifyContent: "space-between",
       gap: "0.75rem",
-      className: cl26("toggle")
+      className: cl27("toggle")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
@@ -21069,25 +21302,25 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "flex-start",
       gap: "0.5rem",
-      className: cl26("formula")
+      className: cl27("formula")
     }, terms.map((term, i) => /* @__PURE__ */ React.createElement(React.Fragment, {
       key: term.label
     }, i > 0 && /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       alignItems: "center",
-      className: cl26("formula-op-col")
+      className: cl27("formula-op-col")
     }, /* @__PURE__ */ React.createElement("span", {
-      className: cl26("formula-op")
+      className: cl27("formula-op")
     }, ops[i - 1]), /* @__PURE__ */ React.createElement("span", {
-      className: cl26("formula-op")
+      className: cl27("formula-op")
     }, ops[i - 1])), /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       alignItems: "center",
-      className: cl26("formula-term")
+      className: cl27("formula-term")
     }, /* @__PURE__ */ React.createElement("span", {
-      className: cl26("formula-label")
+      className: cl27("formula-label")
     }, term.label), /* @__PURE__ */ React.createElement("span", {
-      className: cl26("formula-value")
+      className: cl27("formula-value")
     }, term.value)))));
   }
   function DayFormula({ rec, today }) {
@@ -21115,7 +21348,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }), caption != null && /* @__PURE__ */ React.createElement(Text2, {
         size: "xs",
         color: "muted",
-        className: cl26("formula-caption")
+        className: cl27("formula-caption")
       }, caption));
     }
     return /* @__PURE__ */ React.createElement(Formula, {
@@ -21140,7 +21373,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.35rem",
-      className: cl26("repair")
+      className: cl27("repair")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "muted"
@@ -21154,7 +21387,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       step: 0.1,
       value: draft,
       onChange: (e) => setDraft(e.target.value),
-      className: cl26("repair-input"),
+      className: cl27("repair-input"),
       "aria-label": "Weekly percent before reset"
     }), /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
@@ -21185,7 +21418,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         node.scrollLeft = node.scrollWidth;
     }, [bars.length]);
     useEffect(() => {
-      chartRef.current?.querySelector(`.${cl26("bar-on")}`)?.scrollIntoView({ inline: "nearest", block: "nearest" });
+      chartRef.current?.querySelector(`.${cl27("bar-on")}`)?.scrollIntoView({ inline: "nearest", block: "nearest" });
     }, [selected]);
     return /* @__PURE__ */ React.createElement(VoidPPDialogShell, {
       title: "Usage by date",
@@ -21195,10 +21428,10 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }, /* @__PURE__ */ React.createElement(StatsToggle, null), !usageStats ? /* @__PURE__ */ React.createElement(Paragraph, null, "Turn on daily usage stats to keep a per-day log. Hover shows today after a delay.") : days.length === 0 ? /* @__PURE__ */ React.createElement(Paragraph, null, "No days recorded yet. Stats start from the moment you enable tracking.") : /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.75rem",
-      className: cl26("history")
+      className: cl27("history")
     }, /* @__PURE__ */ React.createElement(Flex, {
       ref: chartRef,
-      className: cl26("chart"),
+      className: cl27("chart"),
       alignItems: "stretch",
       gap: "0.35rem",
       tabIndex: 0,
@@ -21227,22 +21460,22 @@ button:has(.void-ud-trigger > .void-ud-label) {
         role: "option",
         "aria-selected": on,
         "aria-label": `${rec.date === todayKey ? "Today" : formatDayLabel(rec.date)}, ${formatDelta(delta)}`,
-        className: classes(cl26("bar"), on && cl26("bar-on"), empty && cl26("bar-empty")),
+        className: classes(cl27("bar"), on && cl27("bar-on"), empty && cl27("bar-empty")),
         onClick: () => setSelected(rec.date)
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl26("bar-value")
+        className: cl27("bar-value")
       }, empty ? " " : formatPercent(delta)), /* @__PURE__ */ React.createElement("span", {
-        className: cl26("bar-track")
+        className: cl27("bar-track")
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl26("bar-fill"),
+        className: cl27("bar-fill"),
         style: { height: `${pct}%` }
       })), /* @__PURE__ */ React.createElement("span", {
-        className: cl26("bar-label")
+        className: cl27("bar-label")
       }, rec.date === todayKey ? "Today" : formatDayNumber(rec.date)));
     })), active != null && /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.35rem",
-      className: cl26("detail")
+      className: cl27("detail")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "semibold"
@@ -21464,7 +21697,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }));
 
   // src/plugins/settingsFlyout/index.tsx
-  var cl27 = classNameFactory("void-sf-");
+  var cl28 = classNameFactory("void-sf-");
   var settings26 = definePluginSettings({
     showOpenSettings: {
       type: 3 /* BOOLEAN */,
@@ -21563,7 +21796,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         key: t.id,
         onSelect: () => openTab(t.id)
       }, /* @__PURE__ */ React.createElement(Icon, {
-        className: cl27("menu-icon")
+        className: cl28("menu-icon")
       }), t.name);
     });
   }
@@ -21573,7 +21806,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "secondary",
-      className: cl27("group")
+      className: cl28("group")
     }, "Void++"), tabItems(tabs));
   }
   function SettingsMenu({ onOpen }) {
@@ -21597,13 +21830,13 @@ button:has(.void-ud-trigger > .void-ud-label) {
     const voidppFirst = cfg.voidppPosition !== "below";
     const hasBoth = grokTabs.length > 0 && voidppTabs.length > 0;
     return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(CogIcon, {
-      className: cl27("menu-icon")
+      className: cl28("menu-icon")
     }), "Settings"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, {
-      className: cl27("menu")
+      className: cl28("menu")
     }, showOpen && /* @__PURE__ */ React.createElement(DropdownMenuItem, {
       onSelect: (e) => openTab(undefined, onOpen, e)
     }, /* @__PURE__ */ React.createElement(CogIcon, {
-      className: cl27("menu-icon")
+      className: cl28("menu-icon")
     }), "Open Settings"), showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
       tabs: voidppTabs
     }), voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), tabItems(grokTabs), !voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), !voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
@@ -23580,7 +23813,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
 
   // src/plugins/quoteJump/index.ts
   var logger35 = new Logger("QuoteJump");
-  var cl28 = classNameFactory("void-qj-");
+  var cl29 = classNameFactory("void-qj-");
   var HL = "void-qj";
   var QUERY2 = ".query-bar";
   var EDITOR = ".tiptap, [contenteditable='true']";
@@ -23588,7 +23821,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var PANE_SKIP3 = "[data-sidebar], [class*='pane-card']";
   var THINK_SEL2 = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
   var OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
-  var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  var UUID2 = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
   var DISMISS2 = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
   var KEEP2 = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
   var FLASH_MS2 = 1800;
@@ -23641,7 +23874,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (depth > 5 || out.length > 8 || value == null)
       return;
     if (typeof value === "string") {
-      const m = value.match(UUID);
+      const m = value.match(UUID2);
       if (m)
         out.push(m[0]);
       return;
@@ -23654,7 +23887,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     }
     for (const [k, v] of Object.entries(value)) {
-      if (/responseid|messageid|^id$/i.test(k) && typeof v === "string" && UUID.test(v))
+      if (/responseid|messageid|^id$/i.test(k) && typeof v === "string" && UUID2.test(v))
         out.push(v);
       else
         collectIds(v, out, depth + 1);
@@ -23668,7 +23901,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       if (p) {
         for (const k of ["responseId", "parentResponseId", "messageId", "id"]) {
           const v = p[k];
-          if (typeof v === "string" && UUID.test(v))
+          if (typeof v === "string" && UUID2.test(v))
             return v;
         }
       }
@@ -23682,12 +23915,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (el) {
       const host = el.closest("[id^='response-']");
       if (host) {
-        const m = host.id.match(UUID);
+        const m = host.id.match(UUID2);
         if (m)
           out.push(m[0]);
       }
       const attr = el.closest("[data-response-id]")?.getAttribute("data-response-id");
-      if (attr && UUID.test(attr))
+      if (attr && UUID2.test(attr))
         out.push(attr);
       const fromFiber = propsId(el);
       if (fromFiber)
@@ -23979,7 +24212,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (flashTimer2)
       window.clearTimeout(flashTimer2);
     flashTimer2 = 0;
-    flashing2?.classList.remove(cl28("hit"));
+    flashing2?.classList.remove(cl29("hit"));
     flashing2 = null;
     const { highlights } = CSS;
     highlights?.delete(HL);
@@ -23992,7 +24225,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       highlights.set(HL, new HighlightCtor(range));
     } else {
       flashing2 = el;
-      el.classList.add(cl28("hit"));
+      el.classList.add(cl29("hit"));
     }
     flashTimer2 = window.setTimeout(clearHighlight, FLASH_MS2);
   }
@@ -24389,7 +24622,7 @@ html.void-cms-picked .void-cms-ghost {
 
   // src/plugins/compactModeSelect/index.tsx
   var logger36 = new Logger("CompactModeSelect");
-  var cl29 = classNameFactory("void-cms-");
+  var cl30 = classNameFactory("void-cms-");
   var MODES = [
     { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
     { id: "fast", pin: "pinFast", label: "Fast", Icon: FastModeIcon },
@@ -24477,7 +24710,7 @@ html.void-cms-picked .void-cms-ghost {
   var cloakWatch = null;
   function uncloak() {
     for (const host of ghosts) {
-      host.classList.remove(cl29("ghost"));
+      host.classList.remove(cl30("ghost"));
       host.style.removeProperty("opacity");
       host.style.removeProperty("visibility");
       host.style.removeProperty("pointer-events");
@@ -24565,7 +24798,7 @@ html.void-cms-picked .void-cms-ghost {
     const host = ghostHost(menu.root);
     if (ghosts.has(host))
       return;
-    host.classList.add(cl29("ghost"));
+    host.classList.add(cl30("ghost"));
     host.style.setProperty("opacity", GHOST_STYLE.opacity, "important");
     host.style.setProperty("visibility", GHOST_STYLE.visibility, "important");
     ghosts.add(host);
@@ -24757,7 +24990,7 @@ html.void-cms-picked .void-cms-ghost {
   function PinGlyph({ id, Icon, label, showLabels }) {
     const html = useNativeGlyph(id);
     const glyph = html ? /* @__PURE__ */ React.createElement("span", {
-      className: cl29("glyph"),
+      className: cl30("glyph"),
       dangerouslySetInnerHTML: { __html: html }
     }) : /* @__PURE__ */ React.createElement(Icon, {
       size: 18
@@ -24765,7 +24998,7 @@ html.void-cms-picked .void-cms-ghost {
     if (!showLabels)
       return glyph;
     return /* @__PURE__ */ React.createElement(React.Fragment, null, glyph, /* @__PURE__ */ React.createElement("span", {
-      className: cl29("label")
+      className: cl30("label")
     }, label));
   }
   function preventDragOver(e) {
@@ -24790,27 +25023,27 @@ html.void-cms-picked .void-cms-ghost {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl29("order")
+      className: cl30("order")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl29("order-list"),
+      className: cl30("order-list"),
       role: "list"
     }, ids.map((id, i) => {
       const m = MODE_BY_ID[id];
       return /* @__PURE__ */ React.createElement("div", {
         key: m.id,
         role: "listitem",
-        className: classes(cl29("order-row"), dragId === m.id && cl29("dragging")),
+        className: classes(cl30("order-row"), dragId === m.id && cl30("dragging")),
         onDragOver: preventDragOver,
         onDrop: onDrop(m.id)
       }, /* @__PURE__ */ React.createElement(Flex, {
         alignItems: "center",
         gap: "0.5rem",
-        className: cl29("order-main")
+        className: cl30("order-main")
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl29("grip"),
+        className: cl30("grip"),
         draggable: true,
         onDragStart: onDragStart(m.id),
         onDragEnd: () => setDragId(null),
@@ -24819,7 +25052,7 @@ html.void-cms-picked .void-cms-ghost {
         size: 16
       })), /* @__PURE__ */ React.createElement(m.Icon, {
         size: 16,
-        className: cl29("order-icon")
+        className: cl30("order-icon")
       }), /* @__PURE__ */ React.createElement(SettingsTitle, null, m.label)), /* @__PURE__ */ React.createElement(Flex, {
         alignItems: "center",
         gap: "0.25rem"
@@ -24867,10 +25100,10 @@ html.void-cms-picked .void-cms-ghost {
       selectMode(id);
     };
     return /* @__PURE__ */ React.createElement("div", {
-      className: classes(cl29("pins"), hideNative && cl29("hide-native"))
+      className: classes(cl30("pins"), hideNative && cl30("hide-native"))
     }, items.map((m) => /* @__PURE__ */ React.createElement("span", {
       key: m.id,
-      className: cl29("pin-host"),
+      className: cl30("pin-host"),
       "data-void-mode-id": m.id
     }, /* @__PURE__ */ React.createElement(ChatBarButton, {
       size: "sm",
@@ -24882,7 +25115,7 @@ html.void-cms-picked .void-cms-ghost {
       }),
       tooltip: m.label,
       onClick: onPin(m.id),
-      className: classes(cl29("pin"), selectedModeId === m.id && cl29("on"), showLabels && cl29("labeled"), "hover:bg-button-ghost-hover"),
+      className: classes(cl30("pin"), selectedModeId === m.id && cl30("on"), showLabels && cl30("labeled"), "hover:bg-button-ghost-hover"),
       "aria-label": m.label
     }))));
   }
@@ -25132,7 +25365,7 @@ div:has(> #grok-bot-nav-button) {
   }
 
   // src/plugins/placeholder/index.tsx
-  var cl30 = classNameFactory("void-ph-");
+  var cl31 = classNameFactory("void-ph-");
   var HERO_STYLE = "placeholderHero";
   var INPUT_STYLE = "placeholderInput";
   var HERO_SEL = "h1[data-void-ph-hero]";
@@ -25195,7 +25428,7 @@ div:has(> #grok-bot-nav-button) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl30("root")
+      className: cl31("root")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.375rem"
@@ -25203,9 +25436,9 @@ div:has(> #grok-bot-nav-button) {
       size: "sm",
       weight: "medium"
     }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. The non-project home greeting uses these and may wrap. Project chat input uses the first phrase on one line and replaces the last overflowing word with an ellipsis. Home and other non-project chats keep Grok's short placeholders. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl30("textarea-wrap")
+      className: cl31("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
-      className: cl30("textarea"),
+      className: cl31("textarea"),
       value: phrases ?? DEFAULT_PHRASES,
       onChange: (e) => {
         settings32.store.phrases = e.target.value;
@@ -25218,7 +25451,7 @@ div:has(> #grok-bot-nav-button) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl30("root")
+      className: cl31("root")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.375rem"
@@ -25226,9 +25459,9 @@ div:has(> #grok-bot-nav-button) {
       size: "sm",
       weight: "medium"
     }, "Imagine phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, `One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's "Type to imagine".`)), /* @__PURE__ */ React.createElement("div", {
-      className: cl30("textarea-wrap")
+      className: cl31("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
-      className: cl30("textarea"),
+      className: cl31("textarea"),
       value: imaginePhrases ?? "",
       onChange: (e) => {
         settings32.store.imaginePhrases = e.target.value;
@@ -25619,7 +25852,7 @@ Neon rain in a quiet city`
   cleaner_default.updatedAt = 1790093417000;
   betterSidebar_default.updatedAt = 1789881199000;
   betterImagine_default.updatedAt = 1790093417000;
-  modeSync_default.updatedAt = 1790103161000;
+  modeSync_default.updatedAt = 1790104012000;
   messageTimestamps_default.updatedAt = 1789881463000;
   autoRetry_default.updatedAt = 1789906500000;
   userQuotes_default.updatedAt = 1789905284000;
@@ -25632,7 +25865,7 @@ Neon rain in a quiet city`
   betterLinks_default.updatedAt = 1789881199000;
   experiments_default.updatedAt = 1789881199000;
   customInstructions_default.updatedAt = 1789898438000;
-  quoteSticky_default.updatedAt = 1790102335000;
+  quoteSticky_default.updatedAt = 1790104012000;
   noBuildStarters_default.updatedAt = 1789894247000;
   responseNotification_default.updatedAt = 1790093417000;
   incognito_default.updatedAt = 1789881199000;
@@ -25649,7 +25882,7 @@ Neon rain in a quiet city`
   betterFiles_default.updatedAt = 1789881199000;
   noShareLink_default.updatedAt = 1789881199000;
   chatListStatus_default.updatedAt = 1789906500000;
-  quoteJump_default.updatedAt = 1790100528000;
+  quoteJump_default.updatedAt = 1790104012000;
   stableComposer_default.updatedAt = 1789881199000;
   compactModeSelect_default.updatedAt = 1789881199000;
   consoleJanitor_default.updatedAt = 1789881199000;
@@ -25729,7 +25962,7 @@ Neon rain in a quiet city`
     NoticeType["ERROR"] = "error";
     NoticeType["SUCCESS"] = "success";
   })(NoticeType ||= {});
-  var cl31 = classNameFactory("void-notice-");
+  var cl32 = classNameFactory("void-notice-");
   var ICONS2 = {
     ["info" /* INFO */]: () => /* @__PURE__ */ React.createElement(CircleAlertIcon, {
       size: 18
@@ -25747,11 +25980,11 @@ Neon rain in a quiet city`
   var activeNoticeId = null;
   function Notice({ message, type, action, onClose }) {
     return /* @__PURE__ */ React.createElement("div", {
-      className: cl31("root")
+      className: cl32("root")
     }, /* @__PURE__ */ React.createElement("span", {
-      className: cl31("icon")
+      className: cl32("icon")
     }, ICONS2[type ?? "info" /* INFO */]()), /* @__PURE__ */ React.createElement("span", {
-      className: cl31("message")
+      className: cl32("message")
     }, message), action && /* @__PURE__ */ React.createElement(Button, {
       variant: "primary",
       size: "sm",
@@ -25761,7 +25994,7 @@ Neon rain in a quiet city`
       variant: "tertiary",
       size: "sm",
       shape: "square",
-      className: cl31("close"),
+      className: cl32("close"),
       onClick: onClose
     }, /* @__PURE__ */ React.createElement(Cross2Icon, {
       size: 16

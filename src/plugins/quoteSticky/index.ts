@@ -4,28 +4,41 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import "./styles.css";
+
 import { TextQuoteIcon } from "@components/icons";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { ResponseStoreState } from "@grok-types/stores/ResponseStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { ChatPageStore, MessageStore, RoutingStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
+import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
 import definePlugin, { StartAt } from "@utils/types";
 
 const logger = new Logger("QuoteSticky");
+const cl = classNameFactory("void-qs-");
 const KEEP = 40;
 const QUERY = ".query-bar";
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
 const KEEP_BTN = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
 const CHAT_POST = /\/rest\/app-chat\/conversations/;
 const STOP_URL = /stop|abort|cancel/i;
-const QUOTE_KEYS = ["quotedText", "parentQuotedText", "quoted_text", "parent_quoted_text"] as const;
-const POKE_MS = [0, 50, 200, 500, 1000, 2000, 4000, 8000];
+const RESTORE_GAP_MS = 80;
+const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+interface Fields {
+    responseId: string;
+    parentResponseId: string;
+    parentQuotedText: string;
+    parentQuoteSource: unknown;
+}
 
 interface Snap {
     text: string;
     popup: unknown;
+    fields: Fields;
 }
 
 type SendFn = (...args: unknown[]) => unknown;
@@ -33,16 +46,15 @@ type SendFn = (...args: unknown[]) => unknown;
 const saved = new Map<string, Snap>();
 const origFns = new Map<string, SendFn>();
 const wrappedFns = new Map<string, SendFn>();
-const pokeTimers: ReturnType<typeof setTimeout>[] = [];
 
 let lastKey = "";
 let lastText = "";
 let lastPopup: unknown;
 let applying = false;
+let lastRestoreAt = 0;
 let abort: AbortController | null = null;
 let observer: MutationObserver | null = null;
 let origFetch: typeof fetch | null = null;
-let pokeRaf = 0;
 let mutRaf = 0;
 
 function onImaginePage(): boolean {
@@ -57,23 +69,71 @@ function onImaginePage(): boolean {
     }
 }
 
-function chatKey(s?: ChatPageStoreState): string {
+function projectId(): string {
     try {
-        const st = s ?? ChatPageStore.useChatPageStore.getState();
-        const cid = String(st.conversationId || st.optimisticConversationId || "");
-        return cid || `home:${st.projectId || ""}`;
+        return String(ChatPageStore.useChatPageStore.getState().projectId || "");
     } catch {
-        return "home:";
+        return "";
     }
 }
 
-function clonePopup(p: unknown): unknown {
-    if (p == null || typeof p !== "object") return p ?? null;
+function pathCid(): string {
     try {
-        return JSON.parse(JSON.stringify(p));
+        return location.pathname.match(UUID)?.[0] || "";
     } catch {
-        return p;
+        return "";
     }
+}
+
+function routeCid(): string {
+    try {
+        return String(RoutingStore.useRoutingStore.getState().route.conversationId ?? "");
+    } catch {
+        return "";
+    }
+}
+
+function storeCid(s?: ChatPageStoreState): string {
+    try {
+        const st = s ?? ChatPageStore.useChatPageStore.getState();
+        return String(st.conversationId || st.optimisticConversationId || "");
+    } catch {
+        return "";
+    }
+}
+
+function chatKey(s?: ChatPageStoreState): string {
+    for (const id of [pathCid(), routeCid(), storeCid(s)]) {
+        if (id && UUID.test(id)) return id;
+    }
+    return `home:${projectId()}`;
+}
+
+function str(v: unknown): string {
+    if (typeof v === "string") return v;
+    if (v == null) return "";
+    return String(v);
+}
+
+function extractFields(popup: unknown, text: string): Fields {
+    const rec = popup && typeof popup === "object" ? popup as Record<string, unknown> : {};
+    const responseId = str(rec.responseId ?? rec.parentResponseId ?? rec.id);
+    return {
+        responseId,
+        parentResponseId: str(rec.parentResponseId ?? rec.responseId ?? rec.id),
+        parentQuotedText: str(rec.parentQuotedText ?? rec.quotedText ?? text),
+        parentQuoteSource: rec.parentQuoteSource ?? rec.source ?? (responseId ? { responseId } : undefined),
+    };
+}
+
+function popupFor(snap: Snap): unknown {
+    const fields = { ...snap.fields, quotedText: snap.text, parentQuotedText: snap.fields.parentQuotedText || snap.text };
+    if (snap.popup && typeof snap.popup === "object") {
+        try {
+            return { ...fields, ...(snap.popup as object) };
+        } catch { /* frozen / host object */ }
+    }
+    return fields;
 }
 
 function popupSig(p: unknown): string {
@@ -100,10 +160,10 @@ function readText(): { key: string; text: string; popup: unknown } {
     }
 }
 
-function remember(key: string, snap: Snap) {
-    if (!key || !snap.text) return;
+function remember(key: string, text: string, popup: unknown) {
+    if (!key || !text) return;
     saved.delete(key);
-    saved.set(key, { text: snap.text, popup: clonePopup(snap.popup) });
+    saved.set(key, { text, popup, fields: extractFields(popup, text) });
     while (saved.size > KEEP) {
         const oldest = saved.keys().next().value;
         if (oldest === undefined) break;
@@ -112,7 +172,7 @@ function remember(key: string, snap: Snap) {
 }
 
 function stashOutgoing() {
-    if (lastKey && lastText) remember(lastKey, { text: lastText, popup: lastPopup });
+    if (lastKey && lastText) remember(lastKey, lastText, lastPopup);
 }
 
 function drop(key: string) {
@@ -144,8 +204,7 @@ function applyQuote(text: string, popup: unknown) {
     applying = true;
     try {
         if (chat.quotedText !== text) chat.setQuotedText(text);
-        const next = clonePopup(popup);
-        if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(next)) chat.setQuotePopupData(next);
+        if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(popup)) chat.setQuotePopupData(popup);
     } catch (e) {
         logger.debug("apply failed", e);
     } finally {
@@ -153,66 +212,119 @@ function applyQuote(text: string, popup: unknown) {
     }
 }
 
-function restore(key: string) {
-    if (!key || onImaginePage()) return;
-    const snap = saved.get(key);
-    if (!snap?.text) return;
-    try {
-        if (chatKey() !== key) return;
-        const chat = ChatPageStore.useChatPageStore.getState();
-        const live = String(chat.quotedText || "");
-        if (live === snap.text && popupSig(chat.quotePopupData) === popupSig(snap.popup)) return;
-        applyQuote(snap.text, snap.popup);
-        logger.info("restored", key);
-    } catch (e) {
-        logger.debug("restore failed", e);
-    }
-}
-
-function chipVisible(text: string): boolean {
+function officialVisible(text: string): boolean {
     const bar = document.querySelector(QUERY);
     if (!(bar instanceof HTMLElement) || !text) return false;
     const clip = text.replaceAll(/\s+/g, " ").trim().slice(0, 12);
     if (!clip) return false;
     for (const n of bar.querySelectorAll("div, span, button")) {
-        if (!(n instanceof HTMLElement)) continue;
+        if (!(n instanceof HTMLElement) || n.closest(`.${cl("chip")}`)) continue;
         if (n.offsetHeight > 0 && n.offsetHeight <= 72 && (n.textContent || "").includes(clip)) return true;
     }
     return false;
+}
+
+function removeFallback() {
+    for (const n of document.querySelectorAll(`.${cl("chip")}`)) n.remove();
+}
+
+function onFallbackDismiss(e: Event) {
+    e.stopPropagation();
+    dismiss();
+}
+
+function makeChip(): HTMLElement {
+    const el = document.createElement("div");
+    el.className = cl("chip");
+    el.dataset.voidQs = "";
+    const mark = document.createElement("span");
+    mark.className = cl("mark");
+    mark.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    text.className = cl("text");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = cl("x");
+    btn.setAttribute("aria-label", "Remove quote");
+    btn.innerHTML = X_SVG;
+    btn.addEventListener("pointerdown", onFallbackDismiss);
+    el.append(mark, text, btn);
+    return el;
+}
+
+function paintFallback(snap: Snap) {
+    const bar = document.querySelector(QUERY);
+    if (!(bar instanceof HTMLElement) || onImaginePage()) {
+        removeFallback();
+        return;
+    }
+    if (officialVisible(snap.text)) {
+        removeFallback();
+        return;
+    }
+    let el = bar.querySelector(`.${cl("chip")}`);
+    if (!(el instanceof HTMLElement)) {
+        el = makeChip();
+        const editor = bar.querySelector(".tiptap, [contenteditable='true']");
+        const row = editor?.parentElement;
+        if (row && bar.contains(row) && row !== bar) row.prepend(el);
+        else if (editor && editor.parentElement === bar) editor.before(el);
+        else bar.prepend(el);
+    }
+    const label = el.querySelector(`.${cl("text")}`);
+    if (label) label.textContent = snap.text.replaceAll(/\s+/g, " ").trim();
+}
+
+function restore(key: string) {
+    if (!key || onImaginePage()) return;
+    const snap = saved.get(key);
+    if (!snap?.text) {
+        removeFallback();
+        return;
+    }
+    if (chatKey() !== key) return;
+    try {
+        const chat = ChatPageStore.useChatPageStore.getState();
+        const live = String(chat.quotedText || "");
+        const same = live === snap.text && popupSig(chat.quotePopupData) === popupSig(popupFor(snap));
+        const now = performance.now();
+        if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
+            lastRestoreAt = now;
+            applyQuote(snap.text, popupFor(snap));
+            logger.info("restored", key);
+        }
+        paintFallback(snap);
+    } catch (e) {
+        logger.debug("restore failed", e);
+        paintFallback(snap);
+    }
 }
 
 function ensureChip() {
     if (onImaginePage()) return;
     const key = chatKey();
     const snap = saved.get(key);
-    if (!snap?.text) return;
+    if (!snap?.text) {
+        removeFallback();
+        return;
+    }
     restore(key);
-    if (chipVisible(snap.text)) return;
-    if (pokeRaf) cancelAnimationFrame(pokeRaf);
-    pokeRaf = requestAnimationFrame(() => {
-        pokeRaf = 0;
-        if (chatKey() === key) restore(key);
-    });
 }
 
-function clearPokes() {
-    while (pokeTimers.length) {
-        const id = pokeTimers.pop();
-        if (id != null) clearTimeout(id);
+function dismiss() {
+    const key = chatKey();
+    applying = true;
+    try {
+        drop(key);
+        const chat = ChatPageStore.useChatPageStore.getState();
+        if (chat.quotedText) chat.setQuotedText("");
+        if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null) chat.setQuotePopupData(null);
+    } catch (e) {
+        logger.debug("dismiss failed", e);
+    } finally {
+        applying = false;
     }
-    if (pokeRaf) {
-        cancelAnimationFrame(pokeRaf);
-        pokeRaf = 0;
-    }
-    if (mutRaf) {
-        cancelAnimationFrame(mutRaf);
-        mutRaf = 0;
-    }
-}
-
-function schedulePoke() {
-    clearPokes();
-    for (const ms of POKE_MS) pokeTimers.push(setTimeout(ensureChip, ms));
+    removeFallback();
 }
 
 function onChat() {
@@ -222,6 +334,7 @@ function onChat() {
     if (now.key !== lastKey) {
         stashOutgoing();
         lastKey = now.key;
+        lastRestoreAt = 0;
         const snap = saved.get(now.key);
         if (snap?.text) {
             lastText = snap.text;
@@ -231,22 +344,23 @@ function onChat() {
             lastText = "";
             lastPopup = undefined;
             clearLive();
+            removeFallback();
         }
-        schedulePoke();
         return;
     }
     if (now.text) {
-        remember(now.key, { text: now.text, popup: now.popup });
+        remember(now.key, now.text, now.popup);
         lastText = now.text;
         lastPopup = now.popup;
+        if (!officialVisible(now.text)) paintFallback(saved.get(now.key)!);
+        else removeFallback();
         return;
     }
     restore(now.key);
-    ensureChip();
 }
 
 function onNav() {
-    wrapSendFns();
+    wrapAll();
     onChat();
 }
 
@@ -256,8 +370,9 @@ function barButton(el: Element): HTMLElement | null {
 }
 
 function isQuoteDismiss(el: Element): boolean {
+    if (el.closest(`.${cl("x")}`)) return true;
     const btn = barButton(el);
-    if (!btn) return false;
+    if (!btn || btn.closest(`.${cl("chip")}`)) return false;
     const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
     if (KEEP_BTN.test(label)) return false;
     if (DISMISS.test(label)) return true;
@@ -277,37 +392,32 @@ function isQuoteDismiss(el: Element): boolean {
 
 function markConsumed(key = chatKey()) {
     drop(key);
+    removeFallback();
 }
 
 function onPointerDown(e: PointerEvent) {
     if (!e.isTrusted) return;
     const t = e.target;
     if (!(t instanceof Element) || !isQuoteDismiss(t)) return;
-    markConsumed();
+    dismiss();
 }
 
-function quoteFieldIn(raw: unknown, want: string): boolean {
+function isQuoteSend(raw: unknown, want: string): boolean {
     if (!want || raw == null) return false;
     if (typeof raw === "string") {
         if (!raw.startsWith("{") && !raw.startsWith("[")) return false;
         try {
-            return quoteFieldIn(JSON.parse(raw), want);
+            return isQuoteSend(JSON.parse(raw), want);
         } catch {
             return false;
         }
     }
-    if (typeof raw !== "object") return false;
-    if (Array.isArray(raw)) return raw.some(item => quoteFieldIn(item, want));
+    if (typeof raw !== "object" || Array.isArray(raw)) return false;
     const rec = raw as Record<string, unknown>;
-    const n = want.replaceAll(/\s+/g, " ").trim();
-    for (const key of QUOTE_KEYS) {
-        const v = rec[key];
-        if (typeof v === "string" && v.replaceAll(/\s+/g, " ").trim() === n) return true;
-    }
-    for (const v of Object.values(rec)) {
-        if (v && typeof v === "object" && quoteFieldIn(v, want)) return true;
-    }
-    return false;
+    const sending = "message" in rec || "text" in rec || "fileAttachments" in rec || "fileAttachmentIds" in rec;
+    if (!sending) return false;
+    const q = rec.parentQuotedText ?? rec.quotedText;
+    return typeof q === "string" && q.replaceAll(/\s+/g, " ").trim() === want.replaceAll(/\s+/g, " ").trim();
 }
 
 function makeSendWrapper(orig: SendFn): SendFn {
@@ -315,13 +425,64 @@ function makeSendWrapper(orig: SendFn): SendFn {
         const key = chatKey();
         const had = saved.get(key)?.text || readText().text;
         const result = orig.apply(this, args);
-        const first = args[0];
-        if (had && quoteFieldIn(first, had)) markConsumed(key);
+        if (had && isQuoteSend(args[0], had)) markConsumed(key);
         return result;
     };
 }
 
-function wrapOne(label: string, getState: () => Record<string, unknown>, setState: (partial: object) => void, key: string) {
+function scheduleRestore() {
+    const key = chatKey();
+    if (!saved.get(key)?.text) return;
+    queueMicrotask(() => restore(key));
+}
+
+function makeQuotedTextWrapper(orig: SendFn): SendFn {
+    return function voidQuoteStickyQuotedText(this: unknown, ...args: unknown[]) {
+        const result = orig.apply(this, args);
+        if (applying) return result;
+        const text = String(args[0] ?? "");
+        const key = chatKey();
+        if (text) {
+            remember(key, text, ChatPageStore.useChatPageStore.getState().quotePopupData);
+            lastText = text;
+            lastPopup = ChatPageStore.useChatPageStore.getState().quotePopupData;
+            lastKey = key;
+        } else if (saved.get(key)?.text) {
+            scheduleRestore();
+        }
+        return result;
+    };
+}
+
+function makePopupWrapper(orig: SendFn): SendFn {
+    return function voidQuoteStickyPopup(this: unknown, ...args: unknown[]) {
+        const result = orig.apply(this, args);
+        if (applying) return result;
+        const key = chatKey();
+        const popup = args[0];
+        const text = String(ChatPageStore.useChatPageStore.getState().quotedText || lastText || "");
+        if (popup != null && text) {
+            remember(key, text, popup);
+            lastPopup = popup;
+            lastText = text;
+            lastKey = key;
+        } else if (saved.get(key)?.text) {
+            scheduleRestore();
+        }
+        return result;
+    };
+}
+
+function makeNavWrapper(orig: SendFn): SendFn {
+    return function voidQuoteStickyNav(this: unknown, ...args: unknown[]) {
+        stashOutgoing();
+        const result = orig.apply(this, args);
+        queueMicrotask(onNav);
+        return result;
+    };
+}
+
+function wrapOne(label: string, getState: () => Record<string, unknown>, setState: (partial: object) => void, key: string, make: (orig: SendFn) => SendFn) {
     let state: Record<string, unknown>;
     try {
         state = getState();
@@ -332,14 +493,35 @@ function wrapOne(label: string, getState: () => Record<string, unknown>, setStat
     if (typeof current !== "function") return;
     if (wrappedFns.get(label) === current) return;
     origFns.set(label, current as SendFn);
-    const wrapped = makeSendWrapper(current as SendFn);
+    const wrapped = make(current as SendFn);
     wrappedFns.set(label, wrapped);
     setState({ [key]: wrapped });
 }
 
-function wrapSendFns() {
-    wrapOne("msg.sendMessage", () => MessageStore.useMessageStore.getState() as unknown as Record<string, unknown>, p => MessageStore.useMessageStore.setState(p), "sendMessage");
-    wrapOne("msg.queueMessage", () => MessageStore.useMessageStore.getState() as unknown as Record<string, unknown>, p => MessageStore.useMessageStore.setState(p), "queueMessage");
+function chatState() {
+    return ChatPageStore.useChatPageStore.getState() as unknown as Record<string, unknown>;
+}
+
+function msgState() {
+    return MessageStore.useMessageStore.getState() as unknown as Record<string, unknown>;
+}
+
+function chatSet(p: object) {
+    ChatPageStore.useChatPageStore.setState(p);
+}
+
+function msgSet(p: object) {
+    MessageStore.useMessageStore.setState(p);
+}
+
+function wrapAll() {
+    wrapOne("chat.setQuotedText", chatState, chatSet, "setQuotedText", makeQuotedTextWrapper);
+    wrapOne("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
+    wrapOne("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
+    wrapOne("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
+    wrapOne("chat.setChatPageLoaded", chatState, chatSet, "setChatPageLoaded", makeNavWrapper);
+    wrapOne("msg.sendMessage", msgState, msgSet, "sendMessage", makeSendWrapper);
+    wrapOne("msg.queueMessage", msgState, msgSet, "queueMessage", makeSendWrapper);
 }
 
 function unwrapOne(getState: () => Record<string, unknown>, setState: (partial: object) => void, key: string, label: string) {
@@ -351,9 +533,14 @@ function unwrapOne(getState: () => Record<string, unknown>, setState: (partial: 
     } catch { /* store gone */ }
 }
 
-function unwrapSendFns() {
-    unwrapOne(() => MessageStore.useMessageStore.getState() as unknown as Record<string, unknown>, p => MessageStore.useMessageStore.setState(p), "sendMessage", "msg.sendMessage");
-    unwrapOne(() => MessageStore.useMessageStore.getState() as unknown as Record<string, unknown>, p => MessageStore.useMessageStore.setState(p), "queueMessage", "msg.queueMessage");
+function unwrapAll() {
+    unwrapOne(chatState, chatSet, "setQuotedText", "chat.setQuotedText");
+    unwrapOne(chatState, chatSet, "setQuotePopupData", "chat.setQuotePopupData");
+    unwrapOne(chatState, chatSet, "setConversationId", "chat.setConversationId");
+    unwrapOne(chatState, chatSet, "setOptimisticConversationId", "chat.setOptimisticConversationId");
+    unwrapOne(chatState, chatSet, "setChatPageLoaded", "chat.setChatPageLoaded");
+    unwrapOne(msgState, msgSet, "sendMessage", "msg.sendMessage");
+    unwrapOne(msgState, msgSet, "queueMessage", "msg.queueMessage");
     origFns.clear();
     wrappedFns.clear();
 }
@@ -384,7 +571,7 @@ function wrapFetch() {
         if ((method === "POST" || method === "PUT") && CHAT_POST.test(url) && !STOP_URL.test(url)) {
             const key = chatKey();
             const want = saved.get(key)?.text || readText().text;
-            if (want && quoteFieldIn(requestBody(input, init), want)) markConsumed(key);
+            if (want && isQuoteSend(requestBody(input, init), want)) markConsumed(key);
         }
         return inner(input, init);
     };
@@ -416,12 +603,14 @@ export default definePlugin({
     tags: ["chat", "ui"],
     enabledByDefault: true,
     startAt: StartAt.TurbopackReady,
+    managedStyle: "quoteSticky",
+    cleanupSelectors: [`.${cl("chip")}`],
 
     start() {
         const now = readText();
         lastKey = now.key;
         if (now.key && now.text) {
-            remember(now.key, { text: now.text, popup: now.popup });
+            remember(now.key, now.text, now.popup);
             lastText = now.text;
             lastPopup = now.popup;
         }
@@ -429,7 +618,7 @@ export default definePlugin({
         document.addEventListener("pointerdown", onPointerDown, { capture: true, signal: abort.signal });
         observer = new MutationObserver(onMutate);
         observer.observe(document.documentElement, { childList: true, subtree: true });
-        wrapSendFns();
+        wrapAll();
         wrapFetch();
     },
 
@@ -438,14 +627,17 @@ export default definePlugin({
         abort = null;
         observer?.disconnect();
         observer = null;
-        clearPokes();
-        unwrapSendFns();
+        if (mutRaf) cancelAnimationFrame(mutRaf);
+        mutRaf = 0;
+        unwrapAll();
         unwrapFetch();
+        removeFallback();
         saved.clear();
         lastKey = "";
         lastText = "";
         lastPopup = undefined;
         applying = false;
+        lastRestoreAt = 0;
     },
 
     zustand: {
