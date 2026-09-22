@@ -26,7 +26,6 @@ const PANE_SKIP = "[data-sidebar], [class*='pane-card']";
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
 const KEEP = /submit|send|attach|dictat|mode|file/i;
-const OFFSET_PX = 72;
 const FLASH_MS = 1800;
 const WAIT_MS = 50;
 const WAIT_N = 24;
@@ -247,20 +246,41 @@ function sentQuote(el: Element): HTMLElement | null {
     return null;
 }
 
-function findHit(root: HTMLElement, needle: string): HTMLElement | null {
+function findRange(root: HTMLElement, needle: string): Range | null {
     const n = prefixOf(needle);
     if (n.length < 2) return null;
     const clip = n.slice(0, Math.min(n.length, 48));
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let node: Node | null;
     while ((node = walker.nextNode())) {
-        const text = norm(node.nodeValue || "");
-        if (!text || (!text.includes(clip) && !(clip.includes(text) && text.length >= 8))) continue;
+        const raw = node.nodeValue || "";
+        if (!raw.trim()) continue;
         const el = node.parentElement;
         if (!el || el.closest("button, svg, [role='toolbar']")) continue;
-        return el.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, blockquote, span") ?? el;
+        let idx = raw.indexOf(clip);
+        let len = clip.length;
+        if (idx < 0) {
+            const compact = raw.replaceAll(/\s+/g, " ").trim();
+            if (!compact.includes(clip) && !(clip.includes(compact) && compact.length >= 8)) continue;
+            idx = Math.max(0, raw.search(/\S/));
+            len = Math.max(2, Math.min(clip.length, raw.length - idx));
+        }
+        if (idx + len > raw.length) len = raw.length - idx;
+        if (len < 2) continue;
+        const range = document.createRange();
+        range.setStart(node, idx);
+        range.setEnd(node, idx + len);
+        return range;
     }
     return null;
+}
+
+function findHit(root: HTMLElement, needle: string): HTMLElement | null {
+    const range = findRange(root, needle);
+    if (!range) return null;
+    const node = range.startContainer;
+    const el = node instanceof HTMLElement ? node : node.parentElement;
+    return el?.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, blockquote, span") ?? el;
 }
 
 function openAncestors(el: HTMLElement) {
@@ -278,55 +298,45 @@ function clearHighlight() {
     highlights?.delete(HL);
 }
 
-function highlight(el: HTMLElement, needle: string) {
+function highlightRange(range: Range | null, el: HTMLElement) {
     clearHighlight();
-    const n = prefixOf(needle);
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-    let node: Node | null;
-    let used = false;
     const HighlightCtor = (window as unknown as { Highlight?: new (...ranges: Range[]) => unknown }).Highlight;
     const { highlights } = (CSS as { highlights?: { set(k: string, v: unknown): void } });
-    while (n.length >= 2 && (node = walker.nextNode())) {
-        const raw = node.nodeValue || "";
-        const clip = n.slice(0, Math.min(n.length, raw.length));
-        const idx = raw.indexOf(clip);
-        if (idx < 0 || clip.length < 2) continue;
-        if (highlights && HighlightCtor) {
-            const range = document.createRange();
-            range.setStart(node, idx);
-            range.setEnd(node, idx + clip.length);
-            highlights.set(HL, new HighlightCtor(range));
-            used = true;
-        }
-        break;
-    }
-    if (!used) {
+    if (range && highlights && HighlightCtor) {
+        highlights.set(HL, new HighlightCtor(range));
+    } else {
         flashing = el;
         el.classList.add(cl("hit"));
     }
     flashTimer = window.setTimeout(clearHighlight, FLASH_MS);
 }
 
-function composerOffset(): number {
-    const bar = document.querySelector(QUERY);
-    if (!(bar instanceof HTMLElement)) return OFFSET_PX;
-    const h = bar.getBoundingClientRect().height;
-    return Math.max(OFFSET_PX, Math.round(h + 12));
+function viewportMidY(): number {
+    const vv = window.visualViewport;
+    if (vv) return vv.offsetTop + vv.height / 2;
+    return window.innerHeight / 2;
 }
 
-function scrollToEl(el: HTMLElement) {
-    const top = composerOffset();
-    el.style.scrollMarginTop = `${top}px`;
-    el.style.scrollMarginBottom = `${top}px`;
+function lineRect(range: Range | null, el: HTMLElement): DOMRect {
+    if (range) {
+        const line = range.getClientRects()[0];
+        if (line && (line.height > 0 || line.width > 0)) return line;
+        const box = range.getBoundingClientRect();
+        if (box.height > 0 || box.width > 0) return box;
+    }
+    return el.getBoundingClientRect();
+}
+
+function scrollLineToScreenCenter(range: Range | null, el: HTMLElement) {
+    const box = lineRect(range, el);
+    const delta = box.top + box.height / 2 - viewportMidY();
+    if (Math.abs(delta) < 1) return;
     const pane = chatPane();
     if (pane && pane.contains(el)) {
-        const pr = pane.getBoundingClientRect();
-        const er = el.getBoundingClientRect();
-        const mid = pr.top + pr.height / 2;
-        pane.scrollTo({ top: pane.scrollTop + (er.top - mid) + er.height / 2, behavior: "smooth" });
+        pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
         return;
     }
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.scrollBy({ top: delta, behavior: "smooth" });
 }
 
 async function hydrate(cid: string) {
@@ -398,9 +408,13 @@ async function jump(origin: HTMLElement | null) {
         return;
     }
     openAncestors(el);
+    const range = findRange(el, needle);
     const hit = findHit(el, needle) ?? el;
-    scrollToEl(hit);
-    highlight(hit, needle);
+    requestAnimationFrame(() => {
+        if (mine !== gen) return;
+        scrollLineToScreenCenter(range, hit);
+        highlightRange(range, hit);
+    });
 }
 
 function onClick(e: MouseEvent) {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260922.4] v1.0.0
+// @version      [20260922.5] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.4] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.5] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7412,9 +7412,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b9c3892"}`
-    }, `(${"b9c3892"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e2593f8"}`
+    }, `(${"e2593f8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -19203,7 +19203,6 @@ Neon rain in a quiet city`
   var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
   var DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
   var KEEP = /submit|send|attach|dictat|mode|file/i;
-  var OFFSET_PX2 = 72;
   var FLASH_MS2 = 1800;
   var WAIT_MS = 50;
   var WAIT_N = 24;
@@ -19435,7 +19434,7 @@ Neon rain in a quiet city`
       return el instanceof HTMLElement ? el : msg;
     return null;
   }
-  function findHit(root, needle) {
+  function findRange(root, needle) {
     const n = prefixOf(needle);
     if (n.length < 2)
       return null;
@@ -19443,15 +19442,39 @@ Neon rain in a quiet city`
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let node;
     while (node = walker.nextNode()) {
-      const text = norm(node.nodeValue || "");
-      if (!text || !text.includes(clip) && !(clip.includes(text) && text.length >= 8))
+      const raw = node.nodeValue || "";
+      if (!raw.trim())
         continue;
       const el = node.parentElement;
       if (!el || el.closest("button, svg, [role='toolbar']"))
         continue;
-      return el.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, blockquote, span") ?? el;
+      let idx = raw.indexOf(clip);
+      let len = clip.length;
+      if (idx < 0) {
+        const compact = raw.replaceAll(/\s+/g, " ").trim();
+        if (!compact.includes(clip) && !(clip.includes(compact) && compact.length >= 8))
+          continue;
+        idx = Math.max(0, raw.search(/\S/));
+        len = Math.max(2, Math.min(clip.length, raw.length - idx));
+      }
+      if (idx + len > raw.length)
+        len = raw.length - idx;
+      if (len < 2)
+        continue;
+      const range = document.createRange();
+      range.setStart(node, idx);
+      range.setEnd(node, idx + len);
+      return range;
     }
     return null;
+  }
+  function findHit(root, needle) {
+    const range = findRange(root, needle);
+    if (!range)
+      return null;
+    const node = range.startContainer;
+    const el = node instanceof HTMLElement ? node : node.parentElement;
+    return el?.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, blockquote, span") ?? el;
   }
   function openAncestors(el) {
     for (let n = el;n; n = n.parentElement) {
@@ -19468,55 +19491,46 @@ Neon rain in a quiet city`
     const { highlights } = CSS;
     highlights?.delete(HL);
   }
-  function highlight(el, needle) {
+  function highlightRange(range, el) {
     clearHighlight();
-    const n = prefixOf(needle);
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-    let node;
-    let used = false;
     const HighlightCtor = window.Highlight;
     const { highlights } = CSS;
-    while (n.length >= 2 && (node = walker.nextNode())) {
-      const raw = node.nodeValue || "";
-      const clip = n.slice(0, Math.min(n.length, raw.length));
-      const idx = raw.indexOf(clip);
-      if (idx < 0 || clip.length < 2)
-        continue;
-      if (highlights && HighlightCtor) {
-        const range = document.createRange();
-        range.setStart(node, idx);
-        range.setEnd(node, idx + clip.length);
-        highlights.set(HL, new HighlightCtor(range));
-        used = true;
-      }
-      break;
-    }
-    if (!used) {
+    if (range && highlights && HighlightCtor) {
+      highlights.set(HL, new HighlightCtor(range));
+    } else {
       flashing2 = el;
       el.classList.add(cl27("hit"));
     }
     flashTimer2 = window.setTimeout(clearHighlight, FLASH_MS2);
   }
-  function composerOffset() {
-    const bar = document.querySelector(QUERY);
-    if (!(bar instanceof HTMLElement))
-      return OFFSET_PX2;
-    const h = bar.getBoundingClientRect().height;
-    return Math.max(OFFSET_PX2, Math.round(h + 12));
+  function viewportMidY() {
+    const vv = window.visualViewport;
+    if (vv)
+      return vv.offsetTop + vv.height / 2;
+    return window.innerHeight / 2;
   }
-  function scrollToEl(el) {
-    const top = composerOffset();
-    el.style.scrollMarginTop = `${top}px`;
-    el.style.scrollMarginBottom = `${top}px`;
+  function lineRect(range, el) {
+    if (range) {
+      const line = range.getClientRects()[0];
+      if (line && (line.height > 0 || line.width > 0))
+        return line;
+      const box = range.getBoundingClientRect();
+      if (box.height > 0 || box.width > 0)
+        return box;
+    }
+    return el.getBoundingClientRect();
+  }
+  function scrollLineToScreenCenter(range, el) {
+    const box = lineRect(range, el);
+    const delta = box.top + box.height / 2 - viewportMidY();
+    if (Math.abs(delta) < 1)
+      return;
     const pane = chatPane2();
     if (pane && pane.contains(el)) {
-      const pr = pane.getBoundingClientRect();
-      const er = el.getBoundingClientRect();
-      const mid = pr.top + pr.height / 2;
-      pane.scrollTo({ top: pane.scrollTop + (er.top - mid) + er.height / 2, behavior: "smooth" });
+      pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
       return;
     }
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.scrollBy({ top: delta, behavior: "smooth" });
   }
   async function hydrate(cid) {
     if (!cid)
@@ -19594,9 +19608,14 @@ Neon rain in a quiet city`
       return;
     }
     openAncestors(el);
+    const range = findRange(el, needle);
     const hit = findHit(el, needle) ?? el;
-    scrollToEl(hit);
-    highlight(hit, needle);
+    requestAnimationFrame(() => {
+      if (mine !== gen)
+        return;
+      scrollLineToScreenCenter(range, hit);
+      highlightRange(range, hit);
+    });
   }
   function onClick2(e) {
     if (!e.isTrusted || e.button !== 0 || onImaginePage3())
@@ -25196,8 +25215,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
   oneko_default.updatedAt = 1787870966000;
   placeholder_default.updatedAt = 1790093417000;
   pluginsFlyout_default.updatedAt = 1788051053000;
-  quoteJump_default.updatedAt = 0;
-  quoteSticky_default.updatedAt = 1790095609000;
+  quoteJump_default.updatedAt = 1790098807000;
+  quoteSticky_default.updatedAt = 1790098807000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1788095208000;
