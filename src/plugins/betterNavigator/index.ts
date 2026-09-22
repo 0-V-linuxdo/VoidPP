@@ -10,7 +10,8 @@ import type { VoidPPEventMap } from "@api/Events";
 import { definePluginSettings } from "@api/Settings";
 import { ScrollTextIcon } from "@components/icons";
 import type { ChatPageStoreState, GrokResponse, ResponseStoreState } from "@grok-types";
-import { ChatPageStore, ResponseStore } from "@turbopack/common/stores";
+import type { GatewayConversation, GatewayNode, MessageStoreState } from "@grok-types/stores/MessageStore";
+import { ChatPageStore, MessageStore, ResponseStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -42,6 +43,7 @@ const LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", 
 const DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
 const HIDE_CLASS = "void-bn-hidetip";
 const LIVE_LABEL = "正在输出…";
+const LOADING_LABEL = "加载中…";
 const SUMMARY_MAX = 60;
 const FLASH_MS = 2000;
 const FLASH_REDUCED_MS = 1000;
@@ -52,6 +54,9 @@ const LOCK_FAST_MS = 280;
 const FAR_VIEWPORTS = 2.5;
 const DENSE_N = 16;
 const SLOT_CLASS = "void-bn-rail";
+const HYDRATE_MS = 2400;
+const HYDRATE_STEP = 80;
+const LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
 
 const settings = definePluginSettings({
     showAssistant: {
@@ -77,7 +82,8 @@ const settings = definePluginSettings({
 type Role = "user" | "assistant";
 
 interface NavItem {
-    el: HTMLElement;
+    id?: string;
+    el: HTMLElement | null;
     role: Role;
     text: string;
     live?: boolean;
@@ -103,6 +109,8 @@ let lockIdx = -1;
 let lockUntil = 0;
 let overMenu = false;
 let observedPane: HTMLElement | null = null;
+let hydrateGen = 0;
+const labelCache = new Map<string, string>();
 
 function isVisible(el: Element): boolean {
     const r = el.getBoundingClientRect();
@@ -281,7 +289,102 @@ function liveAssistantEl(): HTMLElement | null {
     return null;
 }
 
-function collect(): NavItem[] {
+function currentCid(): string {
+    try {
+        const page = ChatPageStore.useChatPageStore.getState();
+        return page.conversationId || page.optimisticConversationId || "";
+    } catch (e) {
+        logger.debug("chat page unavailable:", e);
+        return "";
+    }
+}
+
+function gatewayOf(cid: string): GatewayConversation | undefined {
+    if (!cid) return;
+    try {
+        return MessageStore.useMessageStore.getState().conversations?.[cid];
+    } catch (e) {
+        logger.debug("message store unavailable:", e);
+        return;
+    }
+}
+
+function pathToLeaf(gw: GatewayConversation): GatewayNode[] {
+    const nodes = gw.nodes ?? {};
+    const leafId = gw.defaultLeafId;
+    if (!leafId || !nodes[leafId]) return [];
+    const out: GatewayNode[] = [];
+    const seen = new Set<string>();
+    let id: string | null = leafId;
+    let guard = 0;
+    while (id && nodes[id] && guard++ < 500) {
+        if (seen.has(id)) break;
+        seen.add(id);
+        out.push(nodes[id]);
+        id = nodes[id].parentId;
+    }
+    out.reverse();
+    return out;
+}
+
+function responseIdOf(el: HTMLElement): string | undefined {
+    if (el.id.startsWith("response-")) return el.id.slice("response-".length);
+    const host = el.closest<HTMLElement>("[id^='response-']");
+    if (host?.id.startsWith("response-")) return host.id.slice("response-".length);
+    return undefined;
+}
+
+function elForId(id: string): HTMLElement | null {
+    const shell = document.getElementById(`response-${id}`);
+    if (!(shell instanceof HTMLElement)) return null;
+    if (shell.matches(MSG_SEL)) return shell;
+    return shell.querySelector<HTMLElement>(MSG_SEL) ?? shell;
+}
+
+function mountedEl(item: NavItem | undefined): HTMLElement | null {
+    if (!item) return null;
+    if (item.el && document.body.contains(item.el)) return item.el;
+    if (!item.id) return null;
+    const found = elForId(item.id);
+    if (!found) return null;
+    item.el = found;
+    return found;
+}
+
+function plain(text: string): string {
+    const t = text.replace(/\s+/g, " ").trim();
+    if (!t || NOISE_TEXT.test(t)) return "";
+    return t.length > SUMMARY_MAX ? `${t.slice(0, SUMMARY_MAX)}…` : t;
+}
+
+function labelFromResponse(role: Role, rec: GrokResponse | undefined): string {
+    if (!rec || rec.isControl) return "";
+    const raw = role === "user" ? (rec.query || rec.message || "") : (rec.message || "");
+    const text = plain(raw);
+    if (text) return text;
+    if (rec.generatedImageUrls?.length || rec.imageAttachments?.length || rec.imageEditUri || rec.imageEditUris?.length) return "图片";
+    if (rec.fileAttachments?.length || rec.fileUris?.length || rec.fileAttachmentsMetadata?.length) return "附件";
+    return "";
+}
+
+function contentOf(cid: string, node: GatewayNode): GrokResponse | undefined {
+    if (node.content) return node.content;
+    try {
+        return MessageStore.nodeToResponse?.(cid, node);
+    } catch (e) {
+        logger.debug("nodeToResponse failed:", e);
+        return;
+    }
+}
+
+function nodeLive(node: GatewayNode): boolean {
+    if (LIVE_NODE.has(node.status)) return true;
+    if (node.content?.partial && !isDeadResponse(node.content)) return true;
+    const state = (node.content?.state ?? "").trim().toLowerCase();
+    return LIVE.has(state) && !isDeadResponse(node.content);
+}
+
+function collectDom(): NavItem[] {
     const root = chatPane() ?? document;
     const showAsst = settings.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
@@ -293,17 +396,63 @@ function collect(): NavItem[] {
         const live = el === liveEl;
         const text = summarize(el) || (live ? LIVE_LABEL : "");
         if (!text) continue;
-        out.push({ el, role, text, live });
+        out.push({ id: responseIdOf(el), el, role, text, live });
     }
     return out;
 }
 
-function structKey(mode: string, nav: NavItem[]): string {
-    return `${chatPath()}:${mode}:${nav.length}:${nav.map(n => n.role).join("")}`;
+function collectLeaf(): NavItem[] {
+    const cid = currentCid();
+    const gw = gatewayOf(cid);
+    if (!gw) return [];
+    const path = pathToLeaf(gw);
+    if (!path.length) return [];
+    const showAsst = settings.store.showAssistant;
+    const liveEl = showAsst ? liveAssistantEl() : null;
+    let liveId = "";
+    for (let i = path.length - 1; i >= 0; i--) {
+        if (path[i].role === "assistant" && nodeLive(path[i])) {
+            liveId = path[i].id;
+            break;
+        }
+    }
+    const out: NavItem[] = [];
+    for (const node of path) {
+        if (node.role !== "user" && node.role !== "assistant") continue;
+        const role: Role = node.role;
+        if (!showAsst && role === "assistant") continue;
+        const rec = contentOf(cid, node);
+        if (rec?.isControl) continue;
+        const el = elForId(node.id);
+        const live = node.id === liveId || (!!el && el === liveEl);
+        const key = `${cid}:${node.id}`;
+        let text = labelFromResponse(role, rec);
+        if (!text && el) text = summarize(el);
+        if (!text) text = labelCache.get(key) ?? "";
+        if (!text) text = live ? LIVE_LABEL : LOADING_LABEL;
+        if (text !== LOADING_LABEL && text !== LIVE_LABEL) labelCache.set(key, text);
+        out.push({ id: node.id, el, role, text, live });
+    }
+    return out;
 }
 
-function sameEls(nav: NavItem[]): boolean {
-    return nav.length === lastNav.length && nav.every((n, i) => n.el === lastNav[i]?.el && n.role === lastNav[i]?.role);
+function collect(): NavItem[] {
+    const leaf = collectLeaf();
+    const dom = collectDom();
+    if (!leaf.length) return dom;
+    const leafIds = new Set(leaf.map(n => n.id).filter((id): id is string => !!id));
+    const domIds = dom.map(n => n.id).filter((id): id is string => !!id);
+    if (domIds.length > 0 && domIds.every(id => leafIds.has(id))) return leaf;
+    if (dom.length > leaf.length) return dom;
+    return leaf;
+}
+
+function structKey(mode: string, nav: NavItem[]): string {
+    return `${chatPath()}:${mode}:${nav.map((n, i) => n.id || `dom${i}:${n.role}`).join(",")}`;
+}
+
+function sameCatalog(nav: NavItem[]): boolean {
+    return nav.length === lastNav.length && nav.every((n, i) => (n.id || "") === (lastNav[i]?.id || "") && n.role === lastNav[i]?.role);
 }
 
 function responseIdxs(): number[] {
@@ -312,14 +461,6 @@ function responseIdxs(): number[] {
         if (lastNav[i].role === "assistant") out.push(i);
     }
     return out;
-}
-
-function responseOrdinal(index: number): number {
-    let k = 0;
-    for (let i = 0; i <= index && i < lastNav.length; i++) {
-        if (lastNav[i].role === "assistant") k++;
-    }
-    return k;
 }
 
 function labelOrdinal(btn: HTMLButtonElement): number | null {
@@ -357,31 +498,41 @@ function flash(el: HTMLElement) {
     flashTimer = window.setTimeout(clearFlash, reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
 }
 
+function mountedAssistantIndexes(): number[] {
+    const out: number[] = [];
+    for (let i = 0; i < lastNav.length; i++) {
+        if (lastNav[i].role !== "assistant") continue;
+        if (mountedEl(lastNav[i])) out.push(i);
+    }
+    return out;
+}
+
+function assistantPool(tickCount: number): number[] {
+    const all = responseIdxs();
+    const mounted = mountedAssistantIndexes();
+    if (!tickCount || tickCount === all.length) return all;
+    if (mounted.length && tickCount === mounted.length) return mounted;
+    if (mounted.length && Math.abs(tickCount - mounted.length) < Math.abs(tickCount - all.length)) return mounted;
+    return all;
+}
+
 function nativeTickFor(item: NavItem, index: number, ticks?: HTMLButtonElement[]): HTMLButtonElement | undefined {
     if (item.role !== "assistant") return;
     const list = ticks?.length ? ticks : nativeTicks();
     if (!list.length) return;
-    const k = responseOrdinal(index);
-    const hit = list.find(t => labelOrdinal(t) === k);
-    return hit ?? list[k - 1];
+    const pool = assistantPool(list.length);
+    const pos = pool.indexOf(index);
+    if (pos < 0) return;
+    const n = pos + 1;
+    return list.find(t => labelOrdinal(t) === n) ?? list[pos];
 }
 
 function navIndexFromTick(tick: HTMLButtonElement, tickIndex: number): number {
+    const list = nativeTicks();
+    const pool = assistantPool(list.length);
     const n = labelOrdinal(tick);
-    if (n != null) {
-        let seen = 0;
-        for (let i = 0; i < lastNav.length; i++) {
-            if (lastNav[i].role !== "assistant") continue;
-            seen++;
-            if (seen === n) return i;
-        }
-    }
-    let seen = 0;
-    for (let i = 0; i < lastNav.length; i++) {
-        if (lastNav[i].role !== "assistant") continue;
-        if (seen === tickIndex) return i;
-        seen++;
-    }
+    if (n != null && pool[n - 1] != null) return pool[n - 1];
+    if (pool[tickIndex] != null) return pool[tickIndex];
     return Math.min(tickIndex, Math.max(0, lastNav.length - 1));
 }
 
@@ -404,13 +555,77 @@ function scrollToItem(el: HTMLElement, behavior: ScrollBehavior) {
     el.scrollIntoView({ behavior, block: "start" });
 }
 
+function nudgeToward(index: number) {
+    const pane = chatPane();
+    if (!pane) return;
+    const vh = Math.max(120, pane.clientHeight || window.innerHeight);
+    let before = -1;
+    let after = -1;
+    for (let i = 0; i < lastNav.length; i++) {
+        if (!mountedEl(lastNav[i])) continue;
+        if (i < index) before = i;
+        else if (after < 0) after = i;
+    }
+    if (before < 0) {
+        pane.scrollTo({ top: Math.max(0, pane.scrollTop - vh * 0.8), behavior: "auto" });
+        return;
+    }
+    if (after < 0) {
+        pane.scrollTo({ top: pane.scrollTop + vh * 0.8, behavior: "auto" });
+        return;
+    }
+    const el = mountedEl(lastNav[before]);
+    if (el) scrollToItem(el, "auto");
+}
+
+async function hydrateJump(item: NavItem, index: number) {
+    const gen = ++hydrateGen;
+    lockIdx = index;
+    lockUntil = performance.now() + HYDRATE_MS + LOCK_MS;
+    applyActive(index);
+    const tick = item.role === "assistant" ? nativeTickFor(item, index) : undefined;
+    if (tick) tick.click();
+    const deadline = performance.now() + HYDRATE_MS;
+    let lastTop = -1;
+    let stuck = 0;
+    let tries = 0;
+    while (performance.now() < deadline) {
+        if (gen !== hydrateGen) return;
+        const el = mountedEl(lastNav[index] ?? item);
+        if (el) {
+            const instant = isFar(el) || reduceMotion();
+            scrollToItem(el, instant ? "auto" : "smooth");
+            window.setTimeout(() => { if (gen === hydrateGen) flash(el); }, 180);
+            lockUntil = performance.now() + (instant ? LOCK_FAST_MS : LOCK_MS);
+            return;
+        }
+        tries++;
+        if (!tick || tries > 4) {
+            const pane = chatPane();
+            const top = pane?.scrollTop ?? 0;
+            if (top === lastTop) stuck++;
+            else stuck = 0;
+            lastTop = top;
+            if (stuck >= 3 && top <= 1) break;
+            nudgeToward(index);
+        }
+        await new Promise(r => window.setTimeout(r, HYDRATE_STEP));
+    }
+}
+
 function jump(item: NavItem, index: number) {
-    const instant = isFar(item.el) || reduceMotion();
+    const cur = lastNav[index] ?? item;
+    const el = mountedEl(cur);
+    if (!el) {
+        void hydrateJump(cur, index);
+        return;
+    }
+    const instant = isFar(el) || reduceMotion();
     lockIdx = index;
     lockUntil = performance.now() + (instant ? LOCK_FAST_MS : LOCK_MS);
     applyActive(index);
-    scrollToItem(item.el, instant ? "auto" : "smooth");
-    window.setTimeout(() => flash(item.el), 180);
+    scrollToItem(el, instant ? "auto" : "smooth");
+    window.setTimeout(() => flash(el), 180);
 }
 
 function stepItem(dir: -1 | 1): boolean {
@@ -455,8 +670,8 @@ function setActive(nav: NavItem[]) {
     const cutoff = top + (pane?.clientHeight ?? window.innerHeight) * THRESHOLD;
     let active = 0;
     for (let i = 0; i < nav.length; i++) {
-        const { el } = nav[i];
-        if (!document.body.contains(el)) continue;
+        const el = mountedEl(nav[i]);
+        if (!el) continue;
         if (el.getBoundingClientRect().top < cutoff) active = i;
         else break;
     }
@@ -502,7 +717,10 @@ function bindIO(nav: NavItem[]) {
         root,
         threshold: [0, 0.15, 0.35, 0.5, 0.75, 1],
     });
-    for (const item of nav) io.observe(item.el);
+    for (const item of nav) {
+        const el = mountedEl(item);
+        if (el) io.observe(el);
+    }
 }
 
 function patchLabels(nav: NavItem[]) {
@@ -680,6 +898,8 @@ function paint() {
     if (path !== lastPath) {
         lastPath = path;
         paintedKey = "";
+        labelCache.clear();
+        hydrateGen++;
         if (host) unmount();
     }
 
@@ -696,9 +916,10 @@ function paint() {
     const slot = nativeSlot();
     const mode = ticks.length ? "native" : (slot ? "fill" : "self");
     const nextKey = structKey(mode, nav);
-    if (nextKey === paintedKey && host?.isConnected && sameEls(nav)) {
+    if (nextKey === paintedKey && host?.isConnected && sameCatalog(nav)) {
         lastNav = nav;
         patchLive(nav);
+        bindIO(nav);
         setActive(nav);
         return;
     }
@@ -736,7 +957,7 @@ function paint() {
 const debouncedPaint = debounce(paint, 160);
 
 function pageKey(s: ChatPageStoreState): string {
-    return `${s.streamedMessageId ?? ""}|${s.showStreamingIndicator ? 1 : 0}`;
+    return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.streamedMessageId ?? ""}|${s.showStreamingIndicator ? 1 : 0}`;
 }
 
 function responseKey(s: ResponseStoreState): string {
@@ -745,6 +966,19 @@ function responseKey(s: ResponseStoreState): string {
         const r = s.byId[id];
         return `${id}:${r?.state ?? ""}:${r?.partial ? 1 : 0}`;
     } catch {
+        return "";
+    }
+}
+
+function messageKey(s: MessageStoreState): string {
+    try {
+        const cid = currentCid();
+        const gw = s.conversations?.[cid];
+        if (!gw) return cid;
+        const path = pathToLeaf(gw);
+        return `${cid}|${gw.defaultLeafId ?? ""}|${path.map(n => `${n.id}:${n.status}`).join(",")}`;
+    } catch (e) {
+        logger.debug("message key failed:", e);
         return "";
     }
 }
@@ -786,6 +1020,8 @@ function stop() {
     io = null;
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
+    hydrateGen++;
+    labelCache.clear();
     unmount();
     clearFlash();
     lastNav = [];
@@ -796,7 +1032,7 @@ function stop() {
 export default definePlugin({
     name: "BetterNavigator",
     icon: ScrollTextIcon,
-    description: "Upgrade Grok's message rail into a Notion-style outline of the whole chat.",
+    description: "Upgrade Grok's message rail into a Notion-style outline of the whole chat, including messages that are not mounted yet.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
@@ -817,6 +1053,10 @@ export default definePlugin({
     zustand: {
         ChatPageStore: {
             selector: pageKey,
+            handler: paint,
+        },
+        MessageStore: {
+            selector: messageKey,
             handler: paint,
         },
         ResponseStore: {
