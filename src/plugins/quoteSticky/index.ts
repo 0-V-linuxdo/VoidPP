@@ -16,11 +16,12 @@ import definePlugin, { StartAt } from "@utils/types";
 const logger = new Logger("QuoteSticky");
 const KEEP = 40;
 const QUERY = ".query-bar";
-const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
-const KEEP_BTN = /submit|send|attach|dictat|mode|file/i;
+const KEEP_BTN = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
 const CHAT_POST = /\/rest\/app-chat\/conversations/;
-const POKE_MS = [0, 50, 200, 500, 1000];
+const STOP_URL = /stop|abort|cancel/i;
+const QUOTE_KEYS = ["quotedText", "parentQuotedText", "quoted_text", "parent_quoted_text"] as const;
+const POKE_MS = [0, 50, 200, 500, 1000, 2000, 4000, 8000];
 
 interface Snap {
     text: string;
@@ -56,58 +57,23 @@ function onImaginePage(): boolean {
     }
 }
 
-function projectId(): string {
+function chatKey(s?: ChatPageStoreState): string {
     try {
-        return String(ChatPageStore.useChatPageStore.getState().projectId || "");
+        const st = s ?? ChatPageStore.useChatPageStore.getState();
+        const cid = String(st.conversationId || st.optimisticConversationId || "");
+        return cid || `home:${st.projectId || ""}`;
     } catch {
-        return "";
+        return "home:";
     }
 }
 
-function routeCid(): string {
+function clonePopup(p: unknown): unknown {
+    if (p == null || typeof p !== "object") return p ?? null;
     try {
-        return String(RoutingStore.useRoutingStore.getState().route.conversationId ?? "");
+        return JSON.parse(JSON.stringify(p));
     } catch {
-        return "";
+        return p;
     }
-}
-
-function pageCid(): string {
-    try {
-        const s = ChatPageStore.useChatPageStore.getState();
-        return String(s.conversationId || s.optimisticConversationId || "");
-    } catch {
-        return "";
-    }
-}
-
-function pathCid(): string {
-    try {
-        return location.pathname.match(UUID)?.[0] || "";
-    } catch {
-        return "";
-    }
-}
-
-function liveKey(): string {
-    return viewKey() ?? fallbackKey();
-}
-
-function fallbackKey(): string {
-    for (const id of [routeCid(), pageCid(), pathCid()]) {
-        if (id && UUID.test(id)) return id;
-    }
-    return `home:${projectId()}`;
-}
-
-function viewKey(): string | null {
-    const ids: string[] = [];
-    for (const id of [routeCid(), pageCid(), pathCid()]) {
-        if (id && UUID.test(id) && !ids.includes(id)) ids.push(id);
-    }
-    if (ids.length > 1) return null;
-    if (ids.length === 1) return ids[0];
-    return `home:${projectId()}`;
 }
 
 function popupSig(p: unknown): string {
@@ -118,7 +84,7 @@ function popupSig(p: unknown): string {
 }
 
 function chatSel(s: ChatPageStoreState): string {
-    return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
+    return `${chatKey(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
 }
 
 function hydrateSel(s: ResponseStoreState): string {
@@ -126,32 +92,18 @@ function hydrateSel(s: ResponseStoreState): string {
 }
 
 function readText(): { key: string; text: string; popup: unknown } {
-    const key = viewKey();
     try {
         const s = ChatPageStore.useChatPageStore.getState();
-        return { key: key ?? "", text: String(s.quotedText || ""), popup: s.quotePopupData };
+        return { key: chatKey(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
     } catch {
-        return { key: key ?? "", text: "", popup: undefined };
+        return { key: chatKey(), text: "", popup: undefined };
     }
-}
-
-function normQuote(s: string): string {
-    return s.replaceAll(/\s+/g, " ").trim();
-}
-
-function isForeign(text: string, key: string): boolean {
-    const n = normQuote(text);
-    if (!n) return false;
-    for (const [k, snap] of saved) {
-        if (k !== key && normQuote(snap.text) === n) return true;
-    }
-    return false;
 }
 
 function remember(key: string, snap: Snap) {
     if (!key || !snap.text) return;
     saved.delete(key);
-    saved.set(key, snap);
+    saved.set(key, { text: snap.text, popup: clonePopup(snap.popup) });
     while (saved.size > KEEP) {
         const oldest = saved.keys().next().value;
         if (oldest === undefined) break;
@@ -192,7 +144,8 @@ function applyQuote(text: string, popup: unknown) {
     applying = true;
     try {
         if (chat.quotedText !== text) chat.setQuotedText(text);
-        if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData !== popup) chat.setQuotePopupData(popup);
+        const next = clonePopup(popup);
+        if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(next)) chat.setQuotePopupData(next);
     } catch (e) {
         logger.debug("apply failed", e);
     } finally {
@@ -205,7 +158,7 @@ function restore(key: string) {
     const snap = saved.get(key);
     if (!snap?.text) return;
     try {
-        if (viewKey() !== key) return;
+        if (chatKey() !== key) return;
         const chat = ChatPageStore.useChatPageStore.getState();
         const live = String(chat.quotedText || "");
         if (live === snap.text && popupSig(chat.quotePopupData) === popupSig(snap.popup)) return;
@@ -230,8 +183,7 @@ function chipVisible(text: string): boolean {
 
 function ensureChip() {
     if (onImaginePage()) return;
-    const key = viewKey();
-    if (!key) return;
+    const key = chatKey();
     const snap = saved.get(key);
     if (!snap?.text) return;
     restore(key);
@@ -239,7 +191,7 @@ function ensureChip() {
     if (pokeRaf) cancelAnimationFrame(pokeRaf);
     pokeRaf = requestAnimationFrame(() => {
         pokeRaf = 0;
-        if (viewKey() === key) restore(key);
+        if (chatKey() === key) restore(key);
     });
 }
 
@@ -284,10 +236,6 @@ function onChat() {
         return;
     }
     if (now.text) {
-        if (isForeign(now.text, now.key)) {
-            clearLive();
-            return;
-        }
         remember(now.key, { text: now.text, popup: now.popup });
         lastText = now.text;
         lastPopup = now.popup;
@@ -318,6 +266,7 @@ function isQuoteDismiss(el: Element): boolean {
     const bar = btn.closest(QUERY);
     let n: HTMLElement | null = btn.parentElement;
     while (n && n !== bar) {
+        if (n.querySelector("textarea, [contenteditable='true'], .tiptap")) return false;
         if (n.offsetHeight > 0 && n.offsetHeight <= 72) {
             return (n.textContent || "").replaceAll(/\s+/g, " ").includes(q.replaceAll(/\s+/g, " ").slice(0, 12));
         }
@@ -326,7 +275,7 @@ function isQuoteDismiss(el: Element): boolean {
     return false;
 }
 
-function markConsumed(key = liveKey()) {
+function markConsumed(key = chatKey()) {
     drop(key);
 }
 
@@ -337,12 +286,37 @@ function onPointerDown(e: PointerEvent) {
     markConsumed();
 }
 
+function quoteFieldIn(raw: unknown, want: string): boolean {
+    if (!want || raw == null) return false;
+    if (typeof raw === "string") {
+        if (!raw.startsWith("{") && !raw.startsWith("[")) return false;
+        try {
+            return quoteFieldIn(JSON.parse(raw), want);
+        } catch {
+            return false;
+        }
+    }
+    if (typeof raw !== "object") return false;
+    if (Array.isArray(raw)) return raw.some(item => quoteFieldIn(item, want));
+    const rec = raw as Record<string, unknown>;
+    const n = want.replaceAll(/\s+/g, " ").trim();
+    for (const key of QUOTE_KEYS) {
+        const v = rec[key];
+        if (typeof v === "string" && v.replaceAll(/\s+/g, " ").trim() === n) return true;
+    }
+    for (const v of Object.values(rec)) {
+        if (v && typeof v === "object" && quoteFieldIn(v, want)) return true;
+    }
+    return false;
+}
+
 function makeSendWrapper(orig: SendFn): SendFn {
     return function voidQuoteStickySend(this: unknown, ...args: unknown[]) {
-        const key = liveKey();
+        const key = chatKey();
         const had = saved.get(key)?.text || readText().text;
         const result = orig.apply(this, args);
-        if (had) markConsumed(key);
+        const first = args[0];
+        if (had && quoteFieldIn(first, had)) markConsumed(key);
         return result;
     };
 }
@@ -366,7 +340,6 @@ function wrapOne(label: string, getState: () => Record<string, unknown>, setStat
 function wrapSendFns() {
     wrapOne("msg.sendMessage", () => MessageStore.useMessageStore.getState() as unknown as Record<string, unknown>, p => MessageStore.useMessageStore.setState(p), "sendMessage");
     wrapOne("msg.queueMessage", () => MessageStore.useMessageStore.getState() as unknown as Record<string, unknown>, p => MessageStore.useMessageStore.setState(p), "queueMessage");
-    wrapOne("chat.sendResponse", () => ChatPageStore.useChatPageStore.getState() as unknown as Record<string, unknown>, p => ChatPageStore.useChatPageStore.setState(p), "sendResponse");
 }
 
 function unwrapOne(getState: () => Record<string, unknown>, setState: (partial: object) => void, key: string, label: string) {
@@ -381,7 +354,6 @@ function unwrapOne(getState: () => Record<string, unknown>, setState: (partial: 
 function unwrapSendFns() {
     unwrapOne(() => MessageStore.useMessageStore.getState() as unknown as Record<string, unknown>, p => MessageStore.useMessageStore.setState(p), "sendMessage", "msg.sendMessage");
     unwrapOne(() => MessageStore.useMessageStore.getState() as unknown as Record<string, unknown>, p => MessageStore.useMessageStore.setState(p), "queueMessage", "msg.queueMessage");
-    unwrapOne(() => ChatPageStore.useChatPageStore.getState() as unknown as Record<string, unknown>, p => ChatPageStore.useChatPageStore.setState(p), "sendResponse", "chat.sendResponse");
     origFns.clear();
     wrappedFns.clear();
 }
@@ -399,13 +371,6 @@ function requestUrl(input: RequestInfo | URL): string {
 function requestBody(input: RequestInfo | URL, init?: RequestInit): string {
     if (typeof init?.body === "string") return init.body;
     if (init?.body instanceof URLSearchParams) return init.body.toString();
-    if (input instanceof Request) {
-        try {
-            return String(init?.body ?? "");
-        } catch {
-            return "";
-        }
-    }
     return "";
 }
 
@@ -416,10 +381,10 @@ function wrapFetch() {
     window.fetch = function voidQuoteStickyFetch(input: RequestInfo | URL, init?: RequestInit) {
         const method = String(init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
         const url = requestUrl(input);
-        if ((method === "POST" || method === "PUT") && CHAT_POST.test(url)) {
-            const key = liveKey();
-            const clip = (saved.get(key)?.text || readText().text).replaceAll(/\s+/g, " ").trim().slice(0, 16);
-            if (clip && requestBody(input, init).includes(clip)) markConsumed(key);
+        if ((method === "POST" || method === "PUT") && CHAT_POST.test(url) && !STOP_URL.test(url)) {
+            const key = chatKey();
+            const want = saved.get(key)?.text || readText().text;
+            if (want && quoteFieldIn(requestBody(input, init), want)) markConsumed(key);
         }
         return inner(input, init);
     };

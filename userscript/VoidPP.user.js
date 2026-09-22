@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.13
+// @version      20260922.14
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.13] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7393,9 +7393,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2d0978e"}`
-    }, `(${"2d0978e"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"54e94c0"}`
+    }, `(${"54e94c0"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11266,6 +11266,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   // src/plugins/modeSync/index.ts
   var logger20 = new Logger("ModeSync");
   var CHAT_POST = /\/rest\/app-chat\/conversations/;
+  var STOP_URL = /stop|abort|cancel/i;
   var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
   var PIN_SEL = "[data-void-mode-id]";
   var TRIGGER_SEL = "[data-query-bar-mode-select]";
@@ -11481,9 +11482,6 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       }
     }, OVERRIDE_MS);
   }
-  function hydrating() {
-    return loadPending() || document.documentElement.hasAttribute(RESTORE_ATTR);
-  }
   function captureIntent(modeId, cur) {
     const keep = modeSlug(cur.modelMode) === modeSlug(modeId);
     return {
@@ -11512,6 +11510,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   }
   function fightHydrate() {
     if (sendOverride || !settings12.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
+      return;
+    if (!loadPending())
       return;
     const cur = snapshot();
     if (cur.modeId === intent.modeId && (!intent.modelMode || cur.modelMode === intent.modelMode) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
@@ -11546,7 +11546,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     syncRestoreFlag();
   }
   function isChatSend(rec) {
-    return "message" in rec || "modeId" in rec || "modelMode" in rec;
+    return "message" in rec || "fileAttachments" in rec && (("modeId" in rec) || ("modelMode" in rec));
   }
   function patchPayload(raw, live) {
     if (onImaginePage2() || !raw || typeof raw !== "object" || Array.isArray(raw) || !live.modeId)
@@ -11769,6 +11769,9 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
             return orig.apply(mgr, args);
           });
         }
+        const type = event && typeof event === "object" ? String(event.type ?? "") : "";
+        if (!GW_TYPES.has(type))
+          return orig.apply(mgr, args);
         const live = liveIntent();
         if (live.modeId) {
           applyIntent(live);
@@ -11881,7 +11884,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       return null;
     if (method !== "POST" && method !== "PUT")
       return null;
-    if (!CHAT_POST.test(url) || text == null)
+    if (!CHAT_POST.test(url) || STOP_URL.test(url) || text == null)
       return null;
     const live = liveIntent();
     if (!live.modeId)
@@ -12261,10 +12264,6 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       return;
     if (!id)
       return;
-    if (hydrating()) {
-      fightHydrate();
-      return;
-    }
     if (userPicking || id !== intent.modeId)
       rememberSnapshot();
   }
@@ -12278,10 +12277,6 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
     if (sendOverride || applying)
       return;
-    if (hydrating()) {
-      fightHydrate();
-      return;
-    }
     const now = snapshot();
     if (!now.modeId)
       return;
@@ -18667,11 +18662,12 @@ html.void-rt-open [data-sidebar="gap"] {
   var logger27 = new Logger("QuoteSticky");
   var KEEP = 40;
   var QUERY = ".query-bar";
-  var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
   var DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
-  var KEEP_BTN = /submit|send|attach|dictat|mode|file/i;
+  var KEEP_BTN = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
   var CHAT_POST2 = /\/rest\/app-chat\/conversations/;
-  var POKE_MS = [0, 50, 200, 500, 1000];
+  var STOP_URL2 = /stop|abort|cancel/i;
+  var QUOTE_KEYS = ["quotedText", "parentQuotedText", "quoted_text", "parent_quoted_text"];
+  var POKE_MS = [0, 50, 200, 500, 1000, 2000, 4000, 8000];
   var saved = new Map;
   var origFns2 = new Map;
   var wrappedFns2 = new Map;
@@ -18697,56 +18693,23 @@ html.void-rt-open [data-sidebar="gap"] {
       return false;
     }
   }
-  function projectId() {
+  function chatKey(s) {
     try {
-      return String(ChatPageStore.useChatPageStore.getState().projectId || "");
+      const st = s ?? ChatPageStore.useChatPageStore.getState();
+      const cid = String(st.conversationId || st.optimisticConversationId || "");
+      return cid || `home:${st.projectId || ""}`;
     } catch {
-      return "";
+      return "home:";
     }
   }
-  function routeCid() {
+  function clonePopup(p) {
+    if (p == null || typeof p !== "object")
+      return p ?? null;
     try {
-      return String(RoutingStore.useRoutingStore.getState().route.conversationId ?? "");
+      return JSON.parse(JSON.stringify(p));
     } catch {
-      return "";
+      return p;
     }
-  }
-  function pageCid() {
-    try {
-      const s = ChatPageStore.useChatPageStore.getState();
-      return String(s.conversationId || s.optimisticConversationId || "");
-    } catch {
-      return "";
-    }
-  }
-  function pathCid() {
-    try {
-      return location.pathname.match(UUID)?.[0] || "";
-    } catch {
-      return "";
-    }
-  }
-  function liveKey() {
-    return viewKey() ?? fallbackKey();
-  }
-  function fallbackKey() {
-    for (const id of [routeCid(), pageCid(), pathCid()]) {
-      if (id && UUID.test(id))
-        return id;
-    }
-    return `home:${projectId()}`;
-  }
-  function viewKey() {
-    const ids = [];
-    for (const id of [routeCid(), pageCid(), pathCid()]) {
-      if (id && UUID.test(id) && !ids.includes(id))
-        ids.push(id);
-    }
-    if (ids.length > 1)
-      return null;
-    if (ids.length === 1)
-      return ids[0];
-    return `home:${projectId()}`;
   }
   function popupSig(p) {
     if (p == null)
@@ -18757,38 +18720,24 @@ html.void-rt-open [data-sidebar="gap"] {
     return String(rec.responseId ?? rec.parentResponseId ?? rec.id ?? rec.quotedText ?? "1");
   }
   function chatSel(s) {
-    return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
+    return `${chatKey(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
   }
   function hydrateSel(s) {
     return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`;
   }
   function readText() {
-    const key = viewKey();
     try {
       const s = ChatPageStore.useChatPageStore.getState();
-      return { key: key ?? "", text: String(s.quotedText || ""), popup: s.quotePopupData };
+      return { key: chatKey(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
     } catch {
-      return { key: key ?? "", text: "", popup: undefined };
+      return { key: chatKey(), text: "", popup: undefined };
     }
-  }
-  function normQuote(s) {
-    return s.replaceAll(/\s+/g, " ").trim();
-  }
-  function isForeign(text, key) {
-    const n = normQuote(text);
-    if (!n)
-      return false;
-    for (const [k, snap] of saved) {
-      if (k !== key && normQuote(snap.text) === n)
-        return true;
-    }
-    return false;
   }
   function remember2(key, snap) {
     if (!key || !snap.text)
       return;
     saved.delete(key);
-    saved.set(key, snap);
+    saved.set(key, { text: snap.text, popup: clonePopup(snap.popup) });
     while (saved.size > KEEP) {
       const oldest = saved.keys().next().value;
       if (oldest === undefined)
@@ -18832,8 +18781,9 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       if (chat.quotedText !== text)
         chat.setQuotedText(text);
-      if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData !== popup)
-        chat.setQuotePopupData(popup);
+      const next = clonePopup(popup);
+      if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(next))
+        chat.setQuotePopupData(next);
     } catch (e) {
       logger27.debug("apply failed", e);
     } finally {
@@ -18847,7 +18797,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!snap?.text)
       return;
     try {
-      if (viewKey() !== key)
+      if (chatKey() !== key)
         return;
       const chat = ChatPageStore.useChatPageStore.getState();
       const live = String(chat.quotedText || "");
@@ -18877,9 +18827,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function ensureChip() {
     if (onImaginePage3())
       return;
-    const key = viewKey();
-    if (!key)
-      return;
+    const key = chatKey();
     const snap = saved.get(key);
     if (!snap?.text)
       return;
@@ -18890,7 +18838,7 @@ html.void-rt-open [data-sidebar="gap"] {
       cancelAnimationFrame(pokeRaf);
     pokeRaf = requestAnimationFrame(() => {
       pokeRaf = 0;
-      if (viewKey() === key)
+      if (chatKey() === key)
         restore(key);
     });
   }
@@ -18937,10 +18885,6 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     }
     if (now.text) {
-      if (isForeign(now.text, now.key)) {
-        clearLive();
-        return;
-      }
       remember2(now.key, { text: now.text, popup: now.popup });
       lastText = now.text;
       lastPopup = now.popup;
@@ -18972,6 +18916,8 @@ html.void-rt-open [data-sidebar="gap"] {
     const bar = btn.closest(QUERY);
     let n = btn.parentElement;
     while (n && n !== bar) {
+      if (n.querySelector("textarea, [contenteditable='true'], .tiptap"))
+        return false;
       if (n.offsetHeight > 0 && n.offsetHeight <= 72) {
         return (n.textContent || "").replaceAll(/\s+/g, " ").includes(q.replaceAll(/\s+/g, " ").slice(0, 12));
       }
@@ -18979,7 +18925,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
     return false;
   }
-  function markConsumed(key = liveKey()) {
+  function markConsumed(key = chatKey()) {
     drop(key);
   }
   function onPointerDown4(e) {
@@ -18990,12 +18936,42 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     markConsumed();
   }
+  function quoteFieldIn(raw, want) {
+    if (!want || raw == null)
+      return false;
+    if (typeof raw === "string") {
+      if (!raw.startsWith("{") && !raw.startsWith("["))
+        return false;
+      try {
+        return quoteFieldIn(JSON.parse(raw), want);
+      } catch {
+        return false;
+      }
+    }
+    if (typeof raw !== "object")
+      return false;
+    if (Array.isArray(raw))
+      return raw.some((item) => quoteFieldIn(item, want));
+    const rec = raw;
+    const n = want.replaceAll(/\s+/g, " ").trim();
+    for (const key of QUOTE_KEYS) {
+      const v = rec[key];
+      if (typeof v === "string" && v.replaceAll(/\s+/g, " ").trim() === n)
+        return true;
+    }
+    for (const v of Object.values(rec)) {
+      if (v && typeof v === "object" && quoteFieldIn(v, want))
+        return true;
+    }
+    return false;
+  }
   function makeSendWrapper2(orig) {
     return function voidQuoteStickySend(...args) {
-      const key = liveKey();
+      const key = chatKey();
       const had = saved.get(key)?.text || readText().text;
       const result = orig.apply(this, args);
-      if (had)
+      const first = args[0];
+      if (had && quoteFieldIn(first, had))
         markConsumed(key);
       return result;
     };
@@ -19020,7 +18996,6 @@ html.void-rt-open [data-sidebar="gap"] {
   function wrapSendFns2() {
     wrapOne2("msg.sendMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "sendMessage");
     wrapOne2("msg.queueMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "queueMessage");
-    wrapOne2("chat.sendResponse", () => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "sendResponse");
   }
   function unwrapOne(getState, setState, key, label) {
     const orig = origFns2.get(label);
@@ -19035,7 +19010,6 @@ html.void-rt-open [data-sidebar="gap"] {
   function unwrapSendFns2() {
     unwrapOne(() => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "sendMessage", "msg.sendMessage");
     unwrapOne(() => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "queueMessage", "msg.queueMessage");
-    unwrapOne(() => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "sendResponse", "chat.sendResponse");
     origFns2.clear();
     wrappedFns2.clear();
   }
@@ -19055,13 +19029,6 @@ html.void-rt-open [data-sidebar="gap"] {
       return init.body;
     if (init?.body instanceof URLSearchParams)
       return init.body.toString();
-    if (input instanceof Request) {
-      try {
-        return String(init?.body ?? "");
-      } catch {
-        return "";
-      }
-    }
     return "";
   }
   function wrapFetch() {
@@ -19072,10 +19039,10 @@ html.void-rt-open [data-sidebar="gap"] {
     window.fetch = function voidQuoteStickyFetch(input, init) {
       const method = String(init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
       const url = requestUrl3(input);
-      if ((method === "POST" || method === "PUT") && CHAT_POST2.test(url)) {
-        const key = liveKey();
-        const clip = (saved.get(key)?.text || readText().text).replaceAll(/\s+/g, " ").trim().slice(0, 16);
-        if (clip && requestBody(input, init).includes(clip))
+      if ((method === "POST" || method === "PUT") && CHAT_POST2.test(url) && !STOP_URL2.test(url)) {
+        const key = chatKey();
+        const want = saved.get(key)?.text || readText().text;
+        if (want && quoteFieldIn(requestBody(input, init), want))
           markConsumed(key);
       }
       return inner(input, init);
@@ -23621,9 +23588,9 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var PANE_SKIP3 = "[data-sidebar], [class*='pane-card']";
   var THINK_SEL2 = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
   var OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
-  var UUID2 = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
   var DISMISS2 = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
-  var KEEP2 = /submit|send|attach|dictat|mode|file/i;
+  var KEEP2 = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
   var FLASH_MS2 = 1800;
   var WAIT_MS = 50;
   var WAIT_N = 24;
@@ -23674,7 +23641,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (depth > 5 || out.length > 8 || value == null)
       return;
     if (typeof value === "string") {
-      const m = value.match(UUID2);
+      const m = value.match(UUID);
       if (m)
         out.push(m[0]);
       return;
@@ -23687,7 +23654,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     }
     for (const [k, v] of Object.entries(value)) {
-      if (/responseid|messageid|^id$/i.test(k) && typeof v === "string" && UUID2.test(v))
+      if (/responseid|messageid|^id$/i.test(k) && typeof v === "string" && UUID.test(v))
         out.push(v);
       else
         collectIds(v, out, depth + 1);
@@ -23701,7 +23668,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       if (p) {
         for (const k of ["responseId", "parentResponseId", "messageId", "id"]) {
           const v = p[k];
-          if (typeof v === "string" && UUID2.test(v))
+          if (typeof v === "string" && UUID.test(v))
             return v;
         }
       }
@@ -23715,12 +23682,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (el) {
       const host = el.closest("[id^='response-']");
       if (host) {
-        const m = host.id.match(UUID2);
+        const m = host.id.match(UUID);
         if (m)
           out.push(m[0]);
       }
       const attr = el.closest("[data-response-id]")?.getAttribute("data-response-id");
-      if (attr && UUID2.test(attr))
+      if (attr && UUID.test(attr))
         out.push(attr);
       const fromFiber = propsId(el);
       if (fromFiber)
@@ -23840,6 +23807,13 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     return null;
   }
+  function isBarAction(el) {
+    const btn = el.closest(`${QUERY2} button, ${QUERY2} [role='button']`);
+    if (!(btn instanceof HTMLElement))
+      return false;
+    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
+    return KEEP2.test(label);
+  }
   function isDismiss(el) {
     const btn = el.closest(`${QUERY2} button, ${QUERY2} [role='button']`);
     if (!(btn instanceof HTMLElement))
@@ -23857,20 +23831,22 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   }
   function composerChip(el) {
     const bar = el.closest(QUERY2);
-    if (!(bar instanceof HTMLElement) || isEditor(el) || isDismiss(el))
+    if (!(bar instanceof HTMLElement) || isEditor(el) || isDismiss(el) || isBarAction(el))
       return null;
     const needle = quotedText();
+    if (!needle)
+      return null;
     let n = el instanceof HTMLElement ? el : el.parentElement;
     while (n && n !== bar) {
       if (n.matches(EDITOR) || n.closest(EDITOR) === n)
         return null;
-      if (n.offsetHeight > 0 && n.offsetHeight <= 72) {
-        if (needle) {
-          if (nodeHasNeedle(n, needle))
-            return n;
-        } else if (prefixOf(n.textContent || "").length >= 2) {
-          return n;
-        }
+      if (n.querySelector("textarea, [contenteditable='true'], .tiptap"))
+        return null;
+      if (n.offsetHeight > 0 && n.offsetHeight <= 72 && nodeHasNeedle(n, needle)) {
+        const action = n.querySelector("button, [role='button']");
+        if (action && isBarAction(action) && !n.contains(el.closest("button, [role='button']") ?? el))
+          return null;
+        return n;
       }
       n = n.parentElement;
     }
@@ -24175,7 +24151,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     const t = e.target;
     if (!(t instanceof Element))
       return;
-    if (isDismiss(t) || isEditor(t))
+    if (isDismiss(t) || isEditor(t) || isBarAction(t))
       return;
     const chip = composerChip(t);
     const sent = sentQuote(t);

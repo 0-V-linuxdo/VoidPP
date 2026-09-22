@@ -25,6 +25,7 @@ import definePlugin, { OptionType, StartAt } from "@utils/types";
 const logger = new Logger("ModeSync");
 
 const CHAT_POST = /\/rest\/app-chat\/conversations/;
+const STOP_URL = /stop|abort|cancel/i;
 const MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
 const PIN_SEL = "[data-void-mode-id]";
 const TRIGGER_SEL = "[data-query-bar-mode-select]";
@@ -260,10 +261,6 @@ function armOverride(item: Intent) {
     }, OVERRIDE_MS);
 }
 
-function hydrating(): boolean {
-    return loadPending() || document.documentElement.hasAttribute(RESTORE_ATTR);
-}
-
 function captureIntent(modeId: string, cur: Intent): Intent {
     const keep = modeSlug(cur.modelMode) === modeSlug(modeId);
     return {
@@ -293,6 +290,7 @@ function rememberSnapshot() {
 
 function fightHydrate() {
     if (sendOverride || !settings.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId) return;
+    if (!loadPending()) return;
     const cur = snapshot();
     if (
         cur.modeId === intent.modeId
@@ -330,7 +328,7 @@ function onNavigate() {
 }
 
 function isChatSend(rec: Record<string, unknown>): boolean {
-    return "message" in rec || "modeId" in rec || "modelMode" in rec;
+    return "message" in rec || ("fileAttachments" in rec && ("modeId" in rec || "modelMode" in rec));
 }
 
 function patchPayload(raw: unknown, live: Intent): boolean {
@@ -531,6 +529,8 @@ function wrapGatewaySend() {
                     return orig.apply(mgr, args);
                 });
             }
+            const type = event && typeof event === "object" ? String((event as { type?: unknown }).type ?? "") : "";
+            if (!GW_TYPES.has(type)) return orig.apply(mgr, args);
             const live = liveIntent();
             if (live.modeId) {
                 applyIntent(live);
@@ -640,7 +640,7 @@ function unwrapSendFns() {
 function rewriteIfChatPost(url: string, method: string, text: string | null): string | null {
     if (onImaginePage()) return null;
     if (method !== "POST" && method !== "PUT") return null;
-    if (!CHAT_POST.test(url) || text == null) return null;
+    if (!CHAT_POST.test(url) || STOP_URL.test(url) || text == null) return null;
     const live = liveIntent();
     if (!live.modeId) return null;
     const next = rewriteJsonBody(text, live);
@@ -1000,10 +1000,6 @@ function onKeyDown(e: KeyboardEvent) {
 function onPicker(id: string) {
     if (applying || sendOverride) return;
     if (!id) return;
-    if (hydrating()) {
-        fightHydrate();
-        return;
-    }
     if (userPicking || id !== intent.modeId) rememberSnapshot();
 }
 
@@ -1016,10 +1012,6 @@ function onChatPage() {
         return;
     }
     if (sendOverride || applying) return;
-    if (hydrating()) {
-        fightHydrate();
-        return;
-    }
     const now = snapshot();
     if (!now.modeId) return;
     if (now.activeModelId !== intent.activeModelId || now.modelMode !== intent.modelMode) rememberSnapshot();

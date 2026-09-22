@@ -27,7 +27,7 @@ const THINK_SEL = "details, [data-testid*='think'], [class*='thinking'], [class*
 const OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
-const KEEP = /submit|send|attach|dictat|mode|file/i;
+const KEEP = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
 const FLASH_MS = 1800;
 const WAIT_MS = 50;
 const WAIT_N = 24;
@@ -236,6 +236,13 @@ function chipRow(btn: HTMLElement): HTMLElement | null {
     return null;
 }
 
+function isBarAction(el: Element): boolean {
+    const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
+    if (!(btn instanceof HTMLElement)) return false;
+    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
+    return KEEP.test(label);
+}
+
 function isDismiss(el: Element): boolean {
     const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
     if (!(btn instanceof HTMLElement)) return false;
@@ -250,17 +257,17 @@ function isDismiss(el: Element): boolean {
 
 function composerChip(el: Element): HTMLElement | null {
     const bar = el.closest(QUERY);
-    if (!(bar instanceof HTMLElement) || isEditor(el) || isDismiss(el)) return null;
+    if (!(bar instanceof HTMLElement) || isEditor(el) || isDismiss(el) || isBarAction(el)) return null;
     const needle = quotedText();
+    if (!needle) return null;
     let n: HTMLElement | null = el instanceof HTMLElement ? el : el.parentElement;
     while (n && n !== bar) {
         if (n.matches(EDITOR) || n.closest(EDITOR) === n) return null;
-        if (n.offsetHeight > 0 && n.offsetHeight <= 72) {
-            if (needle) {
-                if (nodeHasNeedle(n, needle)) return n;
-            } else if (prefixOf(n.textContent || "").length >= 2) {
-                return n;
-            }
+        if (n.querySelector("textarea, [contenteditable='true'], .tiptap")) return null;
+        if (n.offsetHeight > 0 && n.offsetHeight <= 72 && nodeHasNeedle(n, needle)) {
+            const action = n.querySelector("button, [role='button']");
+            if (action && isBarAction(action) && !n.contains(el.closest("button, [role='button']") ?? el)) return null;
+            return n;
         }
         n = n.parentElement;
     }
@@ -545,7 +552,7 @@ function onClick(e: MouseEvent) {
     if (!e.isTrusted || e.button !== 0 || onImaginePage()) return;
     const t = e.target;
     if (!(t instanceof Element)) return;
-    if (isDismiss(t) || isEditor(t)) return;
+    if (isDismiss(t) || isEditor(t) || isBarAction(t)) return;
     const chip = composerChip(t);
     const sent = sentQuote(t);
     if (!chip && !sent) return;
