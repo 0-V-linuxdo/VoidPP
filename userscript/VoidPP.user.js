@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.21
+// @version      20260922.22
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.21] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.22] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7412,9 +7412,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6bf7ca9"}`
-    }, `(${"6bf7ca9"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9fe372d"}`
+    }, `(${"9fe372d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8995,10 +8995,19 @@ button.void-bn-native-live::before {
 
 .void-bn-item:hover,
 .void-bn-item:focus-visible,
-.void-bn-item.void-bn-active,
 .void-bn-item.void-bn-aim {
     background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
     color: hsl(var(--fg-primary));
+}
+
+.void-bn-item.void-bn-active,
+.void-bn-item.void-bn-active:hover,
+.void-bn-item.void-bn-active:focus-visible,
+.void-bn-item.void-bn-active.void-bn-aim {
+    background: hsl(var(--fg-primary) / 14%);
+    color: hsl(var(--fg-primary));
+    font-weight: 500;
+    box-shadow: inset 2px 0 0 hsl(var(--fg-primary));
 }
 
 .void-bn-emoji {

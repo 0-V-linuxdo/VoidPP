@@ -198,10 +198,19 @@ button.void-bn-native-live::before {
 
 .void-bn-item:hover,
 .void-bn-item:focus-visible,
-.void-bn-item.void-bn-active,
 .void-bn-item.void-bn-aim {
     background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
     color: hsl(var(--fg-primary));
+}
+
+.void-bn-item.void-bn-active,
+.void-bn-item.void-bn-active:hover,
+.void-bn-item.void-bn-active:focus-visible,
+.void-bn-item.void-bn-active.void-bn-aim {
+    background: hsl(var(--fg-primary) / 14%);
+    color: hsl(var(--fg-primary));
+    font-weight: 500;
+    box-shadow: inset 2px 0 0 hsl(var(--fg-primary));
 }
 
 .void-bn-emoji {
