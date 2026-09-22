@@ -50,11 +50,10 @@ export default definePlugin({
             ],
         },
         {
-            find: ["Type to imagine", "Generation mode"],
-            noWarn: true,
+            find: "data-wd-toolbar",
             replacement: {
-                match: /("Generation mode"\)\}\)\}\),)/,
-                replace: "$1$self.renderImagineButtons(),",
+                match: /(trailingGutterPx:\i,tight:\i,children:\[[^\]]{0,80})\]/,
+                replace: "$1,$self.renderImagineButtons()]",
             },
         },
     ],

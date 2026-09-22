@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260922.2] v1.0.0
+// @version      [20260922.3] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.2] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7399,7 +7399,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260922.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1ad0e86"}`
     }, `(${"1ad0e86"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -7637,11 +7637,10 @@ button .void-info-hint {
         ]
       },
       {
-        find: ["Type to imagine", "Generation mode"],
-        noWarn: true,
+        find: "data-wd-toolbar",
         replacement: {
-          match: /("Generation mode"\)\}\)\}\),)/,
-          replace: "$1$self.renderImagineButtons(),"
+          match: /(trailingGutterPx:\i,tight:\i,children:\[[^\]]{0,80})\]/,
+          replace: "$1,$self.renderImagineButtons()]"
         }
       }
     ]
@@ -14026,7 +14025,7 @@ html.void-cms-picked .void-cms-ghost {
     const blur = clamp(settings15.store.blur, 0, 40);
     const alpha = pct / 100;
     const frost = pct < 100 && blur > 0 ? `-webkit-backdrop-filter:blur(${blur}px)!important;backdrop-filter:blur(${blur}px)!important;` : "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;";
-    registerStyle(STYLE_NAME3, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + "pointer-events:auto!important;" + `background-color:hsl(var(--surface-l1)/${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}" + `${SHELL}:has([aria-label="Generation mode"]){overflow:visible!important;clip-path:none!important}`);
+    registerStyle(STYLE_NAME3, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + "pointer-events:auto!important;" + `background-color:hsl(var(--surface-l1)/${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}" + `${SHELL}:has([data-wd-toolbar]){overflow:visible!important;clip-path:none!important}`);
   }
   var composerOpacity_default = definePlugin({
     name: "ComposerOpacity",

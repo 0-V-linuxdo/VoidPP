@@ -56,7 +56,7 @@ function apply() {
         + `clip-path:inset(0 round ${RADIUS})!important;`
         + frost
         + "}"
-        + `${SHELL}:has([aria-label="Generation mode"]){overflow:visible!important;clip-path:none!important}`,
+        + `${SHELL}:has([data-wd-toolbar]){overflow:visible!important;clip-path:none!important}`,
     );
 }
 
