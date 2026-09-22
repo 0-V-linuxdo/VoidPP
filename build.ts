@@ -14,8 +14,9 @@ const environment = isDev ? "Development" : "Production";
 
 const FORK_URL = "https://github.com/0-V-linuxdo/VoidPP";
 const SCRIPT_CDN = "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp";
-const VERSION_DATE = "20260922.12";
+const VERSION_DATE = "20260922.13";
 const displayVersion = `[${VERSION_DATE}] v${pkg.version}`;
+const scriptVersion = VERSION_DATE;
 
 const LICENSE_BANNER = `/**
  * Void++ ${displayVersion} — A modification for grok.com
@@ -27,7 +28,7 @@ const LICENSE_BANNER = `/**
 const USERSCRIPT_HEADER = `// ==UserScript==
 // @name         Void++
 // @namespace    ${FORK_URL}
-// @version      ${displayVersion}
+// @version      ${scriptVersion}
 // @description  A modification for grok.com
 // @author       ${pkg.author} & Void++ Contributors
 // @environment  ${environment}
@@ -54,7 +55,7 @@ const USERSCRIPT_HEADER = `// ==UserScript==
 // @license      GPL-3.0-or-later
 // @supportURL   ${FORK_URL}
 // @downloadURL  ${SCRIPT_CDN}/userscript/VoidPP.user.js
-// @updateURL    ${SCRIPT_CDN}/userscript/VoidPP.user.js
+// @updateURL    ${SCRIPT_CDN}/userscript/VoidPP.meta.js
 // ==/UserScript==
 `;
 
@@ -219,6 +220,7 @@ async function buildUserscript() {
     mkdirSync("userscript", { recursive: true });
     await Bun.write("dist/VoidPP.user.js", content);
     await Bun.write("userscript/VoidPP.user.js", content);
+    await Bun.write("userscript/VoidPP.meta.js", USERSCRIPT_HEADER);
     logger.info(`Built VoidPP.user.js (${(content.length / 1024).toFixed(1)} KB)`);
 }
 

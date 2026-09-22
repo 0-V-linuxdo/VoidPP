@@ -4,9 +4,9 @@
 
 ## 安装
 
-[![Install userscript](https://img.shields.io/badge/安装-用户脚本-00d26a?style=for-the-badge)](https://cdn.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp/userscript/VoidPP.user.js)
+[![Install userscript](https://img.shields.io/badge/安装-用户脚本-00d26a?style=for-the-badge)](https://cdn.jsdelivr.net/gh/0-V-linuxdo/VoidPP/userscript/VoidPP.user.js)
 
-点徽章安装（jsDelivr，避开 GitHub Raw 的 `CSP: sandbox`，否则只会看到源码、弹不出更新对话框）。Tampermonkey 后台自动更新仍走 GitHub raw 的 `userscript/VoidPP.user.js`（`@updateURL`，5 分钟缓存）。
+点徽章安装（jsDelivr 默认 `voidpp` 分支，避开 GitHub Raw 的 `CSP: sandbox`）。Tampermonkey 自动更新走 GitHub raw 的 `userscript/VoidPP.meta.js`（`@updateURL`）。
 
 ## 变更
 

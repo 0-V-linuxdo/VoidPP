@@ -4,9 +4,9 @@
 
 ## Install
 
-[![Install userscript](https://img.shields.io/badge/Install-userscript-00d26a?style=for-the-badge)](https://cdn.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp/userscript/VoidPP.user.js)
+[![Install userscript](https://img.shields.io/badge/Install-userscript-00d26a?style=for-the-badge)](https://cdn.jsdelivr.net/gh/0-V-linuxdo/VoidPP/userscript/VoidPP.user.js)
 
-Install by clicking the badge (jsDelivr, no GitHub `CSP: sandbox`). Tampermonkey auto-update still uses GitHub raw `userscript/VoidPP.user.js` (`@updateURL`, 5 min cache).
+Install by clicking the badge (jsDelivr, default `voidpp` branch, no GitHub `CSP: sandbox`). Tampermonkey auto-update uses GitHub raw `userscript/VoidPP.meta.js` (`@updateURL`).
 
 ## Changes
 

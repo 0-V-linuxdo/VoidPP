@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260922.12] v1.0.0
+// @version      20260922.13
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -28,11 +28,11 @@
 // @license      GPL-3.0-or-later
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP
 // @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/userscript/VoidPP.user.js
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/userscript/VoidPP.user.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/userscript/VoidPP.meta.js
 // ==/UserScript==
 
 /**
- * Void++ [20260922.12] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.13] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7393,9 +7393,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"872902b"}`
-    }, `(${"872902b"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2d0978e"}`
+    }, `(${"2d0978e"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -25643,7 +25643,7 @@ Neon rain in a quiet city`
   cleaner_default.updatedAt = 1790093417000;
   betterSidebar_default.updatedAt = 1789881199000;
   betterImagine_default.updatedAt = 1790093417000;
-  modeSync_default.updatedAt = 1790095376000;
+  modeSync_default.updatedAt = 1790103161000;
   messageTimestamps_default.updatedAt = 1789881463000;
   autoRetry_default.updatedAt = 1789906500000;
   userQuotes_default.updatedAt = 1789905284000;
