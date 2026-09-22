@@ -13,6 +13,10 @@ import definePlugin, { StartAt } from "@utils/types";
 
 const logger = new Logger("QuoteSticky");
 const KEEP = 40;
+const FIGHT_MS = 800;
+const QUERY = ".query-bar";
+const DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
+const KEEP_BTN = /submit|send|attach|dictat|mode|file/i;
 
 interface Snap {
     text: string;
@@ -22,6 +26,9 @@ interface Snap {
 const saved = new Map<string, Snap>();
 let lastKey = "";
 let applying = false;
+let fighting = false;
+let fightTimer: ReturnType<typeof setTimeout> | null = null;
+let abort: AbortController | null = null;
 
 function onImaginePage(): boolean {
     try {
@@ -83,23 +90,75 @@ function restore(key: string) {
             logger.info("restored", key);
             return;
         }
-        if (chat.quotedText || chat.quotePopupData) applyQuote(undefined, undefined);
+        if (chat.quotedText || chat.quotePopupData) applyQuote();
     } catch (e) {
         logger.debug("restore failed", e);
     }
+}
+
+function armFight() {
+    fighting = true;
+    if (fightTimer) clearTimeout(fightTimer);
+    fightTimer = setTimeout(() => {
+        fightTimer = null;
+        fighting = false;
+    }, FIGHT_MS);
 }
 
 function onChat() {
     if (applying || onImaginePage()) return;
     const now = read();
     if (!now.key) return;
-    if (now.key === lastKey) {
-        if (now.text) remember(now.key, { text: now.text, popup: now.popup });
-        else saved.delete(now.key);
+    if (now.key !== lastKey) {
+        lastKey = now.key;
+        armFight();
+        restore(now.key);
         return;
     }
-    lastKey = now.key;
-    restore(now.key);
+    if (now.text) {
+        remember(now.key, { text: now.text, popup: now.popup });
+        return;
+    }
+    if (fighting) {
+        const snap = saved.get(now.key);
+        if (snap?.text) {
+            applyQuote(snap.text, snap.popup);
+            return;
+        }
+    }
+    saved.delete(now.key);
+}
+
+function isQuoteDismiss(el: Element): boolean {
+    const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
+    if (!(btn instanceof HTMLElement)) return false;
+    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
+    if (KEEP_BTN.test(label)) return false;
+    if (DISMISS.test(label)) return true;
+    const q = read().text;
+    if (!q || (btn.textContent || "").trim() || !btn.querySelector("svg")) return false;
+    const bar = btn.closest(QUERY);
+    let n: HTMLElement | null = btn.parentElement;
+    while (n && n !== bar) {
+        if (n.offsetHeight > 0 && n.offsetHeight <= 72) {
+            return (n.textContent || "").replaceAll(/\s+/g, " ").includes(q.replaceAll(/\s+/g, " ").slice(0, 12));
+        }
+        n = n.parentElement;
+    }
+    return false;
+}
+
+function onPointerDown(e: PointerEvent) {
+    if (!e.isTrusted) return;
+    const t = e.target;
+    if (!(t instanceof Element) || !isQuoteDismiss(t)) return;
+    fighting = false;
+    if (fightTimer) {
+        clearTimeout(fightTimer);
+        fightTimer = null;
+    }
+    const now = read();
+    if (now.key) saved.delete(now.key);
 }
 
 export default definePlugin({
@@ -115,12 +174,19 @@ export default definePlugin({
         const now = read();
         lastKey = now.key;
         if (now.key && now.text) remember(now.key, { text: now.text, popup: now.popup });
+        abort = new AbortController();
+        document.addEventListener("pointerdown", onPointerDown, { capture: true, signal: abort.signal });
     },
 
     stop() {
+        abort?.abort();
+        abort = null;
+        if (fightTimer) clearTimeout(fightTimer);
+        fightTimer = null;
         saved.clear();
         lastKey = "";
         applying = false;
+        fighting = false;
     },
 
     zustand: {

@@ -629,6 +629,15 @@ export const TextQuoteIcon = (props: IconProps = {}) =>
         <path d="M3 12v6" />,
     );
 
+export const TextSearchIcon = (props: IconProps = {}) =>
+    svg(props,
+        <path d="M21 6H3" />,
+        <path d="M10 12H3" />,
+        <path d="M10 18H3" />,
+        <circle cx="17" cy="15" r="3" />,
+        <path d="m21 19-1.9-1.9" />,
+    );
+
 export const VoidPPIcon = (props: IconProps = {}) =>
     svg({ ...props, strokeWidth: props.strokeWidth ?? 2.15 },
         <path d="M2.2 7.4 L8.4 20.2 L13.03 11.30" />,
