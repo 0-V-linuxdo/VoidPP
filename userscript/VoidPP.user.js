@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260922.6] v1.0.0
+// @version      [20260922.7] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.6] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7412,9 +7412,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2734ec3"}`
-    }, `(${"2734ec3"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5b6aa4c"}`
+    }, `(${"5b6aa4c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -19200,14 +19200,16 @@ Neon rain in a quiet city`
   var EDITOR = ".tiptap, [contenteditable='true']";
   var MSG2 = "[data-testid='user-message'], [data-testid='assistant-message']";
   var PANE_SKIP2 = "[data-sidebar], [class*='pane-card']";
+  var THINK_SEL2 = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
+  var OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
   var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
   var DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
   var KEEP = /submit|send|attach|dictat|mode|file/i;
   var FLASH_MS2 = 1800;
   var WAIT_MS = 50;
   var WAIT_N = 24;
-  var NEAR_PX = 80;
-  var OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
+  var ALIGNED_PX = 8;
+  var MSG_OFFSET = 72;
   var abort2 = null;
   var gen = 0;
   var flashTimer2 = 0;
@@ -19309,44 +19311,21 @@ Neon rain in a quiet city`
     collectIds(quotePopup(), out);
     return [...new Set(out)];
   }
-  function isSkipped(n) {
-    return !!n.closest(PANE_SKIP2);
-  }
-  function canScroll(el) {
-    const oy = getComputedStyle(el).overflowY;
-    if (oy !== "auto" && oy !== "scroll")
-      return false;
-    return el.scrollHeight > el.clientHeight + 1;
-  }
-  function scrollerOf(el) {
-    for (let n = el.parentElement;n && n !== document.documentElement; n = n.parentElement) {
-      if (isSkipped(n))
-        continue;
-      if (canScroll(n))
-        return n;
-    }
-    return chatPane2();
-  }
   function chatPane2() {
     const main = document.querySelector("main");
     if (!main)
       return null;
+    const skip = (n) => !!n.closest(PANE_SKIP2);
     const msg = main.querySelector(MSG2);
     if (msg) {
-      for (let n = msg.parentElement;n && n !== document.body; n = n.parentElement) {
-        if (isSkipped(n))
-          continue;
-        if (canScroll(n))
-          return n;
-      }
       const col = msg.closest(OVERFLOW_SEL);
-      if (col && !isSkipped(col) && canScroll(col))
+      if (col && !skip(col))
         return col;
     }
     let best = null;
     let bestScore = 0;
     for (const n of main.querySelectorAll(OVERFLOW_SEL)) {
-      if (isSkipped(n) || !canScroll(n))
+      if (skip(n))
         continue;
       const r = n.getBoundingClientRect();
       if (r.width < 240 || r.height < 120)
@@ -19358,6 +19337,20 @@ Neon rain in a quiet city`
       }
     }
     return best;
+  }
+  function paneOf(el) {
+    const pane = chatPane2();
+    if (pane && pane.contains(el))
+      return pane;
+    for (let n = el.parentElement;n && n !== document.documentElement; n = n.parentElement) {
+      if (n.closest(PANE_SKIP2))
+        continue;
+      if (n.closest("pre, code, table, details") && !n.querySelector(MSG2))
+        continue;
+      if (n.matches(OVERFLOW_SEL))
+        return n;
+    }
+    return null;
   }
   function messageEls() {
     const root = chatPane2() ?? document.querySelector("main") ?? document.body;
@@ -19448,14 +19441,18 @@ Neon rain in a quiet city`
     if (!(bar instanceof HTMLElement) || isEditor(el) || isDismiss(el))
       return null;
     const needle = quotedText();
-    if (!needle)
-      return null;
     let n = el instanceof HTMLElement ? el : el.parentElement;
     while (n && n !== bar) {
       if (n.matches(EDITOR) || n.closest(EDITOR) === n)
         return null;
-      if (n.offsetHeight > 0 && n.offsetHeight <= 72 && nodeHasNeedle(n, needle))
-        return n;
+      if (n.offsetHeight > 0 && n.offsetHeight <= 72) {
+        if (needle) {
+          if (nodeHasNeedle(n, needle))
+            return n;
+        } else if (prefixOf(n.textContent || "").length >= 2) {
+          return n;
+        }
+      }
       n = n.parentElement;
     }
     return null;
@@ -19473,8 +19470,10 @@ Neon rain in a quiet city`
       return el instanceof HTMLElement ? el : msg;
     return null;
   }
-  function hiddenHost(el) {
+  function hiddenHost(el, allowThink) {
     if (el.closest("button, svg, [role='toolbar']"))
+      return true;
+    if (!allowThink && el.closest(THINK_SEL2) && !el.closest("summary"))
       return true;
     const d = el.closest("details");
     if (d instanceof HTMLDetailsElement && !d.open && !el.closest("summary"))
@@ -19505,40 +19504,59 @@ Neon rain in a quiet city`
     }
     return i;
   }
-  function findRange(root, needle) {
-    const n = prefixOf(needle);
-    if (n.length < 2)
+  function rangeFromParts(parts, blob, clip) {
+    const at = blob.indexOf(clip);
+    if (at < 0)
       return null;
-    const clip = n.slice(0, Math.min(n.length, 48));
+    for (const part of parts) {
+      const compact = norm(part.raw);
+      if (!compact)
+        continue;
+      const end = part.start + compact.length;
+      if (at >= end)
+        continue;
+      const local = Math.max(0, at - part.start);
+      const rawIdx = rawIndexForNorm(part.raw, local);
+      const take = Math.min(Math.max(2, clip.length), part.raw.length - rawIdx);
+      if (rawIdx < 0 || take < 2)
+        continue;
+      const range = document.createRange();
+      range.setStart(part.node, rawIdx);
+      range.setEnd(part.node, rawIdx + take);
+      return range;
+    }
+    return null;
+  }
+  function collectParts(root, allowThink) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const parts = [];
+    let blob = "";
     let node;
     while (node = walker.nextNode()) {
       const raw = node.nodeValue || "";
       if (!raw.trim())
         continue;
       const el = node.parentElement;
-      if (!el || hiddenHost(el))
+      if (!el || hiddenHost(el, allowThink))
         continue;
-      let idx = raw.indexOf(clip);
-      let len = clip.length;
-      if (idx < 0) {
-        const compact = raw.replaceAll(/\s+/g, " ").trim();
-        const at = compact.indexOf(clip);
-        if (at < 0 && !(clip.includes(compact) && compact.length >= 8))
-          continue;
-        idx = rawIndexForNorm(raw, at < 0 ? 0 : at);
-        len = Math.max(2, Math.min(clip.length, raw.length - idx));
-      }
-      if (idx + len > raw.length)
-        len = raw.length - idx;
-      if (idx < 0 || len < 2)
-        continue;
-      const range = document.createRange();
-      range.setStart(node, idx);
-      range.setEnd(node, idx + len);
-      return range;
+      if (blob)
+        blob += " ";
+      parts.push({ node, raw, start: blob.length });
+      blob += norm(raw);
     }
-    return null;
+    return { parts, blob };
+  }
+  function findRange(root, needle) {
+    const n = prefixOf(needle);
+    if (n.length < 2)
+      return null;
+    const clip = n.slice(0, Math.min(n.length, 48));
+    const visible = collectParts(root, false);
+    const hit = rangeFromParts(visible.parts, visible.blob, clip);
+    if (hit)
+      return hit;
+    const all = collectParts(root, true);
+    return rangeFromParts(all.parts, all.blob, clip);
   }
   function findHit(root, needle) {
     const range = findRange(root, needle);
@@ -19583,48 +19601,58 @@ Neon rain in a quiet city`
     }
     flashTimer2 = window.setTimeout(clearHighlight, FLASH_MS2);
   }
-  function viewportMidY() {
-    const vv = window.visualViewport;
-    if (vv)
-      return vv.offsetTop + vv.height / 2;
-    return window.innerHeight / 2;
+  function visibleMidY(pane) {
+    const top = pane?.getBoundingClientRect().top ?? 0;
+    const bar = document.querySelector(QUERY);
+    const barTop = bar instanceof HTMLElement ? bar.getBoundingClientRect().top : 0;
+    const bottom = barTop > top ? barTop : pane?.getBoundingClientRect().bottom ?? window.innerHeight;
+    return (top + bottom) / 2;
   }
-  function lineBox(range, el) {
-    if (range && range.startContainer.isConnected) {
-      for (const line of range.getClientRects()) {
-        if (line.height > 0 || line.width > 0)
-          return line;
-      }
-      const box = range.getBoundingClientRect();
-      if (box.height > 0 || box.width > 0)
-        return box;
+  function lineBox(range) {
+    if (!range || !range.startContainer.isConnected)
+      return null;
+    for (const line of range.getClientRects()) {
+      if (line.height > 0 || line.width > 0)
+        return line;
     }
-    if (!el.isConnected)
-      return null;
-    const box = el.getBoundingClientRect();
-    if (box.height <= 0 && box.width <= 0)
-      return null;
-    if (el.matches(MSG2) && box.height > 160)
-      return new DOMRect(box.left, box.top, box.width, Math.min(48, box.height));
-    return box;
+    const box = range.getBoundingClientRect();
+    return box.height > 0 || box.width > 0 ? box : null;
+  }
+  function scrollMessageTop(el) {
+    el.style.scrollMarginTop = `${MSG_OFFSET}px`;
+    const pane = paneOf(el) ?? chatPane2();
+    if (pane && pane.contains(el)) {
+      const pr = pane.getBoundingClientRect();
+      const er = el.getBoundingClientRect();
+      pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - MSG_OFFSET, behavior: "smooth" });
+      return;
+    }
+    el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
   }
   function scrollLineToScreenCenter(range, el) {
     if (!document.body.contains(el))
       return;
-    const box = lineBox(range, el);
+    const box = lineBox(range);
     if (!box) {
-      el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      scrollMessageTop(el.closest(MSG2) ?? el);
       return;
     }
-    const delta = box.top + box.height / 2 - viewportMidY();
-    if (Math.abs(delta) < NEAR_PX && box.top < window.innerHeight && box.bottom > 0)
+    const pane = paneOf(el) ?? chatPane2();
+    const mid = visibleMidY(pane && pane.contains(el) ? pane : null);
+    const delta = box.top + box.height / 2 - mid;
+    if (Math.abs(delta) < ALIGNED_PX)
       return;
-    const pane = scrollerOf(el) ?? chatPane2();
-    if (pane && pane.contains(el) && canScroll(pane)) {
+    if (pane && pane.contains(el)) {
       pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
       return;
     }
-    el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+    const node = range?.startContainer;
+    const hit = (node instanceof HTMLElement ? node : node?.parentElement) ?? el;
+    if (hit.closest(MSG2) !== hit) {
+      hit.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      return;
+    }
+    scrollMessageTop(el);
   }
   function afterLayout() {
     return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
@@ -19652,7 +19680,7 @@ Neon rain in a quiet city`
       const row = id ? storeById(id) : undefined;
       const sent = String(row?.parentQuotedText || "");
       const parent = String(row?.parentResponseId || "");
-      const text = sent || norm(origin.textContent || "") || live;
+      const text = sent || live || prefixOf(origin.textContent || "");
       const ids = [parent, ...idsFrom(origin, row)].filter(Boolean);
       return { needle: text, ids };
     }
@@ -25320,7 +25348,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   oneko_default.updatedAt = 1787870966000;
   placeholder_default.updatedAt = 1790093417000;
   pluginsFlyout_default.updatedAt = 1788051053000;
-  quoteJump_default.updatedAt = 1790099173000;
+  quoteJump_default.updatedAt = 1790099792000;
   quoteSticky_default.updatedAt = 1790098807000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1790093417000;
