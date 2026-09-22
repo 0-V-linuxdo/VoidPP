@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      [20260922.7] v1.0.0
+// @version      [20260922.8] v1.0.0
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.7] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7412,9 +7412,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5b6aa4c"}`
-    }, `(${"5b6aa4c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6f332fe"}`
+    }, `(${"6f332fe"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -19789,15 +19789,18 @@ Neon rain in a quiet city`
   // src/plugins/quoteSticky/index.ts
   var logger32 = new Logger("QuoteSticky");
   var KEEP2 = 40;
-  var FIGHT_MS = 800;
   var QUERY2 = ".query-bar";
+  var EDITOR2 = ".tiptap, [contenteditable='true']";
   var DISMISS2 = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
-  var KEEP_BTN = /submit|send|attach|dictat|mode|file/i;
+  var SEND = /submit|send|发送/i;
+  var KEEP_BTN = /attach|dictat|mode|file/i;
   var saved = new Map;
   var lastKey = "";
+  var lastText = "";
+  var lastPopup;
+  var lastSig = "";
   var applying3 = false;
-  var fighting = false;
-  var fightTimer = null;
+  var consume = false;
   var abort3 = null;
   function onImaginePage4() {
     try {
@@ -19816,12 +19819,29 @@ Neon rain in a quiet city`
     const ws = String(s.projectId || "");
     return cid || `home:${ws}`;
   }
+  function popupSig(p) {
+    if (p == null)
+      return "";
+    if (typeof p !== "object")
+      return String(p);
+    const rec = p;
+    return String(rec.responseId ?? rec.parentResponseId ?? rec.id ?? rec.quotedText ?? "1");
+  }
+  function messageSig(s) {
+    return `${s.lastMessageId ?? ""}|${s.optimisticMessageId ?? ""}`;
+  }
+  function chatSel(s) {
+    return `${keyOf(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${messageSig(s)}|${popupSig(s.quotePopupData)}`;
+  }
+  function hydrateSel(s) {
+    return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`;
+  }
   function read() {
     try {
       const s = ChatPageStore.useChatPageStore.getState();
-      return { key: keyOf(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
+      return { key: keyOf(s), text: String(s.quotedText || ""), popup: s.quotePopupData, sig: messageSig(s) };
     } catch {
-      return { key: "", text: "", popup: undefined };
+      return { key: "", text: "", popup: undefined, sig: "" };
     }
   }
   function remember2(key, snap) {
@@ -19834,13 +19854,25 @@ Neon rain in a quiet city`
       saved.delete(oldest);
     }
   }
+  function stashOutgoing() {
+    if (lastKey && lastText)
+      remember2(lastKey, { text: lastText, popup: lastPopup });
+  }
+  function drop(key) {
+    if (key)
+      saved.delete(key);
+    if (key === lastKey) {
+      lastText = "";
+      lastPopup = undefined;
+    }
+  }
   function applyQuote(text, popup) {
     const chat = ChatPageStore.useChatPageStore.getState();
     applying3 = true;
     try {
       if (chat.quotedText !== text)
         chat.setQuotedText(text);
-      if ("quotePopupData" in chat && chat.quotePopupData !== popup)
+      if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData !== popup)
         chat.setQuotePopupData(popup);
     } catch (e) {
       logger32.debug("apply failed", e);
@@ -19849,30 +19881,34 @@ Neon rain in a quiet city`
     }
   }
   function restore(key) {
-    if (!key || onImaginePage4())
+    if (!key || consume || onImaginePage4())
       return;
     const snap = saved.get(key);
+    if (!snap?.text)
+      return;
     try {
       const chat = ChatPageStore.useChatPageStore.getState();
-      if (snap?.text) {
-        applyQuote(snap.text, snap.popup);
-        logger32.info("restored", key);
+      if (keyOf(chat) !== key)
         return;
-      }
-      if (chat.quotedText || chat.quotePopupData)
-        applyQuote();
+      const live = String(chat.quotedText || "");
+      if (live === snap.text && popupSig(chat.quotePopupData) === popupSig(snap.popup))
+        return;
+      applyQuote(snap.text, snap.popup);
+      logger32.info("restored", key);
     } catch (e) {
       logger32.debug("restore failed", e);
     }
   }
-  function armFight() {
-    fighting = true;
-    if (fightTimer)
-      clearTimeout(fightTimer);
-    fightTimer = setTimeout(() => {
-      fightTimer = null;
-      fighting = false;
-    }, FIGHT_MS);
+  function sent(prevSig, nextSig) {
+    if (!prevSig || prevSig === nextSig)
+      return false;
+    const [prevLast, prevOpt] = prevSig.split("|");
+    const [curLast, curOpt] = nextSig.split("|");
+    if (prevLast && curLast && prevLast !== curLast)
+      return true;
+    if (curOpt && curOpt !== prevOpt)
+      return true;
+    return false;
   }
   function onChat() {
     if (applying3 || onImaginePage4())
@@ -19881,30 +19917,61 @@ Neon rain in a quiet city`
     if (!now.key)
       return;
     if (now.key !== lastKey) {
+      stashOutgoing();
       lastKey = now.key;
-      armFight();
+      lastSig = now.sig;
+      consume = false;
+      if (now.text) {
+        remember2(now.key, { text: now.text, popup: now.popup });
+        lastText = now.text;
+        lastPopup = now.popup;
+      } else {
+        lastText = "";
+        lastPopup = undefined;
+      }
       restore(now.key);
       return;
     }
     if (now.text) {
+      consume = false;
       remember2(now.key, { text: now.text, popup: now.popup });
+      lastText = now.text;
+      lastPopup = now.popup;
+      lastSig = now.sig;
       return;
     }
-    if (fighting) {
-      const snap = saved.get(now.key);
-      if (snap?.text) {
-        applyQuote(snap.text, snap.popup);
-        return;
-      }
+    const prevSig = lastSig;
+    lastSig = now.sig;
+    if (consume || sent(prevSig, now.sig)) {
+      drop(now.key);
+      consume = false;
+      try {
+        const chat = ChatPageStore.useChatPageStore.getState();
+        if (chat.quotedText || chat.quotePopupData)
+          applyQuote("", null);
+      } catch {}
+      return;
     }
-    saved.delete(now.key);
+    restore(now.key);
+  }
+  function onNav() {
+    if (applying3 || onImaginePage4())
+      return;
+    onChat();
+  }
+  function barButton(el) {
+    const btn = el.closest(`${QUERY2} button, ${QUERY2} [role='button']`);
+    return btn instanceof HTMLElement ? btn : null;
+  }
+  function btnLabel(btn) {
+    return `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""} ${btn.getAttribute("type") || ""}`;
   }
   function isQuoteDismiss(el) {
-    const btn = el.closest(`${QUERY2} button, ${QUERY2} [role='button']`);
-    if (!(btn instanceof HTMLElement))
+    const btn = barButton(el);
+    if (!btn)
       return false;
-    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
-    if (KEEP_BTN.test(label))
+    const label = btnLabel(btn);
+    if (KEEP_BTN.test(label) || SEND.test(label))
       return false;
     if (DISMISS2.test(label))
       return true;
@@ -19921,20 +19988,45 @@ Neon rain in a quiet city`
     }
     return false;
   }
+  function isSend(el) {
+    const btn = barButton(el);
+    if (!btn)
+      return false;
+    const label = btnLabel(btn);
+    if (KEEP_BTN.test(label) || DISMISS2.test(label))
+      return false;
+    if (SEND.test(label) || btn.getAttribute("type") === "submit")
+      return true;
+    return false;
+  }
+  function markConsumed() {
+    consume = true;
+    const now = read();
+    if (now.key)
+      drop(now.key);
+  }
   function onPointerDown4(e) {
     if (!e.isTrusted)
       return;
     const t = e.target;
-    if (!(t instanceof Element) || !isQuoteDismiss(t))
+    if (!(t instanceof Element))
       return;
-    fighting = false;
-    if (fightTimer) {
-      clearTimeout(fightTimer);
-      fightTimer = null;
+    if (isQuoteDismiss(t)) {
+      markConsumed();
+      return;
     }
-    const now = read();
-    if (now.key)
-      saved.delete(now.key);
+    if (isSend(t) && read().text)
+      markConsumed();
+  }
+  function onKeyDown5(e) {
+    if (!e.isTrusted || e.key !== "Enter" || e.shiftKey || e.isComposing)
+      return;
+    const t = e.target;
+    if (!(t instanceof Element) || !t.closest(EDITOR2))
+      return;
+    if (!read().text)
+      return;
+    markConsumed();
   }
   var quoteSticky_default = definePlugin({
     name: "QuoteSticky",
@@ -19947,26 +20039,39 @@ Neon rain in a quiet city`
     start() {
       const now = read();
       lastKey = now.key;
-      if (now.key && now.text)
+      lastSig = now.sig;
+      if (now.key && now.text) {
         remember2(now.key, { text: now.text, popup: now.popup });
+        lastText = now.text;
+        lastPopup = now.popup;
+      }
       abort3 = new AbortController;
       document.addEventListener("pointerdown", onPointerDown4, { capture: true, signal: abort3.signal });
+      document.addEventListener("keydown", onKeyDown5, { capture: true, signal: abort3.signal });
     },
     stop() {
       abort3?.abort();
       abort3 = null;
-      if (fightTimer)
-        clearTimeout(fightTimer);
-      fightTimer = null;
       saved.clear();
       lastKey = "";
+      lastText = "";
+      lastPopup = undefined;
+      lastSig = "";
       applying3 = false;
-      fighting = false;
+      consume = false;
     },
     zustand: {
       ChatPageStore: {
-        selector: (s) => `${keyOf(s)}|${s.quotedText ?? ""}`,
+        selector: chatSel,
         handler: onChat
+      },
+      RoutingStore: {
+        selector: (s) => String(s.route.conversationId ?? ""),
+        handler: onNav
+      },
+      ResponseStore: {
+        selector: hydrateSel,
+        handler: onNav
       }
     }
   });
@@ -22257,7 +22362,7 @@ html.void-rt-open [data-sidebar="gap"] {
     held2 = false;
     paint4();
   }
-  function onKeyDown5(e) {
+  function onKeyDown6(e) {
     if (isCtrlKey(e)) {
       ctrlHeld = true;
       return;
@@ -22760,7 +22865,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (!keys3) {
         keys3 = new AbortController;
         const { signal } = keys3;
-        window.addEventListener("keydown", onKeyDown5, { capture: true, signal });
+        window.addEventListener("keydown", onKeyDown6, { capture: true, signal });
         window.addEventListener("keyup", onKeyUp, { capture: true, signal });
         window.addEventListener("blur", onWindowBlur, { signal });
         document.addEventListener("visibilitychange", onVisibility, { signal });
@@ -25348,7 +25453,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   oneko_default.updatedAt = 1787870966000;
   placeholder_default.updatedAt = 1790093417000;
   pluginsFlyout_default.updatedAt = 1788051053000;
-  quoteJump_default.updatedAt = 1790099792000;
+  quoteJump_default.updatedAt = 1790100528000;
   quoteSticky_default.updatedAt = 1790098807000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1790093417000;
