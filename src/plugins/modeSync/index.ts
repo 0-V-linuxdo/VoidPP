@@ -133,6 +133,22 @@ function onImaginePage(): boolean {
     }
 }
 
+function modeSlug(s: string): string {
+    return s.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
+}
+
+function apiModelMode(s: string): string {
+    const slug = modeSlug(s);
+    if (!slug) return "";
+    return `MODEL_MODE_${slug.replaceAll("-", "_").toUpperCase()}`;
+}
+
+function coerceModelMode(existing: unknown, live: Intent): string {
+    const raw = live.modelMode || live.modeId;
+    if (typeof existing === "string" && existing.startsWith("MODEL_MODE_")) return apiModelMode(raw);
+    return modeSlug(raw);
+}
+
 function snapshot(): Intent {
     try {
         const modes = ModesStore.useModesStore.getState();
@@ -149,8 +165,8 @@ function snapshot(): Intent {
 
 function liveIntent(): Intent {
     if (sendOverride?.modeId) return sendOverride;
-    if (intent.modeId) return intent;
-    return snapshot();
+    const cur = snapshot();
+    return cur.modeId ? cur : intent;
 }
 
 function pickerIntent(): Intent {
@@ -244,12 +260,16 @@ function armOverride(item: Intent) {
     }, OVERRIDE_MS);
 }
 
+function hydrating(): boolean {
+    return loadPending() || document.documentElement.hasAttribute(RESTORE_ATTR);
+}
+
 function captureIntent(modeId: string, cur: Intent): Intent {
-    const same = cur.modelMode === modeId;
+    const keep = modeSlug(cur.modelMode) === modeSlug(modeId);
     return {
         modeId,
-        modelMode: same ? cur.modelMode : modeId,
-        activeModelId: same ? cur.activeModelId : "",
+        modelMode: keep ? cur.modelMode : modeId,
+        activeModelId: keep ? cur.activeModelId : "",
     };
 }
 
@@ -318,12 +338,12 @@ function patchPayload(raw: unknown, live: Intent): boolean {
     const rec = raw as Record<string, unknown>;
     if (!isChatSend(rec)) return false;
     const before = rec.modeId;
-    const hadModelMode = rec.modelMode;
-    const hadModelName = rec.modelName;
+    const beforeMode = rec.modelMode;
+    const beforeName = rec.modelName;
     rec.modeId = live.modeId;
-    if ("modelMode" in rec) rec.modelMode = undefined;
-    if ("modelName" in rec) rec.modelName = undefined;
-    return rec.modeId !== before || hadModelMode !== undefined || hadModelName !== undefined;
+    if ("modelMode" in rec) rec.modelMode = coerceModelMode(rec.modelMode, live);
+    if (live.activeModelId) rec.modelName = live.activeModelId;
+    return rec.modeId !== before || rec.modelMode !== beforeMode || rec.modelName !== beforeName;
 }
 
 function patchSendArgs(args: unknown[], live: Intent) {
@@ -470,14 +490,18 @@ function patchGwEvent(event: unknown, live: Intent) {
     const rec = event as Record<string, unknown>;
     if (typeof rec.type !== "string" || !GW_TYPES.has(rec.type)) return;
     for (const key of GW_MODE_KEYS) {
-        if (key in rec) rec[key] = live.modeId;
+        if (!(key in rec)) continue;
+        rec[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(rec[key], live) : live.modeId;
     }
+    if (live.activeModelId && "modelName" in rec) rec.modelName = live.activeModelId;
     const { item } = rec;
     if (!item || typeof item !== "object" || Array.isArray(item)) return;
     const it = item as Record<string, unknown>;
     for (const key of GW_MODE_KEYS) {
-        if (key in it) it[key] = live.modeId;
+        if (!(key in it)) continue;
+        it[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(it[key], live) : live.modeId;
     }
+    if (live.activeModelId && "modelName" in it) it.modelName = live.activeModelId;
 }
 
 function eventItemIntent(event: unknown): Intent | undefined {
@@ -535,17 +559,6 @@ function unwrapGatewaySend() {
 function makeSendWrapper(orig: SendFn): SendFn {
     return function voidModeSyncSend(this: unknown, ...args: unknown[]) {
         if (onImaginePage()) return orig.apply(this, args);
-        const [first] = args;
-        if (!sendOverride && isTurnArgs(first)) {
-            const qid = conversation(first.convId)?.queue?.[0]?.queue_item_id;
-            const queued = qid ? itemIntent.get(qid) : undefined;
-            if (queued?.modeId) {
-                return withSendIntent(queued, () => {
-                    patchSendArgs(args, queued);
-                    return orig.apply(this, args);
-                });
-            }
-        }
         const live = liveIntent();
         if (live.modeId) {
             applyIntent(live);
@@ -559,7 +572,8 @@ function makeQueueWrapper(orig: SendFn): SendFn {
     return function voidModeSyncQueue(this: unknown, ...args: unknown[]) {
         if (onImaginePage()) return orig.apply(this, args);
         const [first] = args;
-        const live = liveIntent();
+        const cur = snapshot();
+        const live = cur.modeId ? cur : liveIntent();
         if (!isTurnArgs(first) || !live.modeId) return orig.apply(this, args);
         pendingEnqueue = { args: first, intent: { ...live } };
         if (inflightMode(first.convId) !== live.modeId) diverting = first;
@@ -942,7 +956,6 @@ function bindObs() {
 }
 
 function onPointerUp(e: PointerEvent) {
-    if (!e.isTrusted) return;
     const t = e.target;
     if (!(t instanceof Element)) return;
     if (t.closest(`.${CHIP}, .${QMENU}`)) return;
@@ -953,6 +966,7 @@ function onPointerUp(e: PointerEvent) {
         if (id) rememberMode(id);
         return;
     }
+    if (!e.isTrusted) return;
     if (t.closest(TRIGGER_SEL)) {
         awaitingMenu = true;
         userPicking = true;
@@ -985,16 +999,30 @@ function onKeyDown(e: KeyboardEvent) {
 
 function onPicker(id: string) {
     if (applying || sendOverride) return;
-    if (userPicking) {
-        rememberSnapshot();
-        return;
-    }
     if (!id) return;
-    if (!intent.modeId) {
-        intent = snapshot();
+    if (hydrating()) {
+        fightHydrate();
         return;
     }
-    fightHydrate();
+    if (userPicking || id !== intent.modeId) rememberSnapshot();
+}
+
+function onChatPage() {
+    wrapSendFns();
+    const key = navKey();
+    if (key !== lastNavKey) {
+        lastNavKey = key;
+        onNavigate();
+        return;
+    }
+    if (sendOverride || applying) return;
+    if (hydrating()) {
+        fightHydrate();
+        return;
+    }
+    const now = snapshot();
+    if (!now.modeId) return;
+    if (now.activeModelId !== intent.activeModelId || now.modelMode !== intent.modelMode) rememberSnapshot();
 }
 
 function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
@@ -1012,17 +1040,6 @@ function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
     } catch (e) {
         logger.debug("flush override failed", e);
     }
-}
-
-function onChatPage(cur: string, prev: string) {
-    wrapSendFns();
-    const key = navKey();
-    if (key !== lastNavKey) {
-        lastNavKey = key;
-        onNavigate();
-        return;
-    }
-    if (cur !== prev) fightHydrate();
 }
 
 function queueKey(s: MessageStoreState) {
