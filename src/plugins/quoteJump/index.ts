@@ -256,6 +256,8 @@ function isDismiss(el: Element): boolean {
 }
 
 function composerChip(el: Element): HTMLElement | null {
+    const sticky = el.closest(".void-qs-chip");
+    if (sticky instanceof HTMLElement && !el.closest(".void-qs-x")) return sticky;
     const bar = el.closest(QUERY);
     if (!(bar instanceof HTMLElement) || isEditor(el) || isDismiss(el) || isBarAction(el)) return null;
     const needle = quotedText();

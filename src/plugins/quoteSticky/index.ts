@@ -20,11 +20,8 @@ const logger = new Logger("QuoteSticky");
 const cl = classNameFactory("void-qs-");
 const KEEP = 40;
 const QUERY = ".query-bar";
-const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
 const KEEP_BTN = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
-const CHAT_POST = /\/rest\/app-chat\/conversations/;
-const STOP_URL = /stop|abort|cancel/i;
 const RESTORE_GAP_MS = 80;
 const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
@@ -54,7 +51,6 @@ let applying = false;
 let lastRestoreAt = 0;
 let abort: AbortController | null = null;
 let observer: MutationObserver | null = null;
-let origFetch: typeof fetch | null = null;
 let mutRaf = 0;
 
 function onImaginePage(): boolean {
@@ -69,23 +65,15 @@ function onImaginePage(): boolean {
     }
 }
 
-function projectId(): string {
-    try {
-        return String(ChatPageStore.useChatPageStore.getState().projectId || "");
-    } catch {
-        return "";
-    }
-}
-
 function pathCid(): string {
     try {
         const path = location.pathname;
-        const inPath = path.match(/\/(?:c|chat|conversation)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] || "";
-        if (inPath) return inPath;
+        const inPath = path.match(/\/(?:c|chat|conversation)\/([^/?#]+)/i)?.[1] || "";
+        if (inPath && inPath !== "new") return decodeURIComponent(inPath);
         const q = new URLSearchParams(location.search);
         for (const name of ["conversationId", "chat"]) {
             const v = q.get(name) || "";
-            if (UUID.test(v)) return v;
+            if (v) return v;
         }
         return "";
     } catch {
@@ -101,25 +89,27 @@ function routeCid(): string {
     }
 }
 
-function storeCid(s?: ChatPageStoreState): string {
+function realCid(s?: ChatPageStoreState): string {
     try {
         const st = s ?? ChatPageStore.useChatPageStore.getState();
-        return String(st.conversationId || st.optimisticConversationId || "");
+        return String(st.conversationId || "");
     } catch {
         return "";
     }
 }
 
+function snapKey(s?: ChatPageStoreState): string {
+    const cid = realCid(s);
+    if (cid) return cid;
+    return pathCid() || routeCid();
+}
+
 function destKey(s?: ChatPageStoreState): string {
-    const store = storeCid(s);
-    if (store && UUID.test(store)) return store;
-    if (pathCid() || UUID.test(routeCid())) return "";
-    const project = s?.projectId ?? projectId();
-    return `home:${project || ""}`;
+    return realCid(s);
 }
 
 function ownKey(): string {
-    return destKey() || lastKey;
+    return realCid() || pathCid() || routeCid() || lastKey;
 }
 
 function str(v: unknown): string {
@@ -157,7 +147,7 @@ function popupSig(p: unknown): string {
 }
 
 function chatSel(s: ChatPageStoreState): string {
-    return `${destKey(s)}|${pathCid()}|${routeCid()}|${storeCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
+    return `${destKey(s)}|${pathCid()}|${routeCid()}|${realCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
 }
 
 function hydrateSel(s: ResponseStoreState): string {
@@ -267,9 +257,22 @@ function makeChip(): HTMLElement {
     return el;
 }
 
+function placeChip(el: HTMLElement, bar: HTMLElement) {
+    const r = bar.getBoundingClientRect();
+    if (r.width < 8 || r.height < 8) {
+        el.style.display = "none";
+        return;
+    }
+    el.style.display = "flex";
+    el.style.width = `${Math.max(120, r.width - 24)}px`;
+    el.style.left = `${r.left + 12}px`;
+    el.style.top = `${Math.max(8, r.top + 6)}px`;
+}
+
 function paintFallback(key: string, snap: Snap) {
     const bar = document.querySelector(QUERY);
-    if (destKey() !== key || !(bar instanceof HTMLElement) || onImaginePage()) {
+    const path = pathCid();
+    if (!key || destKey() !== key || (path && path !== key) || !(bar instanceof HTMLElement) || onImaginePage()) {
         removeFallback();
         return;
     }
@@ -277,7 +280,7 @@ function paintFallback(key: string, snap: Snap) {
         removeFallback();
         return;
     }
-    let el = bar.querySelector(`.${cl("chip")}`);
+    let el = document.querySelector(`.${cl("chip")}`);
     if (el instanceof HTMLElement && el.dataset.voidQsKey !== key) {
         el.remove();
         el = null;
@@ -285,15 +288,13 @@ function paintFallback(key: string, snap: Snap) {
     if (!(el instanceof HTMLElement)) {
         el = makeChip();
         el.dataset.voidQsKey = key;
-        const editor = bar.querySelector(".tiptap, [contenteditable='true']");
-        const row = editor?.parentElement;
-        if (row && bar.contains(row) && row !== bar) row.prepend(el);
-        else if (editor && editor.parentElement === bar) editor.before(el);
-        else bar.prepend(el);
+        document.body.append(el);
     }
     el.dataset.voidQsKey = key;
     const label = el.querySelector(`.${cl("text")}`);
-    if (label) label.textContent = snap.text.replaceAll(/\s+/g, " ").trim();
+    const shown = snap.text.replaceAll(/\s+/g, " ").trim();
+    if (label && label.textContent !== shown) label.textContent = shown;
+    placeChip(el, bar);
 }
 
 function restore(key: string) {
@@ -325,17 +326,18 @@ function restore(key: string) {
 
 function ensureChip() {
     if (onImaginePage()) return;
-    const key = destKey();
-    if (!key) {
+    const dest = destKey();
+    const path = pathCid();
+    if (!dest || (path && path !== dest)) {
         removeFallback();
         return;
     }
-    const snap = saved.get(key);
+    const snap = saved.get(dest);
     if (!snap?.text) {
         removeFallback();
         return;
     }
-    restore(key);
+    restore(dest);
 }
 
 function dismiss() {
@@ -356,22 +358,47 @@ function dismiss() {
 
 function onChat() {
     if (applying || onImaginePage()) return;
-    const key = destKey();
-    if (!key) {
+    const now = readText();
+    const dest = destKey();
+    const key = snapKey();
+    if (now.text && key && !(dest && lastKey && dest !== lastKey)) {
+        remember(key, now.text, now.popup);
+        lastText = now.text;
+        lastPopup = now.popup;
+        lastKey = key;
+    }
+    if (!dest) {
         stashOutgoing();
+        removeFallback();
+        if (!pathCid() && !routeCid()) {
+            lastText = "";
+            lastPopup = undefined;
+            clearLive();
+        }
+        return;
+    }
+    const path = pathCid();
+    if (path && path === lastKey && path !== dest) {
+        const prior = saved.get(path);
+        if (prior?.text) remember(dest, prior.text, prior.popup);
+        saved.delete(path);
+        lastKey = dest;
+        lastText = prior?.text || lastText;
+        lastPopup = prior?.popup ?? lastPopup;
+    }
+    if (path && path !== dest) {
         removeFallback();
         return;
     }
-    const now = readText();
-    if (key !== lastKey) {
+    if (dest !== lastKey) {
         stashOutgoing();
-        lastKey = key;
+        lastKey = dest;
         lastRestoreAt = 0;
-        const snap = saved.get(key);
+        const snap = saved.get(dest);
         if (snap?.text) {
             lastText = snap.text;
             lastPopup = snap.popup;
-            restore(key);
+            restore(dest);
         } else {
             lastText = "";
             lastPopup = undefined;
@@ -381,14 +408,12 @@ function onChat() {
         return;
     }
     if (now.text) {
-        remember(key, now.text, now.popup);
-        lastText = now.text;
-        lastPopup = now.popup;
-        if (!officialVisible(now.text)) paintFallback(key, saved.get(key)!);
+        const snap = saved.get(dest);
+        if (snap && !officialVisible(now.text)) paintFallback(dest, snap);
         else removeFallback();
         return;
     }
-    restore(key);
+    restore(dest);
 }
 
 function onNav() {
@@ -434,6 +459,17 @@ function onPointerDown(e: PointerEvent) {
     dismiss();
 }
 
+function payloadText(rec: Record<string, unknown>): string {
+    const raw = rec.message ?? rec.text ?? rec.query;
+    if (typeof raw === "string") return raw.trim();
+    if (raw && typeof raw === "object") {
+        const inner = raw as Record<string, unknown>;
+        const nested = inner.text ?? inner.content ?? inner.message;
+        if (typeof nested === "string") return nested.trim();
+    }
+    return "";
+}
+
 function isQuoteSend(raw: unknown, want: string): boolean {
     if (!want || raw == null) return false;
     if (typeof raw === "string") {
@@ -446,8 +482,7 @@ function isQuoteSend(raw: unknown, want: string): boolean {
     }
     if (typeof raw !== "object" || Array.isArray(raw)) return false;
     const rec = raw as Record<string, unknown>;
-    const sending = "message" in rec || "text" in rec || "fileAttachments" in rec || "fileAttachmentIds" in rec;
-    if (!sending) return false;
+    if (!payloadText(rec)) return false;
     const q = rec.parentQuotedText ?? rec.quotedText;
     return typeof q === "string" && q.replaceAll(/\s+/g, " ").trim() === want.replaceAll(/\s+/g, " ").trim();
 }
@@ -475,19 +510,20 @@ function makeQuotedTextWrapper(orig: SendFn): SendFn {
         const result = orig.apply(this, args);
         if (applying) return result;
         const text = String(args[0] ?? "");
-        const agreed = destKey();
+        const dest = destKey();
         const popup = ChatPageStore.useChatPageStore.getState().quotePopupData;
         if (text) {
-            if (!agreed) {
-                if (lastKey && lastText) remember(lastKey, lastText, lastPopup);
+            const key = dest || pathCid() || routeCid() || lastKey;
+            if (!key) return result;
+            if (dest && lastKey && dest !== lastKey) {
+                if (lastText) remember(lastKey, lastText, lastPopup);
                 return result;
             }
-            if (lastKey && lastKey !== agreed) return result;
-            remember(agreed, text, popup);
+            remember(key, text, popup ?? lastPopup);
             lastText = text;
-            lastPopup = popup;
-            lastKey = agreed;
-        } else if (agreed && (!lastKey || lastKey === agreed) && saved.get(agreed)?.text) {
+            lastPopup = popup ?? lastPopup;
+            lastKey = key;
+        } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
             scheduleRestore();
         }
         return result;
@@ -498,18 +534,18 @@ function makePopupWrapper(orig: SendFn): SendFn {
     return function voidQuoteStickyPopup(this: unknown, ...args: unknown[]) {
         const result = orig.apply(this, args);
         if (applying) return result;
-        const agreed = destKey();
+        const dest = destKey();
         const popup = args[0];
         const live = String(ChatPageStore.useChatPageStore.getState().quotedText || "");
-        if (popup != null && agreed && live && (!lastKey || lastKey === agreed)) {
-            remember(agreed, live, popup);
-            lastPopup = popup;
-            lastText = live;
-            lastKey = agreed;
-        } else if (popup != null && !agreed && lastKey && lastText) {
-            remember(lastKey, lastText, popup);
-            lastPopup = popup;
-        } else if (agreed && (!lastKey || lastKey === agreed) && saved.get(agreed)?.text) {
+        if (popup != null && live && !(dest && lastKey && dest !== lastKey)) {
+            const key = dest || pathCid() || routeCid() || lastKey;
+            if (key) {
+                remember(key, live, popup);
+                lastPopup = popup;
+                lastText = live;
+                lastKey = key;
+            }
+        } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
             scheduleRestore();
         }
         return result;
@@ -586,48 +622,6 @@ function unwrapAll() {
     wrappedFns.clear();
 }
 
-function requestUrl(input: RequestInfo | URL): string {
-    if (typeof input === "string") return input;
-    if (input instanceof URL) return input.href;
-    try {
-        return input.url;
-    } catch {
-        return "";
-    }
-}
-
-function requestBody(input: RequestInfo | URL, init?: RequestInit): string {
-    if (typeof init?.body === "string") return init.body;
-    if (init?.body instanceof URLSearchParams) return init.body.toString();
-    return "";
-}
-
-function wrapFetch() {
-    if (origFetch) return;
-    origFetch = window.fetch.bind(window);
-    const inner = origFetch;
-    window.fetch = function voidQuoteStickyFetch(input: RequestInfo | URL, init?: RequestInit) {
-        const method = String(init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
-        const url = requestUrl(input);
-        if ((method === "POST" || method === "PUT") && CHAT_POST.test(url) && !STOP_URL.test(url)) {
-            const key = ownKey();
-            const want = saved.get(key)?.text || readText().text;
-            if (want && isQuoteSend(requestBody(input, init), want)) markConsumed(key);
-        }
-        return inner(input, init);
-    };
-}
-
-function unwrapFetch() {
-    if (!origFetch) return;
-    if (window.fetch !== origFetch) {
-        try {
-            window.fetch = origFetch;
-        } catch { /* locked */ }
-    }
-    origFetch = null;
-}
-
 function onMutate() {
     if (mutRaf) return;
     mutRaf = requestAnimationFrame(() => {
@@ -649,18 +643,22 @@ export default definePlugin({
 
     start() {
         const now = readText();
-        lastKey = now.key;
-        if (now.key && now.text) {
-            remember(now.key, now.text, now.popup);
+        const key = snapKey() || now.key;
+        lastKey = key;
+        if (key && now.text) {
+            remember(key, now.text, now.popup);
             lastText = now.text;
             lastPopup = now.popup;
         }
         abort = new AbortController();
         document.addEventListener("pointerdown", onPointerDown, { capture: true, signal: abort.signal });
+        const poke = () => onMutate();
+        window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort.signal });
+        window.addEventListener("resize", poke, { passive: true, signal: abort.signal });
         observer = new MutationObserver(onMutate);
         observer.observe(document.documentElement, { childList: true, subtree: true });
         wrapAll();
-        wrapFetch();
+        ensureChip();
     },
 
     stop() {
@@ -671,7 +669,6 @@ export default definePlugin({
         if (mutRaf) cancelAnimationFrame(mutRaf);
         mutRaf = 0;
         unwrapAll();
-        unwrapFetch();
         removeFallback();
         saved.clear();
         lastKey = "";

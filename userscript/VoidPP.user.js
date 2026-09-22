@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.17
+// @version      20260922.18
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.17] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.18] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7393,9 +7393,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e496111"}`
-    }, `(${"e496111"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.18] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8247265"}`
+    }, `(${"8247265"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18660,15 +18660,21 @@ html.void-rt-open [data-sidebar="gap"] {
 
   // voidpp-css:/tmp/VoidPP/src/plugins/quoteSticky/styles.css
   registerStyle("quoteSticky", `.void-qs-chip {
+    position: fixed;
+    z-index: 40;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    max-width: 100%;
+    box-sizing: border-box;
+    max-width: calc(100vw - 24px);
     min-height: 2rem;
-    margin: 0.25rem 0.75rem 0;
-    padding: 0.125rem 0.25rem 0.125rem 0;
+    margin: 0;
+    padding: 0.25rem 0.25rem 0.25rem 0.5rem;
+    border-radius: 0.75rem;
+    background: hsl(var(--surface-base, 0 0% 8%));
     color: hsl(var(--fg-secondary));
     cursor: pointer;
+    pointer-events: auto;
 }
 
 .void-qs-mark {
@@ -18726,11 +18732,8 @@ html.void-rt-open [data-sidebar="gap"] {
   var cl26 = classNameFactory("void-qs-");
   var KEEP = 40;
   var QUERY = ".query-bar";
-  var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
   var DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
   var KEEP_BTN = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
-  var CHAT_POST2 = /\/rest\/app-chat\/conversations/;
-  var STOP_URL2 = /stop|abort|cancel/i;
   var RESTORE_GAP_MS = 80;
   var X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   var saved = new Map;
@@ -18743,7 +18746,6 @@ html.void-rt-open [data-sidebar="gap"] {
   var lastRestoreAt = 0;
   var abort2 = null;
   var observer = null;
-  var origFetch3 = null;
   var mutRaf = 0;
   function onImaginePage3() {
     try {
@@ -18757,23 +18759,16 @@ html.void-rt-open [data-sidebar="gap"] {
       return false;
     }
   }
-  function projectId() {
-    try {
-      return String(ChatPageStore.useChatPageStore.getState().projectId || "");
-    } catch {
-      return "";
-    }
-  }
   function pathCid() {
     try {
       const path = location.pathname;
-      const inPath = path.match(/\/(?:c|chat|conversation)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] || "";
-      if (inPath)
-        return inPath;
+      const inPath = path.match(/\/(?:c|chat|conversation)\/([^/?#]+)/i)?.[1] || "";
+      if (inPath && inPath !== "new")
+        return decodeURIComponent(inPath);
       const q = new URLSearchParams(location.search);
       for (const name of ["conversationId", "chat"]) {
         const v = q.get(name) || "";
-        if (UUID.test(v))
+        if (v)
           return v;
       }
       return "";
@@ -18788,25 +18783,25 @@ html.void-rt-open [data-sidebar="gap"] {
       return "";
     }
   }
-  function storeCid(s) {
+  function realCid(s) {
     try {
       const st = s ?? ChatPageStore.useChatPageStore.getState();
-      return String(st.conversationId || st.optimisticConversationId || "");
+      return String(st.conversationId || "");
     } catch {
       return "";
     }
   }
+  function snapKey(s) {
+    const cid = realCid(s);
+    if (cid)
+      return cid;
+    return pathCid() || routeCid();
+  }
   function destKey(s) {
-    const store = storeCid(s);
-    if (store && UUID.test(store))
-      return store;
-    if (pathCid() || UUID.test(routeCid()))
-      return "";
-    const project = s?.projectId ?? projectId();
-    return `home:${project || ""}`;
+    return realCid(s);
   }
   function ownKey() {
-    return destKey() || lastKey;
+    return realCid() || pathCid() || routeCid() || lastKey;
   }
   function str(v) {
     if (typeof v === "string")
@@ -18843,7 +18838,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return String(rec.responseId ?? rec.parentResponseId ?? rec.id ?? rec.quotedText ?? "1");
   }
   function chatSel(s) {
-    return `${destKey(s)}|${pathCid()}|${routeCid()}|${storeCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
+    return `${destKey(s)}|${pathCid()}|${routeCid()}|${realCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
   }
   function hydrateSel(s) {
     return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`;
@@ -18956,9 +18951,21 @@ html.void-rt-open [data-sidebar="gap"] {
     el.append(mark, text, btn);
     return el;
   }
+  function placeChip(el, bar) {
+    const r = bar.getBoundingClientRect();
+    if (r.width < 8 || r.height < 8) {
+      el.style.display = "none";
+      return;
+    }
+    el.style.display = "flex";
+    el.style.width = `${Math.max(120, r.width - 24)}px`;
+    el.style.left = `${r.left + 12}px`;
+    el.style.top = `${Math.max(8, r.top + 6)}px`;
+  }
   function paintFallback(key, snap) {
     const bar = document.querySelector(QUERY);
-    if (destKey() !== key || !(bar instanceof HTMLElement) || onImaginePage3()) {
+    const path = pathCid();
+    if (!key || destKey() !== key || path && path !== key || !(bar instanceof HTMLElement) || onImaginePage3()) {
       removeFallback();
       return;
     }
@@ -18966,7 +18973,7 @@ html.void-rt-open [data-sidebar="gap"] {
       removeFallback();
       return;
     }
-    let el = bar.querySelector(`.${cl26("chip")}`);
+    let el = document.querySelector(`.${cl26("chip")}`);
     if (el instanceof HTMLElement && el.dataset.voidQsKey !== key) {
       el.remove();
       el = null;
@@ -18974,19 +18981,14 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!(el instanceof HTMLElement)) {
       el = makeChip();
       el.dataset.voidQsKey = key;
-      const editor = bar.querySelector(".tiptap, [contenteditable='true']");
-      const row = editor?.parentElement;
-      if (row && bar.contains(row) && row !== bar)
-        row.prepend(el);
-      else if (editor && editor.parentElement === bar)
-        editor.before(el);
-      else
-        bar.prepend(el);
+      document.body.append(el);
     }
     el.dataset.voidQsKey = key;
     const label = el.querySelector(`.${cl26("text")}`);
-    if (label)
-      label.textContent = snap.text.replaceAll(/\s+/g, " ").trim();
+    const shown = snap.text.replaceAll(/\s+/g, " ").trim();
+    if (label && label.textContent !== shown)
+      label.textContent = shown;
+    placeChip(el, bar);
   }
   function restore(key) {
     if (!key || onImaginePage3() || destKey() !== key) {
@@ -19018,17 +19020,18 @@ html.void-rt-open [data-sidebar="gap"] {
   function ensureChip() {
     if (onImaginePage3())
       return;
-    const key = destKey();
-    if (!key) {
+    const dest = destKey();
+    const path = pathCid();
+    if (!dest || path && path !== dest) {
       removeFallback();
       return;
     }
-    const snap = saved.get(key);
+    const snap = saved.get(dest);
     if (!snap?.text) {
       removeFallback();
       return;
     }
-    restore(key);
+    restore(dest);
   }
   function dismiss() {
     const key = ownKey();
@@ -19050,22 +19053,48 @@ html.void-rt-open [data-sidebar="gap"] {
   function onChat() {
     if (applying3 || onImaginePage3())
       return;
-    const key = destKey();
-    if (!key) {
+    const now = readText();
+    const dest = destKey();
+    const key = snapKey();
+    if (now.text && key && !(dest && lastKey && dest !== lastKey)) {
+      remember2(key, now.text, now.popup);
+      lastText = now.text;
+      lastPopup = now.popup;
+      lastKey = key;
+    }
+    if (!dest) {
       stashOutgoing();
+      removeFallback();
+      if (!pathCid() && !routeCid()) {
+        lastText = "";
+        lastPopup = undefined;
+        clearLive();
+      }
+      return;
+    }
+    const path = pathCid();
+    if (path && path === lastKey && path !== dest) {
+      const prior = saved.get(path);
+      if (prior?.text)
+        remember2(dest, prior.text, prior.popup);
+      saved.delete(path);
+      lastKey = dest;
+      lastText = prior?.text || lastText;
+      lastPopup = prior?.popup ?? lastPopup;
+    }
+    if (path && path !== dest) {
       removeFallback();
       return;
     }
-    const now = readText();
-    if (key !== lastKey) {
+    if (dest !== lastKey) {
       stashOutgoing();
-      lastKey = key;
+      lastKey = dest;
       lastRestoreAt = 0;
-      const snap = saved.get(key);
+      const snap = saved.get(dest);
       if (snap?.text) {
         lastText = snap.text;
         lastPopup = snap.popup;
-        restore(key);
+        restore(dest);
       } else {
         lastText = "";
         lastPopup = undefined;
@@ -19075,16 +19104,14 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     }
     if (now.text) {
-      remember2(key, now.text, now.popup);
-      lastText = now.text;
-      lastPopup = now.popup;
-      if (!officialVisible(now.text))
-        paintFallback(key, saved.get(key));
+      const snap = saved.get(dest);
+      if (snap && !officialVisible(now.text))
+        paintFallback(dest, snap);
       else
         removeFallback();
       return;
     }
-    restore(key);
+    restore(dest);
   }
   function onNav() {
     wrapAll();
@@ -19132,6 +19159,18 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     dismiss();
   }
+  function payloadText(rec) {
+    const raw = rec.message ?? rec.text ?? rec.query;
+    if (typeof raw === "string")
+      return raw.trim();
+    if (raw && typeof raw === "object") {
+      const inner = raw;
+      const nested = inner.text ?? inner.content ?? inner.message;
+      if (typeof nested === "string")
+        return nested.trim();
+    }
+    return "";
+  }
   function isQuoteSend(raw, want) {
     if (!want || raw == null)
       return false;
@@ -19147,8 +19186,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (typeof raw !== "object" || Array.isArray(raw))
       return false;
     const rec = raw;
-    const sending = "message" in rec || "text" in rec || "fileAttachments" in rec || "fileAttachmentIds" in rec;
-    if (!sending)
+    if (!payloadText(rec))
       return false;
     const q = rec.parentQuotedText ?? rec.quotedText;
     return typeof q === "string" && q.replaceAll(/\s+/g, " ").trim() === want.replaceAll(/\s+/g, " ").trim();
@@ -19178,21 +19216,22 @@ html.void-rt-open [data-sidebar="gap"] {
       if (applying3)
         return result;
       const text = String(args[0] ?? "");
-      const agreed = destKey();
+      const dest = destKey();
       const popup = ChatPageStore.useChatPageStore.getState().quotePopupData;
       if (text) {
-        if (!agreed) {
-          if (lastKey && lastText)
+        const key = dest || pathCid() || routeCid() || lastKey;
+        if (!key)
+          return result;
+        if (dest && lastKey && dest !== lastKey) {
+          if (lastText)
             remember2(lastKey, lastText, lastPopup);
           return result;
         }
-        if (lastKey && lastKey !== agreed)
-          return result;
-        remember2(agreed, text, popup);
+        remember2(key, text, popup ?? lastPopup);
         lastText = text;
-        lastPopup = popup;
-        lastKey = agreed;
-      } else if (agreed && (!lastKey || lastKey === agreed) && saved.get(agreed)?.text) {
+        lastPopup = popup ?? lastPopup;
+        lastKey = key;
+      } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
         scheduleRestore();
       }
       return result;
@@ -19203,18 +19242,18 @@ html.void-rt-open [data-sidebar="gap"] {
       const result = orig.apply(this, args);
       if (applying3)
         return result;
-      const agreed = destKey();
+      const dest = destKey();
       const popup = args[0];
       const live = String(ChatPageStore.useChatPageStore.getState().quotedText || "");
-      if (popup != null && agreed && live && (!lastKey || lastKey === agreed)) {
-        remember2(agreed, live, popup);
-        lastPopup = popup;
-        lastText = live;
-        lastKey = agreed;
-      } else if (popup != null && !agreed && lastKey && lastText) {
-        remember2(lastKey, lastText, popup);
-        lastPopup = popup;
-      } else if (agreed && (!lastKey || lastKey === agreed) && saved.get(agreed)?.text) {
+      if (popup != null && live && !(dest && lastKey && dest !== lastKey)) {
+        const key = dest || pathCid() || routeCid() || lastKey;
+        if (key) {
+          remember2(key, live, popup);
+          lastPopup = popup;
+          lastText = live;
+          lastKey = key;
+        }
+      } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
         scheduleRestore();
       }
       return result;
@@ -19285,51 +19324,6 @@ html.void-rt-open [data-sidebar="gap"] {
     origFns2.clear();
     wrappedFns2.clear();
   }
-  function requestUrl3(input) {
-    if (typeof input === "string")
-      return input;
-    if (input instanceof URL)
-      return input.href;
-    try {
-      return input.url;
-    } catch {
-      return "";
-    }
-  }
-  function requestBody(input, init) {
-    if (typeof init?.body === "string")
-      return init.body;
-    if (init?.body instanceof URLSearchParams)
-      return init.body.toString();
-    return "";
-  }
-  function wrapFetch() {
-    if (origFetch3)
-      return;
-    origFetch3 = window.fetch.bind(window);
-    const inner = origFetch3;
-    window.fetch = function voidQuoteStickyFetch(input, init) {
-      const method = String(init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
-      const url = requestUrl3(input);
-      if ((method === "POST" || method === "PUT") && CHAT_POST2.test(url) && !STOP_URL2.test(url)) {
-        const key = ownKey();
-        const want = saved.get(key)?.text || readText().text;
-        if (want && isQuoteSend(requestBody(input, init), want))
-          markConsumed(key);
-      }
-      return inner(input, init);
-    };
-  }
-  function unwrapFetch() {
-    if (!origFetch3)
-      return;
-    if (window.fetch !== origFetch3) {
-      try {
-        window.fetch = origFetch3;
-      } catch {}
-    }
-    origFetch3 = null;
-  }
   function onMutate() {
     if (mutRaf)
       return;
@@ -19350,18 +19344,22 @@ html.void-rt-open [data-sidebar="gap"] {
     cleanupSelectors: [`.${cl26("chip")}`],
     start() {
       const now = readText();
-      lastKey = now.key;
-      if (now.key && now.text) {
-        remember2(now.key, now.text, now.popup);
+      const key = snapKey() || now.key;
+      lastKey = key;
+      if (key && now.text) {
+        remember2(key, now.text, now.popup);
         lastText = now.text;
         lastPopup = now.popup;
       }
       abort2 = new AbortController;
       document.addEventListener("pointerdown", onPointerDown4, { capture: true, signal: abort2.signal });
+      const poke = () => onMutate();
+      window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort2.signal });
+      window.addEventListener("resize", poke, { passive: true, signal: abort2.signal });
       observer = new MutationObserver(onMutate);
       observer.observe(document.documentElement, { childList: true, subtree: true });
       wrapAll();
-      wrapFetch();
+      ensureChip();
     },
     stop() {
       abort2?.abort();
@@ -19372,7 +19370,6 @@ html.void-rt-open [data-sidebar="gap"] {
         cancelAnimationFrame(mutRaf);
       mutRaf = 0;
       unwrapAll();
-      unwrapFetch();
       removeFallback();
       saved.clear();
       lastKey = "";
@@ -23866,7 +23863,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var PANE_SKIP3 = "[data-sidebar], [class*='pane-card']";
   var THINK_SEL2 = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
   var OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
-  var UUID2 = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
   var DISMISS2 = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
   var KEEP2 = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
   var FLASH_MS2 = 1800;
@@ -23919,7 +23916,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (depth > 5 || out.length > 8 || value == null)
       return;
     if (typeof value === "string") {
-      const m = value.match(UUID2);
+      const m = value.match(UUID);
       if (m)
         out.push(m[0]);
       return;
@@ -23932,7 +23929,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     }
     for (const [k, v] of Object.entries(value)) {
-      if (/responseid|messageid|^id$/i.test(k) && typeof v === "string" && UUID2.test(v))
+      if (/responseid|messageid|^id$/i.test(k) && typeof v === "string" && UUID.test(v))
         out.push(v);
       else
         collectIds(v, out, depth + 1);
@@ -23946,7 +23943,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       if (p) {
         for (const k of ["responseId", "parentResponseId", "messageId", "id"]) {
           const v = p[k];
-          if (typeof v === "string" && UUID2.test(v))
+          if (typeof v === "string" && UUID.test(v))
             return v;
         }
       }
@@ -23960,12 +23957,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (el) {
       const host = el.closest("[id^='response-']");
       if (host) {
-        const m = host.id.match(UUID2);
+        const m = host.id.match(UUID);
         if (m)
           out.push(m[0]);
       }
       const attr = el.closest("[data-response-id]")?.getAttribute("data-response-id");
-      if (attr && UUID2.test(attr))
+      if (attr && UUID.test(attr))
         out.push(attr);
       const fromFiber = propsId(el);
       if (fromFiber)
@@ -24108,6 +24105,9 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     return !!(row && nodeHasNeedle(row, q));
   }
   function composerChip(el) {
+    const sticky = el.closest(".void-qs-chip");
+    if (sticky instanceof HTMLElement && !el.closest(".void-qs-x"))
+      return sticky;
     const bar = el.closest(QUERY2);
     if (!(bar instanceof HTMLElement) || isEditor(el) || isDismiss(el) || isBarAction(el))
       return null;
@@ -25910,7 +25910,7 @@ Neon rain in a quiet city`
   betterLinks_default.updatedAt = 1789881199000;
   experiments_default.updatedAt = 1789881199000;
   customInstructions_default.updatedAt = 1789898438000;
-  quoteSticky_default.updatedAt = 1790104949000;
+  quoteSticky_default.updatedAt = 1790105280000;
   noBuildStarters_default.updatedAt = 1789894247000;
   responseNotification_default.updatedAt = 1790093417000;
   incognito_default.updatedAt = 1789881199000;

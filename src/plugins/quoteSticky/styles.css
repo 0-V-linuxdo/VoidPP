@@ -1,13 +1,19 @@
 .void-qs-chip {
+    position: fixed;
+    z-index: 40;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    max-width: 100%;
+    box-sizing: border-box;
+    max-width: calc(100vw - 24px);
     min-height: 2rem;
-    margin: 0.25rem 0.75rem 0;
-    padding: 0.125rem 0.25rem 0.125rem 0;
+    margin: 0;
+    padding: 0.25rem 0.25rem 0.25rem 0.5rem;
+    border-radius: 0.75rem;
+    background: hsl(var(--surface-base, 0 0% 8%));
     color: hsl(var(--fg-secondary));
     cursor: pointer;
+    pointer-events: auto;
 }
 
 .void-qs-mark {
