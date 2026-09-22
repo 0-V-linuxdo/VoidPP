@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.16
+// @version      20260922.17
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.16] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.17] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7393,9 +7393,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e739798"}`
-    }, `(${"e739798"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e496111"}`
+    }, `(${"e496111"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18767,11 +18767,16 @@ html.void-rt-open [data-sidebar="gap"] {
   function pathCid() {
     try {
       const path = location.pathname;
-      const inPath = path.match(/\/(?:c|chat)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] || "";
+      const inPath = path.match(/\/(?:c|chat|conversation)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] || "";
       if (inPath)
         return inPath;
-      const q = new URLSearchParams(location.search).get("conversationId") || "";
-      return UUID.test(q) ? q : "";
+      const q = new URLSearchParams(location.search);
+      for (const name of ["conversationId", "chat"]) {
+        const v = q.get(name) || "";
+        if (UUID.test(v))
+          return v;
+      }
+      return "";
     } catch {
       return "";
     }
@@ -18791,21 +18796,17 @@ html.void-rt-open [data-sidebar="gap"] {
       return "";
     }
   }
-  function viewKey(s) {
-    const ids = [];
-    for (const id of [pathCid(), routeCid(), storeCid(s)]) {
-      if (id && UUID.test(id) && !ids.includes(id))
-        ids.push(id);
-    }
-    if (ids.length > 1)
+  function destKey(s) {
+    const store = storeCid(s);
+    if (store && UUID.test(store))
+      return store;
+    if (pathCid() || UUID.test(routeCid()))
       return "";
-    if (ids.length === 1)
-      return ids[0] ?? "";
     const project = s?.projectId ?? projectId();
     return `home:${project || ""}`;
   }
   function ownKey() {
-    return viewKey() || lastKey;
+    return destKey() || lastKey;
   }
   function str(v) {
     if (typeof v === "string")
@@ -18842,7 +18843,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return String(rec.responseId ?? rec.parentResponseId ?? rec.id ?? rec.quotedText ?? "1");
   }
   function chatSel(s) {
-    return `${viewKey(s)}|${pathCid()}|${routeCid()}|${storeCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
+    return `${destKey(s)}|${pathCid()}|${routeCid()}|${storeCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
   }
   function hydrateSel(s) {
     return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`;
@@ -18850,9 +18851,9 @@ html.void-rt-open [data-sidebar="gap"] {
   function readText() {
     try {
       const s = ChatPageStore.useChatPageStore.getState();
-      return { key: viewKey(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
+      return { key: destKey(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
     } catch {
-      return { key: viewKey(), text: "", popup: undefined };
+      return { key: destKey(), text: "", popup: undefined };
     }
   }
   function remember2(key, text, popup) {
@@ -18880,6 +18881,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function clearLive() {
+    lastRestoreAt = 0;
     try {
       const chat = ChatPageStore.useChatPageStore.getState();
       if (!chat.quotedText && chat.quotePopupData == null)
@@ -18898,10 +18900,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function applyQuote(key, text, popup) {
-    if (viewKey() !== key)
-      return;
-    const store = storeCid();
-    if (store && UUID.test(store) && store !== key)
+    if (destKey() !== key)
       return;
     const chat = ChatPageStore.useChatPageStore.getState();
     applying3 = true;
@@ -18959,7 +18958,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function paintFallback(key, snap) {
     const bar = document.querySelector(QUERY);
-    if (viewKey() !== key || !(bar instanceof HTMLElement) || onImaginePage3()) {
+    if (destKey() !== key || !(bar instanceof HTMLElement) || onImaginePage3()) {
       removeFallback();
       return;
     }
@@ -18990,8 +18989,8 @@ html.void-rt-open [data-sidebar="gap"] {
       label.textContent = snap.text.replaceAll(/\s+/g, " ").trim();
   }
   function restore(key) {
-    if (!key || onImaginePage3() || viewKey() !== key) {
-      if (viewKey() !== key)
+    if (!key || onImaginePage3() || destKey() !== key) {
+      if (destKey() !== key)
         removeFallback();
       return;
     }
@@ -19019,9 +19018,9 @@ html.void-rt-open [data-sidebar="gap"] {
   function ensureChip() {
     if (onImaginePage3())
       return;
-    const key = viewKey();
+    const key = destKey();
     if (!key) {
-      hold();
+      removeFallback();
       return;
     }
     const snap = saved.get(key);
@@ -19030,11 +19029,6 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     }
     restore(key);
-  }
-  function hold() {
-    stashOutgoing();
-    removeFallback();
-    clearLive();
   }
   function dismiss() {
     const key = ownKey();
@@ -19056,9 +19050,10 @@ html.void-rt-open [data-sidebar="gap"] {
   function onChat() {
     if (applying3 || onImaginePage3())
       return;
-    const key = viewKey();
+    const key = destKey();
     if (!key) {
-      hold();
+      stashOutgoing();
+      removeFallback();
       return;
     }
     const now = readText();
@@ -19169,11 +19164,11 @@ html.void-rt-open [data-sidebar="gap"] {
     };
   }
   function scheduleRestore() {
-    const key = viewKey();
+    const key = destKey();
     if (!key || !saved.get(key)?.text)
       return;
     queueMicrotask(() => {
-      if (viewKey() === key)
+      if (destKey() === key)
         restore(key);
     });
   }
@@ -19183,7 +19178,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (applying3)
         return result;
       const text = String(args[0] ?? "");
-      const agreed = viewKey();
+      const agreed = destKey();
       const popup = ChatPageStore.useChatPageStore.getState().quotePopupData;
       if (text) {
         if (!agreed) {
@@ -19208,7 +19203,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const result = orig.apply(this, args);
       if (applying3)
         return result;
-      const agreed = viewKey();
+      const agreed = destKey();
       const popup = args[0];
       const live = String(ChatPageStore.useChatPageStore.getState().quotedText || "");
       if (popup != null && agreed && live && (!lastKey || lastKey === agreed)) {
@@ -25915,7 +25910,7 @@ Neon rain in a quiet city`
   betterLinks_default.updatedAt = 1789881199000;
   experiments_default.updatedAt = 1789881199000;
   customInstructions_default.updatedAt = 1789898438000;
-  quoteSticky_default.updatedAt = 1790104515000;
+  quoteSticky_default.updatedAt = 1790104949000;
   noBuildStarters_default.updatedAt = 1789894247000;
   responseNotification_default.updatedAt = 1790093417000;
   incognito_default.updatedAt = 1789881199000;

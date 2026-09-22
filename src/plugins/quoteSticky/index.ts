@@ -80,10 +80,14 @@ function projectId(): string {
 function pathCid(): string {
     try {
         const path = location.pathname;
-        const inPath = path.match(/\/(?:c|chat)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] || "";
+        const inPath = path.match(/\/(?:c|chat|conversation)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] || "";
         if (inPath) return inPath;
-        const q = new URLSearchParams(location.search).get("conversationId") || "";
-        return UUID.test(q) ? q : "";
+        const q = new URLSearchParams(location.search);
+        for (const name of ["conversationId", "chat"]) {
+            const v = q.get(name) || "";
+            if (UUID.test(v)) return v;
+        }
+        return "";
     } catch {
         return "";
     }
@@ -106,19 +110,16 @@ function storeCid(s?: ChatPageStoreState): string {
     }
 }
 
-function viewKey(s?: ChatPageStoreState): string {
-    const ids: string[] = [];
-    for (const id of [pathCid(), routeCid(), storeCid(s)]) {
-        if (id && UUID.test(id) && !ids.includes(id)) ids.push(id);
-    }
-    if (ids.length > 1) return "";
-    if (ids.length === 1) return ids[0] ?? "";
+function destKey(s?: ChatPageStoreState): string {
+    const store = storeCid(s);
+    if (store && UUID.test(store)) return store;
+    if (pathCid() || UUID.test(routeCid())) return "";
     const project = s?.projectId ?? projectId();
     return `home:${project || ""}`;
 }
 
 function ownKey(): string {
-    return viewKey() || lastKey;
+    return destKey() || lastKey;
 }
 
 function str(v: unknown): string {
@@ -156,7 +157,7 @@ function popupSig(p: unknown): string {
 }
 
 function chatSel(s: ChatPageStoreState): string {
-    return `${viewKey(s)}|${pathCid()}|${routeCid()}|${storeCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
+    return `${destKey(s)}|${pathCid()}|${routeCid()}|${storeCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
 }
 
 function hydrateSel(s: ResponseStoreState): string {
@@ -166,9 +167,9 @@ function hydrateSel(s: ResponseStoreState): string {
 function readText(): { key: string; text: string; popup: unknown } {
     try {
         const s = ChatPageStore.useChatPageStore.getState();
-        return { key: viewKey(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
+        return { key: destKey(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
     } catch {
-        return { key: viewKey(), text: "", popup: undefined };
+        return { key: destKey(), text: "", popup: undefined };
     }
 }
 
@@ -196,6 +197,7 @@ function drop(key: string) {
 }
 
 function clearLive() {
+    lastRestoreAt = 0;
     try {
         const chat = ChatPageStore.useChatPageStore.getState();
         if (!chat.quotedText && chat.quotePopupData == null) return;
@@ -212,9 +214,7 @@ function clearLive() {
 }
 
 function applyQuote(key: string, text: string, popup: unknown) {
-    if (viewKey() !== key) return;
-    const store = storeCid();
-    if (store && UUID.test(store) && store !== key) return;
+    if (destKey() !== key) return;
     const chat = ChatPageStore.useChatPageStore.getState();
     applying = true;
     try {
@@ -269,7 +269,7 @@ function makeChip(): HTMLElement {
 
 function paintFallback(key: string, snap: Snap) {
     const bar = document.querySelector(QUERY);
-    if (viewKey() !== key || !(bar instanceof HTMLElement) || onImaginePage()) {
+    if (destKey() !== key || !(bar instanceof HTMLElement) || onImaginePage()) {
         removeFallback();
         return;
     }
@@ -297,8 +297,8 @@ function paintFallback(key: string, snap: Snap) {
 }
 
 function restore(key: string) {
-    if (!key || onImaginePage() || viewKey() !== key) {
-        if (viewKey() !== key) removeFallback();
+    if (!key || onImaginePage() || destKey() !== key) {
+        if (destKey() !== key) removeFallback();
         return;
     }
     const snap = saved.get(key);
@@ -325,9 +325,9 @@ function restore(key: string) {
 
 function ensureChip() {
     if (onImaginePage()) return;
-    const key = viewKey();
+    const key = destKey();
     if (!key) {
-        hold();
+        removeFallback();
         return;
     }
     const snap = saved.get(key);
@@ -336,12 +336,6 @@ function ensureChip() {
         return;
     }
     restore(key);
-}
-
-function hold() {
-    stashOutgoing();
-    removeFallback();
-    clearLive();
 }
 
 function dismiss() {
@@ -362,9 +356,10 @@ function dismiss() {
 
 function onChat() {
     if (applying || onImaginePage()) return;
-    const key = viewKey();
+    const key = destKey();
     if (!key) {
-        hold();
+        stashOutgoing();
+        removeFallback();
         return;
     }
     const now = readText();
@@ -468,10 +463,10 @@ function makeSendWrapper(orig: SendFn): SendFn {
 }
 
 function scheduleRestore() {
-    const key = viewKey();
+    const key = destKey();
     if (!key || !saved.get(key)?.text) return;
     queueMicrotask(() => {
-        if (viewKey() === key) restore(key);
+        if (destKey() === key) restore(key);
     });
 }
 
@@ -480,7 +475,7 @@ function makeQuotedTextWrapper(orig: SendFn): SendFn {
         const result = orig.apply(this, args);
         if (applying) return result;
         const text = String(args[0] ?? "");
-        const agreed = viewKey();
+        const agreed = destKey();
         const popup = ChatPageStore.useChatPageStore.getState().quotePopupData;
         if (text) {
             if (!agreed) {
@@ -503,7 +498,7 @@ function makePopupWrapper(orig: SendFn): SendFn {
     return function voidQuoteStickyPopup(this: unknown, ...args: unknown[]) {
         const result = orig.apply(this, args);
         if (applying) return result;
-        const agreed = viewKey();
+        const agreed = destKey();
         const popup = args[0];
         const live = String(ChatPageStore.useChatPageStore.getState().quotedText || "");
         if (popup != null && agreed && live && (!lastKey || lastKey === agreed)) {
