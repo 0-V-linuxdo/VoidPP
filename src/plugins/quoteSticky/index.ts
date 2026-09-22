@@ -90,9 +90,23 @@ function pathCid(): string {
 }
 
 function liveKey(): string {
+    return viewKey() ?? fallbackKey();
+}
+
+function fallbackKey(): string {
     for (const id of [routeCid(), pageCid(), pathCid()]) {
         if (id && UUID.test(id)) return id;
     }
+    return `home:${projectId()}`;
+}
+
+function viewKey(): string | null {
+    const ids: string[] = [];
+    for (const id of [routeCid(), pageCid(), pathCid()]) {
+        if (id && UUID.test(id) && !ids.includes(id)) ids.push(id);
+    }
+    if (ids.length > 1) return null;
+    if (ids.length === 1) return ids[0];
     return `home:${projectId()}`;
 }
 
@@ -112,12 +126,26 @@ function hydrateSel(s: ResponseStoreState): string {
 }
 
 function readText(): { key: string; text: string; popup: unknown } {
+    const key = viewKey();
     try {
         const s = ChatPageStore.useChatPageStore.getState();
-        return { key: liveKey(), text: String(s.quotedText || ""), popup: s.quotePopupData };
+        return { key: key ?? "", text: String(s.quotedText || ""), popup: s.quotePopupData };
     } catch {
-        return { key: liveKey(), text: "", popup: undefined };
+        return { key: key ?? "", text: "", popup: undefined };
     }
+}
+
+function normQuote(s: string): string {
+    return s.replaceAll(/\s+/g, " ").trim();
+}
+
+function isForeign(text: string, key: string): boolean {
+    const n = normQuote(text);
+    if (!n) return false;
+    for (const [k, snap] of saved) {
+        if (k !== key && normQuote(snap.text) === n) return true;
+    }
+    return false;
 }
 
 function remember(key: string, snap: Snap) {
@@ -143,6 +171,22 @@ function drop(key: string) {
     }
 }
 
+function clearLive() {
+    try {
+        const chat = ChatPageStore.useChatPageStore.getState();
+        if (!chat.quotedText && chat.quotePopupData == null) return;
+        applying = true;
+        try {
+            if (chat.quotedText) chat.setQuotedText("");
+            if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null) chat.setQuotePopupData(null);
+        } finally {
+            applying = false;
+        }
+    } catch (e) {
+        logger.debug("clear failed", e);
+    }
+}
+
 function applyQuote(text: string, popup: unknown) {
     const chat = ChatPageStore.useChatPageStore.getState();
     applying = true;
@@ -161,7 +205,7 @@ function restore(key: string) {
     const snap = saved.get(key);
     if (!snap?.text) return;
     try {
-        if (liveKey() !== key) return;
+        if (viewKey() !== key) return;
         const chat = ChatPageStore.useChatPageStore.getState();
         const live = String(chat.quotedText || "");
         if (live === snap.text && popupSig(chat.quotePopupData) === popupSig(snap.popup)) return;
@@ -186,7 +230,8 @@ function chipVisible(text: string): boolean {
 
 function ensureChip() {
     if (onImaginePage()) return;
-    const key = liveKey();
+    const key = viewKey();
+    if (!key) return;
     const snap = saved.get(key);
     if (!snap?.text) return;
     restore(key);
@@ -194,7 +239,7 @@ function ensureChip() {
     if (pokeRaf) cancelAnimationFrame(pokeRaf);
     pokeRaf = requestAnimationFrame(() => {
         pokeRaf = 0;
-        restore(key);
+        if (viewKey() === key) restore(key);
     });
 }
 
@@ -225,20 +270,24 @@ function onChat() {
     if (now.key !== lastKey) {
         stashOutgoing();
         lastKey = now.key;
-        if (now.text) {
-            remember(now.key, { text: now.text, popup: now.popup });
-            lastText = now.text;
-            lastPopup = now.popup;
+        const snap = saved.get(now.key);
+        if (snap?.text) {
+            lastText = snap.text;
+            lastPopup = snap.popup;
+            restore(now.key);
         } else {
-            const snap = saved.get(now.key);
-            lastText = snap?.text || "";
-            lastPopup = snap?.popup;
+            lastText = "";
+            lastPopup = undefined;
+            clearLive();
         }
-        restore(now.key);
         schedulePoke();
         return;
     }
     if (now.text) {
+        if (isForeign(now.text, now.key)) {
+            clearLive();
+            return;
+        }
         remember(now.key, { text: now.text, popup: now.popup });
         lastText = now.text;
         lastPopup = now.popup;
