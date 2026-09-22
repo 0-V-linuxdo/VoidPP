@@ -29,6 +29,8 @@ Before any push to `voidpp`:
 
 Do not write `userscript/Void.user.js`. The hop is gone. Old Tampermonkey installs that already ate `[20260911.8]` or `[20260911.9]` follow `@updateURL` to `VoidPP.user.js`. Anyone still on a pre-hop `@updateURL` must reinstall from the canonical file.
 
+Tampermonkey `@version` must stay plain numeric (`20260922.18`), never `[20260922.18]`. Bracketed versions parse as equal and Check for updates will not fire.
+
 ## Runtime ids
 
 Canonical:
@@ -65,3 +67,32 @@ Correct path:
 - Imagine (`page` starts with `imagine`, or pathname `/imagine`) uses `imaginePhrases` (short, one line) via the same overlay. Empty list keeps official `Type to imagine`. Do not feed Imagine into `_phrases()` / `_inputPlaceholder()`.
 
 Do not touch ComposerOpacity, InputHistory, BetterCanvas, or real-input autosize for this.
+
+## QuoteSticky
+
+`quotedText` / `quotePopupData` are one global pair. There is no `quotedTextByConversationId`. Only drafts use `queryByConversationId`. After conversation hydrate the official composer does not remount a chip from `setQuotedText` plus a cloned popup. Persist UI is the fallback chip.
+
+Snap (`saved` Map) dies only on explicit dismiss or `sendMessage` / `queueMessage` that carries a user body. Do not `markConsumed` from `fetch` to `/rest/app-chat/conversations`. Nav draft-save POSTs the same shape (`message` / `text` / `fileAttachments` + `parentQuotedText`). During dest empty, `ownKey()` falls back to `lastKey` and that fetch would delete the outgoing chat's snap.
+
+Remember as soon as `quotedText` is non-empty. Key is `conversationId`, or `pathCid` while the store id is still empty. Dest empty must still remember. Refusing remember is why the official chip looked fine until the first switch.
+
+`destKey` for apply / `clearLive` is `conversationId` only. Do not fold in `optimisticConversationId`, path, or route agreement. Dest empty or path/store disagree: hide the chip, do not drop snap, do not `clearLive` (except a settled home with no path, route, or cid — then clear the live store so a blank composer does not keep the last quote). Path-first dest leaks the chip onto the next chat. Triple-source agreement plus `clearLive` on flicker drops the chip on switch-back.
+
+Do not treat `lastText` as the only copy. After dest flips to B, lastText is wiped; the Map is source of truth. `stashOutgoing` after that wipe is a no-op.
+
+Do not use `ownKey() = destKey() || lastKey` to drop snaps. During dest empty it points at the chat you just left.
+
+Host the fallback as a sibling of `.query-bar` (form / composer shell / `document.body` overlay), never as a React child of the query bar. React remounts those children and deletes the node. Observer may re-paint only while dest has a snap.
+
+`officialVisible` matching 12 chars inside `.query-bar` can hide the fallback when the draft editor still contains the quote snippet. Official chip will not be there after hydrate — do not treat that match as "chip already shown".
+
+Do not wrap `setChatPageLoaded` to fight hydrate. That fought ModeSync. Restore on dest settle plus observer paint is enough.
+
+QuoteJump reads the chip text (including `.void-qs-chip`). It does not need the official chip. Click-to-line uses `Range.getClientRects()[0]` plus visual viewport mid-Y, not `scrollIntoView` on the message root. Do not couple QuoteSticky persist fixes to ModeSync, the stop button, or that scroll math.
+
+Regression table:
+
+- 22.15 path-first dest — leak onto the next chat
+- 22.16 three-source dest + `clearLive` on disagree — loss on switch-back
+- 22.17 store dest + dest empty refuses remember + fetch consume — loss on switch-back
+- 22.18 `conversationId` dest, remember on any `quotedText`, no fetch consume, sibling host — persist without leak
