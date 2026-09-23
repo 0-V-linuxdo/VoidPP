@@ -11,6 +11,7 @@ import { ChatPageStore, MessageStore, RoutingStore } from "@turbopack/common/sto
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
 
+import { mountQuoteMark } from "./icon";
 import { DISMISS, KEEP as KEEP_BTN, onImaginePage, QUERY } from "./shared";
 
 const logger = new Logger("QuoteSticky");
@@ -228,6 +229,7 @@ function makeChip(): HTMLElement {
     const mark = document.createElement("span");
     mark.className = cl("mark");
     mark.setAttribute("aria-hidden", "true");
+    mountQuoteMark(mark);
     const text = document.createElement("span");
     text.className = cl("text");
     const btn = document.createElement("button");

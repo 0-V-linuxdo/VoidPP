@@ -78,7 +78,9 @@ Do not touch ComposerOpacity, InputHistory, BetterCanvas, or real-input autosize
 
 ## BetterQuotes
 
-QuoteJump and QuoteSticky are one plugin. `jump.ts` scrolls; `sticky.ts` persists. Do not fold either into UserQuotes. Do not couple persist fixes to BetterQueue, the stop button, or the scroll math in `jump.ts`.
+QuoteJump and QuoteSticky are one plugin. `jump.ts` scrolls; `sticky.ts` persists. `icon.ts` replaces the official composer quote chip's left text-block glyph with MessageSquareQuote while the plugin is on. Do not fold any of them into UserQuotes. Do not couple the icon swap to BetterQueue, the stop button, or the scroll math in `jump.ts`.
+
+Hide the official left svg with `data-void-bq-native` and insert a sibling `data-void-bq-icon`. Repaint from the `quotedText` subscription and a childList observer — React drops the sibling. Do not webpack-patch the chip and do not hide icons by global `path[d]`. The fallback `.void-qs-mark` uses the same svg. Imagine stays unpainted. Leave the dismiss X alone.
 
 `quotedText` / `quotePopupData` are one global pair. There is no `quotedTextByConversationId`. Only drafts use `queryByConversationId`. After conversation hydrate the official composer does not remount a chip from `setQuotedText` plus a cloned popup. Persist UI is the fallback chip.
 

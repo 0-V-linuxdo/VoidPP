@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.21
+// @version      20260923.22
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.21] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.22] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7515,9 +7515,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5412bd4"}`
-    }, `(${"5412bd4"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"127357a"}`
+    }, `(${"127357a"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14202,13 +14202,32 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     pointer-events: auto;
 }
 
+.void-bq-native,
+[data-void-bq-native] {
+    display: none !important;
+}
+
+.void-bq-icon {
+    flex: none;
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+    color: inherit;
+}
+
 .void-qs-mark {
     flex: none;
-    width: 2px;
-    align-self: stretch;
-    min-height: 1.25rem;
-    border-radius: 1px;
-    background: hsl(var(--fg-secondary));
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+    align-self: center;
+    color: inherit;
+}
+
+.void-qs-mark svg {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
 }
 
 .void-qs-text {
@@ -14269,6 +14288,197 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
 
+  // src/plugins/betterQuotes/icon.ts
+  var NATIVE = "data-void-bq-native";
+  var MARK = "data-void-bq-icon";
+  var QUOTE_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 12a2 2 0 0 0 2-2V8H8"/><path d="M14 12a2 2 0 0 0 2-2V8h-2"/></svg>';
+  var armed = false;
+  var observer = null;
+  var unsub = null;
+  var raf2 = 0;
+  function norm(s) {
+    return s.replaceAll(/\s+/g, " ").trim();
+  }
+  function quotedText() {
+    try {
+      return String(ChatPageStore.useChatPageStore.getState().quotedText || "");
+    } catch {
+      return "";
+    }
+  }
+  function isDismissButton(btn) {
+    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
+    if (KEEP.test(label))
+      return false;
+    if (DISMISS.test(label))
+      return true;
+    return !(btn.textContent || "").replace(/\s+/g, "") && !!btn.querySelector("svg");
+  }
+  function isCloseSvg(svg) {
+    const d = [...svg.querySelectorAll("path")].map((p) => p.getAttribute("d") || "").join(" ");
+    return /M18\s*6|6\s*18|l12\s*12/.test(d);
+  }
+  function leftSvgs(row) {
+    const out = [];
+    for (const svg of row.querySelectorAll("svg")) {
+      if (!(svg instanceof SVGSVGElement))
+        continue;
+      if (svg.hasAttribute(MARK) || svg.closest(`[${MARK}]`))
+        continue;
+      if (isCloseSvg(svg))
+        continue;
+      const btn = svg.closest("button, [role='button']");
+      if (btn instanceof HTMLElement && row.contains(btn) && isDismissButton(btn))
+        continue;
+      out.push(svg);
+    }
+    return out;
+  }
+  function chipRows(text) {
+    const q = norm(text);
+    const clip = q.slice(0, 12);
+    if (clip.length < 2)
+      return [];
+    const found = [];
+    for (const bar of document.querySelectorAll(QUERY)) {
+      if (!(bar instanceof HTMLElement))
+        continue;
+      for (const n of bar.querySelectorAll("div, span")) {
+        if (!(n instanceof HTMLElement))
+          continue;
+        if (n.closest(".tiptap, [contenteditable='true'], .void-qs-chip"))
+          continue;
+        if (n.querySelector("textarea, [contenteditable='true'], .tiptap"))
+          continue;
+        if (n.offsetHeight <= 0 || n.offsetHeight > 72)
+          continue;
+        const rowText = norm(n.textContent || "");
+        if (!rowText.includes(clip) || rowText.length > q.length + 48)
+          continue;
+        if (!n.querySelector("svg"))
+          continue;
+        found.push(n);
+      }
+    }
+    return found.filter((el) => !found.some((other) => other !== el && el.contains(other)));
+  }
+  function makeIcon() {
+    const host = document.createElement("div");
+    host.innerHTML = QUOTE_ICON_SVG;
+    const svg = host.firstElementChild;
+    if (!(svg instanceof SVGSVGElement))
+      return null;
+    svg.setAttribute(MARK, "");
+    svg.classList.add("void-bq-icon");
+    return svg;
+  }
+  function mountQuoteMark(host) {
+    if (host.querySelector("svg"))
+      return;
+    const holder = document.createElement("div");
+    holder.innerHTML = QUOTE_ICON_SVG;
+    const svg = holder.firstElementChild;
+    if (svg)
+      host.replaceChildren(svg);
+  }
+  function clearOfficial() {
+    for (const n of document.querySelectorAll(`[${NATIVE}]`)) {
+      n.removeAttribute(NATIVE);
+      n.classList.remove("void-bq-native");
+    }
+    for (const n of document.querySelectorAll(`[${MARK}]`))
+      n.remove();
+  }
+  function paintRow(row) {
+    const natives = leftSvgs(row);
+    for (const svg of natives) {
+      if (!svg.hasAttribute(NATIVE)) {
+        svg.setAttribute(NATIVE, "");
+        svg.classList.add("void-bq-native");
+      }
+    }
+    const icons = [...row.querySelectorAll(`[${MARK}]`)];
+    if (natives.length && icons.length === 0) {
+      const icon = makeIcon();
+      if (icon)
+        natives[0].before(icon);
+    } else {
+      for (const extra of icons.slice(1))
+        extra.remove();
+    }
+  }
+  function paint3() {
+    if (!armed)
+      return;
+    if (onImaginePage2() || !quotedText()) {
+      clearOfficial();
+      return;
+    }
+    const rows = chipRows(quotedText());
+    if (!rows.length) {
+      clearOfficial();
+      return;
+    }
+    const keep = new Set;
+    for (const row of rows) {
+      paintRow(row);
+      for (const n of row.querySelectorAll(`[${MARK}], [${NATIVE}]`))
+        keep.add(n);
+    }
+    for (const n of document.querySelectorAll(`[${MARK}], [${NATIVE}]`)) {
+      if (keep.has(n))
+        continue;
+      if (n.hasAttribute(NATIVE)) {
+        n.removeAttribute(NATIVE);
+        n.classList.remove("void-bq-native");
+      } else {
+        n.remove();
+      }
+    }
+  }
+  function schedule() {
+    if (!armed || raf2)
+      return;
+    raf2 = requestAnimationFrame(() => {
+      raf2 = 0;
+      if (armed)
+        paint3();
+    });
+  }
+  function startIcons() {
+    if (armed)
+      return;
+    armed = true;
+    observer = new MutationObserver(schedule);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    try {
+      let seen = quotedText();
+      unsub = ChatPageStore.useChatPageStore.subscribe(() => {
+        const next = quotedText();
+        if (next === seen)
+          return;
+        seen = next;
+        schedule();
+      });
+    } catch {}
+    schedule();
+  }
+  function stopIcons() {
+    if (!armed && !observer && !unsub) {
+      clearOfficial();
+      return;
+    }
+    armed = false;
+    observer?.disconnect();
+    observer = null;
+    unsub?.();
+    unsub = null;
+    if (raf2)
+      cancelAnimationFrame(raf2);
+    raf2 = 0;
+    clearOfficial();
+  }
+
   // src/plugins/betterQuotes/jump.ts
   var logger26 = new Logger("QuoteJump");
   var cl20 = classNameFactory("void-qj-");
@@ -14289,10 +14499,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var flashTimer2 = 0;
   var flashing2 = null;
   var jumpArmed = false;
-  function norm(s) {
+  function norm2(s) {
     return s.replaceAll(/\s+/g, " ").trim();
   }
-  function quotedText() {
+  function quotedText2() {
     try {
       return String(ChatPageStore.useChatPageStore.getState().quotedText || "");
     } catch {
@@ -14441,7 +14651,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function storeNeedle(needle) {
-    const n = norm(needle);
+    const n = norm2(needle);
     if (n.length < 2)
       return null;
     try {
@@ -14452,7 +14662,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         const row = rows[i];
         if (!row?.responseId)
           continue;
-        if (norm(String(row.message || "")).includes(n))
+        if (norm2(String(row.message || "")).includes(n))
           return { id: row.responseId, cid };
       }
     } catch (e) {
@@ -14461,13 +14671,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return null;
   }
   function prefixOf(text) {
-    return norm(text).replace(/[.…]+$/u, "");
+    return norm2(text).replace(/[.…]+$/u, "");
   }
   function nodeHasNeedle(el, needle) {
     const n = prefixOf(needle);
     if (n.length < 2)
       return false;
-    const text = norm(el.textContent || "");
+    const text = norm2(el.textContent || "");
     const clip = n.slice(0, Math.min(n.length, 48));
     return text.includes(clip) || clip.includes(text) && text.length >= 8;
   }
@@ -14500,8 +14710,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return false;
     if (DISMISS.test(label))
       return true;
-    const q = quotedText();
-    if (!q || norm(btn.textContent || "") || !btn.querySelector("svg"))
+    const q = quotedText2();
+    if (!q || norm2(btn.textContent || "") || !btn.querySelector("svg"))
       return false;
     const row = chipRow(btn);
     return !!(row && nodeHasNeedle(row, q));
@@ -14513,7 +14723,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const bar = el.closest(QUERY);
     if (!(bar instanceof HTMLElement) || isEditor(el) || isDismiss(el) || isBarAction(el))
       return null;
-    const needle = quotedText();
+    const needle = quotedText2();
     if (!needle)
       return null;
     let n = el instanceof HTMLElement ? el : el.parentElement;
@@ -14584,7 +14794,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (at < 0)
       return null;
     for (const part of parts) {
-      const compact = norm(part.raw);
+      const compact = norm2(part.raw);
       if (!compact)
         continue;
       const end = part.start + compact.length;
@@ -14617,7 +14827,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (blob)
         blob += " ";
       parts.push({ node, raw, start: blob.length });
-      blob += norm(raw);
+      blob += norm2(raw);
     }
     return { parts, blob };
   }
@@ -14748,7 +14958,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function resolveNeedle(origin) {
-    const live = quotedText();
+    const live = quotedText2();
     if (origin) {
       const msg = origin.closest(MSG2);
       const id = msg ? propsId(msg) || idsFrom(msg)[0] : "";
@@ -14873,9 +15083,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var applying2 = false;
   var lastRestoreAt = 0;
   var abort3 = null;
-  var observer = null;
+  var observer2 = null;
   var mutRaf = 0;
-  var armed = false;
+  var armed2 = false;
   function pathCid() {
     try {
       const path = location.pathname;
@@ -15057,6 +15267,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const mark = document.createElement("span");
     mark.className = cl21("mark");
     mark.setAttribute("aria-hidden", "true");
+    mountQuoteMark(mark);
     const text = document.createElement("span");
     text.className = cl21("text");
     const btn = document.createElement("button");
@@ -15171,7 +15382,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return String(s.route.conversationId ?? "");
   }
   function onChat() {
-    if (!armed || applying2 || onImaginePage2())
+    if (!armed2 || applying2 || onImaginePage2())
       return;
     const now = readText();
     const dest = destKey();
@@ -15234,7 +15445,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     restore2(dest);
   }
   function onNav() {
-    if (!armed)
+    if (!armed2)
       return;
     wrapAll();
     onChat();
@@ -15447,18 +15658,18 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     wrappedFns2.clear();
   }
   function onMutate() {
-    if (!armed || mutRaf)
+    if (!armed2 || mutRaf)
       return;
     mutRaf = requestAnimationFrame(() => {
       mutRaf = 0;
-      if (armed)
+      if (armed2)
         ensureChip();
     });
   }
   function startSticky() {
-    if (armed)
+    if (armed2)
       return;
-    armed = true;
+    armed2 = true;
     const now = readText();
     const key = snapKey() || now.key;
     lastKey = key;
@@ -15472,19 +15683,19 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const poke = () => onMutate();
     window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort3.signal });
     window.addEventListener("resize", poke, { passive: true, signal: abort3.signal });
-    observer = new MutationObserver(onMutate);
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    observer2 = new MutationObserver(onMutate);
+    observer2.observe(document.documentElement, { childList: true, subtree: true });
     wrapAll();
     ensureChip();
   }
   function stopSticky() {
-    if (!armed)
+    if (!armed2)
       return;
-    armed = false;
+    armed2 = false;
     abort3?.abort();
     abort3 = null;
-    observer?.disconnect();
-    observer = null;
+    observer2?.disconnect();
+    observer2 = null;
     if (mutRaf)
       cancelAnimationFrame(mutRaf);
     mutRaf = 0;
@@ -15583,12 +15794,16 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     startAt: "TurbopackReady" /* TurbopackReady */,
     settings: settings13,
     managedStyle: "betterQuotes",
-    cleanupSelectors: [".void-qs-chip"],
-    start: apply2,
+    cleanupSelectors: [".void-qs-chip", "[data-void-bq-icon]"],
+    start() {
+      startIcons();
+      apply2();
+    },
     onSettingsChange: apply2,
     stop() {
       stopJump();
       stopSticky();
+      stopIcons();
     },
     zustand: {
       ChatPageStore: {
@@ -16308,7 +16523,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 
   // src/plugins/chatListStatus/index.ts
   var logger30 = new Logger("ChatListStatus");
-  var MARK = "void-cls";
+  var MARK2 = "void-cls";
   var LIVE2 = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD2 = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
   var LIVE_WORD = /^(working|running|in[_-]?progress|executing|processing|pending|continuing|started)$/i;
@@ -16329,7 +16544,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var extraSeen = new WeakSet;
   var extraScanned = new Set;
   var extraUnsubs = [];
-  var raf2 = 0;
+  var raf3 = 0;
   var extraScanRaf = 0;
   var extraBusy = false;
   var started2 = false;
@@ -16541,7 +16756,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         continue;
       extraSeen.add(val);
       extraStores.push(val);
-      extraUnsubs.push(val.subscribe(() => schedule()));
+      extraUnsubs.push(val.subscribe(() => schedule2()));
       logger30.info("extra store", key);
     }
   }
@@ -16559,7 +16774,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         scanModule(exports);
       }
       if (extraStores.length !== before)
-        schedule();
+        schedule2();
     } finally {
       extraBusy = false;
     }
@@ -16733,16 +16948,16 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       logger30.debug("streamEnd lookup failed:", e);
     }
     if (liveIds().has(cid)) {
-      schedule();
+      schedule2();
       return;
     }
     if (currentIds().includes(cid) || isUserInterrupt3(response)) {
       marks.delete(cid);
-      schedule();
+      schedule2();
       return;
     }
     marks.set(cid, isErrorResponse(response) ? "error" : "done");
-    schedule();
+    schedule2();
   }
   function hrefOf(el) {
     const a = el instanceof HTMLAnchorElement ? el : el.closest("a[href]") ?? el.querySelector("a[href]");
@@ -16799,7 +17014,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return isDestPath(path);
   }
   function rowHost(el, root) {
-    if (el.classList.contains(MARK))
+    if (el.classList.contains(MARK2))
       return null;
     if (el.closest('[data-sidebar="menu-action"], [data-sidebar="footer"], [data-sidebar="header"]'))
       return null;
@@ -16832,10 +17047,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function ensureMark(btn, kind) {
     btn.toggleAttribute("data-void-cls-nest", isNestedHost(btn));
-    let mark = btn.querySelector(`:scope > .${MARK}`);
+    let mark = btn.querySelector(`:scope > .${MARK2}`);
     if (!mark) {
       mark = document.createElement("span");
-      mark.className = MARK;
+      mark.className = MARK2;
       mark.setAttribute("aria-hidden", "true");
       btn.prepend(mark);
     }
@@ -16847,7 +17062,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       mark.append(spinSvg());
   }
   function clearMark(btn) {
-    btn.querySelector(`:scope > .${MARK}`)?.remove();
+    btn.querySelector(`:scope > .${MARK2}`)?.remove();
     btn.removeAttribute("data-void-cls-nest");
   }
   function roots() {
@@ -16869,13 +17084,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return null;
   }
   function sweepPrimaryMarks() {
-    for (const mark of document.querySelectorAll(`.${MARK}`)) {
+    for (const mark of document.querySelectorAll(`.${MARK2}`)) {
       const host = mark.parentElement;
       if (host && isPrimaryNav(host))
         clearMark(host);
     }
   }
-  function paint3() {
+  function paint4() {
     if (!started2)
       return;
     sweepPrimaryMarks();
@@ -16922,13 +17137,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (live.length && !rowById.size)
       logger30.info("live ids with no rows", live);
   }
-  function schedule() {
-    if (!started2 || raf2)
+  function schedule2() {
+    if (!started2 || raf3)
       return;
-    raf2 = requestAnimationFrame(() => {
-      raf2 = 0;
+    raf3 = requestAnimationFrame(() => {
+      raf3 = 0;
       if (started2)
-        paint3();
+        paint4();
     });
   }
   function ownMutation(list) {
@@ -16936,15 +17151,15 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return false;
     for (const m of list) {
       const { target } = m;
-      if (target instanceof Element && (target.classList.contains(MARK) || target.closest(`.${MARK}`)))
+      if (target instanceof Element && (target.classList.contains(MARK2) || target.closest(`.${MARK2}`)))
         continue;
       for (const n of m.addedNodes) {
-        if (n instanceof Element && (n.classList.contains(MARK) || n.querySelector(`.${MARK}`)))
+        if (n instanceof Element && (n.classList.contains(MARK2) || n.querySelector(`.${MARK2}`)))
           continue;
         return false;
       }
       for (const n of m.removedNodes) {
-        if (n instanceof Element && n.classList.contains(MARK))
+        if (n instanceof Element && n.classList.contains(MARK2))
           continue;
         return false;
       }
@@ -16958,7 +17173,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     obs3 = new MutationObserver((list) => {
       if (ownMutation(list))
         return;
-      schedule();
+      schedule2();
     });
     const node = document.querySelector(SIDEBAR) ?? document.body;
     obs3.observe(node, node === document.body ? { childList: true, subtree: true } : { childList: true, subtree: true, attributes: true, attributeFilter: ["href"] });
@@ -16994,19 +17209,19 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
     managedStyle: "chatListStatus",
-    cleanupSelectors: [`.${MARK}`],
+    cleanupSelectors: [`.${MARK2}`],
     start() {
       started2 = true;
       attachExtraStores();
       extraOff = onModuleLoad(() => queueExtraScan());
       observe();
-      schedule();
+      schedule2();
     },
     stop() {
       started2 = false;
-      if (raf2)
-        cancelAnimationFrame(raf2);
-      raf2 = 0;
+      if (raf3)
+        cancelAnimationFrame(raf3);
+      raf3 = 0;
       if (extraScanRaf)
         cancelAnimationFrame(extraScanRaf);
       extraScanRaf = 0;
@@ -17020,7 +17235,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       extraStores.length = 0;
       extraSeen = new WeakSet;
       extraScanned.clear();
-      for (const el of document.querySelectorAll(`.${MARK}`)) {
+      for (const el of document.querySelectorAll(`.${MARK2}`)) {
         el.parentElement?.removeAttribute("data-void-cls-nest");
         el.remove();
       }
@@ -17033,19 +17248,19 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     zustand: {
       ChatPageStore: {
         selector: pageKey2,
-        handler: schedule
+        handler: schedule2
       },
       ResponseStore: {
         selector: responseKey2,
-        handler: schedule
+        handler: schedule2
       },
       ConversationStore: {
         selector: conversationKey,
-        handler: schedule
+        handler: schedule2
       },
       RoutingStore: {
         selector: routeKey,
-        handler: schedule
+        handler: schedule2
       }
     }
   });
@@ -17325,7 +17540,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var unsubPage = null;
   var unsubStream = null;
   var unsubResponse = null;
-  var raf3 = 0;
+  var raf4 = 0;
   var started3 = false;
   var watching = false;
   function currentStyle() {
@@ -17670,10 +17885,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     scheduleEvaluate();
   }
   function scheduleEvaluate() {
-    if (!started3 || raf3)
+    if (!started3 || raf4)
       return;
-    raf3 = requestAnimationFrame(() => {
-      raf3 = 0;
+    raf4 = requestAnimationFrame(() => {
+      raf4 = 0;
       if (!started3)
         return;
       if (!isChatSurface()) {
@@ -17906,9 +18121,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     stop() {
       started3 = false;
       watching = false;
-      if (raf3)
-        cancelAnimationFrame(raf3);
-      raf3 = 0;
+      if (raf4)
+        cancelAnimationFrame(raf4);
+      raf4 = 0;
       inputCtrl?.abort();
       inputCtrl = null;
       unsubRoute?.();
@@ -19536,7 +19751,7 @@ Neon rain in a quiet city`
   var treeObs = null;
   var sizeObs = null;
   var observed = null;
-  var raf4 = 0;
+  var raf5 = 0;
   var probe = null;
   var lastInputCss = "";
   function pickNextIndex(listLen, advance) {
@@ -19720,10 +19935,10 @@ Neon rain in a quiet city`
     registerStyle(INPUT_STYLE, css);
   }
   function scheduleInput() {
-    if (!started5 || raf4)
+    if (!started5 || raf5)
       return;
-    raf4 = requestAnimationFrame(() => {
-      raf4 = 0;
+    raf5 = requestAnimationFrame(() => {
+      raf5 = 0;
       paintInput();
     });
   }
@@ -19791,9 +20006,9 @@ Neon rain in a quiet city`
       sizeObs?.disconnect();
       sizeObs = null;
       observed = null;
-      if (raf4)
-        cancelAnimationFrame(raf4);
-      raf4 = 0;
+      if (raf5)
+        cancelAnimationFrame(raf5);
+      raf5 = 0;
       probe?.remove();
       probe = null;
       lastInputCss = "";
@@ -20383,7 +20598,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var PFP = 'img[alt="pfp"]';
   var NAME_CLASS = "void-csi-name";
   var HIDE_CLASS2 = "void-csi-hide";
-  var MARK2 = "data-void-csi";
+  var MARK3 = "data-void-csi";
   var ORIG = "data-void-csi-orig";
   var SOURCE_PX = 1024;
   var AVATAR_PX = 256;
@@ -20808,7 +21023,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   var failed = new Set;
   var treeObs2 = null;
-  var raf5 = 0;
+  var raf6 = 0;
   var painting = false;
   var started6 = false;
   function trimName() {
@@ -20835,7 +21050,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function restoreImg(img) {
     const orig = img.getAttribute(ORIG);
     img.removeEventListener("error", onImgError);
-    img.removeAttribute(MARK2);
+    img.removeAttribute(MARK3);
     if (orig == null)
       return;
     img.src = orig;
@@ -20856,7 +21071,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return;
     }
     const current = img.getAttribute("src") ?? "";
-    if (img.getAttribute(MARK2) === "1") {
+    if (img.getAttribute(MARK3) === "1") {
       if (current === url)
         return;
       if (current)
@@ -20864,7 +21079,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     } else if (!img.hasAttribute(ORIG)) {
       img.setAttribute(ORIG, current);
     }
-    img.setAttribute(MARK2, "1");
+    img.setAttribute(MARK3, "1");
     if (img.getAttribute("srcset"))
       img.removeAttribute("srcset");
     img.referrerPolicy = "no-referrer";
@@ -20963,7 +21178,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (!settings21.store.applyToMenu) {
         dropNames(menu);
         unhide(menu);
-        for (const img of menu.querySelectorAll(`img[${MARK2}]`))
+        for (const img of menu.querySelectorAll(`img[${MARK3}]`))
           restoreImg(img);
         continue;
       }
@@ -20987,7 +21202,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   }
   function restoreAll() {
-    for (const img of document.querySelectorAll(`img[${MARK2}]`))
+    for (const img of document.querySelectorAll(`img[${MARK3}]`))
       restoreImg(img);
     dropNames(document);
     unhide(document);
@@ -21011,11 +21226,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       painting = false;
     }
   }
-  function schedule2() {
-    if (!started6 || raf5)
+  function schedule3() {
+    if (!started6 || raf6)
       return;
-    raf5 = requestAnimationFrame(() => {
-      raf5 = 0;
+    raf6 = requestAnimationFrame(() => {
+      raf6 = 0;
       apply4();
     });
   }
@@ -21024,14 +21239,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return;
     for (const m of muts) {
       if (m.type !== "attributes") {
-        schedule2();
+        schedule3();
         return;
       }
       const el = m.target;
       if (!(el instanceof HTMLImageElement))
         continue;
       if (el.closest(FOOTER) || settings21.store.applyToMenu && el.closest(MENU)) {
-        schedule2();
+        schedule3();
         return;
       }
     }
@@ -21068,9 +21283,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     },
     stop() {
       started6 = false;
-      if (raf5)
-        cancelAnimationFrame(raf5);
-      raf5 = 0;
+      if (raf6)
+        cancelAnimationFrame(raf6);
+      raf6 = 0;
       treeObs2?.disconnect();
       treeObs2 = null;
       restoreAll();
@@ -25382,14 +25597,14 @@ html.void-rt-open [data-sidebar="gap"] {
     } finally {
       suspendPaint = false;
     }
-    paint4();
+    paint5();
   }
   function cycle2(reverse) {
     const { length } = topics();
     if (!length)
       return;
     selected = (selected + (reverse ? -1 : 1) + length) % length;
-    paint4();
+    paint5();
   }
   function commit() {
     if (!open2)
@@ -25397,7 +25612,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const target = topics()[selected];
     open2 = false;
     held2 = false;
-    paint4();
+    paint5();
     if (target)
       navigateTo2(target.id);
   }
@@ -25406,7 +25621,7 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     open2 = false;
     held2 = false;
-    paint4();
+    paint5();
   }
   function onKeyDown5(e) {
     if (isCtrlKey(e)) {
@@ -25657,7 +25872,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function maybePaint() {
     if (open2 && !suspendPaint)
-      paint4();
+      paint5();
   }
   function onHoverMove(e) {
     if (!open2 || hoverArmed)
@@ -25772,7 +25987,7 @@ html.void-rt-open [data-sidebar="gap"] {
     });
     cards[selected]?.scrollIntoView({ inline: "nearest", block: "nearest" });
   }
-  function paint4() {
+  function paint5() {
     document.documentElement.classList.toggle("void-rt-open", open2);
     if (!open2) {
       detachHost();
@@ -28475,7 +28690,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1790161256000;
   betterNavigator_default.updatedAt = 1790145289000;
   betterQueue_default.updatedAt = 1790159561000;
-  betterQuotes_default.updatedAt = 1790158302000;
+  betterQuotes_default.updatedAt = 1790169826000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;

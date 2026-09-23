@@ -12,6 +12,7 @@ import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 
+import { startIcons, stopIcons } from "./icon";
 import { startJump, stopJump } from "./jump";
 import { chatSel, hydrateSel, onChat, onNav, routeSel, startSticky, stopSticky } from "./sticky";
 
@@ -97,13 +98,17 @@ export default definePlugin({
     startAt: StartAt.TurbopackReady,
     settings,
     managedStyle: "betterQuotes",
-    cleanupSelectors: [".void-qs-chip"],
+    cleanupSelectors: [".void-qs-chip", "[data-void-bq-icon]"],
 
-    start: apply,
+    start() {
+        startIcons();
+        apply();
+    },
     onSettingsChange: apply,
     stop() {
         stopJump();
         stopSticky();
+        stopIcons();
     },
 
     zustand: {
