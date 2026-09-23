@@ -7,7 +7,7 @@
 import "./styles.css";
 
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
-import { Flex, InfoHint, Textarea } from "@components";
+import { Flex, Text, Textarea } from "@components";
 import { MessageCircleIcon } from "@components/icons";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React, useState } from "@turbopack/common/react";
@@ -187,9 +187,9 @@ function PhraseListsEditor() {
                     Imagine
                 </button>
             </div>
-            <InfoHint>{home
+            <Text size="sm" color="secondary" className={cl("hint")}>{home
                 ? "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults."
-                : "One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's \"Type to imagine\"."}</InfoHint>
+                : "One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's \"Type to imagine\"."}</Text>
             <div className={cl("textarea-wrap")} role="tabpanel">
                 {home ? (
                     <Textarea

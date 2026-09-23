@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.17
+// @version      20260923.18
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.17] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.18] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7489,9 +7489,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"afa7780"}`
-    }, `(${"afa7780"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.18] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"bd60a21"}`
+    }, `(${"bd60a21"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -19261,6 +19261,10 @@ html.void-rt-open [data-sidebar="gap"] {
     box-shadow: inset 0 0 0 2px hsl(var(--fg-primary));
 }
 
+.void-ph-hint {
+    overflow-wrap: anywhere;
+}
+
 .void-ph-textarea-wrap {
     border: 1px solid hsl(var(--border-l2));
     border-radius: 0.75rem;
@@ -19502,7 +19506,11 @@ html.void-rt-open [data-sidebar="gap"] {
       "aria-selected": !home,
       className: cl27("tab", !home && "tab-active"),
       onClick: () => setTab("imagine")
-    }, "Imagine")), /* @__PURE__ */ React.createElement(InfoHint, null, home ? "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults." : `One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's "Type to imagine".`), /* @__PURE__ */ React.createElement("div", {
+    }, "Imagine")), /* @__PURE__ */ React.createElement(Text2, {
+      size: "sm",
+      color: "secondary",
+      className: cl27("hint")
+    }, home ? "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults." : `One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's "Type to imagine".`), /* @__PURE__ */ React.createElement("div", {
       className: cl27("textarea-wrap"),
       role: "tabpanel"
     }, home ? /* @__PURE__ */ React.createElement(Textarea, {
@@ -28443,7 +28451,7 @@ div:has(> #grok-bot-nav-button) {
   customSidebarIdentity_default.updatedAt = 1789918488000;
   downloadTTS_default.updatedAt = 1787870966000;
   recentTopics_default.updatedAt = 1789881195000;
-  customGreeting_default.updatedAt = 1790163144000;
+  customGreeting_default.updatedAt = 1790163660000;
   betterAvatarPlugins_default.updatedAt = 1790162678000;
   betterLinks_default.updatedAt = 1787870966000;
   experiments_default.updatedAt = 1788047438000;

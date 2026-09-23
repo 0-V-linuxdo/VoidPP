@@ -37,6 +37,10 @@
     box-shadow: inset 0 0 0 2px hsl(var(--fg-primary));
 }
 
+.void-ph-hint {
+    overflow-wrap: anywhere;
+}
+
 .void-ph-textarea-wrap {
     border: 1px solid hsl(var(--border-l2));
     border-radius: 0.75rem;
