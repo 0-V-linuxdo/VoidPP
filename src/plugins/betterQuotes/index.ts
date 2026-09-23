@@ -7,7 +7,7 @@
 import "./styles.css";
 
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
-import { TextQuoteIcon } from "@components/icons";
+import { MessageSquareQuoteIcon } from "@components/icons";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
@@ -89,7 +89,7 @@ function apply() {
 
 export default definePlugin({
     name: "BetterQuotes",
-    icon: TextQuoteIcon,
+    icon: MessageSquareQuoteIcon,
     description: "Scroll a composer quote chip to the exact passage, and keep that quote card when switching chats.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
