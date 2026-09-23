@@ -634,6 +634,14 @@ export const TextQuoteIcon = (props: IconProps = {}) =>
         <path d="M3 12v6" />,
     );
 
+export const UserQuotesIcon = (props: IconProps = {}) =>
+    svg(props,
+        <path d="M21 6H8" />,
+        <path d="M21 12H8" />,
+        <path d="M3 6v6" />,
+        <path d="M21 18H3" />,
+    );
+
 export const TextSearchIcon = (props: IconProps = {}) =>
     svg(props,
         <path d="M21 6H3" />,

@@ -5,7 +5,7 @@
  */
 
 import { definePluginSettings } from "@api/Settings";
-import { TextQuoteIcon } from "@components/icons";
+import { UserQuotesIcon } from "@components/icons";
 import { Devs } from "@utils/constants";
 import { registerStyle, unregisterStyle } from "@utils/css";
 import definePlugin, { OptionType } from "@utils/types";
@@ -41,7 +41,7 @@ function apply() {
 
 export default definePlugin({
     name: "UserQuotes",
-    icon: TextQuoteIcon,
+    icon: UserQuotesIcon,
     description: "Show a visible left bar on quoted lines in your own chat bubbles.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
