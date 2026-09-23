@@ -984,13 +984,23 @@ function placeHost() {
     host.style.height = `${span.height}px`;
     host.style.right = "0.75rem";
     host.style.transform = "none";
+    host.style.justifyContent = "center";
     const ticks = host.querySelector<HTMLElement>(".void-bn-ticks");
     if (!ticks) return;
-    ticks.style.height = "100%";
-    ticks.style.maxHeight = "none";
+    ticks.style.height = "auto";
+    ticks.style.flex = "0 0 auto";
+    ticks.style.maxHeight = "100%";
     ticks.style.overflow = "hidden";
     for (const node of ticks.children) {
         if (node instanceof HTMLElement) node.style.height = "";
+    }
+    const room = span.height;
+    const natural = ticks.scrollHeight;
+    const count = ticks.childElementCount;
+    if (natural <= room || !count) return;
+    const h = Math.max(2, Math.floor(room / count));
+    for (const node of ticks.children) {
+        if (node instanceof HTMLElement) node.style.height = `${h}px`;
     }
 }
 
@@ -1003,16 +1013,8 @@ function clampMenu() {
     menu.style.overflowY = "hidden";
     const natural = menu.scrollHeight;
     const cap = span.height;
-    if (natural > cap + 1) {
-        menu.style.maxHeight = `${cap}px`;
-        menu.style.overflowY = "auto";
-        menu.style.top = "0px";
-        menu.style.marginTop = "0px";
-        menu.style.transform = "none";
-        return;
-    }
-    menu.style.maxHeight = `${Math.max(natural, 40)}px`;
-    menu.style.overflowY = "hidden";
+    menu.style.maxHeight = `${cap}px`;
+    menu.style.overflowY = natural > cap + 1 ? "auto" : "hidden";
     menu.style.top = "";
     menu.style.transform = "";
     const originRect = host.getBoundingClientRect();

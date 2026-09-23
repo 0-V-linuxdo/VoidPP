@@ -10,6 +10,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    justify-content: center;
     height: 100%;
     transform: none;
 }
@@ -34,10 +35,9 @@
     flex-direction: column;
     align-items: flex-end;
     gap: 0;
-    flex: 1 1 auto;
-    height: 100%;
-    min-height: 0;
-    max-height: none;
+    flex: 0 0 auto;
+    height: auto;
+    max-height: 100%;
     overflow: hidden;
     pointer-events: auto;
     scrollbar-width: none;
@@ -53,9 +53,8 @@
     align-items: center;
     justify-content: flex-end;
     width: 2.5rem;
-    flex: 1 1 0;
-    min-height: 2px;
-    height: auto;
+    flex: 0 0 auto;
+    height: 0.75rem;
     padding: 0 0.25rem;
     border: 0;
     background: transparent;
@@ -63,8 +62,7 @@
 }
 
 .void-bn-dense .void-bn-tick {
-    min-height: 2px;
-    height: auto;
+    height: 0.45rem;
 }
 
 .void-bn-tick::after {
@@ -168,7 +166,7 @@ button.void-bn-native-edge::before {
     box-sizing: border-box;
     width: min(18rem, 70vw);
     max-height: none;
-    overflow: hidden;
+    overflow: auto;
     padding: 0.375rem;
     border: 1px solid hsl(var(--border-l1));
     border-radius: 1.25rem;

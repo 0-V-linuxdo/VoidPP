@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.4
+// @version      20260923.5
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.4] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.5] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7492,9 +7492,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ab90e09"}`
-    }, `(${"ab90e09"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1b80e87"}`
+    }, `(${"1b80e87"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7828,6 +7828,7 @@ button .void-info-hint {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    justify-content: center;
     height: 100%;
     transform: none;
 }
@@ -7852,10 +7853,9 @@ button .void-info-hint {
     flex-direction: column;
     align-items: flex-end;
     gap: 0;
-    flex: 1 1 auto;
-    height: 100%;
-    min-height: 0;
-    max-height: none;
+    flex: 0 0 auto;
+    height: auto;
+    max-height: 100%;
     overflow: hidden;
     pointer-events: auto;
     scrollbar-width: none;
@@ -7871,9 +7871,8 @@ button .void-info-hint {
     align-items: center;
     justify-content: flex-end;
     width: 2.5rem;
-    flex: 1 1 0;
-    min-height: 2px;
-    height: auto;
+    flex: 0 0 auto;
+    height: 0.75rem;
     padding: 0 0.25rem;
     border: 0;
     background: transparent;
@@ -7881,8 +7880,7 @@ button .void-info-hint {
 }
 
 .void-bn-dense .void-bn-tick {
-    min-height: 2px;
-    height: auto;
+    height: 0.45rem;
 }
 
 .void-bn-tick::after {
@@ -7986,7 +7984,7 @@ button.void-bn-native-edge::before {
     box-sizing: border-box;
     width: min(18rem, 70vw);
     max-height: none;
-    overflow: hidden;
+    overflow: auto;
     padding: 0.375rem;
     border: 1px solid hsl(var(--border-l1));
     border-radius: 1.25rem;
@@ -9166,15 +9164,27 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     host.style.height = `${span.height}px`;
     host.style.right = "0.75rem";
     host.style.transform = "none";
+    host.style.justifyContent = "center";
     const ticks = host.querySelector(".void-bn-ticks");
     if (!ticks)
       return;
-    ticks.style.height = "100%";
-    ticks.style.maxHeight = "none";
+    ticks.style.height = "auto";
+    ticks.style.flex = "0 0 auto";
+    ticks.style.maxHeight = "100%";
     ticks.style.overflow = "hidden";
     for (const node of ticks.children) {
       if (node instanceof HTMLElement)
         node.style.height = "";
+    }
+    const room = span.height;
+    const natural = ticks.scrollHeight;
+    const count = ticks.childElementCount;
+    if (natural <= room || !count)
+      return;
+    const h = Math.max(2, Math.floor(room / count));
+    for (const node of ticks.children) {
+      if (node instanceof HTMLElement)
+        node.style.height = `${h}px`;
     }
   }
   function clampMenu() {
@@ -9187,16 +9197,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     menu.style.overflowY = "hidden";
     const natural = menu.scrollHeight;
     const cap = span.height;
-    if (natural > cap + 1) {
-      menu.style.maxHeight = `${cap}px`;
-      menu.style.overflowY = "auto";
-      menu.style.top = "0px";
-      menu.style.marginTop = "0px";
-      menu.style.transform = "none";
-      return;
-    }
-    menu.style.maxHeight = `${Math.max(natural, 40)}px`;
-    menu.style.overflowY = "hidden";
+    menu.style.maxHeight = `${cap}px`;
+    menu.style.overflowY = natural > cap + 1 ? "auto" : "hidden";
     menu.style.top = "";
     menu.style.transform = "";
     const originRect = host.getBoundingClientRect();
@@ -27924,7 +27926,7 @@ Neon rain in a quiet city`
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1790112209000;
   contextMenu_default.updatedAt = 1790112209000;
-  betterNavigator_default.updatedAt = 1790142749000;
+  betterNavigator_default.updatedAt = 1790143341000;
   noSidebarIdentity_default.updatedAt = 1790112209000;
   completeToast_default.updatedAt = 1790112209000;
   cleaner_default.updatedAt = 1790112209000;
