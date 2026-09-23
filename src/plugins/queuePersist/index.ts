@@ -42,8 +42,10 @@ const LOCAL_ACCOUNT = "local";
 const SETTLE_MS = 450;
 const RETRY_MS = 250;
 const MAX_WAIT_MS = 8_000;
-const ROW_SEL = '[aria-roledescription="sortable"]';
-const TOGGLE_SEL = 'button[aria-label="Toggle queued messages"]';
+const ROW_SEL = '[aria-roledescription="sortable"], [aria-roledescription="draggable"]';
+const TOGGLE_SEL = 'button[aria-label="Toggle queued messages"], button[aria-label*="queued" i]';
+const RAIL_SEL = '[aria-label="Remove from queue"], [aria-label="Send now"], [aria-label="Edit queued message"]';
+const SEND_NOW_SEL = '[aria-label="Send now"]';
 
 interface Doc {
     version: 1;
@@ -232,11 +234,43 @@ function pushPending(cid: string, snap: QueueSnap) {
     pending.set(cid, list);
 }
 
-function rowTexts(ids: string[]): { id: string; text: string }[] {
+function trayCard(): HTMLElement | null {
     const btn = document.querySelector(TOGGLE_SEL);
-    const card = btn?.closest(".rounded-xl") ?? btn?.parentElement;
+    if (!(btn instanceof HTMLElement)) return null;
+    let node: HTMLElement | null = btn;
+    let card: HTMLElement | null = null;
+    while (node && node !== document.body && !node.matches("main")) {
+        if (node.querySelector(RAIL_SEL)) card = node;
+        node = node.parentElement;
+    }
+    return card ?? (btn.closest(".rounded-xl") as HTMLElement | null) ?? btn.parentElement;
+}
+
+function queueRows(card: HTMLElement): HTMLElement[] {
+    const sortable = [...card.querySelectorAll<HTMLElement>(ROW_SEL)].filter(el => el.querySelector(RAIL_SEL) || el.querySelector(".line-clamp-2"));
+    if (sortable.length) return sortable;
+    const anchors = [...card.querySelectorAll<HTMLElement>(SEND_NOW_SEL)];
+    const use = anchors.length ? anchors : [...card.querySelectorAll<HTMLElement>('[aria-label="Remove from queue"]')];
+    const rows: HTMLElement[] = [];
+    const seen = new Set<HTMLElement>();
+    for (const btn of use) {
+        let row: HTMLElement = btn;
+        for (let parent = btn.parentElement; parent && parent !== card && card.contains(parent); parent = parent.parentElement) {
+            const n = Math.max(parent.querySelectorAll(SEND_NOW_SEL).length, parent.querySelectorAll('[aria-label="Remove from queue"]').length);
+            if (n > 1) break;
+            row = parent;
+        }
+        if (seen.has(row)) continue;
+        seen.add(row);
+        rows.push(row);
+    }
+    return rows;
+}
+
+function rowTexts(ids: string[]): { id: string; text: string }[] {
+    const card = trayCard();
     if (!card) return [];
-    const rows = [...card.querySelectorAll<HTMLElement>(ROW_SEL)];
+    const rows = queueRows(card);
     const out: { id: string; text: string }[] = [];
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];

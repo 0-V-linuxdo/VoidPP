@@ -14,7 +14,7 @@ const environment = isDev ? "Development" : "Production";
 
 const FORK_URL = "https://github.com/0-V-linuxdo/VoidPP";
 const SCRIPT_CDN = "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp";
-const VERSION_DATE = "20260922.25";
+const VERSION_DATE = "20260922.26";
 const displayVersion = `[${VERSION_DATE}] v${pkg.version}`;
 const scriptVersion = VERSION_DATE;
 
@@ -55,7 +55,7 @@ const USERSCRIPT_HEADER = `// ==UserScript==
 // @license      GPL-3.0-or-later
 // @supportURL   ${FORK_URL}
 // @downloadURL  ${SCRIPT_CDN}/userscript/VoidPP.user.js
-// @updateURL    ${SCRIPT_CDN}/userscript/VoidPP.meta.js
+// @updateURL    ${SCRIPT_CDN}/userscript/VoidPP.user.js
 // ==/UserScript==
 `;
 

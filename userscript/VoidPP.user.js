@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.25
+// @version      20260922.26
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -28,11 +28,11 @@
 // @license      GPL-3.0-or-later
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP
 // @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/userscript/VoidPP.user.js
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/userscript/VoidPP.meta.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/userscript/VoidPP.user.js
 // ==/UserScript==
 
 /**
- * Void++ [20260922.25] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.26] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7393,9 +7393,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.25] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5832356"}`
-    }, `(${"5832356"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.26] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8f6dd1a"}`
+    }, `(${"8f6dd1a"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11712,8 +11712,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
   var PIN_SEL = "[data-void-mode-id]";
   var TRIGGER_SEL = "[data-query-bar-mode-select]";
-  var TOGGLE_SEL = 'button[aria-label="Toggle queued messages"]';
-  var ROW_SEL = '[aria-roledescription="sortable"]';
+  var TOGGLE_SEL = 'button[aria-label="Toggle queued messages"], button[aria-label*="queued" i]';
+  var ROW_SEL = '[aria-roledescription="sortable"], [aria-roledescription="draggable"]';
   var RAIL_SEL = '[aria-label="Remove from queue"], [aria-label="Send now"], [aria-label="Edit queued message"]';
   var SEND_NOW_SEL = '[aria-label="Send now"]';
   var CHIP = "void-ms-qchip";
@@ -12700,18 +12700,83 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   }
   function trayCard() {
     const btn = document.querySelector(TOGGLE_SEL);
-    if (!btn)
+    if (!(btn instanceof HTMLElement))
       return null;
-    return btn.closest(".rounded-xl") ?? btn.parentElement ?? null;
+    let node = btn;
+    let card = null;
+    while (node && node !== document.body && !node.matches("main")) {
+      if (node.querySelector(RAIL_SEL))
+        card = node;
+      node = node.parentElement;
+    }
+    return card ?? btn.closest(".rounded-xl") ?? btn.parentElement;
+  }
+  function queueRows(card) {
+    const sortable = [...card.querySelectorAll(ROW_SEL)].filter((el) => el.querySelector(RAIL_SEL) || el.querySelector(".line-clamp-2"));
+    if (sortable.length)
+      return sortable;
+    const anchors = [...card.querySelectorAll(SEND_NOW_SEL)];
+    const use = anchors.length ? anchors : [...card.querySelectorAll('[aria-label="Remove from queue"]')];
+    const rows = [];
+    const seen = new Set;
+    for (const btn of use) {
+      let row = btn;
+      for (let parent = btn.parentElement;parent && parent !== card && card.contains(parent); parent = parent.parentElement) {
+        const n = Math.max(parent.querySelectorAll(SEND_NOW_SEL).length, parent.querySelectorAll('[aria-label="Remove from queue"]').length);
+        if (n > 1)
+          break;
+        row = parent;
+      }
+      if (seen.has(row))
+        continue;
+      seen.add(row);
+      rows.push(row);
+    }
+    if (rows.length)
+      return rows;
+    return [...card.querySelectorAll(".line-clamp-2")].map((el) => el.parentElement instanceof HTMLElement ? el.parentElement : el);
+  }
+  function rowBody(row) {
+    const clamp = row.querySelector(".line-clamp-2")?.textContent?.trim();
+    if (clamp)
+      return clamp;
+    const copy = row.cloneNode(true);
+    copy.querySelectorAll("button, svg").forEach((el) => el.remove());
+    return (copy.textContent || "").replace(/\s+/g, " ").trim();
+  }
+  function idForRow(row, items, index, used) {
+    const existing = row.getAttribute(QITEM) || "";
+    if (existing && !used.has(existing) && (!items.length || items.some((q) => qid(q) === existing)))
+      return existing;
+    const indexed = qid(items[index]);
+    if (indexed && !used.has(indexed))
+      return indexed;
+    const body = rowBody(row);
+    const cid = currentCid2();
+    const conv = cid ? conversation(cid) : undefined;
+    if (body && conv) {
+      const hit = items.find((q) => {
+        const id = qid(q);
+        return !!id && !used.has(id) && itemText(conv, id) === body;
+      });
+      if (hit)
+        return qid(hit);
+    }
+    if (existing && !used.has(existing))
+      return existing;
+    if (!items.length && body)
+      return `row:${body.slice(0, 120)}`;
+    return "";
   }
   function currentQueue() {
     const cid = currentCid2();
     if (!cid)
       return [];
     const conv = conversation(cid);
-    if (!conv)
+    const queue = conv?.queue;
+    if (!Array.isArray(queue))
       return [];
-    return conv.queue.toSorted((a, b) => a.position - b.position);
+    return queue.toSorted((a, b) => a.position - b.position);
   }
   function unpaint() {
     closeMenu();
@@ -12725,7 +12790,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         itemIntent.set(id, { ...saved });
     }
     const modeId = itemIntent.get(id)?.modeId || intent.modeId || liveIntent().modeId;
-    let chip = row.querySelector(`:scope > .${CHIP}`);
+    let chip = row.querySelector(`.${CHIP}`);
     if (!chip) {
       chip = document.createElement("button");
       chip.type = "button";
@@ -12758,14 +12823,12 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       closeMenu();
       return;
     }
-    const rows = [...card.querySelectorAll(ROW_SEL)];
+    const rows = queueRows(card);
     const items = currentQueue();
     const seen = new Set;
     for (let i = 0;i < rows.length; i++) {
       const row = rows[i];
-      let id = row.getAttribute(QITEM) || "";
-      if (!id || !items.some((q) => qid(q) === id))
-        id = qid(items[i]);
+      const id = idForRow(row, items, i, seen);
       if (!id)
         continue;
       row.setAttribute(QITEM, id);
@@ -20591,8 +20654,10 @@ html.void-rt-open [data-sidebar="gap"] {
   var SETTLE_MS2 = 450;
   var RETRY_MS3 = 250;
   var MAX_WAIT_MS = 8000;
-  var ROW_SEL2 = '[aria-roledescription="sortable"]';
-  var TOGGLE_SEL2 = 'button[aria-label="Toggle queued messages"]';
+  var ROW_SEL2 = '[aria-roledescription="sortable"], [aria-roledescription="draggable"]';
+  var TOGGLE_SEL2 = 'button[aria-label="Toggle queued messages"], button[aria-label*="queued" i]';
+  var RAIL_SEL2 = '[aria-label="Remove from queue"], [aria-label="Send now"], [aria-label="Edit queued message"]';
+  var SEND_NOW_SEL2 = '[aria-label="Send now"]';
   var memory = new Map;
   var pending2 = new Map;
   var decided = new Set;
@@ -20769,12 +20834,47 @@ html.void-rt-open [data-sidebar="gap"] {
     list.push(snap);
     pending2.set(cid, list);
   }
-  function rowTexts(ids) {
+  function trayCard2() {
     const btn = document.querySelector(TOGGLE_SEL2);
-    const card = btn?.closest(".rounded-xl") ?? btn?.parentElement;
+    if (!(btn instanceof HTMLElement))
+      return null;
+    let node = btn;
+    let card = null;
+    while (node && node !== document.body && !node.matches("main")) {
+      if (node.querySelector(RAIL_SEL2))
+        card = node;
+      node = node.parentElement;
+    }
+    return card ?? btn.closest(".rounded-xl") ?? btn.parentElement;
+  }
+  function queueRows2(card) {
+    const sortable = [...card.querySelectorAll(ROW_SEL2)].filter((el) => el.querySelector(RAIL_SEL2) || el.querySelector(".line-clamp-2"));
+    if (sortable.length)
+      return sortable;
+    const anchors = [...card.querySelectorAll(SEND_NOW_SEL2)];
+    const use = anchors.length ? anchors : [...card.querySelectorAll('[aria-label="Remove from queue"]')];
+    const rows = [];
+    const seen = new Set;
+    for (const btn of use) {
+      let row = btn;
+      for (let parent = btn.parentElement;parent && parent !== card && card.contains(parent); parent = parent.parentElement) {
+        const n = Math.max(parent.querySelectorAll(SEND_NOW_SEL2).length, parent.querySelectorAll('[aria-label="Remove from queue"]').length);
+        if (n > 1)
+          break;
+        row = parent;
+      }
+      if (seen.has(row))
+        continue;
+      seen.add(row);
+      rows.push(row);
+    }
+    return rows;
+  }
+  function rowTexts(ids) {
+    const card = trayCard2();
     if (!card)
       return [];
-    const rows = [...card.querySelectorAll(ROW_SEL2)];
+    const rows = queueRows2(card);
     const out = [];
     for (let i = 0;i < rows.length; i++) {
       const row = rows[i];
@@ -27271,59 +27371,59 @@ Neon rain in a quiet city`
   });
 
   // virtual:~plugins
-  noTelemetry_default.updatedAt = 1790112209000;
-  settings_default.updatedAt = 1790112209000;
-  fixChrome_default.updatedAt = 1790112209000;
+  noTelemetry_default.updatedAt = 1789918820000;
+  settings_default.updatedAt = 1789918820000;
+  fixChrome_default.updatedAt = 1789918820000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  chatBarButtons_default.updatedAt = 1790112209000;
-  contextMenu_default.updatedAt = 1790112209000;
-  betterNavigator_default.updatedAt = 1790129459000;
-  noSidebarIdentity_default.updatedAt = 1790112209000;
-  completeToast_default.updatedAt = 1790112209000;
-  cleaner_default.updatedAt = 1790112209000;
-  betterSidebar_default.updatedAt = 1790112209000;
-  betterImagine_default.updatedAt = 1790112209000;
+  chatBarButtons_default.updatedAt = 1790097681000;
+  contextMenu_default.updatedAt = 1789918820000;
+  betterNavigator_default.updatedAt = 1790129743000;
+  noSidebarIdentity_default.updatedAt = 1789918820000;
+  completeToast_default.updatedAt = 1790093417000;
+  cleaner_default.updatedAt = 1790093417000;
+  betterSidebar_default.updatedAt = 1789918820000;
+  betterImagine_default.updatedAt = 1790093417000;
   modeSync_default.updatedAt = 1790112209000;
-  messageTimestamps_default.updatedAt = 1790112209000;
-  autoRetry_default.updatedAt = 1790112209000;
-  userQuotes_default.updatedAt = 1790112209000;
-  cloneChats_default.updatedAt = 1790112209000;
-  streamerMode_default.updatedAt = 1790112209000;
-  inputHistory_default.updatedAt = 1790112209000;
-  customSidebarIdentity_default.updatedAt = 1790112209000;
-  downloadTTS_default.updatedAt = 1790112209000;
-  recentTopics_default.updatedAt = 1790112209000;
-  betterLinks_default.updatedAt = 1790112209000;
-  experiments_default.updatedAt = 1790112209000;
-  customInstructions_default.updatedAt = 1790112209000;
-  quoteSticky_default.updatedAt = 1790112209000;
-  noBuildStarters_default.updatedAt = 1790112209000;
-  responseNotification_default.updatedAt = 1790112209000;
-  incognito_default.updatedAt = 1790112209000;
-  betterCanvas_default.updatedAt = 1790112209000;
-  noSidebarPlugins_default.updatedAt = 1790112209000;
-  composerOpacity_default.updatedAt = 1790112209000;
+  messageTimestamps_default.updatedAt = 1789918820000;
+  autoRetry_default.updatedAt = 1789918820000;
+  userQuotes_default.updatedAt = 1789918820000;
+  cloneChats_default.updatedAt = 1789918820000;
+  streamerMode_default.updatedAt = 1789918820000;
+  inputHistory_default.updatedAt = 1790093417000;
+  customSidebarIdentity_default.updatedAt = 1789918820000;
+  downloadTTS_default.updatedAt = 1789918820000;
+  recentTopics_default.updatedAt = 1789918820000;
+  betterLinks_default.updatedAt = 1789918820000;
+  experiments_default.updatedAt = 1789918820000;
+  customInstructions_default.updatedAt = 1789918820000;
+  quoteSticky_default.updatedAt = 1790105896000;
+  noBuildStarters_default.updatedAt = 1789918820000;
+  responseNotification_default.updatedAt = 1790093417000;
+  incognito_default.updatedAt = 1789918820000;
+  betterCanvas_default.updatedAt = 1790093417000;
+  noSidebarPlugins_default.updatedAt = 1789918820000;
+  composerOpacity_default.updatedAt = 1790097681000;
   queuePersist_default.updatedAt = 1790112209000;
-  exportChat_default.updatedAt = 1790112209000;
-  autoCollapse_default.updatedAt = 1790112209000;
-  usageDisplay_default.updatedAt = 1790112209000;
-  widerChat_default.updatedAt = 1790112209000;
-  settingsFlyout_default.updatedAt = 1790112209000;
-  chatStateFavicons_default.updatedAt = 1790112209000;
-  noDictation_default.updatedAt = 1790112209000;
-  betterFiles_default.updatedAt = 1790112209000;
-  noShareLink_default.updatedAt = 1790112209000;
-  chatListStatus_default.updatedAt = 1790112209000;
-  quoteJump_default.updatedAt = 1790112209000;
-  stableComposer_default.updatedAt = 1790112209000;
-  compactModeSelect_default.updatedAt = 1790112209000;
-  consoleJanitor_default.updatedAt = 1790112209000;
-  oneko_default.updatedAt = 1790112209000;
-  starry_default.updatedAt = 1790112209000;
-  pluginsFlyout_default.updatedAt = 1790112209000;
-  noGrokBot_default.updatedAt = 1790112209000;
-  placeholder_default.updatedAt = 1790112209000;
+  exportChat_default.updatedAt = 1789918820000;
+  autoCollapse_default.updatedAt = 1789918820000;
+  usageDisplay_default.updatedAt = 1789918820000;
+  widerChat_default.updatedAt = 1789918820000;
+  settingsFlyout_default.updatedAt = 1789918820000;
+  chatStateFavicons_default.updatedAt = 1789921507000;
+  noDictation_default.updatedAt = 1789918820000;
+  betterFiles_default.updatedAt = 1789918820000;
+  noShareLink_default.updatedAt = 1789918820000;
+  chatListStatus_default.updatedAt = 1789918820000;
+  quoteJump_default.updatedAt = 1790105896000;
+  stableComposer_default.updatedAt = 1789918820000;
+  compactModeSelect_default.updatedAt = 1789918820000;
+  consoleJanitor_default.updatedAt = 1789918820000;
+  oneko_default.updatedAt = 1789918820000;
+  starry_default.updatedAt = 1789918820000;
+  pluginsFlyout_default.updatedAt = 1789918820000;
+  noGrokBot_default.updatedAt = 1789918820000;
+  placeholder_default.updatedAt = 1790093417000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [betterNavigator_default.name]: betterNavigator_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [completeToast_default.name]: completeToast_default, [cleaner_default.name]: cleaner_default, [betterSidebar_default.name]: betterSidebar_default, [betterImagine_default.name]: betterImagine_default, [modeSync_default.name]: modeSync_default, [messageTimestamps_default.name]: messageTimestamps_default, [autoRetry_default.name]: autoRetry_default, [userQuotes_default.name]: userQuotes_default, [cloneChats_default.name]: cloneChats_default, [streamerMode_default.name]: streamerMode_default, [inputHistory_default.name]: inputHistory_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [recentTopics_default.name]: recentTopics_default, [betterLinks_default.name]: betterLinks_default, [experiments_default.name]: experiments_default, [customInstructions_default.name]: customInstructions_default, [quoteSticky_default.name]: quoteSticky_default, [noBuildStarters_default.name]: noBuildStarters_default, [responseNotification_default.name]: responseNotification_default, [incognito_default.name]: incognito_default, [betterCanvas_default.name]: betterCanvas_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [composerOpacity_default.name]: composerOpacity_default, [queuePersist_default.name]: queuePersist_default, [exportChat_default.name]: exportChat_default, [autoCollapse_default.name]: autoCollapse_default, [usageDisplay_default.name]: usageDisplay_default, [widerChat_default.name]: widerChat_default, [settingsFlyout_default.name]: settingsFlyout_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [noDictation_default.name]: noDictation_default, [betterFiles_default.name]: betterFiles_default, [noShareLink_default.name]: noShareLink_default, [chatListStatus_default.name]: chatListStatus_default, [quoteJump_default.name]: quoteJump_default, [stableComposer_default.name]: stableComposer_default, [compactModeSelect_default.name]: compactModeSelect_default, [consoleJanitor_default.name]: consoleJanitor_default, [oneko_default.name]: oneko_default, [starry_default.name]: starry_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [noGrokBot_default.name]: noGrokBot_default, [placeholder_default.name]: placeholder_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {

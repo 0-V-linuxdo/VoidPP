@@ -4,7 +4,7 @@
 
 ## 安装
 
-[![Install userscript](https://img.shields.io/badge/安装-用户脚本-00d26a?style=for-the-badge)](https://cdn.jsdelivr.net/gh/0-V-linuxdo/VoidPP/userscript/VoidPP.user.js)
+[![Install userscript](https://img.shields.io/badge/安装-用户脚本-00d26a?style=for-the-badge)](https://cdn.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp/userscript/VoidPP.user.js)
 
 点徽章安装（jsDelivr 默认 `voidpp` 分支，避开 GitHub Raw 的 `CSP: sandbox`）。Tampermonkey 自动更新走 GitHub raw 的 `userscript/VoidPP.meta.js`（`@updateURL`）。
 
@@ -56,7 +56,7 @@
 | 功能 | 默认 | 说明 |
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | 开 | 模型选择器里再次隐藏不可用 / 锁定模型。 |
-| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | 开 | 队列每条保住入队时的模型。后面一轮生成不会再改掉芯片，也不会把发出去的请求换成上一条的模型。 |
+| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | 开 | 只有一条队列、没有拖拽属性时也会画出模型芯片。 |
 
 #### 设置 UI
 

@@ -29,8 +29,8 @@ const STOP_URL = /stop|abort|cancel/i;
 const MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
 const PIN_SEL = "[data-void-mode-id]";
 const TRIGGER_SEL = "[data-query-bar-mode-select]";
-const TOGGLE_SEL = 'button[aria-label="Toggle queued messages"]';
-const ROW_SEL = '[aria-roledescription="sortable"]';
+const TOGGLE_SEL = 'button[aria-label="Toggle queued messages"], button[aria-label*="queued" i]';
+const ROW_SEL = '[aria-roledescription="sortable"], [aria-roledescription="draggable"]';
 const RAIL_SEL = '[aria-label="Remove from queue"], [aria-label="Send now"], [aria-label="Edit queued message"]';
 const SEND_NOW_SEL = '[aria-label="Send now"]';
 const CHIP = "void-ms-qchip";
@@ -996,16 +996,73 @@ function actionRail(row: HTMLElement): HTMLElement | null {
 
 function trayCard(): HTMLElement | null {
     const btn = document.querySelector(TOGGLE_SEL);
-    if (!btn) return null;
-    return (btn.closest(".rounded-xl") as HTMLElement) ?? (btn.parentElement as HTMLElement) ?? null;
+    if (!(btn instanceof HTMLElement)) return null;
+    let node: HTMLElement | null = btn;
+    let card: HTMLElement | null = null;
+    while (node && node !== document.body && !node.matches("main")) {
+        if (node.querySelector(RAIL_SEL)) card = node;
+        node = node.parentElement;
+    }
+    return card ?? (btn.closest(".rounded-xl") as HTMLElement | null) ?? btn.parentElement;
+}
+
+function queueRows(card: HTMLElement): HTMLElement[] {
+    const sortable = [...card.querySelectorAll<HTMLElement>(ROW_SEL)].filter(el => el.querySelector(RAIL_SEL) || el.querySelector(".line-clamp-2"));
+    if (sortable.length) return sortable;
+    const anchors = [...card.querySelectorAll<HTMLElement>(SEND_NOW_SEL)];
+    const use = anchors.length ? anchors : [...card.querySelectorAll<HTMLElement>('[aria-label="Remove from queue"]')];
+    const rows: HTMLElement[] = [];
+    const seen = new Set<HTMLElement>();
+    for (const btn of use) {
+        let row: HTMLElement = btn;
+        for (let parent = btn.parentElement; parent && parent !== card && card.contains(parent); parent = parent.parentElement) {
+            const n = Math.max(parent.querySelectorAll(SEND_NOW_SEL).length, parent.querySelectorAll('[aria-label="Remove from queue"]').length);
+            if (n > 1) break;
+            row = parent;
+        }
+        if (seen.has(row)) continue;
+        seen.add(row);
+        rows.push(row);
+    }
+    if (rows.length) return rows;
+    return [...card.querySelectorAll<HTMLElement>(".line-clamp-2")].map(el => el.parentElement instanceof HTMLElement ? el.parentElement : el);
+}
+
+function rowBody(row: HTMLElement): string {
+    const clamp = row.querySelector(".line-clamp-2")?.textContent?.trim();
+    if (clamp) return clamp;
+    const copy = row.cloneNode(true) as HTMLElement;
+    copy.querySelectorAll("button, svg").forEach(el => el.remove());
+    return (copy.textContent || "").replace(/\s+/g, " ").trim();
+}
+
+function idForRow(row: HTMLElement, items: GatewayQueueItem[], index: number, used: Set<string>): string {
+    const existing = row.getAttribute(QITEM) || "";
+    if (existing && !used.has(existing) && (!items.length || items.some(q => qid(q) === existing))) return existing;
+    const indexed = qid(items[index]);
+    if (indexed && !used.has(indexed)) return indexed;
+    const body = rowBody(row);
+    const cid = currentCid();
+    const conv = cid ? conversation(cid) : undefined;
+    if (body && conv) {
+        const hit = items.find(q => {
+            const id = qid(q);
+            return !!id && !used.has(id) && itemText(conv, id) === body;
+        });
+        if (hit) return qid(hit);
+    }
+    if (existing && !used.has(existing)) return existing;
+    if (!items.length && body) return `row:${body.slice(0, 120)}`;
+    return "";
 }
 
 function currentQueue(): GatewayQueueItem[] {
     const cid = currentCid();
     if (!cid) return [];
     const conv = conversation(cid);
-    if (!conv) return [];
-    return conv.queue.toSorted((a, b) => a.position - b.position);
+    const queue = conv?.queue;
+    if (!Array.isArray(queue)) return [];
+    return queue.toSorted((a, b) => a.position - b.position);
 }
 
 function unpaint() {
@@ -1019,7 +1076,7 @@ function mountChip(row: HTMLElement, id: string) {
         if (saved?.modeId) itemIntent.set(id, { ...saved });
     }
     const modeId = itemIntent.get(id)?.modeId || intent.modeId || liveIntent().modeId;
-    let chip = row.querySelector<HTMLButtonElement>(`:scope > .${CHIP}`);
+    let chip = row.querySelector<HTMLButtonElement>(`.${CHIP}`);
     if (!chip) {
         chip = document.createElement("button");
         chip.type = "button";
@@ -1050,13 +1107,12 @@ function paint() {
         closeMenu();
         return;
     }
-    const rows = [...card.querySelectorAll<HTMLElement>(ROW_SEL)];
+    const rows = queueRows(card);
     const items = currentQueue();
     const seen = new Set<string>();
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
-        let id = row.getAttribute(QITEM) || "";
-        if (!id || !items.some(q => qid(q) === id)) id = qid(items[i]);
+        const id = idForRow(row, items, i, seen);
         if (!id) continue;
         row.setAttribute(QITEM, id);
         seen.add(id);
