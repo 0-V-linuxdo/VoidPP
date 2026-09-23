@@ -29,8 +29,11 @@ const PANE_SKIP = "[data-sidebar], [class*='pane-card']";
 const STRIP_SEL = [
     "button", "svg", "nav", "time", ".void-timestamp", "[class*='timestamp']",
     "details", "[data-testid*='think']", "[class*='thinking']", "[class*='Thought']",
-    "[aria-label*='Thought']", "[role='toolbar']",
+    "[aria-label*='Thought']", "[role='toolbar']", "pre",
+    "[class*='citation']", "[data-testid*='citation']", "[data-testid*='source']",
+    "[aria-label*='source' i]", "[aria-label*='citation' i]",
 ].join(",");
+const CHIP_RE = /^(?:\d+\s+)?sources?$|^web search$|^代码$|^code$/i;
 const THINK_SEL = "[data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
 const STOP_SEL = [
     'button[aria-label="Stop model response"]',
@@ -62,7 +65,8 @@ const LOADING_LABEL = "加载中…";
 const SUMMARY_MAX = 60;
 const FLASH_MS = 2000;
 const FLASH_REDUCED_MS = 1000;
-const THRESHOLD = 0.45;
+const THRESHOLD = 0.28;
+const HEAD_HYST = 24;
 const OFFSET_PX = 72;
 const LOCK_MS = 1000;
 const LOCK_FAST_MS = 280;
@@ -121,6 +125,7 @@ let flashTimer = 0;
 let flashing: HTMLElement | null = null;
 let raf = 0;
 let activeIdx = 0;
+let activeSource: "native" | "list" = "list";
 let lockIdx = -1;
 let lockUntil = 0;
 let overMenu = false;
@@ -240,9 +245,14 @@ function hasMedia(root: HTMLElement): "image" | "file" | "" {
 function summarize(el: HTMLElement): string {
     const clone = el.cloneNode(true) as HTMLElement;
     clone.querySelectorAll(STRIP_SEL).forEach(n => n.remove());
+    for (const n of [...clone.querySelectorAll<HTMLElement>("span, div, a, p")]) {
+        if (!n.isConnected) continue;
+        const chip = (n.textContent ?? "").replace(/\s+/g, " ").trim();
+        if (chip && chip.length <= 24 && CHIP_RE.test(chip)) n.remove();
+    }
     const media = hasMedia(clone);
     clone.querySelectorAll(MEDIA_SEL).forEach(n => n.remove());
-    const text = (clone.textContent ?? "").replaceAll(/\s+/g, " ").trim();
+    const text = (clone.textContent ?? "").replace(/\b\d+\s+sources?\b/gi, " ").replace(/\s+/g, " ").trim();
     if (NOISE_TEXT.test(text)) return "";
     if (!text) {
         if (media === "image") return "图片";
@@ -612,15 +622,13 @@ function labelOrdinal(btn: HTMLButtonElement): number | null {
 
 function metaLabel(index: number): string {
     const n = lastNav.length;
-    const pos = `${Math.min(Math.max(index, 0) + 1, Math.max(n, 1))} / ${n}`;
-    if (!settings.store.showAssistant || !n) return pos;
-    const asstN = responseIdxs().length;
-    if (!asstN || asstN === n) return pos;
-    const item = lastNav[index];
-    if (item?.role !== "assistant") return pos;
-    let k = 0;
-    for (let i = 0; i <= index; i++) if (lastNav[i].role === "assistant") k++;
-    return `${pos} · ${k} / ${asstN}`;
+    if (activeSource === "native") {
+        const asstN = responseIdxs().length;
+        let k = 0;
+        for (let i = 0; i <= index; i++) if (lastNav[i]?.role === "assistant") k++;
+        if (k && asstN) return `${k} / ${asstN}`;
+    }
+    return `${Math.min(Math.max(index, 0) + 1, Math.max(n, 1))} / ${n}`;
 }
 
 function clearFlash() {
@@ -782,8 +790,9 @@ function markAim(index: number) {
     });
 }
 
-function applyActive(index: number) {
+function applyActive(index: number, source: "native" | "list" = "list") {
     activeIdx = index;
+    activeSource = source;
     host?.querySelectorAll(".void-bn-item").forEach(node => {
         node.classList.toggle("void-bn-active", Number((node as HTMLElement).dataset.voidBnI) === index);
     });
@@ -794,41 +803,122 @@ function applyActive(index: number) {
     if (meta) meta.textContent = metaLabel(index);
     const tick = host?.querySelectorAll<HTMLElement>(".void-bn-tick")[index];
     tick?.scrollIntoView({ block: "nearest" });
-    if (!overMenu) {
-        const row = host?.querySelector<HTMLElement>(`.void-bn-item[data-void-bn-i="${index}"]`);
-        row?.scrollIntoView({ block: "nearest" });
-    }
 }
 
-function setActive(nav: NavItem[]) {
-    if (performance.now() < lockUntil && lockIdx >= 0) {
-        applyActive(lockIdx);
-        return;
+function tickBarWidth(btn: HTMLElement): number {
+    let best = 0;
+    btn.querySelectorAll<HTMLElement>("span, div").forEach(el => {
+        if (el.classList.contains("void-bn-native-dash")) return;
+        const r = el.getBoundingClientRect();
+        if (r.width >= 4 && r.height > 0 && r.height <= 6 && r.width > best) best = r.width;
+    });
+    return best;
+}
+
+function tickMarkedCurrent(btn: HTMLElement): boolean {
+    const cur = btn.getAttribute("aria-current");
+    if (cur === "true" || cur === "page" || cur === "location") return true;
+    if (btn.getAttribute("aria-pressed") === "true") return true;
+    const state = (btn.getAttribute("data-state") || "").toLowerCase();
+    return state === "active" || state === "current" || state === "on";
+}
+
+function tickInk(btn: HTMLElement): number {
+    let best = 0;
+    const nodes: HTMLElement[] = [btn, ...btn.querySelectorAll<HTMLElement>("span, div")];
+    for (const el of nodes) {
+        if (el.classList.contains("void-bn-native-dash")) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < 4 || r.height <= 0 || r.height > 8) continue;
+        const m = getComputedStyle(el).backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (!m) continue;
+        const a = m[4] == null ? 1 : Number(m[4]);
+        const lum = ((Number(m[1]) + Number(m[2]) + Number(m[3])) / 3) * a;
+        if (lum > best) best = lum;
     }
+    return best;
+}
+
+function uniqueLeader(scores: number[], minLead: number): number {
+    const positive = scores.filter(s => s > 0);
+    if (positive.length < 2) return -1;
+    const sorted = [...positive].sort((a, b) => a - b);
+    const median = sorted[Math.floor((sorted.length - 1) / 2)];
+    let best = -1;
+    let bestS = 0;
+    for (let i = 0; i < scores.length; i++) {
+        if (scores[i] > bestS) {
+            bestS = scores[i];
+            best = i;
+        }
+    }
+    if (best < 0 || bestS < median + minLead) return -1;
+    if (scores.filter(s => Math.abs(s - bestS) < 0.5).length !== 1) return -1;
+    return best;
+}
+
+function nativeCurrentIndex(): number | null {
+    if (!settings.store.showAssistant) return null;
+    const ticks = nativeTicks();
+    if (!ticks.length) return null;
+    for (let i = 0; i < ticks.length; i++) {
+        if (tickMarkedCurrent(ticks[i])) return navIndexFromTick(ticks[i], i);
+    }
+    if (ticks.some(t => t.matches(":hover"))) {
+        return activeSource === "native" ? activeIdx : null;
+    }
+    const byWidth = uniqueLeader(ticks.map(tickBarWidth), 3);
+    if (byWidth >= 0) return navIndexFromTick(ticks[byWidth], byWidth);
+    const byInk = uniqueLeader(ticks.map(tickInk), 20);
+    if (byInk >= 0) return navIndexFromTick(ticks[byInk], byInk);
+    return null;
+}
+
+function headTop(el: HTMLElement): number {
+    const body = el.querySelector<HTMLElement>(".markdown, .prose, [class*='markdown']");
+    return (body ?? el).getBoundingClientRect().top;
+}
+
+function pickByLine(nav: NavItem[]): number {
     const pane = chatPane();
     const pr = pane?.getBoundingClientRect();
     const top = pr?.top ?? 0;
     const bottom = pr ? Math.min(pr.bottom, composerTop()) : window.innerHeight;
-    const anchor = top + Math.max(bottom - top, 0) * THRESHOLD;
-    let active = 0;
-    let covered = false;
-    let best = Infinity;
+    const line = top + Math.max(bottom - top, 0) * THRESHOLD;
+    const tops: number[] = [];
+    let passed = -1;
     for (let i = 0; i < nav.length; i++) {
         const el = mountedEl(nav[i]);
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        if (r.top <= anchor && r.bottom > anchor) {
-            const dist = Math.abs((r.top + r.bottom) / 2 - anchor);
-            if (!covered || dist < best) {
-                covered = true;
-                best = dist;
-                active = i;
-            }
+        if (!el) {
+            tops.push(NaN);
             continue;
         }
-        if (!covered && r.top <= anchor) active = i;
+        const t = headTop(el);
+        tops.push(t);
+        if (passed < 0) passed = i;
+        if (t <= line) passed = i;
     }
-    applyActive(active);
+    if (passed < 0) return 0;
+    const cur = activeIdx;
+    const curTop = tops[cur];
+    if (!Number.isFinite(curTop)) return passed;
+    if (passed === cur) return cur;
+    if (passed > cur) return passed;
+    if (curTop <= line + HEAD_HYST) return cur;
+    return passed;
+}
+
+function setActive(nav: NavItem[]) {
+    if (performance.now() < lockUntil && lockIdx >= 0) {
+        applyActive(lockIdx, "list");
+        return;
+    }
+    const fromNative = nativeCurrentIndex();
+    if (fromNative != null) {
+        applyActive(fromNative, "native");
+        return;
+    }
+    applyActive(pickByLine(nav), "list");
 }
 
 function clampMenu() {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.31
+// @version      20260922.32
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.31] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.32] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7452,9 +7452,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.31] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"3ab419c"}`
-    }, `(${"3ab419c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.32] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b792626"}`
+    }, `(${"b792626"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8054,8 +8054,15 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     "[class*='thinking']",
     "[class*='Thought']",
     "[aria-label*='Thought']",
-    "[role='toolbar']"
+    "[role='toolbar']",
+    "pre",
+    "[class*='citation']",
+    "[data-testid*='citation']",
+    "[data-testid*='source']",
+    "[aria-label*='source' i]",
+    "[aria-label*='citation' i]"
   ].join(",");
+  var CHIP_RE = /^(?:\d+\s+)?sources?$|^web search$|^代码$|^code$/i;
   var THINK_SEL = "[data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
   var STOP_SEL = [
     'button[aria-label="Stop model response"]',
@@ -8087,7 +8094,8 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var SUMMARY_MAX = 60;
   var FLASH_MS = 2000;
   var FLASH_REDUCED_MS = 1000;
-  var THRESHOLD = 0.45;
+  var THRESHOLD = 0.28;
+  var HEAD_HYST = 24;
   var OFFSET_PX = 72;
   var LOCK_MS = 1000;
   var LOCK_FAST_MS = 280;
@@ -8134,6 +8142,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var flashing = null;
   var raf = 0;
   var activeIdx = 0;
+  var activeSource = "list";
   var lockIdx = -1;
   var lockUntil = 0;
   var overMenu = false;
@@ -8259,9 +8268,16 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function summarize(el) {
     const clone = el.cloneNode(true);
     clone.querySelectorAll(STRIP_SEL).forEach((n) => n.remove());
+    for (const n of [...clone.querySelectorAll("span, div, a, p")]) {
+      if (!n.isConnected)
+        continue;
+      const chip = (n.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (chip && chip.length <= 24 && CHIP_RE.test(chip))
+        n.remove();
+    }
     const media = hasMedia(clone);
     clone.querySelectorAll(MEDIA_SEL).forEach((n) => n.remove());
-    const text = (clone.textContent ?? "").replaceAll(/\s+/g, " ").trim();
+    const text = (clone.textContent ?? "").replace(/\b\d+\s+sources?\b/gi, " ").replace(/\s+/g, " ").trim();
     if (NOISE_TEXT.test(text))
       return "";
     if (!text) {
@@ -8668,20 +8684,16 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   }
   function metaLabel(index) {
     const n = lastNav.length;
-    const pos = `${Math.min(Math.max(index, 0) + 1, Math.max(n, 1))} / ${n}`;
-    if (!settings6.store.showAssistant || !n)
-      return pos;
-    const asstN = responseIdxs().length;
-    if (!asstN || asstN === n)
-      return pos;
-    const item = lastNav[index];
-    if (item?.role !== "assistant")
-      return pos;
-    let k = 0;
-    for (let i = 0;i <= index; i++)
-      if (lastNav[i].role === "assistant")
-        k++;
-    return `${pos} · ${k} / ${asstN}`;
+    if (activeSource === "native") {
+      const asstN = responseIdxs().length;
+      let k = 0;
+      for (let i = 0;i <= index; i++)
+        if (lastNav[i]?.role === "assistant")
+          k++;
+      if (k && asstN)
+        return `${k} / ${asstN}`;
+    }
+    return `${Math.min(Math.max(index, 0) + 1, Math.max(n, 1))} / ${n}`;
   }
   function clearFlash() {
     if (flashTimer)
@@ -8855,8 +8867,9 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       node.classList.toggle("void-bn-aim", Number(node.dataset.voidBnI) === index);
     });
   }
-  function applyActive(index) {
+  function applyActive(index, source = "list") {
     activeIdx = index;
+    activeSource = source;
     host?.querySelectorAll(".void-bn-item").forEach((node) => {
       node.classList.toggle("void-bn-active", Number(node.dataset.voidBnI) === index);
     });
@@ -8868,42 +8881,137 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       meta.textContent = metaLabel(index);
     const tick = host?.querySelectorAll(".void-bn-tick")[index];
     tick?.scrollIntoView({ block: "nearest" });
-    if (!overMenu) {
-      const row = host?.querySelector(`.void-bn-item[data-void-bn-i="${index}"]`);
-      row?.scrollIntoView({ block: "nearest" });
-    }
   }
-  function setActive(nav) {
-    if (performance.now() < lockUntil && lockIdx >= 0) {
-      applyActive(lockIdx);
-      return;
+  function tickBarWidth(btn) {
+    let best = 0;
+    btn.querySelectorAll("span, div").forEach((el) => {
+      if (el.classList.contains("void-bn-native-dash"))
+        return;
+      const r = el.getBoundingClientRect();
+      if (r.width >= 4 && r.height > 0 && r.height <= 6 && r.width > best)
+        best = r.width;
+    });
+    return best;
+  }
+  function tickMarkedCurrent(btn) {
+    const cur = btn.getAttribute("aria-current");
+    if (cur === "true" || cur === "page" || cur === "location")
+      return true;
+    if (btn.getAttribute("aria-pressed") === "true")
+      return true;
+    const state = (btn.getAttribute("data-state") || "").toLowerCase();
+    return state === "active" || state === "current" || state === "on";
+  }
+  function tickInk(btn) {
+    let best = 0;
+    const nodes = [btn, ...btn.querySelectorAll("span, div")];
+    for (const el of nodes) {
+      if (el.classList.contains("void-bn-native-dash"))
+        continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 4 || r.height <= 0 || r.height > 8)
+        continue;
+      const m = getComputedStyle(el).backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+      if (!m)
+        continue;
+      const a = m[4] == null ? 1 : Number(m[4]);
+      const lum = (Number(m[1]) + Number(m[2]) + Number(m[3])) / 3 * a;
+      if (lum > best)
+        best = lum;
     }
+    return best;
+  }
+  function uniqueLeader(scores, minLead) {
+    const positive = scores.filter((s) => s > 0);
+    if (positive.length < 2)
+      return -1;
+    const sorted = [...positive].sort((a, b) => a - b);
+    const median = sorted[Math.floor((sorted.length - 1) / 2)];
+    let best = -1;
+    let bestS = 0;
+    for (let i = 0;i < scores.length; i++) {
+      if (scores[i] > bestS) {
+        bestS = scores[i];
+        best = i;
+      }
+    }
+    if (best < 0 || bestS < median + minLead)
+      return -1;
+    if (scores.filter((s) => Math.abs(s - bestS) < 0.5).length !== 1)
+      return -1;
+    return best;
+  }
+  function nativeCurrentIndex() {
+    if (!settings6.store.showAssistant)
+      return null;
+    const ticks = nativeTicks();
+    if (!ticks.length)
+      return null;
+    for (let i = 0;i < ticks.length; i++) {
+      if (tickMarkedCurrent(ticks[i]))
+        return navIndexFromTick(ticks[i], i);
+    }
+    if (ticks.some((t) => t.matches(":hover"))) {
+      return activeSource === "native" ? activeIdx : null;
+    }
+    const byWidth = uniqueLeader(ticks.map(tickBarWidth), 3);
+    if (byWidth >= 0)
+      return navIndexFromTick(ticks[byWidth], byWidth);
+    const byInk = uniqueLeader(ticks.map(tickInk), 20);
+    if (byInk >= 0)
+      return navIndexFromTick(ticks[byInk], byInk);
+    return null;
+  }
+  function headTop(el) {
+    const body = el.querySelector(".markdown, .prose, [class*='markdown']");
+    return (body ?? el).getBoundingClientRect().top;
+  }
+  function pickByLine(nav) {
     const pane = chatPane();
     const pr = pane?.getBoundingClientRect();
     const top = pr?.top ?? 0;
     const bottom = pr ? Math.min(pr.bottom, composerTop()) : window.innerHeight;
-    const anchor = top + Math.max(bottom - top, 0) * THRESHOLD;
-    let active = 0;
-    let covered = false;
-    let best = Infinity;
+    const line = top + Math.max(bottom - top, 0) * THRESHOLD;
+    const tops = [];
+    let passed = -1;
     for (let i = 0;i < nav.length; i++) {
       const el = mountedEl(nav[i]);
-      if (!el)
-        continue;
-      const r = el.getBoundingClientRect();
-      if (r.top <= anchor && r.bottom > anchor) {
-        const dist = Math.abs((r.top + r.bottom) / 2 - anchor);
-        if (!covered || dist < best) {
-          covered = true;
-          best = dist;
-          active = i;
-        }
+      if (!el) {
+        tops.push(NaN);
         continue;
       }
-      if (!covered && r.top <= anchor)
-        active = i;
+      const t = headTop(el);
+      tops.push(t);
+      if (passed < 0)
+        passed = i;
+      if (t <= line)
+        passed = i;
     }
-    applyActive(active);
+    if (passed < 0)
+      return 0;
+    const cur = activeIdx;
+    const curTop = tops[cur];
+    if (!Number.isFinite(curTop))
+      return passed;
+    if (passed === cur)
+      return cur;
+    if (passed > cur)
+      return passed;
+    if (curTop <= line + HEAD_HYST)
+      return cur;
+    return passed;
+  }
+  function setActive(nav) {
+    if (performance.now() < lockUntil && lockIdx >= 0) {
+      applyActive(lockIdx, "list");
+      return;
+    }
+    const fromNative = nativeCurrentIndex();
+    if (fromNative != null) {
+      applyActive(fromNative, "native");
+      return;
+    }
+    applyActive(pickByLine(nav), "list");
   }
   function clampMenu() {
     const menu = host?.querySelector(".void-bn-menu");
@@ -27637,7 +27745,7 @@ Neon rain in a quiet city`
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1790112209000;
   contextMenu_default.updatedAt = 1790112209000;
-  betterNavigator_default.updatedAt = 1790133920000;
+  betterNavigator_default.updatedAt = 1790134660000;
   noSidebarIdentity_default.updatedAt = 1790112209000;
   completeToast_default.updatedAt = 1790112209000;
   cleaner_default.updatedAt = 1790112209000;
