@@ -803,8 +803,6 @@ function applyActive(index: number, source: "native" | "list" = "list") {
     });
     const meta = host?.querySelector(".void-bn-meta");
     if (meta) meta.textContent = metaLabel(index);
-    const tick = host?.querySelectorAll<HTMLElement>(".void-bn-tick")[index];
-    tick?.scrollIntoView({ block: "nearest" });
 }
 
 function tickBarWidth(btn: HTMLElement): number {
@@ -993,17 +991,53 @@ function setActive(nav: NavItem[]) {
     applyActive(pickByLine(nav), "list");
 }
 
+function columnBox(): { top: number; height: number } {
+    const pane = chatPane();
+    const pr = pane?.getBoundingClientRect();
+    const top = pr?.top ?? 8;
+    const bottom = Math.min(pr?.bottom ?? window.innerHeight, composerTop() - 8);
+    return { top, height: Math.max(120, bottom - top) };
+}
+
 function clampMenu() {
     const menu = host?.querySelector<HTMLElement>(".void-bn-menu");
+    const ticks = host?.querySelector<HTMLElement>(".void-bn-ticks");
+    const box = columnBox();
+    if (host) host.style.height = `${box.height}px`;
+    if (ticks) {
+        ticks.style.height = "100%";
+        ticks.style.maxHeight = "none";
+        ticks.style.overflow = "hidden";
+    }
+    if (rail && host) {
+        const shift = box.top - rail.getBoundingClientRect().top;
+        host.style.marginTop = Math.abs(shift) > 1 ? `${shift}px` : "";
+    } else if (host?.classList.contains("void-bn-self")) {
+        const frame = chatColumn();
+        const fr = frame?.getBoundingClientRect().top ?? 0;
+        host.style.top = `${box.top - fr}px`;
+        host.style.transform = "none";
+    }
     if (!menu || !host) return;
-    const origin = rail ?? host;
-    const cap = Math.max(120, composerTop() - 16);
-    menu.style.maxHeight = `${Math.min(cap, window.innerHeight * 0.7)}px`;
+    const n = lastNav.length;
+    const packed = n > 12;
+    menu.classList.toggle("void-bn-pack", packed);
+    const row = packed ? 28 : 36;
+    const need = n * row + 32;
+    const fit = need >= box.height - 4;
+    menu.classList.toggle("void-bn-fit", fit);
+    menu.style.maxHeight = `${Math.min(need, box.height)}px`;
+    menu.style.overflowY = fit ? "auto" : "hidden";
+    if (fit) {
+        menu.style.marginTop = "";
+        return;
+    }
     menu.style.top = "";
+    const origin = rail ?? host;
     const originRect = origin.getBoundingClientRect();
-    const mh = menu.offsetHeight;
-    const viewTop = 8;
-    const viewBottom = Math.min(window.innerHeight - 8, composerTop() - 8);
+    const mh = menu.offsetHeight || Math.min(need, box.height);
+    const viewTop = box.top;
+    const viewBottom = box.top + box.height;
     const natural = originRect.top + originRect.height / 2 - mh / 2;
     let abs = natural;
     if (abs + mh > viewBottom) abs = viewBottom - mh;
@@ -1162,6 +1196,7 @@ function unmount() {
     overMenu = false;
     restoreFrame();
     clearNativeDash();
+    document.documentElement.classList.remove("void-bn-fullticks");
 }
 
 function syncHideTip() {
@@ -1277,9 +1312,9 @@ function paint() {
         return;
     }
 
-    const ticks = nativeTicks();
     const slot = nativeSlot();
-    const mode = ticks.length ? "native" : (slot ? "fill" : "self");
+    const mode = slot ? "fill" : "self";
+    document.documentElement.classList.add("void-bn-fullticks");
     const nextKey = structKey(mode, nav);
     if (nextKey === paintedKey && host?.isConnected && sameCatalog(nav)) {
         lastNav = nav;
@@ -1292,6 +1327,7 @@ function paint() {
     }
 
     unmount();
+    document.documentElement.classList.add("void-bn-fullticks");
     const box = document.createElement("div");
     box.className = cl("host", mode);
 
