@@ -2,7 +2,15 @@
     contain: layout;
 }
 
+.void-ph-tabrow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .void-ph-tabs {
+    flex: 1;
+    min-width: 0;
     display: flex;
     gap: 0.25rem;
     padding: 0.25rem;
@@ -37,8 +45,9 @@
     box-shadow: inset 0 0 0 2px hsl(var(--fg-primary));
 }
 
-.void-ph-hint {
-    overflow-wrap: anywhere;
+.void-ph-hint-pop {
+    z-index: 1000 !important;
+    max-width: min(20rem, calc(100vw - 2rem));
 }
 
 .void-ph-textarea-wrap {

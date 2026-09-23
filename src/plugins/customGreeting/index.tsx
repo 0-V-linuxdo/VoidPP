@@ -7,8 +7,8 @@
 import "./styles.css";
 
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
-import { Flex, Text, Textarea } from "@components";
-import { MessageCircleIcon } from "@components/icons";
+import { Flex, Textarea, Tooltip, TooltipContent, TooltipTrigger } from "@components";
+import { InfoIcon, MessageCircleIcon } from "@components/icons";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React, useState } from "@turbopack/common/react";
 import { RoutingStore } from "@turbopack/common/stores";
@@ -161,35 +161,53 @@ if (pluginName?.set && pluginName.get) {
     });
 }
 
+function PhraseTabHint({ children }: { children: string }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <span className="void-info-hint" aria-label={children}>
+                    <InfoIcon size={16} />
+                </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="end" sideOffset={6} className={cl("hint-pop")}>
+                {children}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
+
 function PhraseListsEditor() {
     const [tab, setTab] = useState<"phrases" | "imagine">("phrases");
     const { phrases, imaginePhrases } = settings.use(["phrases", "imaginePhrases"]);
     const home = tab === "phrases";
+    const hint = home
+        ? "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults."
+        : "One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's \"Type to imagine\".";
     return (
         <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
-            <div className={cl("tabs")} role="tablist">
-                <button
-                    type="button"
-                    role="tab"
-                    aria-selected={home}
-                    className={cl("tab", home && "tab-active")}
-                    onClick={() => setTab("phrases")}
-                >
-                    Phrases
-                </button>
-                <button
-                    type="button"
-                    role="tab"
-                    aria-selected={!home}
-                    className={cl("tab", !home && "tab-active")}
-                    onClick={() => setTab("imagine")}
-                >
-                    Imagine
-                </button>
+            <div className={cl("tabrow")}>
+                <div className={cl("tabs")} role="tablist">
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={home}
+                        className={cl("tab", home && "tab-active")}
+                        onClick={() => setTab("phrases")}
+                    >
+                        Phrases
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={!home}
+                        className={cl("tab", !home && "tab-active")}
+                        onClick={() => setTab("imagine")}
+                    >
+                        Imagine
+                    </button>
+                </div>
+                <PhraseTabHint>{hint}</PhraseTabHint>
             </div>
-            <Text size="sm" color="secondary" className={cl("hint")}>{home
-                ? "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults."
-                : "One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's \"Type to imagine\"."}</Text>
             <div className={cl("textarea-wrap")} role="tabpanel">
                 {home ? (
                     <Textarea
