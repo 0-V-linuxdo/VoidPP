@@ -4,30 +4,24 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import "./styles.css";
-
-import { TextSearchIcon } from "@components/icons";
 import type { GrokResponse } from "@grok-types/stores/ResponseStore";
-import { ChatPageStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
-import { Devs } from "@utils/constants";
+import { ChatPageStore, ResponseStore } from "@turbopack/common/stores";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
 import { sleep } from "@utils/misc";
 import { getFiber } from "@utils/react";
-import definePlugin, { StartAt } from "@utils/types";
+
+import { DISMISS, KEEP, onImaginePage, QUERY } from "./shared";
 
 const logger = new Logger("QuoteJump");
 const cl = classNameFactory("void-qj-");
 const HL = "void-qj";
-const QUERY = ".query-bar";
 const EDITOR = ".tiptap, [contenteditable='true']";
 const MSG = "[data-testid='user-message'], [data-testid='assistant-message']";
 const PANE_SKIP = "[data-sidebar], [class*='pane-card']";
 const THINK_SEL = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
 const OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-const DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
-const KEEP = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
 const FLASH_MS = 1800;
 const WAIT_MS = 50;
 const WAIT_N = 24;
@@ -38,18 +32,7 @@ let abort: AbortController | null = null;
 let gen = 0;
 let flashTimer = 0;
 let flashing: HTMLElement | null = null;
-
-function onImaginePage(): boolean {
-    try {
-        const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
-        if (page.startsWith("imagine")) return true;
-    } catch { /* route not ready */ }
-    try {
-        return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
-    } catch {
-        return false;
-    }
-}
+let jumpArmed = false;
 
 function norm(s: string): string {
     return s.replaceAll(/\s+/g, " ").trim();
@@ -563,24 +546,18 @@ function onClick(e: MouseEvent) {
     void jump(sent ?? chip);
 }
 
-export default definePlugin({
-    name: "QuoteJump",
-    icon: TextSearchIcon,
-    description: "Click a composer quote chip to scroll to the exact quoted passage, not just the message.",
-    authors: [Devs.p],
-    tags: ["chat", "ui"],
-    enabledByDefault: true,
-    startAt: StartAt.TurbopackReady,
+export function startJump() {
+    if (jumpArmed) return;
+    jumpArmed = true;
+    abort = new AbortController();
+    document.addEventListener("click", onClick, { capture: true, signal: abort.signal });
+}
 
-    start() {
-        abort = new AbortController();
-        document.addEventListener("click", onClick, { capture: true, signal: abort.signal });
-    },
-
-    stop() {
-        abort?.abort();
-        abort = null;
-        gen++;
-        clearHighlight();
-    },
-});
+export function stopJump() {
+    if (!jumpArmed && !abort) return;
+    jumpArmed = false;
+    abort?.abort();
+    abort = null;
+    gen++;
+    clearHighlight();
+}

@@ -4,24 +4,18 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import "./styles.css";
-
-import { TextQuoteIcon } from "@components/icons";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { ResponseStoreState } from "@grok-types/stores/ResponseStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { ChatPageStore, MessageStore, RoutingStore } from "@turbopack/common/stores";
-import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
-import definePlugin, { StartAt } from "@utils/types";
+
+import { DISMISS, KEEP as KEEP_BTN, onImaginePage, QUERY } from "./shared";
 
 const logger = new Logger("QuoteSticky");
 const cl = classNameFactory("void-qs-");
 const KEEP = 40;
-const QUERY = ".query-bar";
-const DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
-const KEEP_BTN = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
 const RESTORE_GAP_MS = 80;
 const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
@@ -52,18 +46,7 @@ let lastRestoreAt = 0;
 let abort: AbortController | null = null;
 let observer: MutationObserver | null = null;
 let mutRaf = 0;
-
-function onImaginePage(): boolean {
-    try {
-        const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
-        if (page.startsWith("imagine")) return true;
-    } catch { /* route not ready */ }
-    try {
-        return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
-    } catch {
-        return false;
-    }
-}
+let armed = false;
 
 function pathCid(): string {
     try {
@@ -146,11 +129,11 @@ function popupSig(p: unknown): string {
     return String(rec.responseId ?? rec.parentResponseId ?? rec.id ?? rec.quotedText ?? "1");
 }
 
-function chatSel(s: ChatPageStoreState): string {
+export function chatSel(s: ChatPageStoreState): string {
     return `${destKey(s)}|${pathCid()}|${routeCid()}|${realCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
 }
 
-function hydrateSel(s: ResponseStoreState): string {
+export function hydrateSel(s: ResponseStoreState): string {
     return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`;
 }
 
@@ -356,8 +339,12 @@ function dismiss() {
     removeFallback();
 }
 
-function onChat() {
-    if (applying || onImaginePage()) return;
+export function routeSel(s: RoutingStoreState): string {
+    return String(s.route.conversationId ?? "");
+}
+
+export function onChat() {
+    if (!armed || applying || onImaginePage()) return;
     const now = readText();
     const dest = destKey();
     const key = snapKey();
@@ -416,7 +403,8 @@ function onChat() {
     restore(dest);
 }
 
-function onNav() {
+export function onNav() {
+    if (!armed) return;
     wrapAll();
     onChat();
 }
@@ -623,73 +611,50 @@ function unwrapAll() {
 }
 
 function onMutate() {
-    if (mutRaf) return;
+    if (!armed || mutRaf) return;
     mutRaf = requestAnimationFrame(() => {
         mutRaf = 0;
-        ensureChip();
+        if (armed) ensureChip();
     });
 }
 
-export default definePlugin({
-    name: "QuoteSticky",
-    icon: TextQuoteIcon,
-    description: "Keep the composer quote card when switching chats and coming back.",
-    authors: [Devs.p],
-    tags: ["chat", "ui"],
-    enabledByDefault: true,
-    startAt: StartAt.TurbopackReady,
-    managedStyle: "quoteSticky",
-    cleanupSelectors: [`.${cl("chip")}`],
+export function startSticky() {
+    if (armed) return;
+    armed = true;
+    const now = readText();
+    const key = snapKey() || now.key;
+    lastKey = key;
+    if (key && now.text) {
+        remember(key, now.text, now.popup);
+        lastText = now.text;
+        lastPopup = now.popup;
+    }
+    abort = new AbortController();
+    document.addEventListener("pointerdown", onPointerDown, { capture: true, signal: abort.signal });
+    const poke = () => onMutate();
+    window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort.signal });
+    window.addEventListener("resize", poke, { passive: true, signal: abort.signal });
+    observer = new MutationObserver(onMutate);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    wrapAll();
+    ensureChip();
+}
 
-    start() {
-        const now = readText();
-        const key = snapKey() || now.key;
-        lastKey = key;
-        if (key && now.text) {
-            remember(key, now.text, now.popup);
-            lastText = now.text;
-            lastPopup = now.popup;
-        }
-        abort = new AbortController();
-        document.addEventListener("pointerdown", onPointerDown, { capture: true, signal: abort.signal });
-        const poke = () => onMutate();
-        window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort.signal });
-        window.addEventListener("resize", poke, { passive: true, signal: abort.signal });
-        observer = new MutationObserver(onMutate);
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-        wrapAll();
-        ensureChip();
-    },
-
-    stop() {
-        abort?.abort();
-        abort = null;
-        observer?.disconnect();
-        observer = null;
-        if (mutRaf) cancelAnimationFrame(mutRaf);
-        mutRaf = 0;
-        unwrapAll();
-        removeFallback();
-        saved.clear();
-        lastKey = "";
-        lastText = "";
-        lastPopup = undefined;
-        applying = false;
-        lastRestoreAt = 0;
-    },
-
-    zustand: {
-        ChatPageStore: {
-            selector: chatSel,
-            handler: onChat,
-        },
-        RoutingStore: {
-            selector: (s: RoutingStoreState) => String(s.route.conversationId ?? ""),
-            handler: onNav,
-        },
-        ResponseStore: {
-            selector: hydrateSel,
-            handler: onNav,
-        },
-    },
-});
+export function stopSticky() {
+    if (!armed) return;
+    armed = false;
+    abort?.abort();
+    abort = null;
+    observer?.disconnect();
+    observer = null;
+    if (mutRaf) cancelAnimationFrame(mutRaf);
+    mutRaf = 0;
+    unwrapAll();
+    removeFallback();
+    saved.clear();
+    lastKey = "";
+    lastText = "";
+    lastPopup = undefined;
+    applying = false;
+    lastRestoreAt = 0;
+}

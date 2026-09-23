@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.10
+// @version      20260923.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.10] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3183,19 +3183,6 @@ ${sourceUrl}`;
     d: "M21 18H8"
   }), /* @__PURE__ */ React.createElement("path", {
     d: "M3 12v6"
-  }));
-  var TextSearchIcon = (props = {}) => svg(props, /* @__PURE__ */ React.createElement("path", {
-    d: "M21 6H3"
-  }), /* @__PURE__ */ React.createElement("path", {
-    d: "M10 12H3"
-  }), /* @__PURE__ */ React.createElement("path", {
-    d: "M10 18H3"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "17",
-    cy: "15",
-    r: "3"
-  }), /* @__PURE__ */ React.createElement("path", {
-    d: "m21 19-1.9-1.9"
   }));
   var VoidPPIcon = (props = {}) => svg({ ...props, strokeWidth: props.strokeWidth ?? 2.15 }, /* @__PURE__ */ React.createElement("path", {
     d: "M2.2 7.4 L8.4 20.2 L13.03 11.30"
@@ -7518,9 +7505,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6a9815d"}`
-    }, `(${"6a9815d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"7f498c4"}`
+    }, `(${"7f498c4"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10721,6 +10708,1447 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   });
 
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterQuotes/styles.css
+  registerStyle("betterQuotes", `.void-qj-hit {
+    border-radius: 0.25rem;
+    outline: 2px solid hsl(var(--fg-primary));
+    outline-offset: 2px;
+    background: hsl(var(--fg-primary) / 12%);
+}
+
+::highlight(void-qj) {
+    background-color: hsl(var(--fg-primary) / 18%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .void-qj-hit {
+        outline: none;
+        background: hsl(var(--button-ghost-hover));
+    }
+}
+
+.void-qs-chip {
+    position: fixed;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-sizing: border-box;
+    max-width: calc(100vw - 24px);
+    min-height: 2rem;
+    margin: 0;
+    padding: 0.25rem 0.25rem 0.25rem 0.5rem;
+    border-radius: 0.75rem;
+    background: hsl(var(--surface-base, 0 0% 8%));
+    color: hsl(var(--fg-secondary));
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.void-qs-mark {
+    flex: none;
+    width: 2px;
+    align-self: stretch;
+    min-height: 1.25rem;
+    border-radius: 1px;
+    background: hsl(var(--fg-secondary));
+}
+
+.void-qs-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    line-height: 1.25;
+}
+
+.void-qs-x {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.void-qs-x:is(:hover, :focus-visible) {
+    background: hsl(var(--button-ghost-hover));
+    color: hsl(var(--fg-primary));
+}
+
+.void-qs-x:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px hsl(var(--fg-accent));
+}
+
+.void-qs-x svg {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+}
+`);
+
+  // src/plugins/betterQuotes/shared.ts
+  var QUERY = ".query-bar";
+  var DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
+  var KEEP = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
+  function onImaginePage() {
+    try {
+      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+      if (page.startsWith("imagine"))
+        return true;
+    } catch {}
+    try {
+      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+      return false;
+    }
+  }
+
+  // src/plugins/betterQuotes/jump.ts
+  var logger21 = new Logger("QuoteJump");
+  var cl19 = classNameFactory("void-qj-");
+  var HL = "void-qj";
+  var EDITOR = ".tiptap, [contenteditable='true']";
+  var MSG2 = "[data-testid='user-message'], [data-testid='assistant-message']";
+  var PANE_SKIP2 = "[data-sidebar], [class*='pane-card']";
+  var THINK_SEL2 = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
+  var OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
+  var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  var FLASH_MS2 = 1800;
+  var WAIT_MS = 50;
+  var WAIT_N = 24;
+  var ALIGNED_PX = 8;
+  var MSG_OFFSET = 72;
+  var abort = null;
+  var gen = 0;
+  var flashTimer2 = 0;
+  var flashing2 = null;
+  var jumpArmed = false;
+  function norm(s) {
+    return s.replaceAll(/\s+/g, " ").trim();
+  }
+  function quotedText() {
+    try {
+      return String(ChatPageStore.useChatPageStore.getState().quotedText || "");
+    } catch {
+      return "";
+    }
+  }
+  function quotePopup() {
+    try {
+      return ChatPageStore.useChatPageStore.getState().quotePopupData;
+    } catch {
+      return;
+    }
+  }
+  function conversationId() {
+    try {
+      const s = ChatPageStore.useChatPageStore.getState();
+      return String(s.conversationId || s.optimisticConversationId || "");
+    } catch {
+      return "";
+    }
+  }
+  function collectIds(value, out, depth = 0) {
+    if (depth > 5 || out.length > 8 || value == null)
+      return;
+    if (typeof value === "string") {
+      const m = value.match(UUID);
+      if (m)
+        out.push(m[0]);
+      return;
+    }
+    if (typeof value !== "object")
+      return;
+    if (Array.isArray(value)) {
+      for (const item of value.slice(0, 24))
+        collectIds(item, out, depth + 1);
+      return;
+    }
+    for (const [k, v] of Object.entries(value)) {
+      if (/responseid|messageid|^id$/i.test(k) && typeof v === "string" && UUID.test(v))
+        out.push(v);
+      else
+        collectIds(v, out, depth + 1);
+    }
+  }
+  function propsId(el) {
+    let cur = getFiber(el);
+    let d = 0;
+    while (cur && d < 28) {
+      const p = cur.memoizedProps;
+      if (p) {
+        for (const k of ["responseId", "parentResponseId", "messageId", "id"]) {
+          const v = p[k];
+          if (typeof v === "string" && UUID.test(v))
+            return v;
+        }
+      }
+      cur = cur.return;
+      d++;
+    }
+    return "";
+  }
+  function idsFrom(el, extra) {
+    const out = [];
+    if (el) {
+      const host = el.closest("[id^='response-']");
+      if (host) {
+        const m = host.id.match(UUID);
+        if (m)
+          out.push(m[0]);
+      }
+      const attr = el.closest("[data-response-id]")?.getAttribute("data-response-id");
+      if (attr && UUID.test(attr))
+        out.push(attr);
+      const fromFiber = propsId(el);
+      if (fromFiber)
+        out.push(fromFiber);
+    }
+    collectIds(extra, out);
+    collectIds(quotePopup(), out);
+    return [...new Set(out)];
+  }
+  function chatPane2() {
+    const main = document.querySelector("main");
+    if (!main)
+      return null;
+    const skip = (n) => !!n.closest(PANE_SKIP2);
+    const msg = main.querySelector(MSG2);
+    if (msg) {
+      const col = msg.closest(OVERFLOW_SEL);
+      if (col && !skip(col))
+        return col;
+    }
+    let best = null;
+    let bestScore = 0;
+    for (const n of main.querySelectorAll(OVERFLOW_SEL)) {
+      if (skip(n))
+        continue;
+      const r = n.getBoundingClientRect();
+      if (r.width < 240 || r.height < 120)
+        continue;
+      const score = r.width * r.height;
+      if (score > bestScore) {
+        best = n;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+  function paneOf(el) {
+    const pane = chatPane2();
+    if (pane && pane.contains(el))
+      return pane;
+    for (let n = el.parentElement;n && n !== document.documentElement; n = n.parentElement) {
+      if (n.closest(PANE_SKIP2))
+        continue;
+      if (n.closest("pre, code, table, details") && !n.querySelector(MSG2))
+        continue;
+      if (n.matches(OVERFLOW_SEL))
+        return n;
+    }
+    return null;
+  }
+  function messageEls() {
+    const root = chatPane2() ?? document.querySelector("main") ?? document.body;
+    return [...root.querySelectorAll(MSG2)];
+  }
+  function messageById(id) {
+    if (!id)
+      return null;
+    const named = document.getElementById(`response-${id}`);
+    if (named instanceof HTMLElement)
+      return named.closest(MSG2) ?? named;
+    for (const el of messageEls()) {
+      if (el.id === `response-${id}` || el.getAttribute("data-response-id") === id)
+        return el;
+      if (propsId(el) === id)
+        return el;
+    }
+    return null;
+  }
+  function storeById(id) {
+    try {
+      return ResponseStore.useResponseStore.getState().byId[id];
+    } catch {
+      return;
+    }
+  }
+  function storeNeedle(needle) {
+    const n = norm(needle);
+    if (n.length < 2)
+      return null;
+    try {
+      const cid = conversationId();
+      const r = ResponseStore.useResponseStore.getState();
+      const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
+      for (let i = rows.length - 1;i >= 0; i--) {
+        const row = rows[i];
+        if (!row?.responseId)
+          continue;
+        if (norm(String(row.message || "")).includes(n))
+          return { id: row.responseId, cid };
+      }
+    } catch (e) {
+      logger21.debug("store search failed", e);
+    }
+    return null;
+  }
+  function prefixOf(text) {
+    return norm(text).replace(/[.…]+$/u, "");
+  }
+  function nodeHasNeedle(el, needle) {
+    const n = prefixOf(needle);
+    if (n.length < 2)
+      return false;
+    const text = norm(el.textContent || "");
+    const clip = n.slice(0, Math.min(n.length, 48));
+    return text.includes(clip) || clip.includes(text) && text.length >= 8;
+  }
+  function isEditor(el) {
+    return !!el.closest(EDITOR);
+  }
+  function chipRow(btn) {
+    const bar = btn.closest(QUERY);
+    let n = btn.parentElement;
+    while (n && n !== bar) {
+      if (n.offsetHeight > 0 && n.offsetHeight <= 72)
+        return n;
+      n = n.parentElement;
+    }
+    return null;
+  }
+  function isBarAction(el) {
+    const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
+    if (!(btn instanceof HTMLElement))
+      return false;
+    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
+    return KEEP.test(label);
+  }
+  function isDismiss(el) {
+    const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
+    if (!(btn instanceof HTMLElement))
+      return false;
+    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
+    if (KEEP.test(label))
+      return false;
+    if (DISMISS.test(label))
+      return true;
+    const q = quotedText();
+    if (!q || norm(btn.textContent || "") || !btn.querySelector("svg"))
+      return false;
+    const row = chipRow(btn);
+    return !!(row && nodeHasNeedle(row, q));
+  }
+  function composerChip(el) {
+    const sticky = el.closest(".void-qs-chip");
+    if (sticky instanceof HTMLElement && !el.closest(".void-qs-x"))
+      return sticky;
+    const bar = el.closest(QUERY);
+    if (!(bar instanceof HTMLElement) || isEditor(el) || isDismiss(el) || isBarAction(el))
+      return null;
+    const needle = quotedText();
+    if (!needle)
+      return null;
+    let n = el instanceof HTMLElement ? el : el.parentElement;
+    while (n && n !== bar) {
+      if (n.matches(EDITOR) || n.closest(EDITOR) === n)
+        return null;
+      if (n.querySelector("textarea, [contenteditable='true'], .tiptap"))
+        return null;
+      if (n.offsetHeight > 0 && n.offsetHeight <= 72 && nodeHasNeedle(n, needle)) {
+        const action = n.querySelector("button, [role='button']");
+        if (action && isBarAction(action) && !n.contains(el.closest("button, [role='button']") ?? el))
+          return null;
+        return n;
+      }
+      n = n.parentElement;
+    }
+    return null;
+  }
+  function sentQuote(el) {
+    const bq = el.closest("[data-testid='user-message'] blockquote");
+    if (bq instanceof HTMLElement)
+      return bq;
+    const msg = el.closest("[data-testid='user-message']");
+    if (!(msg instanceof HTMLElement) || isEditor(el))
+      return null;
+    const row = storeById(propsId(msg) || idsFrom(msg)[0] || "");
+    const snippet = String(row?.parentQuotedText || "");
+    if (snippet && nodeHasNeedle(el instanceof HTMLElement ? el : msg, snippet))
+      return el instanceof HTMLElement ? el : msg;
+    return null;
+  }
+  function hiddenHost(el, allowThink) {
+    if (el.closest("button, svg, [role='toolbar']"))
+      return true;
+    if (!allowThink && el.closest(THINK_SEL2) && !el.closest("summary"))
+      return true;
+    const d = el.closest("details");
+    if (d instanceof HTMLDetailsElement && !d.open && !el.closest("summary"))
+      return true;
+    try {
+      const s = getComputedStyle(el);
+      if (s.display === "none" || s.visibility === "hidden")
+        return true;
+    } catch {}
+    return false;
+  }
+  function rawIndexForNorm(raw, normIdx) {
+    let i = 0;
+    let n = 0;
+    const compact = raw.replaceAll(/\s+/g, " ").trim();
+    while (i < raw.length && /^\s/.test(raw[i]))
+      i++;
+    while (i < raw.length && n < normIdx && n < compact.length) {
+      if (/\s/.test(raw[i])) {
+        while (i < raw.length && /\s/.test(raw[i]))
+          i++;
+        if (n < compact.length && compact[n] === " ")
+          n++;
+        continue;
+      }
+      i++;
+      n++;
+    }
+    return i;
+  }
+  function rangeFromParts(parts, blob, clip) {
+    const at = blob.indexOf(clip);
+    if (at < 0)
+      return null;
+    for (const part of parts) {
+      const compact = norm(part.raw);
+      if (!compact)
+        continue;
+      const end = part.start + compact.length;
+      if (at >= end)
+        continue;
+      const local = Math.max(0, at - part.start);
+      const rawIdx = rawIndexForNorm(part.raw, local);
+      const take = Math.min(Math.max(2, clip.length), part.raw.length - rawIdx);
+      if (rawIdx < 0 || take < 2)
+        continue;
+      const range = document.createRange();
+      range.setStart(part.node, rawIdx);
+      range.setEnd(part.node, rawIdx + take);
+      return range;
+    }
+    return null;
+  }
+  function collectParts(root, allowThink) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const parts = [];
+    let blob = "";
+    let node;
+    while (node = walker.nextNode()) {
+      const raw = node.nodeValue || "";
+      if (!raw.trim())
+        continue;
+      const el = node.parentElement;
+      if (!el || hiddenHost(el, allowThink))
+        continue;
+      if (blob)
+        blob += " ";
+      parts.push({ node, raw, start: blob.length });
+      blob += norm(raw);
+    }
+    return { parts, blob };
+  }
+  function findRange(root, needle) {
+    const n = prefixOf(needle);
+    if (n.length < 2)
+      return null;
+    const clip = n.slice(0, Math.min(n.length, 48));
+    const visible = collectParts(root, false);
+    const hit = rangeFromParts(visible.parts, visible.blob, clip);
+    if (hit)
+      return hit;
+    const all = collectParts(root, true);
+    return rangeFromParts(all.parts, all.blob, clip);
+  }
+  function findHit(root, needle) {
+    const range = findRange(root, needle);
+    if (!range)
+      return null;
+    const node = range.startContainer;
+    const el = node instanceof HTMLElement ? node : node.parentElement;
+    return el?.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, blockquote, span") ?? el;
+  }
+  function openAncestors(el, needle) {
+    for (let n = el;n; n = n.parentElement) {
+      if (n instanceof HTMLDetailsElement && !n.open)
+        n.open = true;
+    }
+    if (!needle)
+      return;
+    for (const d of el.querySelectorAll("details")) {
+      if (!(d instanceof HTMLDetailsElement) || d.open)
+        continue;
+      if (nodeHasNeedle(d, needle))
+        d.open = true;
+    }
+  }
+  function clearHighlight() {
+    if (flashTimer2)
+      window.clearTimeout(flashTimer2);
+    flashTimer2 = 0;
+    flashing2?.classList.remove(cl19("hit"));
+    flashing2 = null;
+    const { highlights } = CSS;
+    highlights?.delete(HL);
+  }
+  function highlightRange(range, el) {
+    clearHighlight();
+    const HighlightCtor = window.Highlight;
+    const { highlights } = CSS;
+    if (range && highlights && HighlightCtor) {
+      highlights.set(HL, new HighlightCtor(range));
+    } else {
+      flashing2 = el;
+      el.classList.add(cl19("hit"));
+    }
+    flashTimer2 = window.setTimeout(clearHighlight, FLASH_MS2);
+  }
+  function visibleMidY(pane) {
+    const top = pane?.getBoundingClientRect().top ?? 0;
+    const bar = document.querySelector(QUERY);
+    const barTop = bar instanceof HTMLElement ? bar.getBoundingClientRect().top : 0;
+    const bottom = barTop > top ? barTop : pane?.getBoundingClientRect().bottom ?? window.innerHeight;
+    return (top + bottom) / 2;
+  }
+  function lineBox(range) {
+    if (!range || !range.startContainer.isConnected)
+      return null;
+    for (const line of range.getClientRects()) {
+      if (line.height > 0 || line.width > 0)
+        return line;
+    }
+    const box = range.getBoundingClientRect();
+    return box.height > 0 || box.width > 0 ? box : null;
+  }
+  function scrollMessageTop(el) {
+    el.style.scrollMarginTop = `${MSG_OFFSET}px`;
+    const pane = paneOf(el) ?? chatPane2();
+    if (pane && pane.contains(el)) {
+      const pr = pane.getBoundingClientRect();
+      const er = el.getBoundingClientRect();
+      pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - MSG_OFFSET, behavior: "smooth" });
+      return;
+    }
+    el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+  }
+  function scrollLineToScreenCenter(range, el) {
+    if (!document.body.contains(el))
+      return;
+    const box = lineBox(range);
+    if (!box) {
+      scrollMessageTop(el.closest(MSG2) ?? el);
+      return;
+    }
+    const pane = paneOf(el) ?? chatPane2();
+    const mid = visibleMidY(pane && pane.contains(el) ? pane : null);
+    const delta = box.top + box.height / 2 - mid;
+    if (Math.abs(delta) < ALIGNED_PX)
+      return;
+    if (pane && pane.contains(el)) {
+      pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
+      return;
+    }
+    const node = range?.startContainer;
+    const hit = (node instanceof HTMLElement ? node : node?.parentElement) ?? el;
+    if (hit.closest(MSG2) !== hit) {
+      hit.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      return;
+    }
+    scrollMessageTop(el);
+  }
+  function afterLayout() {
+    return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+  }
+  async function hydrate(cid) {
+    if (!cid)
+      return;
+    try {
+      await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
+      return;
+    } catch (e) {
+      logger21.debug("loadResponses failed", e);
+    }
+    try {
+      await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
+    } catch (e) {
+      logger21.debug("loadMoreResponses failed", e);
+    }
+  }
+  function resolveNeedle(origin) {
+    const live = quotedText();
+    if (origin) {
+      const msg = origin.closest(MSG2);
+      const id = msg ? propsId(msg) || idsFrom(msg)[0] : "";
+      const row = id ? storeById(id) : undefined;
+      const sent = String(row?.parentQuotedText || "");
+      const parent = String(row?.parentResponseId || "");
+      const text = sent || live || prefixOf(origin.textContent || "");
+      const ids = [parent, ...idsFrom(origin, row)].filter(Boolean);
+      return { needle: text, ids };
+    }
+    return { needle: live, ids: idsFrom(null) };
+  }
+  function pickMessage(ids, needle) {
+    for (const id of ids) {
+      const el = messageById(id);
+      if (el)
+        return el;
+    }
+    const n = prefixOf(needle);
+    if (!n)
+      return null;
+    const rows = messageEls();
+    for (let i = rows.length - 1;i >= 0; i--) {
+      if (nodeHasNeedle(rows[i], n))
+        return rows[i];
+    }
+    return null;
+  }
+  async function jump2(origin) {
+    const mine = ++gen;
+    const { needle, ids } = resolveNeedle(origin);
+    if (!prefixOf(needle))
+      return;
+    let el = pickMessage(ids, needle);
+    if (!el || !findHit(el, needle) && !nodeHasNeedle(el, needle)) {
+      const hit = storeNeedle(needle);
+      if (hit) {
+        if (hit.id)
+          ids.unshift(hit.id);
+        await hydrate(hit.cid || conversationId());
+        if (mine !== gen)
+          return;
+        for (let i = 0;i < WAIT_N; i++) {
+          el = pickMessage(ids, needle);
+          if (el)
+            break;
+          await sleep(WAIT_MS);
+          if (mine !== gen)
+            return;
+        }
+      }
+    }
+    if (mine !== gen)
+      return;
+    if (!el) {
+      logger21.debug("no source message");
+      return;
+    }
+    openAncestors(el, needle);
+    await afterLayout();
+    if (mine !== gen)
+      return;
+    if (!el.isConnected) {
+      el = pickMessage(ids, needle);
+      if (!el)
+        return;
+      openAncestors(el, needle);
+      await afterLayout();
+      if (mine !== gen || !el.isConnected)
+        return;
+    }
+    const range = findRange(el, needle);
+    const hit = findHit(el, needle) ?? el;
+    scrollLineToScreenCenter(range, hit);
+    highlightRange(range, hit);
+  }
+  function onClick(e) {
+    if (!e.isTrusted || e.button !== 0 || onImaginePage())
+      return;
+    const t = e.target;
+    if (!(t instanceof Element))
+      return;
+    if (isDismiss(t) || isEditor(t) || isBarAction(t))
+      return;
+    const chip = composerChip(t);
+    const sent = sentQuote(t);
+    if (!chip && !sent)
+      return;
+    e.preventDefault();
+    e.stopPropagation();
+    jump2(sent ?? chip);
+  }
+  function startJump() {
+    if (jumpArmed)
+      return;
+    jumpArmed = true;
+    abort = new AbortController;
+    document.addEventListener("click", onClick, { capture: true, signal: abort.signal });
+  }
+  function stopJump() {
+    if (!jumpArmed && !abort)
+      return;
+    jumpArmed = false;
+    abort?.abort();
+    abort = null;
+    gen++;
+    clearHighlight();
+  }
+
+  // src/plugins/betterQuotes/sticky.ts
+  var logger22 = new Logger("QuoteSticky");
+  var cl20 = classNameFactory("void-qs-");
+  var KEEP2 = 40;
+  var RESTORE_GAP_MS = 80;
+  var X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  var saved = new Map;
+  var origFns = new Map;
+  var wrappedFns = new Map;
+  var lastKey = "";
+  var lastText = "";
+  var lastPopup;
+  var applying = false;
+  var lastRestoreAt = 0;
+  var abort2 = null;
+  var observer = null;
+  var mutRaf = 0;
+  var armed = false;
+  function pathCid() {
+    try {
+      const path = location.pathname;
+      const inPath = path.match(/\/(?:c|chat|conversation)\/([^/?#]+)/i)?.[1] || "";
+      if (inPath && inPath !== "new")
+        return decodeURIComponent(inPath);
+      const q = new URLSearchParams(location.search);
+      for (const name of ["conversationId", "chat"]) {
+        const v = q.get(name) || "";
+        if (v)
+          return v;
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  }
+  function routeCid() {
+    try {
+      return String(RoutingStore.useRoutingStore.getState().route.conversationId ?? "");
+    } catch {
+      return "";
+    }
+  }
+  function realCid(s) {
+    try {
+      const st = s ?? ChatPageStore.useChatPageStore.getState();
+      return String(st.conversationId || "");
+    } catch {
+      return "";
+    }
+  }
+  function snapKey(s) {
+    const cid = realCid(s);
+    if (cid)
+      return cid;
+    return pathCid() || routeCid();
+  }
+  function destKey(s) {
+    return realCid(s);
+  }
+  function ownKey() {
+    return realCid() || pathCid() || routeCid() || lastKey;
+  }
+  function str(v) {
+    if (typeof v === "string")
+      return v;
+    if (v == null)
+      return "";
+    return String(v);
+  }
+  function extractFields(popup, text) {
+    const rec = popup && typeof popup === "object" ? popup : {};
+    const responseId = str(rec.responseId ?? rec.parentResponseId ?? rec.id);
+    return {
+      responseId,
+      parentResponseId: str(rec.parentResponseId ?? rec.responseId ?? rec.id),
+      parentQuotedText: str(rec.parentQuotedText ?? rec.quotedText ?? text),
+      parentQuoteSource: rec.parentQuoteSource ?? rec.source ?? (responseId ? { responseId } : undefined)
+    };
+  }
+  function popupFor(snap) {
+    const fields = { ...snap.fields, quotedText: snap.text, parentQuotedText: snap.fields.parentQuotedText || snap.text };
+    if (snap.popup && typeof snap.popup === "object") {
+      try {
+        return { ...fields, ...snap.popup };
+      } catch {}
+    }
+    return fields;
+  }
+  function popupSig(p) {
+    if (p == null)
+      return "";
+    if (typeof p !== "object")
+      return String(p);
+    const rec = p;
+    return String(rec.responseId ?? rec.parentResponseId ?? rec.id ?? rec.quotedText ?? "1");
+  }
+  function chatSel(s) {
+    return `${destKey(s)}|${pathCid()}|${routeCid()}|${realCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
+  }
+  function hydrateSel(s) {
+    return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`;
+  }
+  function readText() {
+    try {
+      const s = ChatPageStore.useChatPageStore.getState();
+      return { key: destKey(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
+    } catch {
+      return { key: destKey(), text: "", popup: undefined };
+    }
+  }
+  function remember(key, text, popup) {
+    if (!key || !text)
+      return;
+    saved.delete(key);
+    saved.set(key, { text, popup, fields: extractFields(popup, text) });
+    while (saved.size > KEEP2) {
+      const oldest = saved.keys().next().value;
+      if (oldest === undefined)
+        break;
+      saved.delete(oldest);
+    }
+  }
+  function stashOutgoing() {
+    if (lastKey && lastText)
+      remember(lastKey, lastText, lastPopup);
+  }
+  function drop(key) {
+    if (key)
+      saved.delete(key);
+    if (key === lastKey) {
+      lastText = "";
+      lastPopup = undefined;
+    }
+  }
+  function clearLive() {
+    lastRestoreAt = 0;
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      if (!chat.quotedText && chat.quotePopupData == null)
+        return;
+      applying = true;
+      try {
+        if (chat.quotedText)
+          chat.setQuotedText("");
+        if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
+          chat.setQuotePopupData(null);
+      } finally {
+        applying = false;
+      }
+    } catch (e) {
+      logger22.debug("clear failed", e);
+    }
+  }
+  function applyQuote(key, text, popup) {
+    if (destKey() !== key)
+      return;
+    const chat = ChatPageStore.useChatPageStore.getState();
+    applying = true;
+    try {
+      if (chat.quotedText !== text)
+        chat.setQuotedText(text);
+      if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(popup))
+        chat.setQuotePopupData(popup);
+    } catch (e) {
+      logger22.debug("apply failed", e);
+    } finally {
+      applying = false;
+    }
+  }
+  function officialVisible(text) {
+    const bar = document.querySelector(QUERY);
+    if (!(bar instanceof HTMLElement) || !text)
+      return false;
+    const clip = text.replaceAll(/\s+/g, " ").trim().slice(0, 12);
+    if (!clip)
+      return false;
+    for (const n of bar.querySelectorAll("div, span, button")) {
+      if (!(n instanceof HTMLElement) || n.closest(`.${cl20("chip")}`))
+        continue;
+      if (n.offsetHeight > 0 && n.offsetHeight <= 72 && (n.textContent || "").includes(clip))
+        return true;
+    }
+    return false;
+  }
+  function removeFallback() {
+    for (const n of document.querySelectorAll(`.${cl20("chip")}`))
+      n.remove();
+  }
+  function onFallbackDismiss(e) {
+    e.stopPropagation();
+    dismiss();
+  }
+  function makeChip() {
+    const el = document.createElement("div");
+    el.className = cl20("chip");
+    el.dataset.voidQs = "";
+    const mark = document.createElement("span");
+    mark.className = cl20("mark");
+    mark.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    text.className = cl20("text");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = cl20("x");
+    btn.setAttribute("aria-label", "Remove quote");
+    btn.innerHTML = X_SVG;
+    btn.addEventListener("pointerdown", onFallbackDismiss);
+    el.append(mark, text, btn);
+    return el;
+  }
+  function placeChip(el, bar) {
+    const r = bar.getBoundingClientRect();
+    if (r.width < 8 || r.height < 8) {
+      el.style.display = "none";
+      return;
+    }
+    el.style.display = "flex";
+    el.style.width = `${Math.max(120, r.width - 24)}px`;
+    el.style.left = `${r.left + 12}px`;
+    el.style.top = `${Math.max(8, r.top + 6)}px`;
+  }
+  function paintFallback(key, snap) {
+    const bar = document.querySelector(QUERY);
+    const path = pathCid();
+    if (!key || destKey() !== key || path && path !== key || !(bar instanceof HTMLElement) || onImaginePage()) {
+      removeFallback();
+      return;
+    }
+    if (officialVisible(snap.text)) {
+      removeFallback();
+      return;
+    }
+    let el = document.querySelector(`.${cl20("chip")}`);
+    if (el instanceof HTMLElement && el.dataset.voidQsKey !== key) {
+      el.remove();
+      el = null;
+    }
+    if (!(el instanceof HTMLElement)) {
+      el = makeChip();
+      el.dataset.voidQsKey = key;
+      document.body.append(el);
+    }
+    el.dataset.voidQsKey = key;
+    const label = el.querySelector(`.${cl20("text")}`);
+    const shown = snap.text.replaceAll(/\s+/g, " ").trim();
+    if (label && label.textContent !== shown)
+      label.textContent = shown;
+    placeChip(el, bar);
+  }
+  function restore(key) {
+    if (!key || onImaginePage() || destKey() !== key) {
+      if (destKey() !== key)
+        removeFallback();
+      return;
+    }
+    const snap = saved.get(key);
+    if (!snap?.text) {
+      removeFallback();
+      return;
+    }
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      const live = String(chat.quotedText || "");
+      const same = live === snap.text && popupSig(chat.quotePopupData) === popupSig(popupFor(snap));
+      const now = performance.now();
+      if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
+        lastRestoreAt = now;
+        applyQuote(key, snap.text, popupFor(snap));
+        logger22.info("restored", key);
+      }
+      paintFallback(key, snap);
+    } catch (e) {
+      logger22.debug("restore failed", e);
+      paintFallback(key, snap);
+    }
+  }
+  function ensureChip() {
+    if (onImaginePage())
+      return;
+    const dest = destKey();
+    const path = pathCid();
+    if (!dest || path && path !== dest) {
+      removeFallback();
+      return;
+    }
+    const snap = saved.get(dest);
+    if (!snap?.text) {
+      removeFallback();
+      return;
+    }
+    restore(dest);
+  }
+  function dismiss() {
+    const key = ownKey();
+    applying = true;
+    try {
+      drop(key);
+      const chat = ChatPageStore.useChatPageStore.getState();
+      if (chat.quotedText)
+        chat.setQuotedText("");
+      if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
+        chat.setQuotePopupData(null);
+    } catch (e) {
+      logger22.debug("dismiss failed", e);
+    } finally {
+      applying = false;
+    }
+    removeFallback();
+  }
+  function routeSel(s) {
+    return String(s.route.conversationId ?? "");
+  }
+  function onChat() {
+    if (!armed || applying || onImaginePage())
+      return;
+    const now = readText();
+    const dest = destKey();
+    const key = snapKey();
+    if (now.text && key && !(dest && lastKey && dest !== lastKey)) {
+      remember(key, now.text, now.popup);
+      lastText = now.text;
+      lastPopup = now.popup;
+      lastKey = key;
+    }
+    if (!dest) {
+      stashOutgoing();
+      removeFallback();
+      if (!pathCid() && !routeCid()) {
+        lastText = "";
+        lastPopup = undefined;
+        clearLive();
+      }
+      return;
+    }
+    const path = pathCid();
+    if (path && path === lastKey && path !== dest) {
+      const prior = saved.get(path);
+      if (prior?.text)
+        remember(dest, prior.text, prior.popup);
+      saved.delete(path);
+      lastKey = dest;
+      lastText = prior?.text || lastText;
+      lastPopup = prior?.popup ?? lastPopup;
+    }
+    if (path && path !== dest) {
+      removeFallback();
+      return;
+    }
+    if (dest !== lastKey) {
+      stashOutgoing();
+      lastKey = dest;
+      lastRestoreAt = 0;
+      const snap = saved.get(dest);
+      if (snap?.text) {
+        lastText = snap.text;
+        lastPopup = snap.popup;
+        restore(dest);
+      } else {
+        lastText = "";
+        lastPopup = undefined;
+        clearLive();
+        removeFallback();
+      }
+      return;
+    }
+    if (now.text) {
+      const snap = saved.get(dest);
+      if (snap && !officialVisible(now.text))
+        paintFallback(dest, snap);
+      else
+        removeFallback();
+      return;
+    }
+    restore(dest);
+  }
+  function onNav() {
+    if (!armed)
+      return;
+    wrapAll();
+    onChat();
+  }
+  function barButton(el) {
+    const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
+    return btn instanceof HTMLElement ? btn : null;
+  }
+  function isQuoteDismiss(el) {
+    if (el.closest(`.${cl20("x")}`))
+      return true;
+    const btn = barButton(el);
+    if (!btn || btn.closest(`.${cl20("chip")}`))
+      return false;
+    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
+    if (KEEP.test(label))
+      return false;
+    if (DISMISS.test(label))
+      return true;
+    const q = readText().text || lastText;
+    if (!q || (btn.textContent || "").trim() || !btn.querySelector("svg"))
+      return false;
+    const bar = btn.closest(QUERY);
+    let n = btn.parentElement;
+    while (n && n !== bar) {
+      if (n.querySelector("textarea, [contenteditable='true'], .tiptap"))
+        return false;
+      if (n.offsetHeight > 0 && n.offsetHeight <= 72) {
+        return (n.textContent || "").replaceAll(/\s+/g, " ").includes(q.replaceAll(/\s+/g, " ").slice(0, 12));
+      }
+      n = n.parentElement;
+    }
+    return false;
+  }
+  function markConsumed(key = ownKey()) {
+    drop(key);
+    removeFallback();
+  }
+  function onPointerDown2(e) {
+    if (!e.isTrusted)
+      return;
+    const t = e.target;
+    if (!(t instanceof Element) || !isQuoteDismiss(t))
+      return;
+    dismiss();
+  }
+  function payloadText(rec) {
+    const raw = rec.message ?? rec.text ?? rec.query;
+    if (typeof raw === "string")
+      return raw.trim();
+    if (raw && typeof raw === "object") {
+      const inner = raw;
+      const nested = inner.text ?? inner.content ?? inner.message;
+      if (typeof nested === "string")
+        return nested.trim();
+    }
+    return "";
+  }
+  function isQuoteSend(raw, want) {
+    if (!want || raw == null)
+      return false;
+    if (typeof raw === "string") {
+      if (!raw.startsWith("{") && !raw.startsWith("["))
+        return false;
+      try {
+        return isQuoteSend(JSON.parse(raw), want);
+      } catch {
+        return false;
+      }
+    }
+    if (typeof raw !== "object" || Array.isArray(raw))
+      return false;
+    const rec = raw;
+    if (!payloadText(rec))
+      return false;
+    const q = rec.parentQuotedText ?? rec.quotedText;
+    return typeof q === "string" && q.replaceAll(/\s+/g, " ").trim() === want.replaceAll(/\s+/g, " ").trim();
+  }
+  function makeSendWrapper(orig) {
+    return function voidQuoteStickySend(...args) {
+      const key = ownKey();
+      const had = saved.get(key)?.text || readText().text;
+      const result = orig.apply(this, args);
+      if (had && isQuoteSend(args[0], had))
+        markConsumed(key);
+      return result;
+    };
+  }
+  function scheduleRestore() {
+    const key = destKey();
+    if (!key || !saved.get(key)?.text)
+      return;
+    queueMicrotask(() => {
+      if (destKey() === key)
+        restore(key);
+    });
+  }
+  function makeQuotedTextWrapper(orig) {
+    return function voidQuoteStickyQuotedText(...args) {
+      const result = orig.apply(this, args);
+      if (applying)
+        return result;
+      const text = String(args[0] ?? "");
+      const dest = destKey();
+      const popup = ChatPageStore.useChatPageStore.getState().quotePopupData;
+      if (text) {
+        const key = dest || pathCid() || routeCid() || lastKey;
+        if (!key)
+          return result;
+        if (dest && lastKey && dest !== lastKey) {
+          if (lastText)
+            remember(lastKey, lastText, lastPopup);
+          return result;
+        }
+        remember(key, text, popup ?? lastPopup);
+        lastText = text;
+        lastPopup = popup ?? lastPopup;
+        lastKey = key;
+      } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
+        scheduleRestore();
+      }
+      return result;
+    };
+  }
+  function makePopupWrapper(orig) {
+    return function voidQuoteStickyPopup(...args) {
+      const result = orig.apply(this, args);
+      if (applying)
+        return result;
+      const dest = destKey();
+      const popup = args[0];
+      const live = String(ChatPageStore.useChatPageStore.getState().quotedText || "");
+      if (popup != null && live && !(dest && lastKey && dest !== lastKey)) {
+        const key = dest || pathCid() || routeCid() || lastKey;
+        if (key) {
+          remember(key, live, popup);
+          lastPopup = popup;
+          lastText = live;
+          lastKey = key;
+        }
+      } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
+        scheduleRestore();
+      }
+      return result;
+    };
+  }
+  function makeNavWrapper(orig) {
+    return function voidQuoteStickyNav(...args) {
+      stashOutgoing();
+      const result = orig.apply(this, args);
+      queueMicrotask(onNav);
+      return result;
+    };
+  }
+  function wrapOne(label, getState, setState, key, make) {
+    let state;
+    try {
+      state = getState();
+    } catch {
+      return;
+    }
+    const current = state[key];
+    if (typeof current !== "function")
+      return;
+    if (wrappedFns.get(label) === current)
+      return;
+    origFns.set(label, current);
+    const wrapped = make(current);
+    wrappedFns.set(label, wrapped);
+    setState({ [key]: wrapped });
+  }
+  function chatState() {
+    return ChatPageStore.useChatPageStore.getState();
+  }
+  function msgState() {
+    return MessageStore.useMessageStore.getState();
+  }
+  function chatSet(p) {
+    ChatPageStore.useChatPageStore.setState(p);
+  }
+  function msgSet(p) {
+    MessageStore.useMessageStore.setState(p);
+  }
+  function wrapAll() {
+    wrapOne("chat.setQuotedText", chatState, chatSet, "setQuotedText", makeQuotedTextWrapper);
+    wrapOne("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
+    wrapOne("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
+    wrapOne("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
+    wrapOne("msg.sendMessage", msgState, msgSet, "sendMessage", makeSendWrapper);
+    wrapOne("msg.queueMessage", msgState, msgSet, "queueMessage", makeSendWrapper);
+  }
+  function unwrapOne(getState, setState, key, label) {
+    const orig = origFns.get(label);
+    if (!orig)
+      return;
+    try {
+      const state = getState();
+      if (state[key] === wrappedFns.get(label))
+        setState({ [key]: orig });
+    } catch {}
+  }
+  function unwrapAll() {
+    unwrapOne(chatState, chatSet, "setQuotedText", "chat.setQuotedText");
+    unwrapOne(chatState, chatSet, "setQuotePopupData", "chat.setQuotePopupData");
+    unwrapOne(chatState, chatSet, "setConversationId", "chat.setConversationId");
+    unwrapOne(chatState, chatSet, "setOptimisticConversationId", "chat.setOptimisticConversationId");
+    unwrapOne(msgState, msgSet, "sendMessage", "msg.sendMessage");
+    unwrapOne(msgState, msgSet, "queueMessage", "msg.queueMessage");
+    origFns.clear();
+    wrappedFns.clear();
+  }
+  function onMutate() {
+    if (!armed || mutRaf)
+      return;
+    mutRaf = requestAnimationFrame(() => {
+      mutRaf = 0;
+      if (armed)
+        ensureChip();
+    });
+  }
+  function startSticky() {
+    if (armed)
+      return;
+    armed = true;
+    const now = readText();
+    const key = snapKey() || now.key;
+    lastKey = key;
+    if (key && now.text) {
+      remember(key, now.text, now.popup);
+      lastText = now.text;
+      lastPopup = now.popup;
+    }
+    abort2 = new AbortController;
+    document.addEventListener("pointerdown", onPointerDown2, { capture: true, signal: abort2.signal });
+    const poke = () => onMutate();
+    window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort2.signal });
+    window.addEventListener("resize", poke, { passive: true, signal: abort2.signal });
+    observer = new MutationObserver(onMutate);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    wrapAll();
+    ensureChip();
+  }
+  function stopSticky() {
+    if (!armed)
+      return;
+    armed = false;
+    abort2?.abort();
+    abort2 = null;
+    observer?.disconnect();
+    observer = null;
+    if (mutRaf)
+      cancelAnimationFrame(mutRaf);
+    mutRaf = 0;
+    unwrapAll();
+    removeFallback();
+    saved.clear();
+    lastKey = "";
+    lastText = "";
+    lastPopup = undefined;
+    applying = false;
+    lastRestoreAt = 0;
+  }
+
+  // src/plugins/betterQuotes/index.ts
+  var logger23 = new Logger("BetterQuotes");
+  var settings10 = definePluginSettings({
+    jumpToPassage: {
+      type: 3 /* BOOLEAN */,
+      description: "Click the composer quote chip or a sent quote card to scroll to the exact passage.",
+      default: true
+    },
+    persistAcrossChats: {
+      type: 3 /* BOOLEAN */,
+      description: "Keep the composer quote card when switching chats and coming back.",
+      default: true
+    }
+  });
+  function dropName(list) {
+    if (!Array.isArray(list))
+      return;
+    const next = list.filter((n) => typeof n === "string" && n !== "QuoteJump" && n !== "QuoteSticky");
+    return next.length === list.length ? undefined : next;
+  }
+  function migrateLegacy2() {
+    const plugins = PlainSettings.plugins;
+    const jump = plugins.QuoteJump;
+    const sticky = plugins.QuoteSticky;
+    if (!jump && !sticky)
+      return;
+    const target = plugins.BetterQuotes ??= {};
+    if (jump?.enabled === false && !("jumpToPassage" in target))
+      target.jumpToPassage = false;
+    if (sticky?.enabled === false && !("persistAcrossChats" in target))
+      target.persistAcrossChats = false;
+    if (jump?.enabled === false && sticky?.enabled === false && typeof target.enabled !== "boolean")
+      target.enabled = false;
+    delete plugins.QuoteJump;
+    delete plugins.QuoteSticky;
+    const meta = plugins.Settings;
+    if (meta) {
+      const pinned = dropName(meta.pinnedPlugins);
+      const starred = dropName(meta.starredPlugins);
+      if (pinned)
+        meta.pinnedPlugins = pinned;
+      if (starred)
+        meta.starredPlugins = starred;
+      const known = meta.knownPlugins;
+      if (known && typeof known === "object") {
+        delete known.QuoteJump;
+        delete known.QuoteSticky;
+      }
+    }
+    SettingsStore3.markAsChanged();
+    logger23.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
+  }
+  var pluginName = Object.getOwnPropertyDescriptor(settings10, "pluginName");
+  if (pluginName?.set && pluginName.get) {
+    Object.defineProperty(settings10, "pluginName", {
+      configurable: true,
+      enumerable: true,
+      get: pluginName.get,
+      set(name) {
+        if (name === "BetterQuotes")
+          migrateLegacy2();
+        pluginName.set.call(settings10, name);
+      }
+    });
+  }
+  function apply2() {
+    if (settings10.store.jumpToPassage)
+      startJump();
+    else
+      stopJump();
+    if (settings10.store.persistAcrossChats)
+      startSticky();
+    else
+      stopSticky();
+  }
+  var betterQuotes_default = definePlugin({
+    name: "BetterQuotes",
+    icon: TextQuoteIcon,
+    description: "Scroll a composer quote chip to the exact passage, and keep that quote card when switching chats.",
+    authors: [Devs.p],
+    tags: ["chat", "ui"],
+    enabledByDefault: true,
+    startAt: "TurbopackReady" /* TurbopackReady */,
+    settings: settings10,
+    managedStyle: "betterQuotes",
+    cleanupSelectors: [".void-qs-chip"],
+    start: apply2,
+    onSettingsChange: apply2,
+    stop() {
+      stopJump();
+      stopSticky();
+    },
+    zustand: {
+      ChatPageStore: {
+        selector: chatSel,
+        handler: onChat
+      },
+      RoutingStore: {
+        selector: routeSel,
+        handler: onNav
+      },
+      ResponseStore: {
+        selector: hydrateSel,
+        handler: onNav
+      }
+    }
+  });
+
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/headerHover.css
   registerStyle("headerHover", `/*
  * Void++, a modification for grok.com
@@ -10852,9 +12280,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterSidebar/index.tsx
-  var logger21 = new Logger("BetterSidebar");
-  var cl19 = classNameFactory("void-sidebar-");
-  var settings10 = definePluginSettings({
+  var logger24 = new Logger("BetterSidebar");
+  var cl21 = classNameFactory("void-sidebar-");
+  var settings11 = definePluginSettings({
     clickToToggle: {
       type: 3 /* BOOLEAN */,
       description: "Click anywhere on the sidebar to toggle it.",
@@ -10911,7 +12339,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var projectsCollapseObserver = null;
   var projectsCollapseTimer = null;
   function applyHeaderHover() {
-    if (settings10.store.titleRowHover)
+    if (settings11.store.titleRowHover)
       enableStyle("headerHover");
     else
       disableStyle("headerHover");
@@ -10939,7 +12367,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function startBotsCollapse() {
     stopBotsCollapse();
-    if (!settings10.store.botsDefaultCollapsed)
+    if (!settings11.store.botsDefaultCollapsed)
       return;
     let done = false;
     const tick = () => {
@@ -10961,7 +12389,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }, 1e4);
   }
   function resetChatsCollapsedStorage() {
-    if (!settings10.store.chatsDefaultExpanded)
+    if (!settings11.store.chatsDefaultExpanded)
       return;
     try {
       localStorage.removeItem(CHATS_COLLAPSED_KEY);
@@ -11003,7 +12431,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function startChatsExpand() {
     stopChatsExpand();
-    if (!settings10.store.chatsDefaultExpanded)
+    if (!settings11.store.chatsDefaultExpanded)
       return;
     resetChatsCollapsedStorage();
     let done = false;
@@ -11026,7 +12454,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }, 1e4);
   }
   function resetProjectsCollapsedStorage() {
-    if (!settings10.store.projectsDefaultCollapsed)
+    if (!settings11.store.projectsDefaultCollapsed)
       return;
     try {
       localStorage.setItem(PROJECTS_COLLAPSED_KEY, "true");
@@ -11066,7 +12494,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function startProjectsCollapse() {
     stopProjectsCollapse();
-    if (!settings10.store.projectsDefaultCollapsed)
+    if (!settings11.store.projectsDefaultCollapsed)
       return;
     resetProjectsCollapsedStorage();
     let done = false;
@@ -11110,7 +12538,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     push({ page: "main", teamId });
   }
   var ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
-    if (!settings10.use(["chatsPlus"]).chatsPlus)
+    if (!settings11.use(["chatsPlus"]).chatsPlus)
       return null;
     return /* @__PURE__ */ React.createElement("button", {
       type: "button",
@@ -11136,24 +12564,24 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     };
     return /* @__PURE__ */ React.createElement("div", {
       ref: cardRef,
-      className: cl19("card"),
+      className: cl21("card"),
       onPointerDown: (e) => forward(e, "pointerdown"),
       onPointerUp: (e) => forward(e, "pointerup")
     }, /* @__PURE__ */ React.createElement(AvatarMenu, null), /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       justifyContent: "center",
       gap: "0",
-      className: cl19("info")
+      className: cl21("info")
     }, /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       size: "sm",
       weight: "medium",
-      className: cl19("name")
+      className: cl21("name")
     }, user.givenName ?? user.email?.split("@")[0] ?? "User"), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       size: "xs",
       color: "secondary",
-      className: cl19("plan")
+      className: cl21("plan")
     }, getPlanName(bestSubscription, user.xSubscriptionType))));
   }
   var selection2 = createSelectionStore();
@@ -11165,10 +12593,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
     }
     const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
-    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger21.error("Failed to delete", id, e))));
+    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger24.error("Failed to delete", id, e))));
   }
   function SelectCheckbox({ id, route }) {
-    const enabled = settings10.use(["batchSelect"]).batchSelect;
+    const enabled = settings11.use(["batchSelect"]).batchSelect;
     if (!enabled || !id || !isConversationRoute(route))
       return null;
     return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
@@ -11184,7 +12612,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.Prism, Devs.p],
     tags: ["ui"],
     enabledByDefault: true,
-    settings: settings10,
+    settings: settings11,
     managedStyle: "betterSidebar",
     _ChatsPlus: () => createElement(ChatsPlus),
     _UserCard: ErrorBoundary.wrap(UserCard),
@@ -11199,7 +12627,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     },
     _wrapSidebarClick(onClick, id, route) {
       return (e) => {
-        if (id && settings10.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
+        if (id && settings11.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           e.stopPropagation();
           selection2.toggle(id);
@@ -11209,10 +12637,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       };
     },
     _defaultOpen() {
-      return !settings10.store.defaultCollapsed;
+      return !settings11.store.defaultCollapsed;
     },
     _botsDefaultCollapsed() {
-      return settings10.store.botsDefaultCollapsed;
+      return settings11.store.botsDefaultCollapsed;
     },
     _chatsCollapsedInit() {
       resetChatsCollapsedStorage();
@@ -11223,10 +12651,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return true;
     },
     _projectsAutoExpand() {
-      return !settings10.store.projectsDefaultCollapsed;
+      return !settings11.store.projectsDefaultCollapsed;
     },
     _onSidebarClick() {
-      if (!settings10.store.clickToToggle)
+      if (!settings11.store.clickToToggle)
         return;
       return (e) => {
         const target = e.target;
@@ -11422,7 +12850,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/chatListStatus/index.ts
-  var logger22 = new Logger("ChatListStatus");
+  var logger25 = new Logger("ChatListStatus");
   var MARK = "void-cls";
   var LIVE2 = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD2 = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
@@ -11594,14 +13022,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       add(page.conversationId);
       add(page.optimisticConversationId);
     } catch (e) {
-      logger22.debug("page ids unavailable:", e);
+      logger25.debug("page ids unavailable:", e);
     }
     try {
       const { route } = RoutingStore.useRoutingStore.getState();
       add(route.conversationId);
       add(route.chat);
     } catch (e) {
-      logger22.debug("route ids unavailable:", e);
+      logger25.debug("route ids unavailable:", e);
     }
     try {
       const url = new URL(location.href);
@@ -11609,7 +13037,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       add(url.searchParams.get("conversationId"));
       add(url.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]);
     } catch (e) {
-      logger22.debug("url ids unavailable:", e);
+      logger25.debug("url ids unavailable:", e);
     }
     return ids;
   }
@@ -11657,7 +13085,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       extraSeen.add(val);
       extraStores.push(val);
       extraUnsubs.push(val.subscribe(() => schedule()));
-      logger22.info("extra store", key);
+      logger25.info("extra store", key);
     }
   }
   function attachExtraStores() {
@@ -11755,7 +13183,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           ids.add(id);
       }
     } catch (e) {
-      logger22.debug("stream stores unavailable:", e);
+      logger25.debug("stream stores unavailable:", e);
     }
     try {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
@@ -11766,7 +13194,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       for (const conversation of Object.values(byIdWithWorkspaces ?? {}))
         considerConversation(ids, conversation);
     } catch (e) {
-      logger22.debug("conversation store unavailable:", e);
+      logger25.debug("conversation store unavailable:", e);
     }
     extraLiveIds(ids);
     if (currentChatInterrupted()) {
@@ -11786,7 +13214,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return isErrorResponse(byId[page.lastMessageId]);
       }
     } catch (e) {
-      logger22.debug("error lookup failed:", e);
+      logger25.debug("error lookup failed:", e);
     }
     return false;
   }
@@ -11801,7 +13229,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return isUserInterrupt3(byId[page.lastMessageId ?? ""]) || isUserInterrupt3(byId[page.streamedMessageId ?? ""]);
       }
     } catch (e) {
-      logger22.debug("interrupt lookup failed:", e);
+      logger25.debug("interrupt lookup failed:", e);
     }
     return false;
   }
@@ -11833,7 +13261,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return currentIds()[0] ?? "";
     } catch (e) {
-      logger22.debug("conv lookup failed:", e);
+      logger25.debug("conv lookup failed:", e);
       return "";
     }
   }
@@ -11845,7 +13273,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       response = ResponseStore.useResponseStore.getState().byId[responseId];
     } catch (e) {
-      logger22.debug("streamEnd lookup failed:", e);
+      logger25.debug("streamEnd lookup failed:", e);
     }
     if (liveIds().has(cid)) {
       schedule();
@@ -12035,7 +13463,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     const live = [...marks].filter(([, kind]) => kind === "streaming").map(([id]) => id);
     if (live.length && !rowById.size)
-      logger22.info("live ids with no rows", live);
+      logger25.info("live ids with no rows", live);
   }
   function schedule() {
     if (!started2 || raf2)
@@ -12408,12 +13836,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/chatStateFavicons/index.ts
-  var logger23 = new Logger("ChatStateFavicons");
+  var logger26 = new Logger("ChatStateFavicons");
   var ICON_ID = "void-chat-state-favicon";
   var LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD_RESPONSE = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
   var USER_INTERRUPT4 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
-  var settings11 = definePluginSettings({
+  var settings12 = definePluginSettings({
     style: {
       type: 4 /* SELECT */,
       description: "How the Grok mark is overlaid with chat state.",
@@ -12444,7 +13872,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var started3 = false;
   var watching = false;
   function currentStyle() {
-    const value = settings11.store.style;
+    const value = settings12.store.style;
     return isIconStyle(value) ? value : DEFAULT_STYLE;
   }
   function captureOfficial() {
@@ -12539,7 +13967,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return false;
       return !isDeadResponse3(byId[page.streamedMessageId ?? ""]) && !isDeadResponse3(byId[page.lastMessageId ?? ""]);
     } catch (e) {
-      logger23.debug("stream stores unavailable:", e);
+      logger26.debug("stream stores unavailable:", e);
       return false;
     }
   }
@@ -12553,7 +13981,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return false;
     } catch (e) {
-      logger23.debug("interrupt DOM unavailable:", e);
+      logger26.debug("interrupt DOM unavailable:", e);
       return false;
     }
   }
@@ -12564,7 +13992,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (isUserInterrupt4(byId[page.streamedMessageId ?? ""]) || isUserInterrupt4(byId[page.lastMessageId ?? ""]))
         return true;
     } catch (e) {
-      logger23.debug("interrupt lookup failed:", e);
+      logger26.debug("interrupt lookup failed:", e);
     }
     return officialInterruptedDom2();
   }
@@ -12581,14 +14009,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (route.conversationId)
         return String(route.conversationId);
     } catch (e) {
-      logger23.debug("RoutingStore unavailable:", e);
+      logger26.debug("RoutingStore unavailable:", e);
     }
     try {
       const id = ChatPageStore.useChatPageStore.getState().conversationId;
       if (id)
         return id;
     } catch (e) {
-      logger23.debug("ChatPageStore unavailable:", e);
+      logger26.debug("ChatPageStore unavailable:", e);
     }
     return conversationToken();
   }
@@ -12637,7 +14065,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return false;
       return response.state === "error" || response.error != null;
     } catch (e) {
-      logger23.debug("ResponseStore unavailable:", e);
+      logger26.debug("ResponseStore unavailable:", e);
       return false;
     }
   }
@@ -12811,7 +14239,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const response = ResponseStore.useResponseStore.getState().byId[responseId];
       lastWasError = !!response && !isUserInterrupt4(response) && (response.state === "error" || response.error != null);
     } catch (e) {
-      logger23.debug("ResponseStore unavailable:", e);
+      logger26.debug("ResponseStore unavailable:", e);
     }
     scheduleEvaluate();
   }
@@ -12946,11 +14374,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger23.debug("RoutingStore subscribe failed:", e);
+      logger26.debug("RoutingStore subscribe failed:", e);
       try {
         unsubRoute = RoutingStore.useRoutingStore.subscribe(() => scheduleEvaluate());
       } catch (err) {
-        logger23.debug("RoutingStore full subscribe failed:", err);
+        logger26.debug("RoutingStore full subscribe failed:", err);
       }
     }
     try {
@@ -12968,7 +14396,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger23.debug("ChatPageStore subscribe failed:", e);
+      logger26.debug("ChatPageStore subscribe failed:", e);
     }
     try {
       const responseStore = ResponseStore.useResponseStore;
@@ -12980,7 +14408,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger23.debug("ResponseStore subscribe failed:", e);
+      logger26.debug("ResponseStore subscribe failed:", e);
     }
   }
   function restoreOfficial() {
@@ -13003,7 +14431,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings11,
+    settings: settings12,
     startAt: "TurbopackReady" /* TurbopackReady */,
     cleanupSelectors: [`#${ICON_ID}`],
     start() {
@@ -13058,7 +14486,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   });
 
   // src/plugins/cleaner/index.ts
-  var settings12 = definePluginSettings({
+  var settings13 = definePluginSettings({
     hideUpgradePlan: {
       type: 3 /* BOOLEAN */,
       description: "Hide the upgrade plan button in the user menu.",
@@ -13111,7 +14539,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var IMAGINE_UPGRADE_STYLE = "cleanerImagineUpgrade";
   var IMAGINE_UPGRADE_CSS = 'form:has([aria-label="Generation mode"]) a[href*="upgrade"],form:has([aria-label="Generation mode"]) button[aria-label="Upgrade"],form:has([aria-label="Generation mode"]) button[aria-label*="Upgrade plan"],[data-wd-toolbar] a[href*="upgrade"],[data-wd-toolbar] button[aria-label="Upgrade"]{display:none!important}';
   function applyImagineUpgrade() {
-    if (settings12.store.hideImagineUpgrade)
+    if (settings13.store.hideImagineUpgrade)
       registerStyle(IMAGINE_UPGRADE_STYLE, IMAGINE_UPGRADE_CSS);
     else
       unregisterStyle(IMAGINE_UPGRADE_STYLE);
@@ -13123,7 +14551,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.Prism, Devs.p],
     tags: ["ui"],
     enabledByDefault: true,
-    settings: settings12,
+    settings: settings13,
     start: applyImagineUpgrade,
     onSettingsChange: applyImagineUpgrade,
     stop() {
@@ -13181,7 +14609,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/cloneChats/index.tsx
-  var logger24 = new Logger("CloneChats");
+  var logger27 = new Logger("CloneChats");
   async function cloneChat(conversationId) {
     const lastResponseId = ResponseStore.useResponseStore.getState().nodesByConversationId[conversationId]?.at(-1)?.responseId;
     if (!lastResponseId)
@@ -13204,7 +14632,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function CloneItem({ conversationId }) {
     const streaming = useIsStreaming(conversationId);
     return /* @__PURE__ */ React.createElement(MenuItem, {
-      onSelect: () => cloneChat(conversationId).catch((e) => logger24.error("Failed to clone chat:", e)),
+      onSelect: () => cloneChat(conversationId).catch((e) => logger27.error("Failed to clone chat:", e)),
       disabled: streaming
     }, /* @__PURE__ */ React.createElement(CopyIcon, {
       size: 16,
@@ -13401,8 +14829,8 @@ html.void-cms-picked .void-cms-ghost {
 `);
 
   // src/plugins/compactModeSelect/index.tsx
-  var logger25 = new Logger("CompactModeSelect");
-  var cl20 = classNameFactory("void-cms-");
+  var logger28 = new Logger("CompactModeSelect");
+  var cl22 = classNameFactory("void-cms-");
   var MODES = [
     { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
     { id: "fast", pin: "pinFast", label: "Fast", Icon: FastModeIcon },
@@ -13429,7 +14857,7 @@ html.void-cms-picked .void-cms-ghost {
   var PICK_MS = 900;
   var POINTER = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
   var GHOST_STYLE = { opacity: "0", visibility: "hidden" };
-  var settings13 = definePluginSettings({
+  var settings14 = definePluginSettings({
     pinList: {
       type: 6 /* COMPONENT */,
       description: "Toggle pins and drag to set chip order.",
@@ -13490,7 +14918,7 @@ html.void-cms-picked .void-cms-ghost {
   var cloakWatch = null;
   function uncloak() {
     for (const host of ghosts) {
-      host.classList.remove(cl20("ghost"));
+      host.classList.remove(cl22("ghost"));
       host.style.removeProperty("opacity");
       host.style.removeProperty("visibility");
       host.style.removeProperty("pointer-events");
@@ -13540,10 +14968,10 @@ html.void-cms-picked .void-cms-ghost {
     return next;
   }
   function setOrder(ids) {
-    settings13.store.pinOrder = ids.join(",");
+    settings14.store.pinOrder = ids.join(",");
   }
   function setPinned(pin, on) {
-    settings13.store[pin] = on;
+    settings14.store[pin] = on;
   }
   function itemText(el) {
     return `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`.replaceAll(/\s+/g, " ").trim().toLowerCase();
@@ -13578,7 +15006,7 @@ html.void-cms-picked .void-cms-ghost {
     const host = ghostHost(menu.root);
     if (ghosts.has(host))
       return;
-    host.classList.add(cl20("ghost"));
+    host.classList.add(cl22("ghost"));
     host.style.setProperty("opacity", GHOST_STYLE.opacity, "important");
     host.style.setProperty("visibility", GHOST_STYLE.visibility, "important");
     ghosts.add(host);
@@ -13708,7 +15136,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger25.warn("Failed to harvest mode icons:", e);
+      logger28.warn("Failed to harvest mode icons:", e);
     } finally {
       setPicking(false);
       harvesting = false;
@@ -13724,21 +15152,21 @@ html.void-cms-picked .void-cms-ghost {
       if (!menu) {
         const trigger = nativeTrigger();
         if (!trigger) {
-          logger25.warn("Native mode selector not found");
+          logger28.warn("Native mode selector not found");
           return;
         }
         clickEl(trigger);
         menu = await waitForMenu();
       }
       if (!menu) {
-        logger25.warn("Native mode item not found:", id);
+        logger28.warn("Native mode item not found:", id);
         return;
       }
       cloak(menu);
       stashGlyphs(menu.items);
       const item = menu.items.find((el) => matchItem(el, id));
       if (!item) {
-        logger25.warn("Native mode item not found:", id);
+        logger28.warn("Native mode item not found:", id);
         const trigger = nativeTrigger();
         if (modeMenu() && trigger)
           clickEl(trigger);
@@ -13750,7 +15178,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger25.warn("Failed to select mode:", e);
+      logger28.warn("Failed to select mode:", e);
     } finally {
       setPicking(false);
     }
@@ -13770,7 +15198,7 @@ html.void-cms-picked .void-cms-ghost {
   function PinGlyph({ id, Icon, label, showLabels }) {
     const html = useNativeGlyph(id);
     const glyph = html ? /* @__PURE__ */ React.createElement("span", {
-      className: cl20("glyph"),
+      className: cl22("glyph"),
       dangerouslySetInnerHTML: { __html: html }
     }) : /* @__PURE__ */ React.createElement(Icon, {
       size: 18
@@ -13778,7 +15206,7 @@ html.void-cms-picked .void-cms-ghost {
     if (!showLabels)
       return glyph;
     return /* @__PURE__ */ React.createElement(React.Fragment, null, glyph, /* @__PURE__ */ React.createElement("span", {
-      className: cl20("label")
+      className: cl22("label")
     }, label));
   }
   function preventDragOver(e) {
@@ -13786,7 +15214,7 @@ html.void-cms-picked .void-cms-ghost {
     e.dataTransfer.dropEffect = "move";
   }
   function PinOrderEditor() {
-    const cfg = settings13.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
+    const cfg = settings14.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
     const ids = parseOrder(cfg.pinOrder);
     const [dragId, setDragId] = React.useState(null);
     const onDragStart = (id) => (e) => {
@@ -13803,27 +15231,27 @@ html.void-cms-picked .void-cms-ghost {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl20("order")
+      className: cl22("order")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl20("order-list"),
+      className: cl22("order-list"),
       role: "list"
     }, ids.map((id, i) => {
       const m = MODE_BY_ID[id];
       return /* @__PURE__ */ React.createElement("div", {
         key: m.id,
         role: "listitem",
-        className: classes(cl20("order-row"), dragId === m.id && cl20("dragging")),
+        className: classes(cl22("order-row"), dragId === m.id && cl22("dragging")),
         onDragOver: preventDragOver,
         onDrop: onDrop(m.id)
       }, /* @__PURE__ */ React.createElement(Flex, {
         alignItems: "center",
         gap: "0.5rem",
-        className: cl20("order-main")
+        className: cl22("order-main")
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl20("grip"),
+        className: cl22("grip"),
         draggable: true,
         onDragStart: onDragStart(m.id),
         onDragEnd: () => setDragId(null),
@@ -13832,7 +15260,7 @@ html.void-cms-picked .void-cms-ghost {
         size: 16
       })), /* @__PURE__ */ React.createElement(m.Icon, {
         size: 16,
-        className: cl20("order-icon")
+        className: cl22("order-icon")
       }), /* @__PURE__ */ React.createElement(SettingsTitle, null, m.label)), /* @__PURE__ */ React.createElement(Flex, {
         alignItems: "center",
         gap: "0.25rem"
@@ -13863,7 +15291,7 @@ html.void-cms-picked .void-cms-ghost {
     })));
   }
   function PinnedModes() {
-    const cfg = settings13.use([...SETTING_KEYS]);
+    const cfg = settings14.use([...SETTING_KEYS]);
     const page = RoutingStore.useRoutingStore((s) => s.route.page);
     const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
     const catalog = ModesStore.useModesStore((s) => s.modes);
@@ -13880,10 +15308,10 @@ html.void-cms-picked .void-cms-ghost {
       selectMode(id);
     };
     return /* @__PURE__ */ React.createElement("div", {
-      className: classes(cl20("pins"), hideNative && cl20("hide-native"))
+      className: classes(cl22("pins"), hideNative && cl22("hide-native"))
     }, items.map((m) => /* @__PURE__ */ React.createElement("span", {
       key: m.id,
-      className: cl20("pin-host"),
+      className: cl22("pin-host"),
       "data-void-mode-id": m.id
     }, /* @__PURE__ */ React.createElement(ChatBarButton, {
       size: "sm",
@@ -13895,7 +15323,7 @@ html.void-cms-picked .void-cms-ghost {
       }),
       tooltip: m.label,
       onClick: onPin(m.id),
-      className: classes(cl20("pin"), selectedModeId === m.id && cl20("on"), showLabels && cl20("labeled"), "hover:bg-button-ghost-hover"),
+      className: classes(cl22("pin"), selectedModeId === m.id && cl22("on"), showLabels && cl22("labeled"), "hover:bg-button-ghost-hover"),
       "aria-label": m.label
     }))));
   }
@@ -13906,7 +15334,7 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings13,
+    settings: settings14,
     managedStyle: "compactModeSelect",
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
@@ -14056,8 +15484,8 @@ html.void-cms-picked .void-cms-ghost {
 `);
 
   // src/plugins/completeToast/index.ts
-  var logger26 = new Logger("CompleteToast");
-  var cl21 = classNameFactory("void-ct-");
+  var logger29 = new Logger("CompleteToast");
+  var cl23 = classNameFactory("void-ct-");
   var HOST2 = "void-ct-host";
   var NS = "http://www.w3.org/2000/svg";
   var LIVE_RESP = new Set(["streaming", "optimistic", "reconnecting"]);
@@ -14075,7 +15503,7 @@ html.void-cms-picked .void-cms-ghost {
   var PREVIEW_MAX = 120;
   var TOASTED_MAX = 80;
   var DURATION_MAX = 20;
-  var settings14 = definePluginSettings({
+  var settings15 = definePluginSettings({
     keepUntilDismissed: {
       type: 3 /* BOOLEAN */,
       description: "Don't auto-close the toast. Dismiss with X, or by opening the chat.",
@@ -14145,7 +15573,7 @@ html.void-cms-picked .void-cms-ghost {
     } catch {}
     return false;
   }
-  function onImaginePage() {
+  function onImaginePage2() {
     try {
       const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
       if (page.startsWith("imagine"))
@@ -14170,14 +15598,14 @@ html.void-cms-picked .void-cms-ghost {
       add(page.conversationId);
       add(page.optimisticConversationId);
     } catch (e) {
-      logger26.debug("page ids unavailable:", e);
+      logger29.debug("page ids unavailable:", e);
     }
     try {
       const { route } = RoutingStore.useRoutingStore.getState();
       add(route.conversationId);
       add(route.chat);
     } catch (e) {
-      logger26.debug("route ids unavailable:", e);
+      logger29.debug("route ids unavailable:", e);
     }
     try {
       const url = new URL(location.href);
@@ -14185,7 +15613,7 @@ html.void-cms-picked .void-cms-ghost {
       add(url.searchParams.get("conversationId"));
       add(url.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]);
     } catch (e) {
-      logger26.debug("url ids unavailable:", e);
+      logger29.debug("url ids unavailable:", e);
     }
     return ids;
   }
@@ -14257,7 +15685,7 @@ html.void-cms-picked .void-cms-ghost {
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid];
     } catch (e) {
-      logger26.debug("MessageStore unavailable:", e);
+      logger29.debug("MessageStore unavailable:", e);
       return;
     }
   }
@@ -14276,7 +15704,7 @@ html.void-cms-picked .void-cms-ghost {
       if (isLiveResponse2(lastAssistant2(cid, byConversationId)))
         return true;
     } catch (e) {
-      logger26.debug("ResponseStore live lookup failed:", e);
+      logger29.debug("ResponseStore live lookup failed:", e);
     }
     return false;
   }
@@ -14309,7 +15737,7 @@ html.void-cms-picked .void-cms-ghost {
           return id;
       }
     } catch (e) {
-      logger26.debug("gateway cid lookup failed:", e);
+      logger29.debug("gateway cid lookup failed:", e);
     }
     try {
       const { byConversationId } = ResponseStore.useResponseStore.getState();
@@ -14318,7 +15746,7 @@ html.void-cms-picked .void-cms-ghost {
           return id;
       }
     } catch (e) {
-      logger26.debug("response cid lookup failed:", e);
+      logger29.debug("response cid lookup failed:", e);
     }
     return "";
   }
@@ -14327,7 +15755,7 @@ html.void-cms-picked .void-cms-ghost {
       const { byId, byIdWithWorkspaces } = ConversationStore.useConversationStore.getState();
       return byId[cid] ?? byIdWithWorkspaces[cid];
     } catch (e) {
-      logger26.debug("conversation lookup failed:", e);
+      logger29.debug("conversation lookup failed:", e);
       return;
     }
   }
@@ -14341,7 +15769,7 @@ html.void-cms-picked .void-cms-ghost {
       const conv = byId[cid] ?? byIdWithWorkspaces[cid];
       return asWorkspaceId(conv?.workspaceId) || asWorkspaceId(conv?.workspaces);
     } catch (e) {
-      logger26.debug("workspace lookup failed:", e);
+      logger29.debug("workspace lookup failed:", e);
       return "";
     }
   }
@@ -14364,7 +15792,7 @@ html.void-cms-picked .void-cms-ghost {
     return clean.length > PREVIEW_MAX ? `${clean.slice(0, PREVIEW_MAX - 1)}…` : clean;
   }
   function previewOf(cid, rid) {
-    if (!settings14.store.showPreview)
+    if (!settings15.store.showPreview)
       return "";
     try {
       const { byId, byConversationId } = ResponseStore.useResponseStore.getState();
@@ -14407,7 +15835,7 @@ html.void-cms-picked .void-cms-ghost {
         chat.setOptimisticConversationId(undefined);
       chat.setProjectId(ws || undefined);
     } catch (e) {
-      logger26.debug("ChatPageStore update failed:", e);
+      logger29.debug("ChatPageStore update failed:", e);
     }
   }
   function navigateTo(id) {
@@ -14422,11 +15850,11 @@ html.void-cms-picked .void-cms-ghost {
       routing.push(dest);
       applyChatPage(cid, ws);
     } catch (e) {
-      logger26.error("Failed to navigate:", e);
+      logger29.error("Failed to navigate:", e);
       try {
         location.assign(hrefFor(cid, ws));
       } catch (navErr) {
-        logger26.error("Fallback navigation failed:", navErr);
+        logger29.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -14493,7 +15921,7 @@ html.void-cms-picked .void-cms-ghost {
     if (!toast)
       return;
     if (toast.kind === "imagine") {
-      if (onImaginePage())
+      if (onImaginePage2())
         hide();
       return;
     }
@@ -14501,18 +15929,18 @@ html.void-cms-picked .void-cms-ghost {
       hide();
   }
   function shouldPersist() {
-    return !!settings14.store.keepUntilDismissed || clamp(settings14.store.duration, 0, DURATION_MAX) <= 0;
+    return !!settings15.store.keepUntilDismissed || clamp(settings15.store.duration, 0, DURATION_MAX) <= 0;
   }
   function armTimer() {
     clearTimer();
     if (shouldPersist())
       return;
-    const ms = clamp(settings14.store.duration, 0, DURATION_MAX) * 1000;
+    const ms = clamp(settings15.store.duration, 0, DURATION_MAX) * 1000;
     hideAt = Date.now() + ms;
     hideTimer = setTimeout(hide, ms);
   }
   function migratePersist() {
-    if (settings14.store.duration !== 0 || settings14.store.keepUntilDismissed)
+    if (settings15.store.duration !== 0 || settings15.store.keepUntilDismissed)
       return;
     mergePluginSettings("CompleteToast", {
       keepUntilDismissed: true,
@@ -14542,37 +15970,37 @@ html.void-cms-picked .void-cms-ghost {
     hide();
     if (kind === "chat" && onBotPage2())
       return;
-    if (kind === "imagine" && onImaginePage())
+    if (kind === "imagine" && onImaginePage2())
       return;
     toast = { cid, rid, kind };
     const root = document.createElement("div");
     root.id = HOST2;
-    root.className = cl21("host");
+    root.className = cl23("host");
     root.setAttribute("role", "status");
     root.setAttribute("aria-live", "polite");
     const card = document.createElement("div");
-    card.className = cl21("card");
+    card.className = cl23("card");
     const main = document.createElement("button");
     main.type = "button";
-    main.className = cl21("main");
+    main.className = cl23("main");
     const icon = document.createElement("span");
-    icon.className = cl21("icon");
+    icon.className = cl23("icon");
     icon.append(svgIcon("check"));
     const body = document.createElement("span");
-    body.className = cl21("body");
+    body.className = cl23("body");
     const title = document.createElement("span");
-    title.className = cl21("title");
+    title.className = cl23("title");
     title.textContent = kind === "imagine" ? "Imagine ready" : titleOf(cid);
     body.append(title);
     const preview = kind === "imagine" ? previewText : previewOf(cid, rid);
     const sub = document.createElement("span");
-    sub.className = cl21("preview");
+    sub.className = cl23("preview");
     sub.textContent = preview || (kind === "imagine" ? "Generation ready" : "Response ready");
     body.append(sub);
     main.append(icon, body);
     const x = document.createElement("button");
     x.type = "button";
-    x.className = cl21("x");
+    x.className = cl23("x");
     x.setAttribute("aria-label", "Dismiss");
     x.append(svgIcon("x"));
     card.append(main, x);
@@ -14604,11 +16032,11 @@ html.void-cms-picked .void-cms-ghost {
       const dest = id ? { page: "imagine-post", postId: id, teamId: routing.route.teamId ?? null } : { page: "imagine", teamId: routing.route.teamId ?? null };
       routing.push(dest);
     } catch (e) {
-      logger26.error("Failed to navigate to Imagine:", e);
+      logger29.error("Failed to navigate to Imagine:", e);
       try {
         location.assign(id ? `/imagine/post/${encodeURIComponent(id)}` : "/imagine");
       } catch (navErr) {
-        logger26.error("Fallback Imagine navigation failed:", navErr);
+        logger29.error("Fallback Imagine navigation failed:", navErr);
       }
     }
   }
@@ -14649,9 +16077,9 @@ html.void-cms-picked .void-cms-ghost {
     }
   }
   function maybeFinishImagine(id) {
-    if (!started4 || !settings14.store.imagineGeneration || !id)
+    if (!started4 || !settings15.store.imagineGeneration || !id)
       return;
-    if (onImaginePage())
+    if (onImaginePage2())
       return;
     const key = `imagine:${id}`;
     if (toasted.has(key))
@@ -14660,7 +16088,7 @@ html.void-cms-picked .void-cms-ghost {
     try {
       item = MediaStore.useMediaStore.getState().byId[id];
     } catch (e) {
-      logger26.debug("Imagine item unavailable:", e);
+      logger29.debug("Imagine item unavailable:", e);
       return;
     }
     if (!item)
@@ -14671,10 +16099,10 @@ html.void-cms-picked .void-cms-ghost {
       return;
     markToasted(key);
     const prompt = (item.prompt ?? item.originalPrompt ?? "").trim();
-    show(id, "", "imagine", settings14.store.showPreview ? prompt.slice(0, PREVIEW_MAX) : "");
+    show(id, "", "imagine", settings15.store.showPreview ? prompt.slice(0, PREVIEW_MAX) : "");
   }
   function syncImagine(current, prev) {
-    if (!started4 || !settings14.store.imagineGeneration)
+    if (!started4 || !settings15.store.imagineGeneration)
       return;
     if (!prev)
       return;
@@ -14727,7 +16155,7 @@ html.void-cms-picked .void-cms-ghost {
           ids.add(id);
       }
     } catch (e) {
-      logger26.debug("gateway live scan failed:", e);
+      logger29.debug("gateway live scan failed:", e);
     }
     try {
       const { byConversationId } = ResponseStore.useResponseStore.getState();
@@ -14736,7 +16164,7 @@ html.void-cms-picked .void-cms-ghost {
           ids.add(id);
       }
     } catch (e) {
-      logger26.debug("response live scan failed:", e);
+      logger29.debug("response live scan failed:", e);
     }
     return ids;
   }
@@ -14749,7 +16177,7 @@ html.void-cms-picked .void-cms-ghost {
           markToasted(last.responseId);
       }
     } catch (e) {
-      logger26.debug("seed responses failed:", e);
+      logger29.debug("seed responses failed:", e);
     }
     try {
       for (const [id, gw] of Object.entries(MessageStore.useMessageStore.getState().conversations ?? {})) {
@@ -14760,7 +16188,7 @@ html.void-cms-picked .void-cms-ghost {
           markToasted(node.id);
       }
     } catch (e) {
-      logger26.debug("seed gateway failed:", e);
+      logger29.debug("seed gateway failed:", e);
     }
   }
   function finishClosed() {
@@ -14775,7 +16203,7 @@ html.void-cms-picked .void-cms-ghost {
         maybeFinish(id, last.responseId);
       }
     } catch (e) {
-      logger26.debug("closed scan failed:", e);
+      logger29.debug("closed scan failed:", e);
     }
   }
   function syncLive() {
@@ -14845,7 +16273,7 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings14,
+    settings: settings15,
     startAt: "TurbopackReady" /* TurbopackReady */,
     managedStyle: "completeToast",
     cleanupSelectors: [`.${HOST2}`, `#${HOST2}`],
@@ -14906,7 +16334,7 @@ html.void-cms-picked .void-cms-ghost {
   var FRAME_KIDS = "form:has(.query-bar)>:first-child>*";
   var BACKDROP = ".chat-input-backdrop,.pointer-events-none.absolute.bottom-0.z-0[class*=bg-gradient-to-t]";
   var RADIUS = "var(--border-t-radius,10rem) var(--border-t-radius,10rem) var(--border-b-radius,10rem) var(--border-b-radius,10rem)";
-  var settings15 = definePluginSettings({
+  var settings16 = definePluginSettings({
     opacity: {
       type: 5 /* SLIDER */,
       description: "Background opacity of the chat input. 100 is fully opaque.",
@@ -14922,9 +16350,9 @@ html.void-cms-picked .void-cms-ghost {
       default: 16
     }
   });
-  function apply2() {
-    const pct = clamp(settings15.store.opacity, 0, 100);
-    const blur = clamp(settings15.store.blur, 0, 40);
+  function apply3() {
+    const pct = clamp(settings16.store.opacity, 0, 100);
+    const blur = clamp(settings16.store.blur, 0, 40);
     const alpha = pct / 100;
     const frost = pct < 100 && blur > 0 ? `-webkit-backdrop-filter:blur(${blur}px)!important;backdrop-filter:blur(${blur}px)!important;` : "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;";
     registerStyle(STYLE_NAME3, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + "pointer-events:auto!important;" + `background-color:hsl(var(--surface-l1)/${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}" + `${SHELL}:has([data-wd-toolbar]){overflow:visible!important;clip-path:none!important}`);
@@ -14936,9 +16364,9 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["ui", "chat"],
     enabledByDefault: true,
-    settings: settings15,
-    start: apply2,
-    onSettingsChange: apply2,
+    settings: settings16,
+    start: apply3,
+    onSettingsChange: apply3,
     stop() {
       unregisterStyle(STYLE_NAME3);
     }
@@ -15129,7 +16557,7 @@ html.void-cms-picked .void-cms-ghost {
 `);
 
   // src/plugins/customInstructions/index.tsx
-  var cl22 = classNameFactory("void-ci-");
+  var cl24 = classNameFactory("void-ci-");
   var PixelAvatarModule = findByPropsLazy("PixelAvatar");
   var CheckIcon = findExportedComponentLazy("CheckIcon");
   var BookIcon = findExportedComponentLazy("BookIcon");
@@ -15137,38 +16565,38 @@ html.void-cms-picked .void-cms-ghost {
   var TrashIcon = findExportedComponentLazy("TrashIcon");
   var PlusIcon2 = findExportedComponentLazy("PlusIcon");
   var MAX_LENGTH = 4000;
-  var settings16 = definePluginSettings({
+  var settings17 = definePluginSettings({
     editor: {
       type: 6 /* COMPONENT */,
       component: () => /* @__PURE__ */ React.createElement(PresetsEditor, null)
     }
   }).withPrivateSettings();
   function getPresets() {
-    return settings16.plain.presets ?? [];
+    return settings17.plain.presets ?? [];
   }
   function setPresets(presets) {
-    settings16.store.presets = presets;
+    settings17.store.presets = presets;
   }
   function getAssignments() {
-    return settings16.plain.assignments ?? {};
+    return settings17.plain.assignments ?? {};
   }
   function PresetCard({ preset, onEdit, onDelete }) {
     return /* @__PURE__ */ React.createElement("div", {
       role: "button",
-      className: cl22("card"),
+      className: cl24("card"),
       onClick: onEdit
     }, /* @__PURE__ */ React.createElement("div", {
-      className: cl22("avatar")
+      className: cl24("avatar")
     }, /* @__PURE__ */ React.createElement(PixelAvatarModule.PixelAvatar, {
       seed: preset.id,
       size: 32
     })), /* @__PURE__ */ React.createElement("div", {
-      className: cl22("card-name")
+      className: cl24("card-name")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "medium"
     }, preset.name || "Untitled")), /* @__PURE__ */ React.createElement("div", {
-      className: cl22("card-actions")
+      className: cl24("card-actions")
     }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
       variant: "tertiary",
       size: "xs",
@@ -15196,14 +16624,14 @@ html.void-cms-picked .void-cms-ghost {
   function PresetEditor({ preset, onUpdate, onClose }) {
     const overLimit = preset.prompt.length > MAX_LENGTH;
     return /* @__PURE__ */ React.createElement("div", {
-      className: cl22("editor")
+      className: cl24("editor")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "medium",
-      className: cl22("label")
+      className: cl24("label")
     }, "Name"), /* @__PURE__ */ React.createElement(Input, {
       type: "text",
-      className: cl22("input"),
+      className: cl24("input"),
       placeholder: "Preset name",
       value: preset.name,
       onChange: (e) => onUpdate({ ...preset, name: e.target.value }),
@@ -15211,20 +16639,20 @@ html.void-cms-picked .void-cms-ghost {
     }), /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "medium",
-      className: cl22("label")
+      className: cl24("label")
     }, "Instructions"), /* @__PURE__ */ React.createElement("div", {
-      className: cl22("textarea-wrap", { "textarea-wrap-error": overLimit })
+      className: cl24("textarea-wrap", { "textarea-wrap-error": overLimit })
     }, /* @__PURE__ */ React.createElement(Textarea, {
-      className: cl22("textarea"),
+      className: cl24("textarea"),
       placeholder: "How should Grok behave?",
       value: preset.prompt,
       onChange: (e) => onUpdate({ ...preset, prompt: e.target.value })
     })), /* @__PURE__ */ React.createElement("div", {
-      className: cl22("editor-footer")
+      className: cl24("editor-footer")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: overLimit ? undefined : "muted",
-      className: overLimit ? cl22("error-text") : undefined
+      className: overLimit ? cl24("error-text") : undefined
     }, preset.prompt.length, "/", MAX_LENGTH), /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
       size: "sm",
@@ -15233,7 +16661,7 @@ html.void-cms-picked .void-cms-ghost {
     }, "Done")));
   }
   function PresetsEditor() {
-    const presets = settings16.use(["presets"]).presets ?? [];
+    const presets = settings17.use(["presets"]).presets ?? [];
     const [editingId, setEditingId] = useState(null);
     const updatePreset = useCallback((updated) => {
       setPresets(getPresets().map((p) => p.id === updated.id ? updated : p));
@@ -15245,7 +16673,7 @@ html.void-cms-picked .void-cms-ghost {
         if (v === id)
           delete a[k];
       }
-      settings16.store.assignments = a;
+      settings17.store.assignments = a;
       setEditingId((prev) => prev === id ? null : prev);
     }, []);
     const addPreset = useCallback(() => {
@@ -15255,9 +16683,9 @@ html.void-cms-picked .void-cms-ghost {
     }, []);
     const editing = presets.find((p) => p.id === editingId);
     return /* @__PURE__ */ React.createElement("div", {
-      className: cl22("root")
+      className: cl24("root")
     }, /* @__PURE__ */ React.createElement("div", {
-      className: cl22("grid")
+      className: cl24("grid")
     }, presets.map((p) => /* @__PURE__ */ React.createElement(PresetCard, {
       key: p.id,
       preset: p,
@@ -15265,7 +16693,7 @@ html.void-cms-picked .void-cms-ghost {
       onDelete: () => deletePreset(p.id)
     })), /* @__PURE__ */ React.createElement("div", {
       role: "button",
-      className: cl22("card", "card-add"),
+      className: cl24("card", "card-add"),
       onClick: addPreset
     }, /* @__PURE__ */ React.createElement(PlusIcon2, {
       className: "size-4 text-secondary"
@@ -15280,8 +16708,8 @@ html.void-cms-picked .void-cms-ghost {
     }));
   }
   function InstructionsMenu({ conversationId }) {
-    const presets = settings16.use(["presets"]).presets ?? [];
-    const assignments = settings16.use(["assignments"]).assignments ?? {};
+    const presets = settings17.use(["presets"]).presets ?? [];
+    const assignments = settings17.use(["assignments"]).assignments ?? {};
     const activePresetId = assignments[conversationId];
     const assign = useCallback((presetId) => {
       const a = { ...getAssignments() };
@@ -15289,17 +16717,17 @@ html.void-cms-picked .void-cms-ghost {
         a[conversationId] = presetId;
       else
         delete a[conversationId];
-      settings16.store.assignments = a;
+      settings17.store.assignments = a;
     }, [conversationId]);
     if (!presets.length)
       return null;
     return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, {
-      className: cl22("trigger")
+      className: cl24("trigger")
     }, /* @__PURE__ */ React.createElement(BookIcon, {
       size: 16
     }), " Instructions"), /* @__PURE__ */ React.createElement(MenuSubContent, null, /* @__PURE__ */ React.createElement(MenuItem, {
       onSelect: () => assign(),
-      className: cl22("menu-item")
+      className: cl24("menu-item")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm"
     }, "None"), !activePresetId && /* @__PURE__ */ React.createElement(CheckIcon, {
@@ -15307,7 +16735,7 @@ html.void-cms-picked .void-cms-ghost {
     })), presets.map((p) => /* @__PURE__ */ React.createElement(MenuItem, {
       key: p.id,
       onSelect: () => assign(p.id),
-      className: cl22("menu-item")
+      className: cl24("menu-item")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm"
     }, p.name || "Untitled"), activePresetId === p.id && /* @__PURE__ */ React.createElement(CheckIcon, {
@@ -15320,7 +16748,7 @@ html.void-cms-picked .void-cms-ghost {
     description: "Create instruction presets and assign them to conversations.",
     authors: [Devs.Prism],
     tags: ["chat"],
-    settings: settings16,
+    settings: settings17,
     contextMenuItems: {
       conversation: {
         label: "Instructions",
@@ -15512,8 +16940,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var ZOOM_MIN = 1;
   var ZOOM_MAX = 4;
   var SIZE_VAR = "--void-csi-avatar-size";
-  var cl23 = classNameFactory("void-csi-");
-  var settings17 = definePluginSettings({
+  var cl25 = classNameFactory("void-csi-");
+  var settings18 = definePluginSettings({
     displayName: {
       type: 0 /* STRING */,
       description: "Display name next to the sidebar avatar. Empty keeps the official name.",
@@ -15615,25 +17043,25 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return url;
   }
   function resetCrop() {
-    settings17.store.cropX = 0.5;
-    settings17.store.cropY = 0.5;
-    settings17.store.cropZoom = 1;
+    settings18.store.cropX = 0.5;
+    settings18.store.cropY = 0.5;
+    settings18.store.cropZoom = 1;
   }
   function clearAvatar() {
-    settings17.store.avatarUrl = "";
-    settings17.store.avatarSource = "";
+    settings18.store.avatarUrl = "";
+    settings18.store.avatarSource = "";
     resetCrop();
   }
   var adoptGen = 0;
   async function adoptSource(src) {
     const gen = ++adoptGen;
     resetCrop();
-    settings17.store.avatarSource = src;
+    settings18.store.avatarSource = src;
     const baked = await bake(src, 0.5, 0.5, 1);
     if (gen !== adoptGen)
       return false;
     if (baked)
-      settings17.store.avatarUrl = baked;
+      settings18.store.avatarUrl = baked;
     return !!baked;
   }
   function imageFile(data) {
@@ -15659,7 +17087,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return adoptSource(src);
   }
   function CropStage({ src }) {
-    const { cropX, cropY, cropZoom } = settings17.use(["cropX", "cropY", "cropZoom"]);
+    const { cropX, cropY, cropZoom } = settings18.use(["cropX", "cropY", "cropZoom"]);
     const [nat, setNat] = useState(null);
     const [x, setX] = useState(() => num(cropX, 0.5));
     const [y, setY] = useState(() => num(cropY, 0.5));
@@ -15678,11 +17106,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           setNat({ w: img.naturalWidth, h: img.naturalHeight });
       };
       img.src = src;
-      setX(num(settings17.store.cropX, 0.5));
-      setY(num(settings17.store.cropY, 0.5));
-      setZoom(num(settings17.store.cropZoom, 1));
-      if (!settings17.store.avatarSource)
-        settings17.store.avatarSource = src;
+      setX(num(settings18.store.cropX, 0.5));
+      setY(num(settings18.store.cropY, 0.5));
+      setZoom(num(settings18.store.cropZoom, 1));
+      if (!settings18.store.avatarSource)
+        settings18.store.avatarSource = src;
       return () => {
         dead = true;
       };
@@ -15722,12 +17150,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     function commit(nx, ny, nz, immediate = false) {
       const next = applyPos(nx, ny, nz);
       const run = () => {
-        settings17.store.cropX = next.x;
-        settings17.store.cropY = next.y;
-        settings17.store.cropZoom = next.z;
+        settings18.store.cropX = next.x;
+        settings18.store.cropY = next.y;
+        settings18.store.cropZoom = next.z;
         bake(src, next.x, next.y, next.z).then((url) => {
           if (url)
-            settings17.store.avatarUrl = url;
+            settings18.store.avatarUrl = url;
         });
       };
       if (bakeTimer.current)
@@ -15747,10 +17175,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl23("crop")
+      className: cl25("crop")
     }, /* @__PURE__ */ React.createElement("div", {
       ref: stage,
-      className: cl23("stage"),
+      className: cl25("stage"),
       onPointerDown: (e) => {
         if (e.button !== 0)
           return;
@@ -15776,7 +17204,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         drag.current = null;
       }
     }, src && /* @__PURE__ */ React.createElement("img", {
-      className: cl23("stage-img"),
+      className: cl25("stage-img"),
       src,
       alt: "",
       draggable: false,
@@ -15784,20 +17212,20 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     })), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.5rem",
-      className: cl23("zoom-row")
+      className: cl25("zoom-row")
     }, /* @__PURE__ */ React.createElement("input", {
       type: "range",
       min: ZOOM_MIN,
       max: ZOOM_MAX,
       step: 0.05,
       value: zoom,
-      className: cl23("zoom"),
+      className: cl25("zoom"),
       "aria-label": "Zoom",
       onChange: (e) => commit(pos.current.x, pos.current.y, Number(e.target.value))
     }), /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       color: "secondary",
-      className: cl23("zoom-val")
+      className: cl25("zoom-val")
     }, Math.round(zoom * 100), "%"), /* @__PURE__ */ React.createElement(Button, {
       size: "sm",
       variant: "secondary",
@@ -15808,7 +17236,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }, "Drag to pan · scroll to zoom. Circle matches the sidebar crop."));
   }
   function AvatarUrlField() {
-    const { avatarUrl, avatarSource } = settings17.use(["avatarUrl", "avatarSource"]);
+    const { avatarUrl, avatarSource } = settings18.use(["avatarUrl", "avatarSource"]);
     const raw = String(avatarUrl ?? "");
     const source = String(avatarSource ?? "");
     const cropSrc = source.startsWith("data:image/") ? source : raw.startsWith("data:image/") ? raw : "";
@@ -15821,12 +17249,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         clearTimeout(urlTimer.current);
     }, []);
     function onUrlChange(value) {
-      settings17.store.avatarUrl = value;
+      settings18.store.avatarUrl = value;
       const trimmed = value.trim();
       if (urlTimer.current)
         clearTimeout(urlTimer.current);
       if (!trimmed) {
-        settings17.store.avatarSource = "";
+        settings18.store.avatarSource = "";
         resetCrop();
         setRemoteFail(false);
         return;
@@ -15847,7 +17275,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       }
       if (/^https?:\/\//.test(trimmed)) {
         setRemoteFail(false);
-        settings17.store.avatarSource = "";
+        settings18.store.avatarSource = "";
         urlTimer.current = setTimeout(() => {
           bitmapFromUrl(trimmed).then((bmp) => {
             if (!bmp) {
@@ -15866,7 +17294,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       }
       setRemoteFail(false);
-      settings17.store.avatarSource = "";
+      settings18.store.avatarSource = "";
     }
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
@@ -15875,7 +17303,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       flexDirection: "column",
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Avatar Url"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Image URL, data:image…, or paste a picture. Drag the circle to pick the crop.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl23("avatar"),
+      className: cl25("avatar"),
       onPaste: (e) => {
         if (imageFile(e.clipboardData)) {
           e.preventDefault();
@@ -15895,13 +17323,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         }
       }
     }, raw && /* @__PURE__ */ React.createElement("img", {
-      className: cl23("preview"),
+      className: cl25("preview"),
       src: cropSrc || raw,
       alt: "",
       referrerPolicy: "no-referrer"
     }), /* @__PURE__ */ React.createElement(Input, {
       type: "text",
-      className: cl23("url"),
+      className: cl25("url"),
       value: pasted ? "" : raw,
       placeholder: pasted ? "Pasted image. Drag the circle to crop, or type a URL to replace." : "Paste a picture, or https://…",
       onChange: (e) => onUrlChange(e.target.value),
@@ -15931,10 +17359,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var painting = false;
   var started5 = false;
   function trimName() {
-    return String(settings17.store.displayName ?? "").trim();
+    return String(settings18.store.displayName ?? "").trim();
   }
   function avatarSrc() {
-    const raw = String(settings17.store.avatarUrl ?? "").trim();
+    const raw = String(settings18.store.avatarUrl ?? "").trim();
     if (!raw || failed.has(raw))
       return null;
     if (raw.startsWith("data:image/"))
@@ -16079,7 +17507,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     for (const menu of document.querySelectorAll(MENU)) {
       if (!isAccountMenu(menu))
         continue;
-      if (!settings17.store.applyToMenu) {
+      if (!settings18.store.applyToMenu) {
         dropNames(menu);
         unhide(menu);
         for (const img of menu.querySelectorAll(`img[${MARK2}]`))
@@ -16112,13 +17540,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     unhide(document);
   }
   function applySize() {
-    const n = clamp(Math.round(num(settings17.store.avatarSize, SIZE_DEFAULT)), SIZE_MIN, SIZE_MAX);
+    const n = clamp(Math.round(num(settings18.store.avatarSize, SIZE_DEFAULT)), SIZE_MIN, SIZE_MAX);
     document.documentElement.style.setProperty(SIZE_VAR, `${n}px`);
   }
   function clearSize() {
     document.documentElement.style.removeProperty(SIZE_VAR);
   }
-  function apply3() {
+  function apply4() {
     if (!started5 || painting)
       return;
     painting = true;
@@ -16135,7 +17563,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return;
     raf4 = requestAnimationFrame(() => {
       raf4 = 0;
-      apply3();
+      apply4();
     });
   }
   function onMut(muts) {
@@ -16149,7 +17577,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const el = m.target;
       if (!(el instanceof HTMLImageElement))
         continue;
-      if (el.closest(FOOTER) || settings17.store.applyToMenu && el.closest(MENU)) {
+      if (el.closest(FOOTER) || settings18.store.applyToMenu && el.closest(MENU)) {
         schedule2();
         return;
       }
@@ -16172,18 +17600,18 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     authors: [Devs.p],
     tags: ["ui"],
     enabledByDefault: false,
-    settings: settings17,
+    settings: settings18,
     managedStyle: "customSidebarIdentity",
     cleanupSelectors: [`.${NAME_CLASS}`],
     start() {
       started5 = true;
       failed.clear();
       bind();
-      apply3();
+      apply4();
     },
     onSettingsChange() {
       failed.clear();
-      apply3();
+      apply4();
     },
     stop() {
       started5 = false;
@@ -16205,8 +17633,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/downloadTTS/index.tsx
-  var cl24 = classNameFactory("void-download-tts-");
-  var logger27 = new Logger("DownloadTTS");
+  var cl26 = classNameFactory("void-download-tts-");
+  var logger30 = new Logger("DownloadTTS");
   async function fetchAndDownload() {
     const { currentStreamId } = TextToSpeechStore.useTextToSpeechStore.getState();
     if (!currentStreamId)
@@ -16226,7 +17654,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       try {
         await fetchAndDownload();
       } catch (e) {
-        logger27.error("Failed to download TTS audio:", e);
+        logger30.error("Failed to download TTS audio:", e);
       }
     });
     return /* @__PURE__ */ React.createElement(Button, {
@@ -16238,7 +17666,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       variant: "tertiary"
     }, loading ? /* @__PURE__ */ React.createElement(Spinner, {
       size: "sm",
-      className: cl24("spinner")
+      className: cl26("spinner")
     }) : /* @__PURE__ */ React.createElement(DownloadIcon, {
       size: 16
     }));
@@ -16267,7 +17695,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/exportChat/index.tsx
-  var logger28 = new Logger("ExportChat");
+  var logger31 = new Logger("ExportChat");
   function buildExportMessage(r) {
     return {
       id: r.responseId,
@@ -16442,7 +17870,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       className: "void-export-icon"
     }), "Export"), /* @__PURE__ */ React.createElement(MenuSubContent, null, FORMATS.map(({ fmt, label }) => /* @__PURE__ */ React.createElement(MenuItem, {
       key: fmt,
-      onSelect: () => exportChat(conversationId, fmt).catch((e) => logger28.error("Failed to export chat", e))
+      onSelect: () => exportChat(conversationId, fmt).catch((e) => logger31.error("Failed to export chat", e))
     }, label))));
   }
   var exportChat_default = definePlugin({
@@ -16641,8 +18069,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/inputHistory/index.tsx
-  var logger29 = new Logger("InputHistory");
-  var cl25 = classNameFactory("void-ih-");
+  var logger32 = new Logger("InputHistory");
+  var cl27 = classNameFactory("void-ih-");
   var EDITOR_SEL2 = '.query-bar .tiptap.ProseMirror[contenteditable="true"]';
   var ZWSP = /\u200B/g;
   var MAX_MIN = 10;
@@ -16651,7 +18079,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var HUD_GAP_PX = 8;
   var APPLY_QUIET_MS = 120;
   var CAPTURE_DEDUPE_MS = 2000;
-  var settings18 = definePluginSettings({
+  var settings19 = definePluginSettings({
     maxEntries: {
       type: 5 /* SLIDER */,
       description: "Maximum stored prompts.",
@@ -16673,7 +18101,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var cursor = 0;
   var draft = "";
   var recalling = false;
-  var applying = false;
+  var applying2 = false;
   var composing = false;
   var applyGen = 0;
   var keys2 = null;
@@ -16693,23 +18121,23 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   }
   function useImagineBucket() {
-    return !!settings18.store.separateImagine && isImaginePage2();
+    return !!settings19.store.separateImagine && isImaginePage2();
   }
   function listOf(raw) {
     return Array.isArray(raw) ? raw.filter((x) => typeof x === "string") : [];
   }
   function getEntries() {
-    return listOf(useImagineBucket() ? settings18.plain.imagineEntries : settings18.plain.entries);
+    return listOf(useImagineBucket() ? settings19.plain.imagineEntries : settings19.plain.entries);
   }
   function cap(entries) {
-    const max = clamp(settings18.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
+    const max = clamp(settings19.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
     return entries.length > max ? entries.slice(entries.length - max) : entries;
   }
   function setEntries(entries) {
     if (useImagineBucket())
-      settings18.store.imagineEntries = entries;
+      settings19.store.imagineEntries = entries;
     else
-      settings18.store.entries = entries;
+      settings19.store.entries = entries;
   }
   function normalize(text) {
     return text.replaceAll(ZWSP, "").replace(/\n$/, "").trim();
@@ -16725,7 +18153,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   function invalidateApply() {
     applyGen++;
-    applying = false;
+    applying2 = false;
     applyEl = null;
     clearTimeout(applyTimer);
     applyTimer = undefined;
@@ -16818,7 +18246,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       }
     } catch (err) {
-      logger29.debug("placeCaret pm failed:", err);
+      logger32.debug("placeCaret pm failed:", err);
     }
     const native = window.getSelection();
     if (!native)
@@ -16834,7 +18262,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     applyTimer = setTimeout(() => {
       if (gen !== applyGen)
         return;
-      applying = false;
+      applying2 = false;
       const el = applyEl;
       applyEl = null;
       if (!el || composing)
@@ -16856,7 +18284,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     range.selectNodeContents(el);
     sel.removeAllRanges();
     sel.addRange(range);
-    applying = true;
+    applying2 = true;
     applyEl = el;
     applyAtStart = atStart;
     const gen = ++applyGen;
@@ -16866,23 +18294,23 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       else
         document.execCommand("insertText", false, text);
     } catch (err) {
-      logger29.debug("insertText failed:", err);
+      logger32.debug("insertText failed:", err);
     }
     placeCaret(el, atStart);
     scheduleApplyEnd(gen);
   }
   function hudEl() {
-    let el = document.querySelector(`.${cl25("hud")}`);
+    let el = document.querySelector(`.${cl27("hud")}`);
     if (el)
       return el;
     el = document.createElement("div");
-    el.className = cl25("hud");
+    el.className = cl27("hud");
     el.setAttribute("aria-live", "polite");
     document.body.appendChild(el);
     return el;
   }
   function hideHud() {
-    document.querySelector(`.${cl25("hud")}`)?.classList.remove(cl25("hud-on"));
+    document.querySelector(`.${cl27("hud")}`)?.classList.remove(cl27("hud-on"));
   }
   function showHud(label, editor) {
     const bar = editor.closest(".query-bar");
@@ -16894,7 +18322,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const r = bar.getBoundingClientRect();
       el.style.left = `${r.left + r.width / 2}px`;
       el.style.top = `${r.top - HUD_GAP_PX}px`;
-      el.classList.add(cl25("hud-on"));
+      el.classList.add(cl27("hud-on"));
     });
   }
   function pushEntry(text) {
@@ -16942,7 +18370,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const el = chatEditor(e.target);
     if (!el)
       return;
-    if (applying && e.key !== "ArrowUp" && e.key !== "ArrowDown")
+    if (applying2 && e.key !== "ArrowUp" && e.key !== "ArrowDown")
       invalidateApply();
     if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
       dropRecall(el);
@@ -16974,7 +18402,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     e.stopImmediatePropagation();
     cycle(older, el);
   }
-  function onPointerDown2(e) {
+  function onPointerDown3(e) {
     if (!recalling)
       return;
     const el = chatEditor(e.target);
@@ -17001,12 +18429,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (!el)
       return;
     if (imeEvent(e)) {
-      if (applying)
+      if (applying2)
         invalidateApply();
       return;
     }
     const recalled = matchesRecall(el);
-    if (applying && recalled)
+    if (applying2 && recalled)
       return;
     if (recalling && !recalled)
       dropRecall(el);
@@ -17019,7 +18447,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (editor instanceof HTMLElement)
       pushEntry(editorText(editor));
   }
-  function onClick(e) {
+  function onClick2(e) {
     const t = e.target;
     if (!(t instanceof Element))
       return;
@@ -17038,19 +18466,19 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       pushEntry(editorText(editor));
   }
   function removeEntry(index, imagine) {
-    const list = listOf(imagine ? settings18.plain.imagineEntries : settings18.plain.entries);
+    const list = listOf(imagine ? settings19.plain.imagineEntries : settings19.plain.entries);
     if (index < 0 || index >= list.length)
       return;
     const next = list.filter((_, i) => i !== index);
     if (imagine)
-      settings18.store.imagineEntries = next;
+      settings19.store.imagineEntries = next;
     else
-      settings18.store.entries = next;
+      settings19.store.entries = next;
     if (imagine === useImagineBucket())
       resetBrowse(next.length);
   }
   function HistoryPanel() {
-    const { entries, imagineEntries, separateImagine } = settings18.use(["entries", "imagineEntries", "separateImagine"]);
+    const { entries, imagineEntries, separateImagine } = settings19.use(["entries", "imagineEntries", "separateImagine"]);
     const [bucket, setBucket] = useState("chat");
     const imagine = !!separateImagine && bucket === "imagine";
     const list = imagine ? imagineEntries ?? [] : entries ?? [];
@@ -17062,11 +18490,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl25("panel")
+      className: cl27("panel")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.35rem",
-      className: cl25("toolbar")
+      className: cl27("toolbar")
     }, !!separateImagine && /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.5rem"
@@ -17085,13 +18513,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       placeholder: "Search prompts",
       value: query,
       onChange: (e) => setQuery(e.target.value),
-      className: cl25("search")
+      className: cl27("search")
     }), /* @__PURE__ */ React.createElement(Flex, {
-      className: cl25("meta"),
+      className: cl27("meta"),
       alignItems: "center",
       gap: "0.5rem"
     }, /* @__PURE__ */ React.createElement(Paragraph, {
-      className: cl25("count")
+      className: cl27("count")
     }, needle ? pluralize(visible.length, "match", "matches") : pluralize(list.length, "stored prompt")), /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
       size: "sm",
@@ -17099,20 +18527,20 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       disabled: !list.length,
       onClick: () => setConfirm(true)
     }, "Clear history"))), list.length === 0 && /* @__PURE__ */ React.createElement(Paragraph, {
-      className: cl25("empty")
+      className: cl27("empty")
     }, "No stored prompts."), list.length > 0 && visible.length === 0 && /* @__PURE__ */ React.createElement(Paragraph, {
-      className: cl25("empty")
+      className: cl27("empty")
     }, "No matches."), visible.length > 0 && /* @__PURE__ */ React.createElement("div", {
-      className: cl25("list")
+      className: cl27("list")
     }, visible.map((row) => {
       const expanded = openId === row.index;
       return /* @__PURE__ */ React.createElement("div", {
         key: row.index,
-        className: cl25("item", expanded && "item-on")
+        className: cl27("item", expanded && "item-on")
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl25("index")
+        className: cl27("index")
       }, row.index + 1), /* @__PURE__ */ React.createElement("div", {
-        className: cl25("main"),
+        className: cl27("main"),
         role: "button",
         tabIndex: 0,
         onClick: () => setOpenId(expanded ? null : row.index),
@@ -17123,9 +18551,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           setOpenId(expanded ? null : row.index);
         }
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl25("body", !expanded && "clamp")
+        className: cl27("body", !expanded && "clamp")
       }, row.text)), /* @__PURE__ */ React.createElement("div", {
-        className: cl25("actions")
+        className: cl27("actions")
       }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
         variant: "tertiary",
         size: "sm",
@@ -17133,7 +18561,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         tooltipContent: "Copy",
         "aria-label": "Copy",
         onClick: () => {
-          copyToClipboard(row.text).catch((err) => logger29.error("copy failed:", err));
+          copyToClipboard(row.text).catch((err) => logger32.error("copy failed:", err));
         }
       }, /* @__PURE__ */ React.createElement(CopyIcon, {
         size: 16
@@ -17160,9 +18588,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       danger: true,
       onConfirm: () => {
         if (imagine)
-          settings18.store.imagineEntries = [];
+          settings19.store.imagineEntries = [];
         else
-          settings18.store.entries = [];
+          settings19.store.entries = [];
         if (imagine === useImagineBucket())
           resetBrowse(0);
         setOpenId(null);
@@ -17177,7 +18605,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
-    settings: settings18,
+    settings: settings19,
     managedStyle: "inputHistory",
     cleanupSelectors: [".void-ih-hud"],
     start() {
@@ -17194,8 +18622,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       document.addEventListener("compositionstart", onCompositionStart, { capture: true, signal });
       document.addEventListener("compositionend", onCompositionEnd, { capture: true, signal });
       document.addEventListener("submit", onSubmit, { capture: true, signal });
-      document.addEventListener("click", onClick, { capture: true, signal });
-      document.addEventListener("pointerdown", onPointerDown2, { capture: true, signal });
+      document.addEventListener("click", onClick2, { capture: true, signal });
+      document.addEventListener("pointerdown", onPointerDown3, { capture: true, signal });
     },
     stop() {
       keys2?.abort();
@@ -17213,10 +18641,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         setEntries(next);
       if (cursor > next.length)
         cursor = next.length;
-      const imagine = listOf(settings18.plain.imagineEntries);
+      const imagine = listOf(settings19.plain.imagineEntries);
       const imagineNext = cap(imagine);
       if (imagineNext.length !== imagine.length)
-        settings18.store.imagineEntries = imagineNext;
+        settings19.store.imagineEntries = imagineNext;
     },
     zustand: {
       RoutingStore: {
@@ -17537,10 +18965,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
 
   // src/plugins/messageTimestamps/index.tsx
-  var logger30 = new Logger("MessageTimestamps");
+  var logger33 = new Logger("MessageTimestamps");
   var STAMP_MAX = 5000;
   var RESPONSE_URL = /\/(?:load-responses|share_links|response-node)(?:\/|\?|$)/i;
-  var settings19 = definePluginSettings({
+  var settings20 = definePluginSettings({
     showDate: {
       type: 3 /* BOOLEAN */,
       description: "Show the full date for messages older than today.",
@@ -17563,7 +18991,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (cache)
       return cache;
     cache = new Map;
-    const raw = settings19.plain.stamps;
+    const raw = settings20.plain.stamps;
     if (raw && typeof raw === "object") {
       for (const [id, ms] of Object.entries(raw)) {
         if (typeof ms === "number" && Number.isFinite(ms))
@@ -17576,10 +19004,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const next = {};
     for (const [id, ms] of stamps())
       next[id] = ms;
-    settings19.store.stamps = next;
+    settings20.store.stamps = next;
   }
   var persist2 = debounce(persistNow, 400);
-  function remember(id, ms, sender, state, force = false) {
+  function remember2(id, ms, sender, state, force = false) {
     if (!id)
       return false;
     const map = stamps();
@@ -17612,7 +19040,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           return cid;
       }
     } catch (e) {
-      logger30.debug("conversation id lookup failed", e);
+      logger33.debug("conversation id lookup failed", e);
     }
     return "";
   }
@@ -17652,7 +19080,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         }
       }
     } catch (e) {
-      logger30.debug("message store unavailable", e);
+      logger33.debug("message store unavailable", e);
     }
     return out;
   }
@@ -17662,7 +19090,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id]?.status === "complete";
     } catch (e) {
-      logger30.debug("message store unavailable", e);
+      logger33.debug("message store unavailable", e);
       return false;
     }
   }
@@ -17683,7 +19111,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         break;
       }
     } catch (e) {
-      logger30.debug("stable key lookup failed", e);
+      logger33.debug("stable key lookup failed", e);
     }
     return keys;
   }
@@ -17702,15 +19130,15 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     let changed = false;
     if (user) {
       for (const key of userKeys(rec, id)) {
-        if (remember(key, ms, "human", state, force))
+        if (remember2(key, ms, "human", state, force))
           changed = true;
       }
       return changed;
     }
-    if (remember(id, ms, sender, state, force))
+    if (remember2(id, ms, sender, state, force))
       changed = true;
     for (const key of extraKeys(rec, id)) {
-      if (remember(key, ms, sender, state, force))
+      if (remember2(key, ms, sender, state, force))
         changed = true;
     }
     return changed;
@@ -17724,7 +19152,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       }
       return Object.values(byId ?? {});
     } catch (e) {
-      logger30.debug("response store unavailable", e);
+      logger33.debug("response store unavailable", e);
       return [];
     }
   }
@@ -17748,7 +19176,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       ];
       return neighborTime(id, records) ?? conversationCreateTime(id);
     } catch (e) {
-      logger30.debug("node neighbor lookup failed", e);
+      logger33.debug("node neighbor lookup failed", e);
     }
     return neighborTime(id, storeRecords(id)) ?? conversationCreateTime(id);
   }
@@ -17764,7 +19192,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return ms != null && !isFresh(ms) ? ms : null;
       }
     } catch (e) {
-      logger30.debug("conversation time lookup failed", e);
+      logger33.debug("conversation time lookup failed", e);
     }
     return null;
   }
@@ -17776,7 +19204,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (hit)
         return { ...rec, ...hit };
     } catch (e) {
-      logger30.debug("byId lookup failed", e);
+      logger33.debug("byId lookup failed", e);
     }
     return rec;
   }
@@ -17843,7 +19271,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         try {
           res.clone().json().then(ingest, () => {});
         } catch (e) {
-          logger30.debug("fetch ingest failed", e);
+          logger33.debug("fetch ingest failed", e);
         }
         return res;
       });
@@ -17880,7 +19308,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       try {
         xhrMeta.set(this, requestUrl(url));
       } catch (e) {
-        logger30.debug("xhr open failed", e);
+        logger33.debug("xhr open failed", e);
       }
       return origXhrOpen.call(this, method, url, ...rest);
     };
@@ -17891,7 +19319,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           try {
             ingestXhr(this);
           } catch (e) {
-            logger30.debug("xhr ingest failed", e);
+            logger33.debug("xhr ingest failed", e);
           }
         }, { once: true });
       }
@@ -17921,7 +19349,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       };
     } catch (e) {
       origList = null;
-      logger30.debug("chatListResponses wrap skipped", e);
+      logger33.debug("chatListResponses wrap skipped", e);
     }
   }
   function unhookListResponses() {
@@ -17930,7 +19358,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       ApiClients.chatApi.chatListResponses = origList;
     } catch (e) {
-      logger30.debug("chatListResponses unwrap skipped", e);
+      logger33.debug("chatListResponses unwrap skipped", e);
     }
     origList = null;
   }
@@ -17949,14 +19377,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     description: "Shows timestamps on chat messages.",
     authors: [Devs.Prism, Devs.p],
     tags: ["chat"],
-    settings: settings19,
+    settings: settings20,
     start() {
       try {
         hookFetch();
         hookXhr();
         hookListResponses();
       } catch (e) {
-        logger30.warn("Failed to hook network", e);
+        logger33.warn("Failed to hook network", e);
       }
     },
     stop() {
@@ -17981,7 +19409,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
               nodes: Object.values(nodesByConversationId ?? {}).flat()
             });
           } catch (e) {
-            logger30.debug("store ingest failed", e);
+            logger33.debug("store ingest failed", e);
           }
         }
       },
@@ -18000,7 +19428,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     _renderTimestamp: ErrorBoundary.wrap(({ response, isUser }) => {
       useExternalStore(tick);
       const human = isUser === true || isHumanSender(response.sender);
-      if (settings19.store.hideOwnMessages && human)
+      if (settings20.store.hideOwnMessages && human)
         return null;
       const ms = resolveMs(response, isUser);
       if (ms == null)
@@ -18010,7 +19438,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         size: "xs",
         color: "muted",
         className: "void-timestamp"
-      }, formatTimestamp(ms, settings19.store.showDate));
+      }, formatTimestamp(ms, settings20.store.showDate));
     }),
     patches: [
       {
@@ -18102,7 +19530,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/modeSync/index.ts
-  var logger31 = new Logger("ModeSync");
+  var logger34 = new Logger("ModeSync");
   var CHAT_POST = /\/rest\/app-chat\/conversations/;
   var STOP_URL = /stop|abort|cancel/i;
   var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
@@ -18150,7 +19578,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     heavy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="5" height="5"/><rect x="15" y="4" width="5" height="5"/><rect x="15" y="15" width="5" height="5"/><path d="M11 18H10C7.79086 18 6 16.2091 6 14V13"/></svg>',
     build: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6.55273 4.60517C9.30778 1.96643 12.7289 1.47144 16.748 2.49872L19.1709 3.11787L16.9883 4.34052C16.0286 4.87786 15.0421 5.85039 14.5645 6.87763C14.3308 7.38043 14.2396 7.85117 14.2852 8.26728C14.3289 8.6664 14.5051 9.08437 14.9307 9.50068L20.5068 14.9548C22.0873 16.3103 22.1844 18.7292 20.707 20.2067C19.2281 21.6857 16.8059 21.5867 15.4512 20.0017C15.4468 19.9971 15.4413 19.9919 15.4355 19.986C15.4119 19.9617 15.3773 19.9252 15.332 19.8786C15.2412 19.7851 15.1086 19.6485 14.9424 19.4772C14.6098 19.1346 14.1405 18.653 13.5977 18.0944C12.5116 16.9769 11.1275 15.5535 9.93457 14.3317C9.65277 14.0434 9.32401 13.9826 9.07031 14.0456C8.82894 14.1056 8.57482 14.2967 8.46875 14.7136L8.40137 14.9802L6.5 16.8815L1.08594 11.4675L3.08594 9.46747H3.5C3.84716 9.46747 3.9785 9.37185 4.0752 9.26728C4.22615 9.1039 4.36795 8.82197 4.55371 8.30732C4.8865 7.38517 5.29734 5.80772 6.55273 4.60517ZM11.668 13.2448C12.789 14.3937 14.0363 15.6752 15.0322 16.6999C15.5754 17.2588 16.0441 17.7419 16.377 18.0847C16.5432 18.2559 16.6757 18.3924 16.7666 18.486C16.812 18.5328 16.8474 18.569 16.8711 18.5935C16.8826 18.6053 16.8914 18.6146 16.8975 18.6208C16.9004 18.6238 16.9028 18.627 16.9043 18.6286L16.9062 18.6296L16.9072 18.6306L16.9336 18.6579L16.957 18.6862C17.5529 19.4013 18.6348 19.4509 19.293 18.7927C19.951 18.1345 19.9016 17.0526 19.1865 16.4567L19.1562 16.4313L19.1279 16.404L13.7598 11.153L11.668 13.2448ZM14.1406 4.05244C11.6131 3.80062 9.61076 4.44487 7.93555 6.04951C7.10476 6.84532 6.84901 7.83879 6.43457 8.98701C6.24676 9.5073 5.99495 10.1367 5.54395 10.6247C5.12935 11.0732 4.597 11.349 3.94531 11.4352L3.91406 11.4675L6.5 14.0534L6.61914 13.9333C6.95792 12.978 7.6995 12.326 8.58789 12.1052C9.04163 11.9924 9.51491 11.9981 9.96875 12.1159L12.5625 9.52216C12.4239 9.18685 12.3357 8.83958 12.2969 8.48505C12.2019 7.6178 12.4054 6.77723 12.751 6.03388C13.0875 5.31006 13.578 4.63529 14.1406 4.05244Z"/></svg>'
   };
-  var settings20 = definePluginSettings({
+  var settings21 = definePluginSettings({
     stickyOnNavigate: {
       type: 3 /* BOOLEAN */,
       description: "Keep the selected mode when switching chats.",
@@ -18177,7 +19605,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var pendingEnqueue = null;
   var sendOverride = null;
   var overrideCid = "";
-  var applying2 = false;
+  var applying3 = false;
   var userPicking = false;
   var awaitingMenu = false;
   var intent = { ...EMPTY };
@@ -18185,13 +19613,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var origXhrOpen2 = null;
   var origXhrSend2 = null;
   var xhrMeta2 = new WeakMap;
-  var origFns = new Map;
-  var wrappedFns = new Map;
+  var origFns2 = new Map;
+  var wrappedFns2 = new Map;
   var origGwSend = null;
   var wrappedGwSend = null;
   var gwHost = null;
   var gwOff = [];
-  var abort = null;
+  var abort3 = null;
   var lastNavKey = "";
   var loadTail = null;
   var overrideTail = null;
@@ -18199,7 +19627,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var obs2 = null;
   var menu = null;
   var menuFor = null;
-  function onImaginePage2() {
+  function onImaginePage3() {
     try {
       const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
       if (page.startsWith("imagine"))
@@ -18311,7 +19739,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   }
   function syncRestoreFlag() {
-    if (!settings20.store.stickyOnNavigate) {
+    if (!settings21.store.stickyOnNavigate) {
       setRestoreFlag(false);
       return;
     }
@@ -18332,12 +19760,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   }
   function applyIntent(next) {
-    if (!next.modeId || applying2 || onImaginePage2())
+    if (!next.modeId || applying3 || onImaginePage3())
       return;
     const slug = modeSlug(next.modeId);
     if (!slug)
       return;
-    applying2 = true;
+    applying3 = true;
     try {
       const modes = ModesStore.useModesStore.getState();
       const cid = currentCid2();
@@ -18352,9 +19780,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (settled !== slug && modeSlug(intent.modeId) === slug)
         setIntent(captureIntent(settled, snapshot()));
     } catch (e) {
-      logger31.debug("apply failed", e);
+      logger34.debug("apply failed", e);
     } finally {
-      applying2 = false;
+      applying3 = false;
     }
   }
   function armOverride(item, cid) {
@@ -18392,7 +19820,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     userPicking = false;
     awaitingMenu = false;
     applyIntent(intent);
-    logger31.info("intent", intent.modeId);
+    logger34.info("intent", intent.modeId);
   }
   function rememberSnapshot() {
     const next = snapshot();
@@ -18401,10 +19829,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     setIntent(captureIntent(next.modeId, next));
     userPicking = false;
     awaitingMenu = false;
-    logger31.info("intent", intent.modeId);
+    logger34.info("intent", intent.modeId);
   }
   function fightHydrate() {
-    if (sendOverride || !settings20.store.stickyOnNavigate || applying2 || userPicking || awaitingMenu || !intent.modeId)
+    if (sendOverride || !settings21.store.stickyOnNavigate || applying3 || userPicking || awaitingMenu || !intent.modeId)
       return;
     if (!loadPending())
       return;
@@ -18413,7 +19841,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const cid = currentCid2();
     if (modeSlug(cur.modeId) === slug && (!cid || sessionAdjusted(cid) === slug) && (!intent.modelMode || modeSlug(cur.modelMode) === slug) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
       return;
-    logger31.info("hydrate fought", cur.modeId, "->", intent.modeId);
+    logger34.info("hydrate fought", cur.modeId, "->", intent.modeId);
     applyIntent(intent);
   }
   function navKey() {
@@ -18436,7 +19864,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       setIntent(snapshot());
     closeMenu();
     schedulePaint();
-    if (!settings20.store.stickyOnNavigate || !intent.modeId)
+    if (!settings21.store.stickyOnNavigate || !intent.modeId)
       return;
     setRestoreFlag(true);
     applyIntent(intent);
@@ -18446,7 +19874,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return "message" in rec || "fileAttachments" in rec && (("modeId" in rec) || ("modelMode" in rec));
   }
   function patchPayload(raw, live) {
-    if (onImaginePage2() || !raw || typeof raw !== "object" || Array.isArray(raw) || !live.modeId)
+    if (onImaginePage3() || !raw || typeof raw !== "object" || Array.isArray(raw) || !live.modeId)
       return false;
     const rec = raw;
     if (!isChatSend(rec))
@@ -18591,7 +20019,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (diverting) {
         mapGetOrCreate(held, cid, () => []).push({ id, args: diverting, intent: { ...saved } });
         diverting = null;
-        logger31.info("held", id, "for", saved.modeId);
+        logger34.info("held", id, "for", saved.modeId);
         return true;
       }
       return false;
@@ -18671,7 +20099,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
     state.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued.item), parentId });
     forgetItem(turn.id);
-    logger31.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
+    logger34.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
   }
   function onGwEvent(cid, event) {
     const { type } = event;
@@ -18705,7 +20133,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       rec.model = slug;
   }
   function patchGwEvent(event, live) {
-    if (onImaginePage2() || !event || typeof event !== "object" || Array.isArray(event) || !live.modeId)
+    if (onImaginePage3() || !event || typeof event !== "object" || Array.isArray(event) || !live.modeId)
       return;
     const rec = event;
     if (typeof rec.type !== "string" || !GW_TYPES.has(rec.type))
@@ -18848,7 +20276,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       origGwSend = mgr.send;
       const orig = origGwSend;
       const wrapped = function voidModeSyncGwSend(...args) {
-        if (onImaginePage2())
+        if (onImaginePage3())
           return orig.apply(mgr, args);
         const [cid, event] = args;
         if (typeof cid === "string" && holdQueueEvent(cid, event))
@@ -18878,7 +20306,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       wrappedGwSend = wrapped;
       mgr.send = wrapped;
     } catch (e) {
-      logger31.debug("gateway wrap failed", e);
+      logger34.debug("gateway wrap failed", e);
     }
   }
   function unwrapGatewaySend() {
@@ -18889,15 +20317,15 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (gwHost && origGwSend && gwHost.send === wrappedGwSend)
         gwHost.send = origGwSend;
     } catch (e) {
-      logger31.debug("gateway unwrap failed", e);
+      logger34.debug("gateway unwrap failed", e);
     }
     origGwSend = null;
     wrappedGwSend = null;
     gwHost = null;
   }
-  function makeSendWrapper(orig) {
+  function makeSendWrapper2(orig) {
     return function voidModeSyncSend(...args) {
-      if (onImaginePage2())
+      if (onImaginePage3())
         return orig.apply(this, args);
       const [first] = args;
       if (!sendOverride) {
@@ -18921,7 +20349,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   function makeQueueWrapper(orig) {
     return function voidModeSyncQueue(...args) {
-      if (onImaginePage2())
+      if (onImaginePage3())
         return orig.apply(this, args);
       const [first] = args;
       const live = enqueueIntent();
@@ -18943,7 +20371,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       }
     };
   }
-  function wrapOne(label, getState, setState, key, make = makeSendWrapper) {
+  function wrapOne2(label, getState, setState, key, make = makeSendWrapper2) {
     let state;
     try {
       state = getState();
@@ -18955,21 +20383,21 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return;
     if (current[WRAP_MARK] === true)
       return;
-    if (wrappedFns.get(label) === current)
+    if (wrappedFns2.get(label) === current)
       return;
-    origFns.set(label, current);
+    origFns2.set(label, current);
     const wrapped = make(current);
     wrapped[WRAP_MARK] = true;
-    wrappedFns.set(label, wrapped);
+    wrappedFns2.set(label, wrapped);
     setState({ [key]: wrapped });
   }
   function wrapSendFns() {
-    wrapOne("chat.sendResponse", () => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "sendResponse");
-    wrapOne("chat.establishNewConversation", () => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "establishNewConversation");
-    wrapOne("resp.streamResponse", () => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), "streamResponse");
-    wrapOne("resp.streamCreateAndRespond", () => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), "streamCreateAndRespond");
-    wrapOne("msg.queueMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "queueMessage", makeQueueWrapper);
-    wrapOne("msg.sendMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "sendMessage");
+    wrapOne2("chat.sendResponse", () => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "sendResponse");
+    wrapOne2("chat.establishNewConversation", () => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "establishNewConversation");
+    wrapOne2("resp.streamResponse", () => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), "streamResponse");
+    wrapOne2("resp.streamCreateAndRespond", () => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), "streamCreateAndRespond");
+    wrapOne2("msg.queueMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "queueMessage", makeQueueWrapper);
+    wrapOne2("msg.sendMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "sendMessage");
     wrapGatewaySend();
   }
   function unwrapStore(getState, setState, keys, prefix) {
@@ -18982,8 +20410,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const next = {};
     for (const key of keys) {
       const label = `${prefix}.${key}`;
-      const orig = origFns.get(label);
-      if (orig && state[key] === wrappedFns.get(label))
+      const orig = origFns2.get(label);
+      if (orig && state[key] === wrappedFns2.get(label))
         next[key] = orig;
     }
     if (Object.keys(next).length)
@@ -18994,11 +20422,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     unwrapStore(() => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), RESP_WRAP, "resp");
     unwrapStore(() => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), MSG_WRAP, "msg");
     unwrapGatewaySend();
-    origFns.clear();
-    wrappedFns.clear();
+    origFns2.clear();
+    wrappedFns2.clear();
   }
   function rewriteIfChatPost(url, method, text) {
-    if (onImaginePage2())
+    if (onImaginePage3())
       return null;
     if (method !== "POST" && method !== "PUT")
       return null;
@@ -19011,7 +20439,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (!next || next === text)
       return null;
     applyIntent(live);
-    logger31.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
+    logger34.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
     return next;
   }
   function patchFetchArgs(input, init) {
@@ -19058,7 +20486,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           return origFetch2.call(pageWindow, i, n);
         }
       } catch (e) {
-        logger31.debug("fetch patch failed", e);
+        logger34.debug("fetch patch failed", e);
       }
       return origFetch2.call(pageWindow, input, init);
     };
@@ -19079,7 +20507,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       try {
         xhrMeta2.set(this, `${String(method).toUpperCase()} ${requestUrl2(url)}`);
       } catch (e) {
-        logger31.debug("xhr open failed", e);
+        logger34.debug("xhr open failed", e);
       }
       return origXhrOpen2.call(this, method, url, ...rest);
     };
@@ -19173,7 +20601,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (turn)
         turn.intent = next;
     }
-    logger31.info("queue item", id, "->", next.modeId);
+    logger34.info("queue item", id, "->", next.modeId);
     schedulePaint();
   }
   function openMenu(chip, id) {
@@ -19348,7 +20776,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   function paint3() {
     paintRaf = 0;
-    if (!settings20.store.showQueueMode || onImaginePage2()) {
+    if (!settings21.store.showQueueMode || onImaginePage3()) {
       unpaint();
       return;
     }
@@ -19415,8 +20843,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       awaitingMenu = false;
     }
   }
-  function onPointerDown3(e) {
-    if (onImaginePage2())
+  function onPointerDown4(e) {
+    if (onImaginePage3())
       return;
     const t = e.target;
     if (!(t instanceof Element))
@@ -19446,7 +20874,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       userPicking = true;
   }
   function onPicker(id) {
-    if (applying2 || sendOverride)
+    if (applying3 || sendOverride)
       return;
     if (!id)
       return;
@@ -19461,7 +20889,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       onNavigate();
       return;
     }
-    if (sendOverride || applying2)
+    if (sendOverride || applying3)
       return;
     if (loadPending())
       fightHydrate();
@@ -19490,16 +20918,16 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
-    settings: settings20,
+    settings: settings21,
     startAt: "TurbopackReady" /* TurbopackReady */,
     cleanupSelectors: [`.${CHIP}`, `.${QMENU}`],
     start() {
       setIntent(snapshot());
       lastNavKey = navKey();
-      abort = new AbortController;
-      const { signal } = abort;
+      abort3 = new AbortController;
+      const { signal } = abort3;
       document.addEventListener("pointerup", onPointerUp, { capture: true, signal });
-      document.addEventListener("pointerdown", onPointerDown3, { capture: true, signal });
+      document.addEventListener("pointerdown", onPointerDown4, { capture: true, signal });
       document.addEventListener("keydown", onKeyDown4, { capture: true, signal });
       bindObs();
       schedulePaint();
@@ -19508,14 +20936,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         hookFetch2();
         hookXhr2();
       } catch (e) {
-        logger31.warn("Failed to hook send path", e);
+        logger34.warn("Failed to hook send path", e);
       }
       if (intent.modeId)
         applyIntent(intent);
     },
     stop() {
-      abort?.abort();
-      abort = null;
+      abort3?.abort();
+      abort3 = null;
       if (loadTail) {
         clearTimeout(loadTail);
         loadTail = null;
@@ -19548,7 +20976,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       pendingEnqueue = null;
       sendOverride = null;
       overrideCid = "";
-      applying2 = false;
+      applying3 = false;
       userPicking = false;
       awaitingMenu = false;
       setIntent(EMPTY);
@@ -19625,16 +21053,16 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
 }
 `;
   var REFINEMENT_CSS = `.${REFINEMENT_MARK}{display:none!important}`;
-  var settings21 = definePluginSettings({
+  var settings22 = definePluginSettings({
     hideDictationRefinement: {
       type: 3 /* BOOLEAN */,
       description: 'Hide "Dictation Refinement" in the Grok Settings dialog (Behavior tab).',
       default: true
     }
   });
-  function apply4() {
+  function apply5() {
     const rules = [BUTTON_CSS];
-    if (settings21.store.hideDictationRefinement)
+    if (settings22.store.hideDictationRefinement)
       rules.push(REFINEMENT_CSS);
     registerStyle(STYLE_NAME4, rules.join(`
 `));
@@ -19646,7 +21074,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings21,
+    settings: settings22,
     patches: [
       {
         find: 'settings.behavior.dictation-refinement.description","How much Grok refines your speech-to-text transcriptions',
@@ -19656,8 +21084,8 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         }
       }
     ],
-    start: apply4,
-    onSettingsChange: apply4,
+    start: apply5,
+    onSettingsChange: apply5,
     stop() {
       unregisterStyle(STYLE_NAME4);
     }
@@ -19691,7 +21119,7 @@ div:has(> #grok-bot-nav-button) {
 
   // src/plugins/noShareLink/index.ts
   var STYLE_NAME6 = "noShareLink";
-  var settings22 = definePluginSettings({
+  var settings23 = definePluginSettings({
     hideShareProject: {
       type: 3 /* BOOLEAN */,
       description: "Inside a project: hide the top-right Share Project button.",
@@ -19703,12 +21131,12 @@ div:has(> #grok-bot-nav-button) {
       default: true
     }
   });
-  function apply5() {
+  function apply6() {
     const rules = [];
-    if (settings22.store.hideShareProject) {
+    if (settings23.store.hideShareProject) {
       rules.push('button[aria-label="Share Project"]{display:none!important}');
     }
-    if (settings22.store.hideCreateShareLink) {
+    if (settings23.store.hideCreateShareLink) {
       rules.push('button[aria-label="Create share link"]{display:none!important}');
     }
     registerStyle(STYLE_NAME6, rules.join(`
@@ -19721,9 +21149,9 @@ div:has(> #grok-bot-nav-button) {
     authors: [Devs.p],
     tags: ["ui", "privacy"],
     enabledByDefault: true,
-    settings: settings22,
-    start: apply5,
-    onSettingsChange: apply5,
+    settings: settings23,
+    start: apply6,
+    onSettingsChange: apply6,
     stop() {
       unregisterStyle(STYLE_NAME6);
     }
@@ -19735,7 +21163,7 @@ div:has(> #grok-bot-nav-button) {
   var STACK = `${FOOTER2} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
   var TEXT_WRAP = `${FOOTER2} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER2} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
   var MENU_EMAIL = '[role="menu"] [class*="max-w-[400px]"].truncate';
-  var settings23 = definePluginSettings({
+  var settings24 = definePluginSettings({
     hideUsername: {
       type: 3 /* BOOLEAN */,
       description: "Hide the username next to the sidebar avatar.",
@@ -19747,17 +21175,17 @@ div:has(> #grok-bot-nav-button) {
       default: true
     }
   });
-  function apply6() {
+  function apply7() {
     const rules = [];
-    if (settings23.store.hideUsername) {
+    if (settings24.store.hideUsername) {
       rules.push(`${STACK}>:first-child{display:none!important}`);
       rules.push(`${FOOTER2} .void-sidebar-name{display:none!important}`);
     }
-    if (settings23.store.hideEmail) {
+    if (settings24.store.hideEmail) {
       rules.push(`${STACK}>:nth-child(2){display:none!important}`);
       rules.push(`${MENU_EMAIL}{display:none!important}`);
     }
-    if (settings23.store.hideUsername && settings23.store.hideEmail) {
+    if (settings24.store.hideUsername && settings24.store.hideEmail) {
       rules.push(`${TEXT_WRAP}{display:none!important}`);
       rules.push(`${FOOTER2} .void-sidebar-info{display:none!important}`);
     }
@@ -19771,7 +21199,7 @@ div:has(> #grok-bot-nav-button) {
     authors: [Devs.p],
     tags: ["ui", "privacy"],
     enabledByDefault: true,
-    settings: settings23,
+    settings: settings24,
     patches: [
       {
         find: '"max-w-[400px] truncate"',
@@ -19782,8 +21210,8 @@ div:has(> #grok-bot-nav-button) {
         }
       }
     ],
-    start: apply6,
-    onSettingsChange: apply6,
+    start: apply7,
+    onSettingsChange: apply7,
     stop() {
       unregisterStyle(STYLE_NAME7);
     }
@@ -19947,7 +21375,7 @@ div:has(> #grok-bot-nav-button) {
   }
 
   // src/plugins/placeholder/index.tsx
-  var cl26 = classNameFactory("void-ph-");
+  var cl28 = classNameFactory("void-ph-");
   var HERO_STYLE = "placeholderHero";
   var INPUT_STYLE = "placeholderInput";
   var HERO_SEL = "h1[data-void-ph-hero]";
@@ -19955,7 +21383,7 @@ div:has(> #grok-bot-nav-button) {
   var EMPTY_SEL = `${EDITOR_SEL3} p.is-editor-empty, ${EDITOR_SEL3} p.is-empty:only-child`;
   var ROOT_BEFORE = `${EDITOR_SEL3}::before`;
   var EMPTY_BEFORE = `${EDITOR_SEL3} p.is-editor-empty:first-child::before,${EDITOR_SEL3} p.is-empty:only-child::before`;
-  var CYCLING_SEL = ".query-bar div.absolute.inset-0.pointer-events-none[aria-hidden=\"true\"]";
+  var CYCLING_SEL = '.query-bar div.absolute.inset-0.pointer-events-none[aria-hidden="true"]';
   var WIDTH_PAD = 8;
   var DEFAULT_PHRASES = [
     "Ask not what your country can do for you — ask what you can do for your country.",
@@ -19971,7 +21399,7 @@ div:has(> #grok-bot-nav-button) {
     return text.replaceAll("\\", "\\\\").replaceAll('"', "\\\"").replaceAll(`
 `, "\\A ");
   }
-  var settings24 = definePluginSettings({
+  var settings25 = definePluginSettings({
     mode: {
       type: 4 /* SELECT */,
       description: "When to rotate the home greeting.",
@@ -20013,11 +21441,11 @@ div:has(> #grok-bot-nav-button) {
     }
   }).withPrivateSettings();
   function PhrasesEditor() {
-    const { phrases } = settings24.use(["phrases"]);
+    const { phrases } = settings25.use(["phrases"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl26("root")
+      className: cl28("root")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.375rem"
@@ -20025,22 +21453,22 @@ div:has(> #grok-bot-nav-button) {
       size: "sm",
       weight: "medium"
     }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl26("textarea-wrap")
+      className: cl28("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
-      className: cl26("textarea"),
+      className: cl28("textarea"),
       value: phrases ?? DEFAULT_PHRASES,
       onChange: (e) => {
-        settings24.store.phrases = e.target.value;
+        settings25.store.phrases = e.target.value;
       },
       placeholder: DEFAULT_PHRASES
     })));
   }
   function ImaginePhrasesEditor() {
-    const { imaginePhrases } = settings24.use(["imaginePhrases"]);
+    const { imaginePhrases } = settings25.use(["imaginePhrases"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl26("root")
+      className: cl28("root")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.375rem"
@@ -20048,12 +21476,12 @@ div:has(> #grok-bot-nav-button) {
       size: "sm",
       weight: "medium"
     }, "Imagine phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, `One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's "Type to imagine".`)), /* @__PURE__ */ React.createElement("div", {
-      className: cl26("textarea-wrap")
+      className: cl28("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
-      className: cl26("textarea"),
+      className: cl28("textarea"),
       value: imaginePhrases ?? "",
       onChange: (e) => {
-        settings24.store.imaginePhrases = e.target.value;
+        settings25.store.imaginePhrases = e.target.value;
       },
       placeholder: `A cat astronaut on the moon
 Neon rain in a quiet city`
@@ -20078,7 +21506,7 @@ Neon rain in a quiet city`
   function replaceChatInput() {
     if (isProjectChat())
       return true;
-    return settings24.store.heroOnlyOutsideProject === false;
+    return settings25.store.heroOnlyOutsideProject === false;
   }
   function isImaginePage3() {
     try {
@@ -20094,7 +21522,7 @@ Neon rain in a quiet city`
   }
   function phrases() {
     try {
-      const lines = parsePhrases(settings24.store.phrases ?? DEFAULT_PHRASES);
+      const lines = parsePhrases(settings25.store.phrases ?? DEFAULT_PHRASES);
       return lines.length ? lines : null;
     } catch {
       return null;
@@ -20102,23 +21530,23 @@ Neon rain in a quiet city`
   }
   function imaginePhrases() {
     try {
-      const lines = parsePhrases(settings24.store.imaginePhrases);
+      const lines = parsePhrases(settings25.store.imaginePhrases);
       return lines.length ? lines : null;
     } catch {
       return null;
     }
   }
   function rotateMode() {
-    const value = String(settings24.store.mode ?? "refresh");
+    const value = String(settings25.store.mode ?? "refresh");
     if (value === "interval" || value === "manual")
       return value;
     return "refresh";
   }
   function rotateOrder() {
-    return settings24.store.order === "random" ? "random" : "sequential";
+    return settings25.store.order === "random" ? "random" : "sequential";
   }
   function intervalMs() {
-    return clamp(Number(settings24.store.intervalSec ?? 10), 1, 3600) * 1000;
+    return clamp(Number(settings25.store.intervalSec ?? 10), 1, 3600) * 1000;
   }
   function routeKey3(s) {
     return `${s.route.page ?? ""}|${s.route.workspaceId ?? ""}`;
@@ -20136,13 +21564,13 @@ Neon rain in a quiet city`
   function pickNextIndex(listLen, advance) {
     if (listLen <= 0)
       return 0;
-    const current = Number(settings24.store.greetIndex ?? -1);
-    const last = Number(settings24.store.lastRandom ?? -1);
+    const current = Number(settings25.store.greetIndex ?? -1);
+    const last = Number(settings25.store.lastRandom ?? -1);
     if (listLen === 1) {
       if (current !== 0)
-        settings24.store.greetIndex = 0;
+        settings25.store.greetIndex = 0;
       if (last !== 0)
-        settings24.store.lastRandom = 0;
+        settings25.store.lastRandom = 0;
       return 0;
     }
     if (!advance)
@@ -20153,13 +21581,13 @@ Neon rain in a quiet city`
       let guard = 0;
       while (next === prev && guard++ < 10)
         next = Math.floor(Math.random() * listLen);
-      settings24.store.greetIndex = next;
-      settings24.store.lastRandom = next;
+      settings25.store.greetIndex = next;
+      settings25.store.lastRandom = next;
       return next;
     }
     const prev = current >= -1 && current < listLen ? current : -1;
     const next = (prev + 1) % listLen;
-    settings24.store.greetIndex = next;
+    settings25.store.greetIndex = next;
     return next;
   }
   function paintHero(advance) {
@@ -20327,7 +21755,7 @@ Neon rain in a quiet city`
     description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
     authors: [Devs.p],
     tags: ["chat"],
-    settings: settings24,
+    settings: settings25,
     _phrases() {
       if (isImaginePage3() || !replaceChatInput())
         return null;
@@ -20587,7 +22015,7 @@ Neon rain in a quiet city`
   }
 
   // src/plugins/queuePersist/index.ts
-  var logger32 = new Logger("QueuePersist");
+  var logger35 = new Logger("QueuePersist");
   var ENQUEUE_FORCE2 = Symbol.for("voidpp.modeSync.enqueueIntent");
   var WRAP_MARK2 = Symbol.for("voidpp.modeSync.wrapped");
   var DB_KEY = "queue-persist:v1";
@@ -20702,7 +22130,7 @@ Neon rain in a quiet city`
       if (intent.activeModelId && prevActive !== intent.activeModelId)
         chat.setActiveModelId(intent.activeModelId);
     } catch (e) {
-      logger32.debug("intent apply failed", e);
+      logger35.debug("intent apply failed", e);
     }
     try {
       if (intent?.modeId)
@@ -20718,7 +22146,7 @@ Neon rain in a quiet city`
         if (chat && prevActive && String(chat.activeModelId || "") !== prevActive)
           chat.setActiveModelId(prevActive);
       } catch (e) {
-        logger32.debug("intent restore failed", e);
+        logger35.debug("intent restore failed", e);
       }
     }
   }
@@ -20826,7 +22254,7 @@ Neon rain in a quiet city`
     }
     return out;
   }
-  function remember2(cid, next) {
+  function remember3(cid, next) {
     const prev = memory.get(cid) ?? [];
     if (sameQueue(prev, next))
       return;
@@ -20847,7 +22275,7 @@ Neon rain in a quiet city`
     let next = projectQueue(bound.saved, official, bound.pending, hydrated, now);
     if (hydrated && !replaying && cid === currentCid3())
       next = applyRowText(next, rowTexts(next.map((item) => item.id)), now);
-    remember2(cid, next);
+    remember3(cid, next);
   }
   function syncFromStore() {
     if (!ready || replaying || onImagine())
@@ -20915,7 +22343,7 @@ Neon rain in a quiet city`
     try {
       await idbSet(DB_KEY, doc);
     } catch (e) {
-      logger32.debug("persist failed", e);
+      logger35.debug("persist failed", e);
     }
   }
   async function load() {
@@ -20926,7 +22354,7 @@ Neon rain in a quiet city`
       else
         doc = emptyDoc();
     } catch (e) {
-      logger32.debug("load failed", e);
+      logger35.debug("load failed", e);
       doc = emptyDoc();
     }
     bucketsToMemory(accountId());
@@ -20958,7 +22386,7 @@ Neon rain in a quiet city`
       clearTimeout(timer);
     timer = setTimeout(() => {
       timer = null;
-      restore(cid);
+      restore2(cid);
     }, busy ? RETRY_MS2 : SETTLE_MS);
   }
   function sleep2(ms) {
@@ -20982,7 +22410,7 @@ Neon rain in a quiet city`
           });
         });
       } catch (e) {
-        logger32.debug("replay failed", e);
+        logger35.debug("replay failed", e);
       } finally {
         suppress = false;
       }
@@ -21005,7 +22433,7 @@ Neon rain in a quiet city`
     }
     return placed;
   }
-  async function restore(cid) {
+  async function restore2(cid) {
     if (!alive || !ready || decided.has(cid) || restoring.has(cid) || replaying)
       return;
     if (currentCid3() !== cid || onImagine())
@@ -21049,7 +22477,7 @@ Neon rain in a quiet city`
         decided.add(cid);
       }
     } catch (e) {
-      logger32.debug("restore failed", e);
+      logger35.debug("restore failed", e);
       retry = true;
     } finally {
       replaying = false;
@@ -21266,1368 +22694,6 @@ Neon rain in a quiet city`
       RoutingStore: {
         selector: (s) => `${s.route?.page ?? ""}|${s.route?.conversationId ?? ""}`,
         handler: onPage
-      }
-    }
-  });
-
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/quoteJump/styles.css
-  registerStyle("quoteJump", `.void-qj-hit {
-    border-radius: 0.25rem;
-    outline: 2px solid hsl(var(--fg-primary));
-    outline-offset: 2px;
-    background: hsl(var(--fg-primary) / 12%);
-}
-
-::highlight(void-qj) {
-    background-color: hsl(var(--fg-primary) / 18%);
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .void-qj-hit {
-        outline: none;
-        background: hsl(var(--button-ghost-hover));
-    }
-}
-`);
-
-  // src/plugins/quoteJump/index.ts
-  var logger33 = new Logger("QuoteJump");
-  var cl27 = classNameFactory("void-qj-");
-  var HL = "void-qj";
-  var QUERY = ".query-bar";
-  var EDITOR = ".tiptap, [contenteditable='true']";
-  var MSG2 = "[data-testid='user-message'], [data-testid='assistant-message']";
-  var PANE_SKIP2 = "[data-sidebar], [class*='pane-card']";
-  var THINK_SEL2 = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
-  var OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
-  var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-  var DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
-  var KEEP = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
-  var FLASH_MS2 = 1800;
-  var WAIT_MS = 50;
-  var WAIT_N = 24;
-  var ALIGNED_PX = 8;
-  var MSG_OFFSET = 72;
-  var abort2 = null;
-  var gen = 0;
-  var flashTimer2 = 0;
-  var flashing2 = null;
-  function onImaginePage3() {
-    try {
-      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
-      if (page.startsWith("imagine"))
-        return true;
-    } catch {}
-    try {
-      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
-    } catch {
-      return false;
-    }
-  }
-  function norm(s) {
-    return s.replaceAll(/\s+/g, " ").trim();
-  }
-  function quotedText() {
-    try {
-      return String(ChatPageStore.useChatPageStore.getState().quotedText || "");
-    } catch {
-      return "";
-    }
-  }
-  function quotePopup() {
-    try {
-      return ChatPageStore.useChatPageStore.getState().quotePopupData;
-    } catch {
-      return;
-    }
-  }
-  function conversationId() {
-    try {
-      const s = ChatPageStore.useChatPageStore.getState();
-      return String(s.conversationId || s.optimisticConversationId || "");
-    } catch {
-      return "";
-    }
-  }
-  function collectIds(value, out, depth = 0) {
-    if (depth > 5 || out.length > 8 || value == null)
-      return;
-    if (typeof value === "string") {
-      const m = value.match(UUID);
-      if (m)
-        out.push(m[0]);
-      return;
-    }
-    if (typeof value !== "object")
-      return;
-    if (Array.isArray(value)) {
-      for (const item of value.slice(0, 24))
-        collectIds(item, out, depth + 1);
-      return;
-    }
-    for (const [k, v] of Object.entries(value)) {
-      if (/responseid|messageid|^id$/i.test(k) && typeof v === "string" && UUID.test(v))
-        out.push(v);
-      else
-        collectIds(v, out, depth + 1);
-    }
-  }
-  function propsId(el) {
-    let cur = getFiber(el);
-    let d = 0;
-    while (cur && d < 28) {
-      const p = cur.memoizedProps;
-      if (p) {
-        for (const k of ["responseId", "parentResponseId", "messageId", "id"]) {
-          const v = p[k];
-          if (typeof v === "string" && UUID.test(v))
-            return v;
-        }
-      }
-      cur = cur.return;
-      d++;
-    }
-    return "";
-  }
-  function idsFrom(el, extra) {
-    const out = [];
-    if (el) {
-      const host = el.closest("[id^='response-']");
-      if (host) {
-        const m = host.id.match(UUID);
-        if (m)
-          out.push(m[0]);
-      }
-      const attr = el.closest("[data-response-id]")?.getAttribute("data-response-id");
-      if (attr && UUID.test(attr))
-        out.push(attr);
-      const fromFiber = propsId(el);
-      if (fromFiber)
-        out.push(fromFiber);
-    }
-    collectIds(extra, out);
-    collectIds(quotePopup(), out);
-    return [...new Set(out)];
-  }
-  function chatPane2() {
-    const main = document.querySelector("main");
-    if (!main)
-      return null;
-    const skip = (n) => !!n.closest(PANE_SKIP2);
-    const msg = main.querySelector(MSG2);
-    if (msg) {
-      const col = msg.closest(OVERFLOW_SEL);
-      if (col && !skip(col))
-        return col;
-    }
-    let best = null;
-    let bestScore = 0;
-    for (const n of main.querySelectorAll(OVERFLOW_SEL)) {
-      if (skip(n))
-        continue;
-      const r = n.getBoundingClientRect();
-      if (r.width < 240 || r.height < 120)
-        continue;
-      const score = r.width * r.height;
-      if (score > bestScore) {
-        best = n;
-        bestScore = score;
-      }
-    }
-    return best;
-  }
-  function paneOf(el) {
-    const pane = chatPane2();
-    if (pane && pane.contains(el))
-      return pane;
-    for (let n = el.parentElement;n && n !== document.documentElement; n = n.parentElement) {
-      if (n.closest(PANE_SKIP2))
-        continue;
-      if (n.closest("pre, code, table, details") && !n.querySelector(MSG2))
-        continue;
-      if (n.matches(OVERFLOW_SEL))
-        return n;
-    }
-    return null;
-  }
-  function messageEls() {
-    const root = chatPane2() ?? document.querySelector("main") ?? document.body;
-    return [...root.querySelectorAll(MSG2)];
-  }
-  function messageById(id) {
-    if (!id)
-      return null;
-    const named = document.getElementById(`response-${id}`);
-    if (named instanceof HTMLElement)
-      return named.closest(MSG2) ?? named;
-    for (const el of messageEls()) {
-      if (el.id === `response-${id}` || el.getAttribute("data-response-id") === id)
-        return el;
-      if (propsId(el) === id)
-        return el;
-    }
-    return null;
-  }
-  function storeById(id) {
-    try {
-      return ResponseStore.useResponseStore.getState().byId[id];
-    } catch {
-      return;
-    }
-  }
-  function storeNeedle(needle) {
-    const n = norm(needle);
-    if (n.length < 2)
-      return null;
-    try {
-      const cid = conversationId();
-      const r = ResponseStore.useResponseStore.getState();
-      const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
-      for (let i = rows.length - 1;i >= 0; i--) {
-        const row = rows[i];
-        if (!row?.responseId)
-          continue;
-        if (norm(String(row.message || "")).includes(n))
-          return { id: row.responseId, cid };
-      }
-    } catch (e) {
-      logger33.debug("store search failed", e);
-    }
-    return null;
-  }
-  function prefixOf(text) {
-    return norm(text).replace(/[.…]+$/u, "");
-  }
-  function nodeHasNeedle(el, needle) {
-    const n = prefixOf(needle);
-    if (n.length < 2)
-      return false;
-    const text = norm(el.textContent || "");
-    const clip = n.slice(0, Math.min(n.length, 48));
-    return text.includes(clip) || clip.includes(text) && text.length >= 8;
-  }
-  function isEditor(el) {
-    return !!el.closest(EDITOR);
-  }
-  function chipRow(btn) {
-    const bar = btn.closest(QUERY);
-    let n = btn.parentElement;
-    while (n && n !== bar) {
-      if (n.offsetHeight > 0 && n.offsetHeight <= 72)
-        return n;
-      n = n.parentElement;
-    }
-    return null;
-  }
-  function isBarAction(el) {
-    const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
-    if (!(btn instanceof HTMLElement))
-      return false;
-    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
-    return KEEP.test(label);
-  }
-  function isDismiss(el) {
-    const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
-    if (!(btn instanceof HTMLElement))
-      return false;
-    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
-    if (KEEP.test(label))
-      return false;
-    if (DISMISS.test(label))
-      return true;
-    const q = quotedText();
-    if (!q || norm(btn.textContent || "") || !btn.querySelector("svg"))
-      return false;
-    const row = chipRow(btn);
-    return !!(row && nodeHasNeedle(row, q));
-  }
-  function composerChip(el) {
-    const sticky = el.closest(".void-qs-chip");
-    if (sticky instanceof HTMLElement && !el.closest(".void-qs-x"))
-      return sticky;
-    const bar = el.closest(QUERY);
-    if (!(bar instanceof HTMLElement) || isEditor(el) || isDismiss(el) || isBarAction(el))
-      return null;
-    const needle = quotedText();
-    if (!needle)
-      return null;
-    let n = el instanceof HTMLElement ? el : el.parentElement;
-    while (n && n !== bar) {
-      if (n.matches(EDITOR) || n.closest(EDITOR) === n)
-        return null;
-      if (n.querySelector("textarea, [contenteditable='true'], .tiptap"))
-        return null;
-      if (n.offsetHeight > 0 && n.offsetHeight <= 72 && nodeHasNeedle(n, needle)) {
-        const action = n.querySelector("button, [role='button']");
-        if (action && isBarAction(action) && !n.contains(el.closest("button, [role='button']") ?? el))
-          return null;
-        return n;
-      }
-      n = n.parentElement;
-    }
-    return null;
-  }
-  function sentQuote(el) {
-    const bq = el.closest("[data-testid='user-message'] blockquote");
-    if (bq instanceof HTMLElement)
-      return bq;
-    const msg = el.closest("[data-testid='user-message']");
-    if (!(msg instanceof HTMLElement) || isEditor(el))
-      return null;
-    const row = storeById(propsId(msg) || idsFrom(msg)[0] || "");
-    const snippet = String(row?.parentQuotedText || "");
-    if (snippet && nodeHasNeedle(el instanceof HTMLElement ? el : msg, snippet))
-      return el instanceof HTMLElement ? el : msg;
-    return null;
-  }
-  function hiddenHost(el, allowThink) {
-    if (el.closest("button, svg, [role='toolbar']"))
-      return true;
-    if (!allowThink && el.closest(THINK_SEL2) && !el.closest("summary"))
-      return true;
-    const d = el.closest("details");
-    if (d instanceof HTMLDetailsElement && !d.open && !el.closest("summary"))
-      return true;
-    try {
-      const s = getComputedStyle(el);
-      if (s.display === "none" || s.visibility === "hidden")
-        return true;
-    } catch {}
-    return false;
-  }
-  function rawIndexForNorm(raw, normIdx) {
-    let i = 0;
-    let n = 0;
-    const compact = raw.replaceAll(/\s+/g, " ").trim();
-    while (i < raw.length && /^\s/.test(raw[i]))
-      i++;
-    while (i < raw.length && n < normIdx && n < compact.length) {
-      if (/\s/.test(raw[i])) {
-        while (i < raw.length && /\s/.test(raw[i]))
-          i++;
-        if (n < compact.length && compact[n] === " ")
-          n++;
-        continue;
-      }
-      i++;
-      n++;
-    }
-    return i;
-  }
-  function rangeFromParts(parts, blob, clip) {
-    const at = blob.indexOf(clip);
-    if (at < 0)
-      return null;
-    for (const part of parts) {
-      const compact = norm(part.raw);
-      if (!compact)
-        continue;
-      const end = part.start + compact.length;
-      if (at >= end)
-        continue;
-      const local = Math.max(0, at - part.start);
-      const rawIdx = rawIndexForNorm(part.raw, local);
-      const take = Math.min(Math.max(2, clip.length), part.raw.length - rawIdx);
-      if (rawIdx < 0 || take < 2)
-        continue;
-      const range = document.createRange();
-      range.setStart(part.node, rawIdx);
-      range.setEnd(part.node, rawIdx + take);
-      return range;
-    }
-    return null;
-  }
-  function collectParts(root, allowThink) {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    const parts = [];
-    let blob = "";
-    let node;
-    while (node = walker.nextNode()) {
-      const raw = node.nodeValue || "";
-      if (!raw.trim())
-        continue;
-      const el = node.parentElement;
-      if (!el || hiddenHost(el, allowThink))
-        continue;
-      if (blob)
-        blob += " ";
-      parts.push({ node, raw, start: blob.length });
-      blob += norm(raw);
-    }
-    return { parts, blob };
-  }
-  function findRange(root, needle) {
-    const n = prefixOf(needle);
-    if (n.length < 2)
-      return null;
-    const clip = n.slice(0, Math.min(n.length, 48));
-    const visible = collectParts(root, false);
-    const hit = rangeFromParts(visible.parts, visible.blob, clip);
-    if (hit)
-      return hit;
-    const all = collectParts(root, true);
-    return rangeFromParts(all.parts, all.blob, clip);
-  }
-  function findHit(root, needle) {
-    const range = findRange(root, needle);
-    if (!range)
-      return null;
-    const node = range.startContainer;
-    const el = node instanceof HTMLElement ? node : node.parentElement;
-    return el?.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, blockquote, span") ?? el;
-  }
-  function openAncestors(el, needle) {
-    for (let n = el;n; n = n.parentElement) {
-      if (n instanceof HTMLDetailsElement && !n.open)
-        n.open = true;
-    }
-    if (!needle)
-      return;
-    for (const d of el.querySelectorAll("details")) {
-      if (!(d instanceof HTMLDetailsElement) || d.open)
-        continue;
-      if (nodeHasNeedle(d, needle))
-        d.open = true;
-    }
-  }
-  function clearHighlight() {
-    if (flashTimer2)
-      window.clearTimeout(flashTimer2);
-    flashTimer2 = 0;
-    flashing2?.classList.remove(cl27("hit"));
-    flashing2 = null;
-    const { highlights } = CSS;
-    highlights?.delete(HL);
-  }
-  function highlightRange(range, el) {
-    clearHighlight();
-    const HighlightCtor = window.Highlight;
-    const { highlights } = CSS;
-    if (range && highlights && HighlightCtor) {
-      highlights.set(HL, new HighlightCtor(range));
-    } else {
-      flashing2 = el;
-      el.classList.add(cl27("hit"));
-    }
-    flashTimer2 = window.setTimeout(clearHighlight, FLASH_MS2);
-  }
-  function visibleMidY(pane) {
-    const top = pane?.getBoundingClientRect().top ?? 0;
-    const bar = document.querySelector(QUERY);
-    const barTop = bar instanceof HTMLElement ? bar.getBoundingClientRect().top : 0;
-    const bottom = barTop > top ? barTop : pane?.getBoundingClientRect().bottom ?? window.innerHeight;
-    return (top + bottom) / 2;
-  }
-  function lineBox(range) {
-    if (!range || !range.startContainer.isConnected)
-      return null;
-    for (const line of range.getClientRects()) {
-      if (line.height > 0 || line.width > 0)
-        return line;
-    }
-    const box = range.getBoundingClientRect();
-    return box.height > 0 || box.width > 0 ? box : null;
-  }
-  function scrollMessageTop(el) {
-    el.style.scrollMarginTop = `${MSG_OFFSET}px`;
-    const pane = paneOf(el) ?? chatPane2();
-    if (pane && pane.contains(el)) {
-      const pr = pane.getBoundingClientRect();
-      const er = el.getBoundingClientRect();
-      pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - MSG_OFFSET, behavior: "smooth" });
-      return;
-    }
-    el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
-  }
-  function scrollLineToScreenCenter(range, el) {
-    if (!document.body.contains(el))
-      return;
-    const box = lineBox(range);
-    if (!box) {
-      scrollMessageTop(el.closest(MSG2) ?? el);
-      return;
-    }
-    const pane = paneOf(el) ?? chatPane2();
-    const mid = visibleMidY(pane && pane.contains(el) ? pane : null);
-    const delta = box.top + box.height / 2 - mid;
-    if (Math.abs(delta) < ALIGNED_PX)
-      return;
-    if (pane && pane.contains(el)) {
-      pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
-      return;
-    }
-    const node = range?.startContainer;
-    const hit = (node instanceof HTMLElement ? node : node?.parentElement) ?? el;
-    if (hit.closest(MSG2) !== hit) {
-      hit.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
-      return;
-    }
-    scrollMessageTop(el);
-  }
-  function afterLayout() {
-    return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
-  }
-  async function hydrate(cid) {
-    if (!cid)
-      return;
-    try {
-      await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
-      return;
-    } catch (e) {
-      logger33.debug("loadResponses failed", e);
-    }
-    try {
-      await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
-    } catch (e) {
-      logger33.debug("loadMoreResponses failed", e);
-    }
-  }
-  function resolveNeedle(origin) {
-    const live = quotedText();
-    if (origin) {
-      const msg = origin.closest(MSG2);
-      const id = msg ? propsId(msg) || idsFrom(msg)[0] : "";
-      const row = id ? storeById(id) : undefined;
-      const sent = String(row?.parentQuotedText || "");
-      const parent = String(row?.parentResponseId || "");
-      const text = sent || live || prefixOf(origin.textContent || "");
-      const ids = [parent, ...idsFrom(origin, row)].filter(Boolean);
-      return { needle: text, ids };
-    }
-    return { needle: live, ids: idsFrom(null) };
-  }
-  function pickMessage(ids, needle) {
-    for (const id of ids) {
-      const el = messageById(id);
-      if (el)
-        return el;
-    }
-    const n = prefixOf(needle);
-    if (!n)
-      return null;
-    const rows = messageEls();
-    for (let i = rows.length - 1;i >= 0; i--) {
-      if (nodeHasNeedle(rows[i], n))
-        return rows[i];
-    }
-    return null;
-  }
-  async function jump2(origin) {
-    const mine = ++gen;
-    const { needle, ids } = resolveNeedle(origin);
-    if (!prefixOf(needle))
-      return;
-    let el = pickMessage(ids, needle);
-    if (!el || !findHit(el, needle) && !nodeHasNeedle(el, needle)) {
-      const hit = storeNeedle(needle);
-      if (hit) {
-        if (hit.id)
-          ids.unshift(hit.id);
-        await hydrate(hit.cid || conversationId());
-        if (mine !== gen)
-          return;
-        for (let i = 0;i < WAIT_N; i++) {
-          el = pickMessage(ids, needle);
-          if (el)
-            break;
-          await sleep(WAIT_MS);
-          if (mine !== gen)
-            return;
-        }
-      }
-    }
-    if (mine !== gen)
-      return;
-    if (!el) {
-      logger33.debug("no source message");
-      return;
-    }
-    openAncestors(el, needle);
-    await afterLayout();
-    if (mine !== gen)
-      return;
-    if (!el.isConnected) {
-      el = pickMessage(ids, needle);
-      if (!el)
-        return;
-      openAncestors(el, needle);
-      await afterLayout();
-      if (mine !== gen || !el.isConnected)
-        return;
-    }
-    const range = findRange(el, needle);
-    const hit = findHit(el, needle) ?? el;
-    scrollLineToScreenCenter(range, hit);
-    highlightRange(range, hit);
-  }
-  function onClick2(e) {
-    if (!e.isTrusted || e.button !== 0 || onImaginePage3())
-      return;
-    const t = e.target;
-    if (!(t instanceof Element))
-      return;
-    if (isDismiss(t) || isEditor(t) || isBarAction(t))
-      return;
-    const chip = composerChip(t);
-    const sent = sentQuote(t);
-    if (!chip && !sent)
-      return;
-    e.preventDefault();
-    e.stopPropagation();
-    jump2(sent ?? chip);
-  }
-  var quoteJump_default = definePlugin({
-    name: "QuoteJump",
-    icon: TextSearchIcon,
-    description: "Click a composer quote chip to scroll to the exact quoted passage, not just the message.",
-    authors: [Devs.p],
-    tags: ["chat", "ui"],
-    enabledByDefault: true,
-    startAt: "TurbopackReady" /* TurbopackReady */,
-    start() {
-      abort2 = new AbortController;
-      document.addEventListener("click", onClick2, { capture: true, signal: abort2.signal });
-    },
-    stop() {
-      abort2?.abort();
-      abort2 = null;
-      gen++;
-      clearHighlight();
-    }
-  });
-
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/quoteSticky/styles.css
-  registerStyle("quoteSticky", `.void-qs-chip {
-    position: fixed;
-    z-index: 40;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-sizing: border-box;
-    max-width: calc(100vw - 24px);
-    min-height: 2rem;
-    margin: 0;
-    padding: 0.25rem 0.25rem 0.25rem 0.5rem;
-    border-radius: 0.75rem;
-    background: hsl(var(--surface-base, 0 0% 8%));
-    color: hsl(var(--fg-secondary));
-    cursor: pointer;
-    pointer-events: auto;
-}
-
-.void-qs-mark {
-    flex: none;
-    width: 2px;
-    align-self: stretch;
-    min-height: 1.25rem;
-    border-radius: 1px;
-    background: hsl(var(--fg-secondary));
-}
-
-.void-qs-text {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.875rem;
-    line-height: 1.25;
-}
-
-.void-qs-x {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 1.5rem;
-    height: 1.5rem;
-    padding: 0;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-}
-
-.void-qs-x:is(:hover, :focus-visible) {
-    background: hsl(var(--button-ghost-hover));
-    color: hsl(var(--fg-primary));
-}
-
-.void-qs-x:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 1px hsl(var(--fg-accent));
-}
-
-.void-qs-x svg {
-    display: block;
-    width: 0.875rem;
-    height: 0.875rem;
-}
-`);
-
-  // src/plugins/quoteSticky/index.ts
-  var logger34 = new Logger("QuoteSticky");
-  var cl28 = classNameFactory("void-qs-");
-  var KEEP2 = 40;
-  var QUERY2 = ".query-bar";
-  var DISMISS2 = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
-  var KEEP_BTN = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
-  var RESTORE_GAP_MS = 80;
-  var X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
-  var saved = new Map;
-  var origFns2 = new Map;
-  var wrappedFns2 = new Map;
-  var lastKey = "";
-  var lastText = "";
-  var lastPopup;
-  var applying3 = false;
-  var lastRestoreAt = 0;
-  var abort3 = null;
-  var observer = null;
-  var mutRaf = 0;
-  function onImaginePage4() {
-    try {
-      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
-      if (page.startsWith("imagine"))
-        return true;
-    } catch {}
-    try {
-      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
-    } catch {
-      return false;
-    }
-  }
-  function pathCid() {
-    try {
-      const path = location.pathname;
-      const inPath = path.match(/\/(?:c|chat|conversation)\/([^/?#]+)/i)?.[1] || "";
-      if (inPath && inPath !== "new")
-        return decodeURIComponent(inPath);
-      const q = new URLSearchParams(location.search);
-      for (const name of ["conversationId", "chat"]) {
-        const v = q.get(name) || "";
-        if (v)
-          return v;
-      }
-      return "";
-    } catch {
-      return "";
-    }
-  }
-  function routeCid() {
-    try {
-      return String(RoutingStore.useRoutingStore.getState().route.conversationId ?? "");
-    } catch {
-      return "";
-    }
-  }
-  function realCid(s) {
-    try {
-      const st = s ?? ChatPageStore.useChatPageStore.getState();
-      return String(st.conversationId || "");
-    } catch {
-      return "";
-    }
-  }
-  function snapKey(s) {
-    const cid = realCid(s);
-    if (cid)
-      return cid;
-    return pathCid() || routeCid();
-  }
-  function destKey(s) {
-    return realCid(s);
-  }
-  function ownKey() {
-    return realCid() || pathCid() || routeCid() || lastKey;
-  }
-  function str(v) {
-    if (typeof v === "string")
-      return v;
-    if (v == null)
-      return "";
-    return String(v);
-  }
-  function extractFields(popup, text) {
-    const rec = popup && typeof popup === "object" ? popup : {};
-    const responseId = str(rec.responseId ?? rec.parentResponseId ?? rec.id);
-    return {
-      responseId,
-      parentResponseId: str(rec.parentResponseId ?? rec.responseId ?? rec.id),
-      parentQuotedText: str(rec.parentQuotedText ?? rec.quotedText ?? text),
-      parentQuoteSource: rec.parentQuoteSource ?? rec.source ?? (responseId ? { responseId } : undefined)
-    };
-  }
-  function popupFor(snap) {
-    const fields = { ...snap.fields, quotedText: snap.text, parentQuotedText: snap.fields.parentQuotedText || snap.text };
-    if (snap.popup && typeof snap.popup === "object") {
-      try {
-        return { ...fields, ...snap.popup };
-      } catch {}
-    }
-    return fields;
-  }
-  function popupSig(p) {
-    if (p == null)
-      return "";
-    if (typeof p !== "object")
-      return String(p);
-    const rec = p;
-    return String(rec.responseId ?? rec.parentResponseId ?? rec.id ?? rec.quotedText ?? "1");
-  }
-  function chatSel(s) {
-    return `${destKey(s)}|${pathCid()}|${routeCid()}|${realCid(s)}|${s.quotedText ?? ""}|${s.chatPageLoaded ? 1 : 0}|${popupSig(s.quotePopupData)}`;
-  }
-  function hydrateSel(s) {
-    return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`;
-  }
-  function readText() {
-    try {
-      const s = ChatPageStore.useChatPageStore.getState();
-      return { key: destKey(s), text: String(s.quotedText || ""), popup: s.quotePopupData };
-    } catch {
-      return { key: destKey(), text: "", popup: undefined };
-    }
-  }
-  function remember3(key, text, popup) {
-    if (!key || !text)
-      return;
-    saved.delete(key);
-    saved.set(key, { text, popup, fields: extractFields(popup, text) });
-    while (saved.size > KEEP2) {
-      const oldest = saved.keys().next().value;
-      if (oldest === undefined)
-        break;
-      saved.delete(oldest);
-    }
-  }
-  function stashOutgoing() {
-    if (lastKey && lastText)
-      remember3(lastKey, lastText, lastPopup);
-  }
-  function drop(key) {
-    if (key)
-      saved.delete(key);
-    if (key === lastKey) {
-      lastText = "";
-      lastPopup = undefined;
-    }
-  }
-  function clearLive() {
-    lastRestoreAt = 0;
-    try {
-      const chat = ChatPageStore.useChatPageStore.getState();
-      if (!chat.quotedText && chat.quotePopupData == null)
-        return;
-      applying3 = true;
-      try {
-        if (chat.quotedText)
-          chat.setQuotedText("");
-        if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
-          chat.setQuotePopupData(null);
-      } finally {
-        applying3 = false;
-      }
-    } catch (e) {
-      logger34.debug("clear failed", e);
-    }
-  }
-  function applyQuote(key, text, popup) {
-    if (destKey() !== key)
-      return;
-    const chat = ChatPageStore.useChatPageStore.getState();
-    applying3 = true;
-    try {
-      if (chat.quotedText !== text)
-        chat.setQuotedText(text);
-      if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(popup))
-        chat.setQuotePopupData(popup);
-    } catch (e) {
-      logger34.debug("apply failed", e);
-    } finally {
-      applying3 = false;
-    }
-  }
-  function officialVisible(text) {
-    const bar = document.querySelector(QUERY2);
-    if (!(bar instanceof HTMLElement) || !text)
-      return false;
-    const clip = text.replaceAll(/\s+/g, " ").trim().slice(0, 12);
-    if (!clip)
-      return false;
-    for (const n of bar.querySelectorAll("div, span, button")) {
-      if (!(n instanceof HTMLElement) || n.closest(`.${cl28("chip")}`))
-        continue;
-      if (n.offsetHeight > 0 && n.offsetHeight <= 72 && (n.textContent || "").includes(clip))
-        return true;
-    }
-    return false;
-  }
-  function removeFallback() {
-    for (const n of document.querySelectorAll(`.${cl28("chip")}`))
-      n.remove();
-  }
-  function onFallbackDismiss(e) {
-    e.stopPropagation();
-    dismiss();
-  }
-  function makeChip() {
-    const el = document.createElement("div");
-    el.className = cl28("chip");
-    el.dataset.voidQs = "";
-    const mark = document.createElement("span");
-    mark.className = cl28("mark");
-    mark.setAttribute("aria-hidden", "true");
-    const text = document.createElement("span");
-    text.className = cl28("text");
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = cl28("x");
-    btn.setAttribute("aria-label", "Remove quote");
-    btn.innerHTML = X_SVG;
-    btn.addEventListener("pointerdown", onFallbackDismiss);
-    el.append(mark, text, btn);
-    return el;
-  }
-  function placeChip(el, bar) {
-    const r = bar.getBoundingClientRect();
-    if (r.width < 8 || r.height < 8) {
-      el.style.display = "none";
-      return;
-    }
-    el.style.display = "flex";
-    el.style.width = `${Math.max(120, r.width - 24)}px`;
-    el.style.left = `${r.left + 12}px`;
-    el.style.top = `${Math.max(8, r.top + 6)}px`;
-  }
-  function paintFallback(key, snap) {
-    const bar = document.querySelector(QUERY2);
-    const path = pathCid();
-    if (!key || destKey() !== key || path && path !== key || !(bar instanceof HTMLElement) || onImaginePage4()) {
-      removeFallback();
-      return;
-    }
-    if (officialVisible(snap.text)) {
-      removeFallback();
-      return;
-    }
-    let el = document.querySelector(`.${cl28("chip")}`);
-    if (el instanceof HTMLElement && el.dataset.voidQsKey !== key) {
-      el.remove();
-      el = null;
-    }
-    if (!(el instanceof HTMLElement)) {
-      el = makeChip();
-      el.dataset.voidQsKey = key;
-      document.body.append(el);
-    }
-    el.dataset.voidQsKey = key;
-    const label = el.querySelector(`.${cl28("text")}`);
-    const shown = snap.text.replaceAll(/\s+/g, " ").trim();
-    if (label && label.textContent !== shown)
-      label.textContent = shown;
-    placeChip(el, bar);
-  }
-  function restore2(key) {
-    if (!key || onImaginePage4() || destKey() !== key) {
-      if (destKey() !== key)
-        removeFallback();
-      return;
-    }
-    const snap = saved.get(key);
-    if (!snap?.text) {
-      removeFallback();
-      return;
-    }
-    try {
-      const chat = ChatPageStore.useChatPageStore.getState();
-      const live = String(chat.quotedText || "");
-      const same = live === snap.text && popupSig(chat.quotePopupData) === popupSig(popupFor(snap));
-      const now = performance.now();
-      if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
-        lastRestoreAt = now;
-        applyQuote(key, snap.text, popupFor(snap));
-        logger34.info("restored", key);
-      }
-      paintFallback(key, snap);
-    } catch (e) {
-      logger34.debug("restore failed", e);
-      paintFallback(key, snap);
-    }
-  }
-  function ensureChip() {
-    if (onImaginePage4())
-      return;
-    const dest = destKey();
-    const path = pathCid();
-    if (!dest || path && path !== dest) {
-      removeFallback();
-      return;
-    }
-    const snap = saved.get(dest);
-    if (!snap?.text) {
-      removeFallback();
-      return;
-    }
-    restore2(dest);
-  }
-  function dismiss() {
-    const key = ownKey();
-    applying3 = true;
-    try {
-      drop(key);
-      const chat = ChatPageStore.useChatPageStore.getState();
-      if (chat.quotedText)
-        chat.setQuotedText("");
-      if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
-        chat.setQuotePopupData(null);
-    } catch (e) {
-      logger34.debug("dismiss failed", e);
-    } finally {
-      applying3 = false;
-    }
-    removeFallback();
-  }
-  function onChat() {
-    if (applying3 || onImaginePage4())
-      return;
-    const now = readText();
-    const dest = destKey();
-    const key = snapKey();
-    if (now.text && key && !(dest && lastKey && dest !== lastKey)) {
-      remember3(key, now.text, now.popup);
-      lastText = now.text;
-      lastPopup = now.popup;
-      lastKey = key;
-    }
-    if (!dest) {
-      stashOutgoing();
-      removeFallback();
-      if (!pathCid() && !routeCid()) {
-        lastText = "";
-        lastPopup = undefined;
-        clearLive();
-      }
-      return;
-    }
-    const path = pathCid();
-    if (path && path === lastKey && path !== dest) {
-      const prior = saved.get(path);
-      if (prior?.text)
-        remember3(dest, prior.text, prior.popup);
-      saved.delete(path);
-      lastKey = dest;
-      lastText = prior?.text || lastText;
-      lastPopup = prior?.popup ?? lastPopup;
-    }
-    if (path && path !== dest) {
-      removeFallback();
-      return;
-    }
-    if (dest !== lastKey) {
-      stashOutgoing();
-      lastKey = dest;
-      lastRestoreAt = 0;
-      const snap = saved.get(dest);
-      if (snap?.text) {
-        lastText = snap.text;
-        lastPopup = snap.popup;
-        restore2(dest);
-      } else {
-        lastText = "";
-        lastPopup = undefined;
-        clearLive();
-        removeFallback();
-      }
-      return;
-    }
-    if (now.text) {
-      const snap = saved.get(dest);
-      if (snap && !officialVisible(now.text))
-        paintFallback(dest, snap);
-      else
-        removeFallback();
-      return;
-    }
-    restore2(dest);
-  }
-  function onNav() {
-    wrapAll();
-    onChat();
-  }
-  function barButton(el) {
-    const btn = el.closest(`${QUERY2} button, ${QUERY2} [role='button']`);
-    return btn instanceof HTMLElement ? btn : null;
-  }
-  function isQuoteDismiss(el) {
-    if (el.closest(`.${cl28("x")}`))
-      return true;
-    const btn = barButton(el);
-    if (!btn || btn.closest(`.${cl28("chip")}`))
-      return false;
-    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
-    if (KEEP_BTN.test(label))
-      return false;
-    if (DISMISS2.test(label))
-      return true;
-    const q = readText().text || lastText;
-    if (!q || (btn.textContent || "").trim() || !btn.querySelector("svg"))
-      return false;
-    const bar = btn.closest(QUERY2);
-    let n = btn.parentElement;
-    while (n && n !== bar) {
-      if (n.querySelector("textarea, [contenteditable='true'], .tiptap"))
-        return false;
-      if (n.offsetHeight > 0 && n.offsetHeight <= 72) {
-        return (n.textContent || "").replaceAll(/\s+/g, " ").includes(q.replaceAll(/\s+/g, " ").slice(0, 12));
-      }
-      n = n.parentElement;
-    }
-    return false;
-  }
-  function markConsumed(key = ownKey()) {
-    drop(key);
-    removeFallback();
-  }
-  function onPointerDown4(e) {
-    if (!e.isTrusted)
-      return;
-    const t = e.target;
-    if (!(t instanceof Element) || !isQuoteDismiss(t))
-      return;
-    dismiss();
-  }
-  function payloadText(rec) {
-    const raw = rec.message ?? rec.text ?? rec.query;
-    if (typeof raw === "string")
-      return raw.trim();
-    if (raw && typeof raw === "object") {
-      const inner = raw;
-      const nested = inner.text ?? inner.content ?? inner.message;
-      if (typeof nested === "string")
-        return nested.trim();
-    }
-    return "";
-  }
-  function isQuoteSend(raw, want) {
-    if (!want || raw == null)
-      return false;
-    if (typeof raw === "string") {
-      if (!raw.startsWith("{") && !raw.startsWith("["))
-        return false;
-      try {
-        return isQuoteSend(JSON.parse(raw), want);
-      } catch {
-        return false;
-      }
-    }
-    if (typeof raw !== "object" || Array.isArray(raw))
-      return false;
-    const rec = raw;
-    if (!payloadText(rec))
-      return false;
-    const q = rec.parentQuotedText ?? rec.quotedText;
-    return typeof q === "string" && q.replaceAll(/\s+/g, " ").trim() === want.replaceAll(/\s+/g, " ").trim();
-  }
-  function makeSendWrapper2(orig) {
-    return function voidQuoteStickySend(...args) {
-      const key = ownKey();
-      const had = saved.get(key)?.text || readText().text;
-      const result = orig.apply(this, args);
-      if (had && isQuoteSend(args[0], had))
-        markConsumed(key);
-      return result;
-    };
-  }
-  function scheduleRestore() {
-    const key = destKey();
-    if (!key || !saved.get(key)?.text)
-      return;
-    queueMicrotask(() => {
-      if (destKey() === key)
-        restore2(key);
-    });
-  }
-  function makeQuotedTextWrapper(orig) {
-    return function voidQuoteStickyQuotedText(...args) {
-      const result = orig.apply(this, args);
-      if (applying3)
-        return result;
-      const text = String(args[0] ?? "");
-      const dest = destKey();
-      const popup = ChatPageStore.useChatPageStore.getState().quotePopupData;
-      if (text) {
-        const key = dest || pathCid() || routeCid() || lastKey;
-        if (!key)
-          return result;
-        if (dest && lastKey && dest !== lastKey) {
-          if (lastText)
-            remember3(lastKey, lastText, lastPopup);
-          return result;
-        }
-        remember3(key, text, popup ?? lastPopup);
-        lastText = text;
-        lastPopup = popup ?? lastPopup;
-        lastKey = key;
-      } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
-        scheduleRestore();
-      }
-      return result;
-    };
-  }
-  function makePopupWrapper(orig) {
-    return function voidQuoteStickyPopup(...args) {
-      const result = orig.apply(this, args);
-      if (applying3)
-        return result;
-      const dest = destKey();
-      const popup = args[0];
-      const live = String(ChatPageStore.useChatPageStore.getState().quotedText || "");
-      if (popup != null && live && !(dest && lastKey && dest !== lastKey)) {
-        const key = dest || pathCid() || routeCid() || lastKey;
-        if (key) {
-          remember3(key, live, popup);
-          lastPopup = popup;
-          lastText = live;
-          lastKey = key;
-        }
-      } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
-        scheduleRestore();
-      }
-      return result;
-    };
-  }
-  function makeNavWrapper(orig) {
-    return function voidQuoteStickyNav(...args) {
-      stashOutgoing();
-      const result = orig.apply(this, args);
-      queueMicrotask(onNav);
-      return result;
-    };
-  }
-  function wrapOne2(label, getState, setState, key, make) {
-    let state;
-    try {
-      state = getState();
-    } catch {
-      return;
-    }
-    const current = state[key];
-    if (typeof current !== "function")
-      return;
-    if (wrappedFns2.get(label) === current)
-      return;
-    origFns2.set(label, current);
-    const wrapped = make(current);
-    wrappedFns2.set(label, wrapped);
-    setState({ [key]: wrapped });
-  }
-  function chatState() {
-    return ChatPageStore.useChatPageStore.getState();
-  }
-  function msgState() {
-    return MessageStore.useMessageStore.getState();
-  }
-  function chatSet(p) {
-    ChatPageStore.useChatPageStore.setState(p);
-  }
-  function msgSet(p) {
-    MessageStore.useMessageStore.setState(p);
-  }
-  function wrapAll() {
-    wrapOne2("chat.setQuotedText", chatState, chatSet, "setQuotedText", makeQuotedTextWrapper);
-    wrapOne2("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
-    wrapOne2("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
-    wrapOne2("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
-    wrapOne2("msg.sendMessage", msgState, msgSet, "sendMessage", makeSendWrapper2);
-    wrapOne2("msg.queueMessage", msgState, msgSet, "queueMessage", makeSendWrapper2);
-  }
-  function unwrapOne(getState, setState, key, label) {
-    const orig = origFns2.get(label);
-    if (!orig)
-      return;
-    try {
-      const state = getState();
-      if (state[key] === wrappedFns2.get(label))
-        setState({ [key]: orig });
-    } catch {}
-  }
-  function unwrapAll() {
-    unwrapOne(chatState, chatSet, "setQuotedText", "chat.setQuotedText");
-    unwrapOne(chatState, chatSet, "setQuotePopupData", "chat.setQuotePopupData");
-    unwrapOne(chatState, chatSet, "setConversationId", "chat.setConversationId");
-    unwrapOne(chatState, chatSet, "setOptimisticConversationId", "chat.setOptimisticConversationId");
-    unwrapOne(msgState, msgSet, "sendMessage", "msg.sendMessage");
-    unwrapOne(msgState, msgSet, "queueMessage", "msg.queueMessage");
-    origFns2.clear();
-    wrappedFns2.clear();
-  }
-  function onMutate() {
-    if (mutRaf)
-      return;
-    mutRaf = requestAnimationFrame(() => {
-      mutRaf = 0;
-      ensureChip();
-    });
-  }
-  var quoteSticky_default = definePlugin({
-    name: "QuoteSticky",
-    icon: TextQuoteIcon,
-    description: "Keep the composer quote card when switching chats and coming back.",
-    authors: [Devs.p],
-    tags: ["chat", "ui"],
-    enabledByDefault: true,
-    startAt: "TurbopackReady" /* TurbopackReady */,
-    managedStyle: "quoteSticky",
-    cleanupSelectors: [`.${cl28("chip")}`],
-    start() {
-      const now = readText();
-      const key = snapKey() || now.key;
-      lastKey = key;
-      if (key && now.text) {
-        remember3(key, now.text, now.popup);
-        lastText = now.text;
-        lastPopup = now.popup;
-      }
-      abort3 = new AbortController;
-      document.addEventListener("pointerdown", onPointerDown4, { capture: true, signal: abort3.signal });
-      const poke = () => onMutate();
-      window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort3.signal });
-      window.addEventListener("resize", poke, { passive: true, signal: abort3.signal });
-      observer = new MutationObserver(onMutate);
-      observer.observe(document.documentElement, { childList: true, subtree: true });
-      wrapAll();
-      ensureChip();
-    },
-    stop() {
-      abort3?.abort();
-      abort3 = null;
-      observer?.disconnect();
-      observer = null;
-      if (mutRaf)
-        cancelAnimationFrame(mutRaf);
-      mutRaf = 0;
-      unwrapAll();
-      removeFallback();
-      saved.clear();
-      lastKey = "";
-      lastText = "";
-      lastPopup = undefined;
-      applying3 = false;
-      lastRestoreAt = 0;
-    },
-    zustand: {
-      ChatPageStore: {
-        selector: chatSel,
-        handler: onChat
-      },
-      RoutingStore: {
-        selector: (s) => String(s.route.conversationId ?? ""),
-        handler: onNav
-      },
-      ResponseStore: {
-        selector: hydrateSel,
-        handler: onNav
       }
     }
   });
@@ -22974,7 +23040,7 @@ html.void-rt-open [data-sidebar="gap"] {
 `);
 
   // src/plugins/recentTopics/index.tsx
-  var logger35 = new Logger("RecentTopics");
+  var logger36 = new Logger("RecentTopics");
   var cl29 = classNameFactory("void-rt-");
   var HOME_KEY = "home";
   var HOME_SEP = "home:";
@@ -23004,7 +23070,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var HOVER_ARM_PX = 4;
   var EFFECT_GM_KEY = "VoidPP.rt.effect";
   var EFFECT_LS_KEY = "voidpp.rt.v1";
-  var settings25 = definePluginSettings({
+  var settings26 = definePluginSettings({
     maxRecent: {
       type: 4 /* SELECT */,
       description: "How many recently opened conversations to show.",
@@ -23072,13 +23138,13 @@ html.void-rt-open [data-sidebar="gap"] {
     return effect.visits;
   }
   function maxCount() {
-    const n = Number(settings25.store.maxRecent);
+    const n = Number(settings26.store.maxRecent);
     return Number.isFinite(n) && n > 0 ? n : 5;
   }
   function capVisits(ids) {
-    const allowHome = settings25.store.includeHome;
+    const allowHome = settings26.store.includeHome;
     const current = currentVisit();
-    const dirtyGlobalWs = asWorkspaceId2(settings25.plain.workspaceByConv?.[HOME_KEY]);
+    const dirtyGlobalWs = asWorkspaceId2(settings26.plain.workspaceByConv?.[HOME_KEY]);
     const seen = new Set;
     const out = [];
     for (const raw of ids) {
@@ -23125,9 +23191,9 @@ html.void-rt-open [data-sidebar="gap"] {
     return keys.every((k) => src[k] === b[k]);
   }
   function assignRecord(key, next) {
-    if (sameRecord(settings25.plain[key], next))
+    if (sameRecord(settings26.plain[key], next))
       return false;
-    settings25.store[key] = next;
+    settings26.store[key] = next;
     return true;
   }
   function emptyEffect() {
@@ -23319,9 +23385,9 @@ html.void-rt-open [data-sidebar="gap"] {
       effect = disk;
     } else {
       const fromSettings = {
-        visits: asStringList(settings25.plain.visits),
-        deniedIds: asStringList(settings25.plain.deniedIds),
-        deniedAt: asStringRecord(settings25.plain.deniedAt)
+        visits: asStringList(settings26.plain.visits),
+        deniedIds: asStringList(settings26.plain.deniedIds),
+        deniedAt: asStringRecord(settings26.plain.deniedAt)
       };
       effect = {
         v: 1,
@@ -23363,7 +23429,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function commitVisits(next) {
     const changedVisits = persistEffect(next);
     const visits = readVisits();
-    const rawWs = pruneRecord(settings25.plain.workspaceByConv, visits);
+    const rawWs = pruneRecord(settings26.plain.workspaceByConv, visits);
     const workspaceByConv = {};
     for (const [id, value] of Object.entries(rawWs)) {
       if (id === HOME_KEY)
@@ -23372,7 +23438,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (ws)
         workspaceByConv[id] = ws;
     }
-    const pages = pruneRecord(settings25.plain.pages, visits);
+    const pages = pruneRecord(settings26.plain.pages, visits);
     const usedWs = new Set(Object.values(workspaceByConv));
     for (const id of visits) {
       const ws = workspaceFromHomeId(id);
@@ -23384,7 +23450,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const keepProjects = {};
     const keepIcons = {};
     const idx = sidebarIndex();
-    for (const [id, name] of Object.entries(settings25.plain.projectNames ?? {})) {
+    for (const [id, name] of Object.entries(settings26.plain.projectNames ?? {})) {
       const n = usableName(name);
       if (!usedWs.has(id) || !n)
         continue;
@@ -23393,14 +23459,14 @@ html.void-rt-open [data-sidebar="gap"] {
         continue;
       keepProjects[id] = n;
     }
-    for (const [id, snap] of Object.entries(settings25.plain.projectIcons ?? {})) {
+    for (const [id, snap] of Object.entries(settings26.plain.projectIcons ?? {})) {
       if (!usedWs.has(id) || !snap || isChromeSnap(snap))
         continue;
       keepIcons[id] = snap;
     }
     let changed = changedVisits;
     const titles = {};
-    for (const [id, name] of Object.entries(pruneRecord(settings25.plain.titles, visits))) {
+    for (const [id, name] of Object.entries(pruneRecord(settings26.plain.titles, visits))) {
       const t = usableTitle(name);
       if (t)
         titles[id] = t;
@@ -23427,10 +23493,10 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     if (id === chatIdFromUrl() && isAccessDeniedPage())
       return;
-    const prev = settings25.plain.titles ?? {};
+    const prev = settings26.plain.titles ?? {};
     if (prev[id] === t)
       return;
-    settings25.store.titles = { ...prev, [id]: t };
+    settings26.store.titles = { ...prev, [id]: t };
   }
   function isHomeId(id) {
     return id === HOME_KEY || id.startsWith(HOME_SEP);
@@ -23531,7 +23597,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (fromRoute != null && isHomeId(fromRoute))
         return fromRoute;
     } catch (e) {
-      logger35.debug("RoutingStore unavailable:", e);
+      logger36.debug("RoutingStore unavailable:", e);
     }
     return null;
   }
@@ -23550,7 +23616,7 @@ html.void-rt-open [data-sidebar="gap"] {
         add(historyStack[i]);
       return unique(ids);
     } catch (e) {
-      logger35.debug("historyStack unavailable:", e);
+      logger36.debug("historyStack unavailable:", e);
       return [];
     }
   }
@@ -23626,7 +23692,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
       return byId[id] ?? byIdWithWorkspaces[id] ?? list.find((c) => c.conversationId === id);
     } catch (e) {
-      logger35.debug("Conversation lookup failed:", e);
+      logger36.debug("Conversation lookup failed:", e);
       return;
     }
   }
@@ -23634,9 +23700,9 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!id || isHomeId(id))
       return "New chat";
     if (isDenied(id))
-      return usableTitle(settings25.plain.titles?.[id]) || "Untitled";
+      return usableTitle(settings26.plain.titles?.[id]) || "Untitled";
     const conv = lookup(id);
-    return usableTitle(conv?.title) || usableTitle(settings25.plain.titles?.[id]) || titleFromPage(id) || "Untitled";
+    return usableTitle(conv?.title) || usableTitle(settings26.plain.titles?.[id]) || titleFromPage(id) || "Untitled";
   }
   function liveWorkspaceId() {
     const fromUrl = asWorkspaceId2(projectIdFromUrl());
@@ -23684,7 +23750,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const conv = byId[id] ?? byIdWithWorkspaces[id];
       return asWorkspaceId2(conv?.workspaceId) || asWorkspaceId2(conv?.workspaces);
     } catch (e) {
-      logger35.debug("convWorkspaceId failed:", e);
+      logger36.debug("convWorkspaceId failed:", e);
       return asWorkspaceId2(lookup(id)?.workspaceId) || asWorkspaceId2(lookup(id)?.workspaces);
     }
   }
@@ -23868,18 +23934,18 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!ws)
       return;
     const snap = liveIconSnap(ws);
-    const prev = settings25.plain.projectIcons ?? {};
+    const prev = settings26.plain.projectIcons ?? {};
     if (snap) {
       wsIcons[ws] = snap;
       if (prev[ws] !== snap)
-        settings25.store.projectIcons = { ...prev, [ws]: snap };
+        settings26.store.projectIcons = { ...prev, [ws]: snap };
       return;
     }
     if (prev[ws] && isChromeSnap(prev[ws])) {
       const next = { ...prev };
       delete next[ws];
       delete wsIcons[ws];
-      settings25.store.projectIcons = next;
+      settings26.store.projectIcons = next;
     }
   }
   function projectNameFromAncestors(el) {
@@ -23991,12 +24057,12 @@ html.void-rt-open [data-sidebar="gap"] {
     return "";
   }
   function dropWorkspace(id) {
-    const prev = settings25.plain.workspaceByConv ?? {};
+    const prev = settings26.plain.workspaceByConv ?? {};
     if (!prev[id])
       return;
     const next = { ...prev };
     delete next[id];
-    settings25.store.workspaceByConv = next;
+    settings26.store.workspaceByConv = next;
   }
   function workspaceOf2(id) {
     if (!id)
@@ -24011,7 +24077,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const fromSidebar = sidebarIndex().wsByConv[id] || workspaceFromDom(id);
     if (fromSidebar)
       return fromSidebar;
-    const cached = asWorkspaceId2(settings25.plain.workspaceByConv?.[id]);
+    const cached = asWorkspaceId2(settings26.plain.workspaceByConv?.[id]);
     if (cached)
       return cached;
     const fromHist = workspaceFromHistory(id);
@@ -24042,7 +24108,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!ws)
       return "";
     const idx = sidebarIndex();
-    const named = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || wsNames[ws] || settings25.plain.projectNames?.[ws] || "");
+    const named = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || wsNames[ws] || settings26.plain.projectNames?.[ws] || "");
     if (!named)
       return "";
     const live = liveWorkspaceId();
@@ -24057,28 +24123,28 @@ html.void-rt-open [data-sidebar="gap"] {
     const ws = workspaceOf2(id);
     if (!ws)
       return;
-    const prevWs = settings25.plain.workspaceByConv ?? {};
+    const prevWs = settings26.plain.workspaceByConv ?? {};
     if (prevWs[id] !== ws)
-      settings25.store.workspaceByConv = { ...prevWs, [id]: ws };
+      settings26.store.workspaceByConv = { ...prevWs, [id]: ws };
     const idx = sidebarIndex();
     const sidebarName = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || "");
     const liveName = ws === liveWorkspaceId() ? readOpenProjectName() : "";
-    const cached = usableName(wsNames[ws] || settings25.plain.projectNames?.[ws] || "");
+    const cached = usableName(wsNames[ws] || settings26.plain.projectNames?.[ws] || "");
     const fallback = !isBrandLabel(liveName) ? usableName(liveName) : "";
     const name = sidebarName || fallback || cached;
     rememberProjectIcon(ws);
     if (!name)
       return;
     wsNames[ws] = name;
-    const prevNames = settings25.plain.projectNames ?? {};
+    const prevNames = settings26.plain.projectNames ?? {};
     if (prevNames[ws] !== name)
-      settings25.store.projectNames = { ...prevNames, [ws]: name };
+      settings26.store.projectNames = { ...prevNames, [ws]: name };
   }
   function reconcileSidebarCache() {
     const idx = sidebarIndex();
-    const prevWs = { ...settings25.plain.workspaceByConv };
-    const prevNames = { ...settings25.plain.projectNames };
-    const prevIcons = { ...settings25.plain.projectIcons };
+    const prevWs = { ...settings26.plain.workspaceByConv };
+    const prevNames = { ...settings26.plain.projectNames };
+    const prevIcons = { ...settings26.plain.projectIcons };
     let wsChanged = false;
     let namesChanged = false;
     let iconsChanged = false;
@@ -24122,11 +24188,11 @@ html.void-rt-open [data-sidebar="gap"] {
       namesChanged = true;
     }
     if (wsChanged)
-      settings25.store.workspaceByConv = prevWs;
+      settings26.store.workspaceByConv = prevWs;
     if (namesChanged)
-      settings25.store.projectNames = prevNames;
+      settings26.store.projectNames = prevNames;
     if (iconsChanged)
-      settings25.store.projectIcons = prevIcons;
+      settings26.store.projectIcons = prevIcons;
   }
   function requestWorkspace(id) {
     if (!id || isHomeId(id) || pendingWs.has(id))
@@ -24154,20 +24220,20 @@ html.void-rt-open [data-sidebar="gap"] {
           maybePaint();
           return;
         }
-        const prev = settings25.plain.workspaceByConv ?? {};
+        const prev = settings26.plain.workspaceByConv ?? {};
         if (prev[id] !== ws)
-          settings25.store.workspaceByConv = { ...prev, [id]: ws };
+          settings26.store.workspaceByConv = { ...prev, [id]: ws };
         const live = liveWorkspaceId();
         const liveName = usableName(readOpenProjectName());
-        const names = settings25.plain.projectNames ?? {};
+        const names = settings26.plain.projectNames ?? {};
         if (live && ws !== live && liveName && names[ws] === liveName) {
           const next = { ...names };
           delete next[ws];
-          settings25.store.projectNames = next;
+          settings26.store.projectNames = next;
           delete wsNames[ws];
         }
         maybePaint();
-      }).catch((e) => logger35.debug("workspace fetch failed:", e)).finally(() => {
+      }).catch((e) => logger36.debug("workspace fetch failed:", e)).finally(() => {
         pendingWs.delete(id);
       });
     } catch {
@@ -24432,7 +24498,7 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       return responsesToLines(responsesOf(id));
     } catch (e) {
-      logger35.debug("ResponseStore snapshot failed:", e);
+      logger36.debug("ResponseStore snapshot failed:", e);
       return [];
     }
   }
@@ -24475,7 +24541,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function snapOf(id) {
     if (!id || isHomeId(id))
       return null;
-    const snap = thumbs.get(id) ?? parseSnap(settings25.plain.pages?.[id]);
+    const snap = thumbs.get(id) ?? parseSnap(settings26.plain.pages?.[id]);
     if (!snap)
       return null;
     const lines = lastRound(snap.lines);
@@ -24487,22 +24553,22 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function rememberPage(id, snap) {
     const json = JSON.stringify(snap);
-    const prev = settings25.plain.pages ?? {};
+    const prev = settings26.plain.pages ?? {};
     if (prev[id] === json)
       return;
-    settings25.store.pages = { ...prev, [id]: json };
+    settings26.store.pages = { ...prev, [id]: json };
   }
   function forgetPage(id) {
     thumbs.delete(id);
-    const prev = settings25.plain.pages ?? {};
+    const prev = settings26.plain.pages ?? {};
     if (!(id in prev))
       return;
     const next = { ...prev };
     delete next[id];
-    settings25.store.pages = next;
+    settings26.store.pages = next;
   }
   function prunePages() {
-    const prev = settings25.plain.pages ?? {};
+    const prev = settings26.plain.pages ?? {};
     const next = {};
     let changed = false;
     for (const [id, raw] of Object.entries(prev)) {
@@ -24514,7 +24580,7 @@ html.void-rt-open [data-sidebar="gap"] {
       next[id] = raw;
     }
     if (changed)
-      settings25.store.pages = next;
+      settings26.store.pages = next;
   }
   function applyLineStyle(el, role, theme) {
     el.style.display = "-webkit-box";
@@ -24574,7 +24640,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const lines = lastRound(betterLines(fromStore, fromDom));
     if (!lines.length)
       return;
-    const prev = thumbs.get(id) ?? parseSnap(settings25.plain.pages?.[id]);
+    const prev = thumbs.get(id) ?? parseSnap(settings26.plain.pages?.[id]);
     const prevLines = prev ? lastRound(prev.lines) : [];
     const nextRank = linesRank(lines);
     const prevRank = linesRank(prevLines);
@@ -24604,7 +24670,7 @@ html.void-rt-open [data-sidebar="gap"] {
           captureId(id);
       }
     } catch (e) {
-      logger35.debug("snapshot failed:", e);
+      logger36.debug("snapshot failed:", e);
     } finally {
       capturing = false;
     }
@@ -24684,7 +24750,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function bump(id) {
     if (!id)
       return;
-    if (isHomeId(id) && !settings25.store.includeHome)
+    if (isHomeId(id) && !settings26.store.includeHome)
       return;
     if (!isHomeId(id) && id === chatIdFromUrl() && isAccessDeniedPage()) {
       dropVisit(id);
@@ -24743,7 +24809,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (parsed?.page && parsed.page !== "unknown")
         return parsed;
     } catch (e) {
-      logger35.debug("urlToRoute failed:", e);
+      logger36.debug("urlToRoute failed:", e);
     }
     return null;
   }
@@ -24755,7 +24821,7 @@ html.void-rt-open [data-sidebar="gap"] {
         chat.setOptimisticConversationId(undefined);
       chat.setProjectId(asWorkspaceId2(workspaceId) || undefined);
     } catch (e) {
-      logger35.debug("ChatPageStore update failed:", e);
+      logger36.debug("ChatPageStore update failed:", e);
     }
   }
   function navigateTo2(id) {
@@ -24849,17 +24915,17 @@ html.void-rt-open [data-sidebar="gap"] {
             });
             applyChatPage2(id, ws);
             rememberProject(id);
-          }).catch((e) => logger35.debug("workspace resolve failed:", e));
+          }).catch((e) => logger36.debug("workspace resolve failed:", e));
         } catch (e) {
-          logger35.debug("workspace fetch skipped:", e);
+          logger36.debug("workspace fetch skipped:", e);
         }
       }
     } catch (e) {
-      logger35.error("Failed to navigate:", e);
+      logger36.error("Failed to navigate:", e);
       try {
         location.assign(hrefFor2(id, workspaceOf2(id) || undefined));
       } catch (navErr) {
-        logger35.error("Fallback navigation failed:", navErr);
+        logger36.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -24888,7 +24954,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (topics().length > 1)
         selected = reverse ? topics().length - 1 : 1;
     } catch (e) {
-      logger35.error("Failed to open switcher:", e);
+      logger36.error("Failed to open switcher:", e);
     } finally {
       suspendPaint = false;
     }
@@ -24933,7 +24999,7 @@ html.void-rt-open [data-sidebar="gap"] {
         else
           begin(e.shiftKey, true);
       } catch (err) {
-        logger35.error("Hotkey failed:", err);
+        logger36.error("Hotkey failed:", err);
       }
       return;
     }
@@ -25138,7 +25204,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return svg;
   }
   function projectIconOf(ws) {
-    const raw = ws ? wsIcons[ws] || settings25.plain.projectIcons?.[ws] || liveIconSnap(ws) || "" : "";
+    const raw = ws ? wsIcons[ws] || settings26.plain.projectIcons?.[ws] || liveIconSnap(ws) || "" : "";
     const snap = raw && !isChromeSnap(raw) ? raw : "";
     if (snap) {
       wsIcons[ws] = snap;
@@ -25373,7 +25439,7 @@ html.void-rt-open [data-sidebar="gap"] {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings25,
+    settings: settings26,
     managedStyle: "recentTopics",
     _mark({ response }) {
       try {
@@ -25416,7 +25482,7 @@ html.void-rt-open [data-sidebar="gap"] {
           bump(current);
         scheduleCapture();
       } catch (e) {
-        logger35.error("Hydrate failed:", e);
+        logger36.error("Hydrate failed:", e);
       }
       if (!keys3) {
         keys3 = new AbortController;
@@ -25446,7 +25512,7 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         writeVisits(capVisits(readVisits()));
       } catch (e) {
-        logger35.error("Settings update failed:", e);
+        logger36.error("Settings update failed:", e);
       }
     },
     zustand: {
@@ -25499,7 +25565,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var DEFAULT_CHIME = "data:audio/mpeg;base64,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";
 
   // src/plugins/responseNotification/index.ts
-  var logger36 = new Logger("ResponseNotification");
+  var logger37 = new Logger("ResponseNotification");
   var LIVE_STATES = new Set(["streaming", "optimistic", "reconnecting"]);
   var RETRY_MS3 = 80;
   var SAMPLE_VOLUME = 0.5;
@@ -25513,7 +25579,7 @@ html.void-rt-open [data-sidebar="gap"] {
       }
     }, "Play preview"));
   }
-  var settings26 = definePluginSettings({
+  var settings27 = definePluginSettings({
     sound: {
       type: 3 /* BOOLEAN */,
       description: "Play a notification sound.",
@@ -25559,14 +25625,14 @@ html.void-rt-open [data-sidebar="gap"] {
       audioCtx = new AudioContext;
       return audioCtx;
     } catch (e) {
-      logger36.debug("AudioContext unavailable:", e);
+      logger37.debug("AudioContext unavailable:", e);
       audioCtx = null;
       return null;
     }
   }
   function onUserGesture() {
     userGestured = true;
-    if (settings26.store.browserNotification && Notification.permission === "default")
+    if (settings27.store.browserNotification && Notification.permission === "default")
       Notification.requestPermission();
     const ctx = getCtx();
     if (!ctx)
@@ -25606,22 +25672,22 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function playUrl(ctx, url) {
     loadBuffer(ctx, url).then((buf) => playBuffer(ctx, buf), (err) => {
-      logger36.info("sample play failed:", err);
+      logger37.info("sample play failed:", err);
       if (url !== DEFAULT_CHIME)
-        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger36.info("default chime failed:", e));
+        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger37.info("default chime failed:", e));
     });
   }
   function playSound() {
     if (!userGestured) {
-      logger36.info("sound skipped, no user gesture yet");
+      logger37.info("sound skipped, no user gesture yet");
       return;
     }
     const ctx = getCtx();
     if (!ctx)
       return;
-    const url = settings26.store.soundUrl?.trim() || DEFAULT_CHIME;
+    const url = settings27.store.soundUrl?.trim() || DEFAULT_CHIME;
     if (ctx.state === "suspended")
-      ctx.resume().then(() => playUrl(ctx, url), () => logger36.info("AudioContext resume failed"));
+      ctx.resume().then(() => playUrl(ctx, url), () => logger37.info("AudioContext resume failed"));
     else
       playUrl(ctx, url);
   }
@@ -25635,12 +25701,12 @@ html.void-rt-open [data-sidebar="gap"] {
     return !isErrorResponse3(response) && !isLiveResponse3(response);
   }
   function notify(responseId, state) {
-    logger36.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
-    if (settings26.store.onlyWhenHidden && document.visibilityState === "visible")
+    logger37.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
+    if (settings27.store.onlyWhenHidden && document.visibilityState === "visible")
       return;
-    if (settings26.store.sound)
+    if (settings27.store.sound)
       playSound();
-    if (settings26.store.browserNotification) {
+    if (settings27.store.browserNotification) {
       sendBrowserNotification("Grok", state === "imagine" ? "Imagine generation complete." : "Response complete.");
     }
   }
@@ -25663,7 +25729,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function onStreamEnd7({ responseId }) {
-    logger36.info("streamEnd", responseId);
+    logger37.info("streamEnd", responseId);
     if (retryTimer2)
       clearTimeout(retryTimer2);
     const attempt = (retried) => {
@@ -25671,25 +25737,25 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         response = ResponseStore.useResponseStore.getState().byId[responseId];
       } catch (e) {
-        logger36.info("ResponseStore unavailable:", e);
+        logger37.info("ResponseStore unavailable:", e);
       }
       if (shouldNotify(response)) {
         notifyOnce(responseId, response?.state ?? "gateway");
         return;
       }
       if (isErrorResponse3(response)) {
-        logger36.info("skip error", responseId);
+        logger37.info("skip error", responseId);
         return;
       }
       if (!retried) {
         retryTimer2 = setTimeout(() => attempt(true), RETRY_MS3);
         return;
       }
-      logger36.info("skip", responseId, response?.state ?? "unset");
+      logger37.info("skip", responseId, response?.state ?? "unset");
     };
     attempt(false);
   }
-  function onImaginePage5() {
+  function onImaginePage4() {
     try {
       const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
       if (page.startsWith("imagine"))
@@ -25735,9 +25801,9 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function syncImagine2(current, prev) {
-    if (!settings26.store.imagineGeneration || !prev)
+    if (!settings27.store.imagineGeneration || !prev)
       return;
-    if (onImaginePage5())
+    if (onImaginePage4())
       return;
     const now = new Set(current ? current.split(",") : []);
     for (const id of prev.split(",")) {
@@ -25764,7 +25830,7 @@ html.void-rt-open [data-sidebar="gap"] {
     description: "Notify when Grok finishes responding. Optional Imagine generation notify is off by default.",
     authors: [Devs.Prism, Devs.p],
     tags: ["chat"],
-    settings: settings26,
+    settings: settings27,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
       if (gestureCtrl)
@@ -25904,7 +25970,7 @@ html.void-rt-open [data-sidebar="gap"] {
 
   // src/plugins/settingsFlyout/index.tsx
   var cl30 = classNameFactory("void-sf-");
-  var settings27 = definePluginSettings({
+  var settings28 = definePluginSettings({
     showOpenSettings: {
       type: 3 /* BOOLEAN */,
       description: 'Show "Open Settings" (last used tab).',
@@ -26016,7 +26082,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }, "Void++"), tabItems(tabs));
   }
   function SettingsMenu({ onOpen }) {
-    const cfg = settings27.use([
+    const cfg = settings28.use([
       "showOpenSettings",
       "voidppPosition",
       "plugins",
@@ -26058,7 +26124,7 @@ html.void-rt-open [data-sidebar="gap"] {
     tags: ["ui", "settings"],
     enabledByDefault: true,
     requiresRestart: true,
-    settings: settings27,
+    settings: settings28,
     start() {
       migratePluginSetting("SettingsFlyout", "voidppPosition", "voidPosition");
     },
@@ -26116,18 +26182,18 @@ html.void-rt-open [data-sidebar="gap"] {
     return [n >> 16 & 255, n >> 8 & 255, n & 255];
   }
   function ColorRow2() {
-    const { starColor } = settings28.use(["starColor"]);
+    const { starColor } = settings29.use(["starColor"]);
     return /* @__PURE__ */ React.createElement(ColorSettingRow, {
       value: starColor,
       onChange: (v) => {
-        settings28.store.starColor = v;
+        settings29.store.starColor = v;
       },
       title: "Star color",
       description: "Color of the twinkling stars."
     });
   }
   function StarryBackground() {
-    const { starColor } = settings28.use(["starColor"]);
+    const { starColor } = settings29.use(["starColor"]);
     return /* @__PURE__ */ React.createElement("div", {
       "aria-hidden": true,
       className: "fixed inset-0 -z-10 pointer-events-none"
@@ -26136,7 +26202,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }));
   }
   var WrappedStarry = ErrorBoundary.wrap(StarryBackground);
-  var settings28 = definePluginSettings({
+  var settings29 = definePluginSettings({
     starColor: {
       type: 6 /* COMPONENT */,
       default: DEFAULT_COLOR,
@@ -26149,7 +26215,7 @@ html.void-rt-open [data-sidebar="gap"] {
     description: "Adds Grok's native twinkling starry background to the main page.",
     authors: [Devs.Prism],
     tags: ["ui"],
-    settings: settings28,
+    settings: settings29,
     _StarryBg() {
       return /* @__PURE__ */ React.createElement(WrappedStarry, {
         key: "void-starry-bg"
@@ -26273,7 +26339,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     projects: "void-streamer-projects",
     conversations: "void-streamer-conversations"
   };
-  var settings29 = definePluginSettings({
+  var settings30 = definePluginSettings({
     sidebarAvatar: {
       type: 3 /* BOOLEAN */,
       description: "Blur your avatar in the sidebar.",
@@ -26318,7 +26384,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   function syncClasses() {
     const { classList } = document.documentElement;
     for (const [key, cls] of Object.entries(CSS_CLASSES)) {
-      classList.toggle(cls, !!settings29.store[key]);
+      classList.toggle(cls, !!settings30.store[key]);
     }
   }
   var streamerMode_default = definePlugin({
@@ -26327,7 +26393,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     description: "Blurs personal information for privacy while streaming.",
     authors: [Devs.Prism],
     tags: ["privacy"],
-    settings: settings29,
+    settings: settings30,
     start: syncClasses,
     onSettingsChange: syncClasses,
     stop() {
@@ -26953,7 +27019,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var CHART_SCALE_MIN = 20;
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   var DAY_MS2 = 86400000;
-  var logger37 = new Logger("UsageDisplay");
+  var logger38 = new Logger("UsageDisplay");
   function isRecord2(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
@@ -27009,7 +27075,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      logger37.debug("Failed to read usage stats", error);
+      logger38.debug("Failed to read usage stats", error);
       return memory2.get(key) ?? null;
     }
   }
@@ -27021,7 +27087,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      logger37.debug("Failed to persist usage stats", error);
+      logger38.debug("Failed to persist usage stats", error);
       memory2.set(key, value);
     }
   }
@@ -27033,7 +27099,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      logger37.debug("Failed to clear usage stats", error);
+      logger38.debug("Failed to clear usage stats", error);
       memory2.delete(key);
     }
   }
@@ -27053,7 +27119,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }
       return { version: STATS_VERSION, userId, days };
     } catch (error) {
-      logger37.debug("Failed to read usage stats", error);
+      logger38.debug("Failed to read usage stats", error);
       return emptyStore(userId);
     }
   }
@@ -27237,9 +27303,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
 
   // src/plugins/usageDisplay/index.tsx
-  var logger38 = new Logger("UsageDisplay");
+  var logger39 = new Logger("UsageDisplay");
   var cl31 = classNameFactory("void-ud-");
-  var settings30 = definePluginSettings({
+  var settings31 = definePluginSettings({
     usageStats: {
       type: 3 /* BOOLEAN */,
       description: "Record daily usage. Hover shows today after a delay; click opens history.",
@@ -27340,7 +27406,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       await hook.getState().refreshUsage();
       return normalizeBotUsage(hook.getState().usage);
     } catch (error) {
-      logger38.warn("Failed to fetch Grok Bot usage", error);
+      logger39.warn("Failed to fetch Grok Bot usage", error);
       return null;
     }
   }
@@ -27354,12 +27420,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
     SettingsStore3.markAsChanged();
   }
   function snapshotToday() {
-    if (!settings30.store.usageStats)
+    if (!settings31.store.usageStats)
       return;
     syncAccount();
     if (!state.userId)
       return;
-    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings30.store.retainDays));
+    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings31.store.retainDays));
   }
   async function refresh(reason = "manual") {
     if (refreshPromise)
@@ -27388,7 +27454,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
         const pageUsage = readNativeUsage();
         const remote = await fetchOfficialUsage().then((usage) => ({ ok: true, usage })).catch((error) => {
-          logger38.warn("Failed to fetch official usage", error);
+          logger39.warn("Failed to fetch official usage", error);
           return { ok: false };
         });
         if (currentPoolId() !== poolId)
@@ -27477,7 +27543,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function ButtonIcon() {
     useExternalStore(store3);
-    const { showPercent } = settings30.use(["showPercent"]);
+    const { showPercent } = settings31.use(["showPercent"]);
     const weekly = state.usage?.weekly;
     const percent = weekly?.usedPercent ?? null;
     const tone = usageTone(percent);
@@ -27547,7 +27613,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function UsagePanel() {
     useExternalStore(store3);
-    const { usageStats, hoverStatsDelay } = settings30.use(["usageStats", "hoverStatsDelay"]);
+    const { usageStats, hoverStatsDelay } = settings31.use(["usageStats", "hoverStatsDelay"]);
     const delay = hoverDelayOf(hoverStatsDelay);
     const [showToday, setShowToday] = useState(usageStats && delay <= 0);
     const weekly = state.usage?.weekly;
@@ -27589,7 +27655,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }));
   }
   function StatsToggle() {
-    const { usageStats } = settings30.use(["usageStats"]);
+    const { usageStats } = settings31.use(["usageStats"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       justifyContent: "space-between",
@@ -27607,7 +27673,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }, "Record local daily usage on this device.")), /* @__PURE__ */ React.createElement(Switch, {
       checked: !!usageStats,
       onCheckedChange: (value) => {
-        settings30.store.usageStats = value;
+        settings31.store.usageStats = value;
         store3.notify();
         if (value)
           refresh("manual");
@@ -27716,14 +27782,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
       onClick: () => {
         if (pre == null)
           return;
-        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings30.store.retainDays));
+        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings31.store.retainDays));
         store3.notify();
       }
     }, "Repair")));
   }
   function StatsModal({ onClose }) {
     useExternalStore(store3);
-    const { usageStats } = settings30.use(["usageStats"]);
+    const { usageStats } = settings31.use(["usageStats"]);
     const days = usageStats && state.userId ? listDays(state.userId) : [];
     const todayKey = localDateKey(Date.now());
     const bars = days.length ? fillChartDays(days) : [];
@@ -27859,7 +27925,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
-    settings: settings30,
+    settings: settings31,
     start() {
       migrateUsageStats();
       try {
@@ -27870,7 +27936,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
           refresh("route");
         });
       } catch (error) {
-        logger38.warn("RoutingStore subscribe failed", error);
+        logger39.warn("RoutingStore subscribe failed", error);
       }
     },
     stop() {
@@ -27882,7 +27948,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       streamEnd: onStreamEnd8
     },
     onSettingsChange() {
-      if (settings30.store.usageStats)
+      if (settings31.store.usageStats)
         refresh("manual");
     }
   });
@@ -27890,7 +27956,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   // src/plugins/userQuotes/index.ts
   var STYLE_NAME8 = "userQuotes";
   var SEL = '[data-testid="user-message"] blockquote:not(.twitter-tweet)';
-  var settings31 = definePluginSettings({
+  var settings32 = definePluginSettings({
     italic: {
       type: 3 /* BOOLEAN */,
       description: "Render quoted lines in italic.",
@@ -27902,14 +27968,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
       default: false
     }
   });
-  function apply7() {
+  function apply8() {
     const rules = [
       `${SEL}{margin:0!important;border-inline-start-color:hsl(var(--fg-secondary))!important;border-inline-start-width:0.25rem!important;border-inline-start-style:solid!important;padding-inline-start:0.75rem!important}`,
       `${SEL}>*{margin-block:0!important}`
     ];
-    if (!settings31.store.italic)
+    if (!settings32.store.italic)
       rules.push(`${SEL}{font-style:inherit!important}`);
-    if (!settings31.store.quotes) {
+    if (!settings32.store.quotes) {
       rules.push(`${SEL}{quotes:none!important}`);
       rules.push(`${SEL}::before,${SEL}::after,${SEL} p::before,${SEL} p::after{content:none!important}`);
     }
@@ -27923,7 +27989,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings31,
+    settings: settings32,
     patches: [
       {
         find: '["###### ",',
@@ -27933,8 +27999,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
       }
     ],
-    start: apply7,
-    onSettingsChange: apply7,
+    start: apply8,
+    onSettingsChange: apply8,
     stop() {
       unregisterStyle(STYLE_NAME8);
     }
@@ -27942,7 +28008,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
   // src/plugins/widerChat/index.ts
   var STYLE_NAME9 = "widerChat";
-  var settings32 = definePluginSettings({
+  var settings33 = definePluginSettings({
     width: {
       type: 1 /* NUMBER */,
       description: "Maximum chat width in rem.",
@@ -27950,7 +28016,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
   function applyWidth() {
-    const w = settings32.store.width;
+    const w = settings33.store.width;
     registerStyle(STYLE_NAME9, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
   var widerChat_default = definePlugin({
@@ -27959,7 +28025,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     description: "Adjustable chat width for big monitors.",
     authors: [Devs.Prism],
     tags: ["chat", "ui"],
-    settings: settings32,
+    settings: settings33,
     start: applyWidth,
     onSettingsChange: applyWidth,
     stop() {
@@ -27982,6 +28048,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterImagine_default.updatedAt = 1790093417000;
   betterLinks_default.updatedAt = 1787870966000;
   betterNavigator_default.updatedAt = 1790145289000;
+  betterQuotes_default.updatedAt = 0;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;
@@ -28007,11 +28074,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1788577403000;
   noSidebarPlugins_default.updatedAt = 1789807577000;
   oneko_default.updatedAt = 1787870966000;
-  placeholder_default.updatedAt = 1790093417000;
+  placeholder_default.updatedAt = 1790156512000;
   pluginsFlyout_default.updatedAt = 1788051053000;
   queuePersist_default.updatedAt = 1790130266000;
-  quoteJump_default.updatedAt = 1790105896000;
-  quoteSticky_default.updatedAt = 1790105896000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1788095208000;
@@ -28021,7 +28086,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   usageDisplay_default.updatedAt = 1789172854000;
   userQuotes_default.updatedAt = 1789905284000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterNavigator_default.name]: betterNavigator_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [compactModeSelect_default.name]: compactModeSelect_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [modeSync_default.name]: modeSync_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [queuePersist_default.name]: queuePersist_default, [quoteJump_default.name]: quoteJump_default, [quoteSticky_default.name]: quoteSticky_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterNavigator_default.name]: betterNavigator_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [compactModeSelect_default.name]: compactModeSelect_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [modeSync_default.name]: modeSync_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [queuePersist_default.name]: queuePersist_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
@@ -28295,14 +28360,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // src/VoidPP.ts
-  var logger39 = new Logger("TurbopackPatcher", "#e78284");
+  var logger40 = new Logger("TurbopackPatcher", "#e78284");
   var FALLBACK_MS = 15000;
   var ORPHAN_REPORT_DELAY_MS = 5000;
   function safely(name, fn) {
     try {
       fn();
     } catch (e) {
-      logger39.error(`${name} failed:`, e);
+      logger40.error(`${name} failed:`, e);
     }
   }
   function deferOrphanReport() {
@@ -28323,7 +28388,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       safely("initStreamEvents", initStreamEvents);
       safely("_resolveReady", _resolveReady);
       safely("startAllPlugins", () => startAllPlugins("TurbopackReady" /* TurbopackReady */));
-      logger39.info(`${getModuleCache().size} modules loaded, ready`);
+      logger40.info(`${getModuleCache().size} modules loaded, ready`);
       safely("retryFailedPlugins", retryFailedPlugins);
       safely("deferOrphanReport", deferOrphanReport);
       safely("checkBuildFingerprint", checkBuildFingerprint);

@@ -35,8 +35,7 @@
 | <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | 开 | 队列每条显示模式芯片，发出去用该条入队时的模型，点芯片可改。切会话保持 picker，直到 load-responses 结束（`stickyOnNavigate`、`showQueueMode`）。 |
 | <img src="https://api.iconify.design/lucide/rotate-ccw.svg?color=%238b949e" width="16" height="16" alt=""> QueuePersist | 开 | 刷新后把本机未发送的排队消息灌回官方队列。 |
 | <img src="https://api.iconify.design/lucide/text-quote.svg?color=%238b949e" width="16" height="16" alt=""> UserQuotes | 开 | 自己气泡里的引用行画出可见左竖条，避免 `>` 被 markdown 吃掉后看起来像消失。 |
-| <img src="https://api.iconify.design/lucide/message-square-quote.svg?color=%238b949e" width="16" height="16" alt=""> QuoteSticky | 开 | 切到其他会话再切回来时，保留输入框上的引用条。 |
-| <img src="https://api.iconify.design/lucide/text-search.svg?color=%238b949e" width="16" height="16" alt=""> QuoteJump | 开 | 点输入框引用芯片（或已发送的引用卡）滚到被引原文，而不是只停在那条消息顶部。 |
+| <img src="https://api.iconify.design/lucide/message-square-quote.svg?color=%238b949e" width="16" height="16" alt=""> BetterQuotes | 开 | 点输入框引用芯片（或已发送的引用卡）滚到被引原文（`jumpToPassage`）。切会话再回来时保留引用条（`persistAcrossChats`）。 |
 | <img src="https://api.iconify.design/lucide/blocks.svg?color=%238b949e" width="16" height="16" alt=""> NoSidebarPlugins | 开 | 把侧栏 Plugins 按钮挪到头像折叠菜单（Void++ / Help 旁边）。 |
 | <img src="https://api.iconify.design/lucide/lightbulb.svg?color=%238b949e" width="16" height="16" alt=""> NoBuildStarters | 开 | 隐藏 Build 模式输入框上方的 Ideas 胶囊栏。 |
 | <img src="https://api.iconify.design/lucide/circle-check.svg?color=%238b949e" width="16" height="16" alt=""> CompleteToast | 开 | 后台会话完成后弹出 toast，点击打开。可选 `keepUntilDismissed`：一直留到点 X 或打开该会话。可选 `imagineGeneration`（默认关）在离开 Imagine 时提示生成完成。 |
@@ -76,3 +75,5 @@
 | <img src="https://api.iconify.design/lucide/plus.svg?color=%238b949e" width="16" height="16" alt=""> SidebarHeaderHover | — | 已并入 BetterSidebar（`titleRowHover`、`chatsPlus`）。 |
 | <img src="https://api.iconify.design/lucide/scroll-text.svg?color=%238b949e" width="16" height="16" alt=""> ThemedScrollbar | — | 已并入 BetterCanvas。 |
 | <img src="https://api.iconify.design/lucide/panel-right-close.svg?color=%238b949e" width="16" height="16" alt=""> NoRightPanel | — | 已并入 BetterCanvas。 |
+| <img src="https://api.iconify.design/lucide/message-square-quote.svg?color=%238b949e" width="16" height="16" alt=""> QuoteSticky | — | 已并入 BetterQuotes（`persistAcrossChats`）。 |
+| <img src="https://api.iconify.design/lucide/text-search.svg?color=%238b949e" width="16" height="16" alt=""> QuoteJump | — | 已并入 BetterQuotes（`jumpToPassage`）。 |

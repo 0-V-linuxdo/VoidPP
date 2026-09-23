@@ -72,7 +72,9 @@ Correct path:
 
 Do not touch ComposerOpacity, InputHistory, BetterCanvas, or real-input autosize for this.
 
-## QuoteSticky
+## BetterQuotes
+
+QuoteJump and QuoteSticky are one plugin. `jump.ts` scrolls; `sticky.ts` persists. Do not fold either into UserQuotes. Do not couple persist fixes to ModeSync, the stop button, or the scroll math in `jump.ts`.
 
 `quotedText` / `quotePopupData` are one global pair. There is no `quotedTextByConversationId`. Only drafts use `queryByConversationId`. After conversation hydrate the official composer does not remount a chip from `setQuotedText` plus a cloned popup. Persist UI is the fallback chip.
 
@@ -92,7 +94,9 @@ Host the fallback as a sibling of `.query-bar` (form / composer shell / `documen
 
 Do not wrap `setChatPageLoaded` to fight hydrate. That fought ModeSync. Restore on dest settle plus observer paint is enough.
 
-QuoteJump reads the chip text (including `.void-qs-chip`). It does not need the official chip. Click-to-line uses `Range.getClientRects()[0]` plus visual viewport mid-Y, not `scrollIntoView` on the message root. Do not couple QuoteSticky persist fixes to ModeSync, the stop button, or that scroll math.
+Jump reads the chip text (including `.void-qs-chip`). It does not need the official chip. Click-to-line uses `Range.getClientRects()[0]` plus visual viewport mid-Y, not `scrollIntoView` on the message root.
+
+Settings: `jumpToPassage` and `persistAcrossChats`, both default on. First register migrates `plugins.QuoteJump.enabled === false` and `plugins.QuoteSticky.enabled === false` onto those flags, then deletes the old keys (and pin/star entries) before orphan prune. Both old plugins explicitly off also turns BetterQuotes off.
 
 Regression table:
 
