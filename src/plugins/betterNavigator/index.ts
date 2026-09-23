@@ -1014,8 +1014,6 @@ function clampMenu() {
     const menu = host?.querySelector<HTMLElement>(".void-bn-menu");
     if (!menu || !host) return;
     const span = columnSpan();
-    menu.style.maxHeight = "none";
-    menu.style.overflowY = "hidden";
     const natural = menu.scrollHeight;
     const cap = span.height;
     menu.style.maxHeight = `${cap}px`;

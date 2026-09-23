@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.6
+// @version      20260923.7
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.6] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7433,9 +7433,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1e44ff0"}`
-    }, `(${"1e44ff0"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ab5b0c3"}`
+    }, `(${"ab5b0c3"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -23629,8 +23629,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!menu2 || !host2)
       return;
     const span2 = columnSpan();
-    menu2.style.maxHeight = "none";
-    menu2.style.overflowY = "hidden";
     const natural = menu2.scrollHeight;
     const cap2 = span2.height;
     menu2.style.maxHeight = `${cap2}px`;
@@ -27977,7 +27975,7 @@ html.void-rt-open [data-sidebar="gap"] {
   betterSidebar_default.updatedAt = 1789807577000;
   placeholder_default.updatedAt = 1790093417000;
   messageTimestamps_default.updatedAt = 1789881463000;
-  betterNavigator_default.updatedAt = 1790143500000;
+  betterNavigator_default.updatedAt = 1790144912000;
   betterCanvas_default.updatedAt = 1790140416000;
   cleaner_default.updatedAt = 1790093417000;
   queuePersist_default.updatedAt = 1790130266000;
