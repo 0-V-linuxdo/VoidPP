@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.23
+// @version      20260923.24
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.23] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.24] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7515,7 +7515,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.23] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260923.24] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"3d7ce7e"}`
     }, `(${"3d7ce7e"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -14300,54 +14300,78 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return "";
     }
   }
-  function isDismissButton(btn) {
-    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
-    if (KEEP.test(label))
-      return false;
-    if (DISMISS.test(label))
-      return true;
-    return !(btn.textContent || "").replace(/\s+/g, "") && !!btn.querySelector("svg");
+  function pathData(svg) {
+    return [...svg.querySelectorAll("path")].map((p) => (p.getAttribute("d") || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" ");
   }
   function isCloseSvg(svg) {
-    if (svg.querySelectorAll("line").length >= 2)
-      return true;
-    const d = [...svg.querySelectorAll("path")].map((p) => (p.getAttribute("d") || "").replace(/\s+/g, " ")).join(" ");
+    const d = pathData(svg);
     if (!d)
       return false;
     return /(?:^|\s)[Mm]18\s+6\b|[Mm]6\s+6\b/.test(d) && /6\s+18|18\s+6|12\s+12/.test(d);
   }
-  function isDismissSvg(svg, row) {
-    if (svg.hasAttribute(SIBLING))
-      return true;
-    const btn = svg.closest("button, [role='button']");
-    if (btn instanceof HTMLElement && row.contains(btn) && isDismissButton(btn))
-      return true;
-    if (isCloseSvg(svg))
-      return true;
-    const all = [...row.querySelectorAll("svg")].filter((s) => !s.hasAttribute(SIBLING));
-    if (all.length >= 2 && all[all.length - 1] === svg) {
-      const box = svg.getBoundingClientRect();
-      if (box.width <= 28 && box.height <= 28)
+  function isBars(svg) {
+    if (svg.getAttribute(MARK) === "1" || pathsMatch(svg))
+      return false;
+    const lines = [...svg.querySelectorAll("line")];
+    if (lines.length >= 2 && lines.length <= 4) {
+      const horiz = lines.filter((l) => {
+        const y1 = Number.parseFloat(l.getAttribute("y1") || "");
+        const y2 = Number.parseFloat(l.getAttribute("y2") || "");
+        return Number.isFinite(y1) && Number.isFinite(y2) && Math.abs(y1 - y2) < 0.8;
+      });
+      if (horiz.length >= 2)
         return true;
     }
-    return false;
+    const paths = [...svg.querySelectorAll("path")].map((p) => (p.getAttribute("d") || "").replace(/\s+/g, " ").trim()).filter(Boolean);
+    const horiz = paths.filter((d) => /^[Mm]\s*-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*[Hh]/.test(d) && !/[VvAaCcQq]/.test(d) && d.length < 28);
+    if (horiz.length >= 2)
+      return true;
+    const joined = paths.join(" ");
+    const h = joined.match(/[Hh]\s*-?\d/g)?.length ?? 0;
+    return h >= 3 && joined.length < 96 && !/[AaCcQq]/.test(joined);
   }
   function pathsMatch(svg) {
     if (svg.childElementCount !== PATHS.length)
       return false;
     return [...svg.children].every((el, i) => el.localName === "path" && el.getAttribute("d") === PATHS[i]);
   }
+  function iconSvgs(row) {
+    const out = [];
+    for (const svg of row.querySelectorAll("svg")) {
+      if (!(svg instanceof SVGSVGElement))
+        continue;
+      if (svg.closest(".void-qs-chip") || svg.hasAttribute(SIBLING))
+        continue;
+      const box = svg.getBoundingClientRect();
+      if (box.width > 40 || box.height > 40 || box.width < 1 || box.height < 1)
+        continue;
+      out.push(svg);
+    }
+    out.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left || a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+    return out;
+  }
+  function glyphSvg(row) {
+    const svgs = iconSvgs(row);
+    const ours = svgs.find((s) => s.getAttribute(MARK) === "1" || pathsMatch(s));
+    if (ours)
+      return ours;
+    const bars = svgs.find(isBars);
+    if (bars)
+      return bars;
+    const left = svgs.find((s) => !isCloseSvg(s));
+    return left ?? null;
+  }
   function chipRows(text) {
     const q = norm(text);
     const clip = q.slice(0, 12);
     if (clip.length < 2)
       return [];
-    const byBar = new Map;
+    const out = [];
     for (const bar of document.querySelectorAll(QUERY)) {
       if (!(bar instanceof HTMLElement))
         continue;
       const found = [];
-      for (const n of bar.querySelectorAll("div, span")) {
+      for (const n of bar.querySelectorAll("div, span, button")) {
         if (!(n instanceof HTMLElement))
           continue;
         if (n.closest(".tiptap, [contenteditable='true'], .void-qs-chip"))
@@ -14359,38 +14383,21 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         const rowText = norm(n.textContent || "");
         if (!rowText.includes(clip) || rowText.length > q.length + 48)
           continue;
-        if (!n.querySelector("svg"))
+        if (!glyphSvg(n))
           continue;
         found.push(n);
       }
-      if (found.length)
-        byBar.set(bar, found);
-    }
-    const out = [];
-    for (const list of byBar.values()) {
-      const outer = list.filter((el) => !list.some((other) => other !== el && other.contains(el)));
-      const withX = outer.filter((el) => [...el.querySelectorAll("svg")].some((svg) => svg instanceof SVGElement && isDismissSvg(svg, el)));
-      const pool = withX.length ? withX : outer;
-      pool.sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width);
-      if (pool[0])
-        out.push(pool[0]);
+      const bars = found.filter((el) => {
+        const g = glyphSvg(el);
+        return !!g && (g.getAttribute(MARK) === "1" || pathsMatch(g) || isBars(g));
+      });
+      const pool = bars.length ? bars : found;
+      const inner = pool.filter((el) => !pool.some((other) => other !== el && el.contains(other)));
+      inner.sort((a, b) => (glyphSvg(a)?.getBoundingClientRect().left ?? 0) - (glyphSvg(b)?.getBoundingClientRect().left ?? 0));
+      if (inner[0])
+        out.push(inner[0]);
     }
     return out;
-  }
-  function leadingSvg(row) {
-    for (const svg of row.querySelectorAll("svg")) {
-      if (!(svg instanceof SVGSVGElement))
-        continue;
-      if (svg.closest(".void-qs-chip"))
-        continue;
-      if (isDismissSvg(svg, row))
-        continue;
-      const box = svg.getBoundingClientRect();
-      if (box.width > 32 || box.height > 32)
-        continue;
-      return svg;
-    }
-    return null;
   }
   function applyGlyph(svg) {
     if (!pathsMatch(svg)) {
@@ -14399,13 +14406,22 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const vb = svg.getAttribute("viewBox");
       if (vb !== "0 0 24 24" && !svg.hasAttribute(VB))
         svg.setAttribute(VB, vb ?? "");
-      svg.replaceChildren(...PATHS.map((d) => {
-        const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        p.setAttribute("d", d);
-        return p;
-      }));
+      const kids = [...svg.children];
+      if (kids.length === PATHS.length && kids.every((el) => el.localName === "path")) {
+        kids.forEach((el, i) => {
+          if (el.getAttribute("d") !== PATHS[i])
+            el.setAttribute("d", PATHS[i]);
+        });
+      } else {
+        svg.replaceChildren(...PATHS.map((d) => {
+          const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          p.setAttribute("d", d);
+          return p;
+        }));
+      }
     }
-    svg.setAttribute(MARK, "1");
+    if (svg.getAttribute(MARK) !== "1")
+      svg.setAttribute(MARK, "1");
     if (svg.getAttribute("fill") !== "none")
       svg.setAttribute("fill", "none");
     if (svg.getAttribute("stroke") !== "currentColor")
@@ -14457,7 +14473,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     for (const n of document.querySelectorAll(`[${SIBLING}]`))
       n.remove();
   }
-  function paint3() {
+  function paint2() {
     if (!armed)
       return;
     if (onImaginePage2() || !quotedText()) {
@@ -14467,8 +14483,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const rows = chipRows(quotedText());
     const keep = new Set;
     for (const row of rows) {
-      const svg = leadingSvg(row);
-      if (!svg)
+      const svg = glyphSvg(row);
+      if (!svg || isCloseSvg(svg))
         continue;
       applyGlyph(svg);
       keep.add(svg);
@@ -14486,7 +14502,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     raf2 = requestAnimationFrame(() => {
       raf2 = 0;
       if (armed)
-        paint3();
+        paint2();
     });
   }
   function startIcons() {
@@ -14494,7 +14510,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     armed = true;
     observer = new MutationObserver(schedule);
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["d"]
+    });
     try {
       let seen = quotedText();
       unsub = ChatPageStore.useChatPageStore.subscribe(() => {
