@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.16
+// @version      20260923.17
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.16] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.17] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7489,9 +7489,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"720e344"}`
-    }, `(${"720e344"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"afa7780"}`
+    }, `(${"afa7780"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -19226,6 +19226,41 @@ html.void-rt-open [data-sidebar="gap"] {
     contain: layout;
 }
 
+.void-ph-tabs {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid hsl(var(--border-l2));
+    border-radius: 0.75rem;
+    background: hsl(var(--surface-l2));
+}
+
+.void-ph-tab {
+    flex: 1;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: hsl(var(--fg-secondary));
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.void-ph-tab-active {
+    background: hsl(var(--surface-l1));
+    color: hsl(var(--fg-primary));
+    box-shadow: inset 0 0 0 1px hsl(var(--border-l2));
+}
+
+.void-ph-tab:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px hsl(var(--fg-primary));
+}
+
 .void-ph-textarea-wrap {
     border: 1px solid hsl(var(--border-l2));
     border-radius: 0.75rem;
@@ -19362,12 +19397,12 @@ html.void-rt-open [data-sidebar="gap"] {
     phrases: {
       type: 6 /* COMPONENT */,
       default: DEFAULT_PHRASES,
-      component: PhrasesEditor
+      component: PhraseListsEditor
     },
     imaginePhrases: {
       type: 6 /* COMPONENT */,
       default: "",
-      component: ImaginePhrasesEditor
+      component: () => null
     }
   }).withPrivateSettings();
   var OLD_NAME = "Placeholder";
@@ -19444,44 +19479,40 @@ html.void-rt-open [data-sidebar="gap"] {
       }
     });
   }
-  function PhrasesEditor() {
-    const { phrases } = settings20.use(["phrases"]);
+  function PhraseListsEditor() {
+    const [tab, setTab] = useState("phrases");
+    const { phrases, imaginePhrases } = settings20.use(["phrases", "imaginePhrases"]);
+    const home = tab === "phrases";
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
       className: cl27("root")
-    }, /* @__PURE__ */ React.createElement(Flex, {
-      alignItems: "center",
-      gap: "0.375rem"
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      size: "sm",
-      weight: "medium"
-    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl27("textarea-wrap")
-    }, /* @__PURE__ */ React.createElement(Textarea, {
+    }, /* @__PURE__ */ React.createElement("div", {
+      className: cl27("tabs"),
+      role: "tablist"
+    }, /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      role: "tab",
+      "aria-selected": home,
+      className: cl27("tab", home && "tab-active"),
+      onClick: () => setTab("phrases")
+    }, "Phrases"), /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      role: "tab",
+      "aria-selected": !home,
+      className: cl27("tab", !home && "tab-active"),
+      onClick: () => setTab("imagine")
+    }, "Imagine")), /* @__PURE__ */ React.createElement(InfoHint, null, home ? "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults." : `One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's "Type to imagine".`), /* @__PURE__ */ React.createElement("div", {
+      className: cl27("textarea-wrap"),
+      role: "tabpanel"
+    }, home ? /* @__PURE__ */ React.createElement(Textarea, {
       className: cl27("textarea"),
       value: phrases ?? DEFAULT_PHRASES,
       onChange: (e) => {
         settings20.store.phrases = e.target.value;
       },
       placeholder: DEFAULT_PHRASES
-    })));
-  }
-  function ImaginePhrasesEditor() {
-    const { imaginePhrases } = settings20.use(["imaginePhrases"]);
-    return /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "0.5rem",
-      className: cl27("root")
-    }, /* @__PURE__ */ React.createElement(Flex, {
-      alignItems: "center",
-      gap: "0.375rem"
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      size: "sm",
-      weight: "medium"
-    }, "Imagine phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, `One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's "Type to imagine".`)), /* @__PURE__ */ React.createElement("div", {
-      className: cl27("textarea-wrap")
-    }, /* @__PURE__ */ React.createElement(Textarea, {
+    }) : /* @__PURE__ */ React.createElement(Textarea, {
       className: cl27("textarea"),
       value: imaginePhrases ?? "",
       onChange: (e) => {
@@ -28412,7 +28443,7 @@ div:has(> #grok-bot-nav-button) {
   customSidebarIdentity_default.updatedAt = 1789918488000;
   downloadTTS_default.updatedAt = 1787870966000;
   recentTopics_default.updatedAt = 1789881195000;
-  customGreeting_default.updatedAt = 1790162008000;
+  customGreeting_default.updatedAt = 1790163144000;
   betterAvatarPlugins_default.updatedAt = 1790162678000;
   betterLinks_default.updatedAt = 1787870966000;
   experiments_default.updatedAt = 1788047438000;

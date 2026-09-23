@@ -7,10 +7,10 @@
 import "./styles.css";
 
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
-import { Flex, InfoHint, Text, Textarea } from "@components";
+import { Flex, InfoHint, Textarea } from "@components";
 import { MessageCircleIcon } from "@components/icons";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
-import { React } from "@turbopack/common/react";
+import { React, useState } from "@turbopack/common/react";
 import { RoutingStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classNameFactory, registerStyle, unregisterStyle } from "@utils/css";
@@ -80,12 +80,12 @@ const settings = definePluginSettings({
     phrases: {
         type: OptionType.COMPONENT,
         default: DEFAULT_PHRASES,
-        component: PhrasesEditor,
+        component: PhraseListsEditor,
     },
     imaginePhrases: {
         type: OptionType.COMPONENT,
         default: "",
-        component: ImaginePhrasesEditor,
+        component: () => null,
     },
 }).withPrivateSettings<{ phrases: string; imaginePhrases: string; greetIndex: number; lastRandom: number }>();
 
@@ -161,41 +161,51 @@ if (pluginName?.set && pluginName.get) {
     });
 }
 
-function PhrasesEditor() {
-    const { phrases } = settings.use(["phrases"]);
+function PhraseListsEditor() {
+    const [tab, setTab] = useState<"phrases" | "imagine">("phrases");
+    const { phrases, imaginePhrases } = settings.use(["phrases", "imaginePhrases"]);
+    const home = tab === "phrases";
     return (
         <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
-            <Flex alignItems="center" gap="0.375rem">
-                <Text size="sm" weight="medium">Phrases</Text>
-                <InfoHint>One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.</InfoHint>
-            </Flex>
-            <div className={cl("textarea-wrap")}>
-                <Textarea
-                    className={cl("textarea")}
-                    value={phrases ?? DEFAULT_PHRASES}
-                    onChange={e => { settings.store.phrases = e.target.value; }}
-                    placeholder={DEFAULT_PHRASES}
-                />
+            <div className={cl("tabs")} role="tablist">
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={home}
+                    className={cl("tab", home && "tab-active")}
+                    onClick={() => setTab("phrases")}
+                >
+                    Phrases
+                </button>
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={!home}
+                    className={cl("tab", !home && "tab-active")}
+                    onClick={() => setTab("imagine")}
+                >
+                    Imagine
+                </button>
             </div>
-        </Flex>
-    );
-}
-
-function ImaginePhrasesEditor() {
-    const { imaginePhrases } = settings.use(["imaginePhrases"]);
-    return (
-        <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
-            <Flex alignItems="center" gap="0.375rem">
-                <Text size="sm" weight="medium">Imagine phrases</Text>
-                <InfoHint>One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's "Type to imagine".</InfoHint>
-            </Flex>
-            <div className={cl("textarea-wrap")}>
-                <Textarea
-                    className={cl("textarea")}
-                    value={imaginePhrases ?? ""}
-                    onChange={e => { settings.store.imaginePhrases = e.target.value; }}
-                    placeholder={"A cat astronaut on the moon\nNeon rain in a quiet city"}
-                />
+            <InfoHint>{home
+                ? "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults."
+                : "One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's \"Type to imagine\"."}</InfoHint>
+            <div className={cl("textarea-wrap")} role="tabpanel">
+                {home ? (
+                    <Textarea
+                        className={cl("textarea")}
+                        value={phrases ?? DEFAULT_PHRASES}
+                        onChange={e => { settings.store.phrases = e.target.value; }}
+                        placeholder={DEFAULT_PHRASES}
+                    />
+                ) : (
+                    <Textarea
+                        className={cl("textarea")}
+                        value={imaginePhrases ?? ""}
+                        onChange={e => { settings.store.imaginePhrases = e.target.value; }}
+                        placeholder={"A cat astronaut on the moon\nNeon rain in a quiet city"}
+                    />
+                )}
             </div>
         </Flex>
     );
