@@ -11765,7 +11765,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var QITEM = "data-void-qitem";
   var RESTORE_ATTR = "data-void-mode-sync-restore";
   var LOAD_TAIL_MS = 400;
-  var OVERRIDE_MS = 1000;
+  var OVERRIDE_MS = 2000;
+  var STASH_MS = 2000;
   var CHAT_WRAP = ["sendResponse", "establishNewConversation"];
   var RESP_WRAP = ["streamResponse", "streamCreateAndRespond"];
   var MSG_WRAP = ["queueMessage", "sendMessage"];
@@ -11808,6 +11809,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var EMPTY = { modeId: "", modelMode: "", activeModelId: "" };
   var held = new Map;
   var itemIntent = new Map;
+  var itemBody = new Map;
+  var removed = new Map;
   var diverting = null;
   var pendingEnqueue = null;
   var sendOverride = null;
@@ -11986,8 +11989,12 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       const chat = ChatPageStore.useChatPageStore.getState();
       if (next.modelMode && chat.modelMode !== next.modelMode)
         chat.setModelMode(next.modelMode);
-      if (next.activeModelId && chat.activeModelId !== next.activeModelId)
-        chat.setActiveModelId(next.activeModelId);
+      if (next.activeModelId) {
+        if (chat.activeModelId !== next.activeModelId)
+          chat.setActiveModelId(next.activeModelId);
+      } else if (chat.activeModelId) {
+        chat.setActiveModelId("");
+      }
     } catch (e) {
       logger20.debug("apply failed", e);
     } finally {
@@ -11999,16 +12006,23 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       return fn();
     const restore = pickerIntent();
     sendOverride = item;
+    applyIntent(item);
     try {
-      applyIntent(item);
       return fn();
     } finally {
-      sendOverride = null;
-      if (overrideTail) {
-        clearTimeout(overrideTail);
-        overrideTail = null;
-      }
-      applyIntent(restore);
+      const token = item;
+      queueMicrotask(() => {
+        setTimeout(() => {
+          if (sendOverride !== token)
+            return;
+          sendOverride = null;
+          if (overrideTail) {
+            clearTimeout(overrideTail);
+            overrideTail = null;
+          }
+          applyIntent(restore);
+        }, 0);
+      });
     }
   }
   function armOverride(item) {
@@ -12130,6 +12144,16 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       return null;
     }
   }
+  function intentForBody(text) {
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return liveIntent();
+    }
+    const queued = intentFromPayload(parsed);
+    return queued?.modeId ? queued : liveIntent();
+  }
   function requestUrl(input) {
     if (typeof input === "string")
       return input;
@@ -12187,10 +12211,17 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   }
   function pruneIntents() {
+    const now = Date.now();
+    for (const [id, row] of removed) {
+      if (now - row.at > STASH_MS)
+        removed.delete(id);
+    }
     const live = new Set;
     for (const list of held.values())
       for (const h of list)
         live.add(h.id);
+    for (const id of removed.keys())
+      live.add(id);
     let convs = [];
     try {
       convs = Object.values(MessageStore.useMessageStore.getState().conversations);
@@ -12206,6 +12237,9 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     for (const id of itemIntent.keys())
       if (!live.has(id))
         itemIntent.delete(id);
+    for (const id of itemBody.keys())
+      if (!live.has(id))
+        itemBody.delete(id);
   }
   function holdQueueEvent(cid, event) {
     if (!event || typeof event !== "object")
@@ -12218,6 +12252,9 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       const saved = pendingEnqueue?.intent ?? (intent.modeId ? intent : liveIntent());
       if (saved.modeId)
         itemIntent.set(id, { ...saved });
+      const body = (pendingEnqueue?.args.text || eventText(event)).trim();
+      if (body)
+        itemBody.set(id, body);
       schedulePaint();
       if (diverting) {
         mapGetOrCreate(held, cid, () => []).push({ id, args: diverting, intent: { ...saved } });
@@ -12229,6 +12266,9 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
     if (type !== QUEUE_REMOVE)
       return false;
+    const saved = itemIntent.get(id);
+    if (saved?.modeId)
+      removed.set(id, { intent: { ...saved }, text: itemBody.get(id) || "", at: Date.now() });
     const list = held.get(cid);
     if (list) {
       const idx = list.findIndex((h) => h.id === id);
@@ -12320,6 +12360,12 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       return content.query.trim();
     return "";
   }
+  function bodyOfItem(conv, id) {
+    const saved = itemBody.get(id);
+    if (saved)
+      return saved;
+    return conv ? itemText(conv, id) : "";
+  }
   function intentForText(cid, text) {
     const body = text.trim();
     if (!body || !cid)
@@ -12329,15 +12375,67 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         return turn.intent;
     }
     const conv = conversation(cid);
-    if (!conv)
-      return;
-    for (const q of conv.queue) {
-      const id = qid(q);
-      const saved = id ? itemIntent.get(id) : undefined;
-      if (saved?.modeId && itemText(conv, id) === body)
+    if (conv) {
+      for (const q of conv.queue) {
+        const id = qid(q);
+        const saved = id ? itemIntent.get(id) : undefined;
+        if (saved?.modeId && bodyOfItem(conv, id) === body)
+          return saved;
+      }
+    }
+    for (const [id, saved] of itemIntent) {
+      if (saved.modeId && itemBody.get(id) === body)
         return saved;
     }
+    for (const row of removed.values()) {
+      if (row.text === body && row.intent.modeId)
+        return row.intent;
+    }
     return;
+  }
+  function queuedIntent(cid, text, id) {
+    const now = Date.now();
+    for (const [key, row] of removed) {
+      if (now - row.at > STASH_MS)
+        removed.delete(key);
+    }
+    if (id) {
+      const saved = itemIntent.get(id);
+      if (saved?.modeId)
+        return saved;
+      const gone = removed.get(id);
+      if (gone?.intent.modeId)
+        return gone.intent;
+    }
+    const byText = intentForText(cid, text);
+    if (byText?.modeId)
+      return byText;
+    const body = text.trim();
+    if (!body && removed.size === 1) {
+      const only = removed.values().next().value;
+      if (only?.intent.modeId)
+        return only.intent;
+    }
+    const conv = cid ? conversation(cid) : undefined;
+    const front = conv?.queue?.[0];
+    const frontId = front ? qid(front) : "";
+    const frontIntent = frontId ? itemIntent.get(frontId) : undefined;
+    if (!frontIntent?.modeId)
+      return;
+    const frontText = bodyOfItem(conv, frontId);
+    if (body && frontText === body)
+      return frontIntent;
+    return;
+  }
+  function intentFromPayload(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw))
+      return;
+    const rec = raw;
+    const nested = rec.item && typeof rec.item === "object" && !Array.isArray(rec.item) ? rec.item : undefined;
+    const id = qid(rec) || (nested ? qid(nested) : "");
+    const text = textOf(rec) || (nested ? textOf(nested) : "");
+    const cid = typeof rec.conversationId === "string" ? rec.conversationId : typeof rec.convId === "string" ? rec.convId : currentCid2();
+    return queuedIntent(cid, text, id);
   }
   function eventItemIntent(event, cid) {
     if (!event || typeof event !== "object")
@@ -12345,11 +12443,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     const rec = event;
     if (rec.type !== QUEUE_INTERJECT && rec.type !== "response.create")
       return;
-    const id = eventQueueId(event);
-    const saved = id ? itemIntent.get(id) : undefined;
-    if (saved?.modeId)
-      return saved;
-    return intentForText(cid, eventText(event));
+    return queuedIntent(cid, eventText(event), eventQueueId(event));
   }
   function wrapGatewaySend() {
     try {
@@ -12412,12 +12506,17 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       if (onImaginePage2())
         return orig.apply(this, args);
       const [first] = args;
-      const queued = !sendOverride && isTurnArgs(first) ? intentForText(first.convId, first.text) : undefined;
-      if (queued?.modeId) {
-        return withSendIntent(queued, () => {
-          patchSendArgs(args, queued);
-          return orig.apply(this, args);
-        });
+      if (!sendOverride) {
+        const id = qid(first);
+        const text = isTurnArgs(first) ? first.text : "";
+        const cid = isTurnArgs(first) ? first.convId : currentCid2();
+        const queued = queuedIntent(cid, text, id);
+        if (queued?.modeId) {
+          return withSendIntent(queued, () => {
+            patchSendArgs(args, queued);
+            return orig.apply(this, args);
+          });
+        }
       }
       const live = liveIntent();
       if (live.modeId) {
@@ -12513,7 +12612,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       return null;
     if (!CHAT_POST.test(url) || STOP_URL.test(url) || text == null)
       return null;
-    const live = liveIntent();
+    const live = intentForBody(text);
     if (!live.modeId)
       return null;
     const next = rewriteJsonBody(text, live);
@@ -13057,6 +13156,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       unwrapSendFns();
       held.clear();
       itemIntent.clear();
+      itemBody.clear();
+      removed.clear();
       diverting = null;
       pendingEnqueue = null;
       sendOverride = null;
@@ -27427,7 +27528,7 @@ Neon rain in a quiet city`
   cleaner_default.updatedAt = 1790093417000;
   betterSidebar_default.updatedAt = 1789918820000;
   betterImagine_default.updatedAt = 1790093417000;
-  modeSync_default.updatedAt = 1790112209000;
+  modeSync_default.updatedAt = 1790130266000;
   messageTimestamps_default.updatedAt = 1789918820000;
   autoRetry_default.updatedAt = 1789918820000;
   userQuotes_default.updatedAt = 1789918820000;
@@ -27447,7 +27548,7 @@ Neon rain in a quiet city`
   betterCanvas_default.updatedAt = 1790093417000;
   noSidebarPlugins_default.updatedAt = 1789918820000;
   composerOpacity_default.updatedAt = 1790097681000;
-  queuePersist_default.updatedAt = 1790112209000;
+  queuePersist_default.updatedAt = 1790130266000;
   exportChat_default.updatedAt = 1789918820000;
   autoCollapse_default.updatedAt = 1789918820000;
   usageDisplay_default.updatedAt = 1789918820000;

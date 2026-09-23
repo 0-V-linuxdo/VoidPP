@@ -56,7 +56,7 @@ Install by clicking the badge (jsDelivr, default `voidpp` branch, no GitHub `CSP
 | Feature | Default | What it does |
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | On | Hide inaccessible models in the model selector again. |
-| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | On | A single queued row shows its mode chip, not only drag-sortable rows. |
+| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | On | A queued row sends with that row's mode, not the model of the turn that just finished. |
 
 #### Settings UI
 

@@ -39,7 +39,8 @@ const QOPT = "void-ms-qopt";
 const QITEM = "data-void-qitem";
 const RESTORE_ATTR = "data-void-mode-sync-restore";
 const LOAD_TAIL_MS = 400;
-const OVERRIDE_MS = 1000;
+const OVERRIDE_MS = 2000;
+const STASH_MS = 2000;
 const CHAT_WRAP = ["sendResponse", "establishNewConversation"] as const;
 const RESP_WRAP = ["streamResponse", "streamCreateAndRespond"] as const;
 const MSG_WRAP = ["queueMessage", "sendMessage"] as const;
@@ -99,6 +100,8 @@ interface HeldTurn {
 const EMPTY: Intent = { modeId: "", modelMode: "", activeModelId: "" };
 const held = new Map<string, HeldTurn[]>();
 const itemIntent = new Map<string, Intent>();
+const itemBody = new Map<string, string>();
+const removed = new Map<string, { intent: Intent; text: string; at: number }>();
 let diverting: GatewayTurnArgs | null = null;
 let pendingEnqueue: { args: GatewayTurnArgs; intent: Intent } | null = null;
 let sendOverride: Intent | null = null;
@@ -275,7 +278,11 @@ function applyIntent(next: Intent) {
         if (modes.selectedModeId !== next.modeId) modes.setSelectedModeId(next.modeId, { source: "sync" });
         const chat = ChatPageStore.useChatPageStore.getState();
         if (next.modelMode && chat.modelMode !== next.modelMode) chat.setModelMode(next.modelMode as ModelMode);
-        if (next.activeModelId && chat.activeModelId !== next.activeModelId) chat.setActiveModelId(next.activeModelId as ModelId);
+        if (next.activeModelId) {
+            if (chat.activeModelId !== next.activeModelId) chat.setActiveModelId(next.activeModelId as ModelId);
+        } else if (chat.activeModelId) {
+            chat.setActiveModelId("" as ModelId);
+        }
     } catch (e) {
         logger.debug("apply failed", e);
     } finally {
@@ -287,16 +294,22 @@ function withSendIntent<T>(item: Intent, fn: () => T): T {
     if (!item.modeId) return fn();
     const restore = pickerIntent();
     sendOverride = item;
+    applyIntent(item);
     try {
-        applyIntent(item);
         return fn();
     } finally {
-        sendOverride = null;
-        if (overrideTail) {
-            clearTimeout(overrideTail);
-            overrideTail = null;
-        }
-        applyIntent(restore);
+        const token = item;
+        queueMicrotask(() => {
+            setTimeout(() => {
+                if (sendOverride !== token) return;
+                sendOverride = null;
+                if (overrideTail) {
+                    clearTimeout(overrideTail);
+                    overrideTail = null;
+                }
+                applyIntent(restore);
+            }, 0);
+        });
     }
 }
 
@@ -419,6 +432,17 @@ function rewriteJsonBody(text: string, live: Intent): string | null {
     }
 }
 
+function intentForBody(text: string): Intent {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(text);
+    } catch {
+        return liveIntent();
+    }
+    const queued = intentFromPayload(parsed);
+    return queued?.modeId ? queued : liveIntent();
+}
+
 function requestUrl(input: RequestInfo | URL): string {
     if (typeof input === "string") return input;
     if (input instanceof URL) return input.href;
@@ -475,8 +499,13 @@ function forgetItem(id: string) {
 }
 
 function pruneIntents() {
+    const now = Date.now();
+    for (const [id, row] of removed) {
+        if (now - row.at > STASH_MS) removed.delete(id);
+    }
     const live = new Set<string>();
     for (const list of held.values()) for (const h of list) live.add(h.id);
+    for (const id of removed.keys()) live.add(id);
     let convs: GatewayConversation[] = [];
     try {
         convs = Object.values(MessageStore.useMessageStore.getState().conversations);
@@ -488,6 +517,7 @@ function pruneIntents() {
         if (id) live.add(id);
     }
     for (const id of itemIntent.keys()) if (!live.has(id)) itemIntent.delete(id);
+    for (const id of itemBody.keys()) if (!live.has(id)) itemBody.delete(id);
 }
 
 function holdQueueEvent(cid: string, event: unknown): boolean {
@@ -498,6 +528,8 @@ function holdQueueEvent(cid: string, event: unknown): boolean {
     if (type === QUEUE_ADD) {
         const saved = pendingEnqueue?.intent ?? (intent.modeId ? intent : liveIntent());
         if (saved.modeId) itemIntent.set(id, { ...saved });
+        const body = (pendingEnqueue?.args.text || eventText(event)).trim();
+        if (body) itemBody.set(id, body);
         schedulePaint();
         if (diverting) {
             mapGetOrCreate(held, cid, () => []).push({ id, args: diverting, intent: { ...saved } });
@@ -508,6 +540,8 @@ function holdQueueEvent(cid: string, event: unknown): boolean {
         return false;
     }
     if (type !== QUEUE_REMOVE) return false;
+    const saved = itemIntent.get(id);
+    if (saved?.modeId) removed.set(id, { intent: { ...saved }, text: itemBody.get(id) || "", at: Date.now() });
     const list = held.get(cid);
     if (list) {
         const idx = list.findIndex(h => h.id === id);
@@ -592,6 +626,12 @@ function itemText(conv: GatewayConversation, id: string): string {
     return "";
 }
 
+function bodyOfItem(conv: GatewayConversation | undefined, id: string): string {
+    const saved = itemBody.get(id);
+    if (saved) return saved;
+    return conv ? itemText(conv, id) : "";
+}
+
 function intentForText(cid: string, text: string): Intent | undefined {
     const body = text.trim();
     if (!body || !cid) return undefined;
@@ -599,23 +639,67 @@ function intentForText(cid: string, text: string): Intent | undefined {
         if (turn.args.text.trim() === body && turn.intent.modeId) return turn.intent;
     }
     const conv = conversation(cid);
-    if (!conv) return undefined;
-    for (const q of conv.queue) {
-        const id = qid(q);
-        const saved = id ? itemIntent.get(id) : undefined;
-        if (saved?.modeId && itemText(conv, id) === body) return saved;
+    if (conv) {
+        for (const q of conv.queue) {
+            const id = qid(q);
+            const saved = id ? itemIntent.get(id) : undefined;
+            if (saved?.modeId && bodyOfItem(conv, id) === body) return saved;
+        }
+    }
+    for (const [id, saved] of itemIntent) {
+        if (saved.modeId && itemBody.get(id) === body) return saved;
+    }
+    for (const row of removed.values()) {
+        if (row.text === body && row.intent.modeId) return row.intent;
     }
     return undefined;
+}
+
+function queuedIntent(cid: string, text: string, id: string): Intent | undefined {
+    const now = Date.now();
+    for (const [key, row] of removed) {
+        if (now - row.at > STASH_MS) removed.delete(key);
+    }
+    if (id) {
+        const saved = itemIntent.get(id);
+        if (saved?.modeId) return saved;
+        const gone = removed.get(id);
+        if (gone?.intent.modeId) return gone.intent;
+    }
+    const byText = intentForText(cid, text);
+    if (byText?.modeId) return byText;
+    const body = text.trim();
+    if (!body && removed.size === 1) {
+        const only = removed.values().next().value;
+        if (only?.intent.modeId) return only.intent;
+    }
+    const conv = cid ? conversation(cid) : undefined;
+    const front = conv?.queue?.[0];
+    const frontId = front ? qid(front) : "";
+    const frontIntent = frontId ? itemIntent.get(frontId) : undefined;
+    if (!frontIntent?.modeId) return undefined;
+    const frontText = bodyOfItem(conv, frontId);
+    if (body && frontText === body) return frontIntent;
+    return undefined;
+}
+
+function intentFromPayload(raw: unknown): Intent | undefined {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+    const rec = raw as Record<string, unknown>;
+    const nested = rec.item && typeof rec.item === "object" && !Array.isArray(rec.item) ? rec.item as Record<string, unknown> : undefined;
+    const id = qid(rec) || (nested ? qid(nested) : "");
+    const text = textOf(rec) || (nested ? textOf(nested) : "");
+    const cid = typeof rec.conversationId === "string" ? rec.conversationId
+        : typeof rec.convId === "string" ? rec.convId
+        : currentCid();
+    return queuedIntent(cid, text, id);
 }
 
 function eventItemIntent(event: unknown, cid: string): Intent | undefined {
     if (!event || typeof event !== "object") return undefined;
     const rec = event as { type?: unknown };
     if (rec.type !== QUEUE_INTERJECT && rec.type !== "response.create") return undefined;
-    const id = eventQueueId(event);
-    const saved = id ? itemIntent.get(id) : undefined;
-    if (saved?.modeId) return saved;
-    return intentForText(cid, eventText(event));
+    return queuedIntent(cid, eventText(event), eventQueueId(event));
 }
 
 function wrapGatewaySend() {
@@ -673,12 +757,17 @@ function makeSendWrapper(orig: SendFn): SendFn {
     return function voidModeSyncSend(this: unknown, ...args: unknown[]) {
         if (onImaginePage()) return orig.apply(this, args);
         const [first] = args;
-        const queued = !sendOverride && isTurnArgs(first) ? intentForText(first.convId, first.text) : undefined;
-        if (queued?.modeId) {
-            return withSendIntent(queued, () => {
-                patchSendArgs(args, queued);
-                return orig.apply(this, args);
-            });
+        if (!sendOverride) {
+            const id = qid(first);
+            const text = isTurnArgs(first) ? first.text : "";
+            const cid = isTurnArgs(first) ? first.convId : currentCid();
+            const queued = queuedIntent(cid, text, id);
+            if (queued?.modeId) {
+                return withSendIntent(queued, () => {
+                    patchSendArgs(args, queued);
+                    return orig.apply(this, args);
+                });
+            }
         }
         const live = liveIntent();
         if (live.modeId) {
@@ -767,7 +856,7 @@ function rewriteIfChatPost(url: string, method: string, text: string | null): st
     if (onImaginePage()) return null;
     if (method !== "POST" && method !== "PUT") return null;
     if (!CHAT_POST.test(url) || STOP_URL.test(url) || text == null) return null;
-    const live = liveIntent();
+    const live = intentForBody(text);
     if (!live.modeId) return null;
     const next = rewriteJsonBody(text, live);
     if (!next || next === text) return null;
@@ -1285,6 +1374,8 @@ export default definePlugin({
         unwrapSendFns();
         held.clear();
         itemIntent.clear();
+        itemBody.clear();
+        removed.clear();
         diverting = null;
         pendingEnqueue = null;
         sendOverride = null;
