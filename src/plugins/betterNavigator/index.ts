@@ -62,7 +62,7 @@ const LOADING_LABEL = "加载中…";
 const SUMMARY_MAX = 60;
 const FLASH_MS = 2000;
 const FLASH_REDUCED_MS = 1000;
-const THRESHOLD = 0.4;
+const THRESHOLD = 0.7;
 const OFFSET_PX = 72;
 const LOCK_MS = 1000;
 const LOCK_FAST_MS = 280;
@@ -794,14 +794,26 @@ function setActive(nav: NavItem[]) {
         return;
     }
     const pane = chatPane();
-    const top = pane?.getBoundingClientRect().top ?? 0;
-    const cutoff = top + (pane?.clientHeight ?? window.innerHeight) * THRESHOLD;
+    const pr = pane?.getBoundingClientRect();
+    const top = pr?.top ?? 0;
+    const bottom = pr ? Math.min(pr.bottom, composerTop()) : window.innerHeight;
     let active = 0;
+    let seen = false;
     for (let i = 0; i < nav.length; i++) {
         const el = mountedEl(nav[i]);
         if (!el) continue;
-        if (el.getBoundingClientRect().top < cutoff) active = i;
-        else break;
+        const r = el.getBoundingClientRect();
+        if (r.bottom <= top || r.top >= bottom) continue;
+        active = i;
+        seen = true;
+    }
+    if (!seen) {
+        const cutoff = top + (pr?.height ?? window.innerHeight) * THRESHOLD;
+        for (let i = 0; i < nav.length; i++) {
+            const el = mountedEl(nav[i]);
+            if (!el) continue;
+            if (el.getBoundingClientRect().top < cutoff) active = i;
+        }
     }
     applyActive(active);
 }

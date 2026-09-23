@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.27
+// @version      20260922.28
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.27] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.28] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7393,9 +7393,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"93af23d"}`
-    }, `(${"93af23d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"26d531c"}`
+    }, `(${"26d531c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7898,12 +7898,13 @@ button.void-bn-native-live::before {
 }
 
 .void-bn-item {
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     gap: 0.375rem;
     width: 100%;
     padding: 0.4rem 0.5rem;
-    border: 0;
+    border: 1px solid transparent;
     border-radius: 0.75rem;
     background: transparent;
     color: hsl(var(--fg-secondary));
@@ -7923,8 +7924,17 @@ button.void-bn-native-live::before {
 }
 
 .void-bn-item.void-bn-active {
+    background: transparent;
     color: hsl(var(--fg-primary));
-    box-shadow: inset 0 0 0 1px hsl(var(--border-l2));
+    border-color: hsl(var(--border-l1));
+}
+
+.void-bn-item.void-bn-active:hover,
+.void-bn-item.void-bn-active:focus-visible,
+.void-bn-item.void-bn-active.void-bn-aim {
+    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
+    color: hsl(var(--fg-primary));
+    border-color: hsl(var(--border-l1));
 }
 
 .void-bn-emoji {
@@ -8018,7 +8028,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var SUMMARY_MAX = 60;
   var FLASH_MS = 2000;
   var FLASH_REDUCED_MS = 1000;
-  var THRESHOLD = 0.4;
+  var THRESHOLD = 0.7;
   var OFFSET_PX = 72;
   var LOCK_MS = 1000;
   var LOCK_FAST_MS = 280;
@@ -8800,17 +8810,30 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return;
     }
     const pane = chatPane();
-    const top = pane?.getBoundingClientRect().top ?? 0;
-    const cutoff = top + (pane?.clientHeight ?? window.innerHeight) * THRESHOLD;
+    const pr = pane?.getBoundingClientRect();
+    const top = pr?.top ?? 0;
+    const bottom = pr ? Math.min(pr.bottom, composerTop()) : window.innerHeight;
     let active = 0;
+    let seen = false;
     for (let i = 0;i < nav.length; i++) {
       const el = mountedEl(nav[i]);
       if (!el)
         continue;
-      if (el.getBoundingClientRect().top < cutoff)
-        active = i;
-      else
-        break;
+      const r = el.getBoundingClientRect();
+      if (r.bottom <= top || r.top >= bottom)
+        continue;
+      active = i;
+      seen = true;
+    }
+    if (!seen) {
+      const cutoff = top + (pr?.height ?? window.innerHeight) * THRESHOLD;
+      for (let i = 0;i < nav.length; i++) {
+        const el = mountedEl(nav[i]);
+        if (!el)
+          continue;
+        if (el.getBoundingClientRect().top < cutoff)
+          active = i;
+      }
     }
     applyActive(active);
   }
@@ -9423,7 +9446,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var HOST = "void-ct-host";
   var NS = "http://www.w3.org/2000/svg";
   var LIVE_RESP = new Set(["streaming", "optimistic", "reconnecting"]);
-  var LIVE_PHASE = new Set(["sending", "streaming"]);
+  var LIVE_PHASE2 = new Set(["sending", "streaming"]);
   var LIVE_NODE2 = new Set(["skeleton", "send-queued", "send-sent", "ack-pending", "streaming"]);
   var DEAD_ERR = new Set(["error", "stream-error", "send-error"]);
   var USER_INTERRUPT2 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
@@ -9626,7 +9649,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function isLiveCid(cid) {
     const gw = gatewayOf2(cid);
     const phase = String(gw?.activeGeneration?.phase ?? "").trim().toLowerCase();
-    if (LIVE_PHASE.has(phase))
+    if (LIVE_PHASE2.has(phase))
       return true;
     const node = lastAssistantNode(gw);
     if (node && LIVE_NODE2.has(node.status))
@@ -27515,59 +27538,59 @@ Neon rain in a quiet city`
   });
 
   // virtual:~plugins
-  noTelemetry_default.updatedAt = 1789918820000;
-  settings_default.updatedAt = 1789918820000;
-  fixChrome_default.updatedAt = 1789918820000;
+  noTelemetry_default.updatedAt = 1790112209000;
+  settings_default.updatedAt = 1790112209000;
+  fixChrome_default.updatedAt = 1790112209000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  chatBarButtons_default.updatedAt = 1790097681000;
-  contextMenu_default.updatedAt = 1789918820000;
-  betterNavigator_default.updatedAt = 1790129743000;
-  noSidebarIdentity_default.updatedAt = 1789918820000;
-  completeToast_default.updatedAt = 1790093417000;
-  cleaner_default.updatedAt = 1790093417000;
-  betterSidebar_default.updatedAt = 1789918820000;
-  betterImagine_default.updatedAt = 1790093417000;
-  modeSync_default.updatedAt = 1790130266000;
-  messageTimestamps_default.updatedAt = 1789918820000;
-  autoRetry_default.updatedAt = 1789918820000;
-  userQuotes_default.updatedAt = 1789918820000;
-  cloneChats_default.updatedAt = 1789918820000;
-  streamerMode_default.updatedAt = 1789918820000;
-  inputHistory_default.updatedAt = 1790093417000;
-  customSidebarIdentity_default.updatedAt = 1789918820000;
-  downloadTTS_default.updatedAt = 1789918820000;
-  recentTopics_default.updatedAt = 1789918820000;
-  betterLinks_default.updatedAt = 1789918820000;
-  experiments_default.updatedAt = 1789918820000;
-  customInstructions_default.updatedAt = 1789918820000;
-  quoteSticky_default.updatedAt = 1790105896000;
-  noBuildStarters_default.updatedAt = 1789918820000;
-  responseNotification_default.updatedAt = 1790093417000;
-  incognito_default.updatedAt = 1789918820000;
-  betterCanvas_default.updatedAt = 1790093417000;
-  noSidebarPlugins_default.updatedAt = 1789918820000;
-  composerOpacity_default.updatedAt = 1790097681000;
+  chatBarButtons_default.updatedAt = 1790112209000;
+  contextMenu_default.updatedAt = 1790112209000;
+  betterNavigator_default.updatedAt = 1790131735000;
+  noSidebarIdentity_default.updatedAt = 1790112209000;
+  completeToast_default.updatedAt = 1790112209000;
+  cleaner_default.updatedAt = 1790112209000;
+  betterSidebar_default.updatedAt = 1790112209000;
+  betterImagine_default.updatedAt = 1790112209000;
+  modeSync_default.updatedAt = 1790132076000;
+  messageTimestamps_default.updatedAt = 1790112209000;
+  autoRetry_default.updatedAt = 1790112209000;
+  userQuotes_default.updatedAt = 1790112209000;
+  cloneChats_default.updatedAt = 1790112209000;
+  streamerMode_default.updatedAt = 1790112209000;
+  inputHistory_default.updatedAt = 1790112209000;
+  customSidebarIdentity_default.updatedAt = 1790112209000;
+  downloadTTS_default.updatedAt = 1790112209000;
+  recentTopics_default.updatedAt = 1790112209000;
+  betterLinks_default.updatedAt = 1790112209000;
+  experiments_default.updatedAt = 1790112209000;
+  customInstructions_default.updatedAt = 1790112209000;
+  quoteSticky_default.updatedAt = 1790112209000;
+  noBuildStarters_default.updatedAt = 1790112209000;
+  responseNotification_default.updatedAt = 1790112209000;
+  incognito_default.updatedAt = 1790112209000;
+  betterCanvas_default.updatedAt = 1790112209000;
+  noSidebarPlugins_default.updatedAt = 1790112209000;
+  composerOpacity_default.updatedAt = 1790112209000;
   queuePersist_default.updatedAt = 1790130266000;
-  exportChat_default.updatedAt = 1789918820000;
-  autoCollapse_default.updatedAt = 1789918820000;
-  usageDisplay_default.updatedAt = 1789918820000;
-  widerChat_default.updatedAt = 1789918820000;
-  settingsFlyout_default.updatedAt = 1789918820000;
-  chatStateFavicons_default.updatedAt = 1789921507000;
-  noDictation_default.updatedAt = 1789918820000;
-  betterFiles_default.updatedAt = 1789918820000;
-  noShareLink_default.updatedAt = 1789918820000;
-  chatListStatus_default.updatedAt = 1789918820000;
-  quoteJump_default.updatedAt = 1790105896000;
-  stableComposer_default.updatedAt = 1789918820000;
-  compactModeSelect_default.updatedAt = 1789918820000;
-  consoleJanitor_default.updatedAt = 1789918820000;
-  oneko_default.updatedAt = 1789918820000;
-  starry_default.updatedAt = 1789918820000;
-  pluginsFlyout_default.updatedAt = 1789918820000;
-  noGrokBot_default.updatedAt = 1789918820000;
-  placeholder_default.updatedAt = 1790093417000;
+  exportChat_default.updatedAt = 1790112209000;
+  autoCollapse_default.updatedAt = 1790112209000;
+  usageDisplay_default.updatedAt = 1790112209000;
+  widerChat_default.updatedAt = 1790112209000;
+  settingsFlyout_default.updatedAt = 1790112209000;
+  chatStateFavicons_default.updatedAt = 1790112209000;
+  noDictation_default.updatedAt = 1790112209000;
+  betterFiles_default.updatedAt = 1790112209000;
+  noShareLink_default.updatedAt = 1790112209000;
+  chatListStatus_default.updatedAt = 1790112209000;
+  quoteJump_default.updatedAt = 1790112209000;
+  stableComposer_default.updatedAt = 1790112209000;
+  compactModeSelect_default.updatedAt = 1790112209000;
+  consoleJanitor_default.updatedAt = 1790112209000;
+  oneko_default.updatedAt = 1790112209000;
+  starry_default.updatedAt = 1790112209000;
+  pluginsFlyout_default.updatedAt = 1790112209000;
+  noGrokBot_default.updatedAt = 1790112209000;
+  placeholder_default.updatedAt = 1790112209000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [betterNavigator_default.name]: betterNavigator_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [completeToast_default.name]: completeToast_default, [cleaner_default.name]: cleaner_default, [betterSidebar_default.name]: betterSidebar_default, [betterImagine_default.name]: betterImagine_default, [modeSync_default.name]: modeSync_default, [messageTimestamps_default.name]: messageTimestamps_default, [autoRetry_default.name]: autoRetry_default, [userQuotes_default.name]: userQuotes_default, [cloneChats_default.name]: cloneChats_default, [streamerMode_default.name]: streamerMode_default, [inputHistory_default.name]: inputHistory_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [recentTopics_default.name]: recentTopics_default, [betterLinks_default.name]: betterLinks_default, [experiments_default.name]: experiments_default, [customInstructions_default.name]: customInstructions_default, [quoteSticky_default.name]: quoteSticky_default, [noBuildStarters_default.name]: noBuildStarters_default, [responseNotification_default.name]: responseNotification_default, [incognito_default.name]: incognito_default, [betterCanvas_default.name]: betterCanvas_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [composerOpacity_default.name]: composerOpacity_default, [queuePersist_default.name]: queuePersist_default, [exportChat_default.name]: exportChat_default, [autoCollapse_default.name]: autoCollapse_default, [usageDisplay_default.name]: usageDisplay_default, [widerChat_default.name]: widerChat_default, [settingsFlyout_default.name]: settingsFlyout_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [noDictation_default.name]: noDictation_default, [betterFiles_default.name]: betterFiles_default, [noShareLink_default.name]: noShareLink_default, [chatListStatus_default.name]: chatListStatus_default, [quoteJump_default.name]: quoteJump_default, [stableComposer_default.name]: stableComposer_default, [compactModeSelect_default.name]: compactModeSelect_default, [consoleJanitor_default.name]: consoleJanitor_default, [oneko_default.name]: oneko_default, [starry_default.name]: starry_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [noGrokBot_default.name]: noGrokBot_default, [placeholder_default.name]: placeholder_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
