@@ -8,7 +8,7 @@ import "./styles.css";
 
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
 import { Flex, InfoHint, Text, Textarea } from "@components";
-import { TextCursorInputIcon } from "@components/icons";
+import { MessageCircleIcon } from "@components/icons";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React } from "@turbopack/common/react";
 import { RoutingStore } from "@turbopack/common/stores";
@@ -473,7 +473,7 @@ function scheduleInput() {
 
 export default definePlugin({
     name: "CustomGreeting",
-    icon: TextCursorInputIcon,
+    icon: MessageCircleIcon,
     description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
     authors: [Devs.p],
     tags: ["chat"],
