@@ -81,8 +81,8 @@ export function makeLazy<T>(factory: () => T, maxRetries = MAX_RETRIES): () => T
     };
 }
 
-export function proxyLazy<T>(factory: () => T): T {
-    const getter = makeLazy(factory);
+export function proxyLazy<T>(factory: () => T, maxRetries = MAX_RETRIES): T {
+    const getter = makeLazy(factory, maxRetries);
     const proxyDummy = Object.assign(() => {}, {
         [SYM_LAZY_CACHED]: void 0 as T | undefined,
         [SYM_LAZY_GET]() {

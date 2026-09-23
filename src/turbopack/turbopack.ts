@@ -194,7 +194,13 @@ function makeFinder<Args extends any[]>(name: string, filterFactory: (...args: A
     const lazy = <T = any>(...args: Args): T => {
         const resolve = () => finder<T>(...args);
         trackFinder(name, args.map(String), resolve);
-        return proxyLazy(resolve);
+        let scanned = -1;
+        return proxyLazy(() => {
+            if (getModuleCache().size === scanned) return null as T;
+            const found = resolve();
+            scanned = getModuleCache().size;
+            return found;
+        }, Infinity);
     };
     return [finder, lazy] as const;
 }

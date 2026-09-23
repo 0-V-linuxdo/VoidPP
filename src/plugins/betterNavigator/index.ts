@@ -133,6 +133,7 @@ let lockUntil = 0;
 let overMenu = false;
 let observedPane: HTMLElement | null = null;
 let hydrateGen = 0;
+let olderAsked = "";
 const labelCache = new Map<string, string>();
 
 function isVisible(el: Element): boolean {
@@ -484,12 +485,11 @@ function labelFromResponse(role: Role, rec: GrokResponse | undefined): string {
 }
 
 function contentOf(cid: string, node: GatewayNode): GrokResponse | undefined {
-    if (node.content) return node.content;
     try {
-        return MessageStore.nodeToResponse?.(cid, node);
+        return MessageStore.nodeToResponse?.(cid, node) ?? node.content;
     } catch (e) {
         logger.debug("nodeToResponse failed:", e);
-        return;
+        return node.content;
     }
 }
 
@@ -538,6 +538,11 @@ function collectLeaf(): NavItem[] {
     const cid = currentCid();
     const gw = gatewayOf(cid);
     if (!gw) return [];
+    const olderKey = `${cid}:${gw.history.nextBeforeId}`;
+    if (gw.history.hasMore && gw.defaultLeafId && olderKey !== olderAsked) {
+        olderAsked = olderKey;
+        MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
+    }
     const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length) return [];
     const showAsst = settings.store.showAssistant;
@@ -1405,6 +1410,7 @@ function stop() {
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
     hydrateGen++;
+    olderAsked = "";
     labelCache.clear();
     unmount();
     clearFlash();

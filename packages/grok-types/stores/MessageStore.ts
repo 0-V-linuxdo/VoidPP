@@ -43,6 +43,7 @@ export interface GatewayConversation {
     queue: GatewayQueueItem[];
     activeGeneration: GatewayActiveGeneration | null;
     lastModel?: string;
+    history: { hasMore: boolean; nextBeforeId: string | null };
 }
 
 export interface GatewayTurnArgs {
@@ -61,6 +62,7 @@ export interface MessageStoreState {
     queueMessage: (args: GatewayTurnArgs) => void;
     sendMessage: (args: GatewayTurnArgs) => { userId: string; assistantId: string };
     removeQueuedMessage: (args: { convId: string; queueItemId: string }) => void;
+    loadOlderHistory: (args: { convId: string; leafId: string; limit?: number }) => void;
 }
 
 export interface MessageStoreModule {
