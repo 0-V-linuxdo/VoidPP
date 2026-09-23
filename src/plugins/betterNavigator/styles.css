@@ -29,11 +29,9 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    justify-content: stretch;
     gap: 0;
-    height: 100%;
     max-height: none;
-    overflow: hidden;
+    overflow: visible;
     pointer-events: auto;
     scrollbar-width: none;
 }
@@ -48,9 +46,7 @@
     align-items: center;
     justify-content: flex-end;
     width: 2.5rem;
-    flex: 1 1 0;
-    min-height: 2px;
-    height: auto;
+    height: 0.75rem;
     padding: 0 0.25rem;
     border: 0;
     background: transparent;
@@ -58,8 +54,7 @@
 }
 
 .void-bn-dense .void-bn-tick {
-    min-height: 2px;
-    height: auto;
+    height: 0.45rem;
 }
 
 .void-bn-tick::after {
@@ -162,8 +157,8 @@ button.void-bn-native-edge::before {
     z-index: 50;
     box-sizing: border-box;
     width: min(18rem, 70vw);
-    max-height: none;
-    overflow: hidden;
+    max-height: min(70vh, 28rem);
+    overflow: auto;
     padding: 0.375rem;
     border: 1px solid hsl(var(--border-l1));
     border-radius: 1.25rem;
@@ -190,33 +185,6 @@ button.void-bn-native-edge::before {
     opacity: 1;
     visibility: visible;
     transform: translate(0, -50%);
-}
-
-.void-bn-menu.void-bn-fit,
-.void-bn-open .void-bn-menu.void-bn-fit,
-.void-bn-rail.void-bn-open .void-bn-menu.void-bn-fit,
-.void-bn-rail:hover .void-bn-menu.void-bn-fit,
-.void-bn-rail:focus-within .void-bn-menu.void-bn-fit,
-.void-bn-host:hover .void-bn-menu.void-bn-fit,
-.void-bn-host:focus-within .void-bn-menu.void-bn-fit {
-    top: 0;
-    transform: none;
-}
-
-.void-bn-pack .void-bn-item {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.8125rem;
-}
-
-html.void-bn-fullticks button[aria-label^="Go to response "] {
-    visibility: hidden !important;
-    pointer-events: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
 }
 
 .void-bn-meta {
@@ -298,6 +266,17 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 html.void-bn-hidetip:has(button[aria-label^="Go to response "][data-state]:not([data-state="closed"])) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])),
 html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-label^="Go to response "]) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])) {
     display: none !important;
+}
+
+html.void-bn-fullticks button[aria-label^="Go to response "] {
+    position: absolute !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

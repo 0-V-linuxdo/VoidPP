@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.2
+// @version      20260923.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.2] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7492,9 +7492,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a32a68b"}`
-    }, `(${"a32a68b"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"339aeb0"}`
+    }, `(${"339aeb0"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7847,11 +7847,9 @@ button .void-info-hint {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    justify-content: stretch;
     gap: 0;
-    height: 100%;
     max-height: none;
-    overflow: hidden;
+    overflow: visible;
     pointer-events: auto;
     scrollbar-width: none;
 }
@@ -7866,9 +7864,7 @@ button .void-info-hint {
     align-items: center;
     justify-content: flex-end;
     width: 2.5rem;
-    flex: 1 1 0;
-    min-height: 2px;
-    height: auto;
+    height: 0.75rem;
     padding: 0 0.25rem;
     border: 0;
     background: transparent;
@@ -7876,8 +7872,7 @@ button .void-info-hint {
 }
 
 .void-bn-dense .void-bn-tick {
-    min-height: 2px;
-    height: auto;
+    height: 0.45rem;
 }
 
 .void-bn-tick::after {
@@ -7980,8 +7975,8 @@ button.void-bn-native-edge::before {
     z-index: 50;
     box-sizing: border-box;
     width: min(18rem, 70vw);
-    max-height: none;
-    overflow: hidden;
+    max-height: min(70vh, 28rem);
+    overflow: auto;
     padding: 0.375rem;
     border: 1px solid hsl(var(--border-l1));
     border-radius: 1.25rem;
@@ -8008,33 +8003,6 @@ button.void-bn-native-edge::before {
     opacity: 1;
     visibility: visible;
     transform: translate(0, -50%);
-}
-
-.void-bn-menu.void-bn-fit,
-.void-bn-open .void-bn-menu.void-bn-fit,
-.void-bn-rail.void-bn-open .void-bn-menu.void-bn-fit,
-.void-bn-rail:hover .void-bn-menu.void-bn-fit,
-.void-bn-rail:focus-within .void-bn-menu.void-bn-fit,
-.void-bn-host:hover .void-bn-menu.void-bn-fit,
-.void-bn-host:focus-within .void-bn-menu.void-bn-fit {
-    top: 0;
-    transform: none;
-}
-
-.void-bn-pack .void-bn-item {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.8125rem;
-}
-
-html.void-bn-fullticks button[aria-label^="Go to response "] {
-    visibility: hidden !important;
-    pointer-events: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
 }
 
 .void-bn-meta {
@@ -8116,6 +8084,17 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 html.void-bn-hidetip:has(button[aria-label^="Go to response "][data-state]:not([data-state="closed"])) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])),
 html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-label^="Go to response "]) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])) {
     display: none !important;
+}
+
+html.void-bn-fullticks button[aria-label^="Go to response "] {
+    position: absolute !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -9189,54 +9168,43 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
     applyActive(pickByLine(nav), "list");
   }
-  function columnBox() {
-    const pane = chatPane();
-    const pr = pane?.getBoundingClientRect();
-    const top = pr?.top ?? 8;
-    const bottom = Math.min(pr?.bottom ?? window.innerHeight, composerTop() - 8);
-    return { top, height: Math.max(120, bottom - top) };
+  function columnRoom() {
+    return Math.max(120, composerTop() - 16);
+  }
+  function fitTicks() {
+    const ticks = host?.querySelector(".void-bn-ticks");
+    if (!ticks)
+      return;
+    ticks.style.height = "";
+    ticks.style.maxHeight = "none";
+    ticks.style.overflow = "visible";
+    for (const node of ticks.children) {
+      if (node instanceof HTMLElement)
+        node.style.height = "";
+    }
+    const room = columnRoom();
+    const natural = ticks.scrollHeight;
+    if (natural <= room || !ticks.childElementCount)
+      return;
+    const h = Math.max(2, Math.floor(room / ticks.childElementCount));
+    for (const node of ticks.children) {
+      if (node instanceof HTMLElement)
+        node.style.height = `${h}px`;
+    }
   }
   function clampMenu() {
+    fitTicks();
     const menu = host?.querySelector(".void-bn-menu");
-    const ticks = host?.querySelector(".void-bn-ticks");
-    const box = columnBox();
-    if (host)
-      host.style.height = `${box.height}px`;
-    if (ticks) {
-      ticks.style.height = "100%";
-      ticks.style.maxHeight = "none";
-      ticks.style.overflow = "hidden";
-    }
-    if (rail && host) {
-      const shift = box.top - rail.getBoundingClientRect().top;
-      host.style.marginTop = Math.abs(shift) > 1 ? `${shift}px` : "";
-    } else if (host?.classList.contains("void-bn-self")) {
-      const frame = chatColumn();
-      const fr = frame?.getBoundingClientRect().top ?? 0;
-      host.style.top = `${box.top - fr}px`;
-      host.style.transform = "none";
-    }
     if (!menu || !host)
       return;
-    const n = lastNav.length;
-    const packed = n > 12;
-    menu.classList.toggle("void-bn-pack", packed);
-    const row = packed ? 28 : 36;
-    const need = n * row + 32;
-    const fit = need >= box.height - 4;
-    menu.classList.toggle("void-bn-fit", fit);
-    menu.style.maxHeight = `${Math.min(need, box.height)}px`;
-    menu.style.overflowY = fit ? "auto" : "hidden";
-    if (fit) {
-      menu.style.marginTop = "";
-      return;
-    }
-    menu.style.top = "";
     const origin = rail ?? host;
+    menu.style.maxHeight = `${columnRoom()}px`;
+    menu.style.top = "";
+    menu.style.overflowY = "";
     const originRect = origin.getBoundingClientRect();
-    const mh = menu.offsetHeight || Math.min(need, box.height);
-    const viewTop = box.top;
-    const viewBottom = box.top + box.height;
+    const mh = menu.offsetHeight;
+    const viewTop = 8;
+    const viewBottom = Math.min(window.innerHeight - 8, composerTop() - 8);
     const natural = originRect.top + originRect.height / 2 - mh / 2;
     let abs = natural;
     if (abs + mh > viewBottom)
@@ -27970,7 +27938,7 @@ Neon rain in a quiet city`
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1790112209000;
   contextMenu_default.updatedAt = 1790112209000;
-  betterNavigator_default.updatedAt = 1790135495000;
+  betterNavigator_default.updatedAt = 1790142503000;
   noSidebarIdentity_default.updatedAt = 1790112209000;
   completeToast_default.updatedAt = 1790112209000;
   cleaner_default.updatedAt = 1790112209000;
