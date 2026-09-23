@@ -25,6 +25,7 @@ const INPUT_STYLE = "placeholderInput";
 const HERO_SEL = "h1[data-void-ph-hero]";
 const EDITOR_SEL = ".query-bar .tiptap";
 const EMPTY_SEL = `${EDITOR_SEL} p.is-editor-empty, ${EDITOR_SEL} p.is-empty:only-child`;
+const ROOT_BEFORE = `${EDITOR_SEL}::before`;
 const EMPTY_BEFORE = `${EDITOR_SEL} p.is-editor-empty:first-child::before,${EDITOR_SEL} p.is-empty:only-child::before`;
 const WIDTH_PAD = 8;
 
@@ -85,7 +86,7 @@ function PhrasesEditor() {
         <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
             <Flex alignItems="center" gap="0.375rem">
                 <Text size="sm" weight="medium">Phrases</Text>
-                <InfoHint>One phrase per line. The non-project home greeting uses these and may wrap. Project chat input uses the first phrase on one line and replaces the last overflowing word with an ellipsis. Home and other non-project chats keep Grok's short placeholders. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.</InfoHint>
+                <InfoHint>One phrase per line. The non-project home greeting uses these and may wrap. The query bar rotates them on one line, including home and other non-project chats. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.</InfoHint>
             </Flex>
             <div className={cl("textarea-wrap")}>
                 <Textarea
@@ -126,14 +127,6 @@ function isNonProjectHome(): boolean {
     } catch {
         const path = location.pathname.replace(/\/+$/, "") || "/";
         return path === "/";
-    }
-}
-
-function isProjectChat(): boolean {
-    try {
-        return Boolean(RoutingStore.useRoutingStore.getState().route.workspaceId);
-    } catch {
-        return false;
     }
 }
 
@@ -350,11 +343,6 @@ function paintInput() {
         return;
     }
     const imagine = isImaginePage();
-    if (!isProjectChat() && !imagine) {
-        bindSize(null);
-        clearInputOverlay();
-        return;
-    }
     const list = imagine ? imaginePhrases() : phrases();
     const p = document.querySelector(EMPTY_SEL);
     if (!(p instanceof HTMLElement) || !list) {
@@ -369,7 +357,7 @@ function paintInput() {
         return;
     }
     const shown = clampToWidth(full, Math.max(0, p.clientWidth - WIDTH_PAD), t => measureFor(p, t));
-    const css = `${EMPTY_BEFORE}{content:"${escapeForCssContent(shown)}"!important}`;
+    const css = `${ROOT_BEFORE}{content:none!important}${EMPTY_BEFORE}{content:"${escapeForCssContent(shown)}"!important}`;
     if (css === lastInputCss) return;
     lastInputCss = css;
     registerStyle(INPUT_STYLE, css);
@@ -386,18 +374,22 @@ function scheduleInput() {
 export default definePlugin({
     name: "Placeholder",
     icon: TextCursorInputIcon,
-    description: "Replace the non-project home greeting, the project chat input placeholder, and optional Imagine phrases.",
+    description: "Replace the rotating chat input placeholder, the non-project home greeting, and optional Imagine phrases.",
     authors: [Devs.p],
     tags: ["chat"],
     settings,
 
     _phrases() {
-        return isProjectChat() ? phrases() : null;
+        return isImaginePage() ? null : phrases();
     },
 
     _inputPlaceholder(value: unknown) {
-        if (typeof value !== "string") return value;
-        return this._phrases()?.[0] ?? value;
+        if (isImaginePage()) return value;
+        const list = this._phrases();
+        if (!list?.length) return value;
+        if (typeof value === "string") return list[0];
+        if (Array.isArray(value)) return list;
+        return value;
     },
 
     start() {
@@ -468,18 +460,11 @@ export default definePlugin({
 
     patches: [
         {
-            find: 'query-bar-placeholder.whats-on-your-mind","What\'s on your mind?"',
-            group: true,
-            replacement: [
-                {
-                    match: /:\[g\("query-bar-placeholder\.1",/,
-                    replace: ':($self._phrases()??[g("query-bar-placeholder.1",',
-                },
-                {
-                    match: /g\("query-bar-placeholder\.whats-on-your-mind","What's on your mind\?"\)(?=\],\[)/,
-                    replace: "$&)",
-                },
-            ],
+            find: '"LoggedOutHomeComposer",0,',
+            replacement: {
+                match: /(placeholder:)(\i)(,"aria-label":)/,
+                replace: "$1$self._inputPlaceholder($2)$3",
+            },
         },
         {
             find: "data-query-bar-mode-select",
@@ -490,7 +475,7 @@ export default definePlugin({
             },
         },
         {
-            find: '"WdRefreshHeading",0,',
+            find: '"HeroHeading",0,',
             replacement: {
                 match: /("h1",\{className:\i),children:/,
                 replace: '$1,"data-void-ph-hero":"",children:',
