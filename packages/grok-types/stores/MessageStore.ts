@@ -27,6 +27,7 @@ export interface GatewayQueueItem {
     queue_item_id: string;
     position: number;
     parent_response_id: string | null;
+    item: unknown;
 }
 
 export interface GatewayActiveGeneration {

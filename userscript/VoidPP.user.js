@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.7
+// @version      20260923.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.7] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7433,9 +7433,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ab5b0c3"}`
-    }, `(${"ab5b0c3"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"51879f1"}`
+    }, `(${"51879f1"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -17747,7 +17747,8 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   var QITEM = "data-void-qitem";
   var RESTORE_ATTR = "data-void-mode-sync-restore";
   var LOAD_TAIL_MS = 400;
-  var OVERRIDE_MS = 2000;
+  var FLUSH_MS = 4000;
+  var OVERRIDE_MS = 6000;
   var STASH_MS = 2000;
   var CHAT_WRAP = ["sendResponse", "establishNewConversation"];
   var RESP_WRAP = ["streamResponse", "streamCreateAndRespond"];
@@ -17757,6 +17758,9 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   var QUEUE_ADD = "conversation.queue.add";
   var QUEUE_REMOVE = "conversation.queue.remove";
   var QUEUE_INTERJECT = "conversation.queue.interject";
+  var QUEUE_SILENT = new Set(["conversation.queue.edit", "conversation.queue.move"]);
+  var SESSION_OUT = new Set(["session.create", "session.update"]);
+  var SESSION_IN = new Set(["session.created", "session.updated"]);
   var WRAP_MARK = Symbol.for("voidpp.modeSync.wrapped");
   var ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
   var REMEMBERED = Symbol.for("voidpp.modeSync.intent");
@@ -17788,14 +17792,20 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     }
   });
   var Gateway = findByPropsLazy("gatewayConnectionManager");
+  var QueueItems = findByPropsLazy("queueItemText");
   var EMPTY = { modeId: "", modelMode: "", activeModelId: "" };
   var held = new Map;
+  var flushing = new Map;
+  var sentModel = new Map;
+  var ackedModel = new Map;
+  var busy = new Set;
   var itemIntent = new Map;
   var itemBody = new Map;
   var removed = new Map;
   var diverting = null;
   var pendingEnqueue = null;
   var sendOverride = null;
+  var overrideCid = "";
   var applying3 = false;
   var userPicking = false;
   var awaitingMenu = false;
@@ -17809,6 +17819,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   var origGwSend = null;
   var wrappedGwSend = null;
   var gwHost = null;
+  var gwOff = [];
   var abort2 = null;
   var lastNavKey = "";
   var loadTail = null;
@@ -17845,18 +17856,6 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     if ((existing == null || existing === "") && live2.modelMode.startsWith("MODEL_MODE_"))
       return apiModelMode(raw);
     return modeSlug(raw);
-  }
-  function knownMode(raw) {
-    const slug = modeSlug(raw);
-    if (!slug)
-      return false;
-    if (CATALOG.some((m) => m.id === slug))
-      return true;
-    try {
-      return ModesStore.useModesStore.getState().modes.some((m) => modeSlug(m.id) === slug);
-    } catch {
-      return false;
-    }
   }
   function qid(item) {
     if (!item || typeof item !== "object")
@@ -17987,44 +17986,25 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       applying3 = false;
     }
   }
-  function withSendIntent(item, fn) {
-    if (!item.modeId)
-      return fn();
-    const restore2 = pickerIntent();
-    sendOverride = item;
-    applyIntent(item);
-    try {
-      return fn();
-    } finally {
-      const token = item;
-      queueMicrotask(() => {
-        setTimeout(() => {
-          if (sendOverride !== token)
-            return;
-          sendOverride = null;
-          if (overrideTail) {
-            clearTimeout(overrideTail);
-            overrideTail = null;
-          }
-          applyIntent(restore2);
-        }, 0);
-      });
-    }
-  }
-  function armOverride(item) {
+  function armOverride(item, cid) {
     if (!item.modeId)
       return;
     sendOverride = item;
+    overrideCid = cid;
     applyIntent(item);
     if (overrideTail)
       clearTimeout(overrideTail);
-    overrideTail = setTimeout(() => {
-      overrideTail = null;
-      if (sendOverride === item) {
-        sendOverride = null;
-        applyIntent(pickerIntent());
-      }
-    }, OVERRIDE_MS);
+    overrideTail = setTimeout(releaseOverride, OVERRIDE_MS);
+  }
+  function releaseOverride() {
+    if (overrideTail)
+      clearTimeout(overrideTail);
+    overrideTail = null;
+    overrideCid = "";
+    if (!sendOverride)
+      return;
+    sendOverride = null;
+    applyIntent(pickerIntent());
   }
   function captureIntent(modeId, cur) {
     const keep = modeSlug(cur.modelMode) === modeSlug(modeId);
@@ -18178,14 +18158,6 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       return "";
     }
   }
-  function inflightMode(cid) {
-    const conv = conversation(cid);
-    const sent = String(conv?.activeGeneration?.sentModeId ?? "");
-    if (sent && knownMode(sent))
-      return modeSlug(sent);
-    const last = String(conv?.lastModel ?? "");
-    return knownMode(last) ? modeSlug(last) : "";
-  }
   function isTurnArgs(v) {
     return !!v && typeof v === "object" && typeof v.convId === "string";
   }
@@ -18253,46 +18225,103 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       }
       return false;
     }
+    if (QUEUE_SILENT.has(String(type)))
+      return held.get(cid)?.some((h) => h.id === id) ?? false;
+    if (type === QUEUE_INTERJECT) {
+      unhold(cid, id);
+      return false;
+    }
     if (type !== QUEUE_REMOVE)
       return false;
     const saved2 = itemIntent.get(id);
     if (saved2?.modeId)
       removed.set(id, { intent: { ...saved2 }, text: itemBody.get(id) || "", at: Date.now() });
-    const list = held.get(cid);
-    if (list) {
-      const idx = list.findIndex((h) => h.id === id);
-      if (idx >= 0)
-        list.splice(idx, 1);
-    }
     schedulePaint();
-    return false;
+    return unhold(cid, id);
   }
-  function flushTurn(cid, turn, parentId) {
-    const state2 = MessageStore.useMessageStore.getState();
+  function unhold(cid, id) {
+    const list = held.get(cid) ?? [];
+    const idx = list.findIndex((h) => h.id === id);
+    if (idx >= 0)
+      list.splice(idx, 1);
+    return idx >= 0;
+  }
+  function flushNext(cid, parentId) {
+    const conv = conversation(cid);
+    const list = held.get(cid);
+    if (!conv || !list)
+      return;
+    const queued = list.filter((h) => conv.queue.some((q) => qid(q) === h.id));
+    if (!queued.length)
+      return;
+    held.set(cid, queued);
+    if (conv.queue.some((q) => {
+      const id = qid(q);
+      return !!id && !queued.some((h) => h.id === id);
+    }))
+      return;
+    const turn = queued.find((h) => h.id === qid(conv.queue[0]));
+    if (!turn)
+      return;
+    const prev = flushing.get(cid);
+    if (prev)
+      clearTimeout(prev.timer);
     const item = turn.intent.modeId ? turn.intent : itemIntent.get(turn.id) ?? liveIntent();
-    withSendIntent(item, () => {
-      state2.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
-      state2.sendMessage({ ...turn.args, parentId });
-    });
-    forgetItem(turn.id);
-    logger32.info("flushed", turn.id, "as", item.modeId);
+    flushing.set(cid, { turn, parentId, item, timer: setTimeout(() => flushTurn(cid), FLUSH_MS) });
+    armOverride(item, cid);
+    queueMicrotask(() => tryFlush(cid));
   }
-  function flushHeld(responseId) {
-    for (const [cid, list] of held) {
-      const conv = conversation(cid);
-      if (!conv?.nodes[responseId])
-        continue;
-      const queued = list.filter((h) => conv.queue.some((q) => qid(q) === h.id));
-      if (!queued.length)
-        continue;
-      held.set(cid, queued);
-      if (conv.queue.some((q) => {
-        const id = qid(q);
-        return !!id && !queued.some((h) => h.id === id);
-      }))
-        continue;
-      queueMicrotask(() => flushTurn(cid, queued[0], responseId));
+  function tryFlush(cid) {
+    const next = flushing.get(cid);
+    if (!next || busy.has(cid))
+      return;
+    const slug = modeSlug(next.item.modeId);
+    if (sentModel.get(cid) === slug && ackedModel.get(cid) === slug)
+      flushTurn(cid);
+  }
+  function flushTurn(cid) {
+    const next = flushing.get(cid);
+    if (!next)
+      return;
+    flushing.delete(cid);
+    clearTimeout(next.timer);
+    const conv = conversation(cid);
+    if (conv?.activeGeneration)
+      return;
+    const { turn, parentId, item } = next;
+    const queued = conv?.queue.find((q) => qid(q) === turn.id);
+    if (!queued) {
+      forgetItem(turn.id);
+      flushNext(cid, parentId);
+      return;
     }
+    const state2 = MessageStore.useMessageStore.getState();
+    armOverride(item, cid);
+    state2.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
+    state2.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued.item), parentId });
+    forgetItem(turn.id);
+    logger32.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
+  }
+  function onGwEvent(cid, event) {
+    const { type } = event;
+    if (type === "response.created") {
+      busy.add(cid);
+      if (cid === overrideCid)
+        releaseOverride();
+      return;
+    }
+    if (type === "response.persisted")
+      busy.delete(cid);
+    else if (SESSION_IN.has(String(type)))
+      ackedModel.set(cid, modeSlug(String(event.session?.model ?? "")));
+    else
+      return;
+    if (flushing.has(cid))
+      queueMicrotask(() => tryFlush(cid));
+  }
+  function onGwOutgoing(cid, event) {
+    if (SESSION_OUT.has(String(event.type)))
+      sentModel.set(cid, modeSlug(String(event.session?.model ?? "")));
   }
   function writeMode(rec, live2) {
     const slug = modeSlug(live2.modeId);
@@ -18440,6 +18469,8 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       const mgr = Gateway.gatewayConnectionManager;
       if (!mgr || typeof mgr.send !== "function")
         return;
+      if (!gwOff.length)
+        gwOff = [mgr.on(onGwEvent), mgr.onOutgoing(onGwOutgoing)];
       if (wrappedGwSend && mgr.send === wrappedGwSend)
         return;
       gwHost = mgr;
@@ -18460,10 +18491,9 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
         }
         const queued = typeof cid === "string" ? eventItemIntent(event, cid) : undefined;
         if (queued?.modeId && !sendOverride) {
-          return withSendIntent(queued, () => {
-            patchGwEvent(event, queued);
-            return orig.apply(mgr, args);
-          });
+          armOverride(queued, String(cid));
+          patchGwEvent(event, queued);
+          return orig.apply(mgr, args);
         }
         if (!GW_TYPES.has(type))
           return orig.apply(mgr, args);
@@ -18481,6 +18511,9 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     }
   }
   function unwrapGatewaySend() {
+    for (const off of gwOff)
+      off();
+    gwOff = [];
     try {
       if (gwHost && origGwSend && gwHost.send === wrappedGwSend)
         gwHost.send = origGwSend;
@@ -18502,10 +18535,9 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
         const cid = isTurnArgs(first) ? first.convId : currentCid();
         const queued = queuedIntent(cid, text, id);
         if (queued?.modeId) {
-          return withSendIntent(queued, () => {
-            patchSendArgs(args, queued);
-            return orig.apply(this, args);
-          });
+          armOverride(queued, cid);
+          patchSendArgs(args, queued);
+          return orig.apply(this, args);
         }
       }
       const live2 = liveIntent();
@@ -18525,8 +18557,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       if (!isTurnArgs(first) || !live2.modeId)
         return orig.apply(this, args);
       pendingEnqueue = { args: first, intent: { ...live2 } };
-      const inflight = inflightMode(first.convId);
-      if (inflight && inflight !== modeSlug(live2.modeId))
+      if (conversation(first.convId)?.activeGeneration)
         diverting = first;
       try {
         return orig.apply(this, args);
@@ -19033,7 +19064,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     const id = row instanceof HTMLElement ? row.getAttribute(QITEM) || "" : "";
     const item = id ? itemIntent.get(id) : undefined;
     if (item?.modeId)
-      armOverride(item);
+      armOverride(item, currentCid());
   }
   function onKeyDown3(e) {
     if (!e.isTrusted)
@@ -19066,23 +19097,9 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   }
   function onStreamEnd7({ responseId }) {
     wrapSendFns();
-    flushHeld(responseId);
-    try {
-      for (const [cid, conv] of Object.entries(MessageStore.useMessageStore.getState().conversations)) {
-        if (!conv.nodes[responseId])
-          continue;
-        const heldIds = new Set((held.get(cid) ?? []).map((h) => h.id));
-        const next = conv.queue.find((q) => {
-          const id = qid(q);
-          return !!id && !heldIds.has(id);
-        });
-        const item = next ? itemIntent.get(qid(next)) : undefined;
-        if (item?.modeId)
-          armOverride(item);
-        break;
-      }
-    } catch (e) {
-      logger32.debug("flush override failed", e);
+    for (const cid of held.keys()) {
+      if (conversation(cid)?.nodes[responseId])
+        flushNext(cid, responseId);
     }
   }
   function queueKey(s) {
@@ -19146,6 +19163,12 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       unhookFetch();
       unhookXhr();
       unwrapSendFns();
+      for (const f of flushing.values())
+        clearTimeout(f.timer);
+      flushing.clear();
+      sentModel.clear();
+      ackedModel.clear();
+      busy.clear();
       held.clear();
       itemIntent.clear();
       itemBody.clear();
@@ -19153,6 +19176,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       diverting = null;
       pendingEnqueue = null;
       sendOverride = null;
+      overrideCid = "";
       applying3 = false;
       userPicking = false;
       awaitingMenu = false;
@@ -24703,13 +24727,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!waits.has(cid))
       waits.set(cid, Date.now());
     const elapsed = Date.now() - (waits.get(cid) ?? 0);
-    const busy = (loadBusy(cid) || reconnects > 0) && elapsed < MAX_WAIT_MS;
+    const busy2 = (loadBusy(cid) || reconnects > 0) && elapsed < MAX_WAIT_MS;
     if (timer)
       clearTimeout(timer);
     timer = setTimeout(() => {
       timer = null;
       restore2(cid);
-    }, busy ? RETRY_MS3 : SETTLE_MS);
+    }, busy2 ? RETRY_MS3 : SETTLE_MS);
   }
   function sleep2(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -27975,7 +27999,7 @@ html.void-rt-open [data-sidebar="gap"] {
   betterSidebar_default.updatedAt = 1789807577000;
   placeholder_default.updatedAt = 1790093417000;
   messageTimestamps_default.updatedAt = 1789881463000;
-  betterNavigator_default.updatedAt = 1790144912000;
+  betterNavigator_default.updatedAt = 1790145289000;
   betterCanvas_default.updatedAt = 1790140416000;
   cleaner_default.updatedAt = 1790093417000;
   queuePersist_default.updatedAt = 1790130266000;

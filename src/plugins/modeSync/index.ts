@@ -39,7 +39,8 @@ const QOPT = "void-ms-qopt";
 const QITEM = "data-void-qitem";
 const RESTORE_ATTR = "data-void-mode-sync-restore";
 const LOAD_TAIL_MS = 400;
-const OVERRIDE_MS = 2000;
+const FLUSH_MS = 4000;
+const OVERRIDE_MS = 6000;
 const STASH_MS = 2000;
 const CHAT_WRAP = ["sendResponse", "establishNewConversation"] as const;
 const RESP_WRAP = ["streamResponse", "streamCreateAndRespond"] as const;
@@ -49,6 +50,9 @@ const GW_MODE_KEYS = ["mode", "modeId", "mode_id", "modelMode", "model_mode"] as
 const QUEUE_ADD = "conversation.queue.add";
 const QUEUE_REMOVE = "conversation.queue.remove";
 const QUEUE_INTERJECT = "conversation.queue.interject";
+const QUEUE_SILENT = new Set(["conversation.queue.edit", "conversation.queue.move"]);
+const SESSION_OUT = new Set(["session.create", "session.update"]);
+const SESSION_IN = new Set(["session.created", "session.updated"]);
 const WRAP_MARK = Symbol.for("voidpp.modeSync.wrapped");
 const ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
 const REMEMBERED = Symbol.for("voidpp.modeSync.intent");
@@ -83,7 +87,21 @@ const settings = definePluginSettings({
 
 type SendFn = (...args: any[]) => any;
 
-const Gateway: { gatewayConnectionManager?: { send: SendFn } } = findByPropsLazy("gatewayConnectionManager");
+interface GwEvent {
+    type?: string;
+    session?: { model?: unknown };
+}
+
+type GwListener = (cid: string, event: GwEvent) => void;
+
+interface GatewayManager {
+    send: SendFn;
+    on: (fn: GwListener) => () => void;
+    onOutgoing: (fn: GwListener) => () => void;
+}
+
+const Gateway: { gatewayConnectionManager?: GatewayManager } = findByPropsLazy("gatewayConnectionManager");
+const QueueItems: { queueItemText: (item: unknown) => string } = findByPropsLazy("queueItemText");
 
 interface Intent {
     modeId: string;
@@ -97,14 +115,26 @@ interface HeldTurn {
     intent: Intent;
 }
 
+interface PendingFlush {
+    turn: HeldTurn;
+    parentId: string;
+    item: Intent;
+    timer: ReturnType<typeof setTimeout>;
+}
+
 const EMPTY: Intent = { modeId: "", modelMode: "", activeModelId: "" };
 const held = new Map<string, HeldTurn[]>();
+const flushing = new Map<string, PendingFlush>();
+const sentModel = new Map<string, string>();
+const ackedModel = new Map<string, string>();
+const busy = new Set<string>();
 const itemIntent = new Map<string, Intent>();
 const itemBody = new Map<string, string>();
 const removed = new Map<string, { intent: Intent; text: string; at: number }>();
 let diverting: GatewayTurnArgs | null = null;
 let pendingEnqueue: { args: GatewayTurnArgs; intent: Intent } | null = null;
 let sendOverride: Intent | null = null;
+let overrideCid = "";
 
 let applying = false;
 let userPicking = false;
@@ -119,6 +149,7 @@ const wrappedFns = new Map<string, SendFn>();
 let origGwSend: SendFn | null = null;
 let wrappedGwSend: SendFn | null = null;
 let gwHost: { send: SendFn } | null = null;
+let gwOff: (() => void)[] = [];
 let abort: AbortController | null = null;
 let lastNavKey = "";
 let loadTail: ReturnType<typeof setTimeout> | null = null;
@@ -155,17 +186,6 @@ function coerceModelMode(existing: unknown, live: Intent): string {
     if (typeof existing === "string" && existing.startsWith("MODEL_MODE_")) return apiModelMode(raw);
     if ((existing == null || existing === "") && live.modelMode.startsWith("MODEL_MODE_")) return apiModelMode(raw);
     return modeSlug(raw);
-}
-
-function knownMode(raw: string): boolean {
-    const slug = modeSlug(raw);
-    if (!slug) return false;
-    if (CATALOG.some(m => m.id === slug)) return true;
-    try {
-        return ModesStore.useModesStore.getState().modes.some(m => modeSlug(m.id) === slug);
-    } catch {
-        return false;
-    }
 }
 
 function qid(item: unknown): string {
@@ -297,41 +317,22 @@ function applyIntent(next: Intent) {
     }
 }
 
-function withSendIntent<T>(item: Intent, fn: () => T): T {
-    if (!item.modeId) return fn();
-    const restore = pickerIntent();
-    sendOverride = item;
-    applyIntent(item);
-    try {
-        return fn();
-    } finally {
-        const token = item;
-        queueMicrotask(() => {
-            setTimeout(() => {
-                if (sendOverride !== token) return;
-                sendOverride = null;
-                if (overrideTail) {
-                    clearTimeout(overrideTail);
-                    overrideTail = null;
-                }
-                applyIntent(restore);
-            }, 0);
-        });
-    }
-}
-
-function armOverride(item: Intent) {
+function armOverride(item: Intent, cid: string) {
     if (!item.modeId) return;
     sendOverride = item;
+    overrideCid = cid;
     applyIntent(item);
     if (overrideTail) clearTimeout(overrideTail);
-    overrideTail = setTimeout(() => {
-        overrideTail = null;
-        if (sendOverride === item) {
-            sendOverride = null;
-            applyIntent(pickerIntent());
-        }
-    }, OVERRIDE_MS);
+    overrideTail = setTimeout(releaseOverride, OVERRIDE_MS);
+}
+
+function releaseOverride() {
+    if (overrideTail) clearTimeout(overrideTail);
+    overrideTail = null;
+    overrideCid = "";
+    if (!sendOverride) return;
+    sendOverride = null;
+    applyIntent(pickerIntent());
 }
 
 function captureIntent(modeId: string, cur: Intent): Intent {
@@ -488,14 +489,6 @@ function currentCid(): string {
     }
 }
 
-function inflightMode(cid: string): string {
-    const conv = conversation(cid);
-    const sent = String(conv?.activeGeneration?.sentModeId ?? "");
-    if (sent && knownMode(sent)) return modeSlug(sent);
-    const last = String(conv?.lastModel ?? "");
-    return knownMode(last) ? modeSlug(last) : "";
-}
-
 function isTurnArgs(v: unknown): v is GatewayTurnArgs {
     return !!v && typeof v === "object" && typeof (v as { convId?: unknown }).convId === "string";
 }
@@ -550,42 +543,90 @@ function holdQueueEvent(cid: string, event: unknown): boolean {
         }
         return false;
     }
+    if (QUEUE_SILENT.has(String(type))) return held.get(cid)?.some(h => h.id === id) ?? false;
+    if (type === QUEUE_INTERJECT) {
+        unhold(cid, id);
+        return false;
+    }
     if (type !== QUEUE_REMOVE) return false;
     const saved = itemIntent.get(id);
     if (saved?.modeId) removed.set(id, { intent: { ...saved }, text: itemBody.get(id) || "", at: Date.now() });
-    const list = held.get(cid);
-    if (list) {
-        const idx = list.findIndex(h => h.id === id);
-        if (idx >= 0) list.splice(idx, 1);
-    }
     schedulePaint();
-    return false;
+    return unhold(cid, id);
 }
 
-function flushTurn(cid: string, turn: HeldTurn, parentId: string) {
-    const state = MessageStore.useMessageStore.getState();
+function unhold(cid: string, id: string): boolean {
+    const list = held.get(cid) ?? [];
+    const idx = list.findIndex(h => h.id === id);
+    if (idx >= 0) list.splice(idx, 1);
+    return idx >= 0;
+}
+
+function flushNext(cid: string, parentId: string) {
+    const conv = conversation(cid);
+    const list = held.get(cid);
+    if (!conv || !list) return;
+    const queued = list.filter(h => conv.queue.some(q => qid(q) === h.id));
+    if (!queued.length) return;
+    held.set(cid, queued);
+    if (conv.queue.some(q => {
+        const id = qid(q);
+        return !!id && !queued.some(h => h.id === id);
+    })) return;
+    const turn = queued.find(h => h.id === qid(conv.queue[0]));
+    if (!turn) return;
+    const prev = flushing.get(cid);
+    if (prev) clearTimeout(prev.timer);
     const item = turn.intent.modeId ? turn.intent : itemIntent.get(turn.id) ?? liveIntent();
-    withSendIntent(item, () => {
-        state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
-        state.sendMessage({ ...turn.args, parentId });
-    });
-    forgetItem(turn.id);
-    logger.info("flushed", turn.id, "as", item.modeId);
+    flushing.set(cid, { turn, parentId, item, timer: setTimeout(() => flushTurn(cid), FLUSH_MS) });
+    armOverride(item, cid);
+    queueMicrotask(() => tryFlush(cid));
 }
 
-function flushHeld(responseId: string) {
-    for (const [cid, list] of held) {
-        const conv = conversation(cid);
-        if (!conv?.nodes[responseId]) continue;
-        const queued = list.filter(h => conv.queue.some(q => qid(q) === h.id));
-        if (!queued.length) continue;
-        held.set(cid, queued);
-        if (conv.queue.some(q => {
-            const id = qid(q);
-            return !!id && !queued.some(h => h.id === id);
-        })) continue;
-        queueMicrotask(() => flushTurn(cid, queued[0], responseId));
+function tryFlush(cid: string) {
+    const next = flushing.get(cid);
+    if (!next || busy.has(cid)) return;
+    const slug = modeSlug(next.item.modeId);
+    if (sentModel.get(cid) === slug && ackedModel.get(cid) === slug) flushTurn(cid);
+}
+
+function flushTurn(cid: string) {
+    const next = flushing.get(cid);
+    if (!next) return;
+    flushing.delete(cid);
+    clearTimeout(next.timer);
+    const conv = conversation(cid);
+    if (conv?.activeGeneration) return;
+    const { turn, parentId, item } = next;
+    const queued = conv?.queue.find(q => qid(q) === turn.id);
+    if (!queued) {
+        forgetItem(turn.id);
+        flushNext(cid, parentId);
+        return;
     }
+    const state = MessageStore.useMessageStore.getState();
+    armOverride(item, cid);
+    state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
+    state.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued.item), parentId });
+    forgetItem(turn.id);
+    logger.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
+}
+
+function onGwEvent(cid: string, event: GwEvent) {
+    const { type } = event;
+    if (type === "response.created") {
+        busy.add(cid);
+        if (cid === overrideCid) releaseOverride();
+        return;
+    }
+    if (type === "response.persisted") busy.delete(cid);
+    else if (SESSION_IN.has(String(type))) ackedModel.set(cid, modeSlug(String(event.session?.model ?? "")));
+    else return;
+    if (flushing.has(cid)) queueMicrotask(() => tryFlush(cid));
+}
+
+function onGwOutgoing(cid: string, event: GwEvent) {
+    if (SESSION_OUT.has(String(event.type))) sentModel.set(cid, modeSlug(String(event.session?.model ?? "")));
 }
 
 function writeMode(rec: Record<string, unknown>, live: Intent) {
@@ -718,6 +759,7 @@ function wrapGatewaySend() {
     try {
         const mgr = Gateway.gatewayConnectionManager;
         if (!mgr || typeof mgr.send !== "function") return;
+        if (!gwOff.length) gwOff = [mgr.on(onGwEvent), mgr.onOutgoing(onGwOutgoing)];
         if (wrappedGwSend && mgr.send === wrappedGwSend) return;
         gwHost = mgr;
         origGwSend = mgr.send;
@@ -734,10 +776,9 @@ function wrapGatewaySend() {
             }
             const queued = typeof cid === "string" ? eventItemIntent(event, cid) : undefined;
             if (queued?.modeId && !sendOverride) {
-                return withSendIntent(queued, () => {
-                    patchGwEvent(event, queued);
-                    return orig.apply(mgr, args);
-                });
+                armOverride(queued, String(cid));
+                patchGwEvent(event, queued);
+                return orig.apply(mgr, args);
             }
             if (!GW_TYPES.has(type)) return orig.apply(mgr, args);
             const live = liveIntent();
@@ -755,6 +796,8 @@ function wrapGatewaySend() {
 }
 
 function unwrapGatewaySend() {
+    for (const off of gwOff) off();
+    gwOff = [];
     try {
         if (gwHost && origGwSend && gwHost.send === wrappedGwSend) gwHost.send = origGwSend;
     } catch (e) {
@@ -775,10 +818,9 @@ function makeSendWrapper(orig: SendFn): SendFn {
             const cid = isTurnArgs(first) ? first.convId : currentCid();
             const queued = queuedIntent(cid, text, id);
             if (queued?.modeId) {
-                return withSendIntent(queued, () => {
-                    patchSendArgs(args, queued);
-                    return orig.apply(this, args);
-                });
+                armOverride(queued, cid);
+                patchSendArgs(args, queued);
+                return orig.apply(this, args);
             }
         }
         const live = liveIntent();
@@ -797,8 +839,7 @@ function makeQueueWrapper(orig: SendFn): SendFn {
         const live = enqueueIntent();
         if (!isTurnArgs(first) || !live.modeId) return orig.apply(this, args);
         pendingEnqueue = { args: first, intent: { ...live } };
-        const inflight = inflightMode(first.convId);
-        if (inflight && inflight !== modeSlug(live.modeId)) diverting = first;
+        if (conversation(first.convId)?.activeGeneration) diverting = first;
         try {
             return orig.apply(this, args);
         } finally {
@@ -1275,7 +1316,7 @@ function onPointerDown(e: PointerEvent) {
     const row = send.closest(`[${QITEM}], ${ROW_SEL}`);
     const id = row instanceof HTMLElement ? row.getAttribute(QITEM) || "" : "";
     const item = id ? itemIntent.get(id) : undefined;
-    if (item?.modeId) armOverride(item);
+    if (item?.modeId) armOverride(item, currentCid());
 }
 
 function onKeyDown(e: KeyboardEvent) {
@@ -1304,21 +1345,8 @@ function onChatPage() {
 
 function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
     wrapSendFns();
-    flushHeld(responseId);
-    try {
-        for (const [cid, conv] of Object.entries(MessageStore.useMessageStore.getState().conversations)) {
-            if (!conv.nodes[responseId]) continue;
-            const heldIds = new Set((held.get(cid) ?? []).map(h => h.id));
-            const next = conv.queue.find(q => {
-                const id = qid(q);
-                return !!id && !heldIds.has(id);
-            });
-            const item = next ? itemIntent.get(qid(next)) : undefined;
-            if (item?.modeId) armOverride(item);
-            break;
-        }
-    } catch (e) {
-        logger.debug("flush override failed", e);
+    for (const cid of held.keys()) {
+        if (conversation(cid)?.nodes[responseId]) flushNext(cid, responseId);
     }
 }
 
@@ -1385,6 +1413,11 @@ export default definePlugin({
         unhookFetch();
         unhookXhr();
         unwrapSendFns();
+        for (const f of flushing.values()) clearTimeout(f.timer);
+        flushing.clear();
+        sentModel.clear();
+        ackedModel.clear();
+        busy.clear();
         held.clear();
         itemIntent.clear();
         itemBody.clear();
@@ -1392,6 +1425,7 @@ export default definePlugin({
         diverting = null;
         pendingEnqueue = null;
         sendOverride = null;
+        overrideCid = "";
         applying = false;
         userPicking = false;
         awaitingMenu = false;
