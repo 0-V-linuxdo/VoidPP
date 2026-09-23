@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.30
+// @version      20260922.31
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.30] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.31] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7452,9 +7452,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.30] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8e0613d"}`
-    }, `(${"8e0613d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.31] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"3ab419c"}`
+    }, `(${"3ab419c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8087,7 +8087,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var SUMMARY_MAX = 60;
   var FLASH_MS = 2000;
   var FLASH_REDUCED_MS = 1000;
-  var THRESHOLD = 0.55;
+  var THRESHOLD = 0.45;
   var OFFSET_PX = 72;
   var LOCK_MS = 1000;
   var LOCK_FAST_MS = 280;
@@ -8461,26 +8461,36 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return host.id.slice("response-".length);
     return;
   }
+  function bubbleOf(el) {
+    if (!el)
+      return null;
+    if (el.matches(MSG_SEL))
+      return el;
+    return el.querySelector(MSG_SEL);
+  }
   function elForId(id) {
     const shell = document.getElementById(`response-${id}`);
     if (!(shell instanceof HTMLElement))
       return null;
-    if (shell.matches(MSG_SEL))
-      return shell;
-    return shell.querySelector(MSG_SEL) ?? shell;
+    return bubbleOf(shell);
   }
   function mountedEl(item) {
     if (!item)
       return null;
-    if (item.el && document.body.contains(item.el))
-      return item.el;
-    if (!item.id)
-      return null;
-    const found = elForId(item.id);
-    if (!found)
-      return null;
-    item.el = found;
-    return found;
+    if (item.id) {
+      const found = elForId(item.id);
+      if (found) {
+        item.el = found;
+        return found;
+      }
+    }
+    if (item.el && document.body.contains(item.el)) {
+      const bubble = bubbleOf(item.el);
+      if (bubble)
+        item.el = bubble;
+      return bubble;
+    }
+    return null;
   }
   function plain(text) {
     const t = text.replace(/\s+/g, " ").trim();
@@ -8872,14 +8882,25 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const pr = pane?.getBoundingClientRect();
     const top = pr?.top ?? 0;
     const bottom = pr ? Math.min(pr.bottom, composerTop()) : window.innerHeight;
-    const mid = top + Math.max(bottom - top, 0) * THRESHOLD;
-    const anchor = Math.min(mid, composerTop() - 80);
+    const anchor = top + Math.max(bottom - top, 0) * THRESHOLD;
     let active = 0;
+    let covered = false;
+    let best = Infinity;
     for (let i = 0;i < nav.length; i++) {
       const el = mountedEl(nav[i]);
       if (!el)
         continue;
-      if (el.getBoundingClientRect().top <= anchor)
+      const r = el.getBoundingClientRect();
+      if (r.top <= anchor && r.bottom > anchor) {
+        const dist = Math.abs((r.top + r.bottom) / 2 - anchor);
+        if (!covered || dist < best) {
+          covered = true;
+          best = dist;
+          active = i;
+        }
+        continue;
+      }
+      if (!covered && r.top <= anchor)
         active = i;
     }
     applyActive(active);
@@ -8911,7 +8932,6 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return;
     const row = menu.querySelector(`.void-bn-item[data-void-bn-i="${index}"]`);
     row?.scrollIntoView({ block: "nearest" });
-    markAim(index);
     clampMenu();
   }
   function requestActive() {
@@ -9087,6 +9107,20 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     if (self?.dataset.voidBnI != null)
       alignMenu(Number(self.dataset.voidBnI));
   }
+  function onPointerOut(e) {
+    if (!(e instanceof PointerEvent))
+      return;
+    const t = e.target;
+    if (!(t instanceof Element))
+      return;
+    const fromTick = t.closest(TICK_SEL) || t.closest(".void-bn-tick");
+    if (!fromTick)
+      return;
+    const next = e.relatedTarget;
+    if (next instanceof Element && (next.closest(TICK_SEL) || next.closest(".void-bn-tick") || next.closest(".void-bn-host") || next.closest(".void-bn-rail") || next.closest(".void-bn-menu")))
+      return;
+    markAim(-1);
+  }
   function onKeyDown(e) {
     if (!lastNav.length || !host?.isConnected)
       return;
@@ -9252,6 +9286,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     document.addEventListener("keydown", onKeyDown, { capture: true, signal });
     document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
     document.addEventListener("pointerover", onPointerOver, { capture: true, passive: true, signal });
+    document.addEventListener("pointerout", onPointerOut, { capture: true, passive: true, signal });
     window.addEventListener("popstate", debouncedPaint, { signal });
     const main = document.querySelector("main");
     if (main) {
@@ -27602,7 +27637,7 @@ Neon rain in a quiet city`
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1790112209000;
   contextMenu_default.updatedAt = 1790112209000;
-  betterNavigator_default.updatedAt = 1790132466000;
+  betterNavigator_default.updatedAt = 1790133920000;
   noSidebarIdentity_default.updatedAt = 1790112209000;
   completeToast_default.updatedAt = 1790112209000;
   cleaner_default.updatedAt = 1790112209000;

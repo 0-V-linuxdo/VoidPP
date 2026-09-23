@@ -62,7 +62,7 @@ const LOADING_LABEL = "加载中…";
 const SUMMARY_MAX = 60;
 const FLASH_MS = 2000;
 const FLASH_REDUCED_MS = 1000;
-const THRESHOLD = 0.55;
+const THRESHOLD = 0.45;
 const OFFSET_PX = 72;
 const LOCK_MS = 1000;
 const LOCK_FAST_MS = 280;
@@ -426,21 +426,33 @@ function responseIdOf(el: HTMLElement): string | undefined {
     return undefined;
 }
 
+function bubbleOf(el: HTMLElement | null): HTMLElement | null {
+    if (!el) return null;
+    if (el.matches(MSG_SEL)) return el;
+    return el.querySelector<HTMLElement>(MSG_SEL);
+}
+
 function elForId(id: string): HTMLElement | null {
     const shell = document.getElementById(`response-${id}`);
     if (!(shell instanceof HTMLElement)) return null;
-    if (shell.matches(MSG_SEL)) return shell;
-    return shell.querySelector<HTMLElement>(MSG_SEL) ?? shell;
+    return bubbleOf(shell);
 }
 
 function mountedEl(item: NavItem | undefined): HTMLElement | null {
     if (!item) return null;
-    if (item.el && document.body.contains(item.el)) return item.el;
-    if (!item.id) return null;
-    const found = elForId(item.id);
-    if (!found) return null;
-    item.el = found;
-    return found;
+    if (item.id) {
+        const found = elForId(item.id);
+        if (found) {
+            item.el = found;
+            return found;
+        }
+    }
+    if (item.el && document.body.contains(item.el)) {
+        const bubble = bubbleOf(item.el);
+        if (bubble) item.el = bubble;
+        return bubble;
+    }
+    return null;
 }
 
 function plain(text: string): string {
@@ -797,13 +809,24 @@ function setActive(nav: NavItem[]) {
     const pr = pane?.getBoundingClientRect();
     const top = pr?.top ?? 0;
     const bottom = pr ? Math.min(pr.bottom, composerTop()) : window.innerHeight;
-    const mid = top + Math.max(bottom - top, 0) * THRESHOLD;
-    const anchor = Math.min(mid, composerTop() - 80);
+    const anchor = top + Math.max(bottom - top, 0) * THRESHOLD;
     let active = 0;
+    let covered = false;
+    let best = Infinity;
     for (let i = 0; i < nav.length; i++) {
         const el = mountedEl(nav[i]);
         if (!el) continue;
-        if (el.getBoundingClientRect().top <= anchor) active = i;
+        const r = el.getBoundingClientRect();
+        if (r.top <= anchor && r.bottom > anchor) {
+            const dist = Math.abs((r.top + r.bottom) / 2 - anchor);
+            if (!covered || dist < best) {
+                covered = true;
+                best = dist;
+                active = i;
+            }
+            continue;
+        }
+        if (!covered && r.top <= anchor) active = i;
     }
     applyActive(active);
 }
@@ -832,7 +855,6 @@ function alignMenu(index: number) {
     if (!menu || !host) return;
     const row = menu.querySelector<HTMLElement>(`.void-bn-item[data-void-bn-i="${index}"]`);
     row?.scrollIntoView({ block: "nearest" });
-    markAim(index);
     clampMenu();
 }
 
@@ -1008,6 +1030,17 @@ function onPointerOver(e: Event) {
     if (self?.dataset.voidBnI != null) alignMenu(Number(self.dataset.voidBnI));
 }
 
+function onPointerOut(e: Event) {
+    if (!(e instanceof PointerEvent)) return;
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    const fromTick = t.closest(TICK_SEL) || t.closest(".void-bn-tick");
+    if (!fromTick) return;
+    const next = e.relatedTarget;
+    if (next instanceof Element && (next.closest(TICK_SEL) || next.closest(".void-bn-tick") || next.closest(".void-bn-host") || next.closest(".void-bn-rail") || next.closest(".void-bn-menu"))) return;
+    markAim(-1);
+}
+
 function onKeyDown(e: KeyboardEvent) {
     if (!lastNav.length || !host?.isConnected) return;
     if (isTypingTarget(e.target) || isTypingTarget(document.activeElement)) return;
@@ -1179,6 +1212,7 @@ function start() {
     document.addEventListener("keydown", onKeyDown, { capture: true, signal });
     document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
     document.addEventListener("pointerover", onPointerOver, { capture: true, passive: true, signal });
+    document.addEventListener("pointerout", onPointerOut, { capture: true, passive: true, signal });
     window.addEventListener("popstate", debouncedPaint, { signal });
     const main = document.querySelector("main");
     if (main) {
