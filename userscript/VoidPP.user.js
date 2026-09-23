@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.32
+// @version      20260922.33
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.32] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.33] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7452,9 +7452,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.32] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b792626"}`
-    }, `(${"b792626"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.33] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a8382a1"}`
+    }, `(${"a8382a1"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7886,6 +7886,32 @@ button.void-bn-native-live::before {
     pointer-events: none;
 }
 
+button.void-bn-native-dim > * {
+    width: 0.375rem !important;
+    max-width: 0.375rem !important;
+    background: hsl(var(--fg-tertiary)/50%) !important;
+}
+
+button.void-bn-native-edge {
+    position: relative;
+}
+
+button.void-bn-native-edge > * {
+    opacity: 0;
+}
+
+button.void-bn-native-edge::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 1rem;
+    height: 1px;
+    background: hsl(var(--fg-primary));
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
 .void-bn-native-dash {
     display: flex;
     align-items: center;
@@ -8096,6 +8122,8 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var FLASH_REDUCED_MS = 1000;
   var THRESHOLD = 0.28;
   var HEAD_HYST = 24;
+  var EDGE_PX = 8;
+  var EDGE_TAIL = 80;
   var OFFSET_PX = 72;
   var LOCK_MS = 1000;
   var LOCK_FAST_MS = 280;
@@ -9001,11 +9029,89 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return cur;
     return passed;
   }
+  function paneEdge(nav) {
+    const pane = chatPane();
+    if (!pane || !nav.length)
+      return null;
+    const room = pane.scrollHeight - pane.clientHeight;
+    const atTop = pane.scrollTop <= EDGE_PX;
+    const atBottom = room - pane.scrollTop <= EDGE_PX;
+    const pr = pane.getBoundingClientRect();
+    const floor = Math.min(pr.bottom, composerTop());
+    let geoTop = false;
+    let geoBottom = false;
+    const first = mountedEl(nav[0]);
+    if (first) {
+      const t = headTop(first);
+      if (t >= pr.top - EDGE_PX && t <= pr.top + 48)
+        geoTop = true;
+    }
+    const last = mountedEl(nav[nav.length - 1]);
+    if (last) {
+      const b = last.getBoundingClientRect().bottom;
+      if (b <= floor + EDGE_PX && b >= floor - EDGE_TAIL)
+        geoBottom = true;
+    }
+    if (room <= EDGE_PX || atBottom || geoBottom)
+      return "bottom";
+    if (atTop || geoTop)
+      return "top";
+    return null;
+  }
+  function edgePick(nav) {
+    const edge = paneEdge(nav);
+    if (!edge)
+      return null;
+    const ticks = nativeTicks();
+    if (ticks.length && settings6.store.showAssistant) {
+      const pool = assistantPool(ticks.length);
+      if (pool.length) {
+        return { index: edge === "bottom" ? pool[pool.length - 1] : pool[0], source: "native" };
+      }
+    }
+    return { index: edge === "bottom" ? nav.length - 1 : 0, source: "list" };
+  }
+  function clearNativeEdge() {
+    document.querySelectorAll(".void-bn-native-edge, .void-bn-native-dim").forEach((el) => {
+      el.classList.remove("void-bn-native-edge", "void-bn-native-dim");
+    });
+  }
+  function syncNativeEdge(nav, index) {
+    clearNativeEdge();
+    if (index == null)
+      return;
+    const ticks = nativeTicks();
+    if (!ticks.length)
+      return;
+    const item = nav[index];
+    if (!item)
+      return;
+    const mapped = nativeTickFor(item, index, ticks);
+    if (!mapped)
+      return;
+    for (const tick of ticks) {
+      if (tick === mapped) {
+        if (!item.live)
+          tick.classList.add("void-bn-native-edge");
+        continue;
+      }
+      if (!tick.classList.contains("void-bn-native-live"))
+        tick.classList.add("void-bn-native-dim");
+    }
+  }
   function setActive(nav) {
     if (performance.now() < lockUntil && lockIdx >= 0) {
+      clearNativeEdge();
       applyActive(lockIdx, "list");
       return;
     }
+    const edge = edgePick(nav);
+    if (edge) {
+      applyActive(edge.index, edge.source);
+      syncNativeEdge(nav, edge.index);
+      return;
+    }
+    clearNativeEdge();
     const fromNative = nativeCurrentIndex();
     if (fromNative != null) {
       applyActive(fromNative, "native");
@@ -9073,6 +9179,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   function clearNativeDash() {
     document.querySelectorAll(".void-bn-native-live").forEach((el) => el.classList.remove("void-bn-native-live"));
     document.querySelectorAll(".void-bn-native-dash").forEach((el) => el.remove());
+    clearNativeEdge();
   }
   function syncNativeDash(nav) {
     clearNativeDash();
@@ -27745,7 +27852,7 @@ Neon rain in a quiet city`
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1790112209000;
   contextMenu_default.updatedAt = 1790112209000;
-  betterNavigator_default.updatedAt = 1790134660000;
+  betterNavigator_default.updatedAt = 1790135181000;
   noSidebarIdentity_default.updatedAt = 1790112209000;
   completeToast_default.updatedAt = 1790112209000;
   cleaner_default.updatedAt = 1790112209000;

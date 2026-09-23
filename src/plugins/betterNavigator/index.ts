@@ -67,6 +67,8 @@ const FLASH_MS = 2000;
 const FLASH_REDUCED_MS = 1000;
 const THRESHOLD = 0.28;
 const HEAD_HYST = 24;
+const EDGE_PX = 8;
+const EDGE_TAIL = 80;
 const OFFSET_PX = 72;
 const LOCK_MS = 1000;
 const LOCK_FAST_MS = 280;
@@ -908,11 +910,81 @@ function pickByLine(nav: NavItem[]): number {
     return passed;
 }
 
+function paneEdge(nav: NavItem[]): "top" | "bottom" | null {
+    const pane = chatPane();
+    if (!pane || !nav.length) return null;
+    const room = pane.scrollHeight - pane.clientHeight;
+    const atTop = pane.scrollTop <= EDGE_PX;
+    const atBottom = room - pane.scrollTop <= EDGE_PX;
+    const pr = pane.getBoundingClientRect();
+    const floor = Math.min(pr.bottom, composerTop());
+    let geoTop = false;
+    let geoBottom = false;
+    const first = mountedEl(nav[0]);
+    if (first) {
+        const t = headTop(first);
+        if (t >= pr.top - EDGE_PX && t <= pr.top + 48) geoTop = true;
+    }
+    const last = mountedEl(nav[nav.length - 1]);
+    if (last) {
+        const b = last.getBoundingClientRect().bottom;
+        if (b <= floor + EDGE_PX && b >= floor - EDGE_TAIL) geoBottom = true;
+    }
+    if (room <= EDGE_PX || atBottom || geoBottom) return "bottom";
+    if (atTop || geoTop) return "top";
+    return null;
+}
+
+function edgePick(nav: NavItem[]): { index: number; source: "native" | "list" } | null {
+    const edge = paneEdge(nav);
+    if (!edge) return null;
+    const ticks = nativeTicks();
+    if (ticks.length && settings.store.showAssistant) {
+        const pool = assistantPool(ticks.length);
+        if (pool.length) {
+            return { index: edge === "bottom" ? pool[pool.length - 1] : pool[0], source: "native" };
+        }
+    }
+    return { index: edge === "bottom" ? nav.length - 1 : 0, source: "list" };
+}
+
+function clearNativeEdge() {
+    document.querySelectorAll<HTMLElement>(".void-bn-native-edge, .void-bn-native-dim").forEach(el => {
+        el.classList.remove("void-bn-native-edge", "void-bn-native-dim");
+    });
+}
+
+function syncNativeEdge(nav: NavItem[], index: number | null) {
+    clearNativeEdge();
+    if (index == null) return;
+    const ticks = nativeTicks();
+    if (!ticks.length) return;
+    const item = nav[index];
+    if (!item) return;
+    const mapped = nativeTickFor(item, index, ticks);
+    if (!mapped) return;
+    for (const tick of ticks) {
+        if (tick === mapped) {
+            if (!item.live) tick.classList.add("void-bn-native-edge");
+            continue;
+        }
+        if (!tick.classList.contains("void-bn-native-live")) tick.classList.add("void-bn-native-dim");
+    }
+}
+
 function setActive(nav: NavItem[]) {
     if (performance.now() < lockUntil && lockIdx >= 0) {
+        clearNativeEdge();
         applyActive(lockIdx, "list");
         return;
     }
+    const edge = edgePick(nav);
+    if (edge) {
+        applyActive(edge.index, edge.source);
+        syncNativeEdge(nav, edge.index);
+        return;
+    }
+    clearNativeEdge();
     const fromNative = nativeCurrentIndex();
     if (fromNative != null) {
         applyActive(fromNative, "native");
@@ -978,6 +1050,7 @@ function patchLabels(nav: NavItem[]) {
 function clearNativeDash() {
     document.querySelectorAll<HTMLElement>(".void-bn-native-live").forEach(el => el.classList.remove("void-bn-native-live"));
     document.querySelectorAll(".void-bn-native-dash").forEach(el => el.remove());
+    clearNativeEdge();
 }
 
 function syncNativeDash(nav: NavItem[]) {
