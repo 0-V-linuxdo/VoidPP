@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.24
+// @version      20260922.25
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.24] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.25] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7393,9 +7393,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.24] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"27c1ea9"}`
-    }, `(${"27c1ea9"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.25] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5832356"}`
+    }, `(${"5832356"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7924,6 +7924,7 @@ button.void-bn-native-live::before {
 
 .void-bn-item.void-bn-active {
     color: hsl(var(--fg-primary));
+    box-shadow: inset 0 0 0 1px hsl(var(--border-l2));
 }
 
 .void-bn-emoji {
@@ -27277,7 +27278,7 @@ Neon rain in a quiet city`
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1790112209000;
   contextMenu_default.updatedAt = 1790112209000;
-  betterNavigator_default.updatedAt = 1790112209000;
+  betterNavigator_default.updatedAt = 1790129459000;
   noSidebarIdentity_default.updatedAt = 1790112209000;
   completeToast_default.updatedAt = 1790112209000;
   cleaner_default.updatedAt = 1790112209000;
