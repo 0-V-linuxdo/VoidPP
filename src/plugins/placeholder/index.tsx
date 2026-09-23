@@ -27,6 +27,7 @@ const EDITOR_SEL = ".query-bar .tiptap";
 const EMPTY_SEL = `${EDITOR_SEL} p.is-editor-empty, ${EDITOR_SEL} p.is-empty:only-child`;
 const ROOT_BEFORE = `${EDITOR_SEL}::before`;
 const EMPTY_BEFORE = `${EDITOR_SEL} p.is-editor-empty:first-child::before,${EDITOR_SEL} p.is-empty:only-child::before`;
+const CYCLING_SEL = ".query-bar div.absolute.inset-0.pointer-events-none[aria-hidden=\"true\"]";
 const WIDTH_PAD = 8;
 
 const DEFAULT_PHRASES = [
@@ -68,6 +69,11 @@ const settings = definePluginSettings({
         max: 3600,
         default: 10,
     },
+    heroOnlyOutsideProject: {
+        type: OptionType.BOOLEAN,
+        description: "Outside projects, only replace the home greeting. The input keeps Grok's placeholder.",
+        default: true,
+    },
     phrases: {
         type: OptionType.COMPONENT,
         default: DEFAULT_PHRASES,
@@ -86,7 +92,7 @@ function PhrasesEditor() {
         <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
             <Flex alignItems="center" gap="0.375rem">
                 <Text size="sm" weight="medium">Phrases</Text>
-                <InfoHint>One phrase per line. The non-project home greeting uses these and may wrap. The query bar rotates them on one line, including home and other non-project chats. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.</InfoHint>
+                <InfoHint>One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.</InfoHint>
             </Flex>
             <div className={cl("textarea-wrap")}>
                 <Textarea
@@ -128,6 +134,19 @@ function isNonProjectHome(): boolean {
         const path = location.pathname.replace(/\/+$/, "") || "/";
         return path === "/";
     }
+}
+
+function isProjectChat(): boolean {
+    try {
+        return Boolean(RoutingStore.useRoutingStore.getState().route.workspaceId);
+    } catch {
+        return false;
+    }
+}
+
+function replaceChatInput(): boolean {
+    if (isProjectChat()) return true;
+    return settings.store.heroOnlyOutsideProject === false;
 }
 
 function isImaginePage(): boolean {
@@ -343,6 +362,12 @@ function paintInput() {
         return;
     }
     const imagine = isImaginePage();
+    const cycling = !imagine && !isProjectChat() && !!document.querySelector(CYCLING_SEL);
+    if ((!imagine && !replaceChatInput()) || cycling) {
+        bindSize(null);
+        clearInputOverlay();
+        return;
+    }
     const list = imagine ? imaginePhrases() : phrases();
     const p = document.querySelector(EMPTY_SEL);
     if (!(p instanceof HTMLElement) || !list) {
@@ -374,13 +399,14 @@ function scheduleInput() {
 export default definePlugin({
     name: "Placeholder",
     icon: TextCursorInputIcon,
-    description: "Replace the rotating chat input placeholder, the non-project home greeting, and optional Imagine phrases.",
+    description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
     authors: [Devs.p],
     tags: ["chat"],
     settings,
 
     _phrases() {
-        return isImaginePage() ? null : phrases();
+        if (isImaginePage() || !replaceChatInput()) return null;
+        return phrases();
     },
 
     _inputPlaceholder(value: unknown) {

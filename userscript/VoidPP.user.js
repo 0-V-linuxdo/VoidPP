@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.9
+// @version      20260923.10
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.9] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.10] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7518,7 +7518,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260923.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6a9815d"}`
     }, `(${"6a9815d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -19955,6 +19955,7 @@ div:has(> #grok-bot-nav-button) {
   var EMPTY_SEL = `${EDITOR_SEL3} p.is-editor-empty, ${EDITOR_SEL3} p.is-empty:only-child`;
   var ROOT_BEFORE = `${EDITOR_SEL3}::before`;
   var EMPTY_BEFORE = `${EDITOR_SEL3} p.is-editor-empty:first-child::before,${EDITOR_SEL3} p.is-empty:only-child::before`;
+  var CYCLING_SEL = ".query-bar div.absolute.inset-0.pointer-events-none[aria-hidden=\"true\"]";
   var WIDTH_PAD = 8;
   var DEFAULT_PHRASES = [
     "Ask not what your country can do for you — ask what you can do for your country.",
@@ -19995,6 +19996,11 @@ div:has(> #grok-bot-nav-button) {
       max: 3600,
       default: 10
     },
+    heroOnlyOutsideProject: {
+      type: 3 /* BOOLEAN */,
+      description: "Outside projects, only replace the home greeting. The input keeps Grok's placeholder.",
+      default: true
+    },
     phrases: {
       type: 6 /* COMPONENT */,
       default: DEFAULT_PHRASES,
@@ -20018,7 +20024,7 @@ div:has(> #grok-bot-nav-button) {
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       weight: "medium"
-    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. The non-project home greeting uses these and may wrap. The query bar rotates them on one line, including home and other non-project chats. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.")), /* @__PURE__ */ React.createElement("div", {
+    }, "Phrases"), /* @__PURE__ */ React.createElement(InfoHint, null, "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults. Imagine uses the Imagine phrases list below.")), /* @__PURE__ */ React.createElement("div", {
       className: cl26("textarea-wrap")
     }, /* @__PURE__ */ React.createElement(Textarea, {
       className: cl26("textarea"),
@@ -20061,6 +20067,18 @@ Neon rain in a quiet city`
       const path = location.pathname.replace(/\/+$/, "") || "/";
       return path === "/";
     }
+  }
+  function isProjectChat() {
+    try {
+      return Boolean(RoutingStore.useRoutingStore.getState().route.workspaceId);
+    } catch {
+      return false;
+    }
+  }
+  function replaceChatInput() {
+    if (isProjectChat())
+      return true;
+    return settings24.store.heroOnlyOutsideProject === false;
   }
   function isImaginePage3() {
     try {
@@ -20269,6 +20287,12 @@ Neon rain in a quiet city`
       return;
     }
     const imagine = isImaginePage3();
+    const cycling = !imagine && !isProjectChat() && !!document.querySelector(CYCLING_SEL);
+    if (!imagine && !replaceChatInput() || cycling) {
+      bindSize(null);
+      clearInputOverlay();
+      return;
+    }
     const list = imagine ? imaginePhrases() : phrases();
     const p = document.querySelector(EMPTY_SEL);
     if (!(p instanceof HTMLElement) || !list) {
@@ -20300,12 +20324,14 @@ Neon rain in a quiet city`
   var placeholder_default = definePlugin({
     name: "Placeholder",
     icon: TextCursorInputIcon,
-    description: "Replace the rotating chat input placeholder, the non-project home greeting, and optional Imagine phrases.",
+    description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
     authors: [Devs.p],
     tags: ["chat"],
     settings: settings24,
     _phrases() {
-      return isImaginePage3() ? null : phrases();
+      if (isImaginePage3() || !replaceChatInput())
+        return null;
+      return phrases();
     },
     _inputPlaceholder(value) {
       if (isImaginePage3())
