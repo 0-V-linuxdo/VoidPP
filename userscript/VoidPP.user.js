@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.3
+// @version      20260923.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.3] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7492,9 +7492,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"339aeb0"}`
-    }, `(${"339aeb0"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ab90e09"}`
+    }, `(${"ab90e09"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7823,9 +7823,13 @@ button .void-info-hint {
 
 .void-bn-self {
     position: absolute;
-    top: 50%;
+    top: 0;
     right: 0.75rem;
-    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    height: 100%;
+    transform: none;
 }
 
 .void-bn-native {
@@ -7848,8 +7852,11 @@ button .void-info-hint {
     flex-direction: column;
     align-items: flex-end;
     gap: 0;
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: 0;
     max-height: none;
-    overflow: visible;
+    overflow: hidden;
     pointer-events: auto;
     scrollbar-width: none;
 }
@@ -7864,7 +7871,9 @@ button .void-info-hint {
     align-items: center;
     justify-content: flex-end;
     width: 2.5rem;
-    height: 0.75rem;
+    flex: 1 1 0;
+    min-height: 2px;
+    height: auto;
     padding: 0 0.25rem;
     border: 0;
     background: transparent;
@@ -7872,7 +7881,8 @@ button .void-info-hint {
 }
 
 .void-bn-dense .void-bn-tick {
-    height: 0.45rem;
+    min-height: 2px;
+    height: auto;
 }
 
 .void-bn-tick::after {
@@ -7975,8 +7985,8 @@ button.void-bn-native-edge::before {
     z-index: 50;
     box-sizing: border-box;
     width: min(18rem, 70vw);
-    max-height: min(70vh, 28rem);
-    overflow: auto;
+    max-height: none;
+    overflow: hidden;
     padding: 0.375rem;
     border: 1px solid hsl(var(--border-l1));
     border-radius: 1.25rem;
@@ -9109,44 +9119,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function edgePick(nav) {
     const edge = paneEdge(nav);
-    if (!edge)
+    if (!edge || !nav.length)
       return null;
-    const ticks = nativeTicks();
-    if (ticks.length && settings6.store.showAssistant) {
-      const pool = assistantPool(ticks.length);
-      if (pool.length) {
-        return { index: edge === "bottom" ? pool[pool.length - 1] : pool[0], source: "native" };
-      }
-    }
     return { index: edge === "bottom" ? nav.length - 1 : 0, source: "list" };
   }
   function clearNativeEdge() {
     document.querySelectorAll(".void-bn-native-edge, .void-bn-native-dim").forEach((el) => {
       el.classList.remove("void-bn-native-edge", "void-bn-native-dim");
     });
-  }
-  function syncNativeEdge(nav, index) {
-    clearNativeEdge();
-    if (index == null)
-      return;
-    const ticks = nativeTicks();
-    if (!ticks.length)
-      return;
-    const item = nav[index];
-    if (!item)
-      return;
-    const mapped = nativeTickFor(item, index, ticks);
-    if (!mapped)
-      return;
-    for (const tick of ticks) {
-      if (tick === mapped) {
-        if (!item.live)
-          tick.classList.add("void-bn-native-edge");
-        continue;
-      }
-      if (!tick.classList.contains("void-bn-native-live"))
-        tick.classList.add("void-bn-native-dim");
-    }
   }
   function setActive(nav) {
     if (performance.now() < lockUntil && lockIdx >= 0) {
@@ -9156,8 +9136,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     const edge = edgePick(nav);
     if (edge) {
-      applyActive(edge.index, edge.source);
-      syncNativeEdge(nav, edge.index);
+      applyActive(edge.index, "list");
       return;
     }
     clearNativeEdge();
@@ -9168,50 +9147,70 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     applyActive(pickByLine(nav), "list");
   }
-  function columnRoom() {
-    return Math.max(120, composerTop() - 16);
+  function columnSpan() {
+    const pane = chatPane();
+    const frame = chatColumn();
+    const pr = pane?.getBoundingClientRect();
+    const fr = frame?.getBoundingClientRect();
+    const topVp = pr?.top ?? 8;
+    const bottomVp = Math.min(pr?.bottom ?? window.innerHeight, composerTop());
+    const height = Math.max(120, bottomVp - topVp);
+    const top = frame ? topVp - (fr?.top ?? 0) : 0;
+    return { top, height };
   }
-  function fitTicks() {
-    const ticks = host?.querySelector(".void-bn-ticks");
+  function placeHost() {
+    if (!host)
+      return;
+    const span = columnSpan();
+    host.style.top = `${span.top}px`;
+    host.style.height = `${span.height}px`;
+    host.style.right = "0.75rem";
+    host.style.transform = "none";
+    const ticks = host.querySelector(".void-bn-ticks");
     if (!ticks)
       return;
-    ticks.style.height = "";
+    ticks.style.height = "100%";
     ticks.style.maxHeight = "none";
-    ticks.style.overflow = "visible";
+    ticks.style.overflow = "hidden";
     for (const node of ticks.children) {
       if (node instanceof HTMLElement)
         node.style.height = "";
     }
-    const room = columnRoom();
-    const natural = ticks.scrollHeight;
-    if (natural <= room || !ticks.childElementCount)
-      return;
-    const h = Math.max(2, Math.floor(room / ticks.childElementCount));
-    for (const node of ticks.children) {
-      if (node instanceof HTMLElement)
-        node.style.height = `${h}px`;
-    }
   }
   function clampMenu() {
-    fitTicks();
+    placeHost();
     const menu = host?.querySelector(".void-bn-menu");
     if (!menu || !host)
       return;
-    const origin = rail ?? host;
-    menu.style.maxHeight = `${columnRoom()}px`;
+    const span = columnSpan();
+    menu.style.maxHeight = "none";
+    menu.style.overflowY = "hidden";
+    const natural = menu.scrollHeight;
+    const cap = span.height;
+    if (natural > cap + 1) {
+      menu.style.maxHeight = `${cap}px`;
+      menu.style.overflowY = "auto";
+      menu.style.top = "0px";
+      menu.style.marginTop = "0px";
+      menu.style.transform = "none";
+      return;
+    }
+    menu.style.maxHeight = `${Math.max(natural, 40)}px`;
+    menu.style.overflowY = "hidden";
     menu.style.top = "";
-    menu.style.overflowY = "";
-    const originRect = origin.getBoundingClientRect();
-    const mh = menu.offsetHeight;
-    const viewTop = 8;
-    const viewBottom = Math.min(window.innerHeight - 8, composerTop() - 8);
-    const natural = originRect.top + originRect.height / 2 - mh / 2;
-    let abs = natural;
+    menu.style.transform = "";
+    const originRect = host.getBoundingClientRect();
+    const mh = menu.offsetHeight || natural;
+    const viewTop = originRect.top;
+    const viewBottom = originRect.bottom;
+    const originMid = originRect.top + originRect.height / 2;
+    const naturalTop = originMid - mh / 2;
+    let abs = naturalTop;
     if (abs + mh > viewBottom)
       abs = viewBottom - mh;
     if (abs < viewTop)
       abs = viewTop;
-    const delta = abs - natural;
+    const delta = abs - naturalTop;
     menu.style.marginTop = Math.abs(delta) < 1 ? "" : `${delta}px`;
   }
   function alignMenu(index) {
@@ -9484,8 +9483,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       io = null;
       return;
     }
-    const slot = nativeSlot();
-    const mode = slot ? "fill" : "self";
+    const mode = "self";
     document.documentElement.classList.add("void-bn-fullticks");
     const nextKey = structKey(mode, nav);
     if (nextKey === paintedKey && host?.isConnected && sameCatalog(nav)) {
@@ -9500,26 +9498,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     unmount();
     document.documentElement.classList.add("void-bn-fullticks");
     const box = document.createElement("div");
-    box.className = cl17("host", mode);
-    if (mode === "native" && slot) {
-      slot.classList.add(SLOT_CLASS);
-      box.appendChild(menuEl(nav));
-      slot.appendChild(box);
-      rail = slot;
-    } else if (mode === "fill" && slot) {
-      slot.classList.add(SLOT_CLASS);
-      box.append(tickRail(nav), menuEl(nav));
-      slot.appendChild(box);
-      rail = slot;
-    } else {
-      const frame = chatColumn();
-      if (!frame)
-        return;
-      pinFrame(frame);
-      box.classList.add(SLOT_CLASS);
-      box.append(tickRail(nav), menuEl(nav));
-      frame.appendChild(box);
-    }
+    box.className = cl17("host", "self");
+    const frame = chatColumn();
+    if (!frame)
+      return;
+    pinFrame(frame);
+    box.classList.add(SLOT_CLASS);
+    box.append(tickRail(nav), menuEl(nav));
+    frame.appendChild(box);
     host = box;
     lastNav = nav;
     paintedKey = nextKey;
@@ -27938,7 +27924,7 @@ Neon rain in a quiet city`
   fixChrome_default.hidden = !window.chrome;
   chatBarButtons_default.updatedAt = 1790112209000;
   contextMenu_default.updatedAt = 1790112209000;
-  betterNavigator_default.updatedAt = 1790142503000;
+  betterNavigator_default.updatedAt = 1790142749000;
   noSidebarIdentity_default.updatedAt = 1790112209000;
   completeToast_default.updatedAt = 1790112209000;
   cleaner_default.updatedAt = 1790112209000;

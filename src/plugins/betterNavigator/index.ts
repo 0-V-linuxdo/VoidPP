@@ -933,16 +933,9 @@ function paneEdge(nav: NavItem[]): "top" | "bottom" | null {
     return null;
 }
 
-function edgePick(nav: NavItem[]): { index: number; source: "native" | "list" } | null {
+function edgePick(nav: NavItem[]): { index: number; source: "list" } | null {
     const edge = paneEdge(nav);
-    if (!edge) return null;
-    const ticks = nativeTicks();
-    if (ticks.length && settings.store.showAssistant) {
-        const pool = assistantPool(ticks.length);
-        if (pool.length) {
-            return { index: edge === "bottom" ? pool[pool.length - 1] : pool[0], source: "native" };
-        }
-    }
+    if (!edge || !nav.length) return null;
     return { index: edge === "bottom" ? nav.length - 1 : 0, source: "list" };
 }
 
@@ -950,24 +943,6 @@ function clearNativeEdge() {
     document.querySelectorAll<HTMLElement>(".void-bn-native-edge, .void-bn-native-dim").forEach(el => {
         el.classList.remove("void-bn-native-edge", "void-bn-native-dim");
     });
-}
-
-function syncNativeEdge(nav: NavItem[], index: number | null) {
-    clearNativeEdge();
-    if (index == null) return;
-    const ticks = nativeTicks();
-    if (!ticks.length) return;
-    const item = nav[index];
-    if (!item) return;
-    const mapped = nativeTickFor(item, index, ticks);
-    if (!mapped) return;
-    for (const tick of ticks) {
-        if (tick === mapped) {
-            if (!item.live) tick.classList.add("void-bn-native-edge");
-            continue;
-        }
-        if (!tick.classList.contains("void-bn-native-live")) tick.classList.add("void-bn-native-dim");
-    }
 }
 
 function setActive(nav: NavItem[]) {
@@ -978,8 +953,7 @@ function setActive(nav: NavItem[]) {
     }
     const edge = edgePick(nav);
     if (edge) {
-        applyActive(edge.index, edge.source);
-        syncNativeEdge(nav, edge.index);
+        applyActive(edge.index, "list");
         return;
     }
     clearNativeEdge();
@@ -991,45 +965,66 @@ function setActive(nav: NavItem[]) {
     applyActive(pickByLine(nav), "list");
 }
 
-function columnRoom(): number {
-    return Math.max(120, composerTop() - 16);
+function columnSpan(): { top: number; height: number } {
+    const pane = chatPane();
+    const frame = chatColumn();
+    const pr = pane?.getBoundingClientRect();
+    const fr = frame?.getBoundingClientRect();
+    const topVp = pr?.top ?? 8;
+    const bottomVp = Math.min(pr?.bottom ?? window.innerHeight, composerTop());
+    const height = Math.max(120, bottomVp - topVp);
+    const top = frame ? topVp - (fr?.top ?? 0) : 0;
+    return { top, height };
 }
 
-function fitTicks() {
-    const ticks = host?.querySelector<HTMLElement>(".void-bn-ticks");
+function placeHost() {
+    if (!host) return;
+    const span = columnSpan();
+    host.style.top = `${span.top}px`;
+    host.style.height = `${span.height}px`;
+    host.style.right = "0.75rem";
+    host.style.transform = "none";
+    const ticks = host.querySelector<HTMLElement>(".void-bn-ticks");
     if (!ticks) return;
-    ticks.style.height = "";
+    ticks.style.height = "100%";
     ticks.style.maxHeight = "none";
-    ticks.style.overflow = "visible";
+    ticks.style.overflow = "hidden";
     for (const node of ticks.children) {
         if (node instanceof HTMLElement) node.style.height = "";
-    }
-    const room = columnRoom();
-    const natural = ticks.scrollHeight;
-    if (natural <= room || !ticks.childElementCount) return;
-    const h = Math.max(2, Math.floor(room / ticks.childElementCount));
-    for (const node of ticks.children) {
-        if (node instanceof HTMLElement) node.style.height = `${h}px`;
     }
 }
 
 function clampMenu() {
-    fitTicks();
+    placeHost();
     const menu = host?.querySelector<HTMLElement>(".void-bn-menu");
     if (!menu || !host) return;
-    const origin = rail ?? host;
-    menu.style.maxHeight = `${columnRoom()}px`;
+    const span = columnSpan();
+    menu.style.maxHeight = "none";
+    menu.style.overflowY = "hidden";
+    const natural = menu.scrollHeight;
+    const cap = span.height;
+    if (natural > cap + 1) {
+        menu.style.maxHeight = `${cap}px`;
+        menu.style.overflowY = "auto";
+        menu.style.top = "0px";
+        menu.style.marginTop = "0px";
+        menu.style.transform = "none";
+        return;
+    }
+    menu.style.maxHeight = `${Math.max(natural, 40)}px`;
+    menu.style.overflowY = "hidden";
     menu.style.top = "";
-    menu.style.overflowY = "";
-    const originRect = origin.getBoundingClientRect();
-    const mh = menu.offsetHeight;
-    const viewTop = 8;
-    const viewBottom = Math.min(window.innerHeight - 8, composerTop() - 8);
-    const natural = originRect.top + originRect.height / 2 - mh / 2;
-    let abs = natural;
+    menu.style.transform = "";
+    const originRect = host.getBoundingClientRect();
+    const mh = menu.offsetHeight || natural;
+    const viewTop = originRect.top;
+    const viewBottom = originRect.bottom;
+    const originMid = originRect.top + originRect.height / 2;
+    const naturalTop = originMid - mh / 2;
+    let abs = naturalTop;
     if (abs + mh > viewBottom) abs = viewBottom - mh;
     if (abs < viewTop) abs = viewTop;
-    const delta = abs - natural;
+    const delta = abs - naturalTop;
     menu.style.marginTop = Math.abs(delta) < 1 ? "" : `${delta}px`;
 }
 
@@ -1299,8 +1294,7 @@ function paint() {
         return;
     }
 
-    const slot = nativeSlot();
-    const mode = slot ? "fill" : "self";
+    const mode = "self";
     document.documentElement.classList.add("void-bn-fullticks");
     const nextKey = structKey(mode, nav);
     if (nextKey === paintedKey && host?.isConnected && sameCatalog(nav)) {
@@ -1316,26 +1310,13 @@ function paint() {
     unmount();
     document.documentElement.classList.add("void-bn-fullticks");
     const box = document.createElement("div");
-    box.className = cl("host", mode);
-
-    if (mode === "native" && slot) {
-        slot.classList.add(SLOT_CLASS);
-        box.appendChild(menuEl(nav));
-        slot.appendChild(box);
-        rail = slot;
-    } else if (mode === "fill" && slot) {
-        slot.classList.add(SLOT_CLASS);
-        box.append(tickRail(nav), menuEl(nav));
-        slot.appendChild(box);
-        rail = slot;
-    } else {
-        const frame = chatColumn();
-        if (!frame) return;
-        pinFrame(frame);
-        box.classList.add(SLOT_CLASS);
-        box.append(tickRail(nav), menuEl(nav));
-        frame.appendChild(box);
-    }
+    box.className = cl("host", "self");
+    const frame = chatColumn();
+    if (!frame) return;
+    pinFrame(frame);
+    box.classList.add(SLOT_CLASS);
+    box.append(tickRail(nav), menuEl(nav));
+    frame.appendChild(box);
 
     host = box;
     lastNav = nav;
