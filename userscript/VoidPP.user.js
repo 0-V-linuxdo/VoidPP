@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.26
+// @version      20260922.27
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.26] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.27] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7393,9 +7393,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.26] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8f6dd1a"}`
-    }, `(${"8f6dd1a"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"93af23d"}`
+    }, `(${"93af23d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7987,8 +7987,23 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     "[aria-label*='Thought']",
     "[role='toolbar']"
   ].join(",");
-  var THINK_SEL = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
-  var STOP_SEL = 'button[aria-label="Stop model response"], button[aria-label*="Stop"], button[aria-label*="停止"]';
+  var THINK_SEL = "[data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
+  var STOP_SEL = [
+    'button[aria-label="Stop model response"]',
+    'button[aria-label="停止模型回复"]',
+    'button[aria-label="停止生成"]'
+  ].join(", ");
+  var DONE_ACTION_SEL = [
+    'button[aria-label*="Regenerate" i]',
+    'button[aria-label="Retry"]',
+    'button[aria-label="Redo"]',
+    'button[aria-label="重新生成"]',
+    'button[aria-label="Like"]',
+    'button[aria-label="Dislike"]',
+    'button[aria-label="Good response"]',
+    'button[aria-label="Bad response"]'
+  ].join(", ");
+  var SETTLED_RE = /\b(?:worked for|thought for)\b|工作了|思考了|思考用时/i;
   var MEDIA_SEL = "img, picture, video, canvas";
   var FILE_SEL = "a[download], [data-testid*='file'], [class*='attachment']";
   var DECORATIVE_SRC = /shields\.io|iconify\.design|badgen\.net|favicon|api\.iconify/i;
@@ -8013,6 +8028,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   var HYDRATE_MS = 2400;
   var HYDRATE_STEP = 80;
   var LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
+  var LIVE_PHASE = new Set(["sending", "streaming"]);
   var settings6 = definePluginSettings({
     showAssistant: {
       type: 3 /* BOOLEAN */,
@@ -8221,6 +8237,22 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       return true;
     return isDeadResponse(node.content);
   }
+  function generationPhase(gw) {
+    return String(gw?.activeGeneration?.phase ?? "").trim().toLowerCase();
+  }
+  function lookSettled(el) {
+    if (!el)
+      return false;
+    const text = el.textContent ?? "";
+    if (USER_INTERRUPT.test(text))
+      return true;
+    if (stopVisible())
+      return false;
+    const root = el.closest("[id^='response-']") ?? el;
+    if (root.querySelector(DONE_ACTION_SEL))
+      return true;
+    return SETTLED_RE.test(text);
+  }
   function storeLive() {
     try {
       const page = ChatPageStore.useChatPageStore.getState();
@@ -8228,14 +8260,25 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const gw = cid ? MessageStore.useMessageStore.getState().conversations?.[cid] : undefined;
       const genId = gw?.activeGeneration?.assistantId ?? "";
       const genNode = genId ? gw?.nodes?.[genId] : undefined;
-      if (genId && !nodeTerminal(genNode))
+      const phase = generationPhase(gw);
+      if (genNode && nodeTerminal(genNode)) {} else if (LIVE_PHASE.has(phase)) {
         return true;
-      if (!page.streamedMessageId && !page.showStreamingIndicator)
-        return false;
-      const streamed = ResponseStore.useResponseStore.getState().byId[page.streamedMessageId ?? ""];
-      if (isDeadResponse(streamed))
-        return false;
-      return true;
+      } else if (genNode && nodeLive(genNode) && !nodeTerminal(genNode)) {
+        return true;
+      }
+      const streamedId = page.streamedMessageId ?? "";
+      if (streamedId) {
+        const streamed = ResponseStore.useResponseStore.getState().byId[streamedId];
+        const sameGen = streamedId === genId || streamedId === (gw?.activeGeneration?.responseId ?? "");
+        if (genNode && nodeTerminal(genNode) && sameGen)
+          return false;
+        if (streamed && !isDeadResponse(streamed)) {
+          const state = (streamed.state ?? "").trim().toLowerCase();
+          if (LIVE.has(state) || streamed.partial)
+            return true;
+        }
+      }
+      return false;
     } catch (e) {
       logger16.debug("stream stores unavailable:", e);
       return null;
@@ -8253,14 +8296,14 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const last = [...root.querySelectorAll(ASST_SEL)].findLast((el) => document.body.contains(el));
     if (!last)
       return null;
-    if (USER_INTERRUPT.test(last.textContent ?? ""))
+    if (lookSettled(last))
       return null;
     if (stopVisible())
       return last;
     const live = storeLive();
     if (live)
       return last;
-    if (live == null && last.querySelector(THINK_SEL))
+    if (live == null && last.querySelector(THINK_SEL) && !lookSettled(last))
       return last;
     return null;
   }
@@ -8325,11 +8368,19 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const nodes = gw.nodes ?? {};
     const genId = gw.activeGeneration?.assistantId ?? "";
     const genNode = genId ? nodes[genId] : undefined;
-    if (genId && (!genNode || genNode.role === "assistant" && !nodeTerminal(genNode)))
-      return genId;
+    const phase = generationPhase(gw);
+    if (genNode && genNode.role === "assistant" && !nodeTerminal(genNode) && (LIVE_PHASE.has(phase) || nodeLive(genNode))) {
+      const el = elForId(genId);
+      if (!el || !lookSettled(el))
+        return genId;
+    }
     for (let i = path.length - 1;i >= 0; i--) {
-      if (path[i].role === "assistant" && nodeLive(path[i]) && !nodeTerminal(path[i]))
-        return path[i].id;
+      if (path[i].role !== "assistant" || !nodeLive(path[i]) || nodeTerminal(path[i]))
+        continue;
+      const el = elForId(path[i].id);
+      if (el && lookSettled(el))
+        continue;
+      return path[i].id;
     }
     return "";
   }
@@ -8494,16 +8545,6 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       if (d.id)
         ids.add(d.id);
     }
-    if (!out.some((n) => n.live && n.role === "assistant")) {
-      const liveDom = dom.find((d) => d.live && d.role === "assistant");
-      const last = [...out].reverse().find((n) => n.role === "assistant");
-      if (liveDom && last && (!liveDom.id || !last.id || liveDom.id === last.id)) {
-        last.live = true;
-        last.el = last.el ?? liveDom.el;
-        if (!last.text || last.text === LOADING_LABEL)
-          last.text = liveDom.text || LIVE_LABEL;
-      }
-    }
     return out;
   }
   function collect() {
@@ -8515,7 +8556,15 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     const domIds = dom.map((n) => n.id).filter((id) => !!id);
     const covered = domIds.length > 0 && domIds.every((id) => leafIds.has(id));
     const base = covered || dom.length <= leaf.length ? leaf : dom;
-    return absorbLive(base, dom);
+    const nav = absorbLive(base, dom);
+    for (const item of nav) {
+      if (!item.live || item.role !== "assistant")
+        continue;
+      const el = item.el ?? (item.id ? elForId(item.id) : null);
+      if (lookSettled(el))
+        item.live = false;
+    }
+    return nav;
   }
   function structKey(mode, nav) {
     return `${chatPath()}:${mode}:${nav.map((n, i) => n.id || `dom${i}:${n.role}`).join(",")}`;
@@ -8844,17 +8893,8 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     if (!ticks.length)
       return;
     const mapped = nativeTickFor(nav[liveI], liveI, ticks);
-    if (mapped) {
+    if (mapped)
       mapped.classList.add("void-bn-native-live");
-      return;
-    }
-    const parent = ticks[ticks.length - 1].parentElement;
-    if (!parent)
-      return;
-    const dash = document.createElement("span");
-    dash.className = "void-bn-native-dash";
-    dash.setAttribute("aria-hidden", "true");
-    parent.appendChild(dash);
   }
   function patchLive(nav) {
     host?.querySelectorAll(".void-bn-tick").forEach((node, i) => {
@@ -9107,8 +9147,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const path = extendPath(gw, pathToLeaf(gw));
       const gen = gw.activeGeneration;
       const genNode = gen?.assistantId ? gw.nodes?.[gen.assistantId] : undefined;
-      const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}` : "";
-      return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${path.map((n) => `${n.id}:${n.status}`).join(",")}`;
+      const phase = generationPhase(gw);
+      const lastAsst = [...path].reverse().find((n) => n.role === "assistant");
+      const lastKey = lastAsst ? `${lastAsst.id}:${lastAsst.status}:${lastAsst.content?.state ?? ""}` : "";
+      const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
+      return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.map((n) => `${n.id}:${n.status}`).join(",")}`;
     } catch (e) {
       logger16.debug("message key failed:", e);
       return "";

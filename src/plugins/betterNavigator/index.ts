@@ -31,8 +31,23 @@ const STRIP_SEL = [
     "details", "[data-testid*='think']", "[class*='thinking']", "[class*='Thought']",
     "[aria-label*='Thought']", "[role='toolbar']",
 ].join(",");
-const THINK_SEL = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
-const STOP_SEL = 'button[aria-label="Stop model response"], button[aria-label*="Stop"], button[aria-label*="停止"]';
+const THINK_SEL = "[data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
+const STOP_SEL = [
+    'button[aria-label="Stop model response"]',
+    'button[aria-label="停止模型回复"]',
+    'button[aria-label="停止生成"]',
+].join(", ");
+const DONE_ACTION_SEL = [
+    'button[aria-label*="Regenerate" i]',
+    'button[aria-label="Retry"]',
+    'button[aria-label="Redo"]',
+    'button[aria-label="重新生成"]',
+    'button[aria-label="Like"]',
+    'button[aria-label="Dislike"]',
+    'button[aria-label="Good response"]',
+    'button[aria-label="Bad response"]',
+].join(", ");
+const SETTLED_RE = /\b(?:worked for|thought for)\b|工作了|思考了|思考用时/i;
 const MEDIA_SEL = "img, picture, video, canvas";
 const FILE_SEL = "a[download], [data-testid*='file'], [class*='attachment']";
 const DECORATIVE_SRC = /shields\.io|iconify\.design|badgen\.net|favicon|api\.iconify/i;
@@ -57,6 +72,7 @@ const SLOT_CLASS = "void-bn-rail";
 const HYDRATE_MS = 2400;
 const HYDRATE_STEP = 80;
 const LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
+const LIVE_PHASE = new Set(["sending", "streaming"]);
 
 const settings = definePluginSettings({
     showAssistant: {
@@ -264,6 +280,21 @@ function nodeTerminal(node: GatewayNode | undefined): boolean {
     return isDeadResponse(node.content);
 }
 
+function generationPhase(gw: GatewayConversation | undefined): string {
+    return String((gw?.activeGeneration as { phase?: string } | null | undefined)?.phase ?? "").trim().toLowerCase();
+}
+
+function lookSettled(el: HTMLElement | null): boolean {
+    if (!el) return false;
+    const text = el.textContent ?? "";
+    if (USER_INTERRUPT.test(text)) return true;
+    // Stop still on screen means the answer after "Worked for" may still be streaming.
+    if (stopVisible()) return false;
+    const root = el.closest<HTMLElement>("[id^='response-']") ?? el;
+    if (root.querySelector(DONE_ACTION_SEL)) return true;
+    return SETTLED_RE.test(text);
+}
+
 function storeLive(): boolean | null {
     try {
         const page = ChatPageStore.useChatPageStore.getState();
@@ -271,11 +302,25 @@ function storeLive(): boolean | null {
         const gw = cid ? MessageStore.useMessageStore.getState().conversations?.[cid] : undefined;
         const genId = gw?.activeGeneration?.assistantId ?? "";
         const genNode = genId ? gw?.nodes?.[genId] : undefined;
-        if (genId && !nodeTerminal(genNode)) return true;
-        if (!page.streamedMessageId && !page.showStreamingIndicator) return false;
-        const streamed = ResponseStore.useResponseStore.getState().byId[page.streamedMessageId ?? ""];
-        if (isDeadResponse(streamed)) return false;
-        return true;
+        const phase = generationPhase(gw);
+        if (genNode && nodeTerminal(genNode)) {
+            /* generation object can stick after the node is done */
+        } else if (LIVE_PHASE.has(phase)) {
+            return true;
+        } else if (genNode && nodeLive(genNode) && !nodeTerminal(genNode)) {
+            return true;
+        }
+        const streamedId = page.streamedMessageId ?? "";
+        if (streamedId) {
+            const streamed = ResponseStore.useResponseStore.getState().byId[streamedId];
+            const sameGen = streamedId === genId || streamedId === (gw?.activeGeneration?.responseId ?? "");
+            if (genNode && nodeTerminal(genNode) && sameGen) return false;
+            if (streamed && !isDeadResponse(streamed)) {
+                const state = (streamed.state ?? "").trim().toLowerCase();
+                if (LIVE.has(state) || streamed.partial) return true;
+            }
+        }
+        return false;
     } catch (e) {
         logger.debug("stream stores unavailable:", e);
         return null;
@@ -293,11 +338,11 @@ function liveAssistantEl(): HTMLElement | null {
     const root = chatPane() ?? document;
     const last = [...root.querySelectorAll<HTMLElement>(ASST_SEL)].findLast(el => document.body.contains(el));
     if (!last) return null;
-    if (USER_INTERRUPT.test(last.textContent ?? "")) return null;
+    if (lookSettled(last)) return null;
     if (stopVisible()) return last;
     const live = storeLive();
     if (live) return last;
-    if (live == null && last.querySelector(THINK_SEL)) return last;
+    if (live == null && last.querySelector(THINK_SEL) && !lookSettled(last)) return last;
     return null;
 }
 
@@ -360,9 +405,16 @@ function liveAssistantId(gw: GatewayConversation, path: GatewayNode[]): string {
     const nodes = gw.nodes ?? {};
     const genId = gw.activeGeneration?.assistantId ?? "";
     const genNode = genId ? nodes[genId] : undefined;
-    if (genId && (!genNode || (genNode.role === "assistant" && !nodeTerminal(genNode)))) return genId;
+    const phase = generationPhase(gw);
+    if (genNode && genNode.role === "assistant" && !nodeTerminal(genNode) && (LIVE_PHASE.has(phase) || nodeLive(genNode))) {
+        const el = elForId(genId);
+        if (!el || !lookSettled(el)) return genId;
+    }
     for (let i = path.length - 1; i >= 0; i--) {
-        if (path[i].role === "assistant" && nodeLive(path[i]) && !nodeTerminal(path[i])) return path[i].id;
+        if (path[i].role !== "assistant" || !nodeLive(path[i]) || nodeTerminal(path[i])) continue;
+        const el = elForId(path[i].id);
+        if (el && lookSettled(el)) continue;
+        return path[i].id;
     }
     return "";
 }
@@ -503,15 +555,6 @@ function absorbLive(base: NavItem[], dom: NavItem[]): NavItem[] {
         out.push({ ...d, text: d.text || LIVE_LABEL, live: true });
         if (d.id) ids.add(d.id);
     }
-    if (!out.some(n => n.live && n.role === "assistant")) {
-        const liveDom = dom.find(d => d.live && d.role === "assistant");
-        const last = [...out].reverse().find(n => n.role === "assistant");
-        if (liveDom && last && (!liveDom.id || !last.id || liveDom.id === last.id)) {
-            last.live = true;
-            last.el = last.el ?? liveDom.el;
-            if (!last.text || last.text === LOADING_LABEL) last.text = liveDom.text || LIVE_LABEL;
-        }
-    }
     return out;
 }
 
@@ -523,7 +566,13 @@ function collect(): NavItem[] {
     const domIds = dom.map(n => n.id).filter((id): id is string => !!id);
     const covered = domIds.length > 0 && domIds.every(id => leafIds.has(id));
     const base = covered || dom.length <= leaf.length ? leaf : dom;
-    return absorbLive(base, dom);
+    const nav = absorbLive(base, dom);
+    for (const item of nav) {
+        if (!item.live || item.role !== "assistant") continue;
+        const el = item.el ?? (item.id ? elForId(item.id) : null);
+        if (lookSettled(el)) item.live = false;
+    }
+    return nav;
 }
 
 function structKey(mode: string, nav: NavItem[]): string {
@@ -831,16 +880,7 @@ function syncNativeDash(nav: NavItem[]) {
     const ticks = nativeTicks();
     if (!ticks.length) return;
     const mapped = nativeTickFor(nav[liveI], liveI, ticks);
-    if (mapped) {
-        mapped.classList.add("void-bn-native-live");
-        return;
-    }
-    const parent = ticks[ticks.length - 1].parentElement;
-    if (!parent) return;
-    const dash = document.createElement("span");
-    dash.className = "void-bn-native-dash";
-    dash.setAttribute("aria-hidden", "true");
-    parent.appendChild(dash);
+    if (mapped) mapped.classList.add("void-bn-native-live");
 }
 
 function patchLive(nav: NavItem[]) {
@@ -1097,8 +1137,11 @@ function messageKey(s: MessageStoreState): string {
         const path = extendPath(gw, pathToLeaf(gw));
         const gen = gw.activeGeneration;
         const genNode = gen?.assistantId ? gw.nodes?.[gen.assistantId] : undefined;
-        const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}` : "";
-        return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${path.map(n => `${n.id}:${n.status}`).join(",")}`;
+        const phase = generationPhase(gw);
+        const lastAsst = [...path].reverse().find(n => n.role === "assistant");
+        const lastKey = lastAsst ? `${lastAsst.id}:${lastAsst.status}:${lastAsst.content?.state ?? ""}` : "";
+        const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
+        return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.map(n => `${n.id}:${n.status}`).join(",")}`;
     } catch (e) {
         logger.debug("message key failed:", e);
         return "";
