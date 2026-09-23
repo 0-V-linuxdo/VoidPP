@@ -8,9 +8,10 @@ import { definePluginSettings } from "@api/Settings";
 import { FrameIcon } from "@components/icons";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import { ChatPageStore } from "@turbopack/common/stores";
+import { filters, findByPropsLazy, waitFor } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
-import { Logger } from "@utils/Logger";
 import { registerStyle, unregisterStyle } from "@utils/css";
+import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 
 const logger = new Logger("BetterCanvas");
@@ -68,8 +69,21 @@ const settings = definePluginSettings({
     },
 });
 
+interface WorkspaceHook {
+    getState: () => {
+        canvasExpanded?: boolean;
+        toggleCanvas?: (open: boolean, opts?: { animate?: boolean }) => void;
+    };
+    subscribe: (listener: () => void) => () => void;
+}
+
+const WorkspaceStore = findByPropsLazy("useWorkspaceStore") as { useWorkspaceStore?: WorkspaceHook };
+
 let domObs: MutationObserver | null = null;
 let themeObs: MutationObserver | null = null;
+let unsubWorkspace: (() => void) | null = null;
+let cancelWorkspaceWait: (() => void) | null = null;
+let collapsing = false;
 const hooked = new WeakSet<HTMLIFrameElement>();
 
 export function isGrokPreviewFrame() {
@@ -222,8 +236,25 @@ function callFn(fn: unknown, thisArg: unknown): boolean {
     return true;
 }
 
+function collapseCanvas() {
+    if (collapsing || !settings.store.hideRightPanel) return;
+    try {
+        const hook = WorkspaceStore.useWorkspaceStore;
+        if (!hook?.getState) return;
+        const state = hook.getState();
+        if (!state.canvasExpanded || typeof state.toggleCanvas !== "function") return;
+        collapsing = true;
+        state.toggleCanvas(false, { animate: false });
+    } catch (e) {
+        logger.debug("hide canvas failed", e);
+    } finally {
+        collapsing = false;
+    }
+}
+
 function enforce() {
     if (!settings.store.hideRightPanel) return;
+    collapseCanvas();
     try {
         const hook = ChatPageStore.useChatPageStore;
         if (!hook || typeof hook.getState !== "function") return;
@@ -241,6 +272,14 @@ function enforce() {
     } catch (e) {
         logger.debug("hide right panel failed", e);
     }
+}
+
+function bindWorkspace(mod?: { useWorkspaceStore?: WorkspaceHook }) {
+    if (unsubWorkspace) return;
+    const hook = mod?.useWorkspaceStore ?? WorkspaceStore.useWorkspaceStore;
+    if (!hook?.subscribe) return;
+    unsubWorkspace = hook.subscribe(() => collapseCanvas());
+    collapseCanvas();
 }
 
 function apply() {
@@ -261,6 +300,8 @@ export default definePlugin({
 
     start() {
         window.addEventListener("message", onParentMessage);
+        bindWorkspace();
+        if (!unsubWorkspace) cancelWorkspaceWait = waitFor(filters.byProps("useWorkspaceStore"), bindWorkspace);
         apply();
     },
 
@@ -268,6 +309,10 @@ export default definePlugin({
 
     stop() {
         window.removeEventListener("message", onParentMessage);
+        cancelWorkspaceWait?.();
+        cancelWorkspaceWait = null;
+        unsubWorkspace?.();
+        unsubWorkspace = null;
         stopScrollbar();
     },
 
@@ -289,7 +334,8 @@ export default definePlugin({
             },
         },
         {
-            find: '"computePreviewAutoOpen"',
+            find: 'source:"auto"',
+            all: true,
             replacement: {
                 match: /&&(\i)\(\{source:"auto"\}\)/,
                 replace: "&&!$self.settings.store.hideRightPanel&&$1({source:\"auto\"})",

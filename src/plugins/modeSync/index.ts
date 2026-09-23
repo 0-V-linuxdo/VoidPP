@@ -9,7 +9,7 @@ import "./styles.css";
 import type { VoidPPEventMap } from "@api/Events";
 import { definePluginSettings } from "@api/Settings";
 import { ListOrderedIcon } from "@components/icons";
-import type { ModelId, ModelMode } from "@grok-types/enums/models";
+import type { ModelMode } from "@grok-types/enums/models";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { GatewayConversation, GatewayQueueItem, GatewayTurnArgs, MessageStoreState } from "@grok-types/stores/MessageStore";
 import type { ModesStoreState } from "@grok-types/stores/ModesStore";
@@ -151,7 +151,7 @@ function apiModelMode(s: string): string {
 }
 
 function coerceModelMode(existing: unknown, live: Intent): string {
-    const raw = live.modelMode || live.modeId;
+    const raw = live.modeId || live.modelMode;
     if (typeof existing === "string" && existing.startsWith("MODEL_MODE_")) return apiModelMode(raw);
     if ((existing == null || existing === "") && live.modelMode.startsWith("MODEL_MODE_")) return apiModelMode(raw);
     return modeSlug(raw);
@@ -214,16 +214,20 @@ function setIntent(next: Intent) {
     else delete host[REMEMBERED];
 }
 
+function sessionAdjusted(cid: string): string {
+    if (!cid) return "";
+    const modes = ModesStore.useModesStore.getState() as ModesStoreState & {
+        userAdjustedSessionModeByConversationId?: Record<string, string>;
+    };
+    return String(modes.userAdjustedSessionModeByConversationId?.[cid] ?? "");
+}
+
 function enqueueIntent(): Intent {
     const forced = forcedIntent();
     if (forced?.modeId) return forced;
-    if (userPicking || awaitingMenu) {
-        const cur = snapshot();
-        if (cur.modeId) return cur;
-    }
-    if (intent.modeId) return intent;
     const cur = snapshot();
-    return cur.modeId ? cur : liveIntent();
+    if (cur.modeId) return cur;
+    return intent.modeId ? intent : liveIntent();
 }
 
 function pickerIntent(): Intent {
@@ -272,17 +276,20 @@ function syncRestoreFlag() {
 
 function applyIntent(next: Intent) {
     if (!next.modeId || applying || onImaginePage()) return;
+    const slug = modeSlug(next.modeId);
+    if (!slug) return;
     applying = true;
     try {
         const modes = ModesStore.useModesStore.getState();
-        if (modes.selectedModeId !== next.modeId) modes.setSelectedModeId(next.modeId, { source: "sync" });
-        const chat = ChatPageStore.useChatPageStore.getState();
-        if (next.modelMode && chat.modelMode !== next.modelMode) chat.setModelMode(next.modelMode as ModelMode);
-        if (next.activeModelId) {
-            if (chat.activeModelId !== next.activeModelId) chat.setActiveModelId(next.activeModelId as ModelId);
-        } else if (chat.activeModelId) {
-            chat.setActiveModelId("" as ModelId);
+        const cid = currentCid();
+        const adjusted = cid ? sessionAdjusted(cid) : slug;
+        if (modeSlug(String(modes.selectedModeId || "")) !== slug || adjusted !== slug) {
+            modes.setSelectedModeId(slug, { source: "user" });
         }
+        const settled = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || "")) || slug;
+        const chat = ChatPageStore.useChatPageStore.getState();
+        if (modeSlug(String(chat.modelMode || "")) !== settled) chat.setModelMode(settled as ModelMode);
+        if (settled !== slug && modeSlug(intent.modeId) === slug) setIntent(captureIntent(settled, snapshot()));
     } catch (e) {
         logger.debug("apply failed", e);
     } finally {
@@ -358,9 +365,12 @@ function fightHydrate() {
     if (sendOverride || !settings.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId) return;
     if (!loadPending()) return;
     const cur = snapshot();
+    const slug = modeSlug(intent.modeId);
+    const cid = currentCid();
     if (
-        cur.modeId === intent.modeId
-        && (!intent.modelMode || cur.modelMode === intent.modelMode)
+        modeSlug(cur.modeId) === slug
+        && (!cid || sessionAdjusted(cid) === slug)
+        && (!intent.modelMode || modeSlug(cur.modelMode) === slug)
         && (!intent.activeModelId || cur.activeModelId === intent.activeModelId)
     ) return;
     logger.info("hydrate fought", cur.modeId, "->", intent.modeId);
@@ -401,14 +411,15 @@ function patchPayload(raw: unknown, live: Intent): boolean {
     if (onImaginePage() || !raw || typeof raw !== "object" || Array.isArray(raw) || !live.modeId) return false;
     const rec = raw as Record<string, unknown>;
     if (!isChatSend(rec)) return false;
+    const slug = modeSlug(live.modeId);
+    if (!slug) return false;
     const before = rec.modeId;
     const beforeMode = rec.modelMode;
-    const beforeName = rec.modelName;
-    rec.modeId = live.modeId;
+    const beforeModel = rec.model;
+    rec.modeId = slug;
     rec.modelMode = coerceModelMode(rec.modelMode, live);
-    if (live.activeModelId) rec.modelName = live.activeModelId;
-    else delete rec.modelName;
-    return rec.modeId !== before || rec.modelMode !== beforeMode || rec.modelName !== beforeName;
+    if ("model" in rec) rec.model = slug;
+    return rec.modeId !== before || rec.modelMode !== beforeMode || ("model" in rec && rec.model !== beforeModel);
 }
 
 function patchSendArgs(args: unknown[], live: Intent) {
@@ -523,7 +534,7 @@ function pruneIntents() {
 function holdQueueEvent(cid: string, event: unknown): boolean {
     if (!event || typeof event !== "object") return false;
     const id = eventQueueId(event);
-    const type = (event as { type?: unknown }).type;
+    const { type } = (event as { type?: unknown });
     if (!id) return false;
     if (type === QUEUE_ADD) {
         const saved = pendingEnqueue?.intent ?? (intent.modeId ? intent : liveIntent());
@@ -578,11 +589,12 @@ function flushHeld(responseId: string) {
 }
 
 function writeMode(rec: Record<string, unknown>, live: Intent) {
+    const slug = modeSlug(live.modeId);
+    if (!slug) return;
     for (const key of GW_MODE_KEYS) {
-        rec[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(rec[key], live) : live.modeId;
+        rec[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(rec[key], live) : slug;
     }
-    if (live.activeModelId) rec.modelName = live.activeModelId;
-    else delete rec.modelName;
+    if ("model" in rec) rec.model = slug;
 }
 
 function patchGwEvent(event: unknown, live: Intent) {
@@ -614,7 +626,7 @@ function eventText(event: unknown): string {
     const rec = event as Record<string, unknown>;
     const own = textOf(rec);
     if (own) return own;
-    const item = rec.item;
+    const { item } = rec;
     return item && typeof item === "object" ? textOf(item as Record<string, unknown>) : "";
 }
 
@@ -690,8 +702,8 @@ function intentFromPayload(raw: unknown): Intent | undefined {
     const id = qid(rec) || (nested ? qid(nested) : "");
     const text = textOf(rec) || (nested ? textOf(nested) : "");
     const cid = typeof rec.conversationId === "string" ? rec.conversationId
-        : typeof rec.convId === "string" ? rec.convId
-        : currentCid();
+        : (typeof rec.convId === "string" ? rec.convId
+        : currentCid());
     return queuedIntent(cid, text, id);
 }
 
@@ -1122,7 +1134,7 @@ function rowBody(row: HTMLElement): string {
     if (clamp) return clamp;
     const copy = row.cloneNode(true) as HTMLElement;
     copy.querySelectorAll("button, svg").forEach(el => el.remove());
-    return (copy.textContent || "").replace(/\s+/g, " ").trim();
+    return (copy.textContent || "").replaceAll(/\s+/g, " ").trim();
 }
 
 function idForRow(row: HTMLElement, items: GatewayQueueItem[], index: number, used: Set<string>): string {
@@ -1350,6 +1362,7 @@ export default definePlugin({
         } catch (e) {
             logger.warn("Failed to hook send path", e);
         }
+        if (intent.modeId) applyIntent(intent);
     },
 
     stop() {
