@@ -31,7 +31,7 @@
 | <img src="https://api.iconify.design/lucide/scroll-text.svg?color=%238b949e" width="16" height="16" alt=""> BetterNavigator | 开 | 把原生消息导航升级成 Notion 式目录。悬停 tick 可看到当前分支的全部消息，含尚未挂载的历史；正在输出的回答以虚线保留，悬停目录相对轨道垂直居中。一轮对话和右侧栏打开时钉在聊天列上。输入框外 ↑/↓ 按目录逐条跳转（`showAssistant`、`hideNativeHover`、`jumpEffect`）。 |
 | <img src="https://api.iconify.design/lucide/blend.svg?color=%238b949e" width="16" height="16" alt=""> ComposerOpacity | 开 | 调节输入栏背景透明度和模糊。 |
 | <img src="https://api.iconify.design/lucide/layout-grid.svg?color=%238b949e" width="16" height="16" alt=""> RecentTopics | 开 | Ctrl+` 切换最近会话（玻璃卡片、项目名、上轮问答预览）。 |
-| <img src="https://api.iconify.design/lucide/minimize-2.svg?color=%238b949e" width="16" height="16" alt=""> CompactModeSelect | 开 | 输入栏模型按钮始终只显示图标，宽屏也不展开成文字。 |
+| <img src="https://api.iconify.design/lucide/minimize-2.svg?color=%238b949e" width="16" height="16" alt=""> BetterModeSelect | 开 | 把 1–N 个聊天模式钉成常驻芯片，点一下直接切换，不必打开菜单。 |
 | <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | 开 | 队列每条记住入队时的模型（`showQueueMode`）。切会话保持 picker（`stickyOnNavigate`）。刷新后把未发送的排队消息灌回（`persistAcrossRefresh`）。 |
 | <img src="https://api.iconify.design/lucide/text-quote.svg?color=%238b949e" width="16" height="16" alt=""> UserQuotes | 开 | 自己气泡里的引用行画出可见左竖条，避免 `>` 被 markdown 吃掉后看起来像消失。 |
 | <img src="https://api.iconify.design/lucide/message-square-quote.svg?color=%238b949e" width="16" height="16" alt=""> BetterQuotes | 开 | 点输入框引用芯片（或已发送的引用卡）滚到被引原文（`jumpToPassage`）。切会话再回来时保留引用条（`persistAcrossChats`）。 |

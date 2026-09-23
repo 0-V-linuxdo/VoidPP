@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.12
+// @version      20260923.13
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.12] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.13] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7505,9 +7505,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6d61d40"}`
-    }, `(${"6d61d40"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a0b2801"}`
+    }, `(${"a0b2801"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8887,6 +8887,792 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   });
 
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterModeSelect/styles.css
+  registerStyle("betterModeSelect", `/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+.void-cms-pins {
+    display: contents;
+}
+
+.void-cms-pin-host {
+    display: contents;
+}
+
+.void-cms-pin {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    max-height: 2.25rem;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.query-bar .void-cms-on {
+    color: #ff7a17;
+}
+
+.query-bar .void-cms-on:not(:hover, :focus-visible) {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.query-bar .void-cms-pin:is(:hover, :focus-visible) {
+    background-color: var(--button-ghost-hover, rgb(255 255 255 / 8%)) !important;
+}
+
+.void-cms-label {
+    display: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.void-cms-glyph {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+}
+
+.void-cms-glyph svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+}
+
+.query-bar:has(.void-cms-hide-native) [data-query-bar-mode-select] {
+    position: absolute;
+    width: 0;
+    height: 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    max-height: 2.25rem;
+    padding: 0;
+    position: relative;
+    display: grid;
+    place-items: center;
+}
+
+.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button > * {
+    display: none !important;
+}
+
+.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button::after {
+    content: "";
+    width: 18px;
+    height: 18px;
+    background-color: currentcolor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='5' cy='12' r='1'/%3E%3Ccircle cx='12' cy='12' r='1'/%3E%3Ccircle cx='19' cy='12' r='1'/%3E%3C/svg%3E") center / 18px 18px no-repeat;
+}
+
+html.void-cms-picking .query-bar [data-query-bar-mode-select] {
+    pointer-events: auto !important;
+}
+
+html.void-cms-picking .query-bar [data-query-bar-mode-select] [role="tooltip"],
+html.void-cms-picking .query-bar [data-query-bar-mode-select] [data-radix-tooltip-content] {
+    display: none !important;
+}
+
+.void-cms-ghost {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+html.void-cms-picked .void-cms-ghost {
+    pointer-events: none !important;
+}
+
+.void-cms-order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.void-cms-order-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+    padding: 0.25rem 0.25rem 0.25rem 0;
+    border-radius: 0.5rem;
+    user-select: none;
+}
+
+.void-cms-order-row:hover {
+    background: hsl(var(--fg-primary) / 6%);
+}
+
+.void-cms-order-row.void-cms-dragging {
+    opacity: 0.45;
+}
+
+.void-cms-order-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.void-cms-grip {
+    display: grid;
+    place-items: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: hsl(var(--fg-secondary));
+    cursor: grab;
+}
+
+.void-cms-grip:active {
+    cursor: grabbing;
+}
+
+.void-cms-order-icon {
+    flex-shrink: 0;
+    color: hsl(var(--fg-secondary));
+}
+
+@media (width >= 48rem) {
+    .void-cms-labeled {
+        width: auto;
+        min-width: 2.25rem;
+        max-height: 2.25rem;
+        border-radius: 999px;
+        padding-inline: 0.5rem;
+        gap: 0.25rem;
+    }
+
+    .void-cms-labeled .void-cms-label {
+        display: inline;
+    }
+}
+`);
+
+  // src/plugins/betterModeSelect/index.tsx
+  var logger20 = new Logger("BetterModeSelect");
+  var cl18 = classNameFactory("void-cms-");
+  var MODES = [
+    { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
+    { id: "fast", pin: "pinFast", label: "Fast", Icon: FastModeIcon },
+    { id: "expert", pin: "pinExpert", label: "Expert", Icon: LightbulbIcon },
+    { id: "heavy", pin: "pinHeavy", label: "Heavy", Icon: ConnectedAppsIcon },
+    { id: "build", pin: "pinBuild", label: "Build", Icon: BuildModeIcon }
+  ];
+  var KNOWN_IDS = new Set(MODES.map((m) => m.id));
+  var PIN_BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m.pin]));
+  var MODE_BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m]));
+  var DEFAULT_PIN_ORDER = "heavy,build";
+  var SETTING_KEYS = ["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "showLabels", "hideNativeTrigger", "pinOrder"];
+  var ITEM_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
+  var MENU_ROOT_SEL = [
+    "[data-radix-popper-content-wrapper]",
+    "[data-radix-menu-content]",
+    "[data-radix-dropdown-menu-content]",
+    "[data-radix-select-content]",
+    "[data-radix-popover-content]",
+    "[role='menu']",
+    "[role='listbox']"
+  ].join(", ");
+  var TRIGGER_SEL = ".query-bar [data-query-bar-mode-select] button";
+  var PICK_MS = 900;
+  var POINTER = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
+  var GHOST_STYLE = { opacity: "0", visibility: "hidden" };
+  var settings9 = definePluginSettings({
+    pinList: {
+      type: 6 /* COMPONENT */,
+      description: "Toggle pins and drag to set chip order.",
+      component: PinOrderEditor
+    },
+    hideNativeTrigger: {
+      type: 3 /* BOOLEAN */,
+      description: "Hide the native mode menu button and keep its popup invisible.",
+      default: true
+    },
+    showLabels: {
+      type: 3 /* BOOLEAN */,
+      description: "Show mode names on pinned chips.",
+      default: false
+    },
+    pinAuto: {
+      type: 3 /* BOOLEAN */,
+      description: "Pin Auto as a chip.",
+      default: false,
+      hidden: true
+    },
+    pinFast: {
+      type: 3 /* BOOLEAN */,
+      description: "Pin Fast as a chip.",
+      default: false,
+      hidden: true
+    },
+    pinExpert: {
+      type: 3 /* BOOLEAN */,
+      description: "Pin Expert as a chip.",
+      default: false,
+      hidden: true
+    },
+    pinHeavy: {
+      type: 3 /* BOOLEAN */,
+      description: "Pin Heavy as a chip.",
+      default: true,
+      hidden: true
+    },
+    pinBuild: {
+      type: 3 /* BOOLEAN */,
+      description: "Pin Build as a chip.",
+      default: true,
+      hidden: true
+    },
+    pinOrder: {
+      type: 0 /* STRING */,
+      description: "Order of pinned chips.",
+      default: DEFAULT_PIN_ORDER,
+      hidden: true
+    }
+  });
+  var OLD_NAME = "CompactModeSelect";
+  var NEW_NAME = "BetterModeSelect";
+  function renameList(list) {
+    if (!Array.isArray(list) || !list.includes(OLD_NAME))
+      return;
+    const seen = new Set;
+    const next = [];
+    for (const item of list) {
+      if (typeof item !== "string")
+        continue;
+      const name = item === OLD_NAME ? NEW_NAME : item;
+      if (seen.has(name))
+        continue;
+      seen.add(name);
+      next.push(name);
+    }
+    return next;
+  }
+  function migrateLegacy2() {
+    const bag = PlainSettings.plugins;
+    const old = bag[OLD_NAME];
+    const meta = bag.Settings;
+    const menu = bag.PluginsFlyout?.menuPlugins;
+    const known = meta?.knownPlugins;
+    const pinned = renameList(meta?.pinnedPlugins);
+    const starred = renameList(meta?.starredPlugins);
+    const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu : undefined;
+    const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
+    const menuHas = !!menuRec && OLD_NAME in menuRec;
+    const knownHas = !!knownRec && OLD_NAME in knownRec;
+    if (!old && !menuHas && !knownHas && !pinned && !starred)
+      return;
+    if (old) {
+      const target = bag[NEW_NAME] ??= {};
+      const keys = Object.keys(target);
+      const stub = keys.length === 0 || keys.length === 1 && keys[0] === "enabled";
+      for (const key of Object.keys(old)) {
+        if (stub || !(key in target))
+          target[key] = old[key];
+      }
+      delete bag[OLD_NAME];
+    }
+    if (meta) {
+      if (pinned)
+        meta.pinnedPlugins = pinned;
+      if (starred)
+        meta.starredPlugins = starred;
+      if (knownHas && knownRec) {
+        if (!(NEW_NAME in knownRec))
+          knownRec[NEW_NAME] = knownRec[OLD_NAME];
+        delete knownRec[OLD_NAME];
+      }
+    }
+    if (menuHas && menuRec) {
+      if (!(NEW_NAME in menuRec))
+        menuRec[NEW_NAME] = menuRec[OLD_NAME];
+      delete menuRec[OLD_NAME];
+    }
+    SettingsStore3.markAsChanged();
+    logger20.info("Migrated CompactModeSelect into BetterModeSelect");
+  }
+  var pluginName = Object.getOwnPropertyDescriptor(settings9, "pluginName");
+  if (pluginName?.set && pluginName.get) {
+    Object.defineProperty(settings9, "pluginName", {
+      configurable: true,
+      enumerable: true,
+      get: pluginName.get,
+      set(name) {
+        if (name === NEW_NAME)
+          migrateLegacy2();
+        pluginName.set.call(settings9, name);
+      }
+    });
+  }
+  var picking = false;
+  var harvesting = false;
+  var harvested = new Map;
+  var harvestListeners = new Set;
+  var ghosts = new Set;
+  var cloakWatch = null;
+  function uncloak() {
+    for (const host of ghosts) {
+      host.classList.remove(cl18("ghost"));
+      host.style.removeProperty("opacity");
+      host.style.removeProperty("visibility");
+      host.style.removeProperty("pointer-events");
+    }
+    ghosts.clear();
+  }
+  function setPicking(on) {
+    picking = on;
+    document.documentElement.classList.toggle("void-cms-picking", on);
+    if (on) {
+      cloakWatch ??= new MutationObserver(onCloakMutations);
+      cloakWatch.observe(document.documentElement, { childList: true, subtree: true });
+      return;
+    }
+    cloakWatch?.disconnect();
+    cloakWatch = null;
+    document.documentElement.classList.remove("void-cms-picked");
+    uncloak();
+  }
+  function notifyHarvest() {
+    for (const fn of harvestListeners)
+      fn();
+  }
+  function parseOrder(raw) {
+    const seen = new Set;
+    const ordered = [];
+    for (const token of String(raw ?? "").split(/[,\s]+/)) {
+      const id = token.toLowerCase();
+      if (!KNOWN_IDS.has(id) || seen.has(id))
+        continue;
+      seen.add(id);
+      ordered.push(id);
+    }
+    for (const m of MODES) {
+      if (seen.has(m.id))
+        continue;
+      ordered.push(m.id);
+    }
+    return ordered;
+  }
+  function reorder(ids, from, to) {
+    if (from === to || from < 0 || to < 0 || to >= ids.length)
+      return ids;
+    const next = ids.slice();
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    return next;
+  }
+  function setOrder(ids) {
+    settings9.store.pinOrder = ids.join(",");
+  }
+  function setPinned(pin, on) {
+    settings9.store[pin] = on;
+  }
+  function itemText(el) {
+    return `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`.replaceAll(/\s+/g, " ").trim().toLowerCase();
+  }
+  function titlesFor(id) {
+    const mode = MODES.find((m) => m.id === id);
+    const catalogTitle = ModesStore.useModesStore.getState().modes.find((m) => m.id === id)?.title;
+    return [catalogTitle, mode?.label, id].filter((t) => !!t).map((t) => t.toLowerCase());
+  }
+  function matchItem(el, id) {
+    const hay = itemText(el);
+    if (!hay)
+      return false;
+    return titlesFor(id).some((t) => hay === t || hay.startsWith(`${t} `));
+  }
+  function isModeMenu(items) {
+    return items.filter((el) => MODES.some((m) => matchItem(el, m.id))).length >= 2;
+  }
+  function ghostHost(el) {
+    const wrap = el.closest("[data-radix-popper-content-wrapper]");
+    if (wrap instanceof HTMLElement)
+      return wrap;
+    let host = el;
+    for (let n = el;n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+      const pos = getComputedStyle(n).position;
+      if (pos === "fixed" || pos === "absolute")
+        host = n;
+    }
+    return host;
+  }
+  function cloak(menu) {
+    const host = ghostHost(menu.root);
+    if (ghosts.has(host))
+      return;
+    host.classList.add(cl18("ghost"));
+    host.style.setProperty("opacity", GHOST_STYLE.opacity, "important");
+    host.style.setProperty("visibility", GHOST_STYLE.visibility, "important");
+    ghosts.add(host);
+  }
+  function lockGhosts() {
+    document.documentElement.classList.add("void-cms-picked");
+    for (const host of ghosts)
+      host.style.setProperty("pointer-events", "none", "important");
+  }
+  function modeMenu() {
+    for (const root of document.querySelectorAll(MENU_ROOT_SEL)) {
+      if (!(root instanceof HTMLElement))
+        continue;
+      const items = [...root.querySelectorAll(ITEM_SEL)];
+      if (isModeMenu(items))
+        return { root, items };
+    }
+    const loose = [...document.querySelectorAll(ITEM_SEL)].filter((el) => MODES.some((m) => matchItem(el, m.id)));
+    if (loose.length < 2)
+      return null;
+    const nested = loose[0].closest(MENU_ROOT_SEL);
+    const root = nested instanceof HTMLElement ? nested : ghostHost(loose[0]);
+    return { root, items: loose };
+  }
+  function onCloakMutations() {
+    const menu = modeMenu();
+    if (menu)
+      cloak(menu);
+  }
+  function waitUntil(ok) {
+    const start = performance.now();
+    return new Promise((resolve) => {
+      const tick = () => {
+        if (ok()) {
+          resolve(true);
+          return;
+        }
+        if (performance.now() - start > PICK_MS) {
+          resolve(false);
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+  async function waitForMenu() {
+    await waitUntil(() => {
+      const menu = modeMenu();
+      if (menu)
+        cloak(menu);
+      return !!menu;
+    });
+    return modeMenu();
+  }
+  function waitForGone() {
+    return waitUntil(() => !modeMenu());
+  }
+  function nativeTrigger() {
+    return document.querySelector(TRIGGER_SEL);
+  }
+  function clickEl(el) {
+    el.dispatchEvent(new PointerEvent("pointerdown", POINTER));
+    el.dispatchEvent(new PointerEvent("pointerup", POINTER));
+    el.click();
+  }
+  function paintCurrent(el) {
+    for (const attr of ["fill", "stroke"]) {
+      const v = el.getAttribute(attr);
+      if (!v || v === "none" || v === "currentColor")
+        continue;
+      el.setAttribute(attr, "currentColor");
+    }
+    for (const name of el.getAttributeNames()) {
+      if (name.startsWith("on"))
+        el.removeAttribute(name);
+    }
+    el.removeAttribute("class");
+  }
+  function normalizeSvg(src) {
+    const svg = src.cloneNode(true);
+    svg.setAttribute("width", "18");
+    svg.setAttribute("height", "18");
+    svg.setAttribute("aria-hidden", "true");
+    svg.querySelectorAll("script").forEach((n) => n.remove());
+    paintCurrent(svg);
+    svg.querySelectorAll("*").forEach(paintCurrent);
+    return svg.outerHTML;
+  }
+  function stashGlyphs(items) {
+    let added = false;
+    for (const item of items) {
+      const mode = MODES.find((m) => matchItem(item, m.id));
+      if (!mode || harvested.has(mode.id))
+        continue;
+      const svg = item.querySelector("svg");
+      if (!(svg instanceof SVGSVGElement))
+        continue;
+      harvested.set(mode.id, normalizeSvg(svg));
+      added = true;
+    }
+    if (added)
+      notifyHarvest();
+  }
+  async function harvestIcons() {
+    if (harvesting || picking || harvested.size > 0)
+      return;
+    if (document.documentElement.hasAttribute("data-void-mode-sync-restore"))
+      return;
+    const trigger = nativeTrigger();
+    if (!trigger)
+      return;
+    harvesting = true;
+    setPicking(true);
+    try {
+      let menu = modeMenu();
+      if (!menu) {
+        clickEl(trigger);
+        menu = await waitForMenu();
+      }
+      if (!menu)
+        return;
+      cloak(menu);
+      stashGlyphs(menu.items);
+      if (modeMenu())
+        clickEl(trigger);
+      lockGhosts();
+      await waitForGone();
+    } catch (e) {
+      logger20.warn("Failed to harvest mode icons:", e);
+    } finally {
+      setPicking(false);
+      harvesting = false;
+    }
+  }
+  async function selectMode(id) {
+    if (picking)
+      return;
+    setPicking(true);
+    try {
+      await ModesStore.useModesStore.getState().ensureLoaded();
+      let menu = modeMenu();
+      if (!menu) {
+        const trigger = nativeTrigger();
+        if (!trigger) {
+          logger20.warn("Native mode selector not found");
+          return;
+        }
+        clickEl(trigger);
+        menu = await waitForMenu();
+      }
+      if (!menu) {
+        logger20.warn("Native mode item not found:", id);
+        return;
+      }
+      cloak(menu);
+      stashGlyphs(menu.items);
+      const item = menu.items.find((el) => matchItem(el, id));
+      if (!item) {
+        logger20.warn("Native mode item not found:", id);
+        const trigger = nativeTrigger();
+        if (modeMenu() && trigger)
+          clickEl(trigger);
+        lockGhosts();
+        await waitForGone();
+        return;
+      }
+      clickEl(item);
+      lockGhosts();
+      await waitForGone();
+    } catch (e) {
+      logger20.warn("Failed to select mode:", e);
+    } finally {
+      setPicking(false);
+    }
+  }
+  function useNativeGlyph(id) {
+    const [, bump] = React.useState(0);
+    React.useEffect(() => {
+      const onHarvest = () => bump((n) => n + 1);
+      harvestListeners.add(onHarvest);
+      harvestIcons();
+      return () => {
+        harvestListeners.delete(onHarvest);
+      };
+    }, [id]);
+    return harvested.get(id);
+  }
+  function PinGlyph({ id, Icon, label, showLabels }) {
+    const html = useNativeGlyph(id);
+    const glyph = html ? /* @__PURE__ */ React.createElement("span", {
+      className: cl18("glyph"),
+      dangerouslySetInnerHTML: { __html: html }
+    }) : /* @__PURE__ */ React.createElement(Icon, {
+      size: 18
+    });
+    if (!showLabels)
+      return glyph;
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, glyph, /* @__PURE__ */ React.createElement("span", {
+      className: cl18("label")
+    }, label));
+  }
+  function preventDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+  function PinOrderEditor() {
+    const cfg = settings9.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
+    const ids = parseOrder(cfg.pinOrder);
+    const [dragId, setDragId] = React.useState(null);
+    const onDragStart = (id) => (e) => {
+      e.dataTransfer.setData("text/plain", id);
+      e.dataTransfer.effectAllowed = "move";
+      setDragId(id);
+    };
+    const onDrop = (toId) => (e) => {
+      e.preventDefault();
+      const fromId = e.dataTransfer.getData("text/plain");
+      setOrder(reorder(ids, ids.indexOf(fromId), ids.indexOf(toId)));
+      setDragId(null);
+    };
+    return /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0.5rem",
+      className: cl18("order")
+    }, /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "0"
+    }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order.")), /* @__PURE__ */ React.createElement("div", {
+      className: cl18("order-list"),
+      role: "list"
+    }, ids.map((id, i) => {
+      const m = MODE_BY_ID[id];
+      return /* @__PURE__ */ React.createElement("div", {
+        key: m.id,
+        role: "listitem",
+        className: classes(cl18("order-row"), dragId === m.id && cl18("dragging")),
+        onDragOver: preventDragOver,
+        onDrop: onDrop(m.id)
+      }, /* @__PURE__ */ React.createElement(Flex, {
+        alignItems: "center",
+        gap: "0.5rem",
+        className: cl18("order-main")
+      }, /* @__PURE__ */ React.createElement("span", {
+        className: cl18("grip"),
+        draggable: true,
+        onDragStart: onDragStart(m.id),
+        onDragEnd: () => setDragId(null),
+        "aria-label": `Reorder ${m.label}`
+      }, /* @__PURE__ */ React.createElement(GripVerticalIcon, {
+        size: 16
+      })), /* @__PURE__ */ React.createElement(m.Icon, {
+        size: 16,
+        className: cl18("order-icon")
+      }), /* @__PURE__ */ React.createElement(SettingsTitle, null, m.label)), /* @__PURE__ */ React.createElement(Flex, {
+        alignItems: "center",
+        gap: "0.25rem"
+      }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
+        variant: "tertiary",
+        size: "xs",
+        shape: "square",
+        tooltipContent: "Move up",
+        "aria-label": `Move ${m.label} up`,
+        disabled: i === 0,
+        onClick: () => setOrder(reorder(ids, i, i - 1))
+      }, /* @__PURE__ */ React.createElement(ChevronUpIcon, {
+        size: 14
+      })), /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
+        variant: "tertiary",
+        size: "xs",
+        shape: "square",
+        tooltipContent: "Move down",
+        "aria-label": `Move ${m.label} down`,
+        disabled: i === ids.length - 1,
+        onClick: () => setOrder(reorder(ids, i, i + 1))
+      }, /* @__PURE__ */ React.createElement(ChevronDownIcon, {
+        size: 14
+      })), /* @__PURE__ */ React.createElement(Switch, {
+        checked: !!cfg[m.pin],
+        onCheckedChange: (on) => setPinned(m.pin, on)
+      })));
+    })));
+  }
+  function PinnedModes() {
+    const cfg = settings9.use([...SETTING_KEYS]);
+    const page = RoutingStore.useRoutingStore((s) => s.route.page);
+    const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
+    const catalog = ModesStore.useModesStore((s) => s.modes);
+    const knownCatalog = catalog.filter((c) => KNOWN_IDS.has(c.id));
+    const items = parseOrder(cfg.pinOrder).map((id) => MODE_BY_ID[id]).filter((m) => cfg[m.pin] && (m.id === "build" || !knownCatalog.length || knownCatalog.some((c) => c.id === m.id)));
+    if (page === "bot" || !items.length)
+      return null;
+    const { showLabels } = cfg;
+    const allCovered = knownCatalog.length > 0 && knownCatalog.every((c) => cfg[PIN_BY_ID[c.id]]);
+    const hideNative = cfg.hideNativeTrigger || allCovered;
+    const onPin = (id) => (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      selectMode(id);
+    };
+    return /* @__PURE__ */ React.createElement("div", {
+      className: classes(cl18("pins"), hideNative && cl18("hide-native"))
+    }, items.map((m) => /* @__PURE__ */ React.createElement("span", {
+      key: m.id,
+      className: cl18("pin-host"),
+      "data-void-mode-id": m.id
+    }, /* @__PURE__ */ React.createElement(ChatBarButton, {
+      size: "sm",
+      icon: /* @__PURE__ */ React.createElement(PinGlyph, {
+        id: m.id,
+        Icon: m.Icon,
+        label: m.label,
+        showLabels
+      }),
+      tooltip: m.label,
+      onClick: onPin(m.id),
+      className: classes(cl18("pin"), selectedModeId === m.id && cl18("on"), showLabels && cl18("labeled"), "hover:bg-button-ghost-hover"),
+      "aria-label": m.label
+    }))));
+  }
+  var betterModeSelect_default = definePlugin({
+    name: "BetterModeSelect",
+    icon: Minimize2Icon,
+    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu.",
+    authors: [Devs.p],
+    tags: ["chat", "ui"],
+    enabledByDefault: true,
+    settings: settings9,
+    managedStyle: "betterModeSelect",
+    startAt: "TurbopackReady" /* TurbopackReady */,
+    start() {
+      ModesStore.useModesStore.getState().ensureLoaded();
+    },
+    stop() {
+      setPicking(false);
+      harvested.clear();
+      harvestListeners.clear();
+    },
+    renderPinned: ErrorBoundary.wrap(PinnedModes),
+    patches: [
+      {
+        find: "data-query-bar-mode-select",
+        all: true,
+        group: true,
+        replacement: [
+          {
+            match: /ModeSelect,\{compact:\i\|\|\i,/,
+            replace: "ModeSelect,{compact:!0,"
+          },
+          {
+            match: /\},"mode-select"\),/,
+            replace: "$&$self.renderPinned(),"
+          }
+        ]
+      }
+    ]
+  });
+
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterNavigator/styles.css
   registerStyle("betterNavigator", `.void-bn-host {
     pointer-events: none;
@@ -9191,8 +9977,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/betterNavigator/index.ts
-  var logger20 = new Logger("BetterNavigator");
-  var cl18 = classNameFactory("void-bn-");
+  var logger21 = new Logger("BetterNavigator");
+  var cl19 = classNameFactory("void-bn-");
   var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
   var ASST_SEL = "[data-testid='assistant-message']";
   var TICK_SEL = "button[aria-label^='Go to response ']";
@@ -9265,7 +10051,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var HYDRATE_STEP = 80;
   var LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
   var LIVE_PHASE = new Set(["sending", "streaming"]);
-  var settings9 = definePluginSettings({
+  var settings10 = definePluginSettings({
     showAssistant: {
       type: 3 /* BOOLEAN */,
       description: "List assistant replies in the navigator, not only your messages.",
@@ -9525,7 +10311,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return false;
     } catch (e) {
-      logger20.debug("stream stores unavailable:", e);
+      logger21.debug("stream stores unavailable:", e);
       return null;
     }
   }
@@ -9557,7 +10343,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const page = ChatPageStore.useChatPageStore.getState();
       return page.conversationId || page.optimisticConversationId || "";
     } catch (e) {
-      logger20.debug("chat page unavailable:", e);
+      logger21.debug("chat page unavailable:", e);
       return "";
     }
   }
@@ -9567,7 +10353,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid];
     } catch (e) {
-      logger20.debug("message store unavailable:", e);
+      logger21.debug("message store unavailable:", e);
       return;
     }
   }
@@ -9691,7 +10477,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       return MessageStore.nodeToResponse?.(cid, node) ?? node.content;
     } catch (e) {
-      logger20.debug("nodeToResponse failed:", e);
+      logger21.debug("nodeToResponse failed:", e);
       return node.content;
     }
   }
@@ -9705,7 +10491,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function collectDom() {
     const root = chatPane() ?? document;
-    const showAsst = settings9.store.showAssistant;
+    const showAsst = settings10.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const out = [];
     for (const el of root.querySelectorAll(MSG_SEL)) {
@@ -9726,7 +10512,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (node.role !== "user" && node.role !== "assistant")
       return null;
     const role = node.role;
-    if (!settings9.store.showAssistant && role === "assistant")
+    if (!settings10.store.showAssistant && role === "assistant")
       return null;
     const rec = contentOf(cid, node);
     if (rec?.isControl)
@@ -9758,7 +10544,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length)
       return [];
-    const showAsst = settings9.store.showAssistant;
+    const showAsst = settings10.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const liveId = showAsst ? liveAssistantId(gw, path) : "";
     const out = [];
@@ -9867,7 +10653,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function flash(el) {
     clearFlash();
-    if (settings9.store.jumpEffect !== "border")
+    if (settings10.store.jumpEffect !== "border")
       return;
     flashing = el;
     el.classList.add("void-bn-flash");
@@ -10103,7 +10889,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return best;
   }
   function nativeCurrentIndex() {
-    if (!settings9.store.showAssistant)
+    if (!settings10.store.showAssistant)
       return null;
     const ticks = nativeTicks();
     if (!ticks.length)
@@ -10332,7 +11118,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function syncNativeDash(nav) {
     clearNativeDash();
-    if (!settings9.store.showAssistant)
+    if (!settings10.store.showAssistant)
       return;
     let liveI = -1;
     for (let i = nav.length - 1;i >= 0; i--) {
@@ -10358,7 +11144,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function menuEl(nav) {
     const menu = document.createElement("div");
-    menu.className = cl18("menu");
+    menu.className = cl19("menu");
     menu.addEventListener("pointerenter", () => {
       overMenu = true;
       markAim(-1);
@@ -10368,21 +11154,21 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       markAim(-1);
     });
     const meta = document.createElement("div");
-    meta.className = cl18("meta");
+    meta.className = cl19("meta");
     meta.textContent = metaLabel(0);
     const ul = document.createElement("ul");
-    ul.className = cl18("list");
+    ul.className = cl19("list");
     nav.forEach((item, i) => {
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = cl18("item");
+      btn.className = cl19("item");
       btn.dataset.voidBnI = String(i);
       const emoji = document.createElement("span");
-      emoji.className = cl18("emoji");
+      emoji.className = cl19("emoji");
       emoji.textContent = item.role === "user" ? "❓" : "\uD83E\uDD16";
       const label = document.createElement("span");
-      label.className = cl18("label");
+      label.className = cl19("label");
       label.textContent = item.text;
       btn.append(emoji, label);
       btn.addEventListener("click", (e) => {
@@ -10398,11 +11184,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function tickRail(nav) {
     const wrap = document.createElement("div");
-    wrap.className = cl18("ticks", { dense: nav.length > DENSE_N });
+    wrap.className = cl19("ticks", { dense: nav.length > DENSE_N });
     nav.forEach((item, i) => {
       const tick = document.createElement("button");
       tick.type = "button";
-      tick.className = cl18("tick", item.role === "user" ? "tick-user" : "tick-asst", { "tick-live": item.live });
+      tick.className = cl19("tick", item.role === "user" ? "tick-user" : "tick-asst", { "tick-live": item.live });
       tick.dataset.voidBnI = String(i);
       tick.setAttribute("aria-label", `Go to message ${i + 1} of ${nav.length}`);
       tick.addEventListener("click", (e) => {
@@ -10443,7 +11229,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     document.documentElement.classList.remove("void-bn-fullticks");
   }
   function syncHideTip() {
-    document.documentElement.classList.toggle(HIDE_CLASS, !!settings9.store.hideNativeHover);
+    document.documentElement.classList.toggle(HIDE_CLASS, !!settings10.store.hideNativeHover);
   }
   function setOpen(on) {
     host?.classList.toggle("void-bn-open", on);
@@ -10574,7 +11360,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     unmount();
     document.documentElement.classList.add("void-bn-fullticks");
     const box = document.createElement("div");
-    box.className = cl18("host", "self");
+    box.className = cl19("host", "self");
     const frame = chatColumn();
     if (!frame)
       return;
@@ -10620,7 +11406,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
       return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.map((n) => `${n.id}:${n.status}`).join(",")}`;
     } catch (e) {
-      logger20.debug("message key failed:", e);
+      logger21.debug("message key failed:", e);
       return "";
     }
   }
@@ -10679,7 +11465,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["chat", "ui"],
     enabledByDefault: true,
     startAt: "DOMContentLoaded" /* DOMContentLoaded */,
-    settings: settings9,
+    settings: settings10,
     managedStyle: "betterNavigator",
     cleanupSelectors: [".void-bn-host"],
     start,
@@ -10937,7 +11723,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/persist.ts
-  var logger21 = new Logger("QueuePersist");
+  var logger22 = new Logger("QueuePersist");
   var ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
   var DB_KEY = "queue-persist:v1";
   var LOCAL_ACCOUNT = "local";
@@ -11049,7 +11835,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (intent.activeModelId && prevActive !== intent.activeModelId)
         chat.setActiveModelId(intent.activeModelId);
     } catch (e) {
-      logger21.debug("intent apply failed", e);
+      logger22.debug("intent apply failed", e);
     }
     try {
       if (intent?.modeId)
@@ -11065,7 +11851,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         if (chat && prevActive && String(chat.activeModelId || "") !== prevActive)
           chat.setActiveModelId(prevActive);
       } catch (e) {
-        logger21.debug("intent restore failed", e);
+        logger22.debug("intent restore failed", e);
       }
     }
   }
@@ -11262,7 +12048,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       await idbSet(DB_KEY, doc);
     } catch (e) {
-      logger21.debug("persist failed", e);
+      logger22.debug("persist failed", e);
     }
   }
   async function load() {
@@ -11273,7 +12059,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       else
         doc = emptyDoc();
     } catch (e) {
-      logger21.debug("load failed", e);
+      logger22.debug("load failed", e);
       doc = emptyDoc();
     }
     bucketsToMemory(accountId());
@@ -11329,7 +12115,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           });
         });
       } catch (e) {
-        logger21.debug("replay failed", e);
+        logger22.debug("replay failed", e);
       } finally {
         suppress = false;
       }
@@ -11396,7 +12182,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         decided.add(cid);
       }
     } catch (e) {
-      logger21.debug("restore failed", e);
+      logger22.debug("restore failed", e);
       retry = true;
     } finally {
       replaying = false;
@@ -11608,7 +12394,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/settings.ts
-  var settings10 = definePluginSettings({
+  var settings11 = definePluginSettings({
     showQueueMode: {
       type: 3 /* BOOLEAN */,
       description: "Show a mode chip on each queued message.",
@@ -11627,12 +12413,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   });
 
   // src/plugins/betterQueue/mode.ts
-  var logger22 = new Logger("ModeSync");
+  var logger23 = new Logger("ModeSync");
   var CHAT_POST = /\/rest\/app-chat\/conversations/;
   var STOP_URL = /stop|abort|cancel/i;
   var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
   var PIN_SEL = "[data-void-mode-id]";
-  var TRIGGER_SEL = "[data-query-bar-mode-select]";
+  var TRIGGER_SEL2 = "[data-query-bar-mode-select]";
   var TOGGLE_SEL2 = 'button[aria-label="Toggle queued messages"], button[aria-label*="queued" i]';
   var ROW_SEL2 = '[aria-roledescription="sortable"], [aria-roledescription="draggable"]';
   var RAIL_SEL2 = '[aria-label="Remove from queue"], [aria-label="Send now"], [aria-label="Edit queued message"]';
@@ -11824,7 +12610,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function syncRestoreFlag() {
-    if (!settings10.store.stickyOnNavigate) {
+    if (!settings11.store.stickyOnNavigate) {
       setRestoreFlag(false);
       return;
     }
@@ -11865,7 +12651,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (settled !== slug && modeSlug(intent.modeId) === slug)
         setIntent(captureIntent(settled, snapshot()));
     } catch (e) {
-      logger22.debug("apply failed", e);
+      logger23.debug("apply failed", e);
     } finally {
       applying = false;
     }
@@ -11905,7 +12691,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     userPicking = false;
     awaitingMenu = false;
     applyIntent(intent);
-    logger22.info("intent", intent.modeId);
+    logger23.info("intent", intent.modeId);
   }
   function rememberSnapshot() {
     const next = snapshot();
@@ -11914,10 +12700,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     setIntent(captureIntent(next.modeId, next));
     userPicking = false;
     awaitingMenu = false;
-    logger22.info("intent", intent.modeId);
+    logger23.info("intent", intent.modeId);
   }
   function fightHydrate() {
-    if (sendOverride || !settings10.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
+    if (sendOverride || !settings11.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
       return;
     if (!loadPending())
       return;
@@ -11926,7 +12712,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const cid = currentCid3();
     if (modeSlug(cur.modeId) === slug && (!cid || sessionAdjusted(cid) === slug) && (!intent.modelMode || modeSlug(cur.modelMode) === slug) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
       return;
-    logger22.info("hydrate fought", cur.modeId, "->", intent.modeId);
+    logger23.info("hydrate fought", cur.modeId, "->", intent.modeId);
     applyIntent(intent);
   }
   function navKey() {
@@ -11949,7 +12735,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       setIntent(snapshot());
     closeMenu();
     schedulePaint();
-    if (!settings10.store.stickyOnNavigate || !intent.modeId)
+    if (!settings11.store.stickyOnNavigate || !intent.modeId)
       return;
     setRestoreFlag(true);
     applyIntent(intent);
@@ -12104,7 +12890,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (diverting) {
         mapGetOrCreate(held, cid, () => []).push({ id, args: diverting, intent: { ...saved } });
         diverting = null;
-        logger22.info("held", id, "for", saved.modeId);
+        logger23.info("held", id, "for", saved.modeId);
         return true;
       }
       return false;
@@ -12184,7 +12970,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
     state.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued.item), parentId });
     forgetItem(turn.id);
-    logger22.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
+    logger23.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
   }
   function onGwEvent(cid, event) {
     const { type } = event;
@@ -12253,7 +13039,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const { item } = rec;
     return item && typeof item === "object" ? textOf(item) : "";
   }
-  function itemText(conv, id) {
+  function itemText2(conv, id) {
     const content = conv.nodes?.[id]?.content;
     if (!content)
       return "";
@@ -12267,7 +13053,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const saved = itemBody.get(id);
     if (saved)
       return saved;
-    return conv ? itemText(conv, id) : "";
+    return conv ? itemText2(conv, id) : "";
   }
   function intentForText(cid, text) {
     const body = text.trim();
@@ -12391,7 +13177,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       wrappedGwSend = wrapped;
       mgr.send = wrapped;
     } catch (e) {
-      logger22.debug("gateway wrap failed", e);
+      logger23.debug("gateway wrap failed", e);
     }
   }
   function unwrapGatewaySend() {
@@ -12402,7 +13188,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (gwHost && origGwSend && gwHost.send === wrappedGwSend)
         gwHost.send = origGwSend;
     } catch (e) {
-      logger22.debug("gateway unwrap failed", e);
+      logger23.debug("gateway unwrap failed", e);
     }
     origGwSend = null;
     wrappedGwSend = null;
@@ -12531,7 +13317,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!next || next === text)
       return null;
     applyIntent(live);
-    logger22.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
+    logger23.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
     return next;
   }
   function patchFetchArgs(input, init) {
@@ -12578,7 +13364,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           return origFetch.call(pageWindow, i, n);
         }
       } catch (e) {
-        logger22.debug("fetch patch failed", e);
+        logger23.debug("fetch patch failed", e);
       }
       return origFetch.call(pageWindow, input, init);
     };
@@ -12599,7 +13385,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         xhrMeta.set(this, `${String(method).toUpperCase()} ${requestUrl(url)}`);
       } catch (e) {
-        logger22.debug("xhr open failed", e);
+        logger23.debug("xhr open failed", e);
       }
       return origXhrOpen.call(this, method, url, ...rest);
     };
@@ -12693,7 +13479,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (turn)
         turn.intent = next;
     }
-    logger22.info("queue item", id, "->", next.modeId);
+    logger23.info("queue item", id, "->", next.modeId);
     schedulePaint();
   }
   function openMenu(chip, id) {
@@ -12811,7 +13597,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (body && conv) {
       const hit = items.find((q) => {
         const id = qid2(q);
-        return !!id && !used.has(id) && itemText(conv, id) === body;
+        return !!id && !used.has(id) && itemText2(conv, id) === body;
       });
       if (hit)
         return qid2(hit);
@@ -12868,7 +13654,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function paint2() {
     paintRaf = 0;
-    if (!settings10.store.showQueueMode || onImaginePage()) {
+    if (!settings11.store.showQueueMode || onImaginePage()) {
       unpaint();
       return;
     }
@@ -12925,7 +13711,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (!e.isTrusted)
       return;
-    if (t.closest(TRIGGER_SEL)) {
+    if (t.closest(TRIGGER_SEL2)) {
       awaitingMenu = true;
       userPicking = true;
       return;
@@ -12943,9 +13729,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     if (t.closest(`.${CHIP}, .${QMENU}`))
       return;
-    if (t.closest(`${TRIGGER_SEL}, ${PIN_SEL}, ${MENU_SEL}`)) {
+    if (t.closest(`${TRIGGER_SEL2}, ${PIN_SEL}, ${MENU_SEL}`)) {
       userPicking = true;
-      if (t.closest(TRIGGER_SEL))
+      if (t.closest(TRIGGER_SEL2))
         awaitingMenu = true;
     }
     const send = t.closest(SEND_NOW_SEL2);
@@ -13022,7 +13808,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       hookFetch();
       hookXhr();
     } catch (e) {
-      logger22.warn("Failed to hook send path", e);
+      logger23.warn("Failed to hook send path", e);
     }
     if (intent.modeId)
       applyIntent(intent);
@@ -13115,14 +13901,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/index.ts
-  var logger23 = new Logger("BetterQueue");
+  var logger24 = new Logger("BetterQueue");
   function dropName(list) {
     if (!Array.isArray(list))
       return;
     const next = list.filter((n) => typeof n === "string" && n !== "ModeSync" && n !== "QueuePersist");
     return next.length === list.length ? undefined : next;
   }
-  function migrateLegacy2() {
+  function migrateLegacy3() {
     const plugins = PlainSettings.plugins;
     const mode = plugins.ModeSync;
     const persist = plugins.QueuePersist;
@@ -13156,23 +13942,23 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     }
     SettingsStore3.markAsChanged();
-    logger23.info("Migrated ModeSync / QueuePersist into BetterQueue");
+    logger24.info("Migrated ModeSync / QueuePersist into BetterQueue");
   }
-  var pluginName = Object.getOwnPropertyDescriptor(settings10, "pluginName");
-  if (pluginName?.set && pluginName.get) {
-    Object.defineProperty(settings10, "pluginName", {
+  var pluginName2 = Object.getOwnPropertyDescriptor(settings11, "pluginName");
+  if (pluginName2?.set && pluginName2.get) {
+    Object.defineProperty(settings11, "pluginName", {
       configurable: true,
       enumerable: true,
-      get: pluginName.get,
+      get: pluginName2.get,
       set(name) {
         if (name === "BetterQueue")
-          migrateLegacy2();
-        pluginName.set.call(settings10, name);
+          migrateLegacy3();
+        pluginName2.set.call(settings11, name);
       }
     });
   }
   function applyPersist() {
-    if (settings10.store.persistAcrossRefresh)
+    if (settings11.store.persistAcrossRefresh)
       startPersist();
     else
       stopPersist();
@@ -13185,7 +13971,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["chat", "ui"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
-    settings: settings10,
+    settings: settings11,
     managedStyle: "betterQueue",
     cleanupSelectors: [".void-ms-qchip", ".void-ms-qmenu"],
     start() {
@@ -13344,8 +14130,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/jump.ts
-  var logger24 = new Logger("QuoteJump");
-  var cl19 = classNameFactory("void-qj-");
+  var logger25 = new Logger("QuoteJump");
+  var cl20 = classNameFactory("void-qj-");
   var HL = "void-qj";
   var EDITOR = ".tiptap, [contenteditable='true']";
   var MSG2 = "[data-testid='user-message'], [data-testid='assistant-message']";
@@ -13530,7 +14316,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           return { id: row.responseId, cid };
       }
     } catch (e) {
-      logger24.debug("store search failed", e);
+      logger25.debug("store search failed", e);
     }
     return null;
   }
@@ -13733,7 +14519,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (flashTimer2)
       window.clearTimeout(flashTimer2);
     flashTimer2 = 0;
-    flashing2?.classList.remove(cl19("hit"));
+    flashing2?.classList.remove(cl20("hit"));
     flashing2 = null;
     const { highlights } = CSS;
     highlights?.delete(HL);
@@ -13746,7 +14532,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       highlights.set(HL, new HighlightCtor(range));
     } else {
       flashing2 = el;
-      el.classList.add(cl19("hit"));
+      el.classList.add(cl20("hit"));
     }
     flashTimer2 = window.setTimeout(clearHighlight, FLASH_MS2);
   }
@@ -13813,12 +14599,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
       return;
     } catch (e) {
-      logger24.debug("loadResponses failed", e);
+      logger25.debug("loadResponses failed", e);
     }
     try {
       await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
     } catch (e) {
-      logger24.debug("loadMoreResponses failed", e);
+      logger25.debug("loadMoreResponses failed", e);
     }
   }
   function resolveNeedle(origin) {
@@ -13878,7 +14664,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (mine !== gen)
       return;
     if (!el) {
-      logger24.debug("no source message");
+      logger25.debug("no source message");
       return;
     }
     openAncestors(el, needle);
@@ -13933,8 +14719,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/sticky.ts
-  var logger25 = new Logger("QuoteSticky");
-  var cl20 = classNameFactory("void-qs-");
+  var logger26 = new Logger("QuoteSticky");
+  var cl21 = classNameFactory("void-qs-");
   var KEEP2 = 40;
   var RESTORE_GAP_MS = 80;
   var X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
@@ -14082,7 +14868,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         applying2 = false;
       }
     } catch (e) {
-      logger25.debug("clear failed", e);
+      logger26.debug("clear failed", e);
     }
   }
   function applyQuote(key, text, popup) {
@@ -14096,7 +14882,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(popup))
         chat.setQuotePopupData(popup);
     } catch (e) {
-      logger25.debug("apply failed", e);
+      logger26.debug("apply failed", e);
     } finally {
       applying2 = false;
     }
@@ -14109,7 +14895,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!clip)
       return false;
     for (const n of bar.querySelectorAll("div, span, button")) {
-      if (!(n instanceof HTMLElement) || n.closest(`.${cl20("chip")}`))
+      if (!(n instanceof HTMLElement) || n.closest(`.${cl21("chip")}`))
         continue;
       if (n.offsetHeight > 0 && n.offsetHeight <= 72 && (n.textContent || "").includes(clip))
         return true;
@@ -14117,7 +14903,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return false;
   }
   function removeFallback() {
-    for (const n of document.querySelectorAll(`.${cl20("chip")}`))
+    for (const n of document.querySelectorAll(`.${cl21("chip")}`))
       n.remove();
   }
   function onFallbackDismiss(e) {
@@ -14126,16 +14912,16 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function makeChip() {
     const el = document.createElement("div");
-    el.className = cl20("chip");
+    el.className = cl21("chip");
     el.dataset.voidQs = "";
     const mark = document.createElement("span");
-    mark.className = cl20("mark");
+    mark.className = cl21("mark");
     mark.setAttribute("aria-hidden", "true");
     const text = document.createElement("span");
-    text.className = cl20("text");
+    text.className = cl21("text");
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = cl20("x");
+    btn.className = cl21("x");
     btn.setAttribute("aria-label", "Remove quote");
     btn.innerHTML = X_SVG;
     btn.addEventListener("pointerdown", onFallbackDismiss);
@@ -14164,7 +14950,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       removeFallback();
       return;
     }
-    let el = document.querySelector(`.${cl20("chip")}`);
+    let el = document.querySelector(`.${cl21("chip")}`);
     if (el instanceof HTMLElement && el.dataset.voidQsKey !== key) {
       el.remove();
       el = null;
@@ -14175,7 +14961,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       document.body.append(el);
     }
     el.dataset.voidQsKey = key;
-    const label = el.querySelector(`.${cl20("text")}`);
+    const label = el.querySelector(`.${cl21("text")}`);
     const shown = snap.text.replaceAll(/\s+/g, " ").trim();
     if (label && label.textContent !== shown)
       label.textContent = shown;
@@ -14200,11 +14986,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
         lastRestoreAt = now;
         applyQuote(key, snap.text, popupFor(snap));
-        logger25.info("restored", key);
+        logger26.info("restored", key);
       }
       paintFallback(key, snap);
     } catch (e) {
-      logger25.debug("restore failed", e);
+      logger26.debug("restore failed", e);
       paintFallback(key, snap);
     }
   }
@@ -14235,7 +15021,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
         chat.setQuotePopupData(null);
     } catch (e) {
-      logger25.debug("dismiss failed", e);
+      logger26.debug("dismiss failed", e);
     } finally {
       applying2 = false;
     }
@@ -14318,10 +15104,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return btn instanceof HTMLElement ? btn : null;
   }
   function isQuoteDismiss(el) {
-    if (el.closest(`.${cl20("x")}`))
+    if (el.closest(`.${cl21("x")}`))
       return true;
     const btn = barButton(el);
-    if (!btn || btn.closest(`.${cl20("chip")}`))
+    if (!btn || btn.closest(`.${cl21("chip")}`))
       return false;
     const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
     if (KEEP.test(label))
@@ -14573,8 +15359,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/index.ts
-  var logger26 = new Logger("BetterQuotes");
-  var settings11 = definePluginSettings({
+  var logger27 = new Logger("BetterQuotes");
+  var settings12 = definePluginSettings({
     jumpToPassage: {
       type: 3 /* BOOLEAN */,
       description: "Click the composer quote chip or a sent quote card to scroll to the exact passage.",
@@ -14592,7 +15378,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const next = list.filter((n) => typeof n === "string" && n !== "QuoteJump" && n !== "QuoteSticky");
     return next.length === list.length ? undefined : next;
   }
-  function migrateLegacy3() {
+  function migrateLegacy4() {
     const plugins = PlainSettings.plugins;
     const jump = plugins.QuoteJump;
     const sticky = plugins.QuoteSticky;
@@ -14622,27 +15408,27 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     }
     SettingsStore3.markAsChanged();
-    logger26.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
+    logger27.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
   }
-  var pluginName2 = Object.getOwnPropertyDescriptor(settings11, "pluginName");
-  if (pluginName2?.set && pluginName2.get) {
-    Object.defineProperty(settings11, "pluginName", {
+  var pluginName3 = Object.getOwnPropertyDescriptor(settings12, "pluginName");
+  if (pluginName3?.set && pluginName3.get) {
+    Object.defineProperty(settings12, "pluginName", {
       configurable: true,
       enumerable: true,
-      get: pluginName2.get,
+      get: pluginName3.get,
       set(name) {
         if (name === "BetterQuotes")
-          migrateLegacy3();
-        pluginName2.set.call(settings11, name);
+          migrateLegacy4();
+        pluginName3.set.call(settings12, name);
       }
     });
   }
   function apply2() {
-    if (settings11.store.jumpToPassage)
+    if (settings12.store.jumpToPassage)
       startJump();
     else
       stopJump();
-    if (settings11.store.persistAcrossChats)
+    if (settings12.store.persistAcrossChats)
       startSticky();
     else
       stopSticky();
@@ -14655,7 +15441,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["chat", "ui"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
-    settings: settings11,
+    settings: settings12,
     managedStyle: "betterQuotes",
     cleanupSelectors: [".void-qs-chip"],
     start: apply2,
@@ -14811,9 +15597,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterSidebar/index.tsx
-  var logger27 = new Logger("BetterSidebar");
-  var cl21 = classNameFactory("void-sidebar-");
-  var settings12 = definePluginSettings({
+  var logger28 = new Logger("BetterSidebar");
+  var cl22 = classNameFactory("void-sidebar-");
+  var settings13 = definePluginSettings({
     clickToToggle: {
       type: 3 /* BOOLEAN */,
       description: "Click anywhere on the sidebar to toggle it.",
@@ -14870,7 +15656,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var projectsCollapseObserver = null;
   var projectsCollapseTimer = null;
   function applyHeaderHover() {
-    if (settings12.store.titleRowHover)
+    if (settings13.store.titleRowHover)
       enableStyle("headerHover");
     else
       disableStyle("headerHover");
@@ -14898,7 +15684,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function startBotsCollapse() {
     stopBotsCollapse();
-    if (!settings12.store.botsDefaultCollapsed)
+    if (!settings13.store.botsDefaultCollapsed)
       return;
     let done = false;
     const tick = () => {
@@ -14920,7 +15706,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }, 1e4);
   }
   function resetChatsCollapsedStorage() {
-    if (!settings12.store.chatsDefaultExpanded)
+    if (!settings13.store.chatsDefaultExpanded)
       return;
     try {
       localStorage.removeItem(CHATS_COLLAPSED_KEY);
@@ -14962,7 +15748,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function startChatsExpand() {
     stopChatsExpand();
-    if (!settings12.store.chatsDefaultExpanded)
+    if (!settings13.store.chatsDefaultExpanded)
       return;
     resetChatsCollapsedStorage();
     let done = false;
@@ -14985,7 +15771,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }, 1e4);
   }
   function resetProjectsCollapsedStorage() {
-    if (!settings12.store.projectsDefaultCollapsed)
+    if (!settings13.store.projectsDefaultCollapsed)
       return;
     try {
       localStorage.setItem(PROJECTS_COLLAPSED_KEY, "true");
@@ -15025,7 +15811,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function startProjectsCollapse() {
     stopProjectsCollapse();
-    if (!settings12.store.projectsDefaultCollapsed)
+    if (!settings13.store.projectsDefaultCollapsed)
       return;
     resetProjectsCollapsedStorage();
     let done = false;
@@ -15069,7 +15855,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     push({ page: "main", teamId });
   }
   var ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
-    if (!settings12.use(["chatsPlus"]).chatsPlus)
+    if (!settings13.use(["chatsPlus"]).chatsPlus)
       return null;
     return /* @__PURE__ */ React.createElement("button", {
       type: "button",
@@ -15095,24 +15881,24 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     };
     return /* @__PURE__ */ React.createElement("div", {
       ref: cardRef,
-      className: cl21("card"),
+      className: cl22("card"),
       onPointerDown: (e) => forward(e, "pointerdown"),
       onPointerUp: (e) => forward(e, "pointerup")
     }, /* @__PURE__ */ React.createElement(AvatarMenu, null), /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       justifyContent: "center",
       gap: "0",
-      className: cl21("info")
+      className: cl22("info")
     }, /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       size: "sm",
       weight: "medium",
-      className: cl21("name")
+      className: cl22("name")
     }, user.givenName ?? user.email?.split("@")[0] ?? "User"), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       size: "xs",
       color: "secondary",
-      className: cl21("plan")
+      className: cl22("plan")
     }, getPlanName(bestSubscription, user.xSubscriptionType))));
   }
   var selection2 = createSelectionStore();
@@ -15124,10 +15910,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
     }
     const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
-    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger27.error("Failed to delete", id, e))));
+    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger28.error("Failed to delete", id, e))));
   }
   function SelectCheckbox({ id, route }) {
-    const enabled = settings12.use(["batchSelect"]).batchSelect;
+    const enabled = settings13.use(["batchSelect"]).batchSelect;
     if (!enabled || !id || !isConversationRoute(route))
       return null;
     return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
@@ -15143,7 +15929,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.Prism, Devs.p],
     tags: ["ui"],
     enabledByDefault: true,
-    settings: settings12,
+    settings: settings13,
     managedStyle: "betterSidebar",
     _ChatsPlus: () => createElement(ChatsPlus),
     _UserCard: ErrorBoundary.wrap(UserCard),
@@ -15158,7 +15944,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     },
     _wrapSidebarClick(onClick, id, route) {
       return (e) => {
-        if (id && settings12.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
+        if (id && settings13.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           e.stopPropagation();
           selection2.toggle(id);
@@ -15168,10 +15954,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       };
     },
     _defaultOpen() {
-      return !settings12.store.defaultCollapsed;
+      return !settings13.store.defaultCollapsed;
     },
     _botsDefaultCollapsed() {
-      return settings12.store.botsDefaultCollapsed;
+      return settings13.store.botsDefaultCollapsed;
     },
     _chatsCollapsedInit() {
       resetChatsCollapsedStorage();
@@ -15182,10 +15968,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return true;
     },
     _projectsAutoExpand() {
-      return !settings12.store.projectsDefaultCollapsed;
+      return !settings13.store.projectsDefaultCollapsed;
     },
     _onSidebarClick() {
-      if (!settings12.store.clickToToggle)
+      if (!settings13.store.clickToToggle)
         return;
       return (e) => {
         const target = e.target;
@@ -15381,7 +16167,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/chatListStatus/index.ts
-  var logger28 = new Logger("ChatListStatus");
+  var logger29 = new Logger("ChatListStatus");
   var MARK = "void-cls";
   var LIVE2 = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD2 = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
@@ -15553,14 +16339,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       add(page.conversationId);
       add(page.optimisticConversationId);
     } catch (e) {
-      logger28.debug("page ids unavailable:", e);
+      logger29.debug("page ids unavailable:", e);
     }
     try {
       const { route } = RoutingStore.useRoutingStore.getState();
       add(route.conversationId);
       add(route.chat);
     } catch (e) {
-      logger28.debug("route ids unavailable:", e);
+      logger29.debug("route ids unavailable:", e);
     }
     try {
       const url = new URL(location.href);
@@ -15568,7 +16354,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       add(url.searchParams.get("conversationId"));
       add(url.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]);
     } catch (e) {
-      logger28.debug("url ids unavailable:", e);
+      logger29.debug("url ids unavailable:", e);
     }
     return ids;
   }
@@ -15616,7 +16402,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       extraSeen.add(val);
       extraStores.push(val);
       extraUnsubs.push(val.subscribe(() => schedule()));
-      logger28.info("extra store", key);
+      logger29.info("extra store", key);
     }
   }
   function attachExtraStores() {
@@ -15714,7 +16500,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           ids.add(id);
       }
     } catch (e) {
-      logger28.debug("stream stores unavailable:", e);
+      logger29.debug("stream stores unavailable:", e);
     }
     try {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
@@ -15725,7 +16511,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       for (const conversation of Object.values(byIdWithWorkspaces ?? {}))
         considerConversation(ids, conversation);
     } catch (e) {
-      logger28.debug("conversation store unavailable:", e);
+      logger29.debug("conversation store unavailable:", e);
     }
     extraLiveIds(ids);
     if (currentChatInterrupted()) {
@@ -15745,7 +16531,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return isErrorResponse(byId[page.lastMessageId]);
       }
     } catch (e) {
-      logger28.debug("error lookup failed:", e);
+      logger29.debug("error lookup failed:", e);
     }
     return false;
   }
@@ -15760,7 +16546,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return isUserInterrupt3(byId[page.lastMessageId ?? ""]) || isUserInterrupt3(byId[page.streamedMessageId ?? ""]);
       }
     } catch (e) {
-      logger28.debug("interrupt lookup failed:", e);
+      logger29.debug("interrupt lookup failed:", e);
     }
     return false;
   }
@@ -15792,7 +16578,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return currentIds()[0] ?? "";
     } catch (e) {
-      logger28.debug("conv lookup failed:", e);
+      logger29.debug("conv lookup failed:", e);
       return "";
     }
   }
@@ -15804,7 +16590,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       response = ResponseStore.useResponseStore.getState().byId[responseId];
     } catch (e) {
-      logger28.debug("streamEnd lookup failed:", e);
+      logger29.debug("streamEnd lookup failed:", e);
     }
     if (liveIds().has(cid)) {
       schedule();
@@ -15994,7 +16780,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     const live = [...marks].filter(([, kind]) => kind === "streaming").map(([id]) => id);
     if (live.length && !rowById.size)
-      logger28.info("live ids with no rows", live);
+      logger29.info("live ids with no rows", live);
   }
   function schedule() {
     if (!started2 || raf2)
@@ -16367,12 +17153,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/chatStateFavicons/index.ts
-  var logger29 = new Logger("ChatStateFavicons");
+  var logger30 = new Logger("ChatStateFavicons");
   var ICON_ID = "void-chat-state-favicon";
   var LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD_RESPONSE = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
   var USER_INTERRUPT4 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
-  var settings13 = definePluginSettings({
+  var settings14 = definePluginSettings({
     style: {
       type: 4 /* SELECT */,
       description: "How the Grok mark is overlaid with chat state.",
@@ -16403,7 +17189,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var started3 = false;
   var watching = false;
   function currentStyle() {
-    const value = settings13.store.style;
+    const value = settings14.store.style;
     return isIconStyle(value) ? value : DEFAULT_STYLE;
   }
   function captureOfficial() {
@@ -16498,7 +17284,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return false;
       return !isDeadResponse3(byId[page.streamedMessageId ?? ""]) && !isDeadResponse3(byId[page.lastMessageId ?? ""]);
     } catch (e) {
-      logger29.debug("stream stores unavailable:", e);
+      logger30.debug("stream stores unavailable:", e);
       return false;
     }
   }
@@ -16512,7 +17298,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return false;
     } catch (e) {
-      logger29.debug("interrupt DOM unavailable:", e);
+      logger30.debug("interrupt DOM unavailable:", e);
       return false;
     }
   }
@@ -16523,7 +17309,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (isUserInterrupt4(byId[page.streamedMessageId ?? ""]) || isUserInterrupt4(byId[page.lastMessageId ?? ""]))
         return true;
     } catch (e) {
-      logger29.debug("interrupt lookup failed:", e);
+      logger30.debug("interrupt lookup failed:", e);
     }
     return officialInterruptedDom2();
   }
@@ -16540,14 +17326,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (route.conversationId)
         return String(route.conversationId);
     } catch (e) {
-      logger29.debug("RoutingStore unavailable:", e);
+      logger30.debug("RoutingStore unavailable:", e);
     }
     try {
       const id = ChatPageStore.useChatPageStore.getState().conversationId;
       if (id)
         return id;
     } catch (e) {
-      logger29.debug("ChatPageStore unavailable:", e);
+      logger30.debug("ChatPageStore unavailable:", e);
     }
     return conversationToken();
   }
@@ -16596,7 +17382,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return false;
       return response.state === "error" || response.error != null;
     } catch (e) {
-      logger29.debug("ResponseStore unavailable:", e);
+      logger30.debug("ResponseStore unavailable:", e);
       return false;
     }
   }
@@ -16770,7 +17556,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const response = ResponseStore.useResponseStore.getState().byId[responseId];
       lastWasError = !!response && !isUserInterrupt4(response) && (response.state === "error" || response.error != null);
     } catch (e) {
-      logger29.debug("ResponseStore unavailable:", e);
+      logger30.debug("ResponseStore unavailable:", e);
     }
     scheduleEvaluate();
   }
@@ -16905,11 +17691,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger29.debug("RoutingStore subscribe failed:", e);
+      logger30.debug("RoutingStore subscribe failed:", e);
       try {
         unsubRoute = RoutingStore.useRoutingStore.subscribe(() => scheduleEvaluate());
       } catch (err) {
-        logger29.debug("RoutingStore full subscribe failed:", err);
+        logger30.debug("RoutingStore full subscribe failed:", err);
       }
     }
     try {
@@ -16927,7 +17713,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger29.debug("ChatPageStore subscribe failed:", e);
+      logger30.debug("ChatPageStore subscribe failed:", e);
     }
     try {
       const responseStore = ResponseStore.useResponseStore;
@@ -16939,7 +17725,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger29.debug("ResponseStore subscribe failed:", e);
+      logger30.debug("ResponseStore subscribe failed:", e);
     }
   }
   function restoreOfficial() {
@@ -16962,7 +17748,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings13,
+    settings: settings14,
     startAt: "TurbopackReady" /* TurbopackReady */,
     cleanupSelectors: [`#${ICON_ID}`],
     start() {
@@ -17017,7 +17803,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   });
 
   // src/plugins/cleaner/index.ts
-  var settings14 = definePluginSettings({
+  var settings15 = definePluginSettings({
     hideUpgradePlan: {
       type: 3 /* BOOLEAN */,
       description: "Hide the upgrade plan button in the user menu.",
@@ -17070,7 +17856,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var IMAGINE_UPGRADE_STYLE = "cleanerImagineUpgrade";
   var IMAGINE_UPGRADE_CSS = 'form:has([aria-label="Generation mode"]) a[href*="upgrade"],form:has([aria-label="Generation mode"]) button[aria-label="Upgrade"],form:has([aria-label="Generation mode"]) button[aria-label*="Upgrade plan"],[data-wd-toolbar] a[href*="upgrade"],[data-wd-toolbar] button[aria-label="Upgrade"]{display:none!important}';
   function applyImagineUpgrade() {
-    if (settings14.store.hideImagineUpgrade)
+    if (settings15.store.hideImagineUpgrade)
       registerStyle(IMAGINE_UPGRADE_STYLE, IMAGINE_UPGRADE_CSS);
     else
       unregisterStyle(IMAGINE_UPGRADE_STYLE);
@@ -17082,7 +17868,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.Prism, Devs.p],
     tags: ["ui"],
     enabledByDefault: true,
-    settings: settings14,
+    settings: settings15,
     start: applyImagineUpgrade,
     onSettingsChange: applyImagineUpgrade,
     stop() {
@@ -17140,7 +17926,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/cloneChats/index.tsx
-  var logger30 = new Logger("CloneChats");
+  var logger31 = new Logger("CloneChats");
   async function cloneChat(conversationId) {
     const lastResponseId = ResponseStore.useResponseStore.getState().nodesByConversationId[conversationId]?.at(-1)?.responseId;
     if (!lastResponseId)
@@ -17163,7 +17949,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function CloneItem({ conversationId }) {
     const streaming = useIsStreaming(conversationId);
     return /* @__PURE__ */ React.createElement(MenuItem, {
-      onSelect: () => cloneChat(conversationId).catch((e) => logger30.error("Failed to clone chat:", e)),
+      onSelect: () => cloneChat(conversationId).catch((e) => logger31.error("Failed to clone chat:", e)),
       disabled: streaming
     }, /* @__PURE__ */ React.createElement(CopyIcon, {
       size: 16,
@@ -17182,718 +17968,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         render: ErrorBoundary.wrap(CloneItem)
       }
     }
-  });
-
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/compactModeSelect/styles.css
-  registerStyle("compactModeSelect", `/*
- * Void++, a modification for grok.com
- * Copyright (c) 2026 Void++ Contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-.void-cms-pins {
-    display: contents;
-}
-
-.void-cms-pin-host {
-    display: contents;
-}
-
-.void-cms-pin {
-    width: 2.25rem;
-    height: 2.25rem;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-    max-height: 2.25rem;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-.query-bar .void-cms-on {
-    color: #ff7a17;
-}
-
-.query-bar .void-cms-on:not(:hover, :focus-visible) {
-    background-color: transparent !important;
-    box-shadow: none !important;
-}
-
-.query-bar .void-cms-pin:is(:hover, :focus-visible) {
-    background-color: var(--button-ghost-hover, rgb(255 255 255 / 8%)) !important;
-}
-
-.void-cms-label {
-    display: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    line-height: 1;
-}
-
-.void-cms-glyph {
-    display: grid;
-    place-items: center;
-    width: 18px;
-    height: 18px;
-}
-
-.void-cms-glyph svg {
-    display: block;
-    width: 18px;
-    height: 18px;
-}
-
-.query-bar:has(.void-cms-hide-native) [data-query-bar-mode-select] {
-    position: absolute;
-    width: 0;
-    height: 0;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button {
-    width: 2.25rem;
-    height: 2.25rem;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-    max-height: 2.25rem;
-    padding: 0;
-    position: relative;
-    display: grid;
-    place-items: center;
-}
-
-.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button > * {
-    display: none !important;
-}
-
-.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button::after {
-    content: "";
-    width: 18px;
-    height: 18px;
-    background-color: currentcolor;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='5' cy='12' r='1'/%3E%3Ccircle cx='12' cy='12' r='1'/%3E%3Ccircle cx='19' cy='12' r='1'/%3E%3C/svg%3E") center / 18px 18px no-repeat;
-}
-
-html.void-cms-picking .query-bar [data-query-bar-mode-select] {
-    pointer-events: auto !important;
-}
-
-html.void-cms-picking .query-bar [data-query-bar-mode-select] [role="tooltip"],
-html.void-cms-picking .query-bar [data-query-bar-mode-select] [data-radix-tooltip-content] {
-    display: none !important;
-}
-
-.void-cms-ghost {
-    opacity: 0 !important;
-    visibility: hidden !important;
-}
-
-html.void-cms-picked .void-cms-ghost {
-    pointer-events: none !important;
-}
-
-.void-cms-order-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.void-cms-order-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    min-height: 2.25rem;
-    padding: 0.25rem 0.25rem 0.25rem 0;
-    border-radius: 0.5rem;
-    user-select: none;
-}
-
-.void-cms-order-row:hover {
-    background: hsl(var(--fg-primary) / 6%);
-}
-
-.void-cms-order-row.void-cms-dragging {
-    opacity: 0.45;
-}
-
-.void-cms-order-main {
-    min-width: 0;
-    flex: 1;
-}
-
-.void-cms-grip {
-    display: grid;
-    place-items: center;
-    width: 1.25rem;
-    height: 1.25rem;
-    color: hsl(var(--fg-secondary));
-    cursor: grab;
-}
-
-.void-cms-grip:active {
-    cursor: grabbing;
-}
-
-.void-cms-order-icon {
-    flex-shrink: 0;
-    color: hsl(var(--fg-secondary));
-}
-
-@media (width >= 48rem) {
-    .void-cms-labeled {
-        width: auto;
-        min-width: 2.25rem;
-        max-height: 2.25rem;
-        border-radius: 999px;
-        padding-inline: 0.5rem;
-        gap: 0.25rem;
-    }
-
-    .void-cms-labeled .void-cms-label {
-        display: inline;
-    }
-}
-`);
-
-  // src/plugins/compactModeSelect/index.tsx
-  var logger31 = new Logger("CompactModeSelect");
-  var cl22 = classNameFactory("void-cms-");
-  var MODES = [
-    { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
-    { id: "fast", pin: "pinFast", label: "Fast", Icon: FastModeIcon },
-    { id: "expert", pin: "pinExpert", label: "Expert", Icon: LightbulbIcon },
-    { id: "heavy", pin: "pinHeavy", label: "Heavy", Icon: ConnectedAppsIcon },
-    { id: "build", pin: "pinBuild", label: "Build", Icon: BuildModeIcon }
-  ];
-  var KNOWN_IDS = new Set(MODES.map((m) => m.id));
-  var PIN_BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m.pin]));
-  var MODE_BY_ID = Object.fromEntries(MODES.map((m) => [m.id, m]));
-  var DEFAULT_PIN_ORDER = "heavy,build";
-  var SETTING_KEYS = ["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "showLabels", "hideNativeTrigger", "pinOrder"];
-  var ITEM_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
-  var MENU_ROOT_SEL = [
-    "[data-radix-popper-content-wrapper]",
-    "[data-radix-menu-content]",
-    "[data-radix-dropdown-menu-content]",
-    "[data-radix-select-content]",
-    "[data-radix-popover-content]",
-    "[role='menu']",
-    "[role='listbox']"
-  ].join(", ");
-  var TRIGGER_SEL2 = ".query-bar [data-query-bar-mode-select] button";
-  var PICK_MS = 900;
-  var POINTER = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
-  var GHOST_STYLE = { opacity: "0", visibility: "hidden" };
-  var settings15 = definePluginSettings({
-    pinList: {
-      type: 6 /* COMPONENT */,
-      description: "Toggle pins and drag to set chip order.",
-      component: PinOrderEditor
-    },
-    hideNativeTrigger: {
-      type: 3 /* BOOLEAN */,
-      description: "Hide the native mode menu button and keep its popup invisible.",
-      default: true
-    },
-    showLabels: {
-      type: 3 /* BOOLEAN */,
-      description: "Show mode names on pinned chips.",
-      default: false
-    },
-    pinAuto: {
-      type: 3 /* BOOLEAN */,
-      description: "Pin Auto next to the compact selector.",
-      default: false,
-      hidden: true
-    },
-    pinFast: {
-      type: 3 /* BOOLEAN */,
-      description: "Pin Fast next to the compact selector.",
-      default: false,
-      hidden: true
-    },
-    pinExpert: {
-      type: 3 /* BOOLEAN */,
-      description: "Pin Expert next to the compact selector.",
-      default: false,
-      hidden: true
-    },
-    pinHeavy: {
-      type: 3 /* BOOLEAN */,
-      description: "Pin Heavy next to the compact selector.",
-      default: true,
-      hidden: true
-    },
-    pinBuild: {
-      type: 3 /* BOOLEAN */,
-      description: "Pin Build next to the compact selector.",
-      default: true,
-      hidden: true
-    },
-    pinOrder: {
-      type: 0 /* STRING */,
-      description: "Order of pinned chips.",
-      default: DEFAULT_PIN_ORDER,
-      hidden: true
-    }
-  });
-  var picking = false;
-  var harvesting = false;
-  var harvested = new Map;
-  var harvestListeners = new Set;
-  var ghosts = new Set;
-  var cloakWatch = null;
-  function uncloak() {
-    for (const host of ghosts) {
-      host.classList.remove(cl22("ghost"));
-      host.style.removeProperty("opacity");
-      host.style.removeProperty("visibility");
-      host.style.removeProperty("pointer-events");
-    }
-    ghosts.clear();
-  }
-  function setPicking(on) {
-    picking = on;
-    document.documentElement.classList.toggle("void-cms-picking", on);
-    if (on) {
-      cloakWatch ??= new MutationObserver(onCloakMutations);
-      cloakWatch.observe(document.documentElement, { childList: true, subtree: true });
-      return;
-    }
-    cloakWatch?.disconnect();
-    cloakWatch = null;
-    document.documentElement.classList.remove("void-cms-picked");
-    uncloak();
-  }
-  function notifyHarvest() {
-    for (const fn of harvestListeners)
-      fn();
-  }
-  function parseOrder(raw) {
-    const seen = new Set;
-    const ordered = [];
-    for (const token of String(raw ?? "").split(/[,\s]+/)) {
-      const id = token.toLowerCase();
-      if (!KNOWN_IDS.has(id) || seen.has(id))
-        continue;
-      seen.add(id);
-      ordered.push(id);
-    }
-    for (const m of MODES) {
-      if (seen.has(m.id))
-        continue;
-      ordered.push(m.id);
-    }
-    return ordered;
-  }
-  function reorder(ids, from, to) {
-    if (from === to || from < 0 || to < 0 || to >= ids.length)
-      return ids;
-    const next = ids.slice();
-    const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
-    return next;
-  }
-  function setOrder(ids) {
-    settings15.store.pinOrder = ids.join(",");
-  }
-  function setPinned(pin, on) {
-    settings15.store[pin] = on;
-  }
-  function itemText2(el) {
-    return `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`.replaceAll(/\s+/g, " ").trim().toLowerCase();
-  }
-  function titlesFor(id) {
-    const mode = MODES.find((m) => m.id === id);
-    const catalogTitle = ModesStore.useModesStore.getState().modes.find((m) => m.id === id)?.title;
-    return [catalogTitle, mode?.label, id].filter((t) => !!t).map((t) => t.toLowerCase());
-  }
-  function matchItem(el, id) {
-    const hay = itemText2(el);
-    if (!hay)
-      return false;
-    return titlesFor(id).some((t) => hay === t || hay.startsWith(`${t} `));
-  }
-  function isModeMenu(items) {
-    return items.filter((el) => MODES.some((m) => matchItem(el, m.id))).length >= 2;
-  }
-  function ghostHost(el) {
-    const wrap = el.closest("[data-radix-popper-content-wrapper]");
-    if (wrap instanceof HTMLElement)
-      return wrap;
-    let host = el;
-    for (let n = el;n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
-      const pos = getComputedStyle(n).position;
-      if (pos === "fixed" || pos === "absolute")
-        host = n;
-    }
-    return host;
-  }
-  function cloak(menu) {
-    const host = ghostHost(menu.root);
-    if (ghosts.has(host))
-      return;
-    host.classList.add(cl22("ghost"));
-    host.style.setProperty("opacity", GHOST_STYLE.opacity, "important");
-    host.style.setProperty("visibility", GHOST_STYLE.visibility, "important");
-    ghosts.add(host);
-  }
-  function lockGhosts() {
-    document.documentElement.classList.add("void-cms-picked");
-    for (const host of ghosts)
-      host.style.setProperty("pointer-events", "none", "important");
-  }
-  function modeMenu() {
-    for (const root of document.querySelectorAll(MENU_ROOT_SEL)) {
-      if (!(root instanceof HTMLElement))
-        continue;
-      const items = [...root.querySelectorAll(ITEM_SEL)];
-      if (isModeMenu(items))
-        return { root, items };
-    }
-    const loose = [...document.querySelectorAll(ITEM_SEL)].filter((el) => MODES.some((m) => matchItem(el, m.id)));
-    if (loose.length < 2)
-      return null;
-    const nested = loose[0].closest(MENU_ROOT_SEL);
-    const root = nested instanceof HTMLElement ? nested : ghostHost(loose[0]);
-    return { root, items: loose };
-  }
-  function onCloakMutations() {
-    const menu = modeMenu();
-    if (menu)
-      cloak(menu);
-  }
-  function waitUntil(ok) {
-    const start = performance.now();
-    return new Promise((resolve) => {
-      const tick = () => {
-        if (ok()) {
-          resolve(true);
-          return;
-        }
-        if (performance.now() - start > PICK_MS) {
-          resolve(false);
-          return;
-        }
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    });
-  }
-  async function waitForMenu() {
-    await waitUntil(() => {
-      const menu = modeMenu();
-      if (menu)
-        cloak(menu);
-      return !!menu;
-    });
-    return modeMenu();
-  }
-  function waitForGone() {
-    return waitUntil(() => !modeMenu());
-  }
-  function nativeTrigger() {
-    return document.querySelector(TRIGGER_SEL2);
-  }
-  function clickEl(el) {
-    el.dispatchEvent(new PointerEvent("pointerdown", POINTER));
-    el.dispatchEvent(new PointerEvent("pointerup", POINTER));
-    el.click();
-  }
-  function paintCurrent(el) {
-    for (const attr of ["fill", "stroke"]) {
-      const v = el.getAttribute(attr);
-      if (!v || v === "none" || v === "currentColor")
-        continue;
-      el.setAttribute(attr, "currentColor");
-    }
-    for (const name of el.getAttributeNames()) {
-      if (name.startsWith("on"))
-        el.removeAttribute(name);
-    }
-    el.removeAttribute("class");
-  }
-  function normalizeSvg(src) {
-    const svg = src.cloneNode(true);
-    svg.setAttribute("width", "18");
-    svg.setAttribute("height", "18");
-    svg.setAttribute("aria-hidden", "true");
-    svg.querySelectorAll("script").forEach((n) => n.remove());
-    paintCurrent(svg);
-    svg.querySelectorAll("*").forEach(paintCurrent);
-    return svg.outerHTML;
-  }
-  function stashGlyphs(items) {
-    let added = false;
-    for (const item of items) {
-      const mode = MODES.find((m) => matchItem(item, m.id));
-      if (!mode || harvested.has(mode.id))
-        continue;
-      const svg = item.querySelector("svg");
-      if (!(svg instanceof SVGSVGElement))
-        continue;
-      harvested.set(mode.id, normalizeSvg(svg));
-      added = true;
-    }
-    if (added)
-      notifyHarvest();
-  }
-  async function harvestIcons() {
-    if (harvesting || picking || harvested.size > 0)
-      return;
-    if (document.documentElement.hasAttribute("data-void-mode-sync-restore"))
-      return;
-    const trigger = nativeTrigger();
-    if (!trigger)
-      return;
-    harvesting = true;
-    setPicking(true);
-    try {
-      let menu = modeMenu();
-      if (!menu) {
-        clickEl(trigger);
-        menu = await waitForMenu();
-      }
-      if (!menu)
-        return;
-      cloak(menu);
-      stashGlyphs(menu.items);
-      if (modeMenu())
-        clickEl(trigger);
-      lockGhosts();
-      await waitForGone();
-    } catch (e) {
-      logger31.warn("Failed to harvest mode icons:", e);
-    } finally {
-      setPicking(false);
-      harvesting = false;
-    }
-  }
-  async function selectMode(id) {
-    if (picking)
-      return;
-    setPicking(true);
-    try {
-      await ModesStore.useModesStore.getState().ensureLoaded();
-      let menu = modeMenu();
-      if (!menu) {
-        const trigger = nativeTrigger();
-        if (!trigger) {
-          logger31.warn("Native mode selector not found");
-          return;
-        }
-        clickEl(trigger);
-        menu = await waitForMenu();
-      }
-      if (!menu) {
-        logger31.warn("Native mode item not found:", id);
-        return;
-      }
-      cloak(menu);
-      stashGlyphs(menu.items);
-      const item = menu.items.find((el) => matchItem(el, id));
-      if (!item) {
-        logger31.warn("Native mode item not found:", id);
-        const trigger = nativeTrigger();
-        if (modeMenu() && trigger)
-          clickEl(trigger);
-        lockGhosts();
-        await waitForGone();
-        return;
-      }
-      clickEl(item);
-      lockGhosts();
-      await waitForGone();
-    } catch (e) {
-      logger31.warn("Failed to select mode:", e);
-    } finally {
-      setPicking(false);
-    }
-  }
-  function useNativeGlyph(id) {
-    const [, bump] = React.useState(0);
-    React.useEffect(() => {
-      const onHarvest = () => bump((n) => n + 1);
-      harvestListeners.add(onHarvest);
-      harvestIcons();
-      return () => {
-        harvestListeners.delete(onHarvest);
-      };
-    }, [id]);
-    return harvested.get(id);
-  }
-  function PinGlyph({ id, Icon, label, showLabels }) {
-    const html = useNativeGlyph(id);
-    const glyph = html ? /* @__PURE__ */ React.createElement("span", {
-      className: cl22("glyph"),
-      dangerouslySetInnerHTML: { __html: html }
-    }) : /* @__PURE__ */ React.createElement(Icon, {
-      size: 18
-    });
-    if (!showLabels)
-      return glyph;
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, glyph, /* @__PURE__ */ React.createElement("span", {
-      className: cl22("label")
-    }, label));
-  }
-  function preventDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }
-  function PinOrderEditor() {
-    const cfg = settings15.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
-    const ids = parseOrder(cfg.pinOrder);
-    const [dragId, setDragId] = React.useState(null);
-    const onDragStart = (id) => (e) => {
-      e.dataTransfer.setData("text/plain", id);
-      e.dataTransfer.effectAllowed = "move";
-      setDragId(id);
-    };
-    const onDrop = (toId) => (e) => {
-      e.preventDefault();
-      const fromId = e.dataTransfer.getData("text/plain");
-      setOrder(reorder(ids, ids.indexOf(fromId), ids.indexOf(toId)));
-      setDragId(null);
-    };
-    return /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "0.5rem",
-      className: cl22("order")
-    }, /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "0"
-    }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl22("order-list"),
-      role: "list"
-    }, ids.map((id, i) => {
-      const m = MODE_BY_ID[id];
-      return /* @__PURE__ */ React.createElement("div", {
-        key: m.id,
-        role: "listitem",
-        className: classes(cl22("order-row"), dragId === m.id && cl22("dragging")),
-        onDragOver: preventDragOver,
-        onDrop: onDrop(m.id)
-      }, /* @__PURE__ */ React.createElement(Flex, {
-        alignItems: "center",
-        gap: "0.5rem",
-        className: cl22("order-main")
-      }, /* @__PURE__ */ React.createElement("span", {
-        className: cl22("grip"),
-        draggable: true,
-        onDragStart: onDragStart(m.id),
-        onDragEnd: () => setDragId(null),
-        "aria-label": `Reorder ${m.label}`
-      }, /* @__PURE__ */ React.createElement(GripVerticalIcon, {
-        size: 16
-      })), /* @__PURE__ */ React.createElement(m.Icon, {
-        size: 16,
-        className: cl22("order-icon")
-      }), /* @__PURE__ */ React.createElement(SettingsTitle, null, m.label)), /* @__PURE__ */ React.createElement(Flex, {
-        alignItems: "center",
-        gap: "0.25rem"
-      }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
-        variant: "tertiary",
-        size: "xs",
-        shape: "square",
-        tooltipContent: "Move up",
-        "aria-label": `Move ${m.label} up`,
-        disabled: i === 0,
-        onClick: () => setOrder(reorder(ids, i, i - 1))
-      }, /* @__PURE__ */ React.createElement(ChevronUpIcon, {
-        size: 14
-      })), /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
-        variant: "tertiary",
-        size: "xs",
-        shape: "square",
-        tooltipContent: "Move down",
-        "aria-label": `Move ${m.label} down`,
-        disabled: i === ids.length - 1,
-        onClick: () => setOrder(reorder(ids, i, i + 1))
-      }, /* @__PURE__ */ React.createElement(ChevronDownIcon, {
-        size: 14
-      })), /* @__PURE__ */ React.createElement(Switch, {
-        checked: !!cfg[m.pin],
-        onCheckedChange: (on) => setPinned(m.pin, on)
-      })));
-    })));
-  }
-  function PinnedModes() {
-    const cfg = settings15.use([...SETTING_KEYS]);
-    const page = RoutingStore.useRoutingStore((s) => s.route.page);
-    const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
-    const catalog = ModesStore.useModesStore((s) => s.modes);
-    const knownCatalog = catalog.filter((c) => KNOWN_IDS.has(c.id));
-    const items = parseOrder(cfg.pinOrder).map((id) => MODE_BY_ID[id]).filter((m) => cfg[m.pin] && (m.id === "build" || !knownCatalog.length || knownCatalog.some((c) => c.id === m.id)));
-    if (page === "bot" || !items.length)
-      return null;
-    const { showLabels } = cfg;
-    const allCovered = knownCatalog.length > 0 && knownCatalog.every((c) => cfg[PIN_BY_ID[c.id]]);
-    const hideNative = cfg.hideNativeTrigger || allCovered;
-    const onPin = (id) => (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      selectMode(id);
-    };
-    return /* @__PURE__ */ React.createElement("div", {
-      className: classes(cl22("pins"), hideNative && cl22("hide-native"))
-    }, items.map((m) => /* @__PURE__ */ React.createElement("span", {
-      key: m.id,
-      className: cl22("pin-host"),
-      "data-void-mode-id": m.id
-    }, /* @__PURE__ */ React.createElement(ChatBarButton, {
-      size: "sm",
-      icon: /* @__PURE__ */ React.createElement(PinGlyph, {
-        id: m.id,
-        Icon: m.Icon,
-        label: m.label,
-        showLabels
-      }),
-      tooltip: m.label,
-      onClick: onPin(m.id),
-      className: classes(cl22("pin"), selectedModeId === m.id && cl22("on"), showLabels && cl22("labeled"), "hover:bg-button-ghost-hover"),
-      "aria-label": m.label
-    }))));
-  }
-  var compactModeSelect_default = definePlugin({
-    name: "CompactModeSelect",
-    icon: Minimize2Icon,
-    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu.",
-    authors: [Devs.p],
-    tags: ["chat", "ui"],
-    enabledByDefault: true,
-    settings: settings15,
-    managedStyle: "compactModeSelect",
-    startAt: "TurbopackReady" /* TurbopackReady */,
-    start() {
-      ModesStore.useModesStore.getState().ensureLoaded();
-    },
-    stop() {
-      setPicking(false);
-      harvested.clear();
-      harvestListeners.clear();
-    },
-    renderPinned: ErrorBoundary.wrap(PinnedModes),
-    patches: [
-      {
-        find: "data-query-bar-mode-select",
-        all: true,
-        group: true,
-        replacement: [
-          {
-            match: /ModeSelect,\{compact:\i\|\|\i,/,
-            replace: "ModeSelect,{compact:!0,"
-          },
-          {
-            match: /\},"mode-select"\),/,
-            replace: "$&$self.renderPinned(),"
-          }
-        ]
-      }
-    ]
   });
 
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/completeToast/styles.css
@@ -28173,15 +28247,15 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1790093417000;
   betterLinks_default.updatedAt = 1787870966000;
+  betterModeSelect_default.updatedAt = 1790161196000;
   betterNavigator_default.updatedAt = 1790145289000;
-  betterQueue_default.updatedAt = 0;
+  betterQueue_default.updatedAt = 1790159561000;
   betterQuotes_default.updatedAt = 1790158302000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1790093417000;
   cloneChats_default.updatedAt = 1787870966000;
-  compactModeSelect_default.updatedAt = 1789811419000;
   completeToast_default.updatedAt = 1790093417000;
   composerOpacity_default.updatedAt = 1790097681000;
   consoleJanitor_default.updatedAt = 1787789817000;
@@ -28211,7 +28285,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   usageDisplay_default.updatedAt = 1789172854000;
   userQuotes_default.updatedAt = 1789905284000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [compactModeSelect_default.name]: compactModeSelect_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;

@@ -6,7 +6,7 @@
 
 import "./styles.css";
 
-import { definePluginSettings } from "@api/Settings";
+import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
 import { ButtonWithTooltip, ChatBarButton, Flex, SettingsDescription, SettingsTitle, Switch } from "@components";
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { AutoModeIcon, BuildModeIcon, ChevronDownIcon, ChevronUpIcon, ConnectedAppsIcon, FastModeIcon, GripVerticalIcon, LightbulbIcon, Minimize2Icon } from "@components/icons";
@@ -20,7 +20,7 @@ import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 import type { DragEvent, MouseEvent } from "react";
 
-const logger = new Logger("CompactModeSelect");
+const logger = new Logger("BetterModeSelect");
 const cl = classNameFactory("void-cms-");
 
 const MODES = [
@@ -73,31 +73,31 @@ const settings = definePluginSettings({
     },
     pinAuto: {
         type: OptionType.BOOLEAN,
-        description: "Pin Auto next to the compact selector.",
+        description: "Pin Auto as a chip.",
         default: false,
         hidden: true,
     },
     pinFast: {
         type: OptionType.BOOLEAN,
-        description: "Pin Fast next to the compact selector.",
+        description: "Pin Fast as a chip.",
         default: false,
         hidden: true,
     },
     pinExpert: {
         type: OptionType.BOOLEAN,
-        description: "Pin Expert next to the compact selector.",
+        description: "Pin Expert as a chip.",
         default: false,
         hidden: true,
     },
     pinHeavy: {
         type: OptionType.BOOLEAN,
-        description: "Pin Heavy next to the compact selector.",
+        description: "Pin Heavy as a chip.",
         default: true,
         hidden: true,
     },
     pinBuild: {
         type: OptionType.BOOLEAN,
-        description: "Pin Build next to the compact selector.",
+        description: "Pin Build as a chip.",
         default: true,
         hidden: true,
     },
@@ -108,6 +108,78 @@ const settings = definePluginSettings({
         hidden: true,
     },
 });
+
+const OLD_NAME = "CompactModeSelect";
+const NEW_NAME = "BetterModeSelect";
+
+function renameList(list: unknown): string[] | undefined {
+    if (!Array.isArray(list) || !list.includes(OLD_NAME)) return undefined;
+    const seen = new Set<string>();
+    const next: string[] = [];
+    for (const item of list) {
+        if (typeof item !== "string") continue;
+        const name = item === OLD_NAME ? NEW_NAME : item;
+        if (seen.has(name)) continue;
+        seen.add(name);
+        next.push(name);
+    }
+    return next;
+}
+
+function migrateLegacy() {
+    const bag = PlainSettings.plugins;
+    const old = bag[OLD_NAME];
+    const meta = bag.Settings;
+    const menu = bag.PluginsFlyout?.menuPlugins;
+    const known = meta?.knownPlugins;
+    const pinned = renameList(meta?.pinnedPlugins);
+    const starred = renameList(meta?.starredPlugins);
+    const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu as Record<string, unknown> : undefined;
+    const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known as Record<string, unknown> : undefined;
+    const menuHas = !!menuRec && OLD_NAME in menuRec;
+    const knownHas = !!knownRec && OLD_NAME in knownRec;
+    if (!old && !menuHas && !knownHas && !pinned && !starred) return;
+
+    if (old) {
+        const target = bag[NEW_NAME] ??= {};
+        const keys = Object.keys(target);
+        const stub = keys.length === 0 || (keys.length === 1 && keys[0] === "enabled");
+        for (const key of Object.keys(old)) {
+            if (stub || !(key in target)) target[key] = old[key];
+        }
+        delete bag[OLD_NAME];
+    }
+
+    if (meta) {
+        if (pinned) meta.pinnedPlugins = pinned;
+        if (starred) meta.starredPlugins = starred;
+        if (knownHas && knownRec) {
+            if (!(NEW_NAME in knownRec)) knownRec[NEW_NAME] = knownRec[OLD_NAME];
+            delete knownRec[OLD_NAME];
+        }
+    }
+
+    if (menuHas && menuRec) {
+        if (!(NEW_NAME in menuRec)) menuRec[NEW_NAME] = menuRec[OLD_NAME];
+        delete menuRec[OLD_NAME];
+    }
+
+    SettingsStore.markAsChanged();
+    logger.info("Migrated CompactModeSelect into BetterModeSelect");
+}
+
+const pluginName = Object.getOwnPropertyDescriptor(settings, "pluginName");
+if (pluginName?.set && pluginName.get) {
+    Object.defineProperty(settings, "pluginName", {
+        configurable: true,
+        enumerable: true,
+        get: pluginName.get,
+        set(name: string) {
+            if (name === NEW_NAME) migrateLegacy();
+            pluginName.set!.call(settings, name);
+        },
+    });
+}
 
 let picking = false;
 let harvesting = false;
@@ -543,14 +615,14 @@ function PinnedModes() {
 }
 
 export default definePlugin({
-    name: "CompactModeSelect",
+    name: "BetterModeSelect",
     icon: Minimize2Icon,
     description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
     settings,
-    managedStyle: "compactModeSelect",
+    managedStyle: "betterModeSelect",
     startAt: StartAt.TurbopackReady,
 
     start() {
