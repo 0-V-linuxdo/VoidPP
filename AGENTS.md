@@ -74,7 +74,7 @@ Do not touch ComposerOpacity, InputHistory, BetterCanvas, or real-input autosize
 
 ## BetterQuotes
 
-QuoteJump and QuoteSticky are one plugin. `jump.ts` scrolls; `sticky.ts` persists. Do not fold either into UserQuotes. Do not couple persist fixes to ModeSync, the stop button, or the scroll math in `jump.ts`.
+QuoteJump and QuoteSticky are one plugin. `jump.ts` scrolls; `sticky.ts` persists. Do not fold either into UserQuotes. Do not couple persist fixes to BetterQueue, the stop button, or the scroll math in `jump.ts`.
 
 `quotedText` / `quotePopupData` are one global pair. There is no `quotedTextByConversationId`. Only drafts use `queryByConversationId`. After conversation hydrate the official composer does not remount a chip from `setQuotedText` plus a cloned popup. Persist UI is the fallback chip.
 
@@ -93,6 +93,12 @@ Host the fallback as a sibling of `.query-bar` (form / composer shell / `documen
 `officialVisible` matching 12 chars inside `.query-bar` can hide the fallback when the draft editor still contains the quote snippet. Official chip will not be there after hydrate — do not treat that match as "chip already shown".
 
 Do not wrap `setChatPageLoaded` to fight hydrate. That fought ModeSync. Restore on dest settle plus observer paint is enough.
+
+## BetterQueue
+
+ModeSync and QueuePersist are one plugin. `mode.ts` captures each queued row's mode, paints the chip, and sends with that mode. `persist.ts` writes the same rows to IndexedDB key `queue-persist:v1` and replays them after refresh. Do not split them back into two plugins. Do not add a second `queueMessage` wrapper — `noteEnqueue` / `afterEnqueue` run inside the mode wrapper. Keep `Symbol.for("voidpp.modeSync.enqueueIntent")` and `Symbol.for("voidpp.modeSync.intent")`. Do not rename the IDB key or `.void-ms-*` classes.
+
+Settings: `showQueueMode`, `stickyOnNavigate`, `persistAcrossRefresh`, all default on. First register migrates `plugins.ModeSync.enabled === false` onto the first two flags and `plugins.QueuePersist.enabled === false` onto `persistAcrossRefresh`, then deletes the old keys (and pin/star/known entries). Both old plugins explicitly off also turns BetterQueue off. Imagine stays skipped.
 
 Jump reads the chip text (including `.void-qs-chip`). It does not need the official chip. Click-to-line uses `Range.getClientRects()[0]` plus visual viewport mid-Y, not `scrollIntoView` on the message root.
 

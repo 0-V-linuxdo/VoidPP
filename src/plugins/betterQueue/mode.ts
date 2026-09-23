@@ -4,11 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import "./styles.css";
-
 import type { VoidPPEventMap } from "@api/Events";
-import { definePluginSettings } from "@api/Settings";
-import { ListOrderedIcon } from "@components/icons";
 import type { ModelMode } from "@grok-types/enums/models";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { GatewayConversation, GatewayQueueItem, GatewayTurnArgs, MessageStoreState } from "@grok-types/stores/MessageStore";
@@ -17,10 +13,11 @@ import type { ResponseStoreState } from "@grok-types/stores/ResponseStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { ChatPageStore, MessageStore, ModesStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
 import { findByPropsLazy } from "@turbopack/turbopack";
-import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import { mapGetOrCreate, pageWindow } from "@utils/misc";
-import definePlugin, { OptionType, StartAt } from "@utils/types";
+
+import { afterEnqueue, noteEnqueue } from "./persist";
+import { settings } from "./settings";
 
 const logger = new Logger("ModeSync");
 
@@ -71,19 +68,6 @@ const ICONS: Record<string, string> = {
     heavy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="5" height="5"/><rect x="15" y="4" width="5" height="5"/><rect x="15" y="15" width="5" height="5"/><path d="M11 18H10C7.79086 18 6 16.2091 6 14V13"/></svg>',
     build: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6.55273 4.60517C9.30778 1.96643 12.7289 1.47144 16.748 2.49872L19.1709 3.11787L16.9883 4.34052C16.0286 4.87786 15.0421 5.85039 14.5645 6.87763C14.3308 7.38043 14.2396 7.85117 14.2852 8.26728C14.3289 8.6664 14.5051 9.08437 14.9307 9.50068L20.5068 14.9548C22.0873 16.3103 22.1844 18.7292 20.707 20.2067C19.2281 21.6857 16.8059 21.5867 15.4512 20.0017C15.4468 19.9971 15.4413 19.9919 15.4355 19.986C15.4119 19.9617 15.3773 19.9252 15.332 19.8786C15.2412 19.7851 15.1086 19.6485 14.9424 19.4772C14.6098 19.1346 14.1405 18.653 13.5977 18.0944C12.5116 16.9769 11.1275 15.5535 9.93457 14.3317C9.65277 14.0434 9.32401 13.9826 9.07031 14.0456C8.82894 14.1056 8.57482 14.2967 8.46875 14.7136L8.40137 14.9802L6.5 16.8815L1.08594 11.4675L3.08594 9.46747H3.5C3.84716 9.46747 3.9785 9.37185 4.0752 9.26728C4.22615 9.1039 4.36795 8.82197 4.55371 8.30732C4.8865 7.38517 5.29734 5.80772 6.55273 4.60517ZM11.668 13.2448C12.789 14.3937 14.0363 15.6752 15.0322 16.6999C15.5754 17.2588 16.0441 17.7419 16.377 18.0847C16.5432 18.2559 16.6757 18.3924 16.7666 18.486C16.812 18.5328 16.8474 18.569 16.8711 18.5935C16.8826 18.6053 16.8914 18.6146 16.8975 18.6208C16.9004 18.6238 16.9028 18.627 16.9043 18.6286L16.9062 18.6296L16.9072 18.6306L16.9336 18.6579L16.957 18.6862C17.5529 19.4013 18.6348 19.4509 19.293 18.7927C19.951 18.1345 19.9016 17.0526 19.1865 16.4567L19.1562 16.4313L19.1279 16.404L13.7598 11.153L11.668 13.2448ZM14.1406 4.05244C11.6131 3.80062 9.61076 4.44487 7.93555 6.04951C7.10476 6.84532 6.84901 7.83879 6.43457 8.98701C6.24676 9.5073 5.99495 10.1367 5.54395 10.6247C5.12935 11.0732 4.597 11.349 3.94531 11.4352L3.91406 11.4675L6.5 14.0534L6.61914 13.9333C6.95792 12.978 7.6995 12.326 8.58789 12.1052C9.04163 11.9924 9.51491 11.9981 9.96875 12.1159L12.5625 9.52216C12.4239 9.18685 12.3357 8.83958 12.2969 8.48505C12.2019 7.6178 12.4054 6.77723 12.751 6.03388C13.0875 5.31006 13.578 4.63529 14.1406 4.05244Z"/></svg>',
 };
-
-const settings = definePluginSettings({
-    stickyOnNavigate: {
-        type: OptionType.BOOLEAN,
-        description: "Keep the selected mode when switching chats.",
-        default: true,
-    },
-    showQueueMode: {
-        type: OptionType.BOOLEAN,
-        description: "Show a mode chip on each queued message.",
-        default: true,
-    },
-});
 
 type SendFn = (...args: any[]) => any;
 
@@ -835,9 +819,16 @@ function makeSendWrapper(orig: SendFn): SendFn {
 function makeQueueWrapper(orig: SendFn): SendFn {
     return function voidModeSyncQueue(this: unknown, ...args: unknown[]) {
         if (onImaginePage()) return orig.apply(this, args);
+        noteEnqueue(args);
         const [first] = args;
         const live = enqueueIntent();
-        if (!isTurnArgs(first) || !live.modeId) return orig.apply(this, args);
+        if (!isTurnArgs(first) || !live.modeId) {
+            try {
+                return orig.apply(this, args);
+            } finally {
+                afterEnqueue();
+            }
+        }
         pendingEnqueue = { args: first, intent: { ...live } };
         if (conversation(first.convId)?.activeGeneration) diverting = first;
         try {
@@ -848,6 +839,7 @@ function makeQueueWrapper(orig: SendFn): SendFn {
                 if (pendingEnqueue?.args === token) pendingEnqueue = null;
                 if (diverting === token) diverting = null;
             });
+            afterEnqueue();
         }
     };
 }
@@ -1362,114 +1354,121 @@ function onQueue() {
     schedulePaint();
 }
 
-export default definePlugin({
-    name: "ModeSync",
-    icon: ListOrderedIcon,
-    description: "Show and send each queued message with the mode captured on that item. Switching chats still keeps the picker.",
-    authors: [Devs.p],
-    tags: ["chat"],
-    enabledByDefault: true,
-    settings,
-    startAt: StartAt.TurbopackReady,
-    cleanupSelectors: [`.${CHIP}`, `.${QMENU}`],
+let modeStarted = false;
 
-    start() {
-        setIntent(snapshot());
-        lastNavKey = navKey();
-        abort = new AbortController();
-        const { signal } = abort;
-        document.addEventListener("pointerup", onPointerUp, { capture: true, signal });
-        document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
-        document.addEventListener("keydown", onKeyDown, { capture: true, signal });
-        bindObs();
-        schedulePaint();
-        try {
-            wrapSendFns();
-            hookFetch();
-            hookXhr();
-        } catch (e) {
-            logger.warn("Failed to hook send path", e);
-        }
-        if (intent.modeId) applyIntent(intent);
-    },
+export function startMode() {
+    if (modeStarted) return;
+    modeStarted = true;
+    setIntent(snapshot());
+    lastNavKey = navKey();
+    abort = new AbortController();
+    const { signal } = abort;
+    document.addEventListener("pointerup", onPointerUp, { capture: true, signal });
+    document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
+    document.addEventListener("keydown", onKeyDown, { capture: true, signal });
+    bindObs();
+    schedulePaint();
+    try {
+        wrapSendFns();
+        hookFetch();
+        hookXhr();
+    } catch (e) {
+        logger.warn("Failed to hook send path", e);
+    }
+    if (intent.modeId) applyIntent(intent);
+}
 
-    stop() {
-        abort?.abort();
-        abort = null;
-        if (loadTail) {
-            clearTimeout(loadTail);
-            loadTail = null;
-        }
-        if (overrideTail) {
-            clearTimeout(overrideTail);
-            overrideTail = null;
-        }
-        if (paintRaf) cancelAnimationFrame(paintRaf);
-        paintRaf = 0;
-        obs?.disconnect();
-        obs = null;
-        unpaint();
-        setRestoreFlag(false);
-        unhookFetch();
-        unhookXhr();
-        unwrapSendFns();
-        for (const f of flushing.values()) clearTimeout(f.timer);
-        flushing.clear();
-        sentModel.clear();
-        ackedModel.clear();
-        busy.clear();
-        held.clear();
-        itemIntent.clear();
-        itemBody.clear();
-        removed.clear();
-        diverting = null;
-        pendingEnqueue = null;
-        sendOverride = null;
-        overrideCid = "";
-        applying = false;
-        userPicking = false;
-        awaitingMenu = false;
-        setIntent(EMPTY);
-        lastNavKey = "";
-    },
+export function stopMode() {
+    if (!modeStarted) return;
+    modeStarted = false;
+    abort?.abort();
+    abort = null;
+    if (loadTail) {
+        clearTimeout(loadTail);
+        loadTail = null;
+    }
+    if (overrideTail) {
+        clearTimeout(overrideTail);
+        overrideTail = null;
+    }
+    if (paintRaf) cancelAnimationFrame(paintRaf);
+    paintRaf = 0;
+    obs?.disconnect();
+    obs = null;
+    unpaint();
+    setRestoreFlag(false);
+    unhookFetch();
+    unhookXhr();
+    unwrapSendFns();
+    for (const f of flushing.values()) clearTimeout(f.timer);
+    flushing.clear();
+    sentModel.clear();
+    ackedModel.clear();
+    busy.clear();
+    held.clear();
+    itemIntent.clear();
+    itemBody.clear();
+    removed.clear();
+    diverting = null;
+    pendingEnqueue = null;
+    sendOverride = null;
+    overrideCid = "";
+    applying = false;
+    userPicking = false;
+    awaitingMenu = false;
+    setIntent(EMPTY);
+    lastNavKey = "";
+}
 
-    onSettingsChange() {
-        schedulePaint();
-    },
+export function onModeSettingsChange() {
+    schedulePaint();
+}
 
-    events: {
-        streamEnd: onStreamEnd,
-    },
+export function onModeStreamEnd(data: VoidPPEventMap["streamEnd"]) {
+    onStreamEnd(data);
+}
 
-    zustand: {
-        ModesStore: {
-            selector: (s: ModesStoreState) => s.selectedModeId,
-            handler: onPicker,
-        },
-        ChatPageStore: {
-            selector: (s: ChatPageStoreState) => `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.projectId ?? ""}|${s.modelMode}|${s.activeModelId}`,
-            handler: onChatPage,
-        },
-        MessageStore: {
-            selector: queueKey,
-            handler: onQueue,
-        },
-        RoutingStore: {
-            selector: (s: RoutingStoreState) => String(s.route.conversationId ?? ""),
-            handler: () => {
-                const key = navKey();
-                if (key === lastNavKey) return;
-                lastNavKey = key;
-                onNavigate();
-            },
-        },
-        ResponseStore: {
-            selector: (s: ResponseStoreState) => `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`,
-            handler: () => {
-                wrapSendFns();
-                syncRestoreFlag();
-                fightHydrate();
-            },
-        },
-    },
-});
+export function modePickerKey(s: ModesStoreState) {
+    return s.selectedModeId;
+}
+
+export function onModePicker(id: string) {
+    onPicker(id);
+}
+
+export function modeChatKey(s: ChatPageStoreState) {
+    return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.projectId ?? ""}|${s.modelMode}|${s.activeModelId}`;
+}
+
+export function onModeChatPage() {
+    onChatPage();
+}
+
+export function modeQueueKey(s: MessageStoreState) {
+    return queueKey(s);
+}
+
+export function onModeQueue() {
+    onQueue();
+}
+
+export function modeRouteKey(s: RoutingStoreState) {
+    return String(s.route.conversationId ?? "");
+}
+
+export function onModeRoute() {
+    const key = navKey();
+    if (key === lastNavKey) return;
+    lastNavKey = key;
+    onNavigate();
+}
+
+export function modeHydrateKey(s: ResponseStoreState) {
+    return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`;
+}
+
+export function onModeHydrate() {
+    wrapSendFns();
+    syncRestoreFlag();
+    fightHydrate();
+}

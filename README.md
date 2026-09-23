@@ -32,8 +32,7 @@ Install by clicking the badge (jsDelivr, default `voidpp` branch, no GitHub `CSP
 | <img src="https://api.iconify.design/lucide/blend.svg?color=%238b949e" width="16" height="16" alt=""> ComposerOpacity | On | Customizable chat input background opacity and blur. |
 | <img src="https://api.iconify.design/lucide/layout-grid.svg?color=%238b949e" width="16" height="16" alt=""> RecentTopics | On | Switch recently opened chats with Ctrl+` (glass cards, project name, last Q&A preview). |
 | <img src="https://api.iconify.design/lucide/minimize-2.svg?color=%238b949e" width="16" height="16" alt=""> CompactModeSelect | On | Keep the chat input model selector as an icon at every width. |
-| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | On | Each queued message shows a mode chip and sends with that item's mode. Click the chip to switch it. Switching chats keeps the picker until load settles (`stickyOnNavigate`, `showQueueMode`). |
-| <img src="https://api.iconify.design/lucide/rotate-ccw.svg?color=%238b949e" width="16" height="16" alt=""> QueuePersist | On | Keep unsent queued messages in this browser and put them back after a refresh. |
+| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | On | Each queued message keeps the mode it was queued with (`showQueueMode`). Switching chats keeps the picker (`stickyOnNavigate`). Unsent rows come back after a refresh (`persistAcrossRefresh`). |
 | <img src="https://api.iconify.design/lucide/text-quote.svg?color=%238b949e" width="16" height="16" alt=""> UserQuotes | On | Keep quoted lines in your own bubbles marked with a visible left bar after markdown hides `>`. |
 | <img src="https://api.iconify.design/lucide/message-square-quote.svg?color=%238b949e" width="16" height="16" alt=""> BetterQuotes | On | Scroll a composer quote chip (or a sent quote card) to the exact passage (`jumpToPassage`). Keep that quote card when switching chats (`persistAcrossChats`). |
 | <img src="https://api.iconify.design/lucide/blocks.svg?color=%238b949e" width="16" height="16" alt=""> NoSidebarPlugins | On | Move the sidebar Plugins button into the avatar menu (next to Void++ / Help). |
@@ -55,7 +54,7 @@ Install by clicking the badge (jsDelivr, default `voidpp` branch, no GitHub `CSP
 | Feature | Default | What it does |
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | On | Hide inaccessible models in the model selector again. |
-| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | On | A queued row sends with that row's mode, not the model of the turn that just finished. |
+| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | On | A queued row sends with that row's mode, not the model of the turn that just finished. |
 | <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | On | Keep the right panel closed without crashing plugin start when the closer is not on the store snapshot. |
 
 #### Settings UI
@@ -77,3 +76,5 @@ Install by clicking the badge (jsDelivr, default `voidpp` branch, no GitHub `CSP
 | <img src="https://api.iconify.design/lucide/panel-right-close.svg?color=%238b949e" width="16" height="16" alt=""> NoRightPanel | — | Merged into BetterCanvas. |
 | <img src="https://api.iconify.design/lucide/message-square-quote.svg?color=%238b949e" width="16" height="16" alt=""> QuoteSticky | — | Merged into BetterQuotes (`persistAcrossChats`). |
 | <img src="https://api.iconify.design/lucide/text-search.svg?color=%238b949e" width="16" height="16" alt=""> QuoteJump | — | Merged into BetterQuotes (`jumpToPassage`). |
+| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | — | Merged into BetterQueue (`showQueueMode`, `stickyOnNavigate`). |
+| <img src="https://api.iconify.design/lucide/rotate-ccw.svg?color=%238b949e" width="16" height="16" alt=""> QueuePersist | — | Merged into BetterQueue (`persistAcrossRefresh`). |

@@ -4,18 +4,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { RotateCcwIcon } from "@components/icons";
 import type { ModelId, ModelMode } from "@grok-types/enums/models";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { GatewayConversation, GatewayQueueItem, GatewayTurnArgs, MessageStoreState } from "@grok-types/stores/MessageStore";
 import type { ResponseStoreState } from "@grok-types/stores/ResponseStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { ChatPageStore, MessageStore, ModesStore, ResponseStore, RoutingStore, SessionStore } from "@turbopack/common/stores";
-import { Devs } from "@utils/constants";
 import { idbGet, idbSet } from "@utils/idb";
 import { Logger } from "@utils/Logger";
 import { pageWindow } from "@utils/misc";
-import definePlugin, { StartAt } from "@utils/types";
 
 import {
     applyRowText,
@@ -35,7 +32,6 @@ import {
 const logger = new Logger("QueuePersist");
 
 const ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
-const WRAP_MARK = Symbol.for("voidpp.modeSync.wrapped");
 
 const DB_KEY = "queue-persist:v1";
 const LOCAL_ACCOUNT = "local";
@@ -73,8 +69,6 @@ let timerCid = "";
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let domTimer: ReturnType<typeof setTimeout> | null = null;
 let obs: MutationObserver | null = null;
-let origQueue: SendFn | null = null;
-let wrappedQueue: SendFn | null = null;
 let origReconnect: SendFn | null = null;
 let wrappedReconnect: SendFn | null = null;
 
@@ -531,43 +525,14 @@ function snapFromArgs(raw: unknown): { cid: string; snap: QueueSnap } | null {
     };
 }
 
-function makeQueueWrapper(orig: SendFn): SendFn {
-    return function voidQueuePersist(this: unknown, ...args: unknown[]) {
-        if (suppress || onImagine()) return orig.apply(this, args);
-        const parsed = snapFromArgs(args[0]);
-        if (parsed) pushPending(parsed.cid, parsed.snap);
-        const result = orig.apply(this, args);
-        if (ready && !replaying) syncFromStore();
-        return result;
-    };
+export function noteEnqueue(args: unknown[]) {
+    if (!alive || suppress || onImagine()) return;
+    const parsed = snapFromArgs(args[0]);
+    if (parsed) pushPending(parsed.cid, parsed.snap);
 }
 
-function wrapQueue() {
-    let state: MessageStoreState;
-    try {
-        state = MessageStore.useMessageStore.getState();
-    } catch {
-        return;
-    }
-    const current = state.queueMessage as SendFn | undefined;
-    if (typeof current !== "function" || current === wrappedQueue) return;
-    origQueue = current;
-    const wrapped = makeQueueWrapper(current);
-    if ((current as SendFn & Record<symbol, unknown>)[WRAP_MARK] === true) {
-        (wrapped as SendFn & Record<symbol, unknown>)[WRAP_MARK] = true;
-    }
-    wrappedQueue = wrapped;
-    MessageStore.useMessageStore.setState({ queueMessage: wrapped as MessageStoreState["queueMessage"] });
-}
-
-function unwrapQueue() {
-    if (!origQueue || !wrappedQueue) return;
-    try {
-        const state = MessageStore.useMessageStore.getState();
-        if (state.queueMessage === wrappedQueue) MessageStore.useMessageStore.setState({ queueMessage: origQueue as MessageStoreState["queueMessage"] });
-    } catch { /* store gone */ }
-    origQueue = null;
-    wrappedQueue = null;
+export function afterEnqueue() {
+    if (alive && ready && !replaying) syncFromStore();
 }
 
 function wrapReconnect() {
@@ -628,14 +593,14 @@ function bindObs() {
     obs.observe(root, { childList: true, subtree: true, characterData: true });
 }
 
-function onQueue() {
-    wrapQueue();
+function onPersistStore() {
+    if (!alive) return;
     syncFromStore();
     scheduleCurrent();
 }
 
-function onPage() {
-    wrapQueue();
+function onPersistPage() {
+    if (!alive) return;
     wrapReconnect();
     scheduleCurrent();
 }
@@ -644,73 +609,93 @@ async function boot() {
     await load();
     if (!alive) return;
     ready = true;
-    wrapQueue();
     wrapReconnect();
     bindObs();
     syncFromStore();
     scheduleCurrent();
 }
 
-export default definePlugin({
-    name: "QueuePersist",
-    icon: RotateCcwIcon,
-    description: "Restore unsent queued messages in this browser after a refresh.",
-    authors: [Devs.p],
-    tags: ["chat"],
-    enabledByDefault: true,
-    startAt: StartAt.TurbopackReady,
+export function startPersist() {
+    if (alive) return;
+    alive = true;
+    ready = false;
+    void boot();
+}
 
-    start() {
-        alive = true;
-        ready = false;
-        void boot();
-    },
+export function stopPersist() {
+    if (!alive && !ready) return;
+    alive = false;
+    ready = false;
+    replaying = false;
+    suppress = false;
+    reconnects = 0;
+    if (timer) clearTimeout(timer);
+    timer = null;
+    timerCid = "";
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = null;
+    if (domTimer) clearTimeout(domTimer);
+    domTimer = null;
+    obs?.disconnect();
+    obs = null;
+    unwrapReconnect();
+    memory.clear();
+    pending.clear();
+    decided.clear();
+    restoring.clear();
+    retried.clear();
+    waits.clear();
+    doc = emptyDoc();
+    lastQueueKey = "";
+    lastNavKey = "";
+}
 
-    stop() {
-        alive = false;
-        ready = false;
-        replaying = false;
-        suppress = false;
-        reconnects = 0;
-        if (timer) clearTimeout(timer);
-        timer = null;
-        timerCid = "";
-        if (saveTimer) clearTimeout(saveTimer);
-        saveTimer = null;
-        if (domTimer) clearTimeout(domTimer);
-        domTimer = null;
-        obs?.disconnect();
-        obs = null;
-        unwrapQueue();
-        unwrapReconnect();
-        memory.clear();
-        pending.clear();
-        decided.clear();
-        restoring.clear();
-        retried.clear();
-        waits.clear();
-        doc = emptyDoc();
-    },
+export function persistQueueKey(s: MessageStoreState) {
+    return Object.entries(s.conversations ?? {}).map(([cid, conv]) => {
+        const items = [...(conv.queue ?? [])].sort((a, b) => a.position - b.position);
+        return `${cid}=${items.map(item => `${qid(item)}:${item.position}:${nodeFields(conv, qid(item)).text.length}`).join(",")}`;
+    }).sort().join("|");
+}
 
-    zustand: {
-        MessageStore: {
-            selector: (s: MessageStoreState) => Object.entries(s.conversations ?? {}).map(([cid, conv]) => {
-                const items = [...(conv.queue ?? [])].sort((a, b) => a.position - b.position);
-                return `${cid}=${items.map(item => `${qid(item)}:${item.position}:${nodeFields(conv, qid(item)).text.length}`).join(",")}`;
-            }).sort().join("|"),
-            handler: onQueue,
-        },
-        ChatPageStore: {
-            selector: (s: ChatPageStoreState) => `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.chatPageLoaded ? 1 : 0}`,
-            handler: onPage,
-        },
-        ResponseStore: {
-            selector: (s: ResponseStoreState) => `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.inflightPromisesByConversationId ?? {}).join(",")}`,
-            handler: onPage,
-        },
-        RoutingStore: {
-            selector: (s: RoutingStoreState) => `${s.route?.page ?? ""}|${s.route?.conversationId ?? ""}`,
-            handler: onPage,
-        },
-    },
-});
+let lastQueueKey = "";
+let lastNavKey = "";
+
+export function onPersistQueue() {
+    let key = "";
+    try {
+        key = persistQueueKey(MessageStore.useMessageStore.getState());
+    } catch {
+        key = "";
+    }
+    if (key === lastQueueKey) return;
+    lastQueueKey = key;
+    onPersistStore();
+}
+
+export function persistChatKey(s: ChatPageStoreState) {
+    return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.chatPageLoaded ? 1 : 0}`;
+}
+
+export function persistResponseKey(s: ResponseStoreState) {
+    return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.inflightPromisesByConversationId ?? {}).join(",")}`;
+}
+
+export function persistRouteKey(s: RoutingStoreState) {
+    return `${s.route?.page ?? ""}|${s.route?.conversationId ?? ""}`;
+}
+
+export function onPersistNav() {
+    let key = "";
+    try {
+        key = [
+            persistChatKey(ChatPageStore.useChatPageStore.getState()),
+            persistRouteKey(RoutingStore.useRoutingStore.getState()),
+            persistResponseKey(ResponseStore.useResponseStore.getState()),
+        ].join("|");
+    } catch {
+        key = "";
+    }
+    if (key === lastNavKey) return;
+    lastNavKey = key;
+    onPersistPage();
+}

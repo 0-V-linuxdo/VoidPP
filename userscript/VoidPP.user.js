@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.11
+// @version      20260923.12
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.11] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.12] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7505,9 +7505,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"7f498c4"}`
-    }, `(${"7f498c4"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6d61d40"}`
+    }, `(${"6d61d40"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10708,6 +10708,2537 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   });
 
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterQueue/styles.css
+  registerStyle("betterQueue", `.void-ms-qchip {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-block-start: 0.125rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: hsl(var(--fg-secondary));
+    cursor: pointer;
+}
+
+.void-ms-qchip:is(:hover, :focus-visible) {
+    background: hsl(var(--button-ghost-hover));
+    color: hsl(var(--fg-primary));
+}
+
+.void-ms-qchip:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px hsl(var(--fg-accent));
+}
+
+.void-ms-qchip svg {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.void-ms-qmenu {
+    position: fixed;
+    z-index: 90;
+    min-width: 8.75rem;
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    background: hsl(var(--surface-l2));
+    box-shadow:
+        inset 0 0 0 1px hsl(var(--border-l2)),
+        0 0.5rem 1.25rem rgb(0 0 0 / 24%);
+    color: hsl(var(--fg-primary));
+}
+
+.void-ms-qopt {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: inherit;
+    font-size: 0.875rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.void-ms-qopt:is(:hover, :focus-visible) {
+    background: hsl(var(--button-ghost-hover));
+}
+
+.void-ms-qopt[aria-selected="true"] {
+    color: hsl(var(--fg-accent));
+}
+
+.void-ms-qopt svg {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+`);
+
+  // src/plugins/betterQueue/sync.ts
+  var TTL_MS = 24 * 60 * 60 * 1000;
+  var MAX_ITEMS = 30;
+  var PENDING_MS = 2000;
+  var TEXT_MAX = 1e5;
+  var QUOTE_MAX = 20000;
+  function clipText(value, max = TEXT_MAX) {
+    if (typeof value !== "string")
+      return "";
+    const text = value.trim();
+    return text.length > max ? text.slice(0, max) : text;
+  }
+  function fileIdsOf(value) {
+    if (!Array.isArray(value))
+      return [];
+    const out = [];
+    for (const item of value) {
+      if (out.length >= 64)
+        break;
+      if (typeof item === "string") {
+        const id = item.trim();
+        if (id && id.length <= 200)
+          out.push(id);
+        continue;
+      }
+      if (!item || typeof item !== "object")
+        continue;
+      const rec = item;
+      const raw = rec.fileAttachmentId ?? rec.fileId ?? rec.assetId ?? rec.id;
+      if (typeof raw !== "string")
+        continue;
+      const id = raw.trim();
+      if (id && id.length <= 200)
+        out.push(id);
+    }
+    return out;
+  }
+  function freshSnaps(items, now) {
+    return items.filter((item) => item && now - item.savedAt < TTL_MS && (item.text || item.fileAttachmentIds.length)).slice(0, MAX_ITEMS);
+  }
+  function shouldReplay(officialCount, saved, now) {
+    return officialCount === 0 && freshSnaps(saved, now).length > 0;
+  }
+  function intentOf(intent) {
+    if (!intent?.modeId)
+      return;
+    return {
+      modeId: intent.modeId,
+      modelMode: intent.modelMode || "",
+      activeModelId: intent.activeModelId || ""
+    };
+  }
+  function bindPending(saved, official, pending, now) {
+    const known = new Set(saved.map((item) => item.id));
+    const left = pending.filter((item) => now - item.savedAt < PENDING_MS);
+    const extra = [];
+    for (const off of official) {
+      if (!off.id || known.has(off.id))
+        continue;
+      const src = left.shift();
+      if (!src)
+        continue;
+      extra.push({
+        ...src,
+        id: off.id,
+        position: off.position,
+        parentId: off.parentId,
+        savedAt: now
+      });
+      known.add(off.id);
+    }
+    return { saved: saved.concat(extra), pending: left };
+  }
+  function projectQueue(saved, official, pending, hydrated, now) {
+    const fresh = freshSnaps(saved, now);
+    const bound = bindPending(fresh, official, pending, now);
+    if (!official.length) {
+      if (hydrated && !bound.pending.length)
+        return [];
+      return freshSnaps(bound.saved, now);
+    }
+    const byId = new Map(bound.saved.map((item) => [item.id, item]));
+    const next = [];
+    const ordered = official.slice().sort((a, b) => a.position - b.position || a.id.localeCompare(b.id));
+    for (const off of ordered) {
+      if (!off.id)
+        continue;
+      const prev = byId.get(off.id);
+      const text = off.text || prev?.text || "";
+      const fileAttachmentIds = off.fileAttachmentIds.length ? off.fileAttachmentIds : prev?.fileAttachmentIds ?? [];
+      const parentQuotedText = off.parentQuotedText || prev?.parentQuotedText || "";
+      if (!text && !fileAttachmentIds.length)
+        continue;
+      const prevFiles = prev?.fileAttachmentIds.join("\x00") ?? "";
+      const changed = !prev || prev.text !== text || prev.position !== off.position || prev.parentQuotedText !== parentQuotedText || prev.parentId !== off.parentId || prevFiles !== fileAttachmentIds.join("\x00");
+      next.push({
+        id: off.id,
+        text,
+        fileAttachmentIds,
+        parentQuotedText,
+        parentId: off.parentId,
+        intent: intentOf(prev?.intent),
+        position: off.position,
+        savedAt: changed ? now : prev.savedAt
+      });
+      if (next.length >= MAX_ITEMS)
+        break;
+    }
+    return next;
+  }
+  function sameQueue(a, b) {
+    if (a.length !== b.length)
+      return false;
+    for (let i = 0;i < a.length; i++) {
+      const left = a[i];
+      const right = b[i];
+      if (left.id !== right.id || left.text !== right.text || left.position !== right.position)
+        return false;
+      if (left.parentId !== right.parentId || left.parentQuotedText !== right.parentQuotedText)
+        return false;
+      if (left.fileAttachmentIds.join("\x00") !== right.fileAttachmentIds.join("\x00"))
+        return false;
+      if ((left.intent?.modeId ?? "") !== (right.intent?.modeId ?? ""))
+        return false;
+      if ((left.intent?.modelMode ?? "") !== (right.intent?.modelMode ?? ""))
+        return false;
+      if ((left.intent?.activeModelId ?? "") !== (right.intent?.activeModelId ?? ""))
+        return false;
+    }
+    return true;
+  }
+  function applyRowText(saved, rows, now) {
+    if (!rows.length)
+      return saved;
+    const textById = new Map(rows.map((row) => [row.id, clipText(row.text, TEXT_MAX)]));
+    let changed = false;
+    const next = saved.map((item) => {
+      const text = textById.get(item.id) ?? "";
+      if (!text || text === item.text)
+        return item;
+      if (item.text.startsWith(text) && text.length < item.text.length)
+        return item;
+      changed = true;
+      return { ...item, text, savedAt: now };
+    });
+    return changed ? next : saved;
+  }
+  function quoteText(value) {
+    return clipText(value, QUOTE_MAX);
+  }
+
+  // src/plugins/betterQueue/persist.ts
+  var logger21 = new Logger("QueuePersist");
+  var ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
+  var DB_KEY = "queue-persist:v1";
+  var LOCAL_ACCOUNT = "local";
+  var SETTLE_MS = 450;
+  var RETRY_MS = 250;
+  var MAX_WAIT_MS = 8000;
+  var ROW_SEL = '[aria-roledescription="sortable"], [aria-roledescription="draggable"]';
+  var TOGGLE_SEL = 'button[aria-label="Toggle queued messages"], button[aria-label*="queued" i]';
+  var RAIL_SEL = '[aria-label="Remove from queue"], [aria-label="Send now"], [aria-label="Edit queued message"]';
+  var SEND_NOW_SEL = '[aria-label="Send now"]';
+  var memory = new Map;
+  var pending2 = new Map;
+  var decided = new Set;
+  var restoring = new Set;
+  var retried = new Set;
+  var waits = new Map;
+  var doc = { version: 1, buckets: {} };
+  var alive = false;
+  var ready = false;
+  var replaying = false;
+  var suppress = false;
+  var reconnects = 0;
+  var seq = 0;
+  var timer = null;
+  var timerCid = "";
+  var saveTimer = null;
+  var domTimer = null;
+  var obs = null;
+  var origReconnect = null;
+  var wrappedReconnect = null;
+  function emptyDoc() {
+    return { version: 1, buckets: {} };
+  }
+  function accountId() {
+    try {
+      const user = SessionStore.getSessionStoreState?.()?.user ?? SessionStore.sessionStoreState?.getState?.()?.user;
+      return user?.userId || user?.xUserId || LOCAL_ACCOUNT;
+    } catch {
+      return LOCAL_ACCOUNT;
+    }
+  }
+  function onImagine() {
+    try {
+      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+      if (page.startsWith("imagine"))
+        return true;
+    } catch {}
+    try {
+      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+      return false;
+    }
+  }
+  function currentCid2() {
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      const id = chat.conversationId || chat.optimisticConversationId;
+      if (id)
+        return String(id);
+    } catch {}
+    try {
+      return String(RoutingStore.useRoutingStore.getState().route?.conversationId ?? "");
+    } catch {
+      return "";
+    }
+  }
+  function liveIntent() {
+    const host = pageWindow;
+    const forced = host[ENQUEUE_FORCE] ?? host[Symbol.for("voidpp.modeSync.intent")];
+    if (forced?.modeId) {
+      return {
+        modeId: String(forced.modeId),
+        modelMode: String(forced.modelMode || ""),
+        activeModelId: String(forced.activeModelId || "")
+      };
+    }
+    try {
+      const modeId = String(ModesStore.useModesStore.getState().selectedModeId || "");
+      if (!modeId)
+        return;
+      const chat = ChatPageStore.useChatPageStore.getState();
+      return {
+        modeId,
+        modelMode: String(chat.modelMode || ""),
+        activeModelId: String(chat.activeModelId || "")
+      };
+    } catch {
+      return;
+    }
+  }
+  function withIntent(intent, fn) {
+    if (!intent?.modeId)
+      return fn();
+    let modes = null;
+    let chat = null;
+    let prevMode = "";
+    let prevModel = "";
+    let prevActive = "";
+    try {
+      modes = ModesStore.useModesStore.getState();
+      chat = ChatPageStore.useChatPageStore.getState();
+      prevMode = String(modes.selectedModeId || "");
+      prevModel = String(chat.modelMode || "");
+      prevActive = String(chat.activeModelId || "");
+      if (prevMode !== intent.modeId)
+        modes.setSelectedModeId(intent.modeId, { source: "sync" });
+      if (intent.modelMode && prevModel !== intent.modelMode)
+        chat.setModelMode(intent.modelMode);
+      if (intent.activeModelId && prevActive !== intent.activeModelId)
+        chat.setActiveModelId(intent.activeModelId);
+    } catch (e) {
+      logger21.debug("intent apply failed", e);
+    }
+    try {
+      if (intent?.modeId)
+        pageWindow[ENQUEUE_FORCE] = intent;
+      return fn();
+    } finally {
+      delete pageWindow[ENQUEUE_FORCE];
+      try {
+        if (modes && prevMode && modes.selectedModeId !== prevMode)
+          modes.setSelectedModeId(prevMode, { source: "sync" });
+        if (chat && prevModel && String(chat.modelMode || "") !== prevModel)
+          chat.setModelMode(prevModel);
+        if (chat && prevActive && String(chat.activeModelId || "") !== prevActive)
+          chat.setActiveModelId(prevActive);
+      } catch (e) {
+        logger21.debug("intent restore failed", e);
+      }
+    }
+  }
+  function qid(item) {
+    const rec = item;
+    return String(rec.queue_item_id || rec.queueItemId || "");
+  }
+  function qparent(item) {
+    const rec = item;
+    const parent = rec.parent_response_id ?? rec.parentResponseId;
+    return parent == null || parent === "" ? null : String(parent);
+  }
+  function nodeFields(conv, id) {
+    const node = conv.nodes?.[id];
+    const content = node?.content;
+    if (!content)
+      return { text: "", fileAttachmentIds: [], parentQuotedText: "" };
+    return {
+      text: clipText(content.message) || clipText(content.query),
+      fileAttachmentIds: fileIdsOf(content.fileAttachments ?? content.fileUris),
+      parentQuotedText: quoteText(content.parentQuotedText)
+    };
+  }
+  function toOfficial(conv) {
+    if (!conv?.queue?.length)
+      return [];
+    return conv.queue.map((item) => {
+      const id = qid(item);
+      const fields = nodeFields(conv, id);
+      return {
+        id,
+        position: Number(item.position) || 0,
+        parentId: qparent(item),
+        ...fields
+      };
+    }).filter((item) => item.id);
+  }
+  function readOfficial(cid) {
+    try {
+      return toOfficial(MessageStore.useMessageStore.getState().conversations?.[cid]);
+    } catch {
+      return [];
+    }
+  }
+  function idSet(cid) {
+    return new Set(readOfficial(cid).map((item) => item.id));
+  }
+  function localId() {
+    seq += 1;
+    return `pending:${seq}`;
+  }
+  function pushPending(cid, snap) {
+    const list = pending2.get(cid) ?? [];
+    list.push(snap);
+    pending2.set(cid, list);
+  }
+  function trayCard() {
+    const btn = document.querySelector(TOGGLE_SEL);
+    if (!(btn instanceof HTMLElement))
+      return null;
+    let node = btn;
+    let card = null;
+    while (node && node !== document.body && !node.matches("main")) {
+      if (node.querySelector(RAIL_SEL))
+        card = node;
+      node = node.parentElement;
+    }
+    return card ?? btn.closest(".rounded-xl") ?? btn.parentElement;
+  }
+  function queueRows(card) {
+    const sortable = [...card.querySelectorAll(ROW_SEL)].filter((el) => el.querySelector(RAIL_SEL) || el.querySelector(".line-clamp-2"));
+    if (sortable.length)
+      return sortable;
+    const anchors = [...card.querySelectorAll(SEND_NOW_SEL)];
+    const use = anchors.length ? anchors : [...card.querySelectorAll('[aria-label="Remove from queue"]')];
+    const rows = [];
+    const seen = new Set;
+    for (const btn of use) {
+      let row = btn;
+      for (let parent = btn.parentElement;parent && parent !== card && card.contains(parent); parent = parent.parentElement) {
+        const n = Math.max(parent.querySelectorAll(SEND_NOW_SEL).length, parent.querySelectorAll('[aria-label="Remove from queue"]').length);
+        if (n > 1)
+          break;
+        row = parent;
+      }
+      if (seen.has(row))
+        continue;
+      seen.add(row);
+      rows.push(row);
+    }
+    return rows;
+  }
+  function rowTexts(ids) {
+    const card = trayCard();
+    if (!card)
+      return [];
+    const rows = queueRows(card);
+    const out = [];
+    for (let i = 0;i < rows.length; i++) {
+      const row = rows[i];
+      const id = row.getAttribute("data-void-qitem") || ids[i] || "";
+      const text = (row.querySelector(".line-clamp-2")?.textContent ?? "").trim();
+      if (id && text)
+        out.push({ id, text });
+    }
+    return out;
+  }
+  function remember(cid, next) {
+    const prev = memory.get(cid) ?? [];
+    if (sameQueue(prev, next))
+      return;
+    if (next.length)
+      memory.set(cid, next);
+    else
+      memory.delete(cid);
+    persistSoon();
+  }
+  function syncOne(cid, hydrated) {
+    const now = Date.now();
+    const official = readOfficial(cid);
+    const bound = bindPending(freshSnaps(memory.get(cid) ?? [], now), official, pending2.get(cid) ?? [], now);
+    if (bound.pending.length)
+      pending2.set(cid, bound.pending);
+    else
+      pending2.delete(cid);
+    let next = projectQueue(bound.saved, official, bound.pending, hydrated, now);
+    if (hydrated && !replaying && cid === currentCid2())
+      next = applyRowText(next, rowTexts(next.map((item) => item.id)), now);
+    remember(cid, next);
+  }
+  function syncFromStore() {
+    if (!ready || replaying || onImagine())
+      return;
+    let convs = {};
+    try {
+      convs = MessageStore.useMessageStore.getState().conversations ?? {};
+    } catch {
+      return;
+    }
+    const seen = new Set;
+    for (const cid of Object.keys(convs)) {
+      seen.add(cid);
+      syncOne(cid, decided.has(cid));
+    }
+    for (const cid of memory.keys()) {
+      if (seen.has(cid) || !decided.has(cid))
+        continue;
+      syncOne(cid, true);
+    }
+  }
+  function bucketsToMemory(account) {
+    const primary = doc.buckets[account] ?? {};
+    const local = account === LOCAL_ACCOUNT ? {} : doc.buckets[LOCAL_ACCOUNT] ?? {};
+    const cids = new Set([...Object.keys(primary), ...Object.keys(local), ...memory.keys()]);
+    const now = Date.now();
+    for (const cid of cids) {
+      const fromPrimary = freshSnaps(primary[cid] ?? [], now);
+      const fromLocal = freshSnaps(local[cid] ?? [], now);
+      const disk = fromPrimary.length ? fromPrimary : fromLocal;
+      const live = memory.get(cid) ?? [];
+      if (!live.length && disk.length)
+        memory.set(cid, disk);
+    }
+  }
+  function recordBuckets() {
+    const now = Date.now();
+    const out = {};
+    for (const [cid, items] of memory) {
+      const fresh = freshSnaps(items, now);
+      if (fresh.length)
+        out[cid] = fresh;
+    }
+    return out;
+  }
+  function persistSoon() {
+    if (saveTimer)
+      return;
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      persist2();
+    }, 80);
+  }
+  async function persist2() {
+    if (!alive)
+      return;
+    const account = accountId();
+    doc.buckets[account] = recordBuckets();
+    if (account !== LOCAL_ACCOUNT && doc.buckets[LOCAL_ACCOUNT]) {
+      for (const cid of Object.keys(doc.buckets[account] ?? {}))
+        delete doc.buckets[LOCAL_ACCOUNT][cid];
+      if (!Object.keys(doc.buckets[LOCAL_ACCOUNT]).length)
+        delete doc.buckets[LOCAL_ACCOUNT];
+    }
+    try {
+      await idbSet(DB_KEY, doc);
+    } catch (e) {
+      logger21.debug("persist failed", e);
+    }
+  }
+  async function load() {
+    try {
+      const raw = await idbGet(DB_KEY);
+      if (raw && raw.version === 1 && raw.buckets && typeof raw.buckets === "object")
+        doc = raw;
+      else
+        doc = emptyDoc();
+    } catch (e) {
+      logger21.debug("load failed", e);
+      doc = emptyDoc();
+    }
+    bucketsToMemory(accountId());
+  }
+  function loadBusy(cid) {
+    try {
+      const state = ResponseStore.useResponseStore.getState();
+      return !!(state.initialResponsesPromisesByConversationId?.[cid] || state.nodesPromisesByConversationId?.[cid] || state.inflightPromisesByConversationId?.[cid]);
+    } catch {
+      return false;
+    }
+  }
+  function scheduleCurrent() {
+    if (!alive || !ready || replaying)
+      return;
+    const cid = currentCid2();
+    if (!cid || onImagine() || decided.has(cid) || restoring.has(cid))
+      return;
+    if (timer && timerCid !== cid) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    timerCid = cid;
+    if (!waits.has(cid))
+      waits.set(cid, Date.now());
+    const elapsed = Date.now() - (waits.get(cid) ?? 0);
+    const busy = (loadBusy(cid) || reconnects > 0) && elapsed < MAX_WAIT_MS;
+    if (timer)
+      clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      restore(cid);
+    }, busy ? RETRY_MS : SETTLE_MS);
+  }
+  function sleep2(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  async function replay(cid, saved) {
+    const placed = [];
+    const ordered = freshSnaps(saved, Date.now()).slice().sort((a, b) => a.position - b.position);
+    for (const item of ordered) {
+      const before = idSet(cid);
+      suppress = true;
+      try {
+        await withIntent(item.intent, () => {
+          const state = MessageStore.useMessageStore.getState();
+          return state.queueMessage({
+            convId: cid,
+            parentId: item.parentId,
+            text: item.text,
+            fileAttachmentIds: item.fileAttachmentIds.length ? item.fileAttachmentIds : undefined,
+            parentQuotedText: item.parentQuotedText || undefined
+          });
+        });
+      } catch (e) {
+        logger21.debug("replay failed", e);
+      } finally {
+        suppress = false;
+      }
+      let neu = readOfficial(cid).find((off) => !before.has(off.id));
+      if (!neu) {
+        await sleep2(40);
+        neu = readOfficial(cid).find((off) => !before.has(off.id));
+      }
+      if (neu) {
+        placed.push({
+          ...item,
+          id: neu.id,
+          position: neu.position,
+          parentId: neu.parentId,
+          savedAt: Date.now()
+        });
+      } else {
+        placed.push(item);
+      }
+    }
+    return placed;
+  }
+  async function restore(cid) {
+    if (!alive || !ready || decided.has(cid) || restoring.has(cid) || replaying)
+      return;
+    if (currentCid2() !== cid || onImagine())
+      return;
+    const elapsed = Date.now() - (waits.get(cid) ?? 0);
+    if ((loadBusy(cid) || reconnects > 0) && elapsed < MAX_WAIT_MS) {
+      scheduleCurrent();
+      return;
+    }
+    const official = readOfficial(cid);
+    if (official.length) {
+      syncOne(cid, true);
+      decided.add(cid);
+      return;
+    }
+    const saved = freshSnaps(memory.get(cid) ?? [], Date.now());
+    if (!shouldReplay(0, saved, Date.now())) {
+      syncOne(cid, true);
+      decided.add(cid);
+      return;
+    }
+    restoring.add(cid);
+    replaying = true;
+    let retry = false;
+    try {
+      const placed = await replay(cid, saved);
+      const after = readOfficial(cid);
+      if (!after.length) {
+        memory.set(cid, saved);
+        persistSoon();
+        if (!retried.has(cid)) {
+          retried.add(cid);
+          waits.set(cid, Date.now());
+          retry = true;
+        } else {
+          decided.add(cid);
+        }
+      } else {
+        memory.set(cid, placed);
+        persistSoon();
+        decided.add(cid);
+      }
+    } catch (e) {
+      logger21.debug("restore failed", e);
+      retry = true;
+    } finally {
+      replaying = false;
+      restoring.delete(cid);
+    }
+    if (retry || !decided.has(cid))
+      scheduleCurrent();
+    else if (readOfficial(cid).length)
+      syncOne(cid, true);
+  }
+  function snapFromArgs(raw) {
+    if (!raw || typeof raw !== "object")
+      return null;
+    const rec = raw;
+    const cid = String(rec.convId || "");
+    if (!cid)
+      return null;
+    const text = clipText(rec.text);
+    const fileAttachmentIds = fileIdsOf(rec.fileAttachmentIds);
+    if (!text && !fileAttachmentIds.length)
+      return null;
+    return {
+      cid,
+      snap: {
+        id: localId(),
+        text,
+        fileAttachmentIds,
+        parentQuotedText: quoteText(rec.parentQuotedText),
+        parentId: rec.parentId ?? null,
+        intent: liveIntent(),
+        position: 1e6,
+        savedAt: Date.now()
+      }
+    };
+  }
+  function noteEnqueue(args) {
+    if (!alive || suppress || onImagine())
+      return;
+    const parsed = snapFromArgs(args[0]);
+    if (parsed)
+      pushPending(parsed.cid, parsed.snap);
+  }
+  function afterEnqueue() {
+    if (alive && ready && !replaying)
+      syncFromStore();
+  }
+  function wrapReconnect() {
+    let state;
+    try {
+      state = ChatPageStore.useChatPageStore.getState();
+    } catch {
+      return;
+    }
+    const current = state.reconnectToInflightResponses;
+    if (typeof current !== "function" || current === wrappedReconnect)
+      return;
+    origReconnect = current;
+    const wrapped = function voidQueuePersistReconnect(...args) {
+      reconnects += 1;
+      let result;
+      try {
+        result = origReconnect?.apply(this, args);
+      } catch (e) {
+        reconnects = Math.max(0, reconnects - 1);
+        throw e;
+      }
+      Promise.resolve(result).finally(() => {
+        reconnects = Math.max(0, reconnects - 1);
+        scheduleCurrent();
+      });
+      return result;
+    };
+    wrappedReconnect = wrapped;
+    ChatPageStore.useChatPageStore.setState({ reconnectToInflightResponses: wrapped });
+  }
+  function unwrapReconnect() {
+    if (!origReconnect || !wrappedReconnect)
+      return;
+    try {
+      const state = ChatPageStore.useChatPageStore.getState();
+      if (state.reconnectToInflightResponses === wrappedReconnect) {
+        ChatPageStore.useChatPageStore.setState({ reconnectToInflightResponses: origReconnect });
+      }
+    } catch {}
+    origReconnect = null;
+    wrappedReconnect = null;
+  }
+  function scheduleDom() {
+    if (domTimer || !ready || replaying)
+      return;
+    domTimer = setTimeout(() => {
+      domTimer = null;
+      const cid = currentCid2();
+      if (!alive || !ready || replaying || onImagine() || !cid || !decided.has(cid))
+        return;
+      syncOne(cid, true);
+    }, 200);
+  }
+  function bindObs() {
+    obs?.disconnect();
+    const root = document.querySelector("main") ?? document.body;
+    obs = new MutationObserver(() => scheduleDom());
+    obs.observe(root, { childList: true, subtree: true, characterData: true });
+  }
+  function onPersistStore() {
+    if (!alive)
+      return;
+    syncFromStore();
+    scheduleCurrent();
+  }
+  function onPersistPage() {
+    if (!alive)
+      return;
+    wrapReconnect();
+    scheduleCurrent();
+  }
+  async function boot() {
+    await load();
+    if (!alive)
+      return;
+    ready = true;
+    wrapReconnect();
+    bindObs();
+    syncFromStore();
+    scheduleCurrent();
+  }
+  function startPersist() {
+    if (alive)
+      return;
+    alive = true;
+    ready = false;
+    boot();
+  }
+  function stopPersist() {
+    if (!alive && !ready)
+      return;
+    alive = false;
+    ready = false;
+    replaying = false;
+    suppress = false;
+    reconnects = 0;
+    if (timer)
+      clearTimeout(timer);
+    timer = null;
+    timerCid = "";
+    if (saveTimer)
+      clearTimeout(saveTimer);
+    saveTimer = null;
+    if (domTimer)
+      clearTimeout(domTimer);
+    domTimer = null;
+    obs?.disconnect();
+    obs = null;
+    unwrapReconnect();
+    memory.clear();
+    pending2.clear();
+    decided.clear();
+    restoring.clear();
+    retried.clear();
+    waits.clear();
+    doc = emptyDoc();
+    lastQueueKey = "";
+    lastNavKey = "";
+  }
+  function persistQueueKey(s) {
+    return Object.entries(s.conversations ?? {}).map(([cid, conv]) => {
+      const items = [...conv.queue ?? []].sort((a, b) => a.position - b.position);
+      return `${cid}=${items.map((item) => `${qid(item)}:${item.position}:${nodeFields(conv, qid(item)).text.length}`).join(",")}`;
+    }).sort().join("|");
+  }
+  var lastQueueKey = "";
+  var lastNavKey = "";
+  function onPersistQueue() {
+    let key = "";
+    try {
+      key = persistQueueKey(MessageStore.useMessageStore.getState());
+    } catch {
+      key = "";
+    }
+    if (key === lastQueueKey)
+      return;
+    lastQueueKey = key;
+    onPersistStore();
+  }
+  function persistChatKey(s) {
+    return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.chatPageLoaded ? 1 : 0}`;
+  }
+  function persistResponseKey(s) {
+    return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.inflightPromisesByConversationId ?? {}).join(",")}`;
+  }
+  function persistRouteKey(s) {
+    return `${s.route?.page ?? ""}|${s.route?.conversationId ?? ""}`;
+  }
+  function onPersistNav() {
+    let key = "";
+    try {
+      key = [
+        persistChatKey(ChatPageStore.useChatPageStore.getState()),
+        persistRouteKey(RoutingStore.useRoutingStore.getState()),
+        persistResponseKey(ResponseStore.useResponseStore.getState())
+      ].join("|");
+    } catch {
+      key = "";
+    }
+    if (key === lastNavKey)
+      return;
+    lastNavKey = key;
+    onPersistPage();
+  }
+
+  // src/plugins/betterQueue/settings.ts
+  var settings10 = definePluginSettings({
+    showQueueMode: {
+      type: 3 /* BOOLEAN */,
+      description: "Show a mode chip on each queued message.",
+      default: true
+    },
+    stickyOnNavigate: {
+      type: 3 /* BOOLEAN */,
+      description: "Keep the selected mode when switching chats.",
+      default: true
+    },
+    persistAcrossRefresh: {
+      type: 3 /* BOOLEAN */,
+      description: "Restore unsent queued messages in this browser after a refresh.",
+      default: true
+    }
+  });
+
+  // src/plugins/betterQueue/mode.ts
+  var logger22 = new Logger("ModeSync");
+  var CHAT_POST = /\/rest\/app-chat\/conversations/;
+  var STOP_URL = /stop|abort|cancel/i;
+  var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
+  var PIN_SEL = "[data-void-mode-id]";
+  var TRIGGER_SEL = "[data-query-bar-mode-select]";
+  var TOGGLE_SEL2 = 'button[aria-label="Toggle queued messages"], button[aria-label*="queued" i]';
+  var ROW_SEL2 = '[aria-roledescription="sortable"], [aria-roledescription="draggable"]';
+  var RAIL_SEL2 = '[aria-label="Remove from queue"], [aria-label="Send now"], [aria-label="Edit queued message"]';
+  var SEND_NOW_SEL2 = '[aria-label="Send now"]';
+  var CHIP = "void-ms-qchip";
+  var QMENU = "void-ms-qmenu";
+  var QOPT = "void-ms-qopt";
+  var QITEM = "data-void-qitem";
+  var RESTORE_ATTR = "data-void-mode-sync-restore";
+  var LOAD_TAIL_MS = 400;
+  var FLUSH_MS = 4000;
+  var OVERRIDE_MS = 6000;
+  var STASH_MS = 2000;
+  var CHAT_WRAP = ["sendResponse", "establishNewConversation"];
+  var RESP_WRAP = ["streamResponse", "streamCreateAndRespond"];
+  var MSG_WRAP = ["queueMessage", "sendMessage"];
+  var GW_TYPES = new Set(["response.create", "conversation.queue.add", "conversation.queue.interject"]);
+  var GW_MODE_KEYS = ["mode", "modeId", "mode_id", "modelMode", "model_mode"];
+  var QUEUE_ADD = "conversation.queue.add";
+  var QUEUE_REMOVE = "conversation.queue.remove";
+  var QUEUE_INTERJECT = "conversation.queue.interject";
+  var QUEUE_SILENT = new Set(["conversation.queue.edit", "conversation.queue.move"]);
+  var SESSION_OUT = new Set(["session.create", "session.update"]);
+  var SESSION_IN = new Set(["session.created", "session.updated"]);
+  var WRAP_MARK = Symbol.for("voidpp.modeSync.wrapped");
+  var ENQUEUE_FORCE2 = Symbol.for("voidpp.modeSync.enqueueIntent");
+  var REMEMBERED = Symbol.for("voidpp.modeSync.intent");
+  var GW_OK = Object.freeze({ ok: true });
+  var CATALOG = [
+    { id: "auto", label: "Auto" },
+    { id: "fast", label: "Fast" },
+    { id: "expert", label: "Expert" },
+    { id: "heavy", label: "Heavy" },
+    { id: "build", label: "Build" }
+  ];
+  var ICONS = {
+    auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke-linecap="square" d="M6.5 12.5L11.5 17.5M6.5 12.5L11.8349 6.83172C13.5356 5.02464 15.9071 4 18.3887 4H20V5.61135C20 8.09292 18.9754 10.4644 17.1683 12.1651L11.5 17.5M6.5 12.5L2 11L5.12132 7.87868C5.68393 7.31607 6.44699 7 7.24264 7H11M11.5 17.5L13 22L16.1213 18.8787C16.6839 18.3161 17 17.553 17 16.7574V13"/><path d="M4.5 16.5C4.5 16.5 4 18 4 20C6 20 7.5 19.5 7.5 19.5"/></svg>',
+    fast: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 14.25L14 4L13 9.75H19L10 20L11 14.25H5Z"/></svg>',
+    expert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>',
+    heavy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="5" height="5"/><rect x="15" y="4" width="5" height="5"/><rect x="15" y="15" width="5" height="5"/><path d="M11 18H10C7.79086 18 6 16.2091 6 14V13"/></svg>',
+    build: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6.55273 4.60517C9.30778 1.96643 12.7289 1.47144 16.748 2.49872L19.1709 3.11787L16.9883 4.34052C16.0286 4.87786 15.0421 5.85039 14.5645 6.87763C14.3308 7.38043 14.2396 7.85117 14.2852 8.26728C14.3289 8.6664 14.5051 9.08437 14.9307 9.50068L20.5068 14.9548C22.0873 16.3103 22.1844 18.7292 20.707 20.2067C19.2281 21.6857 16.8059 21.5867 15.4512 20.0017C15.4468 19.9971 15.4413 19.9919 15.4355 19.986C15.4119 19.9617 15.3773 19.9252 15.332 19.8786C15.2412 19.7851 15.1086 19.6485 14.9424 19.4772C14.6098 19.1346 14.1405 18.653 13.5977 18.0944C12.5116 16.9769 11.1275 15.5535 9.93457 14.3317C9.65277 14.0434 9.32401 13.9826 9.07031 14.0456C8.82894 14.1056 8.57482 14.2967 8.46875 14.7136L8.40137 14.9802L6.5 16.8815L1.08594 11.4675L3.08594 9.46747H3.5C3.84716 9.46747 3.9785 9.37185 4.0752 9.26728C4.22615 9.1039 4.36795 8.82197 4.55371 8.30732C4.8865 7.38517 5.29734 5.80772 6.55273 4.60517ZM11.668 13.2448C12.789 14.3937 14.0363 15.6752 15.0322 16.6999C15.5754 17.2588 16.0441 17.7419 16.377 18.0847C16.5432 18.2559 16.6757 18.3924 16.7666 18.486C16.812 18.5328 16.8474 18.569 16.8711 18.5935C16.8826 18.6053 16.8914 18.6146 16.8975 18.6208C16.9004 18.6238 16.9028 18.627 16.9043 18.6286L16.9062 18.6296L16.9072 18.6306L16.9336 18.6579L16.957 18.6862C17.5529 19.4013 18.6348 19.4509 19.293 18.7927C19.951 18.1345 19.9016 17.0526 19.1865 16.4567L19.1562 16.4313L19.1279 16.404L13.7598 11.153L11.668 13.2448ZM14.1406 4.05244C11.6131 3.80062 9.61076 4.44487 7.93555 6.04951C7.10476 6.84532 6.84901 7.83879 6.43457 8.98701C6.24676 9.5073 5.99495 10.1367 5.54395 10.6247C5.12935 11.0732 4.597 11.349 3.94531 11.4352L3.91406 11.4675L6.5 14.0534L6.61914 13.9333C6.95792 12.978 7.6995 12.326 8.58789 12.1052C9.04163 11.9924 9.51491 11.9981 9.96875 12.1159L12.5625 9.52216C12.4239 9.18685 12.3357 8.83958 12.2969 8.48505C12.2019 7.6178 12.4054 6.77723 12.751 6.03388C13.0875 5.31006 13.578 4.63529 14.1406 4.05244Z"/></svg>'
+  };
+  var Gateway = findByPropsLazy("gatewayConnectionManager");
+  var QueueItems = findByPropsLazy("queueItemText");
+  var EMPTY = { modeId: "", modelMode: "", activeModelId: "" };
+  var held = new Map;
+  var flushing = new Map;
+  var sentModel = new Map;
+  var ackedModel = new Map;
+  var busy = new Set;
+  var itemIntent = new Map;
+  var itemBody = new Map;
+  var removed = new Map;
+  var diverting = null;
+  var pendingEnqueue = null;
+  var sendOverride = null;
+  var overrideCid = "";
+  var applying = false;
+  var userPicking = false;
+  var awaitingMenu = false;
+  var intent = { ...EMPTY };
+  var origFetch = null;
+  var origXhrOpen = null;
+  var origXhrSend = null;
+  var xhrMeta = new WeakMap;
+  var origFns = new Map;
+  var wrappedFns = new Map;
+  var origGwSend = null;
+  var wrappedGwSend = null;
+  var gwHost = null;
+  var gwOff = [];
+  var abort = null;
+  var lastNavKey2 = "";
+  var loadTail = null;
+  var overrideTail = null;
+  var paintRaf = 0;
+  var obs2 = null;
+  var menu = null;
+  var menuFor = null;
+  function onImaginePage() {
+    try {
+      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+      if (page.startsWith("imagine"))
+        return true;
+    } catch {}
+    try {
+      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+      return false;
+    }
+  }
+  function modeSlug(s) {
+    return s.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
+  }
+  function apiModelMode(s) {
+    const slug = modeSlug(s);
+    if (!slug)
+      return "";
+    return `MODEL_MODE_${slug.replaceAll("-", "_").toUpperCase()}`;
+  }
+  function coerceModelMode(existing, live) {
+    const raw = live.modeId || live.modelMode;
+    if (typeof existing === "string" && existing.startsWith("MODEL_MODE_"))
+      return apiModelMode(raw);
+    if ((existing == null || existing === "") && live.modelMode.startsWith("MODEL_MODE_"))
+      return apiModelMode(raw);
+    return modeSlug(raw);
+  }
+  function qid2(item) {
+    if (!item || typeof item !== "object")
+      return "";
+    const rec = item;
+    const id = rec.queue_item_id ?? rec.queueItemId;
+    return typeof id === "string" ? id : "";
+  }
+  function forcedIntent() {
+    const raw = pageWindow[ENQUEUE_FORCE2];
+    if (!raw || typeof raw !== "object")
+      return null;
+    const rec = raw;
+    if (!rec.modeId)
+      return null;
+    return {
+      modeId: String(rec.modeId),
+      modelMode: String(rec.modelMode || ""),
+      activeModelId: String(rec.activeModelId || "")
+    };
+  }
+  function snapshot() {
+    try {
+      const modes = ModesStore.useModesStore.getState();
+      const chat = ChatPageStore.useChatPageStore.getState();
+      return {
+        modeId: String(modes.selectedModeId || ""),
+        modelMode: String(chat.modelMode || ""),
+        activeModelId: String(chat.activeModelId || "")
+      };
+    } catch {
+      return { ...EMPTY };
+    }
+  }
+  function liveIntent2() {
+    if (sendOverride?.modeId)
+      return sendOverride;
+    const cur = snapshot();
+    return cur.modeId ? cur : intent;
+  }
+  function setIntent(next) {
+    intent = next.modeId ? next : { ...EMPTY };
+    const host = pageWindow;
+    if (intent.modeId)
+      host[REMEMBERED] = intent;
+    else
+      delete host[REMEMBERED];
+  }
+  function sessionAdjusted(cid) {
+    if (!cid)
+      return "";
+    const modes = ModesStore.useModesStore.getState();
+    return String(modes.userAdjustedSessionModeByConversationId?.[cid] ?? "");
+  }
+  function enqueueIntent() {
+    const forced = forcedIntent();
+    if (forced?.modeId)
+      return forced;
+    const cur = snapshot();
+    if (cur.modeId)
+      return cur;
+    return intent.modeId ? intent : liveIntent2();
+  }
+  function pickerIntent() {
+    return intent.modeId ? intent : snapshot();
+  }
+  function setRestoreFlag(on) {
+    if (on)
+      document.documentElement.setAttribute(RESTORE_ATTR, "");
+    else
+      document.documentElement.removeAttribute(RESTORE_ATTR);
+  }
+  function loadPending() {
+    try {
+      const cid = ChatPageStore.useChatPageStore.getState().conversationId;
+      if (!cid)
+        return false;
+      const r = ResponseStore.useResponseStore.getState();
+      return !!(r.initialResponsesPromisesByConversationId?.[cid] || r.nodesPromisesByConversationId?.[cid]);
+    } catch {
+      return false;
+    }
+  }
+  function syncRestoreFlag() {
+    if (!settings10.store.stickyOnNavigate) {
+      setRestoreFlag(false);
+      return;
+    }
+    if (loadPending()) {
+      if (loadTail) {
+        clearTimeout(loadTail);
+        loadTail = null;
+      }
+      setRestoreFlag(true);
+      return;
+    }
+    if (document.documentElement.hasAttribute(RESTORE_ATTR) && !loadTail) {
+      loadTail = setTimeout(() => {
+        loadTail = null;
+        if (!loadPending())
+          setRestoreFlag(false);
+      }, LOAD_TAIL_MS);
+    }
+  }
+  function applyIntent(next) {
+    if (!next.modeId || applying || onImaginePage())
+      return;
+    const slug = modeSlug(next.modeId);
+    if (!slug)
+      return;
+    applying = true;
+    try {
+      const modes = ModesStore.useModesStore.getState();
+      const cid = currentCid3();
+      const adjusted = cid ? sessionAdjusted(cid) : slug;
+      if (modeSlug(String(modes.selectedModeId || "")) !== slug || adjusted !== slug) {
+        modes.setSelectedModeId(slug, { source: "user" });
+      }
+      const settled = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || "")) || slug;
+      const chat = ChatPageStore.useChatPageStore.getState();
+      if (modeSlug(String(chat.modelMode || "")) !== settled)
+        chat.setModelMode(settled);
+      if (settled !== slug && modeSlug(intent.modeId) === slug)
+        setIntent(captureIntent(settled, snapshot()));
+    } catch (e) {
+      logger22.debug("apply failed", e);
+    } finally {
+      applying = false;
+    }
+  }
+  function armOverride(item, cid) {
+    if (!item.modeId)
+      return;
+    sendOverride = item;
+    overrideCid = cid;
+    applyIntent(item);
+    if (overrideTail)
+      clearTimeout(overrideTail);
+    overrideTail = setTimeout(releaseOverride, OVERRIDE_MS);
+  }
+  function releaseOverride() {
+    if (overrideTail)
+      clearTimeout(overrideTail);
+    overrideTail = null;
+    overrideCid = "";
+    if (!sendOverride)
+      return;
+    sendOverride = null;
+    applyIntent(pickerIntent());
+  }
+  function captureIntent(modeId, cur) {
+    const keep = modeSlug(cur.modelMode) === modeSlug(modeId);
+    return {
+      modeId,
+      modelMode: keep ? cur.modelMode : modeId,
+      activeModelId: keep ? cur.activeModelId : ""
+    };
+  }
+  function rememberMode(modeId) {
+    if (!modeId)
+      return;
+    setIntent(captureIntent(modeId, snapshot()));
+    userPicking = false;
+    awaitingMenu = false;
+    applyIntent(intent);
+    logger22.info("intent", intent.modeId);
+  }
+  function rememberSnapshot() {
+    const next = snapshot();
+    if (!next.modeId)
+      return;
+    setIntent(captureIntent(next.modeId, next));
+    userPicking = false;
+    awaitingMenu = false;
+    logger22.info("intent", intent.modeId);
+  }
+  function fightHydrate() {
+    if (sendOverride || !settings10.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
+      return;
+    if (!loadPending())
+      return;
+    const cur = snapshot();
+    const slug = modeSlug(intent.modeId);
+    const cid = currentCid3();
+    if (modeSlug(cur.modeId) === slug && (!cid || sessionAdjusted(cid) === slug) && (!intent.modelMode || modeSlug(cur.modelMode) === slug) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
+      return;
+    logger22.info("hydrate fought", cur.modeId, "->", intent.modeId);
+    applyIntent(intent);
+  }
+  function navKey() {
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      let routeCid = "";
+      try {
+        routeCid = String(RoutingStore.useRoutingStore.getState().route.conversationId ?? "");
+      } catch {
+        routeCid = "";
+      }
+      return `${chat.conversationId ?? ""}|${chat.optimisticConversationId ?? ""}|${chat.projectId ?? ""}|${routeCid}`;
+    } catch {
+      return "";
+    }
+  }
+  function onNavigate() {
+    wrapSendFns();
+    if (!intent.modeId)
+      setIntent(snapshot());
+    closeMenu();
+    schedulePaint();
+    if (!settings10.store.stickyOnNavigate || !intent.modeId)
+      return;
+    setRestoreFlag(true);
+    applyIntent(intent);
+    syncRestoreFlag();
+  }
+  function isChatSend(rec) {
+    return "message" in rec || "fileAttachments" in rec && (("modeId" in rec) || ("modelMode" in rec));
+  }
+  function patchPayload(raw, live) {
+    if (onImaginePage() || !raw || typeof raw !== "object" || Array.isArray(raw) || !live.modeId)
+      return false;
+    const rec = raw;
+    if (!isChatSend(rec))
+      return false;
+    const slug = modeSlug(live.modeId);
+    if (!slug)
+      return false;
+    const before = rec.modeId;
+    const beforeMode = rec.modelMode;
+    const beforeModel = rec.model;
+    rec.modeId = slug;
+    rec.modelMode = coerceModelMode(rec.modelMode, live);
+    if ("model" in rec)
+      rec.model = slug;
+    return rec.modeId !== before || rec.modelMode !== beforeMode || "model" in rec && rec.model !== beforeModel;
+  }
+  function patchSendArgs(args, live) {
+    const first = args[0];
+    if (!first || typeof first !== "object")
+      return;
+    patchPayload(first, live);
+  }
+  function rewriteJsonBody(text, live) {
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return null;
+    }
+    if (!patchPayload(parsed, live))
+      return null;
+    try {
+      return JSON.stringify(parsed);
+    } catch {
+      return null;
+    }
+  }
+  function intentForBody(text) {
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return liveIntent2();
+    }
+    const queued = intentFromPayload(parsed);
+    return queued?.modeId ? queued : liveIntent2();
+  }
+  function requestUrl(input) {
+    if (typeof input === "string")
+      return input;
+    if (input instanceof URL)
+      return input.href;
+    try {
+      return input.url;
+    } catch {
+      return "";
+    }
+  }
+  function decodeBody(raw) {
+    if (typeof raw === "string")
+      return raw;
+    if (raw instanceof Uint8Array)
+      return new TextDecoder().decode(raw);
+    if (raw instanceof ArrayBuffer)
+      return new TextDecoder().decode(raw);
+    return null;
+  }
+  function conversation(cid) {
+    try {
+      return MessageStore.useMessageStore.getState().conversations[cid];
+    } catch {
+      return;
+    }
+  }
+  function currentCid3() {
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      return String(chat.conversationId || chat.optimisticConversationId || "");
+    } catch {
+      return "";
+    }
+  }
+  function isTurnArgs(v) {
+    return !!v && typeof v === "object" && typeof v.convId === "string";
+  }
+  function forgetItem(id) {
+    itemIntent.delete(id);
+    for (const [cid, list] of held) {
+      const next = list.filter((h) => h.id !== id);
+      if (next.length)
+        held.set(cid, next);
+      else
+        held.delete(cid);
+    }
+  }
+  function pruneIntents() {
+    const now = Date.now();
+    for (const [id, row] of removed) {
+      if (now - row.at > STASH_MS)
+        removed.delete(id);
+    }
+    const live = new Set;
+    for (const list of held.values())
+      for (const h of list)
+        live.add(h.id);
+    for (const id of removed.keys())
+      live.add(id);
+    let convs = [];
+    try {
+      convs = Object.values(MessageStore.useMessageStore.getState().conversations);
+    } catch {
+      convs = [];
+    }
+    for (const conv of convs)
+      for (const q of conv.queue) {
+        const id = qid2(q);
+        if (id)
+          live.add(id);
+      }
+    for (const id of itemIntent.keys())
+      if (!live.has(id))
+        itemIntent.delete(id);
+    for (const id of itemBody.keys())
+      if (!live.has(id))
+        itemBody.delete(id);
+  }
+  function holdQueueEvent(cid, event) {
+    if (!event || typeof event !== "object")
+      return false;
+    const id = eventQueueId(event);
+    const { type } = event;
+    if (!id)
+      return false;
+    if (type === QUEUE_ADD) {
+      const saved = pendingEnqueue?.intent ?? (intent.modeId ? intent : liveIntent2());
+      if (saved.modeId)
+        itemIntent.set(id, { ...saved });
+      const body = (pendingEnqueue?.args.text || eventText(event)).trim();
+      if (body)
+        itemBody.set(id, body);
+      schedulePaint();
+      if (diverting) {
+        mapGetOrCreate(held, cid, () => []).push({ id, args: diverting, intent: { ...saved } });
+        diverting = null;
+        logger22.info("held", id, "for", saved.modeId);
+        return true;
+      }
+      return false;
+    }
+    if (QUEUE_SILENT.has(String(type)))
+      return held.get(cid)?.some((h) => h.id === id) ?? false;
+    if (type === QUEUE_INTERJECT) {
+      unhold(cid, id);
+      return false;
+    }
+    if (type !== QUEUE_REMOVE)
+      return false;
+    const saved = itemIntent.get(id);
+    if (saved?.modeId)
+      removed.set(id, { intent: { ...saved }, text: itemBody.get(id) || "", at: Date.now() });
+    schedulePaint();
+    return unhold(cid, id);
+  }
+  function unhold(cid, id) {
+    const list = held.get(cid) ?? [];
+    const idx = list.findIndex((h) => h.id === id);
+    if (idx >= 0)
+      list.splice(idx, 1);
+    return idx >= 0;
+  }
+  function flushNext(cid, parentId) {
+    const conv = conversation(cid);
+    const list = held.get(cid);
+    if (!conv || !list)
+      return;
+    const queued = list.filter((h) => conv.queue.some((q) => qid2(q) === h.id));
+    if (!queued.length)
+      return;
+    held.set(cid, queued);
+    if (conv.queue.some((q) => {
+      const id = qid2(q);
+      return !!id && !queued.some((h) => h.id === id);
+    }))
+      return;
+    const turn = queued.find((h) => h.id === qid2(conv.queue[0]));
+    if (!turn)
+      return;
+    const prev = flushing.get(cid);
+    if (prev)
+      clearTimeout(prev.timer);
+    const item = turn.intent.modeId ? turn.intent : itemIntent.get(turn.id) ?? liveIntent2();
+    flushing.set(cid, { turn, parentId, item, timer: setTimeout(() => flushTurn(cid), FLUSH_MS) });
+    armOverride(item, cid);
+    queueMicrotask(() => tryFlush(cid));
+  }
+  function tryFlush(cid) {
+    const next = flushing.get(cid);
+    if (!next || busy.has(cid))
+      return;
+    const slug = modeSlug(next.item.modeId);
+    if (sentModel.get(cid) === slug && ackedModel.get(cid) === slug)
+      flushTurn(cid);
+  }
+  function flushTurn(cid) {
+    const next = flushing.get(cid);
+    if (!next)
+      return;
+    flushing.delete(cid);
+    clearTimeout(next.timer);
+    const conv = conversation(cid);
+    if (conv?.activeGeneration)
+      return;
+    const { turn, parentId, item } = next;
+    const queued = conv?.queue.find((q) => qid2(q) === turn.id);
+    if (!queued) {
+      forgetItem(turn.id);
+      flushNext(cid, parentId);
+      return;
+    }
+    const state = MessageStore.useMessageStore.getState();
+    armOverride(item, cid);
+    state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
+    state.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued.item), parentId });
+    forgetItem(turn.id);
+    logger22.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
+  }
+  function onGwEvent(cid, event) {
+    const { type } = event;
+    if (type === "response.created") {
+      busy.add(cid);
+      if (cid === overrideCid)
+        releaseOverride();
+      return;
+    }
+    if (type === "response.persisted")
+      busy.delete(cid);
+    else if (SESSION_IN.has(String(type)))
+      ackedModel.set(cid, modeSlug(String(event.session?.model ?? "")));
+    else
+      return;
+    if (flushing.has(cid))
+      queueMicrotask(() => tryFlush(cid));
+  }
+  function onGwOutgoing(cid, event) {
+    if (SESSION_OUT.has(String(event.type)))
+      sentModel.set(cid, modeSlug(String(event.session?.model ?? "")));
+  }
+  function writeMode(rec, live) {
+    const slug = modeSlug(live.modeId);
+    if (!slug)
+      return;
+    for (const key of GW_MODE_KEYS) {
+      rec[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(rec[key], live) : slug;
+    }
+    if ("model" in rec)
+      rec.model = slug;
+  }
+  function patchGwEvent(event, live) {
+    if (onImaginePage() || !event || typeof event !== "object" || Array.isArray(event) || !live.modeId)
+      return;
+    const rec = event;
+    if (typeof rec.type !== "string" || !GW_TYPES.has(rec.type))
+      return;
+    writeMode(rec, live);
+    const { item } = rec;
+    if (!item || typeof item !== "object" || Array.isArray(item))
+      return;
+    writeMode(item, live);
+  }
+  function eventQueueId(event) {
+    if (!event || typeof event !== "object")
+      return "";
+    const rec = event;
+    return qid2(event) || qid2(rec.item);
+  }
+  function textOf(rec) {
+    for (const key of ["message", "text", "query"]) {
+      const value = rec[key];
+      if (typeof value === "string" && value.trim())
+        return value.trim();
+    }
+    return "";
+  }
+  function eventText(event) {
+    if (!event || typeof event !== "object")
+      return "";
+    const rec = event;
+    const own = textOf(rec);
+    if (own)
+      return own;
+    const { item } = rec;
+    return item && typeof item === "object" ? textOf(item) : "";
+  }
+  function itemText(conv, id) {
+    const content = conv.nodes?.[id]?.content;
+    if (!content)
+      return "";
+    if (typeof content.message === "string" && content.message.trim())
+      return content.message.trim();
+    if (typeof content.query === "string")
+      return content.query.trim();
+    return "";
+  }
+  function bodyOfItem(conv, id) {
+    const saved = itemBody.get(id);
+    if (saved)
+      return saved;
+    return conv ? itemText(conv, id) : "";
+  }
+  function intentForText(cid, text) {
+    const body = text.trim();
+    if (!body || !cid)
+      return;
+    for (const turn of held.get(cid) ?? []) {
+      if (turn.args.text.trim() === body && turn.intent.modeId)
+        return turn.intent;
+    }
+    const conv = conversation(cid);
+    if (conv) {
+      for (const q of conv.queue) {
+        const id = qid2(q);
+        const saved = id ? itemIntent.get(id) : undefined;
+        if (saved?.modeId && bodyOfItem(conv, id) === body)
+          return saved;
+      }
+    }
+    for (const [id, saved] of itemIntent) {
+      if (saved.modeId && itemBody.get(id) === body)
+        return saved;
+    }
+    for (const row of removed.values()) {
+      if (row.text === body && row.intent.modeId)
+        return row.intent;
+    }
+    return;
+  }
+  function queuedIntent(cid, text, id) {
+    const now = Date.now();
+    for (const [key, row] of removed) {
+      if (now - row.at > STASH_MS)
+        removed.delete(key);
+    }
+    if (id) {
+      const saved = itemIntent.get(id);
+      if (saved?.modeId)
+        return saved;
+      const gone = removed.get(id);
+      if (gone?.intent.modeId)
+        return gone.intent;
+    }
+    const byText = intentForText(cid, text);
+    if (byText?.modeId)
+      return byText;
+    const body = text.trim();
+    if (!body && removed.size === 1) {
+      const only = removed.values().next().value;
+      if (only?.intent.modeId)
+        return only.intent;
+    }
+    const conv = cid ? conversation(cid) : undefined;
+    const front = conv?.queue?.[0];
+    const frontId = front ? qid2(front) : "";
+    const frontIntent = frontId ? itemIntent.get(frontId) : undefined;
+    if (!frontIntent?.modeId)
+      return;
+    const frontText = bodyOfItem(conv, frontId);
+    if (body && frontText === body)
+      return frontIntent;
+    return;
+  }
+  function intentFromPayload(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw))
+      return;
+    const rec = raw;
+    const nested = rec.item && typeof rec.item === "object" && !Array.isArray(rec.item) ? rec.item : undefined;
+    const id = qid2(rec) || (nested ? qid2(nested) : "");
+    const text = textOf(rec) || (nested ? textOf(nested) : "");
+    const cid = typeof rec.conversationId === "string" ? rec.conversationId : typeof rec.convId === "string" ? rec.convId : currentCid3();
+    return queuedIntent(cid, text, id);
+  }
+  function eventItemIntent(event, cid) {
+    if (!event || typeof event !== "object")
+      return;
+    const rec = event;
+    if (rec.type !== QUEUE_INTERJECT && rec.type !== "response.create")
+      return;
+    return queuedIntent(cid, eventText(event), eventQueueId(event));
+  }
+  function wrapGatewaySend() {
+    try {
+      const mgr = Gateway.gatewayConnectionManager;
+      if (!mgr || typeof mgr.send !== "function")
+        return;
+      if (!gwOff.length)
+        gwOff = [mgr.on(onGwEvent), mgr.onOutgoing(onGwOutgoing)];
+      if (wrappedGwSend && mgr.send === wrappedGwSend)
+        return;
+      gwHost = mgr;
+      origGwSend = mgr.send;
+      const orig = origGwSend;
+      const wrapped = function voidModeSyncGwSend(...args) {
+        if (onImaginePage())
+          return orig.apply(mgr, args);
+        const [cid, event] = args;
+        if (typeof cid === "string" && holdQueueEvent(cid, event))
+          return Promise.resolve(GW_OK);
+        const type = event && typeof event === "object" ? String(event.type ?? "") : "";
+        if (type === QUEUE_ADD) {
+          const saved = (typeof cid === "string" ? itemIntent.get(eventQueueId(event)) : undefined) ?? pendingEnqueue?.intent;
+          if (saved?.modeId)
+            patchGwEvent(event, saved);
+          return orig.apply(mgr, args);
+        }
+        const queued = typeof cid === "string" ? eventItemIntent(event, cid) : undefined;
+        if (queued?.modeId && !sendOverride) {
+          armOverride(queued, String(cid));
+          patchGwEvent(event, queued);
+          return orig.apply(mgr, args);
+        }
+        if (!GW_TYPES.has(type))
+          return orig.apply(mgr, args);
+        const live = liveIntent2();
+        if (live.modeId) {
+          applyIntent(live);
+          patchGwEvent(event, live);
+        }
+        return orig.apply(mgr, args);
+      };
+      wrappedGwSend = wrapped;
+      mgr.send = wrapped;
+    } catch (e) {
+      logger22.debug("gateway wrap failed", e);
+    }
+  }
+  function unwrapGatewaySend() {
+    for (const off of gwOff)
+      off();
+    gwOff = [];
+    try {
+      if (gwHost && origGwSend && gwHost.send === wrappedGwSend)
+        gwHost.send = origGwSend;
+    } catch (e) {
+      logger22.debug("gateway unwrap failed", e);
+    }
+    origGwSend = null;
+    wrappedGwSend = null;
+    gwHost = null;
+  }
+  function makeSendWrapper(orig) {
+    return function voidModeSyncSend(...args) {
+      if (onImaginePage())
+        return orig.apply(this, args);
+      const [first] = args;
+      if (!sendOverride) {
+        const id = qid2(first);
+        const text = isTurnArgs(first) ? first.text : "";
+        const cid = isTurnArgs(first) ? first.convId : currentCid3();
+        const queued = queuedIntent(cid, text, id);
+        if (queued?.modeId) {
+          armOverride(queued, cid);
+          patchSendArgs(args, queued);
+          return orig.apply(this, args);
+        }
+      }
+      const live = liveIntent2();
+      if (live.modeId) {
+        applyIntent(live);
+        patchSendArgs(args, live);
+      }
+      return orig.apply(this, args);
+    };
+  }
+  function makeQueueWrapper(orig) {
+    return function voidModeSyncQueue(...args) {
+      if (onImaginePage())
+        return orig.apply(this, args);
+      noteEnqueue(args);
+      const [first] = args;
+      const live = enqueueIntent();
+      if (!isTurnArgs(first) || !live.modeId) {
+        try {
+          return orig.apply(this, args);
+        } finally {
+          afterEnqueue();
+        }
+      }
+      pendingEnqueue = { args: first, intent: { ...live } };
+      if (conversation(first.convId)?.activeGeneration)
+        diverting = first;
+      try {
+        return orig.apply(this, args);
+      } finally {
+        const token = first;
+        queueMicrotask(() => {
+          if (pendingEnqueue?.args === token)
+            pendingEnqueue = null;
+          if (diverting === token)
+            diverting = null;
+        });
+        afterEnqueue();
+      }
+    };
+  }
+  function wrapOne(label, getState, setState, key, make = makeSendWrapper) {
+    let state;
+    try {
+      state = getState();
+    } catch {
+      return;
+    }
+    const current = state[key];
+    if (typeof current !== "function")
+      return;
+    if (current[WRAP_MARK] === true)
+      return;
+    if (wrappedFns.get(label) === current)
+      return;
+    origFns.set(label, current);
+    const wrapped = make(current);
+    wrapped[WRAP_MARK] = true;
+    wrappedFns.set(label, wrapped);
+    setState({ [key]: wrapped });
+  }
+  function wrapSendFns() {
+    wrapOne("chat.sendResponse", () => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "sendResponse");
+    wrapOne("chat.establishNewConversation", () => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "establishNewConversation");
+    wrapOne("resp.streamResponse", () => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), "streamResponse");
+    wrapOne("resp.streamCreateAndRespond", () => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), "streamCreateAndRespond");
+    wrapOne("msg.queueMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "queueMessage", makeQueueWrapper);
+    wrapOne("msg.sendMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "sendMessage");
+    wrapGatewaySend();
+  }
+  function unwrapStore(getState, setState, keys, prefix) {
+    let state;
+    try {
+      state = getState();
+    } catch {
+      return;
+    }
+    const next = {};
+    for (const key of keys) {
+      const label = `${prefix}.${key}`;
+      const orig = origFns.get(label);
+      if (orig && state[key] === wrappedFns.get(label))
+        next[key] = orig;
+    }
+    if (Object.keys(next).length)
+      setState(next);
+  }
+  function unwrapSendFns() {
+    unwrapStore(() => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), CHAT_WRAP, "chat");
+    unwrapStore(() => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), RESP_WRAP, "resp");
+    unwrapStore(() => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), MSG_WRAP, "msg");
+    unwrapGatewaySend();
+    origFns.clear();
+    wrappedFns.clear();
+  }
+  function rewriteIfChatPost(url, method, text) {
+    if (onImaginePage())
+      return null;
+    if (method !== "POST" && method !== "PUT")
+      return null;
+    if (!CHAT_POST.test(url) || STOP_URL.test(url) || text == null)
+      return null;
+    const live = intentForBody(text);
+    if (!live.modeId)
+      return null;
+    const next = rewriteJsonBody(text, live);
+    if (!next || next === text)
+      return null;
+    applyIntent(live);
+    logger22.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
+    return next;
+  }
+  function patchFetchArgs(input, init) {
+    const url = requestUrl(input);
+    const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+    if (method !== "POST" && method !== "PUT" || !CHAT_POST.test(url))
+      return null;
+    const raw = init?.body;
+    const decoded = decodeBody(raw);
+    if (decoded != null) {
+      const next = rewriteIfChatPost(url, method, decoded);
+      if (!next)
+        return null;
+      return [input, { ...init, body: next }];
+    }
+    if (raw instanceof Blob) {
+      return raw.text().then((text) => {
+        const next = rewriteIfChatPost(url, method, text);
+        return next ? [input, { ...init, body: next }] : [input, init];
+      });
+    }
+    if (raw == null && input instanceof Request) {
+      return input.clone().text().then((text) => {
+        const next = rewriteIfChatPost(url, method, text);
+        if (!next)
+          return [input, init];
+        return [input, { ...init, method, headers: init?.headers ?? input.headers, body: next, credentials: init?.credentials ?? input.credentials }];
+      });
+    }
+    return null;
+  }
+  function hookFetch() {
+    if (origFetch)
+      return;
+    origFetch = pageWindow.fetch;
+    pageWindow.fetch = function voidModeSyncFetch(input, init) {
+      try {
+        const patched = patchFetchArgs(input, init);
+        if (patched && typeof patched.then === "function") {
+          return patched.then(([i, n]) => origFetch.call(pageWindow, i, n), () => origFetch.call(pageWindow, input, init));
+        }
+        if (patched) {
+          const [i, n] = patched;
+          return origFetch.call(pageWindow, i, n);
+        }
+      } catch (e) {
+        logger22.debug("fetch patch failed", e);
+      }
+      return origFetch.call(pageWindow, input, init);
+    };
+  }
+  function unhookFetch() {
+    if (!origFetch)
+      return;
+    pageWindow.fetch = origFetch;
+    origFetch = null;
+  }
+  function hookXhr() {
+    if (origXhrOpen)
+      return;
+    const XHR = pageWindow.XMLHttpRequest;
+    origXhrOpen = XHR.prototype.open;
+    origXhrSend = XHR.prototype.send;
+    XHR.prototype.open = function voidModeSyncOpen(method, url, ...rest) {
+      try {
+        xhrMeta.set(this, `${String(method).toUpperCase()} ${requestUrl(url)}`);
+      } catch (e) {
+        logger22.debug("xhr open failed", e);
+      }
+      return origXhrOpen.call(this, method, url, ...rest);
+    };
+    XHR.prototype.send = function voidModeSyncSend(body) {
+      const meta = xhrMeta.get(this);
+      if (meta && typeof body === "string") {
+        const space = meta.indexOf(" ");
+        const method = meta.slice(0, space);
+        const url = meta.slice(space + 1);
+        const next = rewriteIfChatPost(url, method, body);
+        if (next)
+          return origXhrSend.call(this, next);
+      }
+      return origXhrSend.call(this, body);
+    };
+  }
+  function unhookXhr() {
+    if (!origXhrOpen)
+      return;
+    const XHR = pageWindow.XMLHttpRequest;
+    XHR.prototype.open = origXhrOpen;
+    if (origXhrSend)
+      XHR.prototype.send = origXhrSend;
+    origXhrOpen = null;
+    origXhrSend = null;
+  }
+  function modeLabel(id) {
+    let title = "";
+    try {
+      title = ModesStore.useModesStore.getState().modes.find((m) => m.id === id)?.title ?? "";
+    } catch {
+      title = "";
+    }
+    if (title)
+      return title;
+    return CATALOG.find((m) => m.id === id)?.label ?? id;
+  }
+  function modeChoices() {
+    const labels = new Map(CATALOG.map((m) => [m.id, m.label]));
+    let extra = [];
+    try {
+      extra = ModesStore.useModesStore.getState().modes ?? [];
+    } catch {
+      extra = [];
+    }
+    for (const m of extra)
+      if (m.id)
+        labels.set(m.id, m.title || labels.get(m.id) || m.id);
+    const ids = extra.length ? extra.map((m) => m.id).filter(Boolean) : CATALOG.map((m) => m.id);
+    const seen = new Set;
+    const out = [];
+    for (const id of ids) {
+      if (!id || seen.has(id))
+        continue;
+      seen.add(id);
+      out.push({ id, label: labels.get(id) || id });
+    }
+    for (const m of CATALOG) {
+      if (seen.has(m.id))
+        continue;
+      seen.add(m.id);
+      out.push({ id: m.id, label: labels.get(m.id) || m.label });
+    }
+    return out;
+  }
+  function paintGlyph(host, modeId) {
+    host.replaceChildren();
+    const src = document.querySelector(`${PIN_SEL}[data-void-mode-id="${CSS.escape(modeId)}"] svg`);
+    if (src) {
+      const svg = src.cloneNode(true);
+      svg.removeAttribute("width");
+      svg.removeAttribute("height");
+      svg.setAttribute("aria-hidden", "true");
+      host.append(svg);
+      return;
+    }
+    host.innerHTML = ICONS[modeId] || ICONS.fast;
+  }
+  function closeMenu() {
+    menu?.remove();
+    menu = null;
+    menuFor = null;
+  }
+  function setItemMode(id, modeId) {
+    if (!id || !modeId)
+      return;
+    const next = captureIntent(modeId, itemIntent.get(id) ?? snapshot());
+    itemIntent.set(id, next);
+    for (const list of held.values()) {
+      const turn = list.find((h) => h.id === id);
+      if (turn)
+        turn.intent = next;
+    }
+    logger22.info("queue item", id, "->", next.modeId);
+    schedulePaint();
+  }
+  function openMenu(chip, id) {
+    closeMenu();
+    const box = document.createElement("div");
+    box.className = QMENU;
+    box.setAttribute("role", "menu");
+    const current = itemIntent.get(id)?.modeId || liveIntent2().modeId;
+    for (const choice of modeChoices()) {
+      const opt = document.createElement("button");
+      opt.type = "button";
+      opt.className = QOPT;
+      opt.setAttribute("role", "menuitem");
+      opt.setAttribute("aria-selected", choice.id === current ? "true" : "false");
+      opt.dataset.voidQmode = choice.id;
+      paintGlyph(opt, choice.id);
+      const span = document.createElement("span");
+      span.textContent = choice.label;
+      opt.append(span);
+      opt.addEventListener("pointerdown", (e) => e.stopPropagation());
+      opt.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setItemMode(id, choice.id);
+        closeMenu();
+      });
+      box.append(opt);
+    }
+    document.body.append(box);
+    const rect = chip.getBoundingClientRect();
+    const mw = box.offsetWidth;
+    const mh = box.offsetHeight;
+    const left = Math.min(Math.max(8, rect.right - mw), window.innerWidth - mw - 8);
+    const top = rect.bottom + 6 + mh > window.innerHeight - 8 ? rect.top - mh - 6 : rect.bottom + 6;
+    box.style.left = `${Math.max(8, left)}px`;
+    box.style.top = `${Math.max(8, top)}px`;
+    menu = box;
+    menuFor = id;
+  }
+  function onChipClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const chip = e.currentTarget;
+    const id = chip.getAttribute(QITEM) || "";
+    if (!id)
+      return;
+    if (menuFor === id)
+      closeMenu();
+    else
+      openMenu(chip, id);
+  }
+  function actionRail(row) {
+    const labeled = row.querySelector(RAIL_SEL2);
+    if (labeled?.parentElement)
+      return labeled.parentElement;
+    const blocks = [...row.querySelectorAll(":scope > div")].filter((d) => d.querySelectorAll("button").length >= 2);
+    return blocks.at(-1) ?? null;
+  }
+  function trayCard2() {
+    const btn = document.querySelector(TOGGLE_SEL2);
+    if (!(btn instanceof HTMLElement))
+      return null;
+    let node = btn;
+    let card = null;
+    while (node && node !== document.body && !node.matches("main")) {
+      if (node.querySelector(RAIL_SEL2))
+        card = node;
+      node = node.parentElement;
+    }
+    return card ?? btn.closest(".rounded-xl") ?? btn.parentElement;
+  }
+  function queueRows2(card) {
+    const sortable = [...card.querySelectorAll(ROW_SEL2)].filter((el) => el.querySelector(RAIL_SEL2) || el.querySelector(".line-clamp-2"));
+    if (sortable.length)
+      return sortable;
+    const anchors = [...card.querySelectorAll(SEND_NOW_SEL2)];
+    const use = anchors.length ? anchors : [...card.querySelectorAll('[aria-label="Remove from queue"]')];
+    const rows = [];
+    const seen = new Set;
+    for (const btn of use) {
+      let row = btn;
+      for (let parent = btn.parentElement;parent && parent !== card && card.contains(parent); parent = parent.parentElement) {
+        const n = Math.max(parent.querySelectorAll(SEND_NOW_SEL2).length, parent.querySelectorAll('[aria-label="Remove from queue"]').length);
+        if (n > 1)
+          break;
+        row = parent;
+      }
+      if (seen.has(row))
+        continue;
+      seen.add(row);
+      rows.push(row);
+    }
+    if (rows.length)
+      return rows;
+    return [...card.querySelectorAll(".line-clamp-2")].map((el) => el.parentElement instanceof HTMLElement ? el.parentElement : el);
+  }
+  function rowBody(row) {
+    const clamp = row.querySelector(".line-clamp-2")?.textContent?.trim();
+    if (clamp)
+      return clamp;
+    const copy = row.cloneNode(true);
+    copy.querySelectorAll("button, svg").forEach((el) => el.remove());
+    return (copy.textContent || "").replaceAll(/\s+/g, " ").trim();
+  }
+  function idForRow(row, items, index, used) {
+    const existing = row.getAttribute(QITEM) || "";
+    if (existing && !used.has(existing) && (!items.length || items.some((q) => qid2(q) === existing)))
+      return existing;
+    const indexed = qid2(items[index]);
+    if (indexed && !used.has(indexed))
+      return indexed;
+    const body = rowBody(row);
+    const cid = currentCid3();
+    const conv = cid ? conversation(cid) : undefined;
+    if (body && conv) {
+      const hit = items.find((q) => {
+        const id = qid2(q);
+        return !!id && !used.has(id) && itemText(conv, id) === body;
+      });
+      if (hit)
+        return qid2(hit);
+    }
+    if (existing && !used.has(existing))
+      return existing;
+    if (!items.length && body)
+      return `row:${body.slice(0, 120)}`;
+    return "";
+  }
+  function currentQueue() {
+    const cid = currentCid3();
+    if (!cid)
+      return [];
+    const conv = conversation(cid);
+    const queue = conv?.queue;
+    if (!Array.isArray(queue))
+      return [];
+    return queue.toSorted((a, b) => a.position - b.position);
+  }
+  function unpaint() {
+    closeMenu();
+    for (const el of document.querySelectorAll(`.${CHIP}`))
+      el.remove();
+  }
+  function mountChip(row, id) {
+    if (!itemIntent.has(id)) {
+      const saved = pendingEnqueue?.intent?.modeId ? pendingEnqueue.intent : intent.modeId ? intent : undefined;
+      if (saved?.modeId)
+        itemIntent.set(id, { ...saved });
+    }
+    const modeId = itemIntent.get(id)?.modeId || intent.modeId || liveIntent2().modeId;
+    let chip = row.querySelector(`.${CHIP}`);
+    if (!chip) {
+      chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = CHIP;
+      chip.addEventListener("pointerdown", (e) => e.stopPropagation());
+      chip.addEventListener("click", onChipClick);
+      const rail = actionRail(row);
+      if (rail)
+        rail.before(chip);
+      else
+        row.append(chip);
+    }
+    if (chip.getAttribute(QITEM) === id && chip.dataset.mode === modeId)
+      return;
+    chip.setAttribute(QITEM, id);
+    chip.dataset.mode = modeId;
+    const label = modeLabel(modeId);
+    chip.title = label;
+    chip.setAttribute("aria-label", label);
+    paintGlyph(chip, modeId);
+  }
+  function paint2() {
+    paintRaf = 0;
+    if (!settings10.store.showQueueMode || onImaginePage()) {
+      unpaint();
+      return;
+    }
+    const card = trayCard2();
+    if (!card) {
+      closeMenu();
+      return;
+    }
+    const rows = queueRows2(card);
+    const items = currentQueue();
+    const seen = new Set;
+    for (let i = 0;i < rows.length; i++) {
+      const row = rows[i];
+      const id = idForRow(row, items, i, seen);
+      if (!id)
+        continue;
+      row.setAttribute(QITEM, id);
+      seen.add(id);
+      mountChip(row, id);
+    }
+    for (const chip of card.querySelectorAll(`.${CHIP}`)) {
+      const id = chip.getAttribute(QITEM);
+      if (id && !seen.has(id))
+        chip.remove();
+    }
+    if (menuFor && !seen.has(menuFor))
+      closeMenu();
+  }
+  function schedulePaint() {
+    if (paintRaf)
+      return;
+    paintRaf = requestAnimationFrame(paint2);
+  }
+  function bindObs2() {
+    obs2?.disconnect();
+    const root = document.querySelector("main") ?? document.body;
+    obs2 = new MutationObserver(() => schedulePaint());
+    obs2.observe(root, { childList: true, subtree: true });
+  }
+  function onPointerUp(e) {
+    const t = e.target;
+    if (!(t instanceof Element))
+      return;
+    if (t.closest(`.${CHIP}, .${QMENU}`))
+      return;
+    if (menu && !t.closest(`.${QMENU}`))
+      closeMenu();
+    const pin = t.closest(PIN_SEL);
+    if (pin instanceof HTMLElement) {
+      const id = pin.getAttribute("data-void-mode-id");
+      if (id)
+        rememberMode(id);
+      return;
+    }
+    if (!e.isTrusted)
+      return;
+    if (t.closest(TRIGGER_SEL)) {
+      awaitingMenu = true;
+      userPicking = true;
+      return;
+    }
+    if ((awaitingMenu || userPicking) && t.closest(MENU_SEL)) {
+      userPicking = true;
+      awaitingMenu = false;
+    }
+  }
+  function onPointerDown2(e) {
+    if (onImaginePage())
+      return;
+    const t = e.target;
+    if (!(t instanceof Element))
+      return;
+    if (t.closest(`.${CHIP}, .${QMENU}`))
+      return;
+    if (t.closest(`${TRIGGER_SEL}, ${PIN_SEL}, ${MENU_SEL}`)) {
+      userPicking = true;
+      if (t.closest(TRIGGER_SEL))
+        awaitingMenu = true;
+    }
+    const send = t.closest(SEND_NOW_SEL2);
+    if (!send)
+      return;
+    const row = send.closest(`[${QITEM}], ${ROW_SEL2}`);
+    const id = row instanceof HTMLElement ? row.getAttribute(QITEM) || "" : "";
+    const item = id ? itemIntent.get(id) : undefined;
+    if (item?.modeId)
+      armOverride(item, currentCid3());
+  }
+  function onKeyDown3(e) {
+    if (!e.isTrusted)
+      return;
+    if (e.key === "Escape")
+      closeMenu();
+    if (e.key === "Tab" && e.shiftKey)
+      userPicking = true;
+  }
+  function onPicker(id) {
+    if (applying || sendOverride)
+      return;
+    if (!id)
+      return;
+    if (userPicking || awaitingMenu)
+      rememberSnapshot();
+  }
+  function onChatPage() {
+    wrapSendFns();
+    const key = navKey();
+    if (key !== lastNavKey2) {
+      lastNavKey2 = key;
+      onNavigate();
+      return;
+    }
+    if (sendOverride || applying)
+      return;
+    if (loadPending())
+      fightHydrate();
+  }
+  function onStreamEnd3({ responseId }) {
+    wrapSendFns();
+    for (const cid of held.keys()) {
+      if (conversation(cid)?.nodes[responseId])
+        flushNext(cid, responseId);
+    }
+  }
+  function queueKey(s) {
+    const cid = currentCid3();
+    const q = cid ? s.conversations[cid]?.queue ?? [] : [];
+    return q.map((i) => `${qid2(i)}:${i.position}`).join(",");
+  }
+  function onQueue() {
+    pruneIntents();
+    wrapSendFns();
+    schedulePaint();
+  }
+  var modeStarted = false;
+  function startMode() {
+    if (modeStarted)
+      return;
+    modeStarted = true;
+    setIntent(snapshot());
+    lastNavKey2 = navKey();
+    abort = new AbortController;
+    const { signal } = abort;
+    document.addEventListener("pointerup", onPointerUp, { capture: true, signal });
+    document.addEventListener("pointerdown", onPointerDown2, { capture: true, signal });
+    document.addEventListener("keydown", onKeyDown3, { capture: true, signal });
+    bindObs2();
+    schedulePaint();
+    try {
+      wrapSendFns();
+      hookFetch();
+      hookXhr();
+    } catch (e) {
+      logger22.warn("Failed to hook send path", e);
+    }
+    if (intent.modeId)
+      applyIntent(intent);
+  }
+  function stopMode() {
+    if (!modeStarted)
+      return;
+    modeStarted = false;
+    abort?.abort();
+    abort = null;
+    if (loadTail) {
+      clearTimeout(loadTail);
+      loadTail = null;
+    }
+    if (overrideTail) {
+      clearTimeout(overrideTail);
+      overrideTail = null;
+    }
+    if (paintRaf)
+      cancelAnimationFrame(paintRaf);
+    paintRaf = 0;
+    obs2?.disconnect();
+    obs2 = null;
+    unpaint();
+    setRestoreFlag(false);
+    unhookFetch();
+    unhookXhr();
+    unwrapSendFns();
+    for (const f of flushing.values())
+      clearTimeout(f.timer);
+    flushing.clear();
+    sentModel.clear();
+    ackedModel.clear();
+    busy.clear();
+    held.clear();
+    itemIntent.clear();
+    itemBody.clear();
+    removed.clear();
+    diverting = null;
+    pendingEnqueue = null;
+    sendOverride = null;
+    overrideCid = "";
+    applying = false;
+    userPicking = false;
+    awaitingMenu = false;
+    setIntent(EMPTY);
+    lastNavKey2 = "";
+  }
+  function onModeSettingsChange() {
+    schedulePaint();
+  }
+  function onModeStreamEnd(data) {
+    onStreamEnd3(data);
+  }
+  function modePickerKey(s) {
+    return s.selectedModeId;
+  }
+  function onModePicker(id) {
+    onPicker(id);
+  }
+  function modeChatKey(s) {
+    return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.projectId ?? ""}|${s.modelMode}|${s.activeModelId}`;
+  }
+  function onModeChatPage() {
+    onChatPage();
+  }
+  function modeQueueKey(s) {
+    return queueKey(s);
+  }
+  function onModeQueue() {
+    onQueue();
+  }
+  function modeRouteKey(s) {
+    return String(s.route.conversationId ?? "");
+  }
+  function onModeRoute() {
+    const key = navKey();
+    if (key === lastNavKey2)
+      return;
+    lastNavKey2 = key;
+    onNavigate();
+  }
+  function modeHydrateKey(s) {
+    return `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`;
+  }
+  function onModeHydrate() {
+    wrapSendFns();
+    syncRestoreFlag();
+    fightHydrate();
+  }
+
+  // src/plugins/betterQueue/index.ts
+  var logger23 = new Logger("BetterQueue");
+  function dropName(list) {
+    if (!Array.isArray(list))
+      return;
+    const next = list.filter((n) => typeof n === "string" && n !== "ModeSync" && n !== "QueuePersist");
+    return next.length === list.length ? undefined : next;
+  }
+  function migrateLegacy2() {
+    const plugins = PlainSettings.plugins;
+    const mode = plugins.ModeSync;
+    const persist = plugins.QueuePersist;
+    if (!mode && !persist)
+      return;
+    const target = plugins.BetterQueue ??= {};
+    if (mode?.enabled === false) {
+      if (!("showQueueMode" in target))
+        target.showQueueMode = false;
+      if (!("stickyOnNavigate" in target))
+        target.stickyOnNavigate = false;
+    }
+    if (persist?.enabled === false && !("persistAcrossRefresh" in target))
+      target.persistAcrossRefresh = false;
+    if (mode?.enabled === false && persist?.enabled === false && typeof target.enabled !== "boolean")
+      target.enabled = false;
+    delete plugins.ModeSync;
+    delete plugins.QueuePersist;
+    const meta = plugins.Settings;
+    if (meta) {
+      const pinned = dropName(meta.pinnedPlugins);
+      const starred = dropName(meta.starredPlugins);
+      if (pinned)
+        meta.pinnedPlugins = pinned;
+      if (starred)
+        meta.starredPlugins = starred;
+      const known = meta.knownPlugins;
+      if (known && typeof known === "object") {
+        delete known.ModeSync;
+        delete known.QueuePersist;
+      }
+    }
+    SettingsStore3.markAsChanged();
+    logger23.info("Migrated ModeSync / QueuePersist into BetterQueue");
+  }
+  var pluginName = Object.getOwnPropertyDescriptor(settings10, "pluginName");
+  if (pluginName?.set && pluginName.get) {
+    Object.defineProperty(settings10, "pluginName", {
+      configurable: true,
+      enumerable: true,
+      get: pluginName.get,
+      set(name) {
+        if (name === "BetterQueue")
+          migrateLegacy2();
+        pluginName.set.call(settings10, name);
+      }
+    });
+  }
+  function applyPersist() {
+    if (settings10.store.persistAcrossRefresh)
+      startPersist();
+    else
+      stopPersist();
+  }
+  var betterQueue_default = definePlugin({
+    name: "BetterQueue",
+    icon: ListOrderedIcon,
+    description: "Keep each queued message's mode, and restore unsent rows after a refresh.",
+    authors: [Devs.p],
+    tags: ["chat", "ui"],
+    enabledByDefault: true,
+    startAt: "TurbopackReady" /* TurbopackReady */,
+    settings: settings10,
+    managedStyle: "betterQueue",
+    cleanupSelectors: [".void-ms-qchip", ".void-ms-qmenu"],
+    start() {
+      startMode();
+      applyPersist();
+    },
+    onSettingsChange() {
+      applyPersist();
+      onModeSettingsChange();
+    },
+    stop() {
+      stopPersist();
+      stopMode();
+    },
+    events: {
+      streamEnd: onModeStreamEnd
+    },
+    zustand: {
+      ModesStore: {
+        selector: (s) => modePickerKey(s),
+        handler: onModePicker
+      },
+      ChatPageStore: {
+        selector: (s) => `${modeChatKey(s)}|${persistChatKey(s)}`,
+        handler: () => {
+          onModeChatPage();
+          onPersistNav();
+        }
+      },
+      MessageStore: {
+        selector: (s) => `${modeQueueKey(s)}|${persistQueueKey(s)}`,
+        handler: () => {
+          onModeQueue();
+          onPersistQueue();
+        }
+      },
+      RoutingStore: {
+        selector: (s) => `${modeRouteKey(s)}|${persistRouteKey(s)}`,
+        handler: () => {
+          onModeRoute();
+          onPersistNav();
+        }
+      },
+      ResponseStore: {
+        selector: (s) => `${modeHydrateKey(s)}|${persistResponseKey(s)}`,
+        handler: () => {
+          onModeHydrate();
+          onPersistNav();
+        }
+      }
+    }
+  });
+
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterQuotes/styles.css
   registerStyle("betterQuotes", `.void-qj-hit {
     border-radius: 0.25rem;
@@ -10799,7 +13330,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var QUERY = ".query-bar";
   var DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
   var KEEP = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
-  function onImaginePage() {
+  function onImaginePage2() {
     try {
       const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
       if (page.startsWith("imagine"))
@@ -10813,7 +13344,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/jump.ts
-  var logger21 = new Logger("QuoteJump");
+  var logger24 = new Logger("QuoteJump");
   var cl19 = classNameFactory("void-qj-");
   var HL = "void-qj";
   var EDITOR = ".tiptap, [contenteditable='true']";
@@ -10827,7 +13358,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var WAIT_N = 24;
   var ALIGNED_PX = 8;
   var MSG_OFFSET = 72;
-  var abort = null;
+  var abort2 = null;
   var gen = 0;
   var flashTimer2 = 0;
   var flashing2 = null;
@@ -10999,7 +13530,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           return { id: row.responseId, cid };
       }
     } catch (e) {
-      logger21.debug("store search failed", e);
+      logger24.debug("store search failed", e);
     }
     return null;
   }
@@ -11282,12 +13813,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
       return;
     } catch (e) {
-      logger21.debug("loadResponses failed", e);
+      logger24.debug("loadResponses failed", e);
     }
     try {
       await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
     } catch (e) {
-      logger21.debug("loadMoreResponses failed", e);
+      logger24.debug("loadMoreResponses failed", e);
     }
   }
   function resolveNeedle(origin) {
@@ -11347,7 +13878,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (mine !== gen)
       return;
     if (!el) {
-      logger21.debug("no source message");
+      logger24.debug("no source message");
       return;
     }
     openAncestors(el, needle);
@@ -11369,7 +13900,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     highlightRange(range, hit);
   }
   function onClick(e) {
-    if (!e.isTrusted || e.button !== 0 || onImaginePage())
+    if (!e.isTrusted || e.button !== 0 || onImaginePage2())
       return;
     const t = e.target;
     if (!(t instanceof Element))
@@ -11388,34 +13919,34 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (jumpArmed)
       return;
     jumpArmed = true;
-    abort = new AbortController;
-    document.addEventListener("click", onClick, { capture: true, signal: abort.signal });
+    abort2 = new AbortController;
+    document.addEventListener("click", onClick, { capture: true, signal: abort2.signal });
   }
   function stopJump() {
-    if (!jumpArmed && !abort)
+    if (!jumpArmed && !abort2)
       return;
     jumpArmed = false;
-    abort?.abort();
-    abort = null;
+    abort2?.abort();
+    abort2 = null;
     gen++;
     clearHighlight();
   }
 
   // src/plugins/betterQuotes/sticky.ts
-  var logger22 = new Logger("QuoteSticky");
+  var logger25 = new Logger("QuoteSticky");
   var cl20 = classNameFactory("void-qs-");
   var KEEP2 = 40;
   var RESTORE_GAP_MS = 80;
   var X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   var saved = new Map;
-  var origFns = new Map;
-  var wrappedFns = new Map;
+  var origFns2 = new Map;
+  var wrappedFns2 = new Map;
   var lastKey = "";
   var lastText = "";
   var lastPopup;
-  var applying = false;
+  var applying2 = false;
   var lastRestoreAt = 0;
-  var abort2 = null;
+  var abort3 = null;
   var observer = null;
   var mutRaf = 0;
   var armed = false;
@@ -11511,7 +14042,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return { key: destKey(), text: "", popup: undefined };
     }
   }
-  function remember(key, text, popup) {
+  function remember2(key, text, popup) {
     if (!key || !text)
       return;
     saved.delete(key);
@@ -11525,7 +14056,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function stashOutgoing() {
     if (lastKey && lastText)
-      remember(lastKey, lastText, lastPopup);
+      remember2(lastKey, lastText, lastPopup);
   }
   function drop(key) {
     if (key)
@@ -11541,33 +14072,33 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const chat = ChatPageStore.useChatPageStore.getState();
       if (!chat.quotedText && chat.quotePopupData == null)
         return;
-      applying = true;
+      applying2 = true;
       try {
         if (chat.quotedText)
           chat.setQuotedText("");
         if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
           chat.setQuotePopupData(null);
       } finally {
-        applying = false;
+        applying2 = false;
       }
     } catch (e) {
-      logger22.debug("clear failed", e);
+      logger25.debug("clear failed", e);
     }
   }
   function applyQuote(key, text, popup) {
     if (destKey() !== key)
       return;
     const chat = ChatPageStore.useChatPageStore.getState();
-    applying = true;
+    applying2 = true;
     try {
       if (chat.quotedText !== text)
         chat.setQuotedText(text);
       if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(popup))
         chat.setQuotePopupData(popup);
     } catch (e) {
-      logger22.debug("apply failed", e);
+      logger25.debug("apply failed", e);
     } finally {
-      applying = false;
+      applying2 = false;
     }
   }
   function officialVisible(text) {
@@ -11625,7 +14156,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function paintFallback(key, snap) {
     const bar = document.querySelector(QUERY);
     const path = pathCid();
-    if (!key || destKey() !== key || path && path !== key || !(bar instanceof HTMLElement) || onImaginePage()) {
+    if (!key || destKey() !== key || path && path !== key || !(bar instanceof HTMLElement) || onImaginePage2()) {
       removeFallback();
       return;
     }
@@ -11650,8 +14181,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       label.textContent = shown;
     placeChip(el, bar);
   }
-  function restore(key) {
-    if (!key || onImaginePage() || destKey() !== key) {
+  function restore2(key) {
+    if (!key || onImaginePage2() || destKey() !== key) {
       if (destKey() !== key)
         removeFallback();
       return;
@@ -11669,16 +14200,16 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
         lastRestoreAt = now;
         applyQuote(key, snap.text, popupFor(snap));
-        logger22.info("restored", key);
+        logger25.info("restored", key);
       }
       paintFallback(key, snap);
     } catch (e) {
-      logger22.debug("restore failed", e);
+      logger25.debug("restore failed", e);
       paintFallback(key, snap);
     }
   }
   function ensureChip() {
-    if (onImaginePage())
+    if (onImaginePage2())
       return;
     const dest = destKey();
     const path = pathCid();
@@ -11691,11 +14222,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       removeFallback();
       return;
     }
-    restore(dest);
+    restore2(dest);
   }
   function dismiss() {
     const key = ownKey();
-    applying = true;
+    applying2 = true;
     try {
       drop(key);
       const chat = ChatPageStore.useChatPageStore.getState();
@@ -11704,9 +14235,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
         chat.setQuotePopupData(null);
     } catch (e) {
-      logger22.debug("dismiss failed", e);
+      logger25.debug("dismiss failed", e);
     } finally {
-      applying = false;
+      applying2 = false;
     }
     removeFallback();
   }
@@ -11714,13 +14245,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return String(s.route.conversationId ?? "");
   }
   function onChat() {
-    if (!armed || applying || onImaginePage())
+    if (!armed || applying2 || onImaginePage2())
       return;
     const now = readText();
     const dest = destKey();
     const key = snapKey();
     if (now.text && key && !(dest && lastKey && dest !== lastKey)) {
-      remember(key, now.text, now.popup);
+      remember2(key, now.text, now.popup);
       lastText = now.text;
       lastPopup = now.popup;
       lastKey = key;
@@ -11739,7 +14270,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (path && path === lastKey && path !== dest) {
       const prior = saved.get(path);
       if (prior?.text)
-        remember(dest, prior.text, prior.popup);
+        remember2(dest, prior.text, prior.popup);
       saved.delete(path);
       lastKey = dest;
       lastText = prior?.text || lastText;
@@ -11757,7 +14288,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (snap?.text) {
         lastText = snap.text;
         lastPopup = snap.popup;
-        restore(dest);
+        restore2(dest);
       } else {
         lastText = "";
         lastPopup = undefined;
@@ -11774,7 +14305,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         removeFallback();
       return;
     }
-    restore(dest);
+    restore2(dest);
   }
   function onNav() {
     if (!armed)
@@ -11816,7 +14347,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     drop(key);
     removeFallback();
   }
-  function onPointerDown2(e) {
+  function onPointerDown3(e) {
     if (!e.isTrusted)
       return;
     const t = e.target;
@@ -11856,7 +14387,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const q = rec.parentQuotedText ?? rec.quotedText;
     return typeof q === "string" && q.replaceAll(/\s+/g, " ").trim() === want.replaceAll(/\s+/g, " ").trim();
   }
-  function makeSendWrapper(orig) {
+  function makeSendWrapper2(orig) {
     return function voidQuoteStickySend(...args) {
       const key = ownKey();
       const had = saved.get(key)?.text || readText().text;
@@ -11872,13 +14403,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     queueMicrotask(() => {
       if (destKey() === key)
-        restore(key);
+        restore2(key);
     });
   }
   function makeQuotedTextWrapper(orig) {
     return function voidQuoteStickyQuotedText(...args) {
       const result = orig.apply(this, args);
-      if (applying)
+      if (applying2)
         return result;
       const text = String(args[0] ?? "");
       const dest = destKey();
@@ -11889,10 +14420,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           return result;
         if (dest && lastKey && dest !== lastKey) {
           if (lastText)
-            remember(lastKey, lastText, lastPopup);
+            remember2(lastKey, lastText, lastPopup);
           return result;
         }
-        remember(key, text, popup ?? lastPopup);
+        remember2(key, text, popup ?? lastPopup);
         lastText = text;
         lastPopup = popup ?? lastPopup;
         lastKey = key;
@@ -11905,7 +14436,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function makePopupWrapper(orig) {
     return function voidQuoteStickyPopup(...args) {
       const result = orig.apply(this, args);
-      if (applying)
+      if (applying2)
         return result;
       const dest = destKey();
       const popup = args[0];
@@ -11913,7 +14444,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (popup != null && live && !(dest && lastKey && dest !== lastKey)) {
         const key = dest || pathCid() || routeCid() || lastKey;
         if (key) {
-          remember(key, live, popup);
+          remember2(key, live, popup);
           lastPopup = popup;
           lastText = live;
           lastKey = key;
@@ -11932,7 +14463,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return result;
     };
   }
-  function wrapOne(label, getState, setState, key, make) {
+  function wrapOne2(label, getState, setState, key, make) {
     let state;
     try {
       state = getState();
@@ -11942,11 +14473,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const current = state[key];
     if (typeof current !== "function")
       return;
-    if (wrappedFns.get(label) === current)
+    if (wrappedFns2.get(label) === current)
       return;
-    origFns.set(label, current);
+    origFns2.set(label, current);
     const wrapped = make(current);
-    wrappedFns.set(label, wrapped);
+    wrappedFns2.set(label, wrapped);
     setState({ [key]: wrapped });
   }
   function chatState() {
@@ -11962,20 +14493,20 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     MessageStore.useMessageStore.setState(p);
   }
   function wrapAll() {
-    wrapOne("chat.setQuotedText", chatState, chatSet, "setQuotedText", makeQuotedTextWrapper);
-    wrapOne("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
-    wrapOne("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
-    wrapOne("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
-    wrapOne("msg.sendMessage", msgState, msgSet, "sendMessage", makeSendWrapper);
-    wrapOne("msg.queueMessage", msgState, msgSet, "queueMessage", makeSendWrapper);
+    wrapOne2("chat.setQuotedText", chatState, chatSet, "setQuotedText", makeQuotedTextWrapper);
+    wrapOne2("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
+    wrapOne2("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
+    wrapOne2("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
+    wrapOne2("msg.sendMessage", msgState, msgSet, "sendMessage", makeSendWrapper2);
+    wrapOne2("msg.queueMessage", msgState, msgSet, "queueMessage", makeSendWrapper2);
   }
   function unwrapOne(getState, setState, key, label) {
-    const orig = origFns.get(label);
+    const orig = origFns2.get(label);
     if (!orig)
       return;
     try {
       const state = getState();
-      if (state[key] === wrappedFns.get(label))
+      if (state[key] === wrappedFns2.get(label))
         setState({ [key]: orig });
     } catch {}
   }
@@ -11986,8 +14517,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     unwrapOne(chatState, chatSet, "setOptimisticConversationId", "chat.setOptimisticConversationId");
     unwrapOne(msgState, msgSet, "sendMessage", "msg.sendMessage");
     unwrapOne(msgState, msgSet, "queueMessage", "msg.queueMessage");
-    origFns.clear();
-    wrappedFns.clear();
+    origFns2.clear();
+    wrappedFns2.clear();
   }
   function onMutate() {
     if (!armed || mutRaf)
@@ -12006,15 +14537,15 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const key = snapKey() || now.key;
     lastKey = key;
     if (key && now.text) {
-      remember(key, now.text, now.popup);
+      remember2(key, now.text, now.popup);
       lastText = now.text;
       lastPopup = now.popup;
     }
-    abort2 = new AbortController;
-    document.addEventListener("pointerdown", onPointerDown2, { capture: true, signal: abort2.signal });
+    abort3 = new AbortController;
+    document.addEventListener("pointerdown", onPointerDown3, { capture: true, signal: abort3.signal });
     const poke = () => onMutate();
-    window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort2.signal });
-    window.addEventListener("resize", poke, { passive: true, signal: abort2.signal });
+    window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort3.signal });
+    window.addEventListener("resize", poke, { passive: true, signal: abort3.signal });
     observer = new MutationObserver(onMutate);
     observer.observe(document.documentElement, { childList: true, subtree: true });
     wrapAll();
@@ -12024,8 +14555,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!armed)
       return;
     armed = false;
-    abort2?.abort();
-    abort2 = null;
+    abort3?.abort();
+    abort3 = null;
     observer?.disconnect();
     observer = null;
     if (mutRaf)
@@ -12037,13 +14568,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     lastKey = "";
     lastText = "";
     lastPopup = undefined;
-    applying = false;
+    applying2 = false;
     lastRestoreAt = 0;
   }
 
   // src/plugins/betterQuotes/index.ts
-  var logger23 = new Logger("BetterQuotes");
-  var settings10 = definePluginSettings({
+  var logger26 = new Logger("BetterQuotes");
+  var settings11 = definePluginSettings({
     jumpToPassage: {
       type: 3 /* BOOLEAN */,
       description: "Click the composer quote chip or a sent quote card to scroll to the exact passage.",
@@ -12055,13 +14586,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       default: true
     }
   });
-  function dropName(list) {
+  function dropName2(list) {
     if (!Array.isArray(list))
       return;
     const next = list.filter((n) => typeof n === "string" && n !== "QuoteJump" && n !== "QuoteSticky");
     return next.length === list.length ? undefined : next;
   }
-  function migrateLegacy2() {
+  function migrateLegacy3() {
     const plugins = PlainSettings.plugins;
     const jump = plugins.QuoteJump;
     const sticky = plugins.QuoteSticky;
@@ -12078,8 +14609,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     delete plugins.QuoteSticky;
     const meta = plugins.Settings;
     if (meta) {
-      const pinned = dropName(meta.pinnedPlugins);
-      const starred = dropName(meta.starredPlugins);
+      const pinned = dropName2(meta.pinnedPlugins);
+      const starred = dropName2(meta.starredPlugins);
       if (pinned)
         meta.pinnedPlugins = pinned;
       if (starred)
@@ -12091,27 +14622,27 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     }
     SettingsStore3.markAsChanged();
-    logger23.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
+    logger26.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
   }
-  var pluginName = Object.getOwnPropertyDescriptor(settings10, "pluginName");
-  if (pluginName?.set && pluginName.get) {
-    Object.defineProperty(settings10, "pluginName", {
+  var pluginName2 = Object.getOwnPropertyDescriptor(settings11, "pluginName");
+  if (pluginName2?.set && pluginName2.get) {
+    Object.defineProperty(settings11, "pluginName", {
       configurable: true,
       enumerable: true,
-      get: pluginName.get,
+      get: pluginName2.get,
       set(name) {
         if (name === "BetterQuotes")
-          migrateLegacy2();
-        pluginName.set.call(settings10, name);
+          migrateLegacy3();
+        pluginName2.set.call(settings11, name);
       }
     });
   }
   function apply2() {
-    if (settings10.store.jumpToPassage)
+    if (settings11.store.jumpToPassage)
       startJump();
     else
       stopJump();
-    if (settings10.store.persistAcrossChats)
+    if (settings11.store.persistAcrossChats)
       startSticky();
     else
       stopSticky();
@@ -12124,7 +14655,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["chat", "ui"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
-    settings: settings10,
+    settings: settings11,
     managedStyle: "betterQuotes",
     cleanupSelectors: [".void-qs-chip"],
     start: apply2,
@@ -12280,9 +14811,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterSidebar/index.tsx
-  var logger24 = new Logger("BetterSidebar");
+  var logger27 = new Logger("BetterSidebar");
   var cl21 = classNameFactory("void-sidebar-");
-  var settings11 = definePluginSettings({
+  var settings12 = definePluginSettings({
     clickToToggle: {
       type: 3 /* BOOLEAN */,
       description: "Click anywhere on the sidebar to toggle it.",
@@ -12339,7 +14870,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var projectsCollapseObserver = null;
   var projectsCollapseTimer = null;
   function applyHeaderHover() {
-    if (settings11.store.titleRowHover)
+    if (settings12.store.titleRowHover)
       enableStyle("headerHover");
     else
       disableStyle("headerHover");
@@ -12367,7 +14898,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function startBotsCollapse() {
     stopBotsCollapse();
-    if (!settings11.store.botsDefaultCollapsed)
+    if (!settings12.store.botsDefaultCollapsed)
       return;
     let done = false;
     const tick = () => {
@@ -12389,7 +14920,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }, 1e4);
   }
   function resetChatsCollapsedStorage() {
-    if (!settings11.store.chatsDefaultExpanded)
+    if (!settings12.store.chatsDefaultExpanded)
       return;
     try {
       localStorage.removeItem(CHATS_COLLAPSED_KEY);
@@ -12431,7 +14962,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function startChatsExpand() {
     stopChatsExpand();
-    if (!settings11.store.chatsDefaultExpanded)
+    if (!settings12.store.chatsDefaultExpanded)
       return;
     resetChatsCollapsedStorage();
     let done = false;
@@ -12454,7 +14985,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }, 1e4);
   }
   function resetProjectsCollapsedStorage() {
-    if (!settings11.store.projectsDefaultCollapsed)
+    if (!settings12.store.projectsDefaultCollapsed)
       return;
     try {
       localStorage.setItem(PROJECTS_COLLAPSED_KEY, "true");
@@ -12494,7 +15025,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function startProjectsCollapse() {
     stopProjectsCollapse();
-    if (!settings11.store.projectsDefaultCollapsed)
+    if (!settings12.store.projectsDefaultCollapsed)
       return;
     resetProjectsCollapsedStorage();
     let done = false;
@@ -12538,7 +15069,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     push({ page: "main", teamId });
   }
   var ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
-    if (!settings11.use(["chatsPlus"]).chatsPlus)
+    if (!settings12.use(["chatsPlus"]).chatsPlus)
       return null;
     return /* @__PURE__ */ React.createElement("button", {
       type: "button",
@@ -12593,10 +15124,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
     }
     const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
-    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger24.error("Failed to delete", id, e))));
+    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger27.error("Failed to delete", id, e))));
   }
   function SelectCheckbox({ id, route }) {
-    const enabled = settings11.use(["batchSelect"]).batchSelect;
+    const enabled = settings12.use(["batchSelect"]).batchSelect;
     if (!enabled || !id || !isConversationRoute(route))
       return null;
     return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
@@ -12612,7 +15143,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.Prism, Devs.p],
     tags: ["ui"],
     enabledByDefault: true,
-    settings: settings11,
+    settings: settings12,
     managedStyle: "betterSidebar",
     _ChatsPlus: () => createElement(ChatsPlus),
     _UserCard: ErrorBoundary.wrap(UserCard),
@@ -12627,7 +15158,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     },
     _wrapSidebarClick(onClick, id, route) {
       return (e) => {
-        if (id && settings11.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
+        if (id && settings12.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           e.stopPropagation();
           selection2.toggle(id);
@@ -12637,10 +15168,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       };
     },
     _defaultOpen() {
-      return !settings11.store.defaultCollapsed;
+      return !settings12.store.defaultCollapsed;
     },
     _botsDefaultCollapsed() {
-      return settings11.store.botsDefaultCollapsed;
+      return settings12.store.botsDefaultCollapsed;
     },
     _chatsCollapsedInit() {
       resetChatsCollapsedStorage();
@@ -12651,10 +15182,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return true;
     },
     _projectsAutoExpand() {
-      return !settings11.store.projectsDefaultCollapsed;
+      return !settings12.store.projectsDefaultCollapsed;
     },
     _onSidebarClick() {
-      if (!settings11.store.clickToToggle)
+      if (!settings12.store.clickToToggle)
         return;
       return (e) => {
         const target = e.target;
@@ -12850,7 +15381,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/chatListStatus/index.ts
-  var logger25 = new Logger("ChatListStatus");
+  var logger28 = new Logger("ChatListStatus");
   var MARK = "void-cls";
   var LIVE2 = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD2 = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
@@ -12876,7 +15407,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var extraScanRaf = 0;
   var extraBusy = false;
   var started2 = false;
-  var obs = null;
+  var obs3 = null;
   var extraOff = null;
   function isConvId(value) {
     return typeof value === "string" && value.length >= 8 && /^[a-z0-9_-]+$/i.test(value);
@@ -13022,14 +15553,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       add(page.conversationId);
       add(page.optimisticConversationId);
     } catch (e) {
-      logger25.debug("page ids unavailable:", e);
+      logger28.debug("page ids unavailable:", e);
     }
     try {
       const { route } = RoutingStore.useRoutingStore.getState();
       add(route.conversationId);
       add(route.chat);
     } catch (e) {
-      logger25.debug("route ids unavailable:", e);
+      logger28.debug("route ids unavailable:", e);
     }
     try {
       const url = new URL(location.href);
@@ -13037,7 +15568,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       add(url.searchParams.get("conversationId"));
       add(url.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]);
     } catch (e) {
-      logger25.debug("url ids unavailable:", e);
+      logger28.debug("url ids unavailable:", e);
     }
     return ids;
   }
@@ -13085,7 +15616,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       extraSeen.add(val);
       extraStores.push(val);
       extraUnsubs.push(val.subscribe(() => schedule()));
-      logger25.info("extra store", key);
+      logger28.info("extra store", key);
     }
   }
   function attachExtraStores() {
@@ -13183,7 +15714,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           ids.add(id);
       }
     } catch (e) {
-      logger25.debug("stream stores unavailable:", e);
+      logger28.debug("stream stores unavailable:", e);
     }
     try {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
@@ -13194,7 +15725,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       for (const conversation of Object.values(byIdWithWorkspaces ?? {}))
         considerConversation(ids, conversation);
     } catch (e) {
-      logger25.debug("conversation store unavailable:", e);
+      logger28.debug("conversation store unavailable:", e);
     }
     extraLiveIds(ids);
     if (currentChatInterrupted()) {
@@ -13214,7 +15745,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return isErrorResponse(byId[page.lastMessageId]);
       }
     } catch (e) {
-      logger25.debug("error lookup failed:", e);
+      logger28.debug("error lookup failed:", e);
     }
     return false;
   }
@@ -13229,7 +15760,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return isUserInterrupt3(byId[page.lastMessageId ?? ""]) || isUserInterrupt3(byId[page.streamedMessageId ?? ""]);
       }
     } catch (e) {
-      logger25.debug("interrupt lookup failed:", e);
+      logger28.debug("interrupt lookup failed:", e);
     }
     return false;
   }
@@ -13261,11 +15792,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return currentIds()[0] ?? "";
     } catch (e) {
-      logger25.debug("conv lookup failed:", e);
+      logger28.debug("conv lookup failed:", e);
       return "";
     }
   }
-  function onStreamEnd3({ responseId }) {
+  function onStreamEnd4({ responseId }) {
     const cid = convOfResponse(responseId);
     if (!cid)
       return;
@@ -13273,7 +15804,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       response = ResponseStore.useResponseStore.getState().byId[responseId];
     } catch (e) {
-      logger25.debug("streamEnd lookup failed:", e);
+      logger28.debug("streamEnd lookup failed:", e);
     }
     if (liveIds().has(cid)) {
       schedule();
@@ -13418,7 +15949,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         clearMark(host);
     }
   }
-  function paint2() {
+  function paint3() {
     if (!started2)
       return;
     sweepPrimaryMarks();
@@ -13463,7 +15994,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     const live = [...marks].filter(([, kind]) => kind === "streaming").map(([id]) => id);
     if (live.length && !rowById.size)
-      logger25.info("live ids with no rows", live);
+      logger28.info("live ids with no rows", live);
   }
   function schedule() {
     if (!started2 || raf2)
@@ -13471,7 +16002,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     raf2 = requestAnimationFrame(() => {
       raf2 = 0;
       if (started2)
-        paint2();
+        paint3();
     });
   }
   function ownMutation(list) {
@@ -13497,14 +16028,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return true;
   }
   function observe() {
-    obs?.disconnect();
-    obs = new MutationObserver((list) => {
+    obs3?.disconnect();
+    obs3 = new MutationObserver((list) => {
       if (ownMutation(list))
         return;
       schedule();
     });
     const node = document.querySelector(SIDEBAR) ?? document.body;
-    obs.observe(node, node === document.body ? { childList: true, subtree: true } : { childList: true, subtree: true, attributes: true, attributeFilter: ["href"] });
+    obs3.observe(node, node === document.body ? { childList: true, subtree: true } : { childList: true, subtree: true, attributes: true, attributeFilter: ["href"] });
   }
   function pageKey2(s) {
     return `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.streamedMessageId ?? ""}|${s.lastMessageId ?? ""}|${s.sidePanelResponseId ?? ""}|${s.showStreamingIndicator ? 1 : 0}`;
@@ -13553,8 +16084,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (extraScanRaf)
         cancelAnimationFrame(extraScanRaf);
       extraScanRaf = 0;
-      obs?.disconnect();
-      obs = null;
+      obs3?.disconnect();
+      obs3 = null;
       extraOff?.();
       extraOff = null;
       for (const unsub of extraUnsubs)
@@ -13571,7 +16102,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       rowById.clear();
     },
     events: {
-      streamEnd: onStreamEnd3
+      streamEnd: onStreamEnd4
     },
     zustand: {
       ChatPageStore: {
@@ -13836,12 +16367,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/chatStateFavicons/index.ts
-  var logger26 = new Logger("ChatStateFavicons");
+  var logger29 = new Logger("ChatStateFavicons");
   var ICON_ID = "void-chat-state-favicon";
   var LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD_RESPONSE = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
   var USER_INTERRUPT4 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
-  var settings12 = definePluginSettings({
+  var settings13 = definePluginSettings({
     style: {
       type: 4 /* SELECT */,
       description: "How the Grok mark is overlaid with chat state.",
@@ -13872,7 +16403,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var started3 = false;
   var watching = false;
   function currentStyle() {
-    const value = settings12.store.style;
+    const value = settings13.store.style;
     return isIconStyle(value) ? value : DEFAULT_STYLE;
   }
   function captureOfficial() {
@@ -13967,7 +16498,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return false;
       return !isDeadResponse3(byId[page.streamedMessageId ?? ""]) && !isDeadResponse3(byId[page.lastMessageId ?? ""]);
     } catch (e) {
-      logger26.debug("stream stores unavailable:", e);
+      logger29.debug("stream stores unavailable:", e);
       return false;
     }
   }
@@ -13981,7 +16512,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return false;
     } catch (e) {
-      logger26.debug("interrupt DOM unavailable:", e);
+      logger29.debug("interrupt DOM unavailable:", e);
       return false;
     }
   }
@@ -13992,7 +16523,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (isUserInterrupt4(byId[page.streamedMessageId ?? ""]) || isUserInterrupt4(byId[page.lastMessageId ?? ""]))
         return true;
     } catch (e) {
-      logger26.debug("interrupt lookup failed:", e);
+      logger29.debug("interrupt lookup failed:", e);
     }
     return officialInterruptedDom2();
   }
@@ -14009,14 +16540,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (route.conversationId)
         return String(route.conversationId);
     } catch (e) {
-      logger26.debug("RoutingStore unavailable:", e);
+      logger29.debug("RoutingStore unavailable:", e);
     }
     try {
       const id = ChatPageStore.useChatPageStore.getState().conversationId;
       if (id)
         return id;
     } catch (e) {
-      logger26.debug("ChatPageStore unavailable:", e);
+      logger29.debug("ChatPageStore unavailable:", e);
     }
     return conversationToken();
   }
@@ -14065,7 +16596,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return false;
       return response.state === "error" || response.error != null;
     } catch (e) {
-      logger26.debug("ResponseStore unavailable:", e);
+      logger29.debug("ResponseStore unavailable:", e);
       return false;
     }
   }
@@ -14234,12 +16765,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       evaluateState();
     });
   }
-  function onStreamEnd4({ responseId }) {
+  function onStreamEnd5({ responseId }) {
     try {
       const response = ResponseStore.useResponseStore.getState().byId[responseId];
       lastWasError = !!response && !isUserInterrupt4(response) && (response.state === "error" || response.error != null);
     } catch (e) {
-      logger26.debug("ResponseStore unavailable:", e);
+      logger29.debug("ResponseStore unavailable:", e);
     }
     scheduleEvaluate();
   }
@@ -14374,11 +16905,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger26.debug("RoutingStore subscribe failed:", e);
+      logger29.debug("RoutingStore subscribe failed:", e);
       try {
         unsubRoute = RoutingStore.useRoutingStore.subscribe(() => scheduleEvaluate());
       } catch (err) {
-        logger26.debug("RoutingStore full subscribe failed:", err);
+        logger29.debug("RoutingStore full subscribe failed:", err);
       }
     }
     try {
@@ -14396,7 +16927,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger26.debug("ChatPageStore subscribe failed:", e);
+      logger29.debug("ChatPageStore subscribe failed:", e);
     }
     try {
       const responseStore = ResponseStore.useResponseStore;
@@ -14408,7 +16939,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger26.debug("ResponseStore subscribe failed:", e);
+      logger29.debug("ResponseStore subscribe failed:", e);
     }
   }
   function restoreOfficial() {
@@ -14431,7 +16962,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings12,
+    settings: settings13,
     startAt: "TurbopackReady" /* TurbopackReady */,
     cleanupSelectors: [`#${ICON_ID}`],
     start() {
@@ -14481,12 +17012,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     },
     onSettingsChange: rebuildIcons,
     events: {
-      streamEnd: onStreamEnd4
+      streamEnd: onStreamEnd5
     }
   });
 
   // src/plugins/cleaner/index.ts
-  var settings13 = definePluginSettings({
+  var settings14 = definePluginSettings({
     hideUpgradePlan: {
       type: 3 /* BOOLEAN */,
       description: "Hide the upgrade plan button in the user menu.",
@@ -14539,7 +17070,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var IMAGINE_UPGRADE_STYLE = "cleanerImagineUpgrade";
   var IMAGINE_UPGRADE_CSS = 'form:has([aria-label="Generation mode"]) a[href*="upgrade"],form:has([aria-label="Generation mode"]) button[aria-label="Upgrade"],form:has([aria-label="Generation mode"]) button[aria-label*="Upgrade plan"],[data-wd-toolbar] a[href*="upgrade"],[data-wd-toolbar] button[aria-label="Upgrade"]{display:none!important}';
   function applyImagineUpgrade() {
-    if (settings13.store.hideImagineUpgrade)
+    if (settings14.store.hideImagineUpgrade)
       registerStyle(IMAGINE_UPGRADE_STYLE, IMAGINE_UPGRADE_CSS);
     else
       unregisterStyle(IMAGINE_UPGRADE_STYLE);
@@ -14551,7 +17082,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.Prism, Devs.p],
     tags: ["ui"],
     enabledByDefault: true,
-    settings: settings13,
+    settings: settings14,
     start: applyImagineUpgrade,
     onSettingsChange: applyImagineUpgrade,
     stop() {
@@ -14609,7 +17140,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/cloneChats/index.tsx
-  var logger27 = new Logger("CloneChats");
+  var logger30 = new Logger("CloneChats");
   async function cloneChat(conversationId) {
     const lastResponseId = ResponseStore.useResponseStore.getState().nodesByConversationId[conversationId]?.at(-1)?.responseId;
     if (!lastResponseId)
@@ -14632,7 +17163,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function CloneItem({ conversationId }) {
     const streaming = useIsStreaming(conversationId);
     return /* @__PURE__ */ React.createElement(MenuItem, {
-      onSelect: () => cloneChat(conversationId).catch((e) => logger27.error("Failed to clone chat:", e)),
+      onSelect: () => cloneChat(conversationId).catch((e) => logger30.error("Failed to clone chat:", e)),
       disabled: streaming
     }, /* @__PURE__ */ React.createElement(CopyIcon, {
       size: 16,
@@ -14829,7 +17360,7 @@ html.void-cms-picked .void-cms-ghost {
 `);
 
   // src/plugins/compactModeSelect/index.tsx
-  var logger28 = new Logger("CompactModeSelect");
+  var logger31 = new Logger("CompactModeSelect");
   var cl22 = classNameFactory("void-cms-");
   var MODES = [
     { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
@@ -14853,11 +17384,11 @@ html.void-cms-picked .void-cms-ghost {
     "[role='menu']",
     "[role='listbox']"
   ].join(", ");
-  var TRIGGER_SEL = ".query-bar [data-query-bar-mode-select] button";
+  var TRIGGER_SEL2 = ".query-bar [data-query-bar-mode-select] button";
   var PICK_MS = 900;
   var POINTER = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
   var GHOST_STYLE = { opacity: "0", visibility: "hidden" };
-  var settings14 = definePluginSettings({
+  var settings15 = definePluginSettings({
     pinList: {
       type: 6 /* COMPONENT */,
       description: "Toggle pins and drag to set chip order.",
@@ -14968,12 +17499,12 @@ html.void-cms-picked .void-cms-ghost {
     return next;
   }
   function setOrder(ids) {
-    settings14.store.pinOrder = ids.join(",");
+    settings15.store.pinOrder = ids.join(",");
   }
   function setPinned(pin, on) {
-    settings14.store[pin] = on;
+    settings15.store[pin] = on;
   }
-  function itemText(el) {
+  function itemText2(el) {
     return `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`.replaceAll(/\s+/g, " ").trim().toLowerCase();
   }
   function titlesFor(id) {
@@ -14982,7 +17513,7 @@ html.void-cms-picked .void-cms-ghost {
     return [catalogTitle, mode?.label, id].filter((t) => !!t).map((t) => t.toLowerCase());
   }
   function matchItem(el, id) {
-    const hay = itemText(el);
+    const hay = itemText2(el);
     if (!hay)
       return false;
     return titlesFor(id).some((t) => hay === t || hay.startsWith(`${t} `));
@@ -15066,7 +17597,7 @@ html.void-cms-picked .void-cms-ghost {
     return waitUntil(() => !modeMenu());
   }
   function nativeTrigger() {
-    return document.querySelector(TRIGGER_SEL);
+    return document.querySelector(TRIGGER_SEL2);
   }
   function clickEl(el) {
     el.dispatchEvent(new PointerEvent("pointerdown", POINTER));
@@ -15136,7 +17667,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger28.warn("Failed to harvest mode icons:", e);
+      logger31.warn("Failed to harvest mode icons:", e);
     } finally {
       setPicking(false);
       harvesting = false;
@@ -15152,21 +17683,21 @@ html.void-cms-picked .void-cms-ghost {
       if (!menu) {
         const trigger = nativeTrigger();
         if (!trigger) {
-          logger28.warn("Native mode selector not found");
+          logger31.warn("Native mode selector not found");
           return;
         }
         clickEl(trigger);
         menu = await waitForMenu();
       }
       if (!menu) {
-        logger28.warn("Native mode item not found:", id);
+        logger31.warn("Native mode item not found:", id);
         return;
       }
       cloak(menu);
       stashGlyphs(menu.items);
       const item = menu.items.find((el) => matchItem(el, id));
       if (!item) {
-        logger28.warn("Native mode item not found:", id);
+        logger31.warn("Native mode item not found:", id);
         const trigger = nativeTrigger();
         if (modeMenu() && trigger)
           clickEl(trigger);
@@ -15178,7 +17709,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger28.warn("Failed to select mode:", e);
+      logger31.warn("Failed to select mode:", e);
     } finally {
       setPicking(false);
     }
@@ -15214,7 +17745,7 @@ html.void-cms-picked .void-cms-ghost {
     e.dataTransfer.dropEffect = "move";
   }
   function PinOrderEditor() {
-    const cfg = settings14.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
+    const cfg = settings15.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
     const ids = parseOrder(cfg.pinOrder);
     const [dragId, setDragId] = React.useState(null);
     const onDragStart = (id) => (e) => {
@@ -15291,7 +17822,7 @@ html.void-cms-picked .void-cms-ghost {
     })));
   }
   function PinnedModes() {
-    const cfg = settings14.use([...SETTING_KEYS]);
+    const cfg = settings15.use([...SETTING_KEYS]);
     const page = RoutingStore.useRoutingStore((s) => s.route.page);
     const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
     const catalog = ModesStore.useModesStore((s) => s.modes);
@@ -15334,7 +17865,7 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings14,
+    settings: settings15,
     managedStyle: "compactModeSelect",
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
@@ -15484,7 +18015,7 @@ html.void-cms-picked .void-cms-ghost {
 `);
 
   // src/plugins/completeToast/index.ts
-  var logger29 = new Logger("CompleteToast");
+  var logger32 = new Logger("CompleteToast");
   var cl23 = classNameFactory("void-ct-");
   var HOST2 = "void-ct-host";
   var NS = "http://www.w3.org/2000/svg";
@@ -15499,11 +18030,11 @@ html.void-cms-picked .void-cms-ghost {
   var MD_LINK = /!?\[([^\]]{0,80})\]\([^)]{0,200}\)/g;
   var MD_MARK = /[#*_>~`|-]+/g;
   var WS_ID = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|deepsearch)$/i;
-  var RETRY_MS = 80;
+  var RETRY_MS2 = 80;
   var PREVIEW_MAX = 120;
   var TOASTED_MAX = 80;
   var DURATION_MAX = 20;
-  var settings15 = definePluginSettings({
+  var settings16 = definePluginSettings({
     keepUntilDismissed: {
       type: 3 /* BOOLEAN */,
       description: "Don't auto-close the toast. Dismiss with X, or by opening the chat.",
@@ -15573,7 +18104,7 @@ html.void-cms-picked .void-cms-ghost {
     } catch {}
     return false;
   }
-  function onImaginePage2() {
+  function onImaginePage3() {
     try {
       const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
       if (page.startsWith("imagine"))
@@ -15598,14 +18129,14 @@ html.void-cms-picked .void-cms-ghost {
       add(page.conversationId);
       add(page.optimisticConversationId);
     } catch (e) {
-      logger29.debug("page ids unavailable:", e);
+      logger32.debug("page ids unavailable:", e);
     }
     try {
       const { route } = RoutingStore.useRoutingStore.getState();
       add(route.conversationId);
       add(route.chat);
     } catch (e) {
-      logger29.debug("route ids unavailable:", e);
+      logger32.debug("route ids unavailable:", e);
     }
     try {
       const url = new URL(location.href);
@@ -15613,7 +18144,7 @@ html.void-cms-picked .void-cms-ghost {
       add(url.searchParams.get("conversationId"));
       add(url.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]);
     } catch (e) {
-      logger29.debug("url ids unavailable:", e);
+      logger32.debug("url ids unavailable:", e);
     }
     return ids;
   }
@@ -15685,7 +18216,7 @@ html.void-cms-picked .void-cms-ghost {
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid];
     } catch (e) {
-      logger29.debug("MessageStore unavailable:", e);
+      logger32.debug("MessageStore unavailable:", e);
       return;
     }
   }
@@ -15704,7 +18235,7 @@ html.void-cms-picked .void-cms-ghost {
       if (isLiveResponse2(lastAssistant2(cid, byConversationId)))
         return true;
     } catch (e) {
-      logger29.debug("ResponseStore live lookup failed:", e);
+      logger32.debug("ResponseStore live lookup failed:", e);
     }
     return false;
   }
@@ -15737,7 +18268,7 @@ html.void-cms-picked .void-cms-ghost {
           return id;
       }
     } catch (e) {
-      logger29.debug("gateway cid lookup failed:", e);
+      logger32.debug("gateway cid lookup failed:", e);
     }
     try {
       const { byConversationId } = ResponseStore.useResponseStore.getState();
@@ -15746,7 +18277,7 @@ html.void-cms-picked .void-cms-ghost {
           return id;
       }
     } catch (e) {
-      logger29.debug("response cid lookup failed:", e);
+      logger32.debug("response cid lookup failed:", e);
     }
     return "";
   }
@@ -15755,7 +18286,7 @@ html.void-cms-picked .void-cms-ghost {
       const { byId, byIdWithWorkspaces } = ConversationStore.useConversationStore.getState();
       return byId[cid] ?? byIdWithWorkspaces[cid];
     } catch (e) {
-      logger29.debug("conversation lookup failed:", e);
+      logger32.debug("conversation lookup failed:", e);
       return;
     }
   }
@@ -15769,7 +18300,7 @@ html.void-cms-picked .void-cms-ghost {
       const conv = byId[cid] ?? byIdWithWorkspaces[cid];
       return asWorkspaceId(conv?.workspaceId) || asWorkspaceId(conv?.workspaces);
     } catch (e) {
-      logger29.debug("workspace lookup failed:", e);
+      logger32.debug("workspace lookup failed:", e);
       return "";
     }
   }
@@ -15792,7 +18323,7 @@ html.void-cms-picked .void-cms-ghost {
     return clean.length > PREVIEW_MAX ? `${clean.slice(0, PREVIEW_MAX - 1)}…` : clean;
   }
   function previewOf(cid, rid) {
-    if (!settings15.store.showPreview)
+    if (!settings16.store.showPreview)
       return "";
     try {
       const { byId, byConversationId } = ResponseStore.useResponseStore.getState();
@@ -15835,7 +18366,7 @@ html.void-cms-picked .void-cms-ghost {
         chat.setOptimisticConversationId(undefined);
       chat.setProjectId(ws || undefined);
     } catch (e) {
-      logger29.debug("ChatPageStore update failed:", e);
+      logger32.debug("ChatPageStore update failed:", e);
     }
   }
   function navigateTo(id) {
@@ -15850,11 +18381,11 @@ html.void-cms-picked .void-cms-ghost {
       routing.push(dest);
       applyChatPage(cid, ws);
     } catch (e) {
-      logger29.error("Failed to navigate:", e);
+      logger32.error("Failed to navigate:", e);
       try {
         location.assign(hrefFor(cid, ws));
       } catch (navErr) {
-        logger29.error("Fallback navigation failed:", navErr);
+        logger32.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -15921,7 +18452,7 @@ html.void-cms-picked .void-cms-ghost {
     if (!toast)
       return;
     if (toast.kind === "imagine") {
-      if (onImaginePage2())
+      if (onImaginePage3())
         hide();
       return;
     }
@@ -15929,18 +18460,18 @@ html.void-cms-picked .void-cms-ghost {
       hide();
   }
   function shouldPersist() {
-    return !!settings15.store.keepUntilDismissed || clamp(settings15.store.duration, 0, DURATION_MAX) <= 0;
+    return !!settings16.store.keepUntilDismissed || clamp(settings16.store.duration, 0, DURATION_MAX) <= 0;
   }
   function armTimer() {
     clearTimer();
     if (shouldPersist())
       return;
-    const ms = clamp(settings15.store.duration, 0, DURATION_MAX) * 1000;
+    const ms = clamp(settings16.store.duration, 0, DURATION_MAX) * 1000;
     hideAt = Date.now() + ms;
     hideTimer = setTimeout(hide, ms);
   }
   function migratePersist() {
-    if (settings15.store.duration !== 0 || settings15.store.keepUntilDismissed)
+    if (settings16.store.duration !== 0 || settings16.store.keepUntilDismissed)
       return;
     mergePluginSettings("CompleteToast", {
       keepUntilDismissed: true,
@@ -15970,7 +18501,7 @@ html.void-cms-picked .void-cms-ghost {
     hide();
     if (kind === "chat" && onBotPage2())
       return;
-    if (kind === "imagine" && onImaginePage2())
+    if (kind === "imagine" && onImaginePage3())
       return;
     toast = { cid, rid, kind };
     const root = document.createElement("div");
@@ -16032,11 +18563,11 @@ html.void-cms-picked .void-cms-ghost {
       const dest = id ? { page: "imagine-post", postId: id, teamId: routing.route.teamId ?? null } : { page: "imagine", teamId: routing.route.teamId ?? null };
       routing.push(dest);
     } catch (e) {
-      logger29.error("Failed to navigate to Imagine:", e);
+      logger32.error("Failed to navigate to Imagine:", e);
       try {
         location.assign(id ? `/imagine/post/${encodeURIComponent(id)}` : "/imagine");
       } catch (navErr) {
-        logger29.error("Fallback Imagine navigation failed:", navErr);
+        logger32.error("Fallback Imagine navigation failed:", navErr);
       }
     }
   }
@@ -16077,9 +18608,9 @@ html.void-cms-picked .void-cms-ghost {
     }
   }
   function maybeFinishImagine(id) {
-    if (!started4 || !settings15.store.imagineGeneration || !id)
+    if (!started4 || !settings16.store.imagineGeneration || !id)
       return;
-    if (onImaginePage2())
+    if (onImaginePage3())
       return;
     const key = `imagine:${id}`;
     if (toasted.has(key))
@@ -16088,7 +18619,7 @@ html.void-cms-picked .void-cms-ghost {
     try {
       item = MediaStore.useMediaStore.getState().byId[id];
     } catch (e) {
-      logger29.debug("Imagine item unavailable:", e);
+      logger32.debug("Imagine item unavailable:", e);
       return;
     }
     if (!item)
@@ -16099,10 +18630,10 @@ html.void-cms-picked .void-cms-ghost {
       return;
     markToasted(key);
     const prompt = (item.prompt ?? item.originalPrompt ?? "").trim();
-    show(id, "", "imagine", settings15.store.showPreview ? prompt.slice(0, PREVIEW_MAX) : "");
+    show(id, "", "imagine", settings16.store.showPreview ? prompt.slice(0, PREVIEW_MAX) : "");
   }
   function syncImagine(current, prev) {
-    if (!started4 || !settings15.store.imagineGeneration)
+    if (!started4 || !settings16.store.imagineGeneration)
       return;
     if (!prev)
       return;
@@ -16155,7 +18686,7 @@ html.void-cms-picked .void-cms-ghost {
           ids.add(id);
       }
     } catch (e) {
-      logger29.debug("gateway live scan failed:", e);
+      logger32.debug("gateway live scan failed:", e);
     }
     try {
       const { byConversationId } = ResponseStore.useResponseStore.getState();
@@ -16164,7 +18695,7 @@ html.void-cms-picked .void-cms-ghost {
           ids.add(id);
       }
     } catch (e) {
-      logger29.debug("response live scan failed:", e);
+      logger32.debug("response live scan failed:", e);
     }
     return ids;
   }
@@ -16177,7 +18708,7 @@ html.void-cms-picked .void-cms-ghost {
           markToasted(last.responseId);
       }
     } catch (e) {
-      logger29.debug("seed responses failed:", e);
+      logger32.debug("seed responses failed:", e);
     }
     try {
       for (const [id, gw] of Object.entries(MessageStore.useMessageStore.getState().conversations ?? {})) {
@@ -16188,7 +18719,7 @@ html.void-cms-picked .void-cms-ghost {
           markToasted(node.id);
       }
     } catch (e) {
-      logger29.debug("seed gateway failed:", e);
+      logger32.debug("seed gateway failed:", e);
     }
   }
   function finishClosed() {
@@ -16203,7 +18734,7 @@ html.void-cms-picked .void-cms-ghost {
         maybeFinish(id, last.responseId);
       }
     } catch (e) {
-      logger29.debug("closed scan failed:", e);
+      logger32.debug("closed scan failed:", e);
     }
   }
   function syncLive() {
@@ -16221,14 +18752,14 @@ html.void-cms-picked .void-cms-ghost {
     finishClosed();
     dismissIfCurrent();
   }
-  function onStreamEnd5({ responseId }) {
+  function onStreamEnd6({ responseId }) {
     if (retryTimer)
       clearTimeout(retryTimer);
     const attempt = (retried) => {
       const cid = cidOf(responseId);
       if (!cid || isLiveCid(cid)) {
         if (!retried)
-          retryTimer = setTimeout(() => attempt(true), RETRY_MS);
+          retryTimer = setTimeout(() => attempt(true), RETRY_MS2);
         return;
       }
       if (currentIds2().includes(cid)) {
@@ -16273,7 +18804,7 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
-    settings: settings15,
+    settings: settings16,
     startAt: "TurbopackReady" /* TurbopackReady */,
     managedStyle: "completeToast",
     cleanupSelectors: [`.${HOST2}`, `#${HOST2}`],
@@ -16301,7 +18832,7 @@ html.void-cms-picked .void-cms-ghost {
         armTimer();
     },
     events: {
-      streamEnd: onStreamEnd5
+      streamEnd: onStreamEnd6
     },
     zustand: {
       MessageStore: {
@@ -16334,7 +18865,7 @@ html.void-cms-picked .void-cms-ghost {
   var FRAME_KIDS = "form:has(.query-bar)>:first-child>*";
   var BACKDROP = ".chat-input-backdrop,.pointer-events-none.absolute.bottom-0.z-0[class*=bg-gradient-to-t]";
   var RADIUS = "var(--border-t-radius,10rem) var(--border-t-radius,10rem) var(--border-b-radius,10rem) var(--border-b-radius,10rem)";
-  var settings16 = definePluginSettings({
+  var settings17 = definePluginSettings({
     opacity: {
       type: 5 /* SLIDER */,
       description: "Background opacity of the chat input. 100 is fully opaque.",
@@ -16351,8 +18882,8 @@ html.void-cms-picked .void-cms-ghost {
     }
   });
   function apply3() {
-    const pct = clamp(settings16.store.opacity, 0, 100);
-    const blur = clamp(settings16.store.blur, 0, 40);
+    const pct = clamp(settings17.store.opacity, 0, 100);
+    const blur = clamp(settings17.store.blur, 0, 40);
     const alpha = pct / 100;
     const frost = pct < 100 && blur > 0 ? `-webkit-backdrop-filter:blur(${blur}px)!important;backdrop-filter:blur(${blur}px)!important;` : "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;";
     registerStyle(STYLE_NAME3, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + "pointer-events:auto!important;" + `background-color:hsl(var(--surface-l1)/${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}" + `${SHELL}:has([data-wd-toolbar]){overflow:visible!important;clip-path:none!important}`);
@@ -16364,7 +18895,7 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["ui", "chat"],
     enabledByDefault: true,
-    settings: settings16,
+    settings: settings17,
     start: apply3,
     onSettingsChange: apply3,
     stop() {
@@ -16565,20 +19096,20 @@ html.void-cms-picked .void-cms-ghost {
   var TrashIcon = findExportedComponentLazy("TrashIcon");
   var PlusIcon2 = findExportedComponentLazy("PlusIcon");
   var MAX_LENGTH = 4000;
-  var settings17 = definePluginSettings({
+  var settings18 = definePluginSettings({
     editor: {
       type: 6 /* COMPONENT */,
       component: () => /* @__PURE__ */ React.createElement(PresetsEditor, null)
     }
   }).withPrivateSettings();
   function getPresets() {
-    return settings17.plain.presets ?? [];
+    return settings18.plain.presets ?? [];
   }
   function setPresets(presets) {
-    settings17.store.presets = presets;
+    settings18.store.presets = presets;
   }
   function getAssignments() {
-    return settings17.plain.assignments ?? {};
+    return settings18.plain.assignments ?? {};
   }
   function PresetCard({ preset, onEdit, onDelete }) {
     return /* @__PURE__ */ React.createElement("div", {
@@ -16661,7 +19192,7 @@ html.void-cms-picked .void-cms-ghost {
     }, "Done")));
   }
   function PresetsEditor() {
-    const presets = settings17.use(["presets"]).presets ?? [];
+    const presets = settings18.use(["presets"]).presets ?? [];
     const [editingId, setEditingId] = useState(null);
     const updatePreset = useCallback((updated) => {
       setPresets(getPresets().map((p) => p.id === updated.id ? updated : p));
@@ -16673,7 +19204,7 @@ html.void-cms-picked .void-cms-ghost {
         if (v === id)
           delete a[k];
       }
-      settings17.store.assignments = a;
+      settings18.store.assignments = a;
       setEditingId((prev) => prev === id ? null : prev);
     }, []);
     const addPreset = useCallback(() => {
@@ -16708,8 +19239,8 @@ html.void-cms-picked .void-cms-ghost {
     }));
   }
   function InstructionsMenu({ conversationId }) {
-    const presets = settings17.use(["presets"]).presets ?? [];
-    const assignments = settings17.use(["assignments"]).assignments ?? {};
+    const presets = settings18.use(["presets"]).presets ?? [];
+    const assignments = settings18.use(["assignments"]).assignments ?? {};
     const activePresetId = assignments[conversationId];
     const assign = useCallback((presetId) => {
       const a = { ...getAssignments() };
@@ -16717,7 +19248,7 @@ html.void-cms-picked .void-cms-ghost {
         a[conversationId] = presetId;
       else
         delete a[conversationId];
-      settings17.store.assignments = a;
+      settings18.store.assignments = a;
     }, [conversationId]);
     if (!presets.length)
       return null;
@@ -16748,7 +19279,7 @@ html.void-cms-picked .void-cms-ghost {
     description: "Create instruction presets and assign them to conversations.",
     authors: [Devs.Prism],
     tags: ["chat"],
-    settings: settings17,
+    settings: settings18,
     contextMenuItems: {
       conversation: {
         label: "Instructions",
@@ -16941,7 +19472,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var ZOOM_MAX = 4;
   var SIZE_VAR = "--void-csi-avatar-size";
   var cl25 = classNameFactory("void-csi-");
-  var settings18 = definePluginSettings({
+  var settings19 = definePluginSettings({
     displayName: {
       type: 0 /* STRING */,
       description: "Display name next to the sidebar avatar. Empty keeps the official name.",
@@ -17043,25 +19574,25 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return url;
   }
   function resetCrop() {
-    settings18.store.cropX = 0.5;
-    settings18.store.cropY = 0.5;
-    settings18.store.cropZoom = 1;
+    settings19.store.cropX = 0.5;
+    settings19.store.cropY = 0.5;
+    settings19.store.cropZoom = 1;
   }
   function clearAvatar() {
-    settings18.store.avatarUrl = "";
-    settings18.store.avatarSource = "";
+    settings19.store.avatarUrl = "";
+    settings19.store.avatarSource = "";
     resetCrop();
   }
   var adoptGen = 0;
   async function adoptSource(src) {
     const gen = ++adoptGen;
     resetCrop();
-    settings18.store.avatarSource = src;
+    settings19.store.avatarSource = src;
     const baked = await bake(src, 0.5, 0.5, 1);
     if (gen !== adoptGen)
       return false;
     if (baked)
-      settings18.store.avatarUrl = baked;
+      settings19.store.avatarUrl = baked;
     return !!baked;
   }
   function imageFile(data) {
@@ -17087,7 +19618,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return adoptSource(src);
   }
   function CropStage({ src }) {
-    const { cropX, cropY, cropZoom } = settings18.use(["cropX", "cropY", "cropZoom"]);
+    const { cropX, cropY, cropZoom } = settings19.use(["cropX", "cropY", "cropZoom"]);
     const [nat, setNat] = useState(null);
     const [x, setX] = useState(() => num(cropX, 0.5));
     const [y, setY] = useState(() => num(cropY, 0.5));
@@ -17106,11 +19637,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           setNat({ w: img.naturalWidth, h: img.naturalHeight });
       };
       img.src = src;
-      setX(num(settings18.store.cropX, 0.5));
-      setY(num(settings18.store.cropY, 0.5));
-      setZoom(num(settings18.store.cropZoom, 1));
-      if (!settings18.store.avatarSource)
-        settings18.store.avatarSource = src;
+      setX(num(settings19.store.cropX, 0.5));
+      setY(num(settings19.store.cropY, 0.5));
+      setZoom(num(settings19.store.cropZoom, 1));
+      if (!settings19.store.avatarSource)
+        settings19.store.avatarSource = src;
       return () => {
         dead = true;
       };
@@ -17150,12 +19681,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     function commit(nx, ny, nz, immediate = false) {
       const next = applyPos(nx, ny, nz);
       const run = () => {
-        settings18.store.cropX = next.x;
-        settings18.store.cropY = next.y;
-        settings18.store.cropZoom = next.z;
+        settings19.store.cropX = next.x;
+        settings19.store.cropY = next.y;
+        settings19.store.cropZoom = next.z;
         bake(src, next.x, next.y, next.z).then((url) => {
           if (url)
-            settings18.store.avatarUrl = url;
+            settings19.store.avatarUrl = url;
         });
       };
       if (bakeTimer.current)
@@ -17236,7 +19767,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }, "Drag to pan · scroll to zoom. Circle matches the sidebar crop."));
   }
   function AvatarUrlField() {
-    const { avatarUrl, avatarSource } = settings18.use(["avatarUrl", "avatarSource"]);
+    const { avatarUrl, avatarSource } = settings19.use(["avatarUrl", "avatarSource"]);
     const raw = String(avatarUrl ?? "");
     const source = String(avatarSource ?? "");
     const cropSrc = source.startsWith("data:image/") ? source : raw.startsWith("data:image/") ? raw : "";
@@ -17249,12 +19780,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         clearTimeout(urlTimer.current);
     }, []);
     function onUrlChange(value) {
-      settings18.store.avatarUrl = value;
+      settings19.store.avatarUrl = value;
       const trimmed = value.trim();
       if (urlTimer.current)
         clearTimeout(urlTimer.current);
       if (!trimmed) {
-        settings18.store.avatarSource = "";
+        settings19.store.avatarSource = "";
         resetCrop();
         setRemoteFail(false);
         return;
@@ -17275,7 +19806,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       }
       if (/^https?:\/\//.test(trimmed)) {
         setRemoteFail(false);
-        settings18.store.avatarSource = "";
+        settings19.store.avatarSource = "";
         urlTimer.current = setTimeout(() => {
           bitmapFromUrl(trimmed).then((bmp) => {
             if (!bmp) {
@@ -17294,7 +19825,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       }
       setRemoteFail(false);
-      settings18.store.avatarSource = "";
+      settings19.store.avatarSource = "";
     }
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
@@ -17359,10 +19890,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var painting = false;
   var started5 = false;
   function trimName() {
-    return String(settings18.store.displayName ?? "").trim();
+    return String(settings19.store.displayName ?? "").trim();
   }
   function avatarSrc() {
-    const raw = String(settings18.store.avatarUrl ?? "").trim();
+    const raw = String(settings19.store.avatarUrl ?? "").trim();
     if (!raw || failed.has(raw))
       return null;
     if (raw.startsWith("data:image/"))
@@ -17507,7 +20038,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     for (const menu of document.querySelectorAll(MENU)) {
       if (!isAccountMenu(menu))
         continue;
-      if (!settings18.store.applyToMenu) {
+      if (!settings19.store.applyToMenu) {
         dropNames(menu);
         unhide(menu);
         for (const img of menu.querySelectorAll(`img[${MARK2}]`))
@@ -17540,7 +20071,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     unhide(document);
   }
   function applySize() {
-    const n = clamp(Math.round(num(settings18.store.avatarSize, SIZE_DEFAULT)), SIZE_MIN, SIZE_MAX);
+    const n = clamp(Math.round(num(settings19.store.avatarSize, SIZE_DEFAULT)), SIZE_MIN, SIZE_MAX);
     document.documentElement.style.setProperty(SIZE_VAR, `${n}px`);
   }
   function clearSize() {
@@ -17577,7 +20108,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const el = m.target;
       if (!(el instanceof HTMLImageElement))
         continue;
-      if (el.closest(FOOTER) || settings18.store.applyToMenu && el.closest(MENU)) {
+      if (el.closest(FOOTER) || settings19.store.applyToMenu && el.closest(MENU)) {
         schedule2();
         return;
       }
@@ -17600,7 +20131,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     authors: [Devs.p],
     tags: ["ui"],
     enabledByDefault: false,
-    settings: settings18,
+    settings: settings19,
     managedStyle: "customSidebarIdentity",
     cleanupSelectors: [`.${NAME_CLASS}`],
     start() {
@@ -17634,7 +20165,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 
   // src/plugins/downloadTTS/index.tsx
   var cl26 = classNameFactory("void-download-tts-");
-  var logger30 = new Logger("DownloadTTS");
+  var logger33 = new Logger("DownloadTTS");
   async function fetchAndDownload() {
     const { currentStreamId } = TextToSpeechStore.useTextToSpeechStore.getState();
     if (!currentStreamId)
@@ -17654,7 +20185,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       try {
         await fetchAndDownload();
       } catch (e) {
-        logger30.error("Failed to download TTS audio:", e);
+        logger33.error("Failed to download TTS audio:", e);
       }
     });
     return /* @__PURE__ */ React.createElement(Button, {
@@ -17695,7 +20226,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/exportChat/index.tsx
-  var logger31 = new Logger("ExportChat");
+  var logger34 = new Logger("ExportChat");
   function buildExportMessage(r) {
     return {
       id: r.responseId,
@@ -17870,7 +20401,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       className: "void-export-icon"
     }), "Export"), /* @__PURE__ */ React.createElement(MenuSubContent, null, FORMATS.map(({ fmt, label }) => /* @__PURE__ */ React.createElement(MenuItem, {
       key: fmt,
-      onSelect: () => exportChat(conversationId, fmt).catch((e) => logger31.error("Failed to export chat", e))
+      onSelect: () => exportChat(conversationId, fmt).catch((e) => logger34.error("Failed to export chat", e))
     }, label))));
   }
   var exportChat_default = definePlugin({
@@ -18069,7 +20600,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/inputHistory/index.tsx
-  var logger32 = new Logger("InputHistory");
+  var logger35 = new Logger("InputHistory");
   var cl27 = classNameFactory("void-ih-");
   var EDITOR_SEL2 = '.query-bar .tiptap.ProseMirror[contenteditable="true"]';
   var ZWSP = /\u200B/g;
@@ -18079,7 +20610,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var HUD_GAP_PX = 8;
   var APPLY_QUIET_MS = 120;
   var CAPTURE_DEDUPE_MS = 2000;
-  var settings19 = definePluginSettings({
+  var settings20 = definePluginSettings({
     maxEntries: {
       type: 5 /* SLIDER */,
       description: "Maximum stored prompts.",
@@ -18101,7 +20632,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var cursor = 0;
   var draft = "";
   var recalling = false;
-  var applying2 = false;
+  var applying3 = false;
   var composing = false;
   var applyGen = 0;
   var keys2 = null;
@@ -18121,23 +20652,23 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   }
   function useImagineBucket() {
-    return !!settings19.store.separateImagine && isImaginePage2();
+    return !!settings20.store.separateImagine && isImaginePage2();
   }
   function listOf(raw) {
     return Array.isArray(raw) ? raw.filter((x) => typeof x === "string") : [];
   }
   function getEntries() {
-    return listOf(useImagineBucket() ? settings19.plain.imagineEntries : settings19.plain.entries);
+    return listOf(useImagineBucket() ? settings20.plain.imagineEntries : settings20.plain.entries);
   }
   function cap(entries) {
-    const max = clamp(settings19.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
+    const max = clamp(settings20.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
     return entries.length > max ? entries.slice(entries.length - max) : entries;
   }
   function setEntries(entries) {
     if (useImagineBucket())
-      settings19.store.imagineEntries = entries;
+      settings20.store.imagineEntries = entries;
     else
-      settings19.store.entries = entries;
+      settings20.store.entries = entries;
   }
   function normalize(text) {
     return text.replaceAll(ZWSP, "").replace(/\n$/, "").trim();
@@ -18153,7 +20684,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   function invalidateApply() {
     applyGen++;
-    applying2 = false;
+    applying3 = false;
     applyEl = null;
     clearTimeout(applyTimer);
     applyTimer = undefined;
@@ -18246,7 +20777,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       }
     } catch (err) {
-      logger32.debug("placeCaret pm failed:", err);
+      logger35.debug("placeCaret pm failed:", err);
     }
     const native = window.getSelection();
     if (!native)
@@ -18262,7 +20793,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     applyTimer = setTimeout(() => {
       if (gen !== applyGen)
         return;
-      applying2 = false;
+      applying3 = false;
       const el = applyEl;
       applyEl = null;
       if (!el || composing)
@@ -18284,7 +20815,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     range.selectNodeContents(el);
     sel.removeAllRanges();
     sel.addRange(range);
-    applying2 = true;
+    applying3 = true;
     applyEl = el;
     applyAtStart = atStart;
     const gen = ++applyGen;
@@ -18294,7 +20825,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       else
         document.execCommand("insertText", false, text);
     } catch (err) {
-      logger32.debug("insertText failed:", err);
+      logger35.debug("insertText failed:", err);
     }
     placeCaret(el, atStart);
     scheduleApplyEnd(gen);
@@ -18362,7 +20893,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     else
       hideHud();
   }
-  function onKeyDown3(e) {
+  function onKeyDown4(e) {
     if (imeEvent(e))
       return;
     if (e.ctrlKey || e.metaKey)
@@ -18370,7 +20901,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const el = chatEditor(e.target);
     if (!el)
       return;
-    if (applying2 && e.key !== "ArrowUp" && e.key !== "ArrowDown")
+    if (applying3 && e.key !== "ArrowUp" && e.key !== "ArrowDown")
       invalidateApply();
     if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
       dropRecall(el);
@@ -18402,7 +20933,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     e.stopImmediatePropagation();
     cycle(older, el);
   }
-  function onPointerDown3(e) {
+  function onPointerDown4(e) {
     if (!recalling)
       return;
     const el = chatEditor(e.target);
@@ -18429,12 +20960,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (!el)
       return;
     if (imeEvent(e)) {
-      if (applying2)
+      if (applying3)
         invalidateApply();
       return;
     }
     const recalled = matchesRecall(el);
-    if (applying2 && recalled)
+    if (applying3 && recalled)
       return;
     if (recalling && !recalled)
       dropRecall(el);
@@ -18466,19 +20997,19 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       pushEntry(editorText(editor));
   }
   function removeEntry(index, imagine) {
-    const list = listOf(imagine ? settings19.plain.imagineEntries : settings19.plain.entries);
+    const list = listOf(imagine ? settings20.plain.imagineEntries : settings20.plain.entries);
     if (index < 0 || index >= list.length)
       return;
     const next = list.filter((_, i) => i !== index);
     if (imagine)
-      settings19.store.imagineEntries = next;
+      settings20.store.imagineEntries = next;
     else
-      settings19.store.entries = next;
+      settings20.store.entries = next;
     if (imagine === useImagineBucket())
       resetBrowse(next.length);
   }
   function HistoryPanel() {
-    const { entries, imagineEntries, separateImagine } = settings19.use(["entries", "imagineEntries", "separateImagine"]);
+    const { entries, imagineEntries, separateImagine } = settings20.use(["entries", "imagineEntries", "separateImagine"]);
     const [bucket, setBucket] = useState("chat");
     const imagine = !!separateImagine && bucket === "imagine";
     const list = imagine ? imagineEntries ?? [] : entries ?? [];
@@ -18561,7 +21092,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         tooltipContent: "Copy",
         "aria-label": "Copy",
         onClick: () => {
-          copyToClipboard(row.text).catch((err) => logger32.error("copy failed:", err));
+          copyToClipboard(row.text).catch((err) => logger35.error("copy failed:", err));
         }
       }, /* @__PURE__ */ React.createElement(CopyIcon, {
         size: 16
@@ -18588,9 +21119,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       danger: true,
       onConfirm: () => {
         if (imagine)
-          settings19.store.imagineEntries = [];
+          settings20.store.imagineEntries = [];
         else
-          settings19.store.entries = [];
+          settings20.store.entries = [];
         if (imagine === useImagineBucket())
           resetBrowse(0);
         setOpenId(null);
@@ -18605,7 +21136,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
-    settings: settings19,
+    settings: settings20,
     managedStyle: "inputHistory",
     cleanupSelectors: [".void-ih-hud"],
     start() {
@@ -18617,13 +21148,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       invalidateApply();
       keys2 = new AbortController;
       const { signal } = keys2;
-      document.addEventListener("keydown", onKeyDown3, { capture: true, signal });
+      document.addEventListener("keydown", onKeyDown4, { capture: true, signal });
       document.addEventListener("input", onInput, { capture: true, signal });
       document.addEventListener("compositionstart", onCompositionStart, { capture: true, signal });
       document.addEventListener("compositionend", onCompositionEnd, { capture: true, signal });
       document.addEventListener("submit", onSubmit, { capture: true, signal });
       document.addEventListener("click", onClick2, { capture: true, signal });
-      document.addEventListener("pointerdown", onPointerDown3, { capture: true, signal });
+      document.addEventListener("pointerdown", onPointerDown4, { capture: true, signal });
     },
     stop() {
       keys2?.abort();
@@ -18641,10 +21172,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         setEntries(next);
       if (cursor > next.length)
         cursor = next.length;
-      const imagine = listOf(settings19.plain.imagineEntries);
+      const imagine = listOf(settings20.plain.imagineEntries);
       const imagineNext = cap(imagine);
       if (imagineNext.length !== imagine.length)
-        settings19.store.imagineEntries = imagineNext;
+        settings20.store.imagineEntries = imagineNext;
     },
     zustand: {
       RoutingStore: {
@@ -18965,10 +21496,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
 
   // src/plugins/messageTimestamps/index.tsx
-  var logger33 = new Logger("MessageTimestamps");
+  var logger36 = new Logger("MessageTimestamps");
   var STAMP_MAX = 5000;
   var RESPONSE_URL = /\/(?:load-responses|share_links|response-node)(?:\/|\?|$)/i;
-  var settings20 = definePluginSettings({
+  var settings21 = definePluginSettings({
     showDate: {
       type: 3 /* BOOLEAN */,
       description: "Show the full date for messages older than today.",
@@ -18982,16 +21513,16 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }).withPrivateSettings();
   var tick = createExternalStore();
   var cache = null;
-  var origFetch = null;
-  var origXhrOpen = null;
-  var origXhrSend = null;
+  var origFetch2 = null;
+  var origXhrOpen2 = null;
+  var origXhrSend2 = null;
   var origList = null;
-  var xhrMeta = new WeakMap;
+  var xhrMeta2 = new WeakMap;
   function stamps() {
     if (cache)
       return cache;
     cache = new Map;
-    const raw = settings20.plain.stamps;
+    const raw = settings21.plain.stamps;
     if (raw && typeof raw === "object") {
       for (const [id, ms] of Object.entries(raw)) {
         if (typeof ms === "number" && Number.isFinite(ms))
@@ -19004,10 +21535,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const next = {};
     for (const [id, ms] of stamps())
       next[id] = ms;
-    settings20.store.stamps = next;
+    settings21.store.stamps = next;
   }
-  var persist2 = debounce(persistNow, 400);
-  function remember2(id, ms, sender, state, force = false) {
+  var persist3 = debounce(persistNow, 400);
+  function remember3(id, ms, sender, state, force = false) {
     if (!id)
       return false;
     const map = stamps();
@@ -19023,7 +21554,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         break;
       map.delete(oldest);
     }
-    persist2();
+    persist3();
     return prev !== ms;
   }
   function conversationIdOf(id, rec) {
@@ -19040,7 +21571,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           return cid;
       }
     } catch (e) {
-      logger33.debug("conversation id lookup failed", e);
+      logger36.debug("conversation id lookup failed", e);
     }
     return "";
   }
@@ -19080,7 +21611,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         }
       }
     } catch (e) {
-      logger33.debug("message store unavailable", e);
+      logger36.debug("message store unavailable", e);
     }
     return out;
   }
@@ -19090,7 +21621,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id]?.status === "complete";
     } catch (e) {
-      logger33.debug("message store unavailable", e);
+      logger36.debug("message store unavailable", e);
       return false;
     }
   }
@@ -19111,7 +21642,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         break;
       }
     } catch (e) {
-      logger33.debug("stable key lookup failed", e);
+      logger36.debug("stable key lookup failed", e);
     }
     return keys;
   }
@@ -19130,15 +21661,15 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     let changed = false;
     if (user) {
       for (const key of userKeys(rec, id)) {
-        if (remember2(key, ms, "human", state, force))
+        if (remember3(key, ms, "human", state, force))
           changed = true;
       }
       return changed;
     }
-    if (remember2(id, ms, sender, state, force))
+    if (remember3(id, ms, sender, state, force))
       changed = true;
     for (const key of extraKeys(rec, id)) {
-      if (remember2(key, ms, sender, state, force))
+      if (remember3(key, ms, sender, state, force))
         changed = true;
     }
     return changed;
@@ -19152,7 +21683,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       }
       return Object.values(byId ?? {});
     } catch (e) {
-      logger33.debug("response store unavailable", e);
+      logger36.debug("response store unavailable", e);
       return [];
     }
   }
@@ -19176,7 +21707,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       ];
       return neighborTime(id, records) ?? conversationCreateTime(id);
     } catch (e) {
-      logger33.debug("node neighbor lookup failed", e);
+      logger36.debug("node neighbor lookup failed", e);
     }
     return neighborTime(id, storeRecords(id)) ?? conversationCreateTime(id);
   }
@@ -19192,7 +21723,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return ms != null && !isFresh(ms) ? ms : null;
       }
     } catch (e) {
-      logger33.debug("conversation time lookup failed", e);
+      logger36.debug("conversation time lookup failed", e);
     }
     return null;
   }
@@ -19204,7 +21735,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (hit)
         return { ...rec, ...hit };
     } catch (e) {
-      logger33.debug("byId lookup failed", e);
+      logger36.debug("byId lookup failed", e);
     }
     return rec;
   }
@@ -19247,7 +21778,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (changed)
       tick.notify();
   }
-  function requestUrl(input) {
+  function requestUrl2(input) {
     if (typeof input === "string")
       return input;
     if (input instanceof URL)
@@ -19258,30 +21789,30 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return "";
     }
   }
-  function hookFetch() {
-    if (origFetch)
+  function hookFetch2() {
+    if (origFetch2)
       return;
-    origFetch = pageWindow.fetch;
+    origFetch2 = pageWindow.fetch;
     pageWindow.fetch = function voidMessageTimestampsFetch(input, init) {
-      const url = requestUrl(input);
-      const promise = origFetch.call(pageWindow, input, init);
+      const url = requestUrl2(input);
+      const promise = origFetch2.call(pageWindow, input, init);
       if (!RESPONSE_URL.test(url))
         return promise;
       return promise.then((res) => {
         try {
           res.clone().json().then(ingest, () => {});
         } catch (e) {
-          logger33.debug("fetch ingest failed", e);
+          logger36.debug("fetch ingest failed", e);
         }
         return res;
       });
     };
   }
-  function unhookFetch() {
-    if (!origFetch)
+  function unhookFetch2() {
+    if (!origFetch2)
       return;
-    pageWindow.fetch = origFetch;
-    origFetch = null;
+    pageWindow.fetch = origFetch2;
+    origFetch2 = null;
   }
   function ingestXhr(xhr) {
     if (xhr.status < 200 || xhr.status >= 300)
@@ -19298,42 +21829,42 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return;
     ingest(JSON.parse(text));
   }
-  function hookXhr() {
-    if (origXhrOpen)
+  function hookXhr2() {
+    if (origXhrOpen2)
       return;
     const XHR = pageWindow.XMLHttpRequest;
-    origXhrOpen = XHR.prototype.open;
-    origXhrSend = XHR.prototype.send;
+    origXhrOpen2 = XHR.prototype.open;
+    origXhrSend2 = XHR.prototype.send;
     XHR.prototype.open = function voidMessageTimestampsOpen(method, url, ...rest) {
       try {
-        xhrMeta.set(this, requestUrl(url));
+        xhrMeta2.set(this, requestUrl2(url));
       } catch (e) {
-        logger33.debug("xhr open failed", e);
+        logger36.debug("xhr open failed", e);
       }
-      return origXhrOpen.call(this, method, url, ...rest);
+      return origXhrOpen2.call(this, method, url, ...rest);
     };
     XHR.prototype.send = function voidMessageTimestampsSend(body) {
-      const url = xhrMeta.get(this) ?? "";
+      const url = xhrMeta2.get(this) ?? "";
       if (RESPONSE_URL.test(url)) {
         this.addEventListener("load", () => {
           try {
             ingestXhr(this);
           } catch (e) {
-            logger33.debug("xhr ingest failed", e);
+            logger36.debug("xhr ingest failed", e);
           }
         }, { once: true });
       }
-      return origXhrSend.call(this, body);
+      return origXhrSend2.call(this, body);
     };
   }
-  function unhookXhr() {
-    if (!origXhrOpen || !origXhrSend)
+  function unhookXhr2() {
+    if (!origXhrOpen2 || !origXhrSend2)
       return;
     const XHR = pageWindow.XMLHttpRequest;
-    XHR.prototype.open = origXhrOpen;
-    XHR.prototype.send = origXhrSend;
-    origXhrOpen = null;
-    origXhrSend = null;
+    XHR.prototype.open = origXhrOpen2;
+    XHR.prototype.send = origXhrSend2;
+    origXhrOpen2 = null;
+    origXhrSend2 = null;
   }
   function hookListResponses() {
     if (origList)
@@ -19349,7 +21880,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       };
     } catch (e) {
       origList = null;
-      logger33.debug("chatListResponses wrap skipped", e);
+      logger36.debug("chatListResponses wrap skipped", e);
     }
   }
   function unhookListResponses() {
@@ -19358,7 +21889,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       ApiClients.chatApi.chatListResponses = origList;
     } catch (e) {
-      logger33.debug("chatListResponses unwrap skipped", e);
+      logger36.debug("chatListResponses unwrap skipped", e);
     }
     origList = null;
   }
@@ -19377,19 +21908,19 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     description: "Shows timestamps on chat messages.",
     authors: [Devs.Prism, Devs.p],
     tags: ["chat"],
-    settings: settings20,
+    settings: settings21,
     start() {
       try {
-        hookFetch();
-        hookXhr();
+        hookFetch2();
+        hookXhr2();
         hookListResponses();
       } catch (e) {
-        logger33.warn("Failed to hook network", e);
+        logger36.warn("Failed to hook network", e);
       }
     },
     stop() {
-      unhookFetch();
-      unhookXhr();
+      unhookFetch2();
+      unhookXhr2();
       unhookListResponses();
       persistNow();
     },
@@ -19409,7 +21940,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
               nodes: Object.values(nodesByConversationId ?? {}).flat()
             });
           } catch (e) {
-            logger33.debug("store ingest failed", e);
+            logger36.debug("store ingest failed", e);
           }
         }
       },
@@ -19428,7 +21959,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     _renderTimestamp: ErrorBoundary.wrap(({ response, isUser }) => {
       useExternalStore(tick);
       const human = isUser === true || isHumanSender(response.sender);
-      if (settings20.store.hideOwnMessages && human)
+      if (settings21.store.hideOwnMessages && human)
         return null;
       const ms = resolveMs(response, isUser);
       if (ms == null)
@@ -19438,7 +21969,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         size: "xs",
         color: "muted",
         className: "void-timestamp"
-      }, formatTimestamp(ms, settings20.store.showDate));
+      }, formatTimestamp(ms, settings21.store.showDate));
     }),
     patches: [
       {
@@ -19450,1576 +21981,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         }
       }
     ]
-  });
-
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/modeSync/styles.css
-  registerStyle("modeSync", `.void-ms-qchip {
-    display: grid;
-    flex-shrink: 0;
-    place-items: center;
-    width: 1.5rem;
-    height: 1.5rem;
-    margin-block-start: 0.125rem;
-    padding: 0;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: hsl(var(--fg-secondary));
-    cursor: pointer;
-}
-
-.void-ms-qchip:is(:hover, :focus-visible) {
-    background: hsl(var(--button-ghost-hover));
-    color: hsl(var(--fg-primary));
-}
-
-.void-ms-qchip:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 1px hsl(var(--fg-accent));
-}
-
-.void-ms-qchip svg {
-    display: block;
-    width: 0.875rem;
-    height: 0.875rem;
-}
-
-.void-ms-qmenu {
-    position: fixed;
-    z-index: 90;
-    min-width: 8.75rem;
-    padding: 0.25rem;
-    border-radius: 0.75rem;
-    background: hsl(var(--surface-l2));
-    box-shadow:
-        inset 0 0 0 1px hsl(var(--border-l2)),
-        0 0.5rem 1.25rem rgb(0 0 0 / 24%);
-    color: hsl(var(--fg-primary));
-}
-
-.void-ms-qopt {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    gap: 0.5rem;
-    height: 2rem;
-    padding: 0 0.5rem;
-    border: 0;
-    border-radius: 0.5rem;
-    background: transparent;
-    color: inherit;
-    font-size: 0.875rem;
-    line-height: 1;
-    cursor: pointer;
-}
-
-.void-ms-qopt:is(:hover, :focus-visible) {
-    background: hsl(var(--button-ghost-hover));
-}
-
-.void-ms-qopt[aria-selected="true"] {
-    color: hsl(var(--fg-accent));
-}
-
-.void-ms-qopt svg {
-    display: block;
-    width: 1rem;
-    height: 1rem;
-    flex-shrink: 0;
-}
-`);
-
-  // src/plugins/modeSync/index.ts
-  var logger34 = new Logger("ModeSync");
-  var CHAT_POST = /\/rest\/app-chat\/conversations/;
-  var STOP_URL = /stop|abort|cancel/i;
-  var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
-  var PIN_SEL = "[data-void-mode-id]";
-  var TRIGGER_SEL2 = "[data-query-bar-mode-select]";
-  var TOGGLE_SEL = 'button[aria-label="Toggle queued messages"], button[aria-label*="queued" i]';
-  var ROW_SEL = '[aria-roledescription="sortable"], [aria-roledescription="draggable"]';
-  var RAIL_SEL = '[aria-label="Remove from queue"], [aria-label="Send now"], [aria-label="Edit queued message"]';
-  var SEND_NOW_SEL = '[aria-label="Send now"]';
-  var CHIP = "void-ms-qchip";
-  var QMENU = "void-ms-qmenu";
-  var QOPT = "void-ms-qopt";
-  var QITEM = "data-void-qitem";
-  var RESTORE_ATTR = "data-void-mode-sync-restore";
-  var LOAD_TAIL_MS = 400;
-  var FLUSH_MS = 4000;
-  var OVERRIDE_MS = 6000;
-  var STASH_MS = 2000;
-  var CHAT_WRAP = ["sendResponse", "establishNewConversation"];
-  var RESP_WRAP = ["streamResponse", "streamCreateAndRespond"];
-  var MSG_WRAP = ["queueMessage", "sendMessage"];
-  var GW_TYPES = new Set(["response.create", "conversation.queue.add", "conversation.queue.interject"]);
-  var GW_MODE_KEYS = ["mode", "modeId", "mode_id", "modelMode", "model_mode"];
-  var QUEUE_ADD = "conversation.queue.add";
-  var QUEUE_REMOVE = "conversation.queue.remove";
-  var QUEUE_INTERJECT = "conversation.queue.interject";
-  var QUEUE_SILENT = new Set(["conversation.queue.edit", "conversation.queue.move"]);
-  var SESSION_OUT = new Set(["session.create", "session.update"]);
-  var SESSION_IN = new Set(["session.created", "session.updated"]);
-  var WRAP_MARK = Symbol.for("voidpp.modeSync.wrapped");
-  var ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
-  var REMEMBERED = Symbol.for("voidpp.modeSync.intent");
-  var GW_OK = Object.freeze({ ok: true });
-  var CATALOG = [
-    { id: "auto", label: "Auto" },
-    { id: "fast", label: "Fast" },
-    { id: "expert", label: "Expert" },
-    { id: "heavy", label: "Heavy" },
-    { id: "build", label: "Build" }
-  ];
-  var ICONS = {
-    auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke-linecap="square" d="M6.5 12.5L11.5 17.5M6.5 12.5L11.8349 6.83172C13.5356 5.02464 15.9071 4 18.3887 4H20V5.61135C20 8.09292 18.9754 10.4644 17.1683 12.1651L11.5 17.5M6.5 12.5L2 11L5.12132 7.87868C5.68393 7.31607 6.44699 7 7.24264 7H11M11.5 17.5L13 22L16.1213 18.8787C16.6839 18.3161 17 17.553 17 16.7574V13"/><path d="M4.5 16.5C4.5 16.5 4 18 4 20C6 20 7.5 19.5 7.5 19.5"/></svg>',
-    fast: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 14.25L14 4L13 9.75H19L10 20L11 14.25H5Z"/></svg>',
-    expert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>',
-    heavy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="5" height="5"/><rect x="15" y="4" width="5" height="5"/><rect x="15" y="15" width="5" height="5"/><path d="M11 18H10C7.79086 18 6 16.2091 6 14V13"/></svg>',
-    build: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6.55273 4.60517C9.30778 1.96643 12.7289 1.47144 16.748 2.49872L19.1709 3.11787L16.9883 4.34052C16.0286 4.87786 15.0421 5.85039 14.5645 6.87763C14.3308 7.38043 14.2396 7.85117 14.2852 8.26728C14.3289 8.6664 14.5051 9.08437 14.9307 9.50068L20.5068 14.9548C22.0873 16.3103 22.1844 18.7292 20.707 20.2067C19.2281 21.6857 16.8059 21.5867 15.4512 20.0017C15.4468 19.9971 15.4413 19.9919 15.4355 19.986C15.4119 19.9617 15.3773 19.9252 15.332 19.8786C15.2412 19.7851 15.1086 19.6485 14.9424 19.4772C14.6098 19.1346 14.1405 18.653 13.5977 18.0944C12.5116 16.9769 11.1275 15.5535 9.93457 14.3317C9.65277 14.0434 9.32401 13.9826 9.07031 14.0456C8.82894 14.1056 8.57482 14.2967 8.46875 14.7136L8.40137 14.9802L6.5 16.8815L1.08594 11.4675L3.08594 9.46747H3.5C3.84716 9.46747 3.9785 9.37185 4.0752 9.26728C4.22615 9.1039 4.36795 8.82197 4.55371 8.30732C4.8865 7.38517 5.29734 5.80772 6.55273 4.60517ZM11.668 13.2448C12.789 14.3937 14.0363 15.6752 15.0322 16.6999C15.5754 17.2588 16.0441 17.7419 16.377 18.0847C16.5432 18.2559 16.6757 18.3924 16.7666 18.486C16.812 18.5328 16.8474 18.569 16.8711 18.5935C16.8826 18.6053 16.8914 18.6146 16.8975 18.6208C16.9004 18.6238 16.9028 18.627 16.9043 18.6286L16.9062 18.6296L16.9072 18.6306L16.9336 18.6579L16.957 18.6862C17.5529 19.4013 18.6348 19.4509 19.293 18.7927C19.951 18.1345 19.9016 17.0526 19.1865 16.4567L19.1562 16.4313L19.1279 16.404L13.7598 11.153L11.668 13.2448ZM14.1406 4.05244C11.6131 3.80062 9.61076 4.44487 7.93555 6.04951C7.10476 6.84532 6.84901 7.83879 6.43457 8.98701C6.24676 9.5073 5.99495 10.1367 5.54395 10.6247C5.12935 11.0732 4.597 11.349 3.94531 11.4352L3.91406 11.4675L6.5 14.0534L6.61914 13.9333C6.95792 12.978 7.6995 12.326 8.58789 12.1052C9.04163 11.9924 9.51491 11.9981 9.96875 12.1159L12.5625 9.52216C12.4239 9.18685 12.3357 8.83958 12.2969 8.48505C12.2019 7.6178 12.4054 6.77723 12.751 6.03388C13.0875 5.31006 13.578 4.63529 14.1406 4.05244Z"/></svg>'
-  };
-  var settings21 = definePluginSettings({
-    stickyOnNavigate: {
-      type: 3 /* BOOLEAN */,
-      description: "Keep the selected mode when switching chats.",
-      default: true
-    },
-    showQueueMode: {
-      type: 3 /* BOOLEAN */,
-      description: "Show a mode chip on each queued message.",
-      default: true
-    }
-  });
-  var Gateway = findByPropsLazy("gatewayConnectionManager");
-  var QueueItems = findByPropsLazy("queueItemText");
-  var EMPTY = { modeId: "", modelMode: "", activeModelId: "" };
-  var held = new Map;
-  var flushing = new Map;
-  var sentModel = new Map;
-  var ackedModel = new Map;
-  var busy = new Set;
-  var itemIntent = new Map;
-  var itemBody = new Map;
-  var removed = new Map;
-  var diverting = null;
-  var pendingEnqueue = null;
-  var sendOverride = null;
-  var overrideCid = "";
-  var applying3 = false;
-  var userPicking = false;
-  var awaitingMenu = false;
-  var intent = { ...EMPTY };
-  var origFetch2 = null;
-  var origXhrOpen2 = null;
-  var origXhrSend2 = null;
-  var xhrMeta2 = new WeakMap;
-  var origFns2 = new Map;
-  var wrappedFns2 = new Map;
-  var origGwSend = null;
-  var wrappedGwSend = null;
-  var gwHost = null;
-  var gwOff = [];
-  var abort3 = null;
-  var lastNavKey = "";
-  var loadTail = null;
-  var overrideTail = null;
-  var paintRaf = 0;
-  var obs2 = null;
-  var menu = null;
-  var menuFor = null;
-  function onImaginePage3() {
-    try {
-      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
-      if (page.startsWith("imagine"))
-        return true;
-    } catch {}
-    try {
-      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
-    } catch {
-      return false;
-    }
-  }
-  function modeSlug(s) {
-    return s.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
-  }
-  function apiModelMode(s) {
-    const slug = modeSlug(s);
-    if (!slug)
-      return "";
-    return `MODEL_MODE_${slug.replaceAll("-", "_").toUpperCase()}`;
-  }
-  function coerceModelMode(existing, live) {
-    const raw = live.modeId || live.modelMode;
-    if (typeof existing === "string" && existing.startsWith("MODEL_MODE_"))
-      return apiModelMode(raw);
-    if ((existing == null || existing === "") && live.modelMode.startsWith("MODEL_MODE_"))
-      return apiModelMode(raw);
-    return modeSlug(raw);
-  }
-  function qid(item) {
-    if (!item || typeof item !== "object")
-      return "";
-    const rec = item;
-    const id = rec.queue_item_id ?? rec.queueItemId;
-    return typeof id === "string" ? id : "";
-  }
-  function forcedIntent() {
-    const raw = pageWindow[ENQUEUE_FORCE];
-    if (!raw || typeof raw !== "object")
-      return null;
-    const rec = raw;
-    if (!rec.modeId)
-      return null;
-    return {
-      modeId: String(rec.modeId),
-      modelMode: String(rec.modelMode || ""),
-      activeModelId: String(rec.activeModelId || "")
-    };
-  }
-  function snapshot() {
-    try {
-      const modes = ModesStore.useModesStore.getState();
-      const chat = ChatPageStore.useChatPageStore.getState();
-      return {
-        modeId: String(modes.selectedModeId || ""),
-        modelMode: String(chat.modelMode || ""),
-        activeModelId: String(chat.activeModelId || "")
-      };
-    } catch {
-      return { ...EMPTY };
-    }
-  }
-  function liveIntent() {
-    if (sendOverride?.modeId)
-      return sendOverride;
-    const cur = snapshot();
-    return cur.modeId ? cur : intent;
-  }
-  function setIntent(next) {
-    intent = next.modeId ? next : { ...EMPTY };
-    const host = pageWindow;
-    if (intent.modeId)
-      host[REMEMBERED] = intent;
-    else
-      delete host[REMEMBERED];
-  }
-  function sessionAdjusted(cid) {
-    if (!cid)
-      return "";
-    const modes = ModesStore.useModesStore.getState();
-    return String(modes.userAdjustedSessionModeByConversationId?.[cid] ?? "");
-  }
-  function enqueueIntent() {
-    const forced = forcedIntent();
-    if (forced?.modeId)
-      return forced;
-    const cur = snapshot();
-    if (cur.modeId)
-      return cur;
-    return intent.modeId ? intent : liveIntent();
-  }
-  function pickerIntent() {
-    return intent.modeId ? intent : snapshot();
-  }
-  function setRestoreFlag(on) {
-    if (on)
-      document.documentElement.setAttribute(RESTORE_ATTR, "");
-    else
-      document.documentElement.removeAttribute(RESTORE_ATTR);
-  }
-  function loadPending() {
-    try {
-      const cid = ChatPageStore.useChatPageStore.getState().conversationId;
-      if (!cid)
-        return false;
-      const r = ResponseStore.useResponseStore.getState();
-      return !!(r.initialResponsesPromisesByConversationId?.[cid] || r.nodesPromisesByConversationId?.[cid]);
-    } catch {
-      return false;
-    }
-  }
-  function syncRestoreFlag() {
-    if (!settings21.store.stickyOnNavigate) {
-      setRestoreFlag(false);
-      return;
-    }
-    if (loadPending()) {
-      if (loadTail) {
-        clearTimeout(loadTail);
-        loadTail = null;
-      }
-      setRestoreFlag(true);
-      return;
-    }
-    if (document.documentElement.hasAttribute(RESTORE_ATTR) && !loadTail) {
-      loadTail = setTimeout(() => {
-        loadTail = null;
-        if (!loadPending())
-          setRestoreFlag(false);
-      }, LOAD_TAIL_MS);
-    }
-  }
-  function applyIntent(next) {
-    if (!next.modeId || applying3 || onImaginePage3())
-      return;
-    const slug = modeSlug(next.modeId);
-    if (!slug)
-      return;
-    applying3 = true;
-    try {
-      const modes = ModesStore.useModesStore.getState();
-      const cid = currentCid2();
-      const adjusted = cid ? sessionAdjusted(cid) : slug;
-      if (modeSlug(String(modes.selectedModeId || "")) !== slug || adjusted !== slug) {
-        modes.setSelectedModeId(slug, { source: "user" });
-      }
-      const settled = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || "")) || slug;
-      const chat = ChatPageStore.useChatPageStore.getState();
-      if (modeSlug(String(chat.modelMode || "")) !== settled)
-        chat.setModelMode(settled);
-      if (settled !== slug && modeSlug(intent.modeId) === slug)
-        setIntent(captureIntent(settled, snapshot()));
-    } catch (e) {
-      logger34.debug("apply failed", e);
-    } finally {
-      applying3 = false;
-    }
-  }
-  function armOverride(item, cid) {
-    if (!item.modeId)
-      return;
-    sendOverride = item;
-    overrideCid = cid;
-    applyIntent(item);
-    if (overrideTail)
-      clearTimeout(overrideTail);
-    overrideTail = setTimeout(releaseOverride, OVERRIDE_MS);
-  }
-  function releaseOverride() {
-    if (overrideTail)
-      clearTimeout(overrideTail);
-    overrideTail = null;
-    overrideCid = "";
-    if (!sendOverride)
-      return;
-    sendOverride = null;
-    applyIntent(pickerIntent());
-  }
-  function captureIntent(modeId, cur) {
-    const keep = modeSlug(cur.modelMode) === modeSlug(modeId);
-    return {
-      modeId,
-      modelMode: keep ? cur.modelMode : modeId,
-      activeModelId: keep ? cur.activeModelId : ""
-    };
-  }
-  function rememberMode(modeId) {
-    if (!modeId)
-      return;
-    setIntent(captureIntent(modeId, snapshot()));
-    userPicking = false;
-    awaitingMenu = false;
-    applyIntent(intent);
-    logger34.info("intent", intent.modeId);
-  }
-  function rememberSnapshot() {
-    const next = snapshot();
-    if (!next.modeId)
-      return;
-    setIntent(captureIntent(next.modeId, next));
-    userPicking = false;
-    awaitingMenu = false;
-    logger34.info("intent", intent.modeId);
-  }
-  function fightHydrate() {
-    if (sendOverride || !settings21.store.stickyOnNavigate || applying3 || userPicking || awaitingMenu || !intent.modeId)
-      return;
-    if (!loadPending())
-      return;
-    const cur = snapshot();
-    const slug = modeSlug(intent.modeId);
-    const cid = currentCid2();
-    if (modeSlug(cur.modeId) === slug && (!cid || sessionAdjusted(cid) === slug) && (!intent.modelMode || modeSlug(cur.modelMode) === slug) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
-      return;
-    logger34.info("hydrate fought", cur.modeId, "->", intent.modeId);
-    applyIntent(intent);
-  }
-  function navKey() {
-    try {
-      const chat = ChatPageStore.useChatPageStore.getState();
-      let routeCid = "";
-      try {
-        routeCid = String(RoutingStore.useRoutingStore.getState().route.conversationId ?? "");
-      } catch {
-        routeCid = "";
-      }
-      return `${chat.conversationId ?? ""}|${chat.optimisticConversationId ?? ""}|${chat.projectId ?? ""}|${routeCid}`;
-    } catch {
-      return "";
-    }
-  }
-  function onNavigate() {
-    wrapSendFns();
-    if (!intent.modeId)
-      setIntent(snapshot());
-    closeMenu();
-    schedulePaint();
-    if (!settings21.store.stickyOnNavigate || !intent.modeId)
-      return;
-    setRestoreFlag(true);
-    applyIntent(intent);
-    syncRestoreFlag();
-  }
-  function isChatSend(rec) {
-    return "message" in rec || "fileAttachments" in rec && (("modeId" in rec) || ("modelMode" in rec));
-  }
-  function patchPayload(raw, live) {
-    if (onImaginePage3() || !raw || typeof raw !== "object" || Array.isArray(raw) || !live.modeId)
-      return false;
-    const rec = raw;
-    if (!isChatSend(rec))
-      return false;
-    const slug = modeSlug(live.modeId);
-    if (!slug)
-      return false;
-    const before = rec.modeId;
-    const beforeMode = rec.modelMode;
-    const beforeModel = rec.model;
-    rec.modeId = slug;
-    rec.modelMode = coerceModelMode(rec.modelMode, live);
-    if ("model" in rec)
-      rec.model = slug;
-    return rec.modeId !== before || rec.modelMode !== beforeMode || "model" in rec && rec.model !== beforeModel;
-  }
-  function patchSendArgs(args, live) {
-    const first = args[0];
-    if (!first || typeof first !== "object")
-      return;
-    patchPayload(first, live);
-  }
-  function rewriteJsonBody(text, live) {
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      return null;
-    }
-    if (!patchPayload(parsed, live))
-      return null;
-    try {
-      return JSON.stringify(parsed);
-    } catch {
-      return null;
-    }
-  }
-  function intentForBody(text) {
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      return liveIntent();
-    }
-    const queued = intentFromPayload(parsed);
-    return queued?.modeId ? queued : liveIntent();
-  }
-  function requestUrl2(input) {
-    if (typeof input === "string")
-      return input;
-    if (input instanceof URL)
-      return input.href;
-    try {
-      return input.url;
-    } catch {
-      return "";
-    }
-  }
-  function decodeBody(raw) {
-    if (typeof raw === "string")
-      return raw;
-    if (raw instanceof Uint8Array)
-      return new TextDecoder().decode(raw);
-    if (raw instanceof ArrayBuffer)
-      return new TextDecoder().decode(raw);
-    return null;
-  }
-  function conversation(cid) {
-    try {
-      return MessageStore.useMessageStore.getState().conversations[cid];
-    } catch {
-      return;
-    }
-  }
-  function currentCid2() {
-    try {
-      const chat = ChatPageStore.useChatPageStore.getState();
-      return String(chat.conversationId || chat.optimisticConversationId || "");
-    } catch {
-      return "";
-    }
-  }
-  function isTurnArgs(v) {
-    return !!v && typeof v === "object" && typeof v.convId === "string";
-  }
-  function forgetItem(id) {
-    itemIntent.delete(id);
-    for (const [cid, list] of held) {
-      const next = list.filter((h) => h.id !== id);
-      if (next.length)
-        held.set(cid, next);
-      else
-        held.delete(cid);
-    }
-  }
-  function pruneIntents() {
-    const now = Date.now();
-    for (const [id, row] of removed) {
-      if (now - row.at > STASH_MS)
-        removed.delete(id);
-    }
-    const live = new Set;
-    for (const list of held.values())
-      for (const h of list)
-        live.add(h.id);
-    for (const id of removed.keys())
-      live.add(id);
-    let convs = [];
-    try {
-      convs = Object.values(MessageStore.useMessageStore.getState().conversations);
-    } catch {
-      convs = [];
-    }
-    for (const conv of convs)
-      for (const q of conv.queue) {
-        const id = qid(q);
-        if (id)
-          live.add(id);
-      }
-    for (const id of itemIntent.keys())
-      if (!live.has(id))
-        itemIntent.delete(id);
-    for (const id of itemBody.keys())
-      if (!live.has(id))
-        itemBody.delete(id);
-  }
-  function holdQueueEvent(cid, event) {
-    if (!event || typeof event !== "object")
-      return false;
-    const id = eventQueueId(event);
-    const { type } = event;
-    if (!id)
-      return false;
-    if (type === QUEUE_ADD) {
-      const saved = pendingEnqueue?.intent ?? (intent.modeId ? intent : liveIntent());
-      if (saved.modeId)
-        itemIntent.set(id, { ...saved });
-      const body = (pendingEnqueue?.args.text || eventText(event)).trim();
-      if (body)
-        itemBody.set(id, body);
-      schedulePaint();
-      if (diverting) {
-        mapGetOrCreate(held, cid, () => []).push({ id, args: diverting, intent: { ...saved } });
-        diverting = null;
-        logger34.info("held", id, "for", saved.modeId);
-        return true;
-      }
-      return false;
-    }
-    if (QUEUE_SILENT.has(String(type)))
-      return held.get(cid)?.some((h) => h.id === id) ?? false;
-    if (type === QUEUE_INTERJECT) {
-      unhold(cid, id);
-      return false;
-    }
-    if (type !== QUEUE_REMOVE)
-      return false;
-    const saved = itemIntent.get(id);
-    if (saved?.modeId)
-      removed.set(id, { intent: { ...saved }, text: itemBody.get(id) || "", at: Date.now() });
-    schedulePaint();
-    return unhold(cid, id);
-  }
-  function unhold(cid, id) {
-    const list = held.get(cid) ?? [];
-    const idx = list.findIndex((h) => h.id === id);
-    if (idx >= 0)
-      list.splice(idx, 1);
-    return idx >= 0;
-  }
-  function flushNext(cid, parentId) {
-    const conv = conversation(cid);
-    const list = held.get(cid);
-    if (!conv || !list)
-      return;
-    const queued = list.filter((h) => conv.queue.some((q) => qid(q) === h.id));
-    if (!queued.length)
-      return;
-    held.set(cid, queued);
-    if (conv.queue.some((q) => {
-      const id = qid(q);
-      return !!id && !queued.some((h) => h.id === id);
-    }))
-      return;
-    const turn = queued.find((h) => h.id === qid(conv.queue[0]));
-    if (!turn)
-      return;
-    const prev = flushing.get(cid);
-    if (prev)
-      clearTimeout(prev.timer);
-    const item = turn.intent.modeId ? turn.intent : itemIntent.get(turn.id) ?? liveIntent();
-    flushing.set(cid, { turn, parentId, item, timer: setTimeout(() => flushTurn(cid), FLUSH_MS) });
-    armOverride(item, cid);
-    queueMicrotask(() => tryFlush(cid));
-  }
-  function tryFlush(cid) {
-    const next = flushing.get(cid);
-    if (!next || busy.has(cid))
-      return;
-    const slug = modeSlug(next.item.modeId);
-    if (sentModel.get(cid) === slug && ackedModel.get(cid) === slug)
-      flushTurn(cid);
-  }
-  function flushTurn(cid) {
-    const next = flushing.get(cid);
-    if (!next)
-      return;
-    flushing.delete(cid);
-    clearTimeout(next.timer);
-    const conv = conversation(cid);
-    if (conv?.activeGeneration)
-      return;
-    const { turn, parentId, item } = next;
-    const queued = conv?.queue.find((q) => qid(q) === turn.id);
-    if (!queued) {
-      forgetItem(turn.id);
-      flushNext(cid, parentId);
-      return;
-    }
-    const state = MessageStore.useMessageStore.getState();
-    armOverride(item, cid);
-    state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
-    state.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued.item), parentId });
-    forgetItem(turn.id);
-    logger34.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
-  }
-  function onGwEvent(cid, event) {
-    const { type } = event;
-    if (type === "response.created") {
-      busy.add(cid);
-      if (cid === overrideCid)
-        releaseOverride();
-      return;
-    }
-    if (type === "response.persisted")
-      busy.delete(cid);
-    else if (SESSION_IN.has(String(type)))
-      ackedModel.set(cid, modeSlug(String(event.session?.model ?? "")));
-    else
-      return;
-    if (flushing.has(cid))
-      queueMicrotask(() => tryFlush(cid));
-  }
-  function onGwOutgoing(cid, event) {
-    if (SESSION_OUT.has(String(event.type)))
-      sentModel.set(cid, modeSlug(String(event.session?.model ?? "")));
-  }
-  function writeMode(rec, live) {
-    const slug = modeSlug(live.modeId);
-    if (!slug)
-      return;
-    for (const key of GW_MODE_KEYS) {
-      rec[key] = key === "modelMode" || key === "model_mode" ? coerceModelMode(rec[key], live) : slug;
-    }
-    if ("model" in rec)
-      rec.model = slug;
-  }
-  function patchGwEvent(event, live) {
-    if (onImaginePage3() || !event || typeof event !== "object" || Array.isArray(event) || !live.modeId)
-      return;
-    const rec = event;
-    if (typeof rec.type !== "string" || !GW_TYPES.has(rec.type))
-      return;
-    writeMode(rec, live);
-    const { item } = rec;
-    if (!item || typeof item !== "object" || Array.isArray(item))
-      return;
-    writeMode(item, live);
-  }
-  function eventQueueId(event) {
-    if (!event || typeof event !== "object")
-      return "";
-    const rec = event;
-    return qid(event) || qid(rec.item);
-  }
-  function textOf(rec) {
-    for (const key of ["message", "text", "query"]) {
-      const value = rec[key];
-      if (typeof value === "string" && value.trim())
-        return value.trim();
-    }
-    return "";
-  }
-  function eventText(event) {
-    if (!event || typeof event !== "object")
-      return "";
-    const rec = event;
-    const own = textOf(rec);
-    if (own)
-      return own;
-    const { item } = rec;
-    return item && typeof item === "object" ? textOf(item) : "";
-  }
-  function itemText2(conv, id) {
-    const content = conv.nodes?.[id]?.content;
-    if (!content)
-      return "";
-    if (typeof content.message === "string" && content.message.trim())
-      return content.message.trim();
-    if (typeof content.query === "string")
-      return content.query.trim();
-    return "";
-  }
-  function bodyOfItem(conv, id) {
-    const saved = itemBody.get(id);
-    if (saved)
-      return saved;
-    return conv ? itemText2(conv, id) : "";
-  }
-  function intentForText(cid, text) {
-    const body = text.trim();
-    if (!body || !cid)
-      return;
-    for (const turn of held.get(cid) ?? []) {
-      if (turn.args.text.trim() === body && turn.intent.modeId)
-        return turn.intent;
-    }
-    const conv = conversation(cid);
-    if (conv) {
-      for (const q of conv.queue) {
-        const id = qid(q);
-        const saved = id ? itemIntent.get(id) : undefined;
-        if (saved?.modeId && bodyOfItem(conv, id) === body)
-          return saved;
-      }
-    }
-    for (const [id, saved] of itemIntent) {
-      if (saved.modeId && itemBody.get(id) === body)
-        return saved;
-    }
-    for (const row of removed.values()) {
-      if (row.text === body && row.intent.modeId)
-        return row.intent;
-    }
-    return;
-  }
-  function queuedIntent(cid, text, id) {
-    const now = Date.now();
-    for (const [key, row] of removed) {
-      if (now - row.at > STASH_MS)
-        removed.delete(key);
-    }
-    if (id) {
-      const saved = itemIntent.get(id);
-      if (saved?.modeId)
-        return saved;
-      const gone = removed.get(id);
-      if (gone?.intent.modeId)
-        return gone.intent;
-    }
-    const byText = intentForText(cid, text);
-    if (byText?.modeId)
-      return byText;
-    const body = text.trim();
-    if (!body && removed.size === 1) {
-      const only = removed.values().next().value;
-      if (only?.intent.modeId)
-        return only.intent;
-    }
-    const conv = cid ? conversation(cid) : undefined;
-    const front = conv?.queue?.[0];
-    const frontId = front ? qid(front) : "";
-    const frontIntent = frontId ? itemIntent.get(frontId) : undefined;
-    if (!frontIntent?.modeId)
-      return;
-    const frontText = bodyOfItem(conv, frontId);
-    if (body && frontText === body)
-      return frontIntent;
-    return;
-  }
-  function intentFromPayload(raw) {
-    if (!raw || typeof raw !== "object" || Array.isArray(raw))
-      return;
-    const rec = raw;
-    const nested = rec.item && typeof rec.item === "object" && !Array.isArray(rec.item) ? rec.item : undefined;
-    const id = qid(rec) || (nested ? qid(nested) : "");
-    const text = textOf(rec) || (nested ? textOf(nested) : "");
-    const cid = typeof rec.conversationId === "string" ? rec.conversationId : typeof rec.convId === "string" ? rec.convId : currentCid2();
-    return queuedIntent(cid, text, id);
-  }
-  function eventItemIntent(event, cid) {
-    if (!event || typeof event !== "object")
-      return;
-    const rec = event;
-    if (rec.type !== QUEUE_INTERJECT && rec.type !== "response.create")
-      return;
-    return queuedIntent(cid, eventText(event), eventQueueId(event));
-  }
-  function wrapGatewaySend() {
-    try {
-      const mgr = Gateway.gatewayConnectionManager;
-      if (!mgr || typeof mgr.send !== "function")
-        return;
-      if (!gwOff.length)
-        gwOff = [mgr.on(onGwEvent), mgr.onOutgoing(onGwOutgoing)];
-      if (wrappedGwSend && mgr.send === wrappedGwSend)
-        return;
-      gwHost = mgr;
-      origGwSend = mgr.send;
-      const orig = origGwSend;
-      const wrapped = function voidModeSyncGwSend(...args) {
-        if (onImaginePage3())
-          return orig.apply(mgr, args);
-        const [cid, event] = args;
-        if (typeof cid === "string" && holdQueueEvent(cid, event))
-          return Promise.resolve(GW_OK);
-        const type = event && typeof event === "object" ? String(event.type ?? "") : "";
-        if (type === QUEUE_ADD) {
-          const saved = (typeof cid === "string" ? itemIntent.get(eventQueueId(event)) : undefined) ?? pendingEnqueue?.intent;
-          if (saved?.modeId)
-            patchGwEvent(event, saved);
-          return orig.apply(mgr, args);
-        }
-        const queued = typeof cid === "string" ? eventItemIntent(event, cid) : undefined;
-        if (queued?.modeId && !sendOverride) {
-          armOverride(queued, String(cid));
-          patchGwEvent(event, queued);
-          return orig.apply(mgr, args);
-        }
-        if (!GW_TYPES.has(type))
-          return orig.apply(mgr, args);
-        const live = liveIntent();
-        if (live.modeId) {
-          applyIntent(live);
-          patchGwEvent(event, live);
-        }
-        return orig.apply(mgr, args);
-      };
-      wrappedGwSend = wrapped;
-      mgr.send = wrapped;
-    } catch (e) {
-      logger34.debug("gateway wrap failed", e);
-    }
-  }
-  function unwrapGatewaySend() {
-    for (const off of gwOff)
-      off();
-    gwOff = [];
-    try {
-      if (gwHost && origGwSend && gwHost.send === wrappedGwSend)
-        gwHost.send = origGwSend;
-    } catch (e) {
-      logger34.debug("gateway unwrap failed", e);
-    }
-    origGwSend = null;
-    wrappedGwSend = null;
-    gwHost = null;
-  }
-  function makeSendWrapper2(orig) {
-    return function voidModeSyncSend(...args) {
-      if (onImaginePage3())
-        return orig.apply(this, args);
-      const [first] = args;
-      if (!sendOverride) {
-        const id = qid(first);
-        const text = isTurnArgs(first) ? first.text : "";
-        const cid = isTurnArgs(first) ? first.convId : currentCid2();
-        const queued = queuedIntent(cid, text, id);
-        if (queued?.modeId) {
-          armOverride(queued, cid);
-          patchSendArgs(args, queued);
-          return orig.apply(this, args);
-        }
-      }
-      const live = liveIntent();
-      if (live.modeId) {
-        applyIntent(live);
-        patchSendArgs(args, live);
-      }
-      return orig.apply(this, args);
-    };
-  }
-  function makeQueueWrapper(orig) {
-    return function voidModeSyncQueue(...args) {
-      if (onImaginePage3())
-        return orig.apply(this, args);
-      const [first] = args;
-      const live = enqueueIntent();
-      if (!isTurnArgs(first) || !live.modeId)
-        return orig.apply(this, args);
-      pendingEnqueue = { args: first, intent: { ...live } };
-      if (conversation(first.convId)?.activeGeneration)
-        diverting = first;
-      try {
-        return orig.apply(this, args);
-      } finally {
-        const token = first;
-        queueMicrotask(() => {
-          if (pendingEnqueue?.args === token)
-            pendingEnqueue = null;
-          if (diverting === token)
-            diverting = null;
-        });
-      }
-    };
-  }
-  function wrapOne2(label, getState, setState, key, make = makeSendWrapper2) {
-    let state;
-    try {
-      state = getState();
-    } catch {
-      return;
-    }
-    const current = state[key];
-    if (typeof current !== "function")
-      return;
-    if (current[WRAP_MARK] === true)
-      return;
-    if (wrappedFns2.get(label) === current)
-      return;
-    origFns2.set(label, current);
-    const wrapped = make(current);
-    wrapped[WRAP_MARK] = true;
-    wrappedFns2.set(label, wrapped);
-    setState({ [key]: wrapped });
-  }
-  function wrapSendFns() {
-    wrapOne2("chat.sendResponse", () => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "sendResponse");
-    wrapOne2("chat.establishNewConversation", () => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), "establishNewConversation");
-    wrapOne2("resp.streamResponse", () => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), "streamResponse");
-    wrapOne2("resp.streamCreateAndRespond", () => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), "streamCreateAndRespond");
-    wrapOne2("msg.queueMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "queueMessage", makeQueueWrapper);
-    wrapOne2("msg.sendMessage", () => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), "sendMessage");
-    wrapGatewaySend();
-  }
-  function unwrapStore(getState, setState, keys, prefix) {
-    let state;
-    try {
-      state = getState();
-    } catch {
-      return;
-    }
-    const next = {};
-    for (const key of keys) {
-      const label = `${prefix}.${key}`;
-      const orig = origFns2.get(label);
-      if (orig && state[key] === wrappedFns2.get(label))
-        next[key] = orig;
-    }
-    if (Object.keys(next).length)
-      setState(next);
-  }
-  function unwrapSendFns() {
-    unwrapStore(() => ChatPageStore.useChatPageStore.getState(), (p) => ChatPageStore.useChatPageStore.setState(p), CHAT_WRAP, "chat");
-    unwrapStore(() => ResponseStore.useResponseStore.getState(), (p) => ResponseStore.useResponseStore.setState(p), RESP_WRAP, "resp");
-    unwrapStore(() => MessageStore.useMessageStore.getState(), (p) => MessageStore.useMessageStore.setState(p), MSG_WRAP, "msg");
-    unwrapGatewaySend();
-    origFns2.clear();
-    wrappedFns2.clear();
-  }
-  function rewriteIfChatPost(url, method, text) {
-    if (onImaginePage3())
-      return null;
-    if (method !== "POST" && method !== "PUT")
-      return null;
-    if (!CHAT_POST.test(url) || STOP_URL.test(url) || text == null)
-      return null;
-    const live = intentForBody(text);
-    if (!live.modeId)
-      return null;
-    const next = rewriteJsonBody(text, live);
-    if (!next || next === text)
-      return null;
-    applyIntent(live);
-    logger34.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
-    return next;
-  }
-  function patchFetchArgs(input, init) {
-    const url = requestUrl2(input);
-    const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
-    if (method !== "POST" && method !== "PUT" || !CHAT_POST.test(url))
-      return null;
-    const raw = init?.body;
-    const decoded = decodeBody(raw);
-    if (decoded != null) {
-      const next = rewriteIfChatPost(url, method, decoded);
-      if (!next)
-        return null;
-      return [input, { ...init, body: next }];
-    }
-    if (raw instanceof Blob) {
-      return raw.text().then((text) => {
-        const next = rewriteIfChatPost(url, method, text);
-        return next ? [input, { ...init, body: next }] : [input, init];
-      });
-    }
-    if (raw == null && input instanceof Request) {
-      return input.clone().text().then((text) => {
-        const next = rewriteIfChatPost(url, method, text);
-        if (!next)
-          return [input, init];
-        return [input, { ...init, method, headers: init?.headers ?? input.headers, body: next, credentials: init?.credentials ?? input.credentials }];
-      });
-    }
-    return null;
-  }
-  function hookFetch2() {
-    if (origFetch2)
-      return;
-    origFetch2 = pageWindow.fetch;
-    pageWindow.fetch = function voidModeSyncFetch(input, init) {
-      try {
-        const patched = patchFetchArgs(input, init);
-        if (patched && typeof patched.then === "function") {
-          return patched.then(([i, n]) => origFetch2.call(pageWindow, i, n), () => origFetch2.call(pageWindow, input, init));
-        }
-        if (patched) {
-          const [i, n] = patched;
-          return origFetch2.call(pageWindow, i, n);
-        }
-      } catch (e) {
-        logger34.debug("fetch patch failed", e);
-      }
-      return origFetch2.call(pageWindow, input, init);
-    };
-  }
-  function unhookFetch2() {
-    if (!origFetch2)
-      return;
-    pageWindow.fetch = origFetch2;
-    origFetch2 = null;
-  }
-  function hookXhr2() {
-    if (origXhrOpen2)
-      return;
-    const XHR = pageWindow.XMLHttpRequest;
-    origXhrOpen2 = XHR.prototype.open;
-    origXhrSend2 = XHR.prototype.send;
-    XHR.prototype.open = function voidModeSyncOpen(method, url, ...rest) {
-      try {
-        xhrMeta2.set(this, `${String(method).toUpperCase()} ${requestUrl2(url)}`);
-      } catch (e) {
-        logger34.debug("xhr open failed", e);
-      }
-      return origXhrOpen2.call(this, method, url, ...rest);
-    };
-    XHR.prototype.send = function voidModeSyncSend(body) {
-      const meta = xhrMeta2.get(this);
-      if (meta && typeof body === "string") {
-        const space = meta.indexOf(" ");
-        const method = meta.slice(0, space);
-        const url = meta.slice(space + 1);
-        const next = rewriteIfChatPost(url, method, body);
-        if (next)
-          return origXhrSend2.call(this, next);
-      }
-      return origXhrSend2.call(this, body);
-    };
-  }
-  function unhookXhr2() {
-    if (!origXhrOpen2)
-      return;
-    const XHR = pageWindow.XMLHttpRequest;
-    XHR.prototype.open = origXhrOpen2;
-    if (origXhrSend2)
-      XHR.prototype.send = origXhrSend2;
-    origXhrOpen2 = null;
-    origXhrSend2 = null;
-  }
-  function modeLabel(id) {
-    let title = "";
-    try {
-      title = ModesStore.useModesStore.getState().modes.find((m) => m.id === id)?.title ?? "";
-    } catch {
-      title = "";
-    }
-    if (title)
-      return title;
-    return CATALOG.find((m) => m.id === id)?.label ?? id;
-  }
-  function modeChoices() {
-    const labels = new Map(CATALOG.map((m) => [m.id, m.label]));
-    let extra = [];
-    try {
-      extra = ModesStore.useModesStore.getState().modes ?? [];
-    } catch {
-      extra = [];
-    }
-    for (const m of extra)
-      if (m.id)
-        labels.set(m.id, m.title || labels.get(m.id) || m.id);
-    const ids = extra.length ? extra.map((m) => m.id).filter(Boolean) : CATALOG.map((m) => m.id);
-    const seen = new Set;
-    const out = [];
-    for (const id of ids) {
-      if (!id || seen.has(id))
-        continue;
-      seen.add(id);
-      out.push({ id, label: labels.get(id) || id });
-    }
-    for (const m of CATALOG) {
-      if (seen.has(m.id))
-        continue;
-      seen.add(m.id);
-      out.push({ id: m.id, label: labels.get(m.id) || m.label });
-    }
-    return out;
-  }
-  function paintGlyph(host, modeId) {
-    host.replaceChildren();
-    const src = document.querySelector(`${PIN_SEL}[data-void-mode-id="${CSS.escape(modeId)}"] svg`);
-    if (src) {
-      const svg = src.cloneNode(true);
-      svg.removeAttribute("width");
-      svg.removeAttribute("height");
-      svg.setAttribute("aria-hidden", "true");
-      host.append(svg);
-      return;
-    }
-    host.innerHTML = ICONS[modeId] || ICONS.fast;
-  }
-  function closeMenu() {
-    menu?.remove();
-    menu = null;
-    menuFor = null;
-  }
-  function setItemMode(id, modeId) {
-    if (!id || !modeId)
-      return;
-    const next = captureIntent(modeId, itemIntent.get(id) ?? snapshot());
-    itemIntent.set(id, next);
-    for (const list of held.values()) {
-      const turn = list.find((h) => h.id === id);
-      if (turn)
-        turn.intent = next;
-    }
-    logger34.info("queue item", id, "->", next.modeId);
-    schedulePaint();
-  }
-  function openMenu(chip, id) {
-    closeMenu();
-    const box = document.createElement("div");
-    box.className = QMENU;
-    box.setAttribute("role", "menu");
-    const current = itemIntent.get(id)?.modeId || liveIntent().modeId;
-    for (const choice of modeChoices()) {
-      const opt = document.createElement("button");
-      opt.type = "button";
-      opt.className = QOPT;
-      opt.setAttribute("role", "menuitem");
-      opt.setAttribute("aria-selected", choice.id === current ? "true" : "false");
-      opt.dataset.voidQmode = choice.id;
-      paintGlyph(opt, choice.id);
-      const span = document.createElement("span");
-      span.textContent = choice.label;
-      opt.append(span);
-      opt.addEventListener("pointerdown", (e) => e.stopPropagation());
-      opt.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setItemMode(id, choice.id);
-        closeMenu();
-      });
-      box.append(opt);
-    }
-    document.body.append(box);
-    const rect = chip.getBoundingClientRect();
-    const mw = box.offsetWidth;
-    const mh = box.offsetHeight;
-    const left = Math.min(Math.max(8, rect.right - mw), window.innerWidth - mw - 8);
-    const top = rect.bottom + 6 + mh > window.innerHeight - 8 ? rect.top - mh - 6 : rect.bottom + 6;
-    box.style.left = `${Math.max(8, left)}px`;
-    box.style.top = `${Math.max(8, top)}px`;
-    menu = box;
-    menuFor = id;
-  }
-  function onChipClick(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    const chip = e.currentTarget;
-    const id = chip.getAttribute(QITEM) || "";
-    if (!id)
-      return;
-    if (menuFor === id)
-      closeMenu();
-    else
-      openMenu(chip, id);
-  }
-  function actionRail(row) {
-    const labeled = row.querySelector(RAIL_SEL);
-    if (labeled?.parentElement)
-      return labeled.parentElement;
-    const blocks = [...row.querySelectorAll(":scope > div")].filter((d) => d.querySelectorAll("button").length >= 2);
-    return blocks.at(-1) ?? null;
-  }
-  function trayCard() {
-    const btn = document.querySelector(TOGGLE_SEL);
-    if (!(btn instanceof HTMLElement))
-      return null;
-    let node = btn;
-    let card = null;
-    while (node && node !== document.body && !node.matches("main")) {
-      if (node.querySelector(RAIL_SEL))
-        card = node;
-      node = node.parentElement;
-    }
-    return card ?? btn.closest(".rounded-xl") ?? btn.parentElement;
-  }
-  function queueRows(card) {
-    const sortable = [...card.querySelectorAll(ROW_SEL)].filter((el) => el.querySelector(RAIL_SEL) || el.querySelector(".line-clamp-2"));
-    if (sortable.length)
-      return sortable;
-    const anchors = [...card.querySelectorAll(SEND_NOW_SEL)];
-    const use = anchors.length ? anchors : [...card.querySelectorAll('[aria-label="Remove from queue"]')];
-    const rows = [];
-    const seen = new Set;
-    for (const btn of use) {
-      let row = btn;
-      for (let parent = btn.parentElement;parent && parent !== card && card.contains(parent); parent = parent.parentElement) {
-        const n = Math.max(parent.querySelectorAll(SEND_NOW_SEL).length, parent.querySelectorAll('[aria-label="Remove from queue"]').length);
-        if (n > 1)
-          break;
-        row = parent;
-      }
-      if (seen.has(row))
-        continue;
-      seen.add(row);
-      rows.push(row);
-    }
-    if (rows.length)
-      return rows;
-    return [...card.querySelectorAll(".line-clamp-2")].map((el) => el.parentElement instanceof HTMLElement ? el.parentElement : el);
-  }
-  function rowBody(row) {
-    const clamp = row.querySelector(".line-clamp-2")?.textContent?.trim();
-    if (clamp)
-      return clamp;
-    const copy = row.cloneNode(true);
-    copy.querySelectorAll("button, svg").forEach((el) => el.remove());
-    return (copy.textContent || "").replaceAll(/\s+/g, " ").trim();
-  }
-  function idForRow(row, items, index, used) {
-    const existing = row.getAttribute(QITEM) || "";
-    if (existing && !used.has(existing) && (!items.length || items.some((q) => qid(q) === existing)))
-      return existing;
-    const indexed = qid(items[index]);
-    if (indexed && !used.has(indexed))
-      return indexed;
-    const body = rowBody(row);
-    const cid = currentCid2();
-    const conv = cid ? conversation(cid) : undefined;
-    if (body && conv) {
-      const hit = items.find((q) => {
-        const id = qid(q);
-        return !!id && !used.has(id) && itemText2(conv, id) === body;
-      });
-      if (hit)
-        return qid(hit);
-    }
-    if (existing && !used.has(existing))
-      return existing;
-    if (!items.length && body)
-      return `row:${body.slice(0, 120)}`;
-    return "";
-  }
-  function currentQueue() {
-    const cid = currentCid2();
-    if (!cid)
-      return [];
-    const conv = conversation(cid);
-    const queue = conv?.queue;
-    if (!Array.isArray(queue))
-      return [];
-    return queue.toSorted((a, b) => a.position - b.position);
-  }
-  function unpaint() {
-    closeMenu();
-    for (const el of document.querySelectorAll(`.${CHIP}`))
-      el.remove();
-  }
-  function mountChip(row, id) {
-    if (!itemIntent.has(id)) {
-      const saved = pendingEnqueue?.intent?.modeId ? pendingEnqueue.intent : intent.modeId ? intent : undefined;
-      if (saved?.modeId)
-        itemIntent.set(id, { ...saved });
-    }
-    const modeId = itemIntent.get(id)?.modeId || intent.modeId || liveIntent().modeId;
-    let chip = row.querySelector(`.${CHIP}`);
-    if (!chip) {
-      chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = CHIP;
-      chip.addEventListener("pointerdown", (e) => e.stopPropagation());
-      chip.addEventListener("click", onChipClick);
-      const rail = actionRail(row);
-      if (rail)
-        rail.before(chip);
-      else
-        row.append(chip);
-    }
-    if (chip.getAttribute(QITEM) === id && chip.dataset.mode === modeId)
-      return;
-    chip.setAttribute(QITEM, id);
-    chip.dataset.mode = modeId;
-    const label = modeLabel(modeId);
-    chip.title = label;
-    chip.setAttribute("aria-label", label);
-    paintGlyph(chip, modeId);
-  }
-  function paint3() {
-    paintRaf = 0;
-    if (!settings21.store.showQueueMode || onImaginePage3()) {
-      unpaint();
-      return;
-    }
-    const card = trayCard();
-    if (!card) {
-      closeMenu();
-      return;
-    }
-    const rows = queueRows(card);
-    const items = currentQueue();
-    const seen = new Set;
-    for (let i = 0;i < rows.length; i++) {
-      const row = rows[i];
-      const id = idForRow(row, items, i, seen);
-      if (!id)
-        continue;
-      row.setAttribute(QITEM, id);
-      seen.add(id);
-      mountChip(row, id);
-    }
-    for (const chip of card.querySelectorAll(`.${CHIP}`)) {
-      const id = chip.getAttribute(QITEM);
-      if (id && !seen.has(id))
-        chip.remove();
-    }
-    if (menuFor && !seen.has(menuFor))
-      closeMenu();
-  }
-  function schedulePaint() {
-    if (paintRaf)
-      return;
-    paintRaf = requestAnimationFrame(paint3);
-  }
-  function bindObs() {
-    obs2?.disconnect();
-    const root = document.querySelector("main") ?? document.body;
-    obs2 = new MutationObserver(() => schedulePaint());
-    obs2.observe(root, { childList: true, subtree: true });
-  }
-  function onPointerUp(e) {
-    const t = e.target;
-    if (!(t instanceof Element))
-      return;
-    if (t.closest(`.${CHIP}, .${QMENU}`))
-      return;
-    if (menu && !t.closest(`.${QMENU}`))
-      closeMenu();
-    const pin = t.closest(PIN_SEL);
-    if (pin instanceof HTMLElement) {
-      const id = pin.getAttribute("data-void-mode-id");
-      if (id)
-        rememberMode(id);
-      return;
-    }
-    if (!e.isTrusted)
-      return;
-    if (t.closest(TRIGGER_SEL2)) {
-      awaitingMenu = true;
-      userPicking = true;
-      return;
-    }
-    if ((awaitingMenu || userPicking) && t.closest(MENU_SEL)) {
-      userPicking = true;
-      awaitingMenu = false;
-    }
-  }
-  function onPointerDown4(e) {
-    if (onImaginePage3())
-      return;
-    const t = e.target;
-    if (!(t instanceof Element))
-      return;
-    if (t.closest(`.${CHIP}, .${QMENU}`))
-      return;
-    if (t.closest(`${TRIGGER_SEL2}, ${PIN_SEL}, ${MENU_SEL}`)) {
-      userPicking = true;
-      if (t.closest(TRIGGER_SEL2))
-        awaitingMenu = true;
-    }
-    const send = t.closest(SEND_NOW_SEL);
-    if (!send)
-      return;
-    const row = send.closest(`[${QITEM}], ${ROW_SEL}`);
-    const id = row instanceof HTMLElement ? row.getAttribute(QITEM) || "" : "";
-    const item = id ? itemIntent.get(id) : undefined;
-    if (item?.modeId)
-      armOverride(item, currentCid2());
-  }
-  function onKeyDown4(e) {
-    if (!e.isTrusted)
-      return;
-    if (e.key === "Escape")
-      closeMenu();
-    if (e.key === "Tab" && e.shiftKey)
-      userPicking = true;
-  }
-  function onPicker(id) {
-    if (applying3 || sendOverride)
-      return;
-    if (!id)
-      return;
-    if (userPicking || awaitingMenu)
-      rememberSnapshot();
-  }
-  function onChatPage() {
-    wrapSendFns();
-    const key = navKey();
-    if (key !== lastNavKey) {
-      lastNavKey = key;
-      onNavigate();
-      return;
-    }
-    if (sendOverride || applying3)
-      return;
-    if (loadPending())
-      fightHydrate();
-  }
-  function onStreamEnd6({ responseId }) {
-    wrapSendFns();
-    for (const cid of held.keys()) {
-      if (conversation(cid)?.nodes[responseId])
-        flushNext(cid, responseId);
-    }
-  }
-  function queueKey(s) {
-    const cid = currentCid2();
-    const q = cid ? s.conversations[cid]?.queue ?? [] : [];
-    return q.map((i) => `${qid(i)}:${i.position}`).join(",");
-  }
-  function onQueue() {
-    pruneIntents();
-    wrapSendFns();
-    schedulePaint();
-  }
-  var modeSync_default = definePlugin({
-    name: "ModeSync",
-    icon: ListOrderedIcon,
-    description: "Show and send each queued message with the mode captured on that item. Switching chats still keeps the picker.",
-    authors: [Devs.p],
-    tags: ["chat"],
-    enabledByDefault: true,
-    settings: settings21,
-    startAt: "TurbopackReady" /* TurbopackReady */,
-    cleanupSelectors: [`.${CHIP}`, `.${QMENU}`],
-    start() {
-      setIntent(snapshot());
-      lastNavKey = navKey();
-      abort3 = new AbortController;
-      const { signal } = abort3;
-      document.addEventListener("pointerup", onPointerUp, { capture: true, signal });
-      document.addEventListener("pointerdown", onPointerDown4, { capture: true, signal });
-      document.addEventListener("keydown", onKeyDown4, { capture: true, signal });
-      bindObs();
-      schedulePaint();
-      try {
-        wrapSendFns();
-        hookFetch2();
-        hookXhr2();
-      } catch (e) {
-        logger34.warn("Failed to hook send path", e);
-      }
-      if (intent.modeId)
-        applyIntent(intent);
-    },
-    stop() {
-      abort3?.abort();
-      abort3 = null;
-      if (loadTail) {
-        clearTimeout(loadTail);
-        loadTail = null;
-      }
-      if (overrideTail) {
-        clearTimeout(overrideTail);
-        overrideTail = null;
-      }
-      if (paintRaf)
-        cancelAnimationFrame(paintRaf);
-      paintRaf = 0;
-      obs2?.disconnect();
-      obs2 = null;
-      unpaint();
-      setRestoreFlag(false);
-      unhookFetch2();
-      unhookXhr2();
-      unwrapSendFns();
-      for (const f of flushing.values())
-        clearTimeout(f.timer);
-      flushing.clear();
-      sentModel.clear();
-      ackedModel.clear();
-      busy.clear();
-      held.clear();
-      itemIntent.clear();
-      itemBody.clear();
-      removed.clear();
-      diverting = null;
-      pendingEnqueue = null;
-      sendOverride = null;
-      overrideCid = "";
-      applying3 = false;
-      userPicking = false;
-      awaitingMenu = false;
-      setIntent(EMPTY);
-      lastNavKey = "";
-    },
-    onSettingsChange() {
-      schedulePaint();
-    },
-    events: {
-      streamEnd: onStreamEnd6
-    },
-    zustand: {
-      ModesStore: {
-        selector: (s) => s.selectedModeId,
-        handler: onPicker
-      },
-      ChatPageStore: {
-        selector: (s) => `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.projectId ?? ""}|${s.modelMode}|${s.activeModelId}`,
-        handler: onChatPage
-      },
-      MessageStore: {
-        selector: queueKey,
-        handler: onQueue
-      },
-      RoutingStore: {
-        selector: (s) => String(s.route.conversationId ?? ""),
-        handler: () => {
-          const key = navKey();
-          if (key === lastNavKey)
-            return;
-          lastNavKey = key;
-          onNavigate();
-        }
-      },
-      ResponseStore: {
-        selector: (s) => `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}`,
-        handler: () => {
-          wrapSendFns();
-          syncRestoreFlag();
-          fightHydrate();
-        }
-      }
-    }
   });
 
   // src/plugins/noBuildStarters/index.ts
@@ -21863,841 +22824,6 @@ Neon rain in a quiet city`
     ]
   });
 
-  // src/plugins/queuePersist/sync.ts
-  var TTL_MS = 24 * 60 * 60 * 1000;
-  var MAX_ITEMS = 30;
-  var PENDING_MS = 2000;
-  var TEXT_MAX = 1e5;
-  var QUOTE_MAX = 20000;
-  function clipText(value, max = TEXT_MAX) {
-    if (typeof value !== "string")
-      return "";
-    const text = value.trim();
-    return text.length > max ? text.slice(0, max) : text;
-  }
-  function fileIdsOf(value) {
-    if (!Array.isArray(value))
-      return [];
-    const out = [];
-    for (const item of value) {
-      if (out.length >= 64)
-        break;
-      if (typeof item === "string") {
-        const id = item.trim();
-        if (id && id.length <= 200)
-          out.push(id);
-        continue;
-      }
-      if (!item || typeof item !== "object")
-        continue;
-      const rec = item;
-      const raw = rec.fileAttachmentId ?? rec.fileId ?? rec.assetId ?? rec.id;
-      if (typeof raw !== "string")
-        continue;
-      const id = raw.trim();
-      if (id && id.length <= 200)
-        out.push(id);
-    }
-    return out;
-  }
-  function freshSnaps(items, now) {
-    return items.filter((item) => item && now - item.savedAt < TTL_MS && (item.text || item.fileAttachmentIds.length)).slice(0, MAX_ITEMS);
-  }
-  function shouldReplay(officialCount, saved, now) {
-    return officialCount === 0 && freshSnaps(saved, now).length > 0;
-  }
-  function intentOf(intent) {
-    if (!intent?.modeId)
-      return;
-    return {
-      modeId: intent.modeId,
-      modelMode: intent.modelMode || "",
-      activeModelId: intent.activeModelId || ""
-    };
-  }
-  function bindPending(saved, official, pending, now) {
-    const known = new Set(saved.map((item) => item.id));
-    const left = pending.filter((item) => now - item.savedAt < PENDING_MS);
-    const extra = [];
-    for (const off of official) {
-      if (!off.id || known.has(off.id))
-        continue;
-      const src = left.shift();
-      if (!src)
-        continue;
-      extra.push({
-        ...src,
-        id: off.id,
-        position: off.position,
-        parentId: off.parentId,
-        savedAt: now
-      });
-      known.add(off.id);
-    }
-    return { saved: saved.concat(extra), pending: left };
-  }
-  function projectQueue(saved, official, pending, hydrated, now) {
-    const fresh = freshSnaps(saved, now);
-    const bound = bindPending(fresh, official, pending, now);
-    if (!official.length) {
-      if (hydrated && !bound.pending.length)
-        return [];
-      return freshSnaps(bound.saved, now);
-    }
-    const byId = new Map(bound.saved.map((item) => [item.id, item]));
-    const next = [];
-    const ordered = official.slice().sort((a, b) => a.position - b.position || a.id.localeCompare(b.id));
-    for (const off of ordered) {
-      if (!off.id)
-        continue;
-      const prev = byId.get(off.id);
-      const text = off.text || prev?.text || "";
-      const fileAttachmentIds = off.fileAttachmentIds.length ? off.fileAttachmentIds : prev?.fileAttachmentIds ?? [];
-      const parentQuotedText = off.parentQuotedText || prev?.parentQuotedText || "";
-      if (!text && !fileAttachmentIds.length)
-        continue;
-      const prevFiles = prev?.fileAttachmentIds.join("\x00") ?? "";
-      const changed = !prev || prev.text !== text || prev.position !== off.position || prev.parentQuotedText !== parentQuotedText || prev.parentId !== off.parentId || prevFiles !== fileAttachmentIds.join("\x00");
-      next.push({
-        id: off.id,
-        text,
-        fileAttachmentIds,
-        parentQuotedText,
-        parentId: off.parentId,
-        intent: intentOf(prev?.intent),
-        position: off.position,
-        savedAt: changed ? now : prev.savedAt
-      });
-      if (next.length >= MAX_ITEMS)
-        break;
-    }
-    return next;
-  }
-  function sameQueue(a, b) {
-    if (a.length !== b.length)
-      return false;
-    for (let i = 0;i < a.length; i++) {
-      const left = a[i];
-      const right = b[i];
-      if (left.id !== right.id || left.text !== right.text || left.position !== right.position)
-        return false;
-      if (left.parentId !== right.parentId || left.parentQuotedText !== right.parentQuotedText)
-        return false;
-      if (left.fileAttachmentIds.join("\x00") !== right.fileAttachmentIds.join("\x00"))
-        return false;
-      if ((left.intent?.modeId ?? "") !== (right.intent?.modeId ?? ""))
-        return false;
-      if ((left.intent?.modelMode ?? "") !== (right.intent?.modelMode ?? ""))
-        return false;
-      if ((left.intent?.activeModelId ?? "") !== (right.intent?.activeModelId ?? ""))
-        return false;
-    }
-    return true;
-  }
-  function applyRowText(saved, rows, now) {
-    if (!rows.length)
-      return saved;
-    const textById = new Map(rows.map((row) => [row.id, clipText(row.text, TEXT_MAX)]));
-    let changed = false;
-    const next = saved.map((item) => {
-      const text = textById.get(item.id) ?? "";
-      if (!text || text === item.text)
-        return item;
-      if (item.text.startsWith(text) && text.length < item.text.length)
-        return item;
-      changed = true;
-      return { ...item, text, savedAt: now };
-    });
-    return changed ? next : saved;
-  }
-  function quoteText(value) {
-    return clipText(value, QUOTE_MAX);
-  }
-
-  // src/plugins/queuePersist/index.ts
-  var logger35 = new Logger("QueuePersist");
-  var ENQUEUE_FORCE2 = Symbol.for("voidpp.modeSync.enqueueIntent");
-  var WRAP_MARK2 = Symbol.for("voidpp.modeSync.wrapped");
-  var DB_KEY = "queue-persist:v1";
-  var LOCAL_ACCOUNT = "local";
-  var SETTLE_MS = 450;
-  var RETRY_MS2 = 250;
-  var MAX_WAIT_MS = 8000;
-  var ROW_SEL2 = '[aria-roledescription="sortable"], [aria-roledescription="draggable"]';
-  var TOGGLE_SEL2 = 'button[aria-label="Toggle queued messages"], button[aria-label*="queued" i]';
-  var RAIL_SEL2 = '[aria-label="Remove from queue"], [aria-label="Send now"], [aria-label="Edit queued message"]';
-  var SEND_NOW_SEL2 = '[aria-label="Send now"]';
-  var memory = new Map;
-  var pending2 = new Map;
-  var decided = new Set;
-  var restoring = new Set;
-  var retried = new Set;
-  var waits = new Map;
-  var doc = { version: 1, buckets: {} };
-  var alive = false;
-  var ready = false;
-  var replaying = false;
-  var suppress = false;
-  var reconnects = 0;
-  var seq = 0;
-  var timer = null;
-  var timerCid = "";
-  var saveTimer = null;
-  var domTimer = null;
-  var obs3 = null;
-  var origQueue = null;
-  var wrappedQueue = null;
-  var origReconnect = null;
-  var wrappedReconnect = null;
-  function emptyDoc() {
-    return { version: 1, buckets: {} };
-  }
-  function accountId() {
-    try {
-      const user = SessionStore.getSessionStoreState?.()?.user ?? SessionStore.sessionStoreState?.getState?.()?.user;
-      return user?.userId || user?.xUserId || LOCAL_ACCOUNT;
-    } catch {
-      return LOCAL_ACCOUNT;
-    }
-  }
-  function onImagine() {
-    try {
-      const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
-      if (page.startsWith("imagine"))
-        return true;
-    } catch {}
-    try {
-      return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
-    } catch {
-      return false;
-    }
-  }
-  function currentCid3() {
-    try {
-      const chat = ChatPageStore.useChatPageStore.getState();
-      const id = chat.conversationId || chat.optimisticConversationId;
-      if (id)
-        return String(id);
-    } catch {}
-    try {
-      return String(RoutingStore.useRoutingStore.getState().route?.conversationId ?? "");
-    } catch {
-      return "";
-    }
-  }
-  function liveIntent2() {
-    const host = pageWindow;
-    const forced = host[ENQUEUE_FORCE2] ?? host[Symbol.for("voidpp.modeSync.intent")];
-    if (forced?.modeId) {
-      return {
-        modeId: String(forced.modeId),
-        modelMode: String(forced.modelMode || ""),
-        activeModelId: String(forced.activeModelId || "")
-      };
-    }
-    try {
-      const modeId = String(ModesStore.useModesStore.getState().selectedModeId || "");
-      if (!modeId)
-        return;
-      const chat = ChatPageStore.useChatPageStore.getState();
-      return {
-        modeId,
-        modelMode: String(chat.modelMode || ""),
-        activeModelId: String(chat.activeModelId || "")
-      };
-    } catch {
-      return;
-    }
-  }
-  function withIntent(intent, fn) {
-    if (!intent?.modeId)
-      return fn();
-    let modes = null;
-    let chat = null;
-    let prevMode = "";
-    let prevModel = "";
-    let prevActive = "";
-    try {
-      modes = ModesStore.useModesStore.getState();
-      chat = ChatPageStore.useChatPageStore.getState();
-      prevMode = String(modes.selectedModeId || "");
-      prevModel = String(chat.modelMode || "");
-      prevActive = String(chat.activeModelId || "");
-      if (prevMode !== intent.modeId)
-        modes.setSelectedModeId(intent.modeId, { source: "sync" });
-      if (intent.modelMode && prevModel !== intent.modelMode)
-        chat.setModelMode(intent.modelMode);
-      if (intent.activeModelId && prevActive !== intent.activeModelId)
-        chat.setActiveModelId(intent.activeModelId);
-    } catch (e) {
-      logger35.debug("intent apply failed", e);
-    }
-    try {
-      if (intent?.modeId)
-        pageWindow[ENQUEUE_FORCE2] = intent;
-      return fn();
-    } finally {
-      delete pageWindow[ENQUEUE_FORCE2];
-      try {
-        if (modes && prevMode && modes.selectedModeId !== prevMode)
-          modes.setSelectedModeId(prevMode, { source: "sync" });
-        if (chat && prevModel && String(chat.modelMode || "") !== prevModel)
-          chat.setModelMode(prevModel);
-        if (chat && prevActive && String(chat.activeModelId || "") !== prevActive)
-          chat.setActiveModelId(prevActive);
-      } catch (e) {
-        logger35.debug("intent restore failed", e);
-      }
-    }
-  }
-  function qid2(item) {
-    const rec = item;
-    return String(rec.queue_item_id || rec.queueItemId || "");
-  }
-  function qparent(item) {
-    const rec = item;
-    const parent = rec.parent_response_id ?? rec.parentResponseId;
-    return parent == null || parent === "" ? null : String(parent);
-  }
-  function nodeFields(conv, id) {
-    const node = conv.nodes?.[id];
-    const content = node?.content;
-    if (!content)
-      return { text: "", fileAttachmentIds: [], parentQuotedText: "" };
-    return {
-      text: clipText(content.message) || clipText(content.query),
-      fileAttachmentIds: fileIdsOf(content.fileAttachments ?? content.fileUris),
-      parentQuotedText: quoteText(content.parentQuotedText)
-    };
-  }
-  function toOfficial(conv) {
-    if (!conv?.queue?.length)
-      return [];
-    return conv.queue.map((item) => {
-      const id = qid2(item);
-      const fields = nodeFields(conv, id);
-      return {
-        id,
-        position: Number(item.position) || 0,
-        parentId: qparent(item),
-        ...fields
-      };
-    }).filter((item) => item.id);
-  }
-  function readOfficial(cid) {
-    try {
-      return toOfficial(MessageStore.useMessageStore.getState().conversations?.[cid]);
-    } catch {
-      return [];
-    }
-  }
-  function idSet(cid) {
-    return new Set(readOfficial(cid).map((item) => item.id));
-  }
-  function localId() {
-    seq += 1;
-    return `pending:${seq}`;
-  }
-  function pushPending(cid, snap) {
-    const list = pending2.get(cid) ?? [];
-    list.push(snap);
-    pending2.set(cid, list);
-  }
-  function trayCard2() {
-    const btn = document.querySelector(TOGGLE_SEL2);
-    if (!(btn instanceof HTMLElement))
-      return null;
-    let node = btn;
-    let card = null;
-    while (node && node !== document.body && !node.matches("main")) {
-      if (node.querySelector(RAIL_SEL2))
-        card = node;
-      node = node.parentElement;
-    }
-    return card ?? btn.closest(".rounded-xl") ?? btn.parentElement;
-  }
-  function queueRows2(card) {
-    const sortable = [...card.querySelectorAll(ROW_SEL2)].filter((el) => el.querySelector(RAIL_SEL2) || el.querySelector(".line-clamp-2"));
-    if (sortable.length)
-      return sortable;
-    const anchors = [...card.querySelectorAll(SEND_NOW_SEL2)];
-    const use = anchors.length ? anchors : [...card.querySelectorAll('[aria-label="Remove from queue"]')];
-    const rows = [];
-    const seen = new Set;
-    for (const btn of use) {
-      let row = btn;
-      for (let parent = btn.parentElement;parent && parent !== card && card.contains(parent); parent = parent.parentElement) {
-        const n = Math.max(parent.querySelectorAll(SEND_NOW_SEL2).length, parent.querySelectorAll('[aria-label="Remove from queue"]').length);
-        if (n > 1)
-          break;
-        row = parent;
-      }
-      if (seen.has(row))
-        continue;
-      seen.add(row);
-      rows.push(row);
-    }
-    return rows;
-  }
-  function rowTexts(ids) {
-    const card = trayCard2();
-    if (!card)
-      return [];
-    const rows = queueRows2(card);
-    const out = [];
-    for (let i = 0;i < rows.length; i++) {
-      const row = rows[i];
-      const id = row.getAttribute("data-void-qitem") || ids[i] || "";
-      const text = (row.querySelector(".line-clamp-2")?.textContent ?? "").trim();
-      if (id && text)
-        out.push({ id, text });
-    }
-    return out;
-  }
-  function remember3(cid, next) {
-    const prev = memory.get(cid) ?? [];
-    if (sameQueue(prev, next))
-      return;
-    if (next.length)
-      memory.set(cid, next);
-    else
-      memory.delete(cid);
-    persistSoon();
-  }
-  function syncOne(cid, hydrated) {
-    const now = Date.now();
-    const official = readOfficial(cid);
-    const bound = bindPending(freshSnaps(memory.get(cid) ?? [], now), official, pending2.get(cid) ?? [], now);
-    if (bound.pending.length)
-      pending2.set(cid, bound.pending);
-    else
-      pending2.delete(cid);
-    let next = projectQueue(bound.saved, official, bound.pending, hydrated, now);
-    if (hydrated && !replaying && cid === currentCid3())
-      next = applyRowText(next, rowTexts(next.map((item) => item.id)), now);
-    remember3(cid, next);
-  }
-  function syncFromStore() {
-    if (!ready || replaying || onImagine())
-      return;
-    let convs = {};
-    try {
-      convs = MessageStore.useMessageStore.getState().conversations ?? {};
-    } catch {
-      return;
-    }
-    const seen = new Set;
-    for (const cid of Object.keys(convs)) {
-      seen.add(cid);
-      syncOne(cid, decided.has(cid));
-    }
-    for (const cid of memory.keys()) {
-      if (seen.has(cid) || !decided.has(cid))
-        continue;
-      syncOne(cid, true);
-    }
-  }
-  function bucketsToMemory(account) {
-    const primary = doc.buckets[account] ?? {};
-    const local = account === LOCAL_ACCOUNT ? {} : doc.buckets[LOCAL_ACCOUNT] ?? {};
-    const cids = new Set([...Object.keys(primary), ...Object.keys(local), ...memory.keys()]);
-    const now = Date.now();
-    for (const cid of cids) {
-      const fromPrimary = freshSnaps(primary[cid] ?? [], now);
-      const fromLocal = freshSnaps(local[cid] ?? [], now);
-      const disk = fromPrimary.length ? fromPrimary : fromLocal;
-      const live = memory.get(cid) ?? [];
-      if (!live.length && disk.length)
-        memory.set(cid, disk);
-    }
-  }
-  function recordBuckets() {
-    const now = Date.now();
-    const out = {};
-    for (const [cid, items] of memory) {
-      const fresh = freshSnaps(items, now);
-      if (fresh.length)
-        out[cid] = fresh;
-    }
-    return out;
-  }
-  function persistSoon() {
-    if (saveTimer)
-      return;
-    saveTimer = setTimeout(() => {
-      saveTimer = null;
-      persist3();
-    }, 80);
-  }
-  async function persist3() {
-    if (!alive)
-      return;
-    const account = accountId();
-    doc.buckets[account] = recordBuckets();
-    if (account !== LOCAL_ACCOUNT && doc.buckets[LOCAL_ACCOUNT]) {
-      for (const cid of Object.keys(doc.buckets[account] ?? {}))
-        delete doc.buckets[LOCAL_ACCOUNT][cid];
-      if (!Object.keys(doc.buckets[LOCAL_ACCOUNT]).length)
-        delete doc.buckets[LOCAL_ACCOUNT];
-    }
-    try {
-      await idbSet(DB_KEY, doc);
-    } catch (e) {
-      logger35.debug("persist failed", e);
-    }
-  }
-  async function load() {
-    try {
-      const raw = await idbGet(DB_KEY);
-      if (raw && raw.version === 1 && raw.buckets && typeof raw.buckets === "object")
-        doc = raw;
-      else
-        doc = emptyDoc();
-    } catch (e) {
-      logger35.debug("load failed", e);
-      doc = emptyDoc();
-    }
-    bucketsToMemory(accountId());
-  }
-  function loadBusy(cid) {
-    try {
-      const state = ResponseStore.useResponseStore.getState();
-      return !!(state.initialResponsesPromisesByConversationId?.[cid] || state.nodesPromisesByConversationId?.[cid] || state.inflightPromisesByConversationId?.[cid]);
-    } catch {
-      return false;
-    }
-  }
-  function scheduleCurrent() {
-    if (!alive || !ready || replaying)
-      return;
-    const cid = currentCid3();
-    if (!cid || onImagine() || decided.has(cid) || restoring.has(cid))
-      return;
-    if (timer && timerCid !== cid) {
-      clearTimeout(timer);
-      timer = null;
-    }
-    timerCid = cid;
-    if (!waits.has(cid))
-      waits.set(cid, Date.now());
-    const elapsed = Date.now() - (waits.get(cid) ?? 0);
-    const busy = (loadBusy(cid) || reconnects > 0) && elapsed < MAX_WAIT_MS;
-    if (timer)
-      clearTimeout(timer);
-    timer = setTimeout(() => {
-      timer = null;
-      restore2(cid);
-    }, busy ? RETRY_MS2 : SETTLE_MS);
-  }
-  function sleep2(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-  async function replay(cid, saved) {
-    const placed = [];
-    const ordered = freshSnaps(saved, Date.now()).slice().sort((a, b) => a.position - b.position);
-    for (const item of ordered) {
-      const before = idSet(cid);
-      suppress = true;
-      try {
-        await withIntent(item.intent, () => {
-          const state = MessageStore.useMessageStore.getState();
-          return state.queueMessage({
-            convId: cid,
-            parentId: item.parentId,
-            text: item.text,
-            fileAttachmentIds: item.fileAttachmentIds.length ? item.fileAttachmentIds : undefined,
-            parentQuotedText: item.parentQuotedText || undefined
-          });
-        });
-      } catch (e) {
-        logger35.debug("replay failed", e);
-      } finally {
-        suppress = false;
-      }
-      let neu = readOfficial(cid).find((off) => !before.has(off.id));
-      if (!neu) {
-        await sleep2(40);
-        neu = readOfficial(cid).find((off) => !before.has(off.id));
-      }
-      if (neu) {
-        placed.push({
-          ...item,
-          id: neu.id,
-          position: neu.position,
-          parentId: neu.parentId,
-          savedAt: Date.now()
-        });
-      } else {
-        placed.push(item);
-      }
-    }
-    return placed;
-  }
-  async function restore2(cid) {
-    if (!alive || !ready || decided.has(cid) || restoring.has(cid) || replaying)
-      return;
-    if (currentCid3() !== cid || onImagine())
-      return;
-    const elapsed = Date.now() - (waits.get(cid) ?? 0);
-    if ((loadBusy(cid) || reconnects > 0) && elapsed < MAX_WAIT_MS) {
-      scheduleCurrent();
-      return;
-    }
-    const official = readOfficial(cid);
-    if (official.length) {
-      syncOne(cid, true);
-      decided.add(cid);
-      return;
-    }
-    const saved = freshSnaps(memory.get(cid) ?? [], Date.now());
-    if (!shouldReplay(0, saved, Date.now())) {
-      syncOne(cid, true);
-      decided.add(cid);
-      return;
-    }
-    restoring.add(cid);
-    replaying = true;
-    let retry = false;
-    try {
-      const placed = await replay(cid, saved);
-      const after = readOfficial(cid);
-      if (!after.length) {
-        memory.set(cid, saved);
-        persistSoon();
-        if (!retried.has(cid)) {
-          retried.add(cid);
-          waits.set(cid, Date.now());
-          retry = true;
-        } else {
-          decided.add(cid);
-        }
-      } else {
-        memory.set(cid, placed);
-        persistSoon();
-        decided.add(cid);
-      }
-    } catch (e) {
-      logger35.debug("restore failed", e);
-      retry = true;
-    } finally {
-      replaying = false;
-      restoring.delete(cid);
-    }
-    if (retry || !decided.has(cid))
-      scheduleCurrent();
-    else if (readOfficial(cid).length)
-      syncOne(cid, true);
-  }
-  function snapFromArgs(raw) {
-    if (!raw || typeof raw !== "object")
-      return null;
-    const rec = raw;
-    const cid = String(rec.convId || "");
-    if (!cid)
-      return null;
-    const text = clipText(rec.text);
-    const fileAttachmentIds = fileIdsOf(rec.fileAttachmentIds);
-    if (!text && !fileAttachmentIds.length)
-      return null;
-    return {
-      cid,
-      snap: {
-        id: localId(),
-        text,
-        fileAttachmentIds,
-        parentQuotedText: quoteText(rec.parentQuotedText),
-        parentId: rec.parentId ?? null,
-        intent: liveIntent2(),
-        position: 1e6,
-        savedAt: Date.now()
-      }
-    };
-  }
-  function makeQueueWrapper2(orig) {
-    return function voidQueuePersist(...args) {
-      if (suppress || onImagine())
-        return orig.apply(this, args);
-      const parsed = snapFromArgs(args[0]);
-      if (parsed)
-        pushPending(parsed.cid, parsed.snap);
-      const result = orig.apply(this, args);
-      if (ready && !replaying)
-        syncFromStore();
-      return result;
-    };
-  }
-  function wrapQueue() {
-    let state;
-    try {
-      state = MessageStore.useMessageStore.getState();
-    } catch {
-      return;
-    }
-    const current = state.queueMessage;
-    if (typeof current !== "function" || current === wrappedQueue)
-      return;
-    origQueue = current;
-    const wrapped = makeQueueWrapper2(current);
-    if (current[WRAP_MARK2] === true) {
-      wrapped[WRAP_MARK2] = true;
-    }
-    wrappedQueue = wrapped;
-    MessageStore.useMessageStore.setState({ queueMessage: wrapped });
-  }
-  function unwrapQueue() {
-    if (!origQueue || !wrappedQueue)
-      return;
-    try {
-      const state = MessageStore.useMessageStore.getState();
-      if (state.queueMessage === wrappedQueue)
-        MessageStore.useMessageStore.setState({ queueMessage: origQueue });
-    } catch {}
-    origQueue = null;
-    wrappedQueue = null;
-  }
-  function wrapReconnect() {
-    let state;
-    try {
-      state = ChatPageStore.useChatPageStore.getState();
-    } catch {
-      return;
-    }
-    const current = state.reconnectToInflightResponses;
-    if (typeof current !== "function" || current === wrappedReconnect)
-      return;
-    origReconnect = current;
-    const wrapped = function voidQueuePersistReconnect(...args) {
-      reconnects += 1;
-      let result;
-      try {
-        result = origReconnect?.apply(this, args);
-      } catch (e) {
-        reconnects = Math.max(0, reconnects - 1);
-        throw e;
-      }
-      Promise.resolve(result).finally(() => {
-        reconnects = Math.max(0, reconnects - 1);
-        scheduleCurrent();
-      });
-      return result;
-    };
-    wrappedReconnect = wrapped;
-    ChatPageStore.useChatPageStore.setState({ reconnectToInflightResponses: wrapped });
-  }
-  function unwrapReconnect() {
-    if (!origReconnect || !wrappedReconnect)
-      return;
-    try {
-      const state = ChatPageStore.useChatPageStore.getState();
-      if (state.reconnectToInflightResponses === wrappedReconnect) {
-        ChatPageStore.useChatPageStore.setState({ reconnectToInflightResponses: origReconnect });
-      }
-    } catch {}
-    origReconnect = null;
-    wrappedReconnect = null;
-  }
-  function scheduleDom() {
-    if (domTimer || !ready || replaying)
-      return;
-    domTimer = setTimeout(() => {
-      domTimer = null;
-      const cid = currentCid3();
-      if (!alive || !ready || replaying || onImagine() || !cid || !decided.has(cid))
-        return;
-      syncOne(cid, true);
-    }, 200);
-  }
-  function bindObs2() {
-    obs3?.disconnect();
-    const root = document.querySelector("main") ?? document.body;
-    obs3 = new MutationObserver(() => scheduleDom());
-    obs3.observe(root, { childList: true, subtree: true, characterData: true });
-  }
-  function onQueue2() {
-    wrapQueue();
-    syncFromStore();
-    scheduleCurrent();
-  }
-  function onPage() {
-    wrapQueue();
-    wrapReconnect();
-    scheduleCurrent();
-  }
-  async function boot() {
-    await load();
-    if (!alive)
-      return;
-    ready = true;
-    wrapQueue();
-    wrapReconnect();
-    bindObs2();
-    syncFromStore();
-    scheduleCurrent();
-  }
-  var queuePersist_default = definePlugin({
-    name: "QueuePersist",
-    icon: RotateCcwIcon,
-    description: "Restore unsent queued messages in this browser after a refresh.",
-    authors: [Devs.p],
-    tags: ["chat"],
-    enabledByDefault: true,
-    startAt: "TurbopackReady" /* TurbopackReady */,
-    start() {
-      alive = true;
-      ready = false;
-      boot();
-    },
-    stop() {
-      alive = false;
-      ready = false;
-      replaying = false;
-      suppress = false;
-      reconnects = 0;
-      if (timer)
-        clearTimeout(timer);
-      timer = null;
-      timerCid = "";
-      if (saveTimer)
-        clearTimeout(saveTimer);
-      saveTimer = null;
-      if (domTimer)
-        clearTimeout(domTimer);
-      domTimer = null;
-      obs3?.disconnect();
-      obs3 = null;
-      unwrapQueue();
-      unwrapReconnect();
-      memory.clear();
-      pending2.clear();
-      decided.clear();
-      restoring.clear();
-      retried.clear();
-      waits.clear();
-      doc = emptyDoc();
-    },
-    zustand: {
-      MessageStore: {
-        selector: (s) => Object.entries(s.conversations ?? {}).map(([cid, conv]) => {
-          const items = [...conv.queue ?? []].sort((a, b) => a.position - b.position);
-          return `${cid}=${items.map((item) => `${qid2(item)}:${item.position}:${nodeFields(conv, qid2(item)).text.length}`).join(",")}`;
-        }).sort().join("|"),
-        handler: onQueue2
-      },
-      ChatPageStore: {
-        selector: (s) => `${s.conversationId ?? ""}|${s.optimisticConversationId ?? ""}|${s.chatPageLoaded ? 1 : 0}`,
-        handler: onPage
-      },
-      ResponseStore: {
-        selector: (s) => `${Object.keys(s.initialResponsesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.nodesPromisesByConversationId ?? {}).join(",")}|${Object.keys(s.inflightPromisesByConversationId ?? {}).join(",")}`,
-        handler: onPage
-      },
-      RoutingStore: {
-        selector: (s) => `${s.route?.page ?? ""}|${s.route?.conversationId ?? ""}`,
-        handler: onPage
-      }
-    }
-  });
-
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/recentTopics/styles.css
   registerStyle("recentTopics", `.void-rt-root,
 .void-rt-root:popover-open {
@@ -23040,7 +23166,7 @@ html.void-rt-open [data-sidebar="gap"] {
 `);
 
   // src/plugins/recentTopics/index.tsx
-  var logger36 = new Logger("RecentTopics");
+  var logger37 = new Logger("RecentTopics");
   var cl29 = classNameFactory("void-rt-");
   var HOME_KEY = "home";
   var HOME_SEP = "home:";
@@ -23597,7 +23723,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (fromRoute != null && isHomeId(fromRoute))
         return fromRoute;
     } catch (e) {
-      logger36.debug("RoutingStore unavailable:", e);
+      logger37.debug("RoutingStore unavailable:", e);
     }
     return null;
   }
@@ -23616,7 +23742,7 @@ html.void-rt-open [data-sidebar="gap"] {
         add(historyStack[i]);
       return unique(ids);
     } catch (e) {
-      logger36.debug("historyStack unavailable:", e);
+      logger37.debug("historyStack unavailable:", e);
       return [];
     }
   }
@@ -23692,7 +23818,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
       return byId[id] ?? byIdWithWorkspaces[id] ?? list.find((c) => c.conversationId === id);
     } catch (e) {
-      logger36.debug("Conversation lookup failed:", e);
+      logger37.debug("Conversation lookup failed:", e);
       return;
     }
   }
@@ -23750,7 +23876,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const conv = byId[id] ?? byIdWithWorkspaces[id];
       return asWorkspaceId2(conv?.workspaceId) || asWorkspaceId2(conv?.workspaces);
     } catch (e) {
-      logger36.debug("convWorkspaceId failed:", e);
+      logger37.debug("convWorkspaceId failed:", e);
       return asWorkspaceId2(lookup(id)?.workspaceId) || asWorkspaceId2(lookup(id)?.workspaces);
     }
   }
@@ -24233,7 +24359,7 @@ html.void-rt-open [data-sidebar="gap"] {
           delete wsNames[ws];
         }
         maybePaint();
-      }).catch((e) => logger36.debug("workspace fetch failed:", e)).finally(() => {
+      }).catch((e) => logger37.debug("workspace fetch failed:", e)).finally(() => {
         pendingWs.delete(id);
       });
     } catch {
@@ -24498,7 +24624,7 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       return responsesToLines(responsesOf(id));
     } catch (e) {
-      logger36.debug("ResponseStore snapshot failed:", e);
+      logger37.debug("ResponseStore snapshot failed:", e);
       return [];
     }
   }
@@ -24670,7 +24796,7 @@ html.void-rt-open [data-sidebar="gap"] {
           captureId(id);
       }
     } catch (e) {
-      logger36.debug("snapshot failed:", e);
+      logger37.debug("snapshot failed:", e);
     } finally {
       capturing = false;
     }
@@ -24809,7 +24935,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (parsed?.page && parsed.page !== "unknown")
         return parsed;
     } catch (e) {
-      logger36.debug("urlToRoute failed:", e);
+      logger37.debug("urlToRoute failed:", e);
     }
     return null;
   }
@@ -24821,7 +24947,7 @@ html.void-rt-open [data-sidebar="gap"] {
         chat.setOptimisticConversationId(undefined);
       chat.setProjectId(asWorkspaceId2(workspaceId) || undefined);
     } catch (e) {
-      logger36.debug("ChatPageStore update failed:", e);
+      logger37.debug("ChatPageStore update failed:", e);
     }
   }
   function navigateTo2(id) {
@@ -24915,17 +25041,17 @@ html.void-rt-open [data-sidebar="gap"] {
             });
             applyChatPage2(id, ws);
             rememberProject(id);
-          }).catch((e) => logger36.debug("workspace resolve failed:", e));
+          }).catch((e) => logger37.debug("workspace resolve failed:", e));
         } catch (e) {
-          logger36.debug("workspace fetch skipped:", e);
+          logger37.debug("workspace fetch skipped:", e);
         }
       }
     } catch (e) {
-      logger36.error("Failed to navigate:", e);
+      logger37.error("Failed to navigate:", e);
       try {
         location.assign(hrefFor2(id, workspaceOf2(id) || undefined));
       } catch (navErr) {
-        logger36.error("Fallback navigation failed:", navErr);
+        logger37.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -24954,7 +25080,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (topics().length > 1)
         selected = reverse ? topics().length - 1 : 1;
     } catch (e) {
-      logger36.error("Failed to open switcher:", e);
+      logger37.error("Failed to open switcher:", e);
     } finally {
       suspendPaint = false;
     }
@@ -24999,7 +25125,7 @@ html.void-rt-open [data-sidebar="gap"] {
         else
           begin(e.shiftKey, true);
       } catch (err) {
-        logger36.error("Hotkey failed:", err);
+        logger37.error("Hotkey failed:", err);
       }
       return;
     }
@@ -25482,7 +25608,7 @@ html.void-rt-open [data-sidebar="gap"] {
           bump(current);
         scheduleCapture();
       } catch (e) {
-        logger36.error("Hydrate failed:", e);
+        logger37.error("Hydrate failed:", e);
       }
       if (!keys3) {
         keys3 = new AbortController;
@@ -25512,7 +25638,7 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         writeVisits(capVisits(readVisits()));
       } catch (e) {
-        logger36.error("Settings update failed:", e);
+        logger37.error("Settings update failed:", e);
       }
     },
     zustand: {
@@ -25565,7 +25691,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var DEFAULT_CHIME = "data:audio/mpeg;base64,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";
 
   // src/plugins/responseNotification/index.ts
-  var logger37 = new Logger("ResponseNotification");
+  var logger38 = new Logger("ResponseNotification");
   var LIVE_STATES = new Set(["streaming", "optimistic", "reconnecting"]);
   var RETRY_MS3 = 80;
   var SAMPLE_VOLUME = 0.5;
@@ -25625,7 +25751,7 @@ html.void-rt-open [data-sidebar="gap"] {
       audioCtx = new AudioContext;
       return audioCtx;
     } catch (e) {
-      logger37.debug("AudioContext unavailable:", e);
+      logger38.debug("AudioContext unavailable:", e);
       audioCtx = null;
       return null;
     }
@@ -25672,14 +25798,14 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function playUrl(ctx, url) {
     loadBuffer(ctx, url).then((buf) => playBuffer(ctx, buf), (err) => {
-      logger37.info("sample play failed:", err);
+      logger38.info("sample play failed:", err);
       if (url !== DEFAULT_CHIME)
-        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger37.info("default chime failed:", e));
+        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger38.info("default chime failed:", e));
     });
   }
   function playSound() {
     if (!userGestured) {
-      logger37.info("sound skipped, no user gesture yet");
+      logger38.info("sound skipped, no user gesture yet");
       return;
     }
     const ctx = getCtx();
@@ -25687,7 +25813,7 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     const url = settings27.store.soundUrl?.trim() || DEFAULT_CHIME;
     if (ctx.state === "suspended")
-      ctx.resume().then(() => playUrl(ctx, url), () => logger37.info("AudioContext resume failed"));
+      ctx.resume().then(() => playUrl(ctx, url), () => logger38.info("AudioContext resume failed"));
     else
       playUrl(ctx, url);
   }
@@ -25701,7 +25827,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return !isErrorResponse3(response) && !isLiveResponse3(response);
   }
   function notify(responseId, state) {
-    logger37.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
+    logger38.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
     if (settings27.store.onlyWhenHidden && document.visibilityState === "visible")
       return;
     if (settings27.store.sound)
@@ -25729,7 +25855,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function onStreamEnd7({ responseId }) {
-    logger37.info("streamEnd", responseId);
+    logger38.info("streamEnd", responseId);
     if (retryTimer2)
       clearTimeout(retryTimer2);
     const attempt = (retried) => {
@@ -25737,21 +25863,21 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         response = ResponseStore.useResponseStore.getState().byId[responseId];
       } catch (e) {
-        logger37.info("ResponseStore unavailable:", e);
+        logger38.info("ResponseStore unavailable:", e);
       }
       if (shouldNotify(response)) {
         notifyOnce(responseId, response?.state ?? "gateway");
         return;
       }
       if (isErrorResponse3(response)) {
-        logger37.info("skip error", responseId);
+        logger38.info("skip error", responseId);
         return;
       }
       if (!retried) {
         retryTimer2 = setTimeout(() => attempt(true), RETRY_MS3);
         return;
       }
-      logger37.info("skip", responseId, response?.state ?? "unset");
+      logger38.info("skip", responseId, response?.state ?? "unset");
     };
     attempt(false);
   }
@@ -27019,7 +27145,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var CHART_SCALE_MIN = 20;
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   var DAY_MS2 = 86400000;
-  var logger38 = new Logger("UsageDisplay");
+  var logger39 = new Logger("UsageDisplay");
   function isRecord2(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
@@ -27075,7 +27201,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      logger38.debug("Failed to read usage stats", error);
+      logger39.debug("Failed to read usage stats", error);
       return memory2.get(key) ?? null;
     }
   }
@@ -27087,7 +27213,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      logger38.debug("Failed to persist usage stats", error);
+      logger39.debug("Failed to persist usage stats", error);
       memory2.set(key, value);
     }
   }
@@ -27099,7 +27225,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      logger38.debug("Failed to clear usage stats", error);
+      logger39.debug("Failed to clear usage stats", error);
       memory2.delete(key);
     }
   }
@@ -27119,7 +27245,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }
       return { version: STATS_VERSION, userId, days };
     } catch (error) {
-      logger38.debug("Failed to read usage stats", error);
+      logger39.debug("Failed to read usage stats", error);
       return emptyStore(userId);
     }
   }
@@ -27303,7 +27429,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
 
   // src/plugins/usageDisplay/index.tsx
-  var logger39 = new Logger("UsageDisplay");
+  var logger40 = new Logger("UsageDisplay");
   var cl31 = classNameFactory("void-ud-");
   var settings31 = definePluginSettings({
     usageStats: {
@@ -27406,7 +27532,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       await hook.getState().refreshUsage();
       return normalizeBotUsage(hook.getState().usage);
     } catch (error) {
-      logger39.warn("Failed to fetch Grok Bot usage", error);
+      logger40.warn("Failed to fetch Grok Bot usage", error);
       return null;
     }
   }
@@ -27454,7 +27580,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
         const pageUsage = readNativeUsage();
         const remote = await fetchOfficialUsage().then((usage) => ({ ok: true, usage })).catch((error) => {
-          logger39.warn("Failed to fetch official usage", error);
+          logger40.warn("Failed to fetch official usage", error);
           return { ok: false };
         });
         if (currentPoolId() !== poolId)
@@ -27936,7 +28062,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
           refresh("route");
         });
       } catch (error) {
-        logger39.warn("RoutingStore subscribe failed", error);
+        logger40.warn("RoutingStore subscribe failed", error);
       }
     },
     stop() {
@@ -28048,7 +28174,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterImagine_default.updatedAt = 1790093417000;
   betterLinks_default.updatedAt = 1787870966000;
   betterNavigator_default.updatedAt = 1790145289000;
-  betterQuotes_default.updatedAt = 0;
+  betterQueue_default.updatedAt = 0;
+  betterQuotes_default.updatedAt = 1790158302000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;
@@ -28066,7 +28193,6 @@ button:has(.void-ud-trigger > .void-ud-label) {
   incognito_default.updatedAt = 1787870966000;
   inputHistory_default.updatedAt = 1790093417000;
   messageTimestamps_default.updatedAt = 1789881463000;
-  modeSync_default.updatedAt = 1790153407000;
   noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1788037550000;
   noGrokBot_default.updatedAt = 1787789817000;
@@ -28076,7 +28202,6 @@ button:has(.void-ud-trigger > .void-ud-label) {
   oneko_default.updatedAt = 1787870966000;
   placeholder_default.updatedAt = 1790156512000;
   pluginsFlyout_default.updatedAt = 1788051053000;
-  queuePersist_default.updatedAt = 1790130266000;
   recentTopics_default.updatedAt = 1789881195000;
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1788095208000;
@@ -28086,7 +28211,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   usageDisplay_default.updatedAt = 1789172854000;
   userQuotes_default.updatedAt = 1789905284000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterNavigator_default.name]: betterNavigator_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [compactModeSelect_default.name]: compactModeSelect_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [modeSync_default.name]: modeSync_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [queuePersist_default.name]: queuePersist_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [compactModeSelect_default.name]: compactModeSelect_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [oneko_default.name]: oneko_default, [placeholder_default.name]: placeholder_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
@@ -28360,14 +28485,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // src/VoidPP.ts
-  var logger40 = new Logger("TurbopackPatcher", "#e78284");
+  var logger41 = new Logger("TurbopackPatcher", "#e78284");
   var FALLBACK_MS = 15000;
   var ORPHAN_REPORT_DELAY_MS = 5000;
   function safely(name, fn) {
     try {
       fn();
     } catch (e) {
-      logger40.error(`${name} failed:`, e);
+      logger41.error(`${name} failed:`, e);
     }
   }
   function deferOrphanReport() {
@@ -28388,7 +28513,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       safely("initStreamEvents", initStreamEvents);
       safely("_resolveReady", _resolveReady);
       safely("startAllPlugins", () => startAllPlugins("TurbopackReady" /* TurbopackReady */));
-      logger40.info(`${getModuleCache().size} modules loaded, ready`);
+      logger41.info(`${getModuleCache().size} modules loaded, ready`);
       safely("retryFailedPlugins", retryFailedPlugins);
       safely("deferOrphanReport", deferOrphanReport);
       safely("checkBuildFingerprint", checkBuildFingerprint);

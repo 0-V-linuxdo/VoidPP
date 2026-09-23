@@ -102,6 +102,18 @@ describe("queue persist sync", () => {
         expect(edited[0]?.text).toBe("hello there");
     });
 
+    test("official text updates keep the sidecar intent", () => {
+        const saved = [snap({
+            id: "a",
+            text: "hello",
+            intent: { modeId: "expert", modelMode: "MODEL_MODE_EXPERT", activeModelId: "grok-4" },
+        })];
+        const official = [{ id: "a", position: 0, parentId: null, text: "hello there", fileAttachmentIds: [], parentQuotedText: "" }];
+        const next = projectQueue(saved, official, [], true, NOW);
+        expect(next[0]?.text).toBe("hello there");
+        expect(next[0]?.intent).toEqual({ modeId: "expert", modelMode: "MODEL_MODE_EXPERT", activeModelId: "grok-4" });
+    });
+
     test("file ids stay strings", () => {
         expect(fileIdsOf([" a ", { fileId: "b" }, { id: 1 }, "", { assetId: "c" }])).toEqual(["a", "b", "c"]);
     });

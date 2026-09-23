@@ -32,8 +32,7 @@
 | <img src="https://api.iconify.design/lucide/blend.svg?color=%238b949e" width="16" height="16" alt=""> ComposerOpacity | 开 | 调节输入栏背景透明度和模糊。 |
 | <img src="https://api.iconify.design/lucide/layout-grid.svg?color=%238b949e" width="16" height="16" alt=""> RecentTopics | 开 | Ctrl+` 切换最近会话（玻璃卡片、项目名、上轮问答预览）。 |
 | <img src="https://api.iconify.design/lucide/minimize-2.svg?color=%238b949e" width="16" height="16" alt=""> CompactModeSelect | 开 | 输入栏模型按钮始终只显示图标，宽屏也不展开成文字。 |
-| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | 开 | 队列每条显示模式芯片，发出去用该条入队时的模型，点芯片可改。切会话保持 picker，直到 load-responses 结束（`stickyOnNavigate`、`showQueueMode`）。 |
-| <img src="https://api.iconify.design/lucide/rotate-ccw.svg?color=%238b949e" width="16" height="16" alt=""> QueuePersist | 开 | 刷新后把本机未发送的排队消息灌回官方队列。 |
+| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | 开 | 队列每条记住入队时的模型（`showQueueMode`）。切会话保持 picker（`stickyOnNavigate`）。刷新后把未发送的排队消息灌回（`persistAcrossRefresh`）。 |
 | <img src="https://api.iconify.design/lucide/text-quote.svg?color=%238b949e" width="16" height="16" alt=""> UserQuotes | 开 | 自己气泡里的引用行画出可见左竖条，避免 `>` 被 markdown 吃掉后看起来像消失。 |
 | <img src="https://api.iconify.design/lucide/message-square-quote.svg?color=%238b949e" width="16" height="16" alt=""> BetterQuotes | 开 | 点输入框引用芯片（或已发送的引用卡）滚到被引原文（`jumpToPassage`）。切会话再回来时保留引用条（`persistAcrossChats`）。 |
 | <img src="https://api.iconify.design/lucide/blocks.svg?color=%238b949e" width="16" height="16" alt=""> NoSidebarPlugins | 开 | 把侧栏 Plugins 按钮挪到头像折叠菜单（Void++ / Help 旁边）。 |
@@ -55,7 +54,7 @@
 | 功能 | 默认 | 说明 |
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | 开 | 模型选择器里再次隐藏不可用 / 锁定模型。 |
-| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | 开 | 出队按这一行记住的模型发送，不再用上一轮写回的选择器。 |
+| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | 开 | 出队按这一行记住的模型发送，不再用上一轮写回的选择器。 |
 | <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | 开 | 保持右侧栏关闭。关闭动作不在 store 快照上时不再把插件启动打死。 |
 
 #### 设置 UI
@@ -77,3 +76,5 @@
 | <img src="https://api.iconify.design/lucide/panel-right-close.svg?color=%238b949e" width="16" height="16" alt=""> NoRightPanel | — | 已并入 BetterCanvas。 |
 | <img src="https://api.iconify.design/lucide/message-square-quote.svg?color=%238b949e" width="16" height="16" alt=""> QuoteSticky | — | 已并入 BetterQuotes（`persistAcrossChats`）。 |
 | <img src="https://api.iconify.design/lucide/text-search.svg?color=%238b949e" width="16" height="16" alt=""> QuoteJump | — | 已并入 BetterQuotes（`jumpToPassage`）。 |
+| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | — | 已并入 BetterQueue（`showQueueMode`、`stickyOnNavigate`）。 |
+| <img src="https://api.iconify.design/lucide/rotate-ccw.svg?color=%238b949e" width="16" height="16" alt=""> QueuePersist | — | 已并入 BetterQueue（`persistAcrossRefresh`）。 |
