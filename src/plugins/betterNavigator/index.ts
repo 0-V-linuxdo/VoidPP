@@ -62,7 +62,7 @@ const LOADING_LABEL = "加载中…";
 const SUMMARY_MAX = 60;
 const FLASH_MS = 2000;
 const FLASH_REDUCED_MS = 1000;
-const THRESHOLD = 0.7;
+const THRESHOLD = 0.55;
 const OFFSET_PX = 72;
 const LOCK_MS = 1000;
 const LOCK_FAST_MS = 280;
@@ -797,23 +797,13 @@ function setActive(nav: NavItem[]) {
     const pr = pane?.getBoundingClientRect();
     const top = pr?.top ?? 0;
     const bottom = pr ? Math.min(pr.bottom, composerTop()) : window.innerHeight;
+    const mid = top + Math.max(bottom - top, 0) * THRESHOLD;
+    const anchor = Math.min(mid, composerTop() - 80);
     let active = 0;
-    let seen = false;
     for (let i = 0; i < nav.length; i++) {
         const el = mountedEl(nav[i]);
         if (!el) continue;
-        const r = el.getBoundingClientRect();
-        if (r.bottom <= top || r.top >= bottom) continue;
-        active = i;
-        seen = true;
-    }
-    if (!seen) {
-        const cutoff = top + (pr?.height ?? window.innerHeight) * THRESHOLD;
-        for (let i = 0; i < nav.length; i++) {
-            const el = mountedEl(nav[i]);
-            if (!el) continue;
-            if (el.getBoundingClientRect().top < cutoff) active = i;
-        }
+        if (el.getBoundingClientRect().top <= anchor) active = i;
     }
     applyActive(active);
 }
@@ -905,8 +895,14 @@ function patchLive(nav: NavItem[]) {
 function menuEl(nav: NavItem[]): HTMLElement {
     const menu = document.createElement("div");
     menu.className = cl("menu");
-    menu.addEventListener("pointerenter", () => { overMenu = true; });
-    menu.addEventListener("pointerleave", () => { overMenu = false; });
+    menu.addEventListener("pointerenter", () => {
+        overMenu = true;
+        markAim(-1);
+    });
+    menu.addEventListener("pointerleave", () => {
+        overMenu = false;
+        markAim(-1);
+    });
     const meta = document.createElement("div");
     meta.className = cl("meta");
     meta.textContent = metaLabel(0);
@@ -991,6 +987,12 @@ function setOpen(on: boolean) {
     host?.classList.toggle("void-bn-open", on);
     rail?.classList.toggle("void-bn-open", on);
     if (!on) markAim(-1);
+}
+
+function onPointerLeaveRail(e: PointerEvent) {
+    const next = e.relatedTarget;
+    if (next instanceof Element && (next.closest(".void-bn-host") || next.closest(".void-bn-rail") || next.closest(".void-bn-menu"))) return;
+    markAim(-1);
 }
 
 function onPointerOver(e: Event) {
@@ -1119,6 +1121,8 @@ function paint() {
     host = box;
     lastNav = nav;
     paintedKey = nextKey;
+    box.addEventListener("pointerleave", onPointerLeaveRail);
+    rail?.addEventListener("pointerleave", onPointerLeaveRail);
     bindIO(nav);
     setActive(nav);
     syncNativeDash(nav);
