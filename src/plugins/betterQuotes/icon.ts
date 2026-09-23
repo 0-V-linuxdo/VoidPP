@@ -8,10 +8,18 @@ import { ChatPageStore } from "@turbopack/common/stores";
 
 import { DISMISS, KEEP, onImaginePage, QUERY } from "./shared";
 
-const NATIVE = "data-void-bq-native";
-const MARK = "data-void-bq-icon";
+const MARK = "data-void-bq-glyph";
+const ORIG = "data-void-bq-orig";
+const VB = "data-void-bq-vb";
+const SIBLING = "data-void-bq-icon";
 
-export const QUOTE_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 12a2 2 0 0 0 2-2V8H8"/><path d="M14 12a2 2 0 0 0 2-2V8h-2"/></svg>';
+const PATHS = [
+    "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+    "M8 12a2 2 0 0 0 2-2V8H8",
+    "M14 12a2 2 0 0 0 2-2V8h-2",
+];
+
+export const QUOTE_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${PATHS[0]}"/><path d="${PATHS[1]}"/><path d="${PATHS[2]}"/></svg>`;
 
 let armed = false;
 let observer: MutationObserver | null = null;
@@ -38,30 +46,38 @@ function isDismissButton(btn: HTMLElement): boolean {
 }
 
 function isCloseSvg(svg: SVGElement): boolean {
-    const d = [...svg.querySelectorAll("path")].map(p => p.getAttribute("d") || "").join(" ");
-    return /M18\s*6|6\s*18|l12\s*12/.test(d);
+    if (svg.querySelectorAll("line").length >= 2) return true;
+    const d = [...svg.querySelectorAll("path")].map(p => (p.getAttribute("d") || "").replace(/\s+/g, " ")).join(" ");
+    if (!d) return false;
+    return /(?:^|\s)[Mm]18\s+6\b|[Mm]6\s+6\b/.test(d) && /6\s+18|18\s+6|12\s+12/.test(d);
 }
 
-function leftSvgs(row: HTMLElement): SVGSVGElement[] {
-    const out: SVGSVGElement[] = [];
-    for (const svg of row.querySelectorAll("svg")) {
-        if (!(svg instanceof SVGSVGElement)) continue;
-        if (svg.hasAttribute(MARK) || svg.closest(`[${MARK}]`)) continue;
-        if (isCloseSvg(svg)) continue;
-        const btn = svg.closest("button, [role='button']");
-        if (btn instanceof HTMLElement && row.contains(btn) && isDismissButton(btn)) continue;
-        out.push(svg);
+function isDismissSvg(svg: SVGElement, row: HTMLElement): boolean {
+    if (svg.hasAttribute(SIBLING)) return true;
+    const btn = svg.closest("button, [role='button']");
+    if (btn instanceof HTMLElement && row.contains(btn) && isDismissButton(btn)) return true;
+    if (isCloseSvg(svg)) return true;
+    const all = [...row.querySelectorAll("svg")].filter(s => !s.hasAttribute(SIBLING));
+    if (all.length >= 2 && all[all.length - 1] === svg) {
+        const box = svg.getBoundingClientRect();
+        if (box.width <= 28 && box.height <= 28) return true;
     }
-    return out;
+    return false;
+}
+
+function pathsMatch(svg: SVGSVGElement): boolean {
+    if (svg.childElementCount !== PATHS.length) return false;
+    return [...svg.children].every((el, i) => el.localName === "path" && el.getAttribute("d") === PATHS[i]);
 }
 
 function chipRows(text: string): HTMLElement[] {
     const q = norm(text);
     const clip = q.slice(0, 12);
     if (clip.length < 2) return [];
-    const found: HTMLElement[] = [];
+    const byBar = new Map<HTMLElement, HTMLElement[]>();
     for (const bar of document.querySelectorAll(QUERY)) {
         if (!(bar instanceof HTMLElement)) continue;
+        const found: HTMLElement[] = [];
         for (const n of bar.querySelectorAll("div, span")) {
             if (!(n instanceof HTMLElement)) continue;
             if (n.closest(".tiptap, [contenteditable='true'], .void-qs-chip")) continue;
@@ -72,18 +88,64 @@ function chipRows(text: string): HTMLElement[] {
             if (!n.querySelector("svg")) continue;
             found.push(n);
         }
+        if (found.length) byBar.set(bar, found);
     }
-    return found.filter(el => !found.some(other => other !== el && el.contains(other)));
+    const out: HTMLElement[] = [];
+    for (const list of byBar.values()) {
+        const outer = list.filter(el => !list.some(other => other !== el && other.contains(el)));
+        const withX = outer.filter(el => [...el.querySelectorAll("svg")].some(svg => svg instanceof SVGElement && isDismissSvg(svg, el)));
+        const pool = withX.length ? withX : outer;
+        pool.sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width);
+        if (pool[0]) out.push(pool[0]);
+    }
+    return out;
 }
 
-function makeIcon(): SVGSVGElement | null {
-    const host = document.createElement("div");
-    host.innerHTML = QUOTE_ICON_SVG;
-    const svg = host.firstElementChild;
-    if (!(svg instanceof SVGSVGElement)) return null;
-    svg.setAttribute(MARK, "");
-    svg.classList.add("void-bq-icon");
-    return svg;
+function leadingSvg(row: HTMLElement): SVGSVGElement | null {
+    for (const svg of row.querySelectorAll("svg")) {
+        if (!(svg instanceof SVGSVGElement)) continue;
+        if (svg.closest(".void-qs-chip")) continue;
+        if (isDismissSvg(svg, row)) continue;
+        const box = svg.getBoundingClientRect();
+        if (box.width > 32 || box.height > 32) continue;
+        return svg;
+    }
+    return null;
+}
+
+function applyGlyph(svg: SVGSVGElement) {
+    if (!pathsMatch(svg)) {
+        if (!svg.hasAttribute(ORIG)) svg.setAttribute(ORIG, svg.innerHTML);
+        const vb = svg.getAttribute("viewBox");
+        if (vb !== "0 0 24 24" && !svg.hasAttribute(VB)) svg.setAttribute(VB, vb ?? "");
+        svg.replaceChildren(...PATHS.map(d => {
+            const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            p.setAttribute("d", d);
+            return p;
+        }));
+    }
+    svg.setAttribute(MARK, "1");
+    if (svg.getAttribute("fill") !== "none") svg.setAttribute("fill", "none");
+    if (svg.getAttribute("stroke") !== "currentColor") svg.setAttribute("stroke", "currentColor");
+    if (svg.getAttribute("stroke-width") !== "2") svg.setAttribute("stroke-width", "2");
+    if (svg.getAttribute("stroke-linecap") !== "round") svg.setAttribute("stroke-linecap", "round");
+    if (svg.getAttribute("stroke-linejoin") !== "round") svg.setAttribute("stroke-linejoin", "round");
+    if (svg.getAttribute("viewBox") !== "0 0 24 24") svg.setAttribute("viewBox", "0 0 24 24");
+}
+
+function restoreSvg(svg: SVGSVGElement) {
+    const orig = svg.getAttribute(ORIG);
+    if (orig != null) svg.innerHTML = orig;
+    const vb = svg.getAttribute(VB);
+    if (vb != null) {
+        if (vb) svg.setAttribute("viewBox", vb);
+        else svg.removeAttribute("viewBox");
+    }
+    svg.removeAttribute(ORIG);
+    svg.removeAttribute(VB);
+    svg.removeAttribute(MARK);
+    svg.removeAttribute("data-void-bq-native");
+    svg.classList.remove("void-bq-native");
 }
 
 export function mountQuoteMark(host: HTMLElement) {
@@ -94,56 +156,35 @@ export function mountQuoteMark(host: HTMLElement) {
     if (svg) host.replaceChildren(svg);
 }
 
-function clearOfficial() {
-    for (const n of document.querySelectorAll(`[${NATIVE}]`)) {
-        n.removeAttribute(NATIVE);
+function clearPaint() {
+    for (const n of document.querySelectorAll(`[${MARK}]`)) {
+        if (n instanceof SVGSVGElement) restoreSvg(n);
+    }
+    for (const n of document.querySelectorAll("[data-void-bq-native]")) {
+        n.removeAttribute("data-void-bq-native");
         n.classList.remove("void-bq-native");
     }
-    for (const n of document.querySelectorAll(`[${MARK}]`)) n.remove();
-}
-
-function paintRow(row: HTMLElement) {
-    const natives = leftSvgs(row);
-    for (const svg of natives) {
-        if (!svg.hasAttribute(NATIVE)) {
-            svg.setAttribute(NATIVE, "");
-            svg.classList.add("void-bq-native");
-        }
-    }
-    const icons = [...row.querySelectorAll(`[${MARK}]`)];
-    if (natives.length && icons.length === 0) {
-        const icon = makeIcon();
-        if (icon) natives[0].before(icon);
-    } else {
-        for (const extra of icons.slice(1)) extra.remove();
-    }
+    for (const n of document.querySelectorAll(`[${SIBLING}]`)) n.remove();
 }
 
 function paint() {
     if (!armed) return;
     if (onImaginePage() || !quotedText()) {
-        clearOfficial();
+        clearPaint();
         return;
     }
     const rows = chipRows(quotedText());
-    if (!rows.length) {
-        clearOfficial();
-        return;
-    }
-    const keep = new Set<Element>();
+    const keep = new Set<SVGSVGElement>();
     for (const row of rows) {
-        paintRow(row);
-        for (const n of row.querySelectorAll(`[${MARK}], [${NATIVE}]`)) keep.add(n);
+        const svg = leadingSvg(row);
+        if (!svg) continue;
+        applyGlyph(svg);
+        keep.add(svg);
     }
-    for (const n of document.querySelectorAll(`[${MARK}], [${NATIVE}]`)) {
-        if (keep.has(n)) continue;
-        if (n.hasAttribute(NATIVE)) {
-            n.removeAttribute(NATIVE);
-            n.classList.remove("void-bq-native");
-        } else {
-            n.remove();
-        }
+    for (const n of document.querySelectorAll(`[${MARK}]`)) {
+        if (n instanceof SVGSVGElement && !keep.has(n)) restoreSvg(n);
     }
+    for (const n of document.querySelectorAll(`[${SIBLING}]`)) n.remove();
 }
 
 function schedule() {
@@ -172,10 +213,6 @@ export function startIcons() {
 }
 
 export function stopIcons() {
-    if (!armed && !observer && !unsub) {
-        clearOfficial();
-        return;
-    }
     armed = false;
     observer?.disconnect();
     observer = null;
@@ -183,5 +220,5 @@ export function stopIcons() {
     unsub = null;
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
-    clearOfficial();
+    clearPaint();
 }

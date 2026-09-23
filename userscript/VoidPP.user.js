@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.22
+// @version      20260923.23
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.22] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.23] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7515,9 +7515,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"127357a"}`
-    }, `(${"127357a"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.23] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"3d7ce7e"}`
+    }, `(${"3d7ce7e"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14202,19 +14202,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     pointer-events: auto;
 }
 
-.void-bq-native,
-[data-void-bq-native] {
-    display: none !important;
-}
-
-.void-bq-icon {
-    flex: none;
-    display: block;
-    width: 0.875rem;
-    height: 0.875rem;
-    color: inherit;
-}
-
 .void-qs-mark {
     flex: none;
     display: block;
@@ -14289,9 +14276,16 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/icon.ts
-  var NATIVE = "data-void-bq-native";
-  var MARK = "data-void-bq-icon";
-  var QUOTE_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 12a2 2 0 0 0 2-2V8H8"/><path d="M14 12a2 2 0 0 0 2-2V8h-2"/></svg>';
+  var MARK = "data-void-bq-glyph";
+  var ORIG = "data-void-bq-orig";
+  var VB = "data-void-bq-vb";
+  var SIBLING = "data-void-bq-icon";
+  var PATHS = [
+    "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+    "M8 12a2 2 0 0 0 2-2V8H8",
+    "M14 12a2 2 0 0 0 2-2V8h-2"
+  ];
+  var QUOTE_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${PATHS[0]}"/><path d="${PATHS[1]}"/><path d="${PATHS[2]}"/></svg>`;
   var armed = false;
   var observer = null;
   var unsub = null;
@@ -14315,34 +14309,44 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return !(btn.textContent || "").replace(/\s+/g, "") && !!btn.querySelector("svg");
   }
   function isCloseSvg(svg) {
-    const d = [...svg.querySelectorAll("path")].map((p) => p.getAttribute("d") || "").join(" ");
-    return /M18\s*6|6\s*18|l12\s*12/.test(d);
+    if (svg.querySelectorAll("line").length >= 2)
+      return true;
+    const d = [...svg.querySelectorAll("path")].map((p) => (p.getAttribute("d") || "").replace(/\s+/g, " ")).join(" ");
+    if (!d)
+      return false;
+    return /(?:^|\s)[Mm]18\s+6\b|[Mm]6\s+6\b/.test(d) && /6\s+18|18\s+6|12\s+12/.test(d);
   }
-  function leftSvgs(row) {
-    const out = [];
-    for (const svg of row.querySelectorAll("svg")) {
-      if (!(svg instanceof SVGSVGElement))
-        continue;
-      if (svg.hasAttribute(MARK) || svg.closest(`[${MARK}]`))
-        continue;
-      if (isCloseSvg(svg))
-        continue;
-      const btn = svg.closest("button, [role='button']");
-      if (btn instanceof HTMLElement && row.contains(btn) && isDismissButton(btn))
-        continue;
-      out.push(svg);
+  function isDismissSvg(svg, row) {
+    if (svg.hasAttribute(SIBLING))
+      return true;
+    const btn = svg.closest("button, [role='button']");
+    if (btn instanceof HTMLElement && row.contains(btn) && isDismissButton(btn))
+      return true;
+    if (isCloseSvg(svg))
+      return true;
+    const all = [...row.querySelectorAll("svg")].filter((s) => !s.hasAttribute(SIBLING));
+    if (all.length >= 2 && all[all.length - 1] === svg) {
+      const box = svg.getBoundingClientRect();
+      if (box.width <= 28 && box.height <= 28)
+        return true;
     }
-    return out;
+    return false;
+  }
+  function pathsMatch(svg) {
+    if (svg.childElementCount !== PATHS.length)
+      return false;
+    return [...svg.children].every((el, i) => el.localName === "path" && el.getAttribute("d") === PATHS[i]);
   }
   function chipRows(text) {
     const q = norm(text);
     const clip = q.slice(0, 12);
     if (clip.length < 2)
       return [];
-    const found = [];
+    const byBar = new Map;
     for (const bar of document.querySelectorAll(QUERY)) {
       if (!(bar instanceof HTMLElement))
         continue;
+      const found = [];
       for (const n of bar.querySelectorAll("div, span")) {
         if (!(n instanceof HTMLElement))
           continue;
@@ -14359,18 +14363,78 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           continue;
         found.push(n);
       }
+      if (found.length)
+        byBar.set(bar, found);
     }
-    return found.filter((el) => !found.some((other) => other !== el && el.contains(other)));
+    const out = [];
+    for (const list of byBar.values()) {
+      const outer = list.filter((el) => !list.some((other) => other !== el && other.contains(el)));
+      const withX = outer.filter((el) => [...el.querySelectorAll("svg")].some((svg) => svg instanceof SVGElement && isDismissSvg(svg, el)));
+      const pool = withX.length ? withX : outer;
+      pool.sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width);
+      if (pool[0])
+        out.push(pool[0]);
+    }
+    return out;
   }
-  function makeIcon() {
-    const host = document.createElement("div");
-    host.innerHTML = QUOTE_ICON_SVG;
-    const svg = host.firstElementChild;
-    if (!(svg instanceof SVGSVGElement))
-      return null;
-    svg.setAttribute(MARK, "");
-    svg.classList.add("void-bq-icon");
-    return svg;
+  function leadingSvg(row) {
+    for (const svg of row.querySelectorAll("svg")) {
+      if (!(svg instanceof SVGSVGElement))
+        continue;
+      if (svg.closest(".void-qs-chip"))
+        continue;
+      if (isDismissSvg(svg, row))
+        continue;
+      const box = svg.getBoundingClientRect();
+      if (box.width > 32 || box.height > 32)
+        continue;
+      return svg;
+    }
+    return null;
+  }
+  function applyGlyph(svg) {
+    if (!pathsMatch(svg)) {
+      if (!svg.hasAttribute(ORIG))
+        svg.setAttribute(ORIG, svg.innerHTML);
+      const vb = svg.getAttribute("viewBox");
+      if (vb !== "0 0 24 24" && !svg.hasAttribute(VB))
+        svg.setAttribute(VB, vb ?? "");
+      svg.replaceChildren(...PATHS.map((d) => {
+        const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        p.setAttribute("d", d);
+        return p;
+      }));
+    }
+    svg.setAttribute(MARK, "1");
+    if (svg.getAttribute("fill") !== "none")
+      svg.setAttribute("fill", "none");
+    if (svg.getAttribute("stroke") !== "currentColor")
+      svg.setAttribute("stroke", "currentColor");
+    if (svg.getAttribute("stroke-width") !== "2")
+      svg.setAttribute("stroke-width", "2");
+    if (svg.getAttribute("stroke-linecap") !== "round")
+      svg.setAttribute("stroke-linecap", "round");
+    if (svg.getAttribute("stroke-linejoin") !== "round")
+      svg.setAttribute("stroke-linejoin", "round");
+    if (svg.getAttribute("viewBox") !== "0 0 24 24")
+      svg.setAttribute("viewBox", "0 0 24 24");
+  }
+  function restoreSvg(svg) {
+    const orig = svg.getAttribute(ORIG);
+    if (orig != null)
+      svg.innerHTML = orig;
+    const vb = svg.getAttribute(VB);
+    if (vb != null) {
+      if (vb)
+        svg.setAttribute("viewBox", vb);
+      else
+        svg.removeAttribute("viewBox");
+    }
+    svg.removeAttribute(ORIG);
+    svg.removeAttribute(VB);
+    svg.removeAttribute(MARK);
+    svg.removeAttribute("data-void-bq-native");
+    svg.classList.remove("void-bq-native");
   }
   function mountQuoteMark(host) {
     if (host.querySelector("svg"))
@@ -14381,60 +14445,40 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (svg)
       host.replaceChildren(svg);
   }
-  function clearOfficial() {
-    for (const n of document.querySelectorAll(`[${NATIVE}]`)) {
-      n.removeAttribute(NATIVE);
+  function clearPaint() {
+    for (const n of document.querySelectorAll(`[${MARK}]`)) {
+      if (n instanceof SVGSVGElement)
+        restoreSvg(n);
+    }
+    for (const n of document.querySelectorAll("[data-void-bq-native]")) {
+      n.removeAttribute("data-void-bq-native");
       n.classList.remove("void-bq-native");
     }
-    for (const n of document.querySelectorAll(`[${MARK}]`))
+    for (const n of document.querySelectorAll(`[${SIBLING}]`))
       n.remove();
-  }
-  function paintRow(row) {
-    const natives = leftSvgs(row);
-    for (const svg of natives) {
-      if (!svg.hasAttribute(NATIVE)) {
-        svg.setAttribute(NATIVE, "");
-        svg.classList.add("void-bq-native");
-      }
-    }
-    const icons = [...row.querySelectorAll(`[${MARK}]`)];
-    if (natives.length && icons.length === 0) {
-      const icon = makeIcon();
-      if (icon)
-        natives[0].before(icon);
-    } else {
-      for (const extra of icons.slice(1))
-        extra.remove();
-    }
   }
   function paint3() {
     if (!armed)
       return;
     if (onImaginePage2() || !quotedText()) {
-      clearOfficial();
+      clearPaint();
       return;
     }
     const rows = chipRows(quotedText());
-    if (!rows.length) {
-      clearOfficial();
-      return;
-    }
     const keep = new Set;
     for (const row of rows) {
-      paintRow(row);
-      for (const n of row.querySelectorAll(`[${MARK}], [${NATIVE}]`))
-        keep.add(n);
-    }
-    for (const n of document.querySelectorAll(`[${MARK}], [${NATIVE}]`)) {
-      if (keep.has(n))
+      const svg = leadingSvg(row);
+      if (!svg)
         continue;
-      if (n.hasAttribute(NATIVE)) {
-        n.removeAttribute(NATIVE);
-        n.classList.remove("void-bq-native");
-      } else {
-        n.remove();
-      }
+      applyGlyph(svg);
+      keep.add(svg);
     }
+    for (const n of document.querySelectorAll(`[${MARK}]`)) {
+      if (n instanceof SVGSVGElement && !keep.has(n))
+        restoreSvg(n);
+    }
+    for (const n of document.querySelectorAll(`[${SIBLING}]`))
+      n.remove();
   }
   function schedule() {
     if (!armed || raf2)
@@ -14464,10 +14508,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     schedule();
   }
   function stopIcons() {
-    if (!armed && !observer && !unsub) {
-      clearOfficial();
-      return;
-    }
     armed = false;
     observer?.disconnect();
     observer = null;
@@ -14476,7 +14516,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (raf2)
       cancelAnimationFrame(raf2);
     raf2 = 0;
-    clearOfficial();
+    clearPaint();
   }
 
   // src/plugins/betterQuotes/jump.ts
@@ -20599,7 +20639,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var NAME_CLASS = "void-csi-name";
   var HIDE_CLASS2 = "void-csi-hide";
   var MARK3 = "data-void-csi";
-  var ORIG = "data-void-csi-orig";
+  var ORIG2 = "data-void-csi-orig";
   var SOURCE_PX = 1024;
   var AVATAR_PX = 256;
   var SIZE_MIN = 24;
@@ -21048,13 +21088,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return footer.querySelector('button[data-slot="button"], button[data-state]');
   }
   function restoreImg(img) {
-    const orig = img.getAttribute(ORIG);
+    const orig = img.getAttribute(ORIG2);
     img.removeEventListener("error", onImgError);
     img.removeAttribute(MARK3);
     if (orig == null)
       return;
     img.src = orig;
-    img.removeAttribute(ORIG);
+    img.removeAttribute(ORIG2);
   }
   function onImgError(e) {
     const img = e.currentTarget;
@@ -21075,9 +21115,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (current === url)
         return;
       if (current)
-        img.setAttribute(ORIG, current);
-    } else if (!img.hasAttribute(ORIG)) {
-      img.setAttribute(ORIG, current);
+        img.setAttribute(ORIG2, current);
+    } else if (!img.hasAttribute(ORIG2)) {
+      img.setAttribute(ORIG2, current);
     }
     img.setAttribute(MARK3, "1");
     if (img.getAttribute("srcset"))
@@ -28690,7 +28730,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1790161256000;
   betterNavigator_default.updatedAt = 1790145289000;
   betterQueue_default.updatedAt = 1790159561000;
-  betterQuotes_default.updatedAt = 1790169826000;
+  betterQuotes_default.updatedAt = 1790170894000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;

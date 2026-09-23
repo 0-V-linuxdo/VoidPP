@@ -34,19 +34,6 @@
     pointer-events: auto;
 }
 
-.void-bq-native,
-[data-void-bq-native] {
-    display: none !important;
-}
-
-.void-bq-icon {
-    flex: none;
-    display: block;
-    width: 0.875rem;
-    height: 0.875rem;
-    color: inherit;
-}
-
 .void-qs-mark {
     flex: none;
     display: block;
