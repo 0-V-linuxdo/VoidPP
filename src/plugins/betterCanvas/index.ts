@@ -9,8 +9,11 @@ import { FrameIcon } from "@components/icons";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import { ChatPageStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
+import { Logger } from "@utils/Logger";
 import { registerStyle, unregisterStyle } from "@utils/css";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
+
+const logger = new Logger("BetterCanvas");
 
 const STYLE_NAME = "betterCanvas";
 const FRAME_STYLE_ID = "void-better-canvas";
@@ -213,10 +216,31 @@ function isRightOpen(s: ChatPageStoreState) {
     return s.sidePanelContent?.type === "rightPanel";
 }
 
+function callFn(fn: unknown, thisArg: unknown): boolean {
+    if (typeof fn !== "function") return false;
+    fn.call(thisArg);
+    return true;
+}
+
 function enforce() {
     if (!settings.store.hideRightPanel) return;
-    const state = ChatPageStore.useChatPageStore.getState();
-    if (isRightOpen(state)) state.closeSidePanelExplicitly();
+    try {
+        const hook = ChatPageStore.useChatPageStore;
+        if (!hook || typeof hook.getState !== "function") return;
+        const state = hook.getState();
+        if (!isRightOpen(state)) return;
+        const api = hook as typeof hook & {
+            closeSidePanelExplicitly?: () => void;
+            closeSidePanel?: () => void;
+        };
+        if (callFn(state.closeSidePanelExplicitly, state)) return;
+        if (callFn(api.closeSidePanelExplicitly, api)) return;
+        if (callFn(state.closeSidePanel, state)) return;
+        if (callFn(api.closeSidePanel, api)) return;
+        state.setSidePanelContent?.(null);
+    } catch (e) {
+        logger.debug("hide right panel failed", e);
+    }
 }
 
 function apply() {

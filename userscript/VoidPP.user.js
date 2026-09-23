@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260922.28
+// @version      20260922.29
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260922.28] v1.0.0 — A modification for grok.com
+ * Void++ [20260922.29] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3336,6 +3336,7 @@ ${sourceUrl}`;
   }
 
   // src/plugins/betterCanvas/index.ts
+  var logger10 = new Logger("BetterCanvas");
   var STYLE_NAME = "betterCanvas";
   var FRAME_STYLE_ID = "void-better-canvas";
   var MSG = "void-better-canvas";
@@ -3509,12 +3510,35 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
   function isRightOpen(s) {
     return s.sidePanelContent?.type === "rightPanel";
   }
+  function callFn(fn, thisArg) {
+    if (typeof fn !== "function")
+      return false;
+    fn.call(thisArg);
+    return true;
+  }
   function enforce() {
     if (!settings2.store.hideRightPanel)
       return;
-    const state = ChatPageStore.useChatPageStore.getState();
-    if (isRightOpen(state))
-      state.closeSidePanelExplicitly();
+    try {
+      const hook = ChatPageStore.useChatPageStore;
+      if (!hook || typeof hook.getState !== "function")
+        return;
+      const state = hook.getState();
+      if (!isRightOpen(state))
+        return;
+      const api = hook;
+      if (callFn(state.closeSidePanelExplicitly, state))
+        return;
+      if (callFn(api.closeSidePanelExplicitly, api))
+        return;
+      if (callFn(state.closeSidePanel, state))
+        return;
+      if (callFn(api.closeSidePanel, api))
+        return;
+      state.setSidePanelContent?.(null);
+    } catch (e) {
+      logger10.debug("hide right panel failed", e);
+    }
   }
   function apply() {
     if (settings2.store.themedScrollbar)
@@ -3716,7 +3740,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
   });
 
   // src/api/BuildHealth.ts
-  var logger10 = new Logger("TurbopackPatcher", "#e78284");
+  var logger11 = new Logger("TurbopackPatcher", "#e78284");
   var chunkBasename = (path) => path.slice(path.lastIndexOf("/") + 1);
   function checkBuildFingerprint() {
     const domChunks = [...document.querySelectorAll('script[src*="/_next/static/chunks/"]')].map((s) => chunkBasename(s.src));
@@ -3728,11 +3752,11 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       const prev = new Set(previous);
       const overlap = current.filter((c) => prev.has(c)).length / current.length;
       if (overlap < 0.5)
-        logger10.warn("grok build changed (chunk fingerprint shifted)");
+        logger11.warn("grok build changed (chunk fingerprint shifted)");
     }
     updateSettingsPluginData({ chunkFingerprint: current });
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ColorSettingRow.css
+  // voidpp-css:/tmp/VoidPP/src/components/ColorSettingRow.css
   registerStyle("ColorSettingRow", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -3771,7 +3795,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, title), /* @__PURE__ */ React.createElement(SettingsDescription, null, description)));
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ConfirmDialog.css
+  // voidpp-css:/tmp/VoidPP/src/components/ConfirmDialog.css
   registerStyle("ConfirmDialog", `.void-confirm-dialog {
     width: 100%;
     max-width: 28rem;
@@ -4020,7 +4044,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     },
     configurable: true
   });
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ErrorCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/ErrorCard.css
   registerStyle("ErrorCard", `.void-error-card-root {
     contain: content;
     padding: 1rem;
@@ -4080,7 +4104,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       ...restProps
     }, children);
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/Paragraph.css
+  // voidpp-css:/tmp/VoidPP/src/components/Paragraph.css
   registerStyle("Paragraph", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -4172,7 +4196,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       weight: "medium"
     }, title), description && /* @__PURE__ */ React.createElement(Paragraph, null, description));
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/SelectionUI.css
+  // voidpp-css:/tmp/VoidPP/src/components/SelectionUI.css
   registerStyle("SelectionUI", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -4433,7 +4457,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
   }
 
   // src/api/PluginManager.ts
-  var logger11 = new Logger("PluginManager", "#b4befe");
+  var logger12 = new Logger("PluginManager", "#b4befe");
   var plugins = {};
   var pluginUnsubscribers = new Map;
   var initialized = false;
@@ -4446,7 +4470,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       try {
         unsub();
       } catch (e) {
-        logger11.error(`Unsub error in ${pluginName}:`, e);
+        logger12.error(`Unsub error in ${pluginName}:`, e);
       }
     }
     pluginUnsubscribers.delete(pluginName);
@@ -4507,13 +4531,13 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     for (const depName of plugin.dependencies) {
       const dep = plugins[depName];
       if (!dep) {
-        logger11.warn(`Missing dependency ${depName} for ${plugin.name}`);
+        logger12.warn(`Missing dependency ${depName} for ${plugin.name}`);
         return false;
       }
       if (dep.started)
         continue;
       if (visiting.has(depName)) {
-        logger11.error(`Circular dependency detected: ${plugin.name} -> ${depName}`);
+        logger12.error(`Circular dependency detected: ${plugin.name} -> ${depName}`);
         return false;
       }
       markAsEnabledDependency(dep);
@@ -4557,14 +4581,14 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       return true;
     try {
       if (!startDependenciesRecursive(plugin)) {
-        logger11.error(`Failed to start dependencies for ${plugin.name}`);
+        logger12.error(`Failed to start dependencies for ${plugin.name}`);
         return false;
       }
       ensureMethodsBound(plugin);
       if (plugin.managedStyle)
         enableStyle(plugin.managedStyle);
       if (!plugin.hidden && !silent)
-        logger11.info(`Starting plugin ${plugin.name}`);
+        logger12.info(`Starting plugin ${plugin.name}`);
       plugin.start?.();
       if (plugin.chatBarButton) {
         addChatBarButton(plugin.name, plugin.chatBarButton);
@@ -4588,11 +4612,46 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
             try {
               sub.handler(current, prev);
             } catch (e) {
-              logger11.error(`Zustand handler error in ${plugin.name} for ${storeName}:`, e);
+              logger12.error(`Zustand handler error in ${plugin.name} for ${storeName}:`, e);
             }
           };
           const attach = (store) => {
-            unsubs.push(sub.selector ? store.subscribe(sub.selector, wrappedHandler) : store.subscribe(wrappedHandler));
+            if (!sub.selector) {
+              unsubs.push(store.subscribe(wrappedHandler));
+              return;
+            }
+            try {
+              const unsub = store.subscribe(sub.selector, wrappedHandler);
+              if (typeof unsub !== "function")
+                throw new Error("selector subscribe returned no unsubscribe");
+              unsubs.push(unsub);
+            } catch (e) {
+              logger12.warn(`${plugin.name}: selector subscribe failed for ${storeName}`, e);
+              const select = sub.selector;
+              let prev;
+              const getState = store.getState;
+              if (typeof getState === "function") {
+                try {
+                  prev = select(getState.call(store));
+                } catch {
+                  prev = undefined;
+                }
+              }
+              unsubs.push(store.subscribe((state) => {
+                let cur;
+                try {
+                  cur = select(state);
+                } catch (err) {
+                  logger12.error(`Zustand selector error in ${plugin.name} for ${storeName}:`, err);
+                  return;
+                }
+                if (Object.is(cur, prev))
+                  return;
+                const old = prev;
+                prev = cur;
+                wrappedHandler(cur, old);
+              }));
+            }
           };
           const store = resolveStoreHook(storeName);
           if (store) {
@@ -4607,7 +4666,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
             if (resolved)
               attach(resolved);
             else
-              logger11.warn(`Store "${storeName}" resolved module missing hook for plugin ${plugin.name}`);
+              logger12.warn(`Store "${storeName}" resolved module missing hook for plugin ${plugin.name}`);
           });
           unsubs.push(() => {
             cancelled = true;
@@ -4624,7 +4683,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       plugin.started = true;
       return true;
     } catch (e) {
-      logger11.error(`Failed to start plugin ${plugin.name}:`, e);
+      logger12.error(`Failed to start plugin ${plugin.name}:`, e);
       if (plugin.managedStyle)
         disableStyle(plugin.managedStyle);
       removeChatBarButton(plugin.name);
@@ -4639,7 +4698,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     try {
       plugin.stop?.();
     } catch (e) {
-      logger11.error(`Error in ${plugin.name}.stop():`, e);
+      logger12.error(`Error in ${plugin.name}.stop():`, e);
     }
     runUnsubs(plugin.name);
     const tryCleanup = (fn) => {
@@ -4647,7 +4706,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
         fn();
         return false;
       } catch (e) {
-        logger11.error(`Cleanup error in ${plugin.name}:`, e);
+        logger12.error(`Cleanup error in ${plugin.name}:`, e);
         return true;
       }
     };
@@ -4667,7 +4726,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     ].some(Boolean);
     plugin.started = false;
     if (failed)
-      logger11.error(`Plugin ${plugin.name} stopped with errors`);
+      logger12.error(`Plugin ${plugin.name} stopped with errors`);
     return !failed;
   }
   function startAllPlugins(target) {
@@ -4679,7 +4738,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       try {
         startPlugin(plugin);
       } catch (e) {
-        logger11.error(`Unexpected error starting ${name}:`, e);
+        logger12.error(`Unexpected error starting ${name}:`, e);
       }
     }
   }
@@ -4714,7 +4773,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     const stored = PlainSettings.plugins;
     const orphaned = Object.keys(stored).filter((name) => !plugins[name]);
     for (const name of orphaned) {
-      logger11.info(`Pruning settings for removed plugin: ${name}`);
+      logger12.info(`Pruning settings for removed plugin: ${name}`);
       delete stored[name];
     }
     if (orphaned.length)
@@ -4741,7 +4800,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
       for (const d of plugin.dependencies ?? []) {
         const dep = plugins[d];
         if (!dep) {
-          logger11.warn(`Plugin ${name} has unresolved dependency ${d}`);
+          logger12.warn(`Plugin ${name} has unresolved dependency ${d}`);
           continue;
         }
         markAsEnabledDependency(dep);
@@ -4769,7 +4828,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
               ;
           }
         } catch (e) {
-          logger11.error(`Failed to register patches for ${name}`, e);
+          logger12.error(`Failed to register patches for ${name}`, e);
         }
       }
     }
@@ -4792,7 +4851,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
         if (!getFailed().length) {
           unsub();
           clearTimeout(timeout);
-          logger11.info("All previously failed plugins started after late module load");
+          logger12.info("All previously failed plugins started after late module load");
         }
       }, RETRY_DEBOUNCE_MS);
     };
@@ -4807,7 +4866,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
         startPlugin(p, true);
       const stillFailed = getFailed();
       if (stillFailed.length) {
-        logger11.warn(`${stillFailed.length} plugin(s) still failed after retry window: ${stillFailed.map((p) => p.name).join(", ")}`);
+        logger12.warn(`${stillFailed.length} plugin(s) still failed after retry window: ${stillFailed.map((p) => p.name).join(", ")}`);
       }
     }, RETRY_TIMEOUT_MS);
   }
@@ -4912,7 +4971,7 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/_core/settings/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/_core/settings/styles.css
   registerStyle("settings", `.void-settings-version,
 .void-settings-version * {
     user-select: text;
@@ -4992,7 +5051,7 @@ button .void-info-hint {
 `);
 
   // src/api/Themes.ts
-  var logger12 = new Logger("Themes", "#c6a0f6");
+  var logger13 = new Logger("Themes", "#c6a0f6");
   function themeStyleId(url) {
     let hash = 0;
     for (let i = 0;i < url.length; i++) {
@@ -5082,7 +5141,7 @@ button .void-info-hint {
     };
     registerDisabledStyle(themeStyleId(url), css);
     setThemes([...getThemes(), theme]);
-    logger12.info(`Added theme "${theme.name}" from ${url}`);
+    logger13.info(`Added theme "${theme.name}" from ${url}`);
     return theme;
   }
   function addLocalTheme(name, css) {
@@ -5103,7 +5162,7 @@ button .void-info-hint {
     };
     registerDisabledStyle(themeStyleId(id), css);
     setThemes([...getThemes(), theme]);
-    logger12.info(`Added local theme "${theme.name}"`);
+    logger13.info(`Added local theme "${theme.name}"`);
     return theme;
   }
   function updateLocalTheme(url, data) {
@@ -5150,14 +5209,14 @@ button .void-info-hint {
     try {
       const resp = await fetchExternal(url);
       if (!resp.ok) {
-        logger12.warn(`Failed to fetch theme CSS (${resp.status}):`, url);
+        logger13.warn(`Failed to fetch theme CSS (${resp.status}):`, url);
         return;
       }
       if (!isThemeStillActive(url))
         return;
       css = await resp.text();
     } catch (e) {
-      logger12.warn("Failed to fetch theme CSS:", url, e);
+      logger13.warn("Failed to fetch theme CSS:", url, e);
       return;
     }
     if (!isThemeStillActive(url))
@@ -5189,12 +5248,12 @@ button .void-info-hint {
     }));
     for (const [i, result] of results.entries()) {
       if (result.status === "rejected") {
-        logger12.warn(`Failed to load theme "${remote[i].name}":`, result.reason);
+        logger13.warn(`Failed to load theme "${remote[i].name}":`, result.reason);
       }
     }
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/CustomCSSTab.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/CustomCSSTab.css
   registerStyle("CustomCSSTab", `.void-css-root {
     height: 100%;
     min-height: 0;
@@ -5205,7 +5264,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/CssEditor.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/CssEditor.css
   registerStyle("CssEditor", `.void-css-wrap {
     flex: 1;
     min-height: 0;
@@ -5481,7 +5540,7 @@ button .void-info-hint {
     }));
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/shared.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/shared.css
   registerStyle("shared", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -5556,7 +5615,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/PluginsTab.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/PluginsTab.css
   registerStyle("PluginsTab", `.void-plugins-reload-banner {
     padding: 0.625rem 0.75rem;
     border-radius: 0.5rem;
@@ -5597,7 +5656,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/PluginCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/PluginCard.css
   registerStyle("PluginCard", `.void-plugin-card-required-icon,
 .void-plugin-card-badge,
 .void-plugin-card-crashed-icon {
@@ -5648,7 +5707,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/BaseCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/BaseCard.css
   registerStyle("BaseCard", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -5928,7 +5987,7 @@ button .void-info-hint {
     });
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/PluginDialog.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/PluginDialog.css
   registerStyle("PluginDialog", `.void-plugin-dialog-settings-list>.px-3 {
     padding-left: 0;
     padding-right: 0;
@@ -5954,7 +6013,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/SettingField.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/SettingField.css
   registerStyle("SettingField", `.void-setting-select-content {
     z-index: 1000 !important;
 }
@@ -6572,7 +6631,7 @@ button .void-info-hint {
     }));
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/ThemesTab.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/ThemesTab.css
   registerStyle("ThemesTab", `.void-themes-add-error {
     color: hsl(var(--fg-danger));
 }
@@ -6595,7 +6654,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/ThemeCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/ThemeCard.css
   registerStyle("ThemeCard", `.void-theme-card-name {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -6609,14 +6668,14 @@ button .void-info-hint {
 `);
 
   // src/components/settings/ThemeCard.tsx
-  var logger13 = new Logger("ThemeCard");
+  var logger14 = new Logger("ThemeCard");
   var cl12 = classNameFactory("void-theme-card-");
   function ThemeCard({ theme, onRemove, onToggle, onEdit }) {
     const handleToggle = () => {
       if (theme.enabled)
         disableTheme(theme.url);
       else
-        enableTheme(theme.url).catch((e) => logger13.error("Failed to enable theme:", e));
+        enableTheme(theme.url).catch((e) => logger14.error("Failed to enable theme:", e));
       onToggle();
     };
     const SourceIcon = theme.local ? FolderIcon : GlobeIcon;
@@ -6635,7 +6694,7 @@ button .void-info-hint {
         icon: CopyIcon,
         label: "Copy URL",
         onClick: () => {
-          copyToClipboard(theme.url).catch((e) => logger13.error("Failed to copy URL:", e));
+          copyToClipboard(theme.url).catch((e) => logger14.error("Failed to copy URL:", e));
         }
       }), /* @__PURE__ */ React.createElement(IconButton, {
         icon: Trash2Icon,
@@ -6873,7 +6932,7 @@ button .void-info-hint {
   var PluginsTab2 = ErrorBoundary.wrap(PluginsTab);
   var ThemesTab2 = ErrorBoundary.wrap(ThemesTab);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/experiments/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/experiments/styles.css
   registerStyle("experiments", `.void-experiments-section {
     padding: 0 1.25rem;
 }
@@ -6939,10 +6998,10 @@ button .void-info-hint {
     [4 /* WARNING */]: "warning",
     [5 /* LOADING */]: "loading"
   };
-  var logger14 = new Logger("Notifications");
+  var logger15 = new Logger("Notifications");
   function showToast(message, type = 0 /* MESSAGE */, options) {
     if (!Toaster.toast) {
-      logger14.warn("showToast called before Toaster initialized, discarding:", message);
+      logger15.warn("showToast called before Toaster initialized, discarding:", message);
       return -1;
     }
     const { toast } = Toaster;
@@ -7251,7 +7310,7 @@ button .void-info-hint {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/pluginsFlyout/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/pluginsFlyout/styles.css
   registerStyle("pluginsFlyout", `.void-pf-icon {
     width: 1rem;
     height: 1rem;
@@ -7346,7 +7405,7 @@ button .void-info-hint {
   });
 
   // src/plugins/_core/settings/index.tsx
-  var logger15 = new Logger("Settings");
+  var logger16 = new Logger("Settings");
   var cl16 = classNameFactory("void-settings-");
   var settings5 = definePluginSettings({
     showVoidPPMenu: {
@@ -7393,9 +7452,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260922.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"26d531c"}`
-    }, `(${"26d531c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260922.29] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"156d770"}`
+    }, `(${"156d770"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7499,9 +7558,9 @@ button .void-info-hint {
         else
           document.addEventListener("DOMContentLoaded", loadSavedCSS, { once: true });
       } catch (e) {
-        logger15.error("Failed to load saved CSS:", e);
+        logger16.error("Failed to load saved CSS:", e);
       }
-      loadSavedThemes().catch((e) => logger15.error("Failed to load saved themes:", e));
+      loadSavedThemes().catch((e) => logger16.error("Failed to load saved themes:", e));
     },
     patches: [
       {
@@ -7716,7 +7775,7 @@ button .void-info-hint {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterNavigator/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterNavigator/styles.css
   registerStyle("betterNavigator", `.void-bn-host {
     pointer-events: none;
     z-index: 50;
@@ -7975,7 +8034,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
 `);
 
   // src/plugins/betterNavigator/index.ts
-  var logger16 = new Logger("BetterNavigator");
+  var logger17 = new Logger("BetterNavigator");
   var cl17 = classNameFactory("void-bn-");
   var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
   var ASST_SEL = "[data-testid='assistant-message']";
@@ -8290,7 +8349,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       }
       return false;
     } catch (e) {
-      logger16.debug("stream stores unavailable:", e);
+      logger17.debug("stream stores unavailable:", e);
       return null;
     }
   }
@@ -8322,7 +8381,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const page = ChatPageStore.useChatPageStore.getState();
       return page.conversationId || page.optimisticConversationId || "";
     } catch (e) {
-      logger16.debug("chat page unavailable:", e);
+      logger17.debug("chat page unavailable:", e);
       return "";
     }
   }
@@ -8332,7 +8391,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid];
     } catch (e) {
-      logger16.debug("message store unavailable:", e);
+      logger17.debug("message store unavailable:", e);
       return;
     }
   }
@@ -8448,7 +8507,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     try {
       return MessageStore.nodeToResponse?.(cid, node);
     } catch (e) {
-      logger16.debug("nodeToResponse failed:", e);
+      logger17.debug("nodeToResponse failed:", e);
       return;
     }
   }
@@ -9176,7 +9235,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
       return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.map((n) => `${n.id}:${n.status}`).join(",")}`;
     } catch (e) {
-      logger16.debug("message key failed:", e);
+      logger17.debug("message key failed:", e);
       return "";
     }
   }
@@ -9322,7 +9381,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/completeToast/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/completeToast/styles.css
   registerStyle("completeToast", `.void-ct-host {
     contain: layout style;
     position: fixed;
@@ -9441,7 +9500,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
 `);
 
   // src/plugins/completeToast/index.ts
-  var logger17 = new Logger("CompleteToast");
+  var logger18 = new Logger("CompleteToast");
   var cl18 = classNameFactory("void-ct-");
   var HOST = "void-ct-host";
   var NS = "http://www.w3.org/2000/svg";
@@ -9555,14 +9614,14 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       add(page.conversationId);
       add(page.optimisticConversationId);
     } catch (e) {
-      logger17.debug("page ids unavailable:", e);
+      logger18.debug("page ids unavailable:", e);
     }
     try {
       const { route } = RoutingStore.useRoutingStore.getState();
       add(route.conversationId);
       add(route.chat);
     } catch (e) {
-      logger17.debug("route ids unavailable:", e);
+      logger18.debug("route ids unavailable:", e);
     }
     try {
       const url = new URL(location.href);
@@ -9570,7 +9629,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       add(url.searchParams.get("conversationId"));
       add(url.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]);
     } catch (e) {
-      logger17.debug("url ids unavailable:", e);
+      logger18.debug("url ids unavailable:", e);
     }
     return ids;
   }
@@ -9642,7 +9701,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid];
     } catch (e) {
-      logger17.debug("MessageStore unavailable:", e);
+      logger18.debug("MessageStore unavailable:", e);
       return;
     }
   }
@@ -9661,7 +9720,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       if (isLiveResponse(lastAssistant(cid, byConversationId)))
         return true;
     } catch (e) {
-      logger17.debug("ResponseStore live lookup failed:", e);
+      logger18.debug("ResponseStore live lookup failed:", e);
     }
     return false;
   }
@@ -9694,7 +9753,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
           return id;
       }
     } catch (e) {
-      logger17.debug("gateway cid lookup failed:", e);
+      logger18.debug("gateway cid lookup failed:", e);
     }
     try {
       const { byConversationId } = ResponseStore.useResponseStore.getState();
@@ -9703,7 +9762,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
           return id;
       }
     } catch (e) {
-      logger17.debug("response cid lookup failed:", e);
+      logger18.debug("response cid lookup failed:", e);
     }
     return "";
   }
@@ -9712,7 +9771,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const { byId, byIdWithWorkspaces } = ConversationStore.useConversationStore.getState();
       return byId[cid] ?? byIdWithWorkspaces[cid];
     } catch (e) {
-      logger17.debug("conversation lookup failed:", e);
+      logger18.debug("conversation lookup failed:", e);
       return;
     }
   }
@@ -9726,7 +9785,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const conv = byId[cid] ?? byIdWithWorkspaces[cid];
       return asWorkspaceId(conv?.workspaceId) || asWorkspaceId(conv?.workspaces);
     } catch (e) {
-      logger17.debug("workspace lookup failed:", e);
+      logger18.debug("workspace lookup failed:", e);
       return "";
     }
   }
@@ -9792,7 +9851,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         chat.setOptimisticConversationId(undefined);
       chat.setProjectId(ws || undefined);
     } catch (e) {
-      logger17.debug("ChatPageStore update failed:", e);
+      logger18.debug("ChatPageStore update failed:", e);
     }
   }
   function navigateTo(id) {
@@ -9807,11 +9866,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       routing.push(dest);
       applyChatPage(cid, ws);
     } catch (e) {
-      logger17.error("Failed to navigate:", e);
+      logger18.error("Failed to navigate:", e);
       try {
         location.assign(hrefFor(cid, ws));
       } catch (navErr) {
-        logger17.error("Fallback navigation failed:", navErr);
+        logger18.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -9989,11 +10048,11 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       const dest = id ? { page: "imagine-post", postId: id, teamId: routing.route.teamId ?? null } : { page: "imagine", teamId: routing.route.teamId ?? null };
       routing.push(dest);
     } catch (e) {
-      logger17.error("Failed to navigate to Imagine:", e);
+      logger18.error("Failed to navigate to Imagine:", e);
       try {
         location.assign(id ? `/imagine/post/${encodeURIComponent(id)}` : "/imagine");
       } catch (navErr) {
-        logger17.error("Fallback Imagine navigation failed:", navErr);
+        logger18.error("Fallback Imagine navigation failed:", navErr);
       }
     }
   }
@@ -10045,7 +10104,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     try {
       item = MediaStore.useMediaStore.getState().byId[id];
     } catch (e) {
-      logger17.debug("Imagine item unavailable:", e);
+      logger18.debug("Imagine item unavailable:", e);
       return;
     }
     if (!item)
@@ -10112,7 +10171,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
           ids.add(id);
       }
     } catch (e) {
-      logger17.debug("gateway live scan failed:", e);
+      logger18.debug("gateway live scan failed:", e);
     }
     try {
       const { byConversationId } = ResponseStore.useResponseStore.getState();
@@ -10121,7 +10180,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
           ids.add(id);
       }
     } catch (e) {
-      logger17.debug("response live scan failed:", e);
+      logger18.debug("response live scan failed:", e);
     }
     return ids;
   }
@@ -10134,7 +10193,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
           markToasted(last.responseId);
       }
     } catch (e) {
-      logger17.debug("seed responses failed:", e);
+      logger18.debug("seed responses failed:", e);
     }
     try {
       for (const [id, gw] of Object.entries(MessageStore.useMessageStore.getState().conversations ?? {})) {
@@ -10145,7 +10204,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
           markToasted(node.id);
       }
     } catch (e) {
-      logger17.debug("seed gateway failed:", e);
+      logger18.debug("seed gateway failed:", e);
     }
   }
   function finishClosed() {
@@ -10160,7 +10219,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
         maybeFinish(id, last.responseId);
       }
     } catch (e) {
-      logger17.debug("closed scan failed:", e);
+      logger18.debug("closed scan failed:", e);
     }
   }
   function syncLive() {
@@ -10401,7 +10460,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/headerHover.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterSidebar/headerHover.css
   registerStyle("headerHover", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -10457,7 +10516,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterSidebar/styles.css
   registerStyle("betterSidebar", `.group.peer [data-sidebar="sidebar"] + div,
 .group.peer [data-sidebar="content"] > .grow {
     cursor: default !important;
@@ -10532,7 +10591,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
   }
 
   // src/plugins/betterSidebar/index.tsx
-  var logger18 = new Logger("BetterSidebar");
+  var logger19 = new Logger("BetterSidebar");
   var cl19 = classNameFactory("void-sidebar-");
   var settings10 = definePluginSettings({
     clickToToggle: {
@@ -10845,7 +10904,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
       ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
     }
     const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
-    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger18.error("Failed to delete", id, e))));
+    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger19.error("Failed to delete", id, e))));
   }
   function SelectCheckbox({ id, route }) {
     const enabled = settings10.use(["batchSelect"]).batchSelect;
@@ -11028,7 +11087,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterImagine/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterImagine/styles.css
   registerStyle("betterImagine", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -11066,7 +11125,7 @@ html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-lab
 `);
 
   // src/plugins/betterImagine/index.tsx
-  var logger19 = new Logger("BetterImagine");
+  var logger20 = new Logger("BetterImagine");
   var cl20 = classNameFactory("void-imagine-");
   var settings11 = definePluginSettings({
     hideDefaultPreviews: {
@@ -11318,7 +11377,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           return;
         video.pause();
         video.currentTime = 0;
-      }).catch((e) => logger19.warn("Failed to pause video:", e));
+      }).catch((e) => logger20.warn("Failed to pause video:", e));
     } else {
       video.pause();
       video.currentTime = 0;
@@ -11327,7 +11386,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var onMouseEnter = (e) => {
     const video = e.currentTarget.querySelector("video");
     if (video)
-      pending.set(video, video.play().catch((e) => logger19.error("Failed to play video", e)));
+      pending.set(video, video.play().catch((e) => logger20.error("Failed to play video", e)));
   };
   var onMouseLeave = (e) => {
     const video = e.currentTarget.querySelector("video");
@@ -11370,7 +11429,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
 `));
       Toaster.toast.success(`Copied ${pluralize(lines.length, label)} to clipboard.`);
     } catch (e) {
-      logger19.error(`Failed to copy ${label}s`, e);
+      logger20.error(`Failed to copy ${label}s`, e);
       Toaster.toast.error(`Failed to copy ${label}s.`);
     }
   }
@@ -11415,7 +11474,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           await state.upscaleVideo(id, video.id);
           upscaled++;
         } catch (e) {
-          logger19.error("Failed to upscale video:", id, video.id, e);
+          logger20.error("Failed to upscale video:", id, video.id, e);
         }
       }
     }
@@ -11694,7 +11753,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/modeSync/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/modeSync/styles.css
   registerStyle("modeSync", `.void-ms-qchip {
     display: grid;
     flex-shrink: 0;
@@ -11772,7 +11831,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
 `);
 
   // src/plugins/modeSync/index.ts
-  var logger20 = new Logger("ModeSync");
+  var logger21 = new Logger("ModeSync");
   var CHAT_POST = /\/rest\/app-chat\/conversations/;
   var STOP_URL = /stop|abort|cancel/i;
   var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
@@ -12019,7 +12078,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         chat.setActiveModelId("");
       }
     } catch (e) {
-      logger20.debug("apply failed", e);
+      logger21.debug("apply failed", e);
     } finally {
       applying = false;
     }
@@ -12078,7 +12137,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     userPicking = false;
     awaitingMenu = false;
     applyIntent(intent);
-    logger20.info("intent", intent.modeId);
+    logger21.info("intent", intent.modeId);
   }
   function rememberSnapshot() {
     const next = snapshot();
@@ -12087,7 +12146,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     setIntent(captureIntent(next.modeId, next));
     userPicking = false;
     awaitingMenu = false;
-    logger20.info("intent", intent.modeId);
+    logger21.info("intent", intent.modeId);
   }
   function fightHydrate() {
     if (sendOverride || !settings12.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
@@ -12097,7 +12156,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     const cur = snapshot();
     if (cur.modeId === intent.modeId && (!intent.modelMode || cur.modelMode === intent.modelMode) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
       return;
-    logger20.info("hydrate fought", cur.modeId, "->", intent.modeId);
+    logger21.info("hydrate fought", cur.modeId, "->", intent.modeId);
     applyIntent(intent);
   }
   function navKey() {
@@ -12282,7 +12341,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       if (diverting) {
         mapGetOrCreate(held, cid, () => []).push({ id, args: diverting, intent: { ...saved } });
         diverting = null;
-        logger20.info("held", id, "for", saved.modeId);
+        logger21.info("held", id, "for", saved.modeId);
         return true;
       }
       return false;
@@ -12309,7 +12368,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       state.sendMessage({ ...turn.args, parentId });
     });
     forgetItem(turn.id);
-    logger20.info("flushed", turn.id, "as", item.modeId);
+    logger21.info("flushed", turn.id, "as", item.modeId);
   }
   function flushHeld(responseId) {
     for (const [cid, list] of held) {
@@ -12510,7 +12569,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       wrappedGwSend = wrapped;
       mgr.send = wrapped;
     } catch (e) {
-      logger20.debug("gateway wrap failed", e);
+      logger21.debug("gateway wrap failed", e);
     }
   }
   function unwrapGatewaySend() {
@@ -12518,7 +12577,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       if (gwHost && origGwSend && gwHost.send === wrappedGwSend)
         gwHost.send = origGwSend;
     } catch (e) {
-      logger20.debug("gateway unwrap failed", e);
+      logger21.debug("gateway unwrap failed", e);
     }
     origGwSend = null;
     wrappedGwSend = null;
@@ -12642,7 +12701,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     if (!next || next === text)
       return null;
     applyIntent(live);
-    logger20.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
+    logger21.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
     return next;
   }
   function patchFetchArgs(input, init) {
@@ -12689,7 +12748,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           return origFetch.call(pageWindow, i, n);
         }
       } catch (e) {
-        logger20.debug("fetch patch failed", e);
+        logger21.debug("fetch patch failed", e);
       }
       return origFetch.call(pageWindow, input, init);
     };
@@ -12710,7 +12769,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       try {
         xhrMeta.set(this, `${String(method).toUpperCase()} ${requestUrl(url)}`);
       } catch (e) {
-        logger20.debug("xhr open failed", e);
+        logger21.debug("xhr open failed", e);
       }
       return origXhrOpen.call(this, method, url, ...rest);
     };
@@ -12804,7 +12863,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       if (turn)
         turn.intent = next;
     }
-    logger20.info("queue item", id, "->", next.modeId);
+    logger21.info("queue item", id, "->", next.modeId);
     schedulePaint();
   }
   function openMenu(chip, id) {
@@ -13115,7 +13174,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         break;
       }
     } catch (e) {
-      logger20.debug("flush override failed", e);
+      logger21.debug("flush override failed", e);
     }
   }
   function queueKey(s) {
@@ -13153,7 +13212,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         hookFetch();
         hookXhr();
       } catch (e) {
-        logger20.warn("Failed to hook send path", e);
+        logger21.warn("Failed to hook send path", e);
       }
     },
     stop() {
@@ -13230,7 +13289,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/messageTimestamps/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/messageTimestamps/styles.css
   registerStyle("messageTimestamps", `.void-timestamp {
     margin-bottom: 0.125rem;
 }
@@ -13539,7 +13598,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   }
 
   // src/plugins/messageTimestamps/index.tsx
-  var logger21 = new Logger("MessageTimestamps");
+  var logger22 = new Logger("MessageTimestamps");
   var STAMP_MAX = 5000;
   var RESPONSE_URL = /\/(?:load-responses|share_links|response-node)(?:\/|\?|$)/i;
   var settings13 = definePluginSettings({
@@ -13614,7 +13673,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           return cid;
       }
     } catch (e) {
-      logger21.debug("conversation id lookup failed", e);
+      logger22.debug("conversation id lookup failed", e);
     }
     return "";
   }
@@ -13654,7 +13713,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         }
       }
     } catch (e) {
-      logger21.debug("message store unavailable", e);
+      logger22.debug("message store unavailable", e);
     }
     return out;
   }
@@ -13664,7 +13723,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id]?.status === "complete";
     } catch (e) {
-      logger21.debug("message store unavailable", e);
+      logger22.debug("message store unavailable", e);
       return false;
     }
   }
@@ -13685,7 +13744,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         break;
       }
     } catch (e) {
-      logger21.debug("stable key lookup failed", e);
+      logger22.debug("stable key lookup failed", e);
     }
     return keys;
   }
@@ -13726,7 +13785,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       }
       return Object.values(byId ?? {});
     } catch (e) {
-      logger21.debug("response store unavailable", e);
+      logger22.debug("response store unavailable", e);
       return [];
     }
   }
@@ -13750,7 +13809,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       ];
       return neighborTime(id, records) ?? conversationCreateTime(id);
     } catch (e) {
-      logger21.debug("node neighbor lookup failed", e);
+      logger22.debug("node neighbor lookup failed", e);
     }
     return neighborTime(id, storeRecords(id)) ?? conversationCreateTime(id);
   }
@@ -13766,7 +13825,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         return ms != null && !isFresh(ms) ? ms : null;
       }
     } catch (e) {
-      logger21.debug("conversation time lookup failed", e);
+      logger22.debug("conversation time lookup failed", e);
     }
     return null;
   }
@@ -13778,7 +13837,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       if (hit)
         return { ...rec, ...hit };
     } catch (e) {
-      logger21.debug("byId lookup failed", e);
+      logger22.debug("byId lookup failed", e);
     }
     return rec;
   }
@@ -13845,7 +13904,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         try {
           res.clone().json().then(ingest, () => {});
         } catch (e) {
-          logger21.debug("fetch ingest failed", e);
+          logger22.debug("fetch ingest failed", e);
         }
         return res;
       });
@@ -13882,7 +13941,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       try {
         xhrMeta2.set(this, requestUrl2(url));
       } catch (e) {
-        logger21.debug("xhr open failed", e);
+        logger22.debug("xhr open failed", e);
       }
       return origXhrOpen2.call(this, method, url, ...rest);
     };
@@ -13893,7 +13952,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           try {
             ingestXhr(this);
           } catch (e) {
-            logger21.debug("xhr ingest failed", e);
+            logger22.debug("xhr ingest failed", e);
           }
         }, { once: true });
       }
@@ -13923,7 +13982,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       };
     } catch (e) {
       origList = null;
-      logger21.debug("chatListResponses wrap skipped", e);
+      logger22.debug("chatListResponses wrap skipped", e);
     }
   }
   function unhookListResponses() {
@@ -13932,7 +13991,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     try {
       ApiClients.chatApi.chatListResponses = origList;
     } catch (e) {
-      logger21.debug("chatListResponses unwrap skipped", e);
+      logger22.debug("chatListResponses unwrap skipped", e);
     }
     origList = null;
   }
@@ -13958,7 +14017,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         hookXhr2();
         hookListResponses();
       } catch (e) {
-        logger21.warn("Failed to hook network", e);
+        logger22.warn("Failed to hook network", e);
       }
     },
     stop() {
@@ -13983,7 +14042,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
               nodes: Object.values(nodesByConversationId ?? {}).flat()
             });
           } catch (e) {
-            logger21.debug("store ingest failed", e);
+            logger22.debug("store ingest failed", e);
           }
         }
       },
@@ -14027,7 +14086,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   });
 
   // src/plugins/autoRetry/index.ts
-  var logger22 = new Logger("AutoRetry");
+  var logger23 = new Logger("AutoRetry");
   var CONTENT_MODERATED = "grok:content-moderated";
   var USER_INTERRUPT3 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
   var settings14 = definePluginSettings({
@@ -14097,7 +14156,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     retryCounts.set(conversationId, count);
     const delaySec = settings14.store.delay;
     showToast(`Retrying... (${count}/${max})`, 0 /* MESSAGE */);
-    logger22.info(`Retry ${count}/${max} for ${conversationId} in ${delaySec}s`);
+    logger23.info(`Retry ${count}/${max} for ${conversationId} in ${delaySec}s`);
     clearPending();
     pendingTimer = setTimeout(() => {
       pendingTimer = null;
@@ -14204,14 +14263,14 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/cloneChats/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/cloneChats/styles.css
   registerStyle("cloneChats", `.void-clone-icon {
     margin-inline-end: 0.5rem;
 }
 `);
 
   // src/plugins/cloneChats/index.tsx
-  var logger23 = new Logger("CloneChats");
+  var logger24 = new Logger("CloneChats");
   async function cloneChat(conversationId) {
     const lastResponseId = ResponseStore.useResponseStore.getState().nodesByConversationId[conversationId]?.at(-1)?.responseId;
     if (!lastResponseId)
@@ -14234,7 +14293,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   function CloneItem({ conversationId }) {
     const streaming = useIsStreaming(conversationId);
     return /* @__PURE__ */ React.createElement(MenuItem, {
-      onSelect: () => cloneChat(conversationId).catch((e) => logger23.error("Failed to clone chat:", e)),
+      onSelect: () => cloneChat(conversationId).catch((e) => logger24.error("Failed to clone chat:", e)),
       disabled: streaming
     }, /* @__PURE__ */ React.createElement(CopyIcon, {
       size: 16,
@@ -14255,7 +14314,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/streamerMode/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/streamerMode/styles.css
   registerStyle("streamerMode", `/* stylelint-disable no-descending-specificity */
 
 /* Sidebar avatar */
@@ -14427,7 +14486,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/inputHistory/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/inputHistory/styles.css
   registerStyle("inputHistory", `.void-ih-hud {
     contain: content;
     position: fixed;
@@ -14584,7 +14643,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
 `);
 
   // src/plugins/inputHistory/index.tsx
-  var logger24 = new Logger("InputHistory");
+  var logger25 = new Logger("InputHistory");
   var cl21 = classNameFactory("void-ih-");
   var EDITOR_SEL = '.query-bar .tiptap.ProseMirror[contenteditable="true"]';
   var ZWSP = /\u200B/g;
@@ -14761,7 +14820,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
         return;
       }
     } catch (err) {
-      logger24.debug("placeCaret pm failed:", err);
+      logger25.debug("placeCaret pm failed:", err);
     }
     const native = window.getSelection();
     if (!native)
@@ -14809,7 +14868,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
       else
         document.execCommand("insertText", false, text);
     } catch (err) {
-      logger24.debug("insertText failed:", err);
+      logger25.debug("insertText failed:", err);
     }
     placeCaret(el, atStart);
     scheduleApplyEnd(gen);
@@ -15076,7 +15135,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
         tooltipContent: "Copy",
         "aria-label": "Copy",
         onClick: () => {
-          copyToClipboard(row.text).catch((err) => logger24.error("copy failed:", err));
+          copyToClipboard(row.text).catch((err) => logger25.error("copy failed:", err));
         }
       }, /* @__PURE__ */ React.createElement(CopyIcon, {
         size: 16
@@ -15171,7 +15230,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customSidebarIdentity/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/customSidebarIdentity/styles.css
   registerStyle("customSidebarIdentity", `.void-csi-name {
     min-width: 0;
     overflow: hidden;
@@ -16020,7 +16079,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/downloadTTS/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/downloadTTS/styles.css
   registerStyle("downloadTTS", `.void-download-tts-spinner {
     pointer-events: none;
 }
@@ -16028,7 +16087,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 
   // src/plugins/downloadTTS/index.tsx
   var cl23 = classNameFactory("void-download-tts-");
-  var logger25 = new Logger("DownloadTTS");
+  var logger26 = new Logger("DownloadTTS");
   async function fetchAndDownload() {
     const { currentStreamId } = TextToSpeechStore.useTextToSpeechStore.getState();
     if (!currentStreamId)
@@ -16048,7 +16107,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       try {
         await fetchAndDownload();
       } catch (e) {
-        logger25.error("Failed to download TTS audio:", e);
+        logger26.error("Failed to download TTS audio:", e);
       }
     });
     return /* @__PURE__ */ React.createElement(Button, {
@@ -16082,7 +16141,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     _renderDownloadButton: ErrorBoundary.wrap(DownloadButton)
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/recentTopics/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/recentTopics/styles.css
   registerStyle("recentTopics", `.void-rt-root,
 .void-rt-root:popover-open {
     isolation: isolate;
@@ -16424,7 +16483,7 @@ html.void-rt-open [data-sidebar="gap"] {
 `);
 
   // src/plugins/recentTopics/index.tsx
-  var logger26 = new Logger("RecentTopics");
+  var logger27 = new Logger("RecentTopics");
   var cl24 = classNameFactory("void-rt-");
   var HOME_KEY = "home";
   var HOME_SEP = "home:";
@@ -16981,7 +17040,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (fromRoute != null && isHomeId(fromRoute))
         return fromRoute;
     } catch (e) {
-      logger26.debug("RoutingStore unavailable:", e);
+      logger27.debug("RoutingStore unavailable:", e);
     }
     return null;
   }
@@ -17000,7 +17059,7 @@ html.void-rt-open [data-sidebar="gap"] {
         add(historyStack[i]);
       return unique(ids);
     } catch (e) {
-      logger26.debug("historyStack unavailable:", e);
+      logger27.debug("historyStack unavailable:", e);
       return [];
     }
   }
@@ -17076,7 +17135,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
       return byId[id] ?? byIdWithWorkspaces[id] ?? list.find((c) => c.conversationId === id);
     } catch (e) {
-      logger26.debug("Conversation lookup failed:", e);
+      logger27.debug("Conversation lookup failed:", e);
       return;
     }
   }
@@ -17134,7 +17193,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const conv = byId[id] ?? byIdWithWorkspaces[id];
       return asWorkspaceId2(conv?.workspaceId) || asWorkspaceId2(conv?.workspaces);
     } catch (e) {
-      logger26.debug("convWorkspaceId failed:", e);
+      logger27.debug("convWorkspaceId failed:", e);
       return asWorkspaceId2(lookup(id)?.workspaceId) || asWorkspaceId2(lookup(id)?.workspaces);
     }
   }
@@ -17617,7 +17676,7 @@ html.void-rt-open [data-sidebar="gap"] {
           delete wsNames[ws];
         }
         maybePaint();
-      }).catch((e) => logger26.debug("workspace fetch failed:", e)).finally(() => {
+      }).catch((e) => logger27.debug("workspace fetch failed:", e)).finally(() => {
         pendingWs.delete(id);
       });
     } catch {
@@ -17882,7 +17941,7 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       return responsesToLines(responsesOf(id));
     } catch (e) {
-      logger26.debug("ResponseStore snapshot failed:", e);
+      logger27.debug("ResponseStore snapshot failed:", e);
       return [];
     }
   }
@@ -18054,7 +18113,7 @@ html.void-rt-open [data-sidebar="gap"] {
           captureId(id);
       }
     } catch (e) {
-      logger26.debug("snapshot failed:", e);
+      logger27.debug("snapshot failed:", e);
     } finally {
       capturing = false;
     }
@@ -18193,7 +18252,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (parsed?.page && parsed.page !== "unknown")
         return parsed;
     } catch (e) {
-      logger26.debug("urlToRoute failed:", e);
+      logger27.debug("urlToRoute failed:", e);
     }
     return null;
   }
@@ -18205,7 +18264,7 @@ html.void-rt-open [data-sidebar="gap"] {
         chat.setOptimisticConversationId(undefined);
       chat.setProjectId(asWorkspaceId2(workspaceId) || undefined);
     } catch (e) {
-      logger26.debug("ChatPageStore update failed:", e);
+      logger27.debug("ChatPageStore update failed:", e);
     }
   }
   function navigateTo2(id) {
@@ -18299,17 +18358,17 @@ html.void-rt-open [data-sidebar="gap"] {
             });
             applyChatPage2(id, ws);
             rememberProject(id);
-          }).catch((e) => logger26.debug("workspace resolve failed:", e));
+          }).catch((e) => logger27.debug("workspace resolve failed:", e));
         } catch (e) {
-          logger26.debug("workspace fetch skipped:", e);
+          logger27.debug("workspace fetch skipped:", e);
         }
       }
     } catch (e) {
-      logger26.error("Failed to navigate:", e);
+      logger27.error("Failed to navigate:", e);
       try {
         location.assign(hrefFor2(id, workspaceOf2(id) || undefined));
       } catch (navErr) {
-        logger26.error("Fallback navigation failed:", navErr);
+        logger27.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -18338,7 +18397,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (topics().length > 1)
         selected = reverse ? topics().length - 1 : 1;
     } catch (e) {
-      logger26.error("Failed to open switcher:", e);
+      logger27.error("Failed to open switcher:", e);
     } finally {
       suspendPaint = false;
     }
@@ -18383,7 +18442,7 @@ html.void-rt-open [data-sidebar="gap"] {
         else
           begin(e.shiftKey, true);
       } catch (err) {
-        logger26.error("Hotkey failed:", err);
+        logger27.error("Hotkey failed:", err);
       }
       return;
     }
@@ -18866,7 +18925,7 @@ html.void-rt-open [data-sidebar="gap"] {
           bump(current);
         scheduleCapture();
       } catch (e) {
-        logger26.error("Hydrate failed:", e);
+        logger27.error("Hydrate failed:", e);
       }
       if (!keys3) {
         keys3 = new AbortController;
@@ -18896,7 +18955,7 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         writeVisits(capVisits(readVisits()));
       } catch (e) {
-        logger26.error("Settings update failed:", e);
+        logger27.error("Settings update failed:", e);
       }
     },
     zustand: {
@@ -19088,7 +19147,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customInstructions/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/customInstructions/styles.css
   registerStyle("customInstructions", `.void-ci-root {
     display: flex;
     flex-direction: column;
@@ -19477,7 +19536,7 @@ html.void-rt-open [data-sidebar="gap"] {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/quoteSticky/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/quoteSticky/styles.css
   registerStyle("quoteSticky", `.void-qs-chip {
     position: fixed;
     z-index: 40;
@@ -19547,7 +19606,7 @@ html.void-rt-open [data-sidebar="gap"] {
 `);
 
   // src/plugins/quoteSticky/index.ts
-  var logger27 = new Logger("QuoteSticky");
+  var logger28 = new Logger("QuoteSticky");
   var cl26 = classNameFactory("void-qs-");
   var KEEP = 40;
   var QUERY = ".query-bar";
@@ -19710,7 +19769,7 @@ html.void-rt-open [data-sidebar="gap"] {
         applying3 = false;
       }
     } catch (e) {
-      logger27.debug("clear failed", e);
+      logger28.debug("clear failed", e);
     }
   }
   function applyQuote(key, text, popup) {
@@ -19724,7 +19783,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(popup))
         chat.setQuotePopupData(popup);
     } catch (e) {
-      logger27.debug("apply failed", e);
+      logger28.debug("apply failed", e);
     } finally {
       applying3 = false;
     }
@@ -19828,11 +19887,11 @@ html.void-rt-open [data-sidebar="gap"] {
       if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
         lastRestoreAt = now;
         applyQuote(key, snap.text, popupFor(snap));
-        logger27.info("restored", key);
+        logger28.info("restored", key);
       }
       paintFallback(key, snap);
     } catch (e) {
-      logger27.debug("restore failed", e);
+      logger28.debug("restore failed", e);
       paintFallback(key, snap);
     }
   }
@@ -19863,7 +19922,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
         chat.setQuotePopupData(null);
     } catch (e) {
-      logger27.debug("dismiss failed", e);
+      logger28.debug("dismiss failed", e);
     } finally {
       applying3 = false;
     }
@@ -20236,7 +20295,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var DEFAULT_CHIME = "data:audio/mpeg;base64,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";
 
   // src/plugins/responseNotification/index.ts
-  var logger28 = new Logger("ResponseNotification");
+  var logger29 = new Logger("ResponseNotification");
   var LIVE_STATES = new Set(["streaming", "optimistic", "reconnecting"]);
   var RETRY_MS2 = 80;
   var SAMPLE_VOLUME = 0.5;
@@ -20296,7 +20355,7 @@ html.void-rt-open [data-sidebar="gap"] {
       audioCtx = new AudioContext;
       return audioCtx;
     } catch (e) {
-      logger28.debug("AudioContext unavailable:", e);
+      logger29.debug("AudioContext unavailable:", e);
       audioCtx = null;
       return null;
     }
@@ -20343,14 +20402,14 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function playUrl(ctx, url) {
     loadBuffer(ctx, url).then((buf) => playBuffer(ctx, buf), (err) => {
-      logger28.info("sample play failed:", err);
+      logger29.info("sample play failed:", err);
       if (url !== DEFAULT_CHIME)
-        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger28.info("default chime failed:", e));
+        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger29.info("default chime failed:", e));
     });
   }
   function playSound() {
     if (!userGestured) {
-      logger28.info("sound skipped, no user gesture yet");
+      logger29.info("sound skipped, no user gesture yet");
       return;
     }
     const ctx = getCtx();
@@ -20358,7 +20417,7 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     const url = settings22.store.soundUrl?.trim() || DEFAULT_CHIME;
     if (ctx.state === "suspended")
-      ctx.resume().then(() => playUrl(ctx, url), () => logger28.info("AudioContext resume failed"));
+      ctx.resume().then(() => playUrl(ctx, url), () => logger29.info("AudioContext resume failed"));
     else
       playUrl(ctx, url);
   }
@@ -20372,7 +20431,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return !isErrorResponse2(response) && !isLiveResponse2(response);
   }
   function notify(responseId, state) {
-    logger28.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
+    logger29.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
     if (settings22.store.onlyWhenHidden && document.visibilityState === "visible")
       return;
     if (settings22.store.sound)
@@ -20400,7 +20459,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function onStreamEnd5({ responseId }) {
-    logger28.info("streamEnd", responseId);
+    logger29.info("streamEnd", responseId);
     if (retryTimer2)
       clearTimeout(retryTimer2);
     const attempt = (retried) => {
@@ -20408,21 +20467,21 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         response = ResponseStore.useResponseStore.getState().byId[responseId];
       } catch (e) {
-        logger28.info("ResponseStore unavailable:", e);
+        logger29.info("ResponseStore unavailable:", e);
       }
       if (shouldNotify(response)) {
         notifyOnce(responseId, response?.state ?? "gateway");
         return;
       }
       if (isErrorResponse2(response)) {
-        logger28.info("skip error", responseId);
+        logger29.info("skip error", responseId);
         return;
       }
       if (!retried) {
         retryTimer2 = setTimeout(() => attempt(true), RETRY_MS2);
         return;
       }
-      logger28.info("skip", responseId, response?.state ?? "unset");
+      logger29.info("skip", responseId, response?.state ?? "unset");
     };
     attempt(false);
   }
@@ -20813,7 +20872,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
 
   // src/plugins/queuePersist/index.ts
-  var logger29 = new Logger("QueuePersist");
+  var logger30 = new Logger("QueuePersist");
   var ENQUEUE_FORCE2 = Symbol.for("voidpp.modeSync.enqueueIntent");
   var WRAP_MARK2 = Symbol.for("voidpp.modeSync.wrapped");
   var DB_KEY = "queue-persist:v1";
@@ -20928,7 +20987,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (intent.activeModelId && prevActive !== intent.activeModelId)
         chat.setActiveModelId(intent.activeModelId);
     } catch (e) {
-      logger29.debug("intent apply failed", e);
+      logger30.debug("intent apply failed", e);
     }
     try {
       if (intent?.modeId)
@@ -20944,7 +21003,7 @@ html.void-rt-open [data-sidebar="gap"] {
         if (chat && prevActive && String(chat.activeModelId || "") !== prevActive)
           chat.setActiveModelId(prevActive);
       } catch (e) {
-        logger29.debug("intent restore failed", e);
+        logger30.debug("intent restore failed", e);
       }
     }
   }
@@ -21141,7 +21200,7 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       await idbSet(DB_KEY, doc);
     } catch (e) {
-      logger29.debug("persist failed", e);
+      logger30.debug("persist failed", e);
     }
   }
   async function load() {
@@ -21152,7 +21211,7 @@ html.void-rt-open [data-sidebar="gap"] {
       else
         doc = emptyDoc();
     } catch (e) {
-      logger29.debug("load failed", e);
+      logger30.debug("load failed", e);
       doc = emptyDoc();
     }
     bucketsToMemory(accountId());
@@ -21208,7 +21267,7 @@ html.void-rt-open [data-sidebar="gap"] {
           });
         });
       } catch (e) {
-        logger29.debug("replay failed", e);
+        logger30.debug("replay failed", e);
       } finally {
         suppress = false;
       }
@@ -21275,7 +21334,7 @@ html.void-rt-open [data-sidebar="gap"] {
         decided.add(cid);
       }
     } catch (e) {
-      logger29.debug("restore failed", e);
+      logger30.debug("restore failed", e);
       retry = true;
     } finally {
       replaying = false;
@@ -21496,14 +21555,14 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/exportChat/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/exportChat/styles.css
   registerStyle("exportChat", `.void-export-icon {
     margin-inline-end: 0.5rem;
 }
 `);
 
   // src/plugins/exportChat/index.tsx
-  var logger30 = new Logger("ExportChat");
+  var logger31 = new Logger("ExportChat");
   function buildExportMessage(r) {
     return {
       id: r.responseId,
@@ -21678,7 +21737,7 @@ html.void-rt-open [data-sidebar="gap"] {
       className: "void-export-icon"
     }), "Export"), /* @__PURE__ */ React.createElement(MenuSubContent, null, FORMATS.map(({ fmt, label }) => /* @__PURE__ */ React.createElement(MenuItem, {
       key: fmt,
-      onSelect: () => exportChat(conversationId, fmt).catch((e) => logger30.error("Failed to export chat", e))
+      onSelect: () => exportChat(conversationId, fmt).catch((e) => logger31.error("Failed to export chat", e))
     }, label))));
   }
   var exportChat_default = definePlugin({
@@ -21715,7 +21774,7 @@ html.void-rt-open [data-sidebar="gap"] {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/usageDisplay/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/usageDisplay/styles.css
   registerStyle("usageDisplay", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -22330,7 +22389,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var CHART_SCALE_MIN = 20;
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   var DAY_MS2 = 86400000;
-  var logger31 = new Logger("UsageDisplay");
+  var logger32 = new Logger("UsageDisplay");
   function isRecord2(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
@@ -22386,7 +22445,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      logger31.debug("Failed to read usage stats", error);
+      logger32.debug("Failed to read usage stats", error);
       return memory2.get(key) ?? null;
     }
   }
@@ -22398,7 +22457,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      logger31.debug("Failed to persist usage stats", error);
+      logger32.debug("Failed to persist usage stats", error);
       memory2.set(key, value);
     }
   }
@@ -22410,7 +22469,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      logger31.debug("Failed to clear usage stats", error);
+      logger32.debug("Failed to clear usage stats", error);
       memory2.delete(key);
     }
   }
@@ -22430,7 +22489,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }
       return { version: STATS_VERSION, userId, days };
     } catch (error) {
-      logger31.debug("Failed to read usage stats", error);
+      logger32.debug("Failed to read usage stats", error);
       return emptyStore(userId);
     }
   }
@@ -22614,7 +22673,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
 
   // src/plugins/usageDisplay/index.tsx
-  var logger32 = new Logger("UsageDisplay");
+  var logger33 = new Logger("UsageDisplay");
   var cl27 = classNameFactory("void-ud-");
   var settings24 = definePluginSettings({
     usageStats: {
@@ -22717,7 +22776,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       await hook.getState().refreshUsage();
       return normalizeBotUsage(hook.getState().usage);
     } catch (error) {
-      logger32.warn("Failed to fetch Grok Bot usage", error);
+      logger33.warn("Failed to fetch Grok Bot usage", error);
       return null;
     }
   }
@@ -22765,7 +22824,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
         const pageUsage = readNativeUsage();
         const remote = await fetchOfficialUsage().then((usage) => ({ ok: true, usage })).catch((error) => {
-          logger32.warn("Failed to fetch official usage", error);
+          logger33.warn("Failed to fetch official usage", error);
           return { ok: false };
         });
         if (currentPoolId() !== poolId)
@@ -23247,7 +23306,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
           refresh("route");
         });
       } catch (error) {
-        logger32.warn("RoutingStore subscribe failed", error);
+        logger33.warn("RoutingStore subscribe failed", error);
       }
     },
     stop() {
@@ -23291,7 +23350,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/settingsFlyout/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/settingsFlyout/styles.css
   registerStyle("settingsFlyout", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -23807,7 +23866,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
 
   // src/plugins/chatStateFavicons/index.ts
-  var logger33 = new Logger("ChatStateFavicons");
+  var logger34 = new Logger("ChatStateFavicons");
   var ICON_ID = "void-chat-state-favicon";
   var LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD_RESPONSE = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
@@ -23938,7 +23997,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         return false;
       return !isDeadResponse2(byId[page.streamedMessageId ?? ""]) && !isDeadResponse2(byId[page.lastMessageId ?? ""]);
     } catch (e) {
-      logger33.debug("stream stores unavailable:", e);
+      logger34.debug("stream stores unavailable:", e);
       return false;
     }
   }
@@ -23952,7 +24011,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }
       return false;
     } catch (e) {
-      logger33.debug("interrupt DOM unavailable:", e);
+      logger34.debug("interrupt DOM unavailable:", e);
       return false;
     }
   }
@@ -23963,7 +24022,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       if (isUserInterrupt4(byId[page.streamedMessageId ?? ""]) || isUserInterrupt4(byId[page.lastMessageId ?? ""]))
         return true;
     } catch (e) {
-      logger33.debug("interrupt lookup failed:", e);
+      logger34.debug("interrupt lookup failed:", e);
     }
     return officialInterruptedDom();
   }
@@ -23980,14 +24039,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
       if (route.conversationId)
         return String(route.conversationId);
     } catch (e) {
-      logger33.debug("RoutingStore unavailable:", e);
+      logger34.debug("RoutingStore unavailable:", e);
     }
     try {
       const id = ChatPageStore.useChatPageStore.getState().conversationId;
       if (id)
         return id;
     } catch (e) {
-      logger33.debug("ChatPageStore unavailable:", e);
+      logger34.debug("ChatPageStore unavailable:", e);
     }
     return conversationToken();
   }
@@ -24036,7 +24095,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         return false;
       return response.state === "error" || response.error != null;
     } catch (e) {
-      logger33.debug("ResponseStore unavailable:", e);
+      logger34.debug("ResponseStore unavailable:", e);
       return false;
     }
   }
@@ -24210,7 +24269,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       const response = ResponseStore.useResponseStore.getState().byId[responseId];
       lastWasError = !!response && !isUserInterrupt4(response) && (response.state === "error" || response.error != null);
     } catch (e) {
-      logger33.debug("ResponseStore unavailable:", e);
+      logger34.debug("ResponseStore unavailable:", e);
     }
     scheduleEvaluate();
   }
@@ -24345,11 +24404,11 @@ button:has(.void-ud-trigger > .void-ud-label) {
         });
       }
     } catch (e) {
-      logger33.debug("RoutingStore subscribe failed:", e);
+      logger34.debug("RoutingStore subscribe failed:", e);
       try {
         unsubRoute2 = RoutingStore.useRoutingStore.subscribe(() => scheduleEvaluate());
       } catch (err) {
-        logger33.debug("RoutingStore full subscribe failed:", err);
+        logger34.debug("RoutingStore full subscribe failed:", err);
       }
     }
     try {
@@ -24367,7 +24426,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         });
       }
     } catch (e) {
-      logger33.debug("ChatPageStore subscribe failed:", e);
+      logger34.debug("ChatPageStore subscribe failed:", e);
     }
     try {
       const responseStore = ResponseStore.useResponseStore;
@@ -24379,7 +24438,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         });
       }
     } catch (e) {
-      logger33.debug("ResponseStore subscribe failed:", e);
+      logger34.debug("ResponseStore subscribe failed:", e);
     }
   }
   function restoreOfficial() {
@@ -24506,7 +24565,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterFiles/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterFiles/styles.css
   registerStyle("betterFiles", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -24529,7 +24588,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
 `);
 
   // src/plugins/betterFiles/index.tsx
-  var logger34 = new Logger("BetterFiles");
+  var logger35 = new Logger("BetterFiles");
   var LibraryAssets = findByPropsLazy("deleteLibraryAsset", "useLibraryAssets");
   var selection2 = createSelectionStore();
   var assetsById = new Map;
@@ -24555,7 +24614,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       try {
         await deleteLibraryAsset(asset);
       } catch (e) {
-        logger34.error("Failed to delete asset", id, e);
+        logger35.error("Failed to delete asset", id, e);
       }
       assetsById.delete(id);
     }
@@ -24670,7 +24729,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/chatListStatus/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/chatListStatus/styles.css
   registerStyle("chatListStatus", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -24744,7 +24803,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
 `);
 
   // src/plugins/chatListStatus/index.ts
-  var logger35 = new Logger("ChatListStatus");
+  var logger36 = new Logger("ChatListStatus");
   var MARK2 = "void-cls";
   var LIVE2 = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD2 = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
@@ -24916,14 +24975,14 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       add(page.conversationId);
       add(page.optimisticConversationId);
     } catch (e) {
-      logger35.debug("page ids unavailable:", e);
+      logger36.debug("page ids unavailable:", e);
     }
     try {
       const { route } = RoutingStore.useRoutingStore.getState();
       add(route.conversationId);
       add(route.chat);
     } catch (e) {
-      logger35.debug("route ids unavailable:", e);
+      logger36.debug("route ids unavailable:", e);
     }
     try {
       const url = new URL(location.href);
@@ -24931,7 +24990,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       add(url.searchParams.get("conversationId"));
       add(url.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]);
     } catch (e) {
-      logger35.debug("url ids unavailable:", e);
+      logger36.debug("url ids unavailable:", e);
     }
     return ids;
   }
@@ -24979,7 +25038,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       extraSeen.add(val);
       extraStores.push(val);
       extraUnsubs.push(val.subscribe(() => schedule2()));
-      logger35.info("extra store", key);
+      logger36.info("extra store", key);
     }
   }
   function attachExtraStores() {
@@ -25077,7 +25136,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
           ids.add(id);
       }
     } catch (e) {
-      logger35.debug("stream stores unavailable:", e);
+      logger36.debug("stream stores unavailable:", e);
     }
     try {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
@@ -25088,7 +25147,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       for (const conversation of Object.values(byIdWithWorkspaces ?? {}))
         considerConversation(ids, conversation);
     } catch (e) {
-      logger35.debug("conversation store unavailable:", e);
+      logger36.debug("conversation store unavailable:", e);
     }
     extraLiveIds(ids);
     if (currentChatInterrupted2()) {
@@ -25108,7 +25167,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         return isErrorResponse3(byId[page.lastMessageId]);
       }
     } catch (e) {
-      logger35.debug("error lookup failed:", e);
+      logger36.debug("error lookup failed:", e);
     }
     return false;
   }
@@ -25123,7 +25182,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         return isUserInterrupt5(byId[page.lastMessageId ?? ""]) || isUserInterrupt5(byId[page.streamedMessageId ?? ""]);
       }
     } catch (e) {
-      logger35.debug("interrupt lookup failed:", e);
+      logger36.debug("interrupt lookup failed:", e);
     }
     return false;
   }
@@ -25155,7 +25214,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       }
       return currentIds2()[0] ?? "";
     } catch (e) {
-      logger35.debug("conv lookup failed:", e);
+      logger36.debug("conv lookup failed:", e);
       return "";
     }
   }
@@ -25167,7 +25226,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     try {
       response = ResponseStore.useResponseStore.getState().byId[responseId];
     } catch (e) {
-      logger35.debug("streamEnd lookup failed:", e);
+      logger36.debug("streamEnd lookup failed:", e);
     }
     if (liveIds().has(cid)) {
       schedule2();
@@ -25357,7 +25416,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     const live = [...marks].filter(([, kind]) => kind === "streaming").map(([id]) => id);
     if (live.length && !rowById.size)
-      logger35.info("live ids with no rows", live);
+      logger36.info("live ids with no rows", live);
   }
   function schedule2() {
     if (!started5 || raf4)
@@ -25487,7 +25546,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/quoteJump/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/quoteJump/styles.css
   registerStyle("quoteJump", `.void-qj-hit {
     border-radius: 0.25rem;
     outline: 2px solid hsl(var(--fg-primary));
@@ -25508,7 +25567,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
 `);
 
   // src/plugins/quoteJump/index.ts
-  var logger36 = new Logger("QuoteJump");
+  var logger37 = new Logger("QuoteJump");
   var cl29 = classNameFactory("void-qj-");
   var HL = "void-qj";
   var QUERY2 = ".query-bar";
@@ -25708,7 +25767,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
           return { id: row.responseId, cid };
       }
     } catch (e) {
-      logger36.debug("store search failed", e);
+      logger37.debug("store search failed", e);
     }
     return null;
   }
@@ -25991,12 +26050,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
       return;
     } catch (e) {
-      logger36.debug("loadResponses failed", e);
+      logger37.debug("loadResponses failed", e);
     }
     try {
       await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
     } catch (e) {
-      logger36.debug("loadMoreResponses failed", e);
+      logger37.debug("loadMoreResponses failed", e);
     }
   }
   function resolveNeedle(origin) {
@@ -26056,7 +26115,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (mine !== gen)
       return;
     if (!el) {
-      logger36.debug("no source message");
+      logger37.debug("no source message");
       return;
     }
     openAncestors(el, needle);
@@ -26144,7 +26203,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/compactModeSelect/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/compactModeSelect/styles.css
   registerStyle("compactModeSelect", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -26320,7 +26379,7 @@ html.void-cms-picked .void-cms-ghost {
 `);
 
   // src/plugins/compactModeSelect/index.tsx
-  var logger37 = new Logger("CompactModeSelect");
+  var logger38 = new Logger("CompactModeSelect");
   var cl30 = classNameFactory("void-cms-");
   var MODES = [
     { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
@@ -26627,7 +26686,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger37.warn("Failed to harvest mode icons:", e);
+      logger38.warn("Failed to harvest mode icons:", e);
     } finally {
       setPicking(false);
       harvesting = false;
@@ -26643,21 +26702,21 @@ html.void-cms-picked .void-cms-ghost {
       if (!menu) {
         const trigger = nativeTrigger();
         if (!trigger) {
-          logger37.warn("Native mode selector not found");
+          logger38.warn("Native mode selector not found");
           return;
         }
         clickEl(trigger);
         menu = await waitForMenu();
       }
       if (!menu) {
-        logger37.warn("Native mode item not found:", id);
+        logger38.warn("Native mode item not found:", id);
         return;
       }
       cloak(menu);
       stashGlyphs(menu.items);
       const item = menu.items.find((el) => matchItem(el, id));
       if (!item) {
-        logger37.warn("Native mode item not found:", id);
+        logger38.warn("Native mode item not found:", id);
         const trigger = nativeTrigger();
         if (modeMenu() && trigger)
           clickEl(trigger);
@@ -26669,7 +26728,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger37.warn("Failed to select mode:", e);
+      logger38.warn("Failed to select mode:", e);
     } finally {
       setPicking(false);
     }
@@ -26981,7 +27040,7 @@ div:has(> #grok-bot-nav-button) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/placeholder/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/placeholder/styles.css
   registerStyle("placeholder", `.void-ph-root {
     contain: layout;
 }
@@ -27538,61 +27597,61 @@ Neon rain in a quiet city`
   });
 
   // virtual:~plugins
-  noTelemetry_default.updatedAt = 1790112209000;
-  settings_default.updatedAt = 1790112209000;
-  fixChrome_default.updatedAt = 1790112209000;
+  noTelemetry_default.updatedAt = 0;
+  settings_default.updatedAt = 0;
+  fixChrome_default.updatedAt = 0;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  chatBarButtons_default.updatedAt = 1790112209000;
-  contextMenu_default.updatedAt = 1790112209000;
-  betterNavigator_default.updatedAt = 1790131735000;
-  noSidebarIdentity_default.updatedAt = 1790112209000;
-  completeToast_default.updatedAt = 1790112209000;
-  cleaner_default.updatedAt = 1790112209000;
-  betterSidebar_default.updatedAt = 1790112209000;
-  betterImagine_default.updatedAt = 1790112209000;
+  chatBarButtons_default.updatedAt = 1790097681000;
+  contextMenu_default.updatedAt = 0;
+  betterNavigator_default.updatedAt = 1790132466000;
+  noSidebarIdentity_default.updatedAt = 0;
+  completeToast_default.updatedAt = 1790093417000;
+  cleaner_default.updatedAt = 1790093417000;
+  betterSidebar_default.updatedAt = 0;
+  betterImagine_default.updatedAt = 1790093417000;
   modeSync_default.updatedAt = 1790132076000;
-  messageTimestamps_default.updatedAt = 1790112209000;
-  autoRetry_default.updatedAt = 1790112209000;
-  userQuotes_default.updatedAt = 1790112209000;
-  cloneChats_default.updatedAt = 1790112209000;
-  streamerMode_default.updatedAt = 1790112209000;
-  inputHistory_default.updatedAt = 1790112209000;
-  customSidebarIdentity_default.updatedAt = 1790112209000;
-  downloadTTS_default.updatedAt = 1790112209000;
-  recentTopics_default.updatedAt = 1790112209000;
-  betterLinks_default.updatedAt = 1790112209000;
-  experiments_default.updatedAt = 1790112209000;
-  customInstructions_default.updatedAt = 1790112209000;
-  quoteSticky_default.updatedAt = 1790112209000;
-  noBuildStarters_default.updatedAt = 1790112209000;
-  responseNotification_default.updatedAt = 1790112209000;
-  incognito_default.updatedAt = 1790112209000;
-  betterCanvas_default.updatedAt = 1790112209000;
-  noSidebarPlugins_default.updatedAt = 1790112209000;
-  composerOpacity_default.updatedAt = 1790112209000;
+  messageTimestamps_default.updatedAt = 0;
+  autoRetry_default.updatedAt = 0;
+  userQuotes_default.updatedAt = 0;
+  cloneChats_default.updatedAt = 0;
+  streamerMode_default.updatedAt = 0;
+  inputHistory_default.updatedAt = 1790093417000;
+  customSidebarIdentity_default.updatedAt = 0;
+  downloadTTS_default.updatedAt = 0;
+  recentTopics_default.updatedAt = 0;
+  betterLinks_default.updatedAt = 0;
+  experiments_default.updatedAt = 0;
+  customInstructions_default.updatedAt = 0;
+  quoteSticky_default.updatedAt = 1790105896000;
+  noBuildStarters_default.updatedAt = 0;
+  responseNotification_default.updatedAt = 1790093417000;
+  incognito_default.updatedAt = 0;
+  betterCanvas_default.updatedAt = 1790093417000;
+  noSidebarPlugins_default.updatedAt = 0;
+  composerOpacity_default.updatedAt = 1790097681000;
   queuePersist_default.updatedAt = 1790130266000;
-  exportChat_default.updatedAt = 1790112209000;
-  autoCollapse_default.updatedAt = 1790112209000;
-  usageDisplay_default.updatedAt = 1790112209000;
-  widerChat_default.updatedAt = 1790112209000;
-  settingsFlyout_default.updatedAt = 1790112209000;
-  chatStateFavicons_default.updatedAt = 1790112209000;
-  noDictation_default.updatedAt = 1790112209000;
-  betterFiles_default.updatedAt = 1790112209000;
-  noShareLink_default.updatedAt = 1790112209000;
-  chatListStatus_default.updatedAt = 1790112209000;
-  quoteJump_default.updatedAt = 1790112209000;
-  stableComposer_default.updatedAt = 1790112209000;
-  compactModeSelect_default.updatedAt = 1790112209000;
-  consoleJanitor_default.updatedAt = 1790112209000;
-  oneko_default.updatedAt = 1790112209000;
-  starry_default.updatedAt = 1790112209000;
-  pluginsFlyout_default.updatedAt = 1790112209000;
-  noGrokBot_default.updatedAt = 1790112209000;
-  placeholder_default.updatedAt = 1790112209000;
+  exportChat_default.updatedAt = 0;
+  autoCollapse_default.updatedAt = 0;
+  usageDisplay_default.updatedAt = 0;
+  widerChat_default.updatedAt = 0;
+  settingsFlyout_default.updatedAt = 0;
+  chatStateFavicons_default.updatedAt = 1789921507000;
+  noDictation_default.updatedAt = 0;
+  betterFiles_default.updatedAt = 0;
+  noShareLink_default.updatedAt = 0;
+  chatListStatus_default.updatedAt = 0;
+  quoteJump_default.updatedAt = 1790105896000;
+  stableComposer_default.updatedAt = 0;
+  compactModeSelect_default.updatedAt = 0;
+  consoleJanitor_default.updatedAt = 0;
+  oneko_default.updatedAt = 0;
+  starry_default.updatedAt = 0;
+  pluginsFlyout_default.updatedAt = 0;
+  noGrokBot_default.updatedAt = 0;
+  placeholder_default.updatedAt = 1790093417000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [betterNavigator_default.name]: betterNavigator_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [completeToast_default.name]: completeToast_default, [cleaner_default.name]: cleaner_default, [betterSidebar_default.name]: betterSidebar_default, [betterImagine_default.name]: betterImagine_default, [modeSync_default.name]: modeSync_default, [messageTimestamps_default.name]: messageTimestamps_default, [autoRetry_default.name]: autoRetry_default, [userQuotes_default.name]: userQuotes_default, [cloneChats_default.name]: cloneChats_default, [streamerMode_default.name]: streamerMode_default, [inputHistory_default.name]: inputHistory_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [recentTopics_default.name]: recentTopics_default, [betterLinks_default.name]: betterLinks_default, [experiments_default.name]: experiments_default, [customInstructions_default.name]: customInstructions_default, [quoteSticky_default.name]: quoteSticky_default, [noBuildStarters_default.name]: noBuildStarters_default, [responseNotification_default.name]: responseNotification_default, [incognito_default.name]: incognito_default, [betterCanvas_default.name]: betterCanvas_default, [noSidebarPlugins_default.name]: noSidebarPlugins_default, [composerOpacity_default.name]: composerOpacity_default, [queuePersist_default.name]: queuePersist_default, [exportChat_default.name]: exportChat_default, [autoCollapse_default.name]: autoCollapse_default, [usageDisplay_default.name]: usageDisplay_default, [widerChat_default.name]: widerChat_default, [settingsFlyout_default.name]: settingsFlyout_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [noDictation_default.name]: noDictation_default, [betterFiles_default.name]: betterFiles_default, [noShareLink_default.name]: noShareLink_default, [chatListStatus_default.name]: chatListStatus_default, [quoteJump_default.name]: quoteJump_default, [stableComposer_default.name]: stableComposer_default, [compactModeSelect_default.name]: compactModeSelect_default, [consoleJanitor_default.name]: consoleJanitor_default, [oneko_default.name]: oneko_default, [starry_default.name]: starry_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [noGrokBot_default.name]: noGrokBot_default, [placeholder_default.name]: placeholder_default };
-  // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
+  // voidpp-css:/tmp/VoidPP/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
     display: flex;
@@ -27865,14 +27924,14 @@ Neon rain in a quiet city`
   });
 
   // src/VoidPP.ts
-  var logger38 = new Logger("TurbopackPatcher", "#e78284");
+  var logger39 = new Logger("TurbopackPatcher", "#e78284");
   var FALLBACK_MS = 15000;
   var ORPHAN_REPORT_DELAY_MS = 5000;
   function safely(name, fn) {
     try {
       fn();
     } catch (e) {
-      logger38.error(`${name} failed:`, e);
+      logger39.error(`${name} failed:`, e);
     }
   }
   function deferOrphanReport() {
@@ -27893,7 +27952,7 @@ Neon rain in a quiet city`
       safely("initStreamEvents", initStreamEvents);
       safely("_resolveReady", _resolveReady);
       safely("startAllPlugins", () => startAllPlugins("TurbopackReady" /* TurbopackReady */));
-      logger38.info(`${getModuleCache().size} modules loaded, ready`);
+      logger39.info(`${getModuleCache().size} modules loaded, ready`);
       safely("retryFailedPlugins", retryFailedPlugins);
       safely("deferOrphanReport", deferOrphanReport);
       safely("checkBuildFingerprint", checkBuildFingerprint);

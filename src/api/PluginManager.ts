@@ -197,7 +197,34 @@ export function startPlugin(plugin: Plugin, silent = false): boolean {
                 };
 
                 const attach = (store: Subscribable) => {
-                    unsubs.push(sub.selector ? store.subscribe(sub.selector, wrappedHandler) : store.subscribe(wrappedHandler));
+                    if (!sub.selector) {
+                        unsubs.push(store.subscribe(wrappedHandler));
+                        return;
+                    }
+                    try {
+                        const unsub = store.subscribe(sub.selector, wrappedHandler);
+                        if (typeof unsub !== "function") throw new Error("selector subscribe returned no unsubscribe");
+                        unsubs.push(unsub);
+                    } catch (e) {
+                        logger.warn(`${plugin.name}: selector subscribe failed for ${storeName}`, e);
+                        const select = sub.selector;
+                        let prev: unknown;
+                        const getState = (store as { getState?: () => unknown }).getState;
+                        if (typeof getState === "function") {
+                            try { prev = select(getState.call(store)); } catch { prev = undefined; }
+                        }
+                        unsubs.push(store.subscribe((state: unknown) => {
+                            let cur: unknown;
+                            try { cur = select(state); } catch (err) {
+                                logger.error(`Zustand selector error in ${plugin.name} for ${storeName}:`, err);
+                                return;
+                            }
+                            if (Object.is(cur, prev)) return;
+                            const old = prev;
+                            prev = cur;
+                            wrappedHandler(cur, old);
+                        }));
+                    }
                 };
 
                 const store = resolveStoreHook(storeName);

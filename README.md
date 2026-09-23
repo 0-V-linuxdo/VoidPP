@@ -57,6 +57,7 @@ Install by clicking the badge (jsDelivr, default `voidpp` branch, no GitHub `CSP
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | On | Hide inaccessible models in the model selector again. |
 | <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> ModeSync | On | A queued row sends with that row's mode, not the model of the turn that just finished. |
+| <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | On | Keep the right panel closed without crashing plugin start when the closer is not on the store snapshot. |
 
 #### Settings UI
 
