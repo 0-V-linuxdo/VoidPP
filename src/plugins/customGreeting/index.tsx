@@ -6,7 +6,7 @@
 
 import "./styles.css";
 
-import { definePluginSettings } from "@api/Settings";
+import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
 import { Flex, InfoHint, Text, Textarea } from "@components";
 import { TextCursorInputIcon } from "@components/icons";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
@@ -14,10 +14,13 @@ import { React } from "@turbopack/common/react";
 import { RoutingStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classNameFactory, registerStyle, unregisterStyle } from "@utils/css";
+import { Logger } from "@utils/Logger";
 import { clamp } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
 
 import { clampToWidth } from "./clamp";
+
+const logger = new Logger("CustomGreeting");
 
 const cl = classNameFactory("void-ph-");
 const HERO_STYLE = "placeholderHero";
@@ -85,6 +88,78 @@ const settings = definePluginSettings({
         component: ImaginePhrasesEditor,
     },
 }).withPrivateSettings<{ phrases: string; imaginePhrases: string; greetIndex: number; lastRandom: number }>();
+
+const OLD_NAME = "Placeholder";
+const NEW_NAME = "CustomGreeting";
+
+function renameList(list: unknown): string[] | undefined {
+    if (!Array.isArray(list) || !list.includes(OLD_NAME)) return undefined;
+    const seen = new Set<string>();
+    const next: string[] = [];
+    for (const item of list) {
+        if (typeof item !== "string") continue;
+        const name = item === OLD_NAME ? NEW_NAME : item;
+        if (seen.has(name)) continue;
+        seen.add(name);
+        next.push(name);
+    }
+    return next;
+}
+
+function migrateLegacy() {
+    const bag = PlainSettings.plugins;
+    const old = bag[OLD_NAME];
+    const meta = bag.Settings;
+    const menu = bag.PluginsFlyout?.menuPlugins;
+    const known = meta?.knownPlugins;
+    const pinned = renameList(meta?.pinnedPlugins);
+    const starred = renameList(meta?.starredPlugins);
+    const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu as Record<string, unknown> : undefined;
+    const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known as Record<string, unknown> : undefined;
+    const menuHas = !!menuRec && OLD_NAME in menuRec;
+    const knownHas = !!knownRec && OLD_NAME in knownRec;
+    if (!old && !menuHas && !knownHas && !pinned && !starred) return;
+
+    if (old) {
+        const target = bag[NEW_NAME] ??= {};
+        const keys = Object.keys(target);
+        const stub = keys.length === 0 || (keys.length === 1 && keys[0] === "enabled");
+        for (const key of Object.keys(old)) {
+            if (stub || !(key in target)) target[key] = old[key];
+        }
+        delete bag[OLD_NAME];
+    }
+
+    if (meta) {
+        if (pinned) meta.pinnedPlugins = pinned;
+        if (starred) meta.starredPlugins = starred;
+        if (knownHas && knownRec) {
+            if (!(NEW_NAME in knownRec)) knownRec[NEW_NAME] = knownRec[OLD_NAME];
+            delete knownRec[OLD_NAME];
+        }
+    }
+
+    if (menuHas && menuRec) {
+        if (!(NEW_NAME in menuRec)) menuRec[NEW_NAME] = menuRec[OLD_NAME];
+        delete menuRec[OLD_NAME];
+    }
+
+    SettingsStore.markAsChanged();
+    logger.info("Migrated Placeholder into CustomGreeting");
+}
+
+const pluginName = Object.getOwnPropertyDescriptor(settings, "pluginName");
+if (pluginName?.set && pluginName.get) {
+    Object.defineProperty(settings, "pluginName", {
+        configurable: true,
+        enumerable: true,
+        get: pluginName.get,
+        set(name: string) {
+            if (name === NEW_NAME) migrateLegacy();
+            pluginName.set!.call(settings, name);
+        },
+    });
+}
 
 function PhrasesEditor() {
     const { phrases } = settings.use(["phrases"]);
@@ -397,7 +472,7 @@ function scheduleInput() {
 }
 
 export default definePlugin({
-    name: "Placeholder",
+    name: "CustomGreeting",
     icon: TextCursorInputIcon,
     description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
     authors: [Devs.p],

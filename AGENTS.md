@@ -48,7 +48,7 @@ Do not rename:
 - AccountSwitcher crypto key `VoidCryptoRootHKDF`
 - `@name Void++` / `@namespace https://github.com/0-V-linuxdo/VoidPP`
 
-## Placeholder
+## CustomGreeting
 
 Query-bar empty placeholder is Tiptap `p.is-editor-empty::before { content: attr(data-placeholder) }`. Official `float` + `height:0` plus editor `overflow-y:auto` lets a long phrase wrap and show a scrollbar. Empty editor must stay one line: `overflow-y:hidden` and `::before` `position:absolute; white-space:nowrap`.
 
