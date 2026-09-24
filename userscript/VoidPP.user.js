@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.28
+// @version      20260924.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.28] v1.0.0 — A modification for grok.com
+ * Void++ [20260924.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7515,9 +7515,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e72e696"}`
-    }, `(${"e72e696"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260924.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5208ac4"}`
+    }, `(${"5208ac4"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14635,6 +14635,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var THINK_SEL2 = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
   var OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
   var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  var JUMP_BTN = "button[aria-label='Jump to quoted message']";
+  var SCROLLER2 = "[data-testid='chat-transcript-scroller']";
   var FLASH_MS2 = 1800;
   var WAIT_MS = 50;
   var WAIT_N = 24;
@@ -14687,11 +14689,77 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     }
     for (const [k, v] of Object.entries(value)) {
-      if (/responseid|messageid|^id$/i.test(k) && typeof v === "string" && UUID.test(v))
-        out.push(v);
-      else
+      if (/responseid|messageid|^id$/i.test(k)) {
+        const id = bareUuid(v);
+        if (id)
+          out.push(id);
+        else
+          collectIds(v, out, depth + 1);
+      } else
         collectIds(v, out, depth + 1);
     }
+  }
+  function bareUuid(value) {
+    if (typeof value !== "string")
+      return "";
+    const m = value.match(UUID);
+    if (!m)
+      return "";
+    if (m[0] === value || value === `response-${m[0]}`)
+      return m[0];
+    return "";
+  }
+  function hostOf(el) {
+    return el?.closest("[id^='response-']") ?? null;
+  }
+  function hostUuid(el) {
+    return bareUuid(hostOf(el)?.id);
+  }
+  function eventEl(t) {
+    if (t instanceof Element)
+      return t;
+    if (t instanceof Node)
+      return t.parentElement;
+    return null;
+  }
+  function officialJumpButton(el) {
+    const btn = el?.closest(JUMP_BTN);
+    return btn instanceof HTMLElement ? btn : null;
+  }
+  function sourceOfRow(row) {
+    if (!row)
+      return { parentId: "", quoted: "" };
+    const meta = row.metadata;
+    const src = meta && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource : undefined;
+    return {
+      parentId: bareUuid(row.parentResponseId) || bareUuid(src?.sourceResponseId),
+      quoted: String(row.parentQuotedText || "")
+    };
+  }
+  function sourceFromFiber(el) {
+    let cur = getFiber(el);
+    let d = 0;
+    let quoted = "";
+    while (cur && d < 32) {
+      const p = cur.memoizedProps;
+      if (p) {
+        const response = p.response;
+        if (response && typeof response === "object") {
+          const rec = response;
+          const meta = rec.metadata && typeof rec.metadata === "object" ? rec.metadata : undefined;
+          const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource : undefined;
+          const parentId = bareUuid(rec.parentResponseId) || bareUuid(src?.sourceResponseId);
+          const fromRow = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
+          if (parentId || fromRow)
+            return { parentId, quoted: fromRow || quoted };
+        }
+        if (!quoted && typeof p.quotedText === "string" && p.quotedText)
+          quoted = p.quotedText;
+      }
+      cur = cur.return;
+      d++;
+    }
+    return { parentId: "", quoted };
   }
   function propsId(el) {
     let cur = getFiber(el);
@@ -14700,9 +14768,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const p = cur.memoizedProps;
       if (p) {
         for (const k of ["responseId", "parentResponseId", "messageId", "id"]) {
-          const v = p[k];
-          if (typeof v === "string" && UUID.test(v))
-            return v;
+          const id = bareUuid(p[k]);
+          if (id)
+            return id;
         }
       }
       cur = cur.return;
@@ -14720,8 +14788,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           out.push(m[0]);
       }
       const attr = el.closest("[data-response-id]")?.getAttribute("data-response-id");
-      if (attr && UUID.test(attr))
-        out.push(attr);
+      const attrId = bareUuid(attr);
+      if (attrId)
+        out.push(attrId);
       const fromFiber = propsId(el);
       if (fromFiber)
         out.push(fromFiber);
@@ -14731,6 +14800,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return [...new Set(out)];
   }
   function chatPane2() {
+    const named = document.querySelector(SCROLLER2);
+    if (named && !named.closest(PANE_SKIP2))
+      return named;
     const main = document.querySelector("main");
     if (!main)
       return null;
@@ -14889,13 +14961,16 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return null;
   }
   function sentQuote(el) {
+    const jump = officialJumpButton(el);
+    if (jump)
+      return jump;
     const bq = el.closest("[data-testid='user-message'] blockquote");
     if (bq instanceof HTMLElement)
       return bq;
     const msg = el.closest("[data-testid='user-message']");
     if (!(msg instanceof HTMLElement) || isEditor(el))
       return null;
-    const row = storeById(propsId(msg) || idsFrom(msg)[0] || "");
+    const row = storeById(propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] || "");
     const snippet = String(row?.parentQuotedText || "");
     if (snippet && nodeHasNeedle(el instanceof HTMLElement ? el : msg, snippet))
       return el instanceof HTMLElement ? el : msg;
@@ -15049,16 +15124,21 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const box = range.getBoundingClientRect();
     return box.height > 0 || box.width > 0 ? box : null;
   }
-  function scrollMessageTop(el) {
-    el.style.scrollMarginTop = `${MSG_OFFSET}px`;
+  function scrollPane(el) {
+    const named = el.closest(SCROLLER2);
+    if (named && !named.closest(PANE_SKIP2))
+      return named;
     const pane = paneOf(el) ?? chatPane2();
-    if (pane && pane.contains(el)) {
-      const pr = pane.getBoundingClientRect();
-      const er = el.getBoundingClientRect();
-      pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - MSG_OFFSET, behavior: "smooth" });
+    return pane && pane.contains(el) ? pane : null;
+  }
+  function scrollMessageTop(el) {
+    const host = el.closest("[id^='response-']") ?? el;
+    const pane = scrollPane(host);
+    if (!pane)
       return;
-    }
-    el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+    const pr = pane.getBoundingClientRect();
+    const er = host.getBoundingClientRect();
+    pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - MSG_OFFSET, behavior: "smooth" });
   }
   function scrollLineToScreenCenter(range, el) {
     if (!document.body.contains(el))
@@ -15068,22 +15148,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       scrollMessageTop(el.closest(MSG2) ?? el);
       return;
     }
-    const pane = paneOf(el) ?? chatPane2();
-    const mid = visibleMidY(pane && pane.contains(el) ? pane : null);
+    const pane = scrollPane(el);
+    if (!pane)
+      return;
+    const mid = visibleMidY(pane);
     const delta = box.top + box.height / 2 - mid;
     if (Math.abs(delta) < ALIGNED_PX)
       return;
-    if (pane && pane.contains(el)) {
-      pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
-      return;
-    }
-    const node = range?.startContainer;
-    const hit = (node instanceof HTMLElement ? node : node?.parentElement) ?? el;
-    if (hit.closest(MSG2) !== hit) {
-      hit.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
-      return;
-    }
-    scrollMessageTop(el);
+    pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
   }
   function afterLayout() {
     return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
@@ -15104,23 +15176,35 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function resolveNeedle(origin) {
+    const jump = origin ? officialJumpButton(origin) : null;
+    if (jump) {
+      const child = hostUuid(jump);
+      const fiber = sourceFromFiber(jump);
+      const row = sourceOfRow(child ? storeById(child) : undefined);
+      const parent = fiber.parentId || row.parentId;
+      const needle = row.quoted || fiber.quoted || prefixOf(jump.textContent || "");
+      return { needle, ids: parent ? [parent] : [] };
+    }
     const live = quotedText2();
     if (origin) {
       const msg = origin.closest(MSG2);
-      const id = msg ? propsId(msg) || idsFrom(msg)[0] : "";
+      const id = msg ? propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] : "";
       const row = id ? storeById(id) : undefined;
       const sent = String(row?.parentQuotedText || "");
       const parent = String(row?.parentResponseId || "");
       const text = sent || live || prefixOf(origin.textContent || "");
-      const ids = [parent, ...idsFrom(origin, row)].filter(Boolean);
+      const ids = [bareUuid(parent) || parent, ...idsFrom(origin, row)].filter(Boolean);
       return { needle: text, ids };
     }
     return { needle: live, ids: idsFrom(null) };
   }
-  function pickMessage(ids, needle) {
+  function insideHost(el, host) {
+    return !!el && !!host && (el === host || host.contains(el));
+  }
+  function pickMessage(ids, needle, skip) {
     for (const id of ids) {
-      const el = messageById(id);
-      if (el)
+      const el = messageById(bareUuid(id) || id);
+      if (el && !insideHost(el, skip ?? null))
         return el;
     }
     const n = prefixOf(needle);
@@ -15128,6 +15212,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return null;
     const rows = messageEls();
     for (let i = rows.length - 1;i >= 0; i--) {
+      if (insideHost(rows[i], skip ?? null))
+        continue;
       if (nodeHasNeedle(rows[i], n))
         return rows[i];
     }
@@ -15138,17 +15224,18 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const { needle, ids } = resolveNeedle(origin);
     if (!prefixOf(needle))
       return;
-    let el = pickMessage(ids, needle);
+    const skip = officialJumpButton(origin) ? hostOf(origin) : null;
+    let el = pickMessage(ids, needle, skip);
     if (!el || !findHit(el, needle) && !nodeHasNeedle(el, needle)) {
       const hit = storeNeedle(needle);
       if (hit) {
-        if (hit.id)
+        if (hit.id && hit.id !== hostUuid(skip))
           ids.unshift(hit.id);
         await hydrate(hit.cid || conversationId());
         if (mine !== gen)
           return;
         for (let i = 0;i < WAIT_N; i++) {
-          el = pickMessage(ids, needle);
+          el = pickMessage(ids, needle, skip);
           if (el)
             break;
           await sleep(WAIT_MS);
@@ -15168,7 +15255,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (mine !== gen)
       return;
     if (!el.isConnected) {
-      el = pickMessage(ids, needle);
+      el = pickMessage(ids, needle, skip);
       if (!el)
         return;
       openAncestors(el, needle);
@@ -15184,8 +15271,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function onClick(e) {
     if (!e.isTrusted || e.button !== 0 || onImaginePage2())
       return;
-    const t = e.target;
-    if (!(t instanceof Element))
+    const t = eventEl(e.target);
+    if (!t)
       return;
     if (isDismiss(t) || isEditor(t) || isBarAction(t))
       return;
@@ -15860,7 +15947,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var settings13 = definePluginSettings({
     jumpToPassage: {
       type: 3 /* BOOLEAN */,
-      description: "Click the composer quote chip or a sent quote card to scroll to the exact passage.",
+      description: "Click the composer quote chip or a sent Jump-to-quoted-message card to scroll to the exact passage.",
       default: true
     },
     persistAcrossChats: {
@@ -15933,7 +16020,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var betterQuotes_default = definePlugin({
     name: "BetterQuotes",
     icon: MessageSquareQuoteIcon,
-    description: "Scroll a composer quote chip to the exact passage, and keep that quote card when switching chats.",
+    description: "Scroll a composer quote chip or a sent quote to the exact passage, and keep that quote card when switching chats.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
@@ -28835,7 +28922,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterLinks_default.updatedAt = 1787870966000;
   betterModeSelect_default.updatedAt = 1790161256000;
   betterNavigator_default.updatedAt = 1790145289000;
-  betterQueue_default.updatedAt = 1790159561000;
+  betterQueue_default.updatedAt = 1790246920000;
   betterQuotes_default.updatedAt = 1790174156000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;

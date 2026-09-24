@@ -21,7 +21,7 @@ const logger = new Logger("BetterQuotes");
 const settings = definePluginSettings({
     jumpToPassage: {
         type: OptionType.BOOLEAN,
-        description: "Click the composer quote chip or a sent quote card to scroll to the exact passage.",
+        description: "Click the composer quote chip or a sent Jump-to-quoted-message card to scroll to the exact passage.",
         default: true,
     },
     persistAcrossChats: {
@@ -91,7 +91,7 @@ function apply() {
 export default definePlugin({
     name: "BetterQuotes",
     icon: MessageSquareQuoteIcon,
-    description: "Scroll a composer quote chip to the exact passage, and keep that quote card when switching chats.",
+    description: "Scroll a composer quote chip or a sent quote to the exact passage, and keep that quote card when switching chats.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,

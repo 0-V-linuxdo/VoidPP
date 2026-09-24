@@ -22,6 +22,8 @@ const PANE_SKIP = "[data-sidebar], [class*='pane-card']";
 const THINK_SEL = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
 const OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const JUMP_BTN = "button[aria-label='Jump to quoted message']";
+const SCROLLER = "[data-testid='chat-transcript-scroller']";
 const FLASH_MS = 1800;
 const WAIT_MS = 50;
 const WAIT_N = 24;
@@ -76,9 +78,75 @@ function collectIds(value: unknown, out: string[], depth = 0) {
         return;
     }
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-        if (/responseid|messageid|^id$/i.test(k) && typeof v === "string" && UUID.test(v)) out.push(v);
-        else collectIds(v, out, depth + 1);
+        if (/responseid|messageid|^id$/i.test(k)) {
+            const id = bareUuid(v);
+            if (id) out.push(id);
+            else collectIds(v, out, depth + 1);
+        } else collectIds(v, out, depth + 1);
     }
+}
+
+function bareUuid(value: unknown): string {
+    if (typeof value !== "string") return "";
+    const m = value.match(UUID);
+    if (!m) return "";
+    if (m[0] === value || value === `response-${m[0]}`) return m[0];
+    return "";
+}
+
+function hostOf(el: Element | null): HTMLElement | null {
+    return el?.closest<HTMLElement>("[id^='response-']") ?? null;
+}
+
+function hostUuid(el: Element | null): string {
+    return bareUuid(hostOf(el)?.id);
+}
+
+function eventEl(t: EventTarget | null): Element | null {
+    if (t instanceof Element) return t;
+    if (t instanceof Node) return t.parentElement;
+    return null;
+}
+
+function officialJumpButton(el: Element | null): HTMLElement | null {
+    const btn = el?.closest(JUMP_BTN);
+    return btn instanceof HTMLElement ? btn : null;
+}
+
+function sourceOfRow(row: GrokResponse | undefined): { parentId: string; quoted: string } {
+    if (!row) return { parentId: "", quoted: "" };
+    const meta = row.metadata;
+    const src = meta && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource as Record<string, unknown> : undefined;
+    return {
+        parentId: bareUuid(row.parentResponseId) || bareUuid(src?.sourceResponseId),
+        quoted: String(row.parentQuotedText || ""),
+    };
+}
+
+function sourceFromFiber(el: Element): { parentId: string; quoted: string } {
+    let cur = getFiber(el);
+    let d = 0;
+    let quoted = "";
+    while (cur && d < 32) {
+        const p = cur.memoizedProps;
+        if (p) {
+            const response = p.response;
+            if (response && typeof response === "object") {
+                const rec = response as Record<string, unknown>;
+                const meta = rec.metadata && typeof rec.metadata === "object" ? rec.metadata as Record<string, unknown> : undefined;
+                const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object"
+                    ? meta.parentQuoteSource as Record<string, unknown>
+                    : undefined;
+                const parentId = bareUuid(rec.parentResponseId) || bareUuid(src?.sourceResponseId);
+                const fromRow = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
+                if (parentId || fromRow) return { parentId, quoted: fromRow || quoted };
+            }
+            if (!quoted && typeof p.quotedText === "string" && p.quotedText) quoted = p.quotedText;
+        }
+        cur = cur.return;
+        d++;
+    }
+    return { parentId: "", quoted };
 }
 
 function propsId(el: Element): string {
@@ -88,8 +156,8 @@ function propsId(el: Element): string {
         const p = cur.memoizedProps;
         if (p) {
             for (const k of ["responseId", "parentResponseId", "messageId", "id"]) {
-                const v = p[k];
-                if (typeof v === "string" && UUID.test(v)) return v;
+                const id = bareUuid(p[k]);
+                if (id) return id;
             }
         }
         cur = cur.return;
@@ -107,7 +175,8 @@ function idsFrom(el: Element | null, extra?: unknown): string[] {
             if (m) out.push(m[0]);
         }
         const attr = el.closest("[data-response-id]")?.getAttribute("data-response-id");
-        if (attr && UUID.test(attr)) out.push(attr);
+        const attrId = bareUuid(attr);
+        if (attrId) out.push(attrId);
         const fromFiber = propsId(el);
         if (fromFiber) out.push(fromFiber);
     }
@@ -117,6 +186,8 @@ function idsFrom(el: Element | null, extra?: unknown): string[] {
 }
 
 function chatPane(): HTMLElement | null {
+    const named = document.querySelector<HTMLElement>(SCROLLER);
+    if (named && !named.closest(PANE_SKIP)) return named;
     const main = document.querySelector("main");
     if (!main) return null;
     const skip = (n: HTMLElement) => !!n.closest(PANE_SKIP);
@@ -260,11 +331,13 @@ function composerChip(el: Element): HTMLElement | null {
 }
 
 function sentQuote(el: Element): HTMLElement | null {
+    const jump = officialJumpButton(el);
+    if (jump) return jump;
     const bq = el.closest("[data-testid='user-message'] blockquote");
     if (bq instanceof HTMLElement) return bq;
     const msg = el.closest("[data-testid='user-message']");
     if (!(msg instanceof HTMLElement) || isEditor(el)) return null;
-    const row = storeById(propsId(msg) || idsFrom(msg)[0] || "");
+    const row = storeById(propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] || "");
     const snippet = String(row?.parentQuotedText || "");
     if (snippet && nodeHasNeedle(el instanceof HTMLElement ? el : msg, snippet)) return el instanceof HTMLElement ? el : msg;
     return null;
@@ -409,40 +482,35 @@ function lineBox(range: Range | null): DOMRect | null {
     return box.height > 0 || box.width > 0 ? box : null;
 }
 
-function scrollMessageTop(el: HTMLElement) {
-    el.style.scrollMarginTop = `${MSG_OFFSET}px`;
+function scrollPane(el: HTMLElement): HTMLElement | null {
+    const named = el.closest<HTMLElement>(SCROLLER);
+    if (named && !named.closest(PANE_SKIP)) return named;
     const pane = paneOf(el) ?? chatPane();
-    if (pane && pane.contains(el)) {
-        const pr = pane.getBoundingClientRect();
-        const er = el.getBoundingClientRect();
-        pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - MSG_OFFSET, behavior: "smooth" });
-        return;
-    }
-    el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+    return pane && pane.contains(el) ? pane : null;
+}
+
+function scrollMessageTop(el: HTMLElement) {
+    const host = el.closest<HTMLElement>("[id^='response-']") ?? el;
+    const pane = scrollPane(host);
+    if (!pane) return;
+    const pr = pane.getBoundingClientRect();
+    const er = host.getBoundingClientRect();
+    pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - MSG_OFFSET, behavior: "smooth" });
 }
 
 function scrollLineToScreenCenter(range: Range | null, el: HTMLElement) {
     if (!document.body.contains(el)) return;
     const box = lineBox(range);
     if (!box) {
-        scrollMessageTop(el.closest(MSG) ?? el);
+        scrollMessageTop(el.closest<HTMLElement>(MSG) ?? el);
         return;
     }
-    const pane = paneOf(el) ?? chatPane();
-    const mid = visibleMidY(pane && pane.contains(el) ? pane : null);
+    const pane = scrollPane(el);
+    if (!pane) return;
+    const mid = visibleMidY(pane);
     const delta = box.top + box.height / 2 - mid;
     if (Math.abs(delta) < ALIGNED_PX) return;
-    if (pane && pane.contains(el)) {
-        pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
-        return;
-    }
-    const node = range?.startContainer;
-    const hit = (node instanceof HTMLElement ? node : node?.parentElement) ?? el;
-    if (hit.closest(MSG) !== hit) {
-        hit.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
-        return;
-    }
-    scrollMessageTop(el);
+    pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
 }
 
 function afterLayout(): Promise<void> {
@@ -465,29 +533,43 @@ async function hydrate(cid: string) {
 }
 
 function resolveNeedle(origin: HTMLElement | null): { needle: string; ids: string[] } {
+    const jump = origin ? officialJumpButton(origin) : null;
+    if (jump) {
+        const child = hostUuid(jump);
+        const fiber = sourceFromFiber(jump);
+        const row = sourceOfRow(child ? storeById(child) : undefined);
+        const parent = fiber.parentId || row.parentId;
+        const needle = row.quoted || fiber.quoted || prefixOf(jump.textContent || "");
+        return { needle, ids: parent ? [parent] : [] };
+    }
     const live = quotedText();
     if (origin) {
         const msg = origin.closest<HTMLElement>(MSG);
-        const id = msg ? propsId(msg) || idsFrom(msg)[0] : "";
+        const id = msg ? propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] : "";
         const row = id ? storeById(id) : undefined;
         const sent = String(row?.parentQuotedText || "");
         const parent = String(row?.parentResponseId || "");
         const text = sent || live || prefixOf(origin.textContent || "");
-        const ids = [parent, ...idsFrom(origin, row)].filter(Boolean);
+        const ids = [bareUuid(parent) || parent, ...idsFrom(origin, row)].filter(Boolean);
         return { needle: text, ids };
     }
     return { needle: live, ids: idsFrom(null) };
 }
 
-function pickMessage(ids: string[], needle: string): HTMLElement | null {
+function insideHost(el: HTMLElement | null, host: HTMLElement | null): boolean {
+    return !!el && !!host && (el === host || host.contains(el));
+}
+
+function pickMessage(ids: string[], needle: string, skip?: HTMLElement | null): HTMLElement | null {
     for (const id of ids) {
-        const el = messageById(id);
-        if (el) return el;
+        const el = messageById(bareUuid(id) || id);
+        if (el && !insideHost(el, skip ?? null)) return el;
     }
     const n = prefixOf(needle);
     if (!n) return null;
     const rows = messageEls();
     for (let i = rows.length - 1; i >= 0; i--) {
+        if (insideHost(rows[i], skip ?? null)) continue;
         if (nodeHasNeedle(rows[i], n)) return rows[i];
     }
     return null;
@@ -497,15 +579,16 @@ async function jump(origin: HTMLElement | null) {
     const mine = ++gen;
     const { needle, ids } = resolveNeedle(origin);
     if (!prefixOf(needle)) return;
-    let el = pickMessage(ids, needle);
+    const skip = officialJumpButton(origin) ? hostOf(origin) : null;
+    let el = pickMessage(ids, needle, skip);
     if (!el || (!findHit(el, needle) && !nodeHasNeedle(el, needle))) {
         const hit = storeNeedle(needle);
         if (hit) {
-            if (hit.id) ids.unshift(hit.id);
+            if (hit.id && hit.id !== hostUuid(skip)) ids.unshift(hit.id);
             await hydrate(hit.cid || conversationId());
             if (mine !== gen) return;
             for (let i = 0; i < WAIT_N; i++) {
-                el = pickMessage(ids, needle);
+                el = pickMessage(ids, needle, skip);
                 if (el) break;
                 await sleep(WAIT_MS);
                 if (mine !== gen) return;
@@ -521,7 +604,7 @@ async function jump(origin: HTMLElement | null) {
     await afterLayout();
     if (mine !== gen) return;
     if (!el.isConnected) {
-        el = pickMessage(ids, needle);
+        el = pickMessage(ids, needle, skip);
         if (!el) return;
         openAncestors(el, needle);
         await afterLayout();
@@ -535,8 +618,8 @@ async function jump(origin: HTMLElement | null) {
 
 function onClick(e: MouseEvent) {
     if (!e.isTrusted || e.button !== 0 || onImaginePage()) return;
-    const t = e.target;
-    if (!(t instanceof Element)) return;
+    const t = eventEl(e.target);
+    if (!t) return;
     if (isDismiss(t) || isEditor(t) || isBarAction(t)) return;
     const chip = composerChip(t);
     const sent = sentQuote(t);
