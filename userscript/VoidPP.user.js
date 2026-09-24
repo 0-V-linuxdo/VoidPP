@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.25
+// @version      20260923.26
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.25] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.26] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7515,7 +7515,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.25] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260923.26] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e72e696"}`
     }, `(${"e72e696"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -13705,30 +13705,33 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     return card ?? btn.closest(".rounded-xl") ?? btn.parentElement;
   }
+  function inToggle(el) {
+    return !!el.closest(TOGGLE_SEL2);
+  }
   function queueRows2(card) {
-    const sortable = [...card.querySelectorAll(ROW_SEL2)].filter((el) => el.querySelector(RAIL_SEL2) || el.querySelector(".line-clamp-2"));
+    const sortable = [...card.querySelectorAll(ROW_SEL2)].filter((el) => !inToggle(el) && !!el.querySelector(RAIL_SEL2));
     if (sortable.length)
       return sortable;
-    const anchors = [...card.querySelectorAll(SEND_NOW_SEL2)];
-    const use = anchors.length ? anchors : [...card.querySelectorAll('[aria-label="Remove from queue"]')];
+    const anchors = [...card.querySelectorAll(SEND_NOW_SEL2)].filter((el) => !inToggle(el));
+    const use = anchors.length ? anchors : [...card.querySelectorAll('[aria-label="Remove from queue"]')].filter((el) => !inToggle(el));
     const rows = [];
     const seen = new Set;
     for (const btn of use) {
       let row = btn;
       for (let parent = btn.parentElement;parent && parent !== card && card.contains(parent); parent = parent.parentElement) {
+        if (inToggle(parent))
+          break;
         const n = Math.max(parent.querySelectorAll(SEND_NOW_SEL2).length, parent.querySelectorAll('[aria-label="Remove from queue"]').length);
         if (n > 1)
           break;
         row = parent;
       }
-      if (seen.has(row))
+      if (inToggle(row) || seen.has(row) || !row.querySelector(RAIL_SEL2))
         continue;
       seen.add(row);
       rows.push(row);
     }
-    if (rows.length)
-      return rows;
-    return [...card.querySelectorAll(".line-clamp-2")].map((el) => el.parentElement instanceof HTMLElement ? el.parentElement : el);
+    return rows;
   }
   function rowBody(row) {
     const clamp = row.querySelector(".line-clamp-2")?.textContent?.trim();
@@ -13739,12 +13742,15 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return (copy.textContent || "").replaceAll(/\s+/g, " ").trim();
   }
   function idForRow(row, items, index, used) {
-    const indexed = qid2(items[index]);
-    if (indexed && !used.has(indexed))
-      return indexed;
     const body = rowBody(row);
     const cid = currentCid3();
     const conv = cid ? conversation(cid) : undefined;
+    const indexed = qid2(items[index]);
+    if (indexed && !used.has(indexed)) {
+      const text = conv ? itemText2(conv, indexed) : "";
+      if (!body || !text || text === body)
+        return indexed;
+    }
     if (body && conv) {
       const hit = items.find((q) => {
         const id = qid2(q);
@@ -13810,20 +13816,30 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     chip.setAttribute("aria-label", label);
     paintGlyph(chip, modeId);
   }
+  function stripToggleChips() {
+    for (const btn of document.querySelectorAll(TOGGLE_SEL2)) {
+      for (const chip of btn.querySelectorAll(`.${CHIP}`))
+        chip.remove();
+    }
+  }
   function paint2() {
     paintRaf = 0;
     if (!settings12.store.showQueueMode || onImaginePage()) {
       unpaint();
       return;
     }
+    stripToggleChips();
     const card = trayCard2();
     if (!card) {
       closeMenu();
       return;
     }
-    const rows = queueRows2(card);
+    const toggle = card.querySelector(TOGGLE_SEL2);
+    const collapsed = toggle instanceof HTMLElement && toggle.getAttribute("aria-expanded") === "false";
+    const rows = collapsed ? [] : queueRows2(card);
     const items = currentQueue();
     const seen = new Set;
+    const mounted = new Set;
     for (let i = 0;i < rows.length; i++) {
       const row = rows[i];
       const id = idForRow(row, items, i, seen);
@@ -13832,10 +13848,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       row.setAttribute(QITEM, id);
       seen.add(id);
       mountChip(row, id);
+      const chip = row.querySelector(`.${CHIP}`);
+      if (chip instanceof HTMLElement)
+        mounted.add(chip);
     }
     for (const chip of card.querySelectorAll(`.${CHIP}`)) {
-      const id = chip.getAttribute(QITEM);
-      if (id && !seen.has(id))
+      if (!mounted.has(chip))
         chip.remove();
     }
     if (menuFor && !seen.has(menuFor))

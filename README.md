@@ -54,7 +54,7 @@ Install by clicking the badge (jsDelivr, default `voidpp` branch, no GitHub `CSP
 | Feature | Default | What it does |
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | On | Hide inaccessible models in the model selector again. |
-| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | On | A queued row shows its mode chip even when the store id is nested or missing. |
+| <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | On | A queued row shows its mode chip. The collapsed tray header does not. |
 | <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | On | Keep the right panel closed without crashing plugin start when the closer is not on the store snapshot. |
 
 #### Settings UI

@@ -1158,26 +1158,32 @@ function trayCard(): HTMLElement | null {
     return card ?? (btn.closest(".rounded-xl") as HTMLElement | null) ?? btn.parentElement;
 }
 
+function inToggle(el: HTMLElement): boolean {
+    return !!el.closest(TOGGLE_SEL);
+}
+
 function queueRows(card: HTMLElement): HTMLElement[] {
-    const sortable = [...card.querySelectorAll<HTMLElement>(ROW_SEL)].filter(el => el.querySelector(RAIL_SEL) || el.querySelector(".line-clamp-2"));
+    const sortable = [...card.querySelectorAll<HTMLElement>(ROW_SEL)].filter(el => !inToggle(el) && !!el.querySelector(RAIL_SEL));
     if (sortable.length) return sortable;
-    const anchors = [...card.querySelectorAll<HTMLElement>(SEND_NOW_SEL)];
-    const use = anchors.length ? anchors : [...card.querySelectorAll<HTMLElement>('[aria-label="Remove from queue"]')];
+    const anchors = [...card.querySelectorAll<HTMLElement>(SEND_NOW_SEL)].filter(el => !inToggle(el));
+    const use = anchors.length
+        ? anchors
+        : [...card.querySelectorAll<HTMLElement>('[aria-label="Remove from queue"]')].filter(el => !inToggle(el));
     const rows: HTMLElement[] = [];
     const seen = new Set<HTMLElement>();
     for (const btn of use) {
         let row: HTMLElement = btn;
         for (let parent = btn.parentElement; parent && parent !== card && card.contains(parent); parent = parent.parentElement) {
+            if (inToggle(parent)) break;
             const n = Math.max(parent.querySelectorAll(SEND_NOW_SEL).length, parent.querySelectorAll('[aria-label="Remove from queue"]').length);
             if (n > 1) break;
             row = parent;
         }
-        if (seen.has(row)) continue;
+        if (inToggle(row) || seen.has(row) || !row.querySelector(RAIL_SEL)) continue;
         seen.add(row);
         rows.push(row);
     }
-    if (rows.length) return rows;
-    return [...card.querySelectorAll<HTMLElement>(".line-clamp-2")].map(el => el.parentElement instanceof HTMLElement ? el.parentElement : el);
+    return rows;
 }
 
 function rowBody(row: HTMLElement): string {
@@ -1189,11 +1195,14 @@ function rowBody(row: HTMLElement): string {
 }
 
 function idForRow(row: HTMLElement, items: GatewayQueueItem[], index: number, used: Set<string>): string {
-    const indexed = qid(items[index]);
-    if (indexed && !used.has(indexed)) return indexed;
     const body = rowBody(row);
     const cid = currentCid();
     const conv = cid ? conversation(cid) : undefined;
+    const indexed = qid(items[index]);
+    if (indexed && !used.has(indexed)) {
+        const text = conv ? itemText(conv, indexed) : "";
+        if (!body || !text || text === body) return indexed;
+    }
     if (body && conv) {
         const hit = items.find(q => {
             const id = qid(q);
@@ -1252,20 +1261,30 @@ function mountChip(row: HTMLElement, id: string) {
     paintGlyph(chip, modeId);
 }
 
+function stripToggleChips() {
+    for (const btn of document.querySelectorAll(TOGGLE_SEL)) {
+        for (const chip of btn.querySelectorAll(`.${CHIP}`)) chip.remove();
+    }
+}
+
 function paint() {
     paintRaf = 0;
     if (!settings.store.showQueueMode || onImaginePage()) {
         unpaint();
         return;
     }
+    stripToggleChips();
     const card = trayCard();
     if (!card) {
         closeMenu();
         return;
     }
-    const rows = queueRows(card);
+    const toggle = card.querySelector(TOGGLE_SEL);
+    const collapsed = toggle instanceof HTMLElement && toggle.getAttribute("aria-expanded") === "false";
+    const rows = collapsed ? [] : queueRows(card);
     const items = currentQueue();
     const seen = new Set<string>();
+    const mounted = new Set<HTMLElement>();
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const id = idForRow(row, items, i, seen);
@@ -1273,10 +1292,11 @@ function paint() {
         row.setAttribute(QITEM, id);
         seen.add(id);
         mountChip(row, id);
+        const chip = row.querySelector(`.${CHIP}`);
+        if (chip instanceof HTMLElement) mounted.add(chip);
     }
     for (const chip of card.querySelectorAll(`.${CHIP}`)) {
-        const id = chip.getAttribute(QITEM);
-        if (id && !seen.has(id)) chip.remove();
+        if (!mounted.has(chip)) chip.remove();
     }
     if (menuFor && !seen.has(menuFor)) closeMenu();
 }

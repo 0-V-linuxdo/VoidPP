@@ -14,7 +14,7 @@ const environment = isDev ? "Development" : "Production";
 
 const FORK_URL = "https://github.com/0-V-linuxdo/VoidPP";
 const SCRIPT_CDN = "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp";
-const VERSION_DATE = "20260923.25";
+const VERSION_DATE = "20260923.26";
 const displayVersion = `[${VERSION_DATE}] v${pkg.version}`;
 const scriptVersion = VERSION_DATE;
 
