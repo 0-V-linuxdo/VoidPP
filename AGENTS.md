@@ -41,6 +41,8 @@ Canonical:
 - Cookie bridge `voidpp-cookies`
 - Settings tab ids `voidpp_*_tab` and nav group `voidpp`
 
+The Settings dialog is the lazy chunk that contains `pressed_cmd_settings`, not the initial HTML chunks. Append Void++ tabs at the visible filter, which is now `tabs.filter(tab=>tab.visible(ctx)&&!(flag&&"team-management"===tab.group))`. The old `\i.filter(\i=>\i.visible(\i))` no longer matches. The module still hits `pressed_cmd_settings`, so the group id and label can patch while the tab spread does not. An empty `voidpp` group renders nothing (`0===n.length?null`), and `setTab("voidpp_*_tab")` misses the list and falls back to the first official tab. That is why the avatar plugin flyout opens Settings with no Void++ pages. Do not restore the old filter.
+
 Do not rename:
 
 - Firefox id `firefox@void.prism`

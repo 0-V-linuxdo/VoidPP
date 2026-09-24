@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260924.1
+// @version      20260924.2
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260924.1] v1.0.0 — A modification for grok.com
+ * Void++ [20260924.2] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7515,9 +7515,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260924.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5208ac4"}`
-    }, `(${"5208ac4"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260924.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"98f72eb"}`
+    }, `(${"98f72eb"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7638,7 +7638,7 @@ button .void-info-hint {
         find: "pressed_cmd_settings",
         replacement: [
           {
-            match: /\i\.filter\(\i=>\i\.visible\(\i\)\)/,
+            match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-management"===\i\.group\)\)/,
             replace: "[...$&,...$self._tabEntries()]"
           },
           {
@@ -28923,7 +28923,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1790161256000;
   betterNavigator_default.updatedAt = 1790145289000;
   betterQueue_default.updatedAt = 1790246920000;
-  betterQuotes_default.updatedAt = 1790174156000;
+  betterQuotes_default.updatedAt = 1790264305000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;
