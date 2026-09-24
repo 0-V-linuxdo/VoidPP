@@ -1096,13 +1096,14 @@ function openMenu(chip: HTMLElement, id: string) {
     const box = document.createElement("div");
     box.className = QMENU;
     box.setAttribute("role", "menu");
-    const current = itemIntent.get(id)?.modeId || liveIntent().modeId;
+    const current = modeSlug(chip.dataset.mode || itemIntent.get(id)?.modeId || intent.modeId || liveIntent().modeId);
     for (const choice of modeChoices()) {
         const opt = document.createElement("button");
         opt.type = "button";
         opt.className = QOPT;
         opt.setAttribute("role", "menuitem");
-        opt.setAttribute("aria-selected", choice.id === current ? "true" : "false");
+        const on = !!current && modeSlug(choice.id) === current;
+        opt.setAttribute("aria-selected", on ? "true" : "false");
         opt.dataset.voidQmode = choice.id;
         paintGlyph(opt, choice.id);
         const span = document.createElement("span");

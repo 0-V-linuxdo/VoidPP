@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.26
+// @version      20260923.27
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.26] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.27] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7515,7 +7515,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.26] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260923.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e72e696"}`
     }, `(${"e72e696"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -11700,6 +11700,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 }
 
 .void-ms-qopt[aria-selected="true"] {
+    background: hsl(var(--button-ghost-hover));
     color: hsl(var(--fg-accent));
 }
 
@@ -13641,13 +13642,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const box = document.createElement("div");
     box.className = QMENU;
     box.setAttribute("role", "menu");
-    const current = itemIntent.get(id)?.modeId || liveIntent2().modeId;
+    const current = modeSlug(chip.dataset.mode || itemIntent.get(id)?.modeId || intent.modeId || liveIntent2().modeId);
     for (const choice of modeChoices()) {
       const opt = document.createElement("button");
       opt.type = "button";
       opt.className = QOPT;
       opt.setAttribute("role", "menuitem");
-      opt.setAttribute("aria-selected", choice.id === current ? "true" : "false");
+      const on = !!current && modeSlug(choice.id) === current;
+      opt.setAttribute("aria-selected", on ? "true" : "false");
       opt.dataset.voidQmode = choice.id;
       paintGlyph(opt, choice.id);
       const span = document.createElement("span");

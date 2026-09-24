@@ -63,6 +63,7 @@
 }
 
 .void-ms-qopt[aria-selected="true"] {
+    background: hsl(var(--button-ghost-hover));
     color: hsl(var(--fg-accent));
 }
 
