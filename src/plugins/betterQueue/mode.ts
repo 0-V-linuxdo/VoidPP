@@ -1091,24 +1091,49 @@ function setItemMode(id: string, modeId: string) {
     schedulePaint();
 }
 
+function menuCurrent(chip: HTMLElement, id: string) {
+    const raw = chip.dataset.mode || itemIntent.get(id)?.modeId || intent.modeId || liveIntent().modeId;
+    return {
+        slug: modeSlug(raw),
+        label: (chip.getAttribute("aria-label") || chip.title || "").trim().toLowerCase(),
+    };
+}
+
+function choiceMatches(choice: { id: string; label: string }, cur: { slug: string; label: string }) {
+    const label = choice.label.trim().toLowerCase();
+    if (cur.slug && modeSlug(choice.id) === cur.slug) return true;
+    if (cur.label && label === cur.label) return true;
+    const hit = CATALOG.find(m => m.id === cur.slug || m.label.toLowerCase() === cur.label);
+    return !!hit && (modeSlug(choice.id) === hit.id || label === hit.label.toLowerCase());
+}
+
 function openMenu(chip: HTMLElement, id: string) {
     closeMenu();
     const box = document.createElement("div");
     box.className = QMENU;
     box.setAttribute("role", "menu");
-    const current = modeSlug(chip.dataset.mode || itemIntent.get(id)?.modeId || intent.modeId || liveIntent().modeId);
+    const current = menuCurrent(chip, id);
     for (const choice of modeChoices()) {
         const opt = document.createElement("button");
         opt.type = "button";
         opt.className = QOPT;
-        opt.setAttribute("role", "menuitem");
-        const on = !!current && modeSlug(choice.id) === current;
+        opt.setAttribute("role", "menuitemradio");
+        const on = choiceMatches(choice, current);
+        opt.setAttribute("aria-checked", on ? "true" : "false");
         opt.setAttribute("aria-selected", on ? "true" : "false");
+        if (on) opt.classList.add(`${QOPT}-on`);
         opt.dataset.voidQmode = choice.id;
         paintGlyph(opt, choice.id);
         const span = document.createElement("span");
         span.textContent = choice.label;
         opt.append(span);
+        if (on) {
+            const mark = document.createElement("span");
+            mark.className = "void-ms-qcheck";
+            mark.setAttribute("aria-hidden", "true");
+            mark.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>';
+            opt.append(mark);
+        }
         opt.addEventListener("pointerdown", e => e.stopPropagation());
         opt.addEventListener("click", e => {
             e.preventDefault();

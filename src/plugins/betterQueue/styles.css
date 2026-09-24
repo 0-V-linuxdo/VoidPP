@@ -62,14 +62,35 @@
     background: hsl(var(--button-ghost-hover));
 }
 
-.void-ms-qopt[aria-selected="true"] {
-    background: hsl(var(--button-ghost-hover));
-    color: hsl(var(--fg-accent));
+.void-ms-qopt[aria-selected="true"],
+.void-ms-qopt.void-ms-qopt-on {
+    background: rgb(255 255 255 / 14%);
+    color: #fff;
 }
 
+.void-ms-qopt > span:first-of-type {
+    flex: 1;
+    text-align: start;
+}
+
+.void-ms-qcheck {
+    display: grid;
+    margin-inline-start: auto;
+    place-items: center;
+    width: 0.875rem;
+    height: 0.875rem;
+    color: #fff;
+}
+
+.void-ms-qcheck svg,
 .void-ms-qopt svg {
     display: block;
     width: 1rem;
     height: 1rem;
     flex-shrink: 0;
+}
+
+.void-ms-qcheck svg {
+    width: 0.875rem;
+    height: 0.875rem;
 }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.27
+// @version      20260923.28
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.27] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.28] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7515,7 +7515,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260923.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e72e696"}`
     }, `(${"e72e696"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -11699,16 +11699,37 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     background: hsl(var(--button-ghost-hover));
 }
 
-.void-ms-qopt[aria-selected="true"] {
-    background: hsl(var(--button-ghost-hover));
-    color: hsl(var(--fg-accent));
+.void-ms-qopt[aria-selected="true"],
+.void-ms-qopt.void-ms-qopt-on {
+    background: rgb(255 255 255 / 14%);
+    color: #fff;
 }
 
+.void-ms-qopt > span:first-of-type {
+    flex: 1;
+    text-align: start;
+}
+
+.void-ms-qcheck {
+    display: grid;
+    margin-inline-start: auto;
+    place-items: center;
+    width: 0.875rem;
+    height: 0.875rem;
+    color: #fff;
+}
+
+.void-ms-qcheck svg,
 .void-ms-qopt svg {
     display: block;
     width: 1rem;
     height: 1rem;
     flex-shrink: 0;
+}
+
+.void-ms-qcheck svg {
+    width: 0.875rem;
+    height: 0.875rem;
 }
 `);
 
@@ -13637,24 +13658,50 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     logger24.info("queue item", id, "->", next.modeId);
     schedulePaint();
   }
+  function menuCurrent(chip, id) {
+    const raw = chip.dataset.mode || itemIntent.get(id)?.modeId || intent.modeId || liveIntent2().modeId;
+    return {
+      slug: modeSlug(raw),
+      label: (chip.getAttribute("aria-label") || chip.title || "").trim().toLowerCase()
+    };
+  }
+  function choiceMatches(choice, cur) {
+    const label = choice.label.trim().toLowerCase();
+    if (cur.slug && modeSlug(choice.id) === cur.slug)
+      return true;
+    if (cur.label && label === cur.label)
+      return true;
+    const hit = CATALOG.find((m) => m.id === cur.slug || m.label.toLowerCase() === cur.label);
+    return !!hit && (modeSlug(choice.id) === hit.id || label === hit.label.toLowerCase());
+  }
   function openMenu(chip, id) {
     closeMenu();
     const box = document.createElement("div");
     box.className = QMENU;
     box.setAttribute("role", "menu");
-    const current = modeSlug(chip.dataset.mode || itemIntent.get(id)?.modeId || intent.modeId || liveIntent2().modeId);
+    const current = menuCurrent(chip, id);
     for (const choice of modeChoices()) {
       const opt = document.createElement("button");
       opt.type = "button";
       opt.className = QOPT;
-      opt.setAttribute("role", "menuitem");
-      const on = !!current && modeSlug(choice.id) === current;
+      opt.setAttribute("role", "menuitemradio");
+      const on = choiceMatches(choice, current);
+      opt.setAttribute("aria-checked", on ? "true" : "false");
       opt.setAttribute("aria-selected", on ? "true" : "false");
+      if (on)
+        opt.classList.add(`${QOPT}-on`);
       opt.dataset.voidQmode = choice.id;
       paintGlyph(opt, choice.id);
       const span = document.createElement("span");
       span.textContent = choice.label;
       opt.append(span);
+      if (on) {
+        const mark = document.createElement("span");
+        mark.className = "void-ms-qcheck";
+        mark.setAttribute("aria-hidden", "true");
+        mark.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>';
+        opt.append(mark);
+      }
       opt.addEventListener("pointerdown", (e) => e.stopPropagation());
       opt.addEventListener("click", (e) => {
         e.preventDefault();
