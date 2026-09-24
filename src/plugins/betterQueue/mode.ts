@@ -172,11 +172,29 @@ function coerceModelMode(existing: unknown, live: Intent): string {
     return modeSlug(raw);
 }
 
+function stringId(value: unknown): string {
+    return typeof value === "string" && value.trim() ? value : "";
+}
+
 function qid(item: unknown): string {
-    if (!item || typeof item !== "object") return "";
-    const rec = item as { queue_item_id?: unknown; queueItemId?: unknown };
-    const id = rec.queue_item_id ?? rec.queueItemId;
-    return typeof id === "string" ? id : "";
+    if (!item || typeof item !== "object" || Array.isArray(item)) return "";
+    const rec = item as {
+        queue_item_id?: unknown;
+        queueItemId?: unknown;
+        id?: unknown;
+        item?: unknown;
+        type?: unknown;
+    };
+    const direct = stringId(rec.queue_item_id) || stringId(rec.queueItemId);
+    if (direct) return direct;
+    const nested = rec.item;
+    if (nested && typeof nested === "object" && !Array.isArray(nested) && nested !== item) {
+        const inner = nested as { queue_item_id?: unknown; queueItemId?: unknown; id?: unknown };
+        const fromItem = stringId(inner.queue_item_id) || stringId(inner.queueItemId) || stringId(inner.id);
+        if (fromItem) return fromItem;
+    }
+    if (typeof rec.type === "string") return "";
+    return stringId(rec.id);
 }
 
 function forcedIntent(): Intent | null {
@@ -1171,8 +1189,6 @@ function rowBody(row: HTMLElement): string {
 }
 
 function idForRow(row: HTMLElement, items: GatewayQueueItem[], index: number, used: Set<string>): string {
-    const existing = row.getAttribute(QITEM) || "";
-    if (existing && !used.has(existing) && (!items.length || items.some(q => qid(q) === existing))) return existing;
     const indexed = qid(items[index]);
     if (indexed && !used.has(indexed)) return indexed;
     const body = rowBody(row);
@@ -1185,8 +1201,14 @@ function idForRow(row: HTMLElement, items: GatewayQueueItem[], index: number, us
         });
         if (hit) return qid(hit);
     }
+    const existing = row.getAttribute(QITEM) || "";
     if (existing && !used.has(existing)) return existing;
-    if (!items.length && body) return `row:${body.slice(0, 120)}`;
+    if (body) {
+        const fallback = `row:${body.slice(0, 120)}`;
+        if (!used.has(fallback)) return fallback;
+    }
+    const slot = `row:${index}`;
+    if (!used.has(slot)) return slot;
     return "";
 }
 

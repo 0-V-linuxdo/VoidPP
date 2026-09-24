@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.24
+// @version      20260923.25
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.24] v1.0.0 — A modification for grok.com
+ * Void++ [20260923.25] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7515,9 +7515,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.24] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"3d7ce7e"}`
-    }, `(${"3d7ce7e"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260923.25] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e72e696"}`
+    }, `(${"e72e696"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -12667,12 +12667,26 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return apiModelMode(raw);
     return modeSlug(raw);
   }
+  function stringId(value) {
+    return typeof value === "string" && value.trim() ? value : "";
+  }
   function qid2(item) {
-    if (!item || typeof item !== "object")
+    if (!item || typeof item !== "object" || Array.isArray(item))
       return "";
     const rec = item;
-    const id = rec.queue_item_id ?? rec.queueItemId;
-    return typeof id === "string" ? id : "";
+    const direct = stringId(rec.queue_item_id) || stringId(rec.queueItemId);
+    if (direct)
+      return direct;
+    const nested = rec.item;
+    if (nested && typeof nested === "object" && !Array.isArray(nested) && nested !== item) {
+      const inner = nested;
+      const fromItem = stringId(inner.queue_item_id) || stringId(inner.queueItemId) || stringId(inner.id);
+      if (fromItem)
+        return fromItem;
+    }
+    if (typeof rec.type === "string")
+      return "";
+    return stringId(rec.id);
   }
   function forcedIntent() {
     const raw = pageWindow[ENQUEUE_FORCE2];
@@ -13725,9 +13739,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return (copy.textContent || "").replaceAll(/\s+/g, " ").trim();
   }
   function idForRow(row, items, index, used) {
-    const existing = row.getAttribute(QITEM) || "";
-    if (existing && !used.has(existing) && (!items.length || items.some((q) => qid2(q) === existing)))
-      return existing;
     const indexed = qid2(items[index]);
     if (indexed && !used.has(indexed))
       return indexed;
@@ -13742,10 +13753,17 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (hit)
         return qid2(hit);
     }
+    const existing = row.getAttribute(QITEM) || "";
     if (existing && !used.has(existing))
       return existing;
-    if (!items.length && body)
-      return `row:${body.slice(0, 120)}`;
+    if (body) {
+      const fallback = `row:${body.slice(0, 120)}`;
+      if (!used.has(fallback))
+        return fallback;
+    }
+    const slot = `row:${index}`;
+    if (!used.has(slot))
+      return slot;
     return "";
   }
   function currentQueue() {
@@ -14473,7 +14491,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     for (const n of document.querySelectorAll(`[${SIBLING}]`))
       n.remove();
   }
-  function paint2() {
+  function paint3() {
     if (!armed)
       return;
     if (onImaginePage2() || !quotedText()) {
@@ -14502,7 +14520,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     raf2 = requestAnimationFrame(() => {
       raf2 = 0;
       if (armed)
-        paint2();
+        paint3();
     });
   }
   function startIcons() {
@@ -28751,7 +28769,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1790161256000;
   betterNavigator_default.updatedAt = 1790145289000;
   betterQueue_default.updatedAt = 1790159561000;
-  betterQuotes_default.updatedAt = 1790170894000;
+  betterQuotes_default.updatedAt = 1790174156000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;

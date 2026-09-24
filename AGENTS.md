@@ -106,6 +106,8 @@ ModeSync and QueuePersist are one plugin. `mode.ts` captures each queued row's m
 
 Settings: `showQueueMode`, `stickyOnNavigate`, `persistAcrossRefresh`, all default on. First register migrates `plugins.ModeSync.enabled === false` onto the first two flags and `plugins.QueuePersist.enabled === false` onto `persistAcrossRefresh`, then deletes the old keys (and pin/star/known entries). Both old plugins explicitly off also turns BetterQueue off. Imagine stays skipped.
 
+`qid` reads `queue_item_id` / `queueItemId`, then the same fields (and `.id`) on `.item`, then a top-level `.id` when the object is not a gateway envelope (`type` string). `idForRow` zips by index and, when that id is empty, still stamps `row:${body}` (or `row:${index}`). Do not skip the row. The official tray is still `button[aria-label="Toggle queued messages"]` + `aria-roledescription="sortable"` + `.w-[76px]` hover rail. Keep `rail.before(chip)`. Do not treat a selector rewrite as the chip fix.
+
 Jump reads the chip text (including `.void-qs-chip`). It does not need the official chip. Click-to-line uses `Range.getClientRects()[0]` plus visual viewport mid-Y, not `scrollIntoView` on the message root.
 
 Settings: `jumpToPassage` and `persistAcrossChats`, both default on. First register migrates `plugins.QuoteJump.enabled === false` and `plugins.QuoteSticky.enabled === false` onto those flags, then deletes the old keys (and pin/star entries) before orphan prune. Both old plugins explicitly off also turns BetterQuotes off.
