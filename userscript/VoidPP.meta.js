@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         Void++
-// @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp
-// @version      20260925.1
+// @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp-beta
+// @version      20260925.2
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Beta
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
-// @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/assets/logos/app-icon/voidpp-icon.svg
+// @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/assets/logos/app-icon/voidpp-icon.svg
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
 // @run-at       document-start
@@ -27,6 +27,6 @@
 // @compatible   opera
 // @license      GPL-3.0-or-later
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP
-// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/userscript/VoidPP.user.js
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/userscript/VoidPP.user.js
+// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/userscript/VoidPP.user.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/userscript/VoidPP.user.js
 // ==/UserScript==
