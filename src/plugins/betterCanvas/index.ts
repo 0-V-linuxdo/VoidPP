@@ -96,30 +96,33 @@ function parentCss() {
     const thumb = tokenColor("--border-l2", "#4a4a52", "#c4c4cc");
     const hover = tokenColor("--fg-tertiary", "#9a9aa3", "#8a8a94");
     const track = tokenColor("--surface-l1", "#141416", "#f4f4f5");
+    // A comma list only attaches a trailing pseudo to the last clause.
+    // Wrap so width/radius/thumb colors stay on the scrollbar, not the Settings form.
+    const root = `:is(${SCROLLER})`;
     return `
 ${SCROLLER} {
     scrollbar-width: thin !important;
     scrollbar-color: ${thumb} ${track} !important;
 }
 
-${SCROLLER}::-webkit-scrollbar {
+${root}::-webkit-scrollbar {
     width: 0.5rem !important;
     height: 0.5rem !important;
 }
 
-${SCROLLER}::-webkit-scrollbar-track,
-${SCROLLER}::-webkit-scrollbar-corner {
+${root}::-webkit-scrollbar-track,
+${root}::-webkit-scrollbar-corner {
     background: ${track} !important;
 }
 
-${SCROLLER}::-webkit-scrollbar-thumb {
+${root}::-webkit-scrollbar-thumb {
     background-color: ${thumb} !important;
     background-clip: padding-box !important;
     border: 0.125rem solid transparent !important;
     border-radius: 999px !important;
 }
 
-${SCROLLER}::-webkit-scrollbar-thumb:hover {
+${root}::-webkit-scrollbar-thumb:hover {
     background-color: ${hover} !important;
 }
 `;
