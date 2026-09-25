@@ -8,7 +8,7 @@
 
 This badge is the published **Beta** (`voidpp`). Click it to install (jsDelivr, no GitHub `CSP: sandbox`). Tampermonkey auto-update follows the header `@updateURL`: GitHub raw `userscript/VoidPP.user.js` on that same branch.
 
-`dev` is the development line. It is published on GitHub raw and has no install badge. Do not enable Beta and Development together. Switch by turning the old copy off first; settings and IndexedDB stay shared. Stable (`voidpp-stable`) is not published yet.
+`dev` is the development line. `voidpp-stable` is opt-in Stable. Both are published on GitHub raw and have no install badge. Do not enable two copies. Switch by turning the old copy off first; settings and IndexedDB stay shared.
 
 ## Changes
 

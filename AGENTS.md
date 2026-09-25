@@ -10,13 +10,13 @@ Three script identities, one data store. Do not enable two copies. Switch by dis
 | --- | --- | --- | --- | --- |
 | `dev` | Development line. Daily work lands here. | `https://github.com/0-V-linuxdo/VoidPP/dev` | Development | GitHub raw `…/dev/userscript/VoidPP.user.js`. No README badge. |
 | `voidpp` | Published Beta / test. The install badge. | `https://github.com/0-V-linuxdo/VoidPP/voidpp` | Beta | GitHub raw `…/voidpp/userscript/VoidPP.user.js` |
-| `voidpp-stable` | Future Stable. Do not create this branch until asked. | `https://github.com/0-V-linuxdo/VoidPP/voidpp-stable` | Production | Not published. |
+| `voidpp-stable` | Published Stable. Opt-in, not the install badge. | `https://github.com/0-V-linuxdo/VoidPP/voidpp-stable` | Production | GitHub raw `…/voidpp-stable/userscript/VoidPP.user.js`. No README badge. |
 
-`bun run build` reads the current git branch and stamps that channel into `@namespace`, `@environment`, `@downloadURL`, and `@updateURL`. `bun run build:dev` (`--dev`) is local only: sourcemaps, `.dev` plugins, and it forces the `dev` namespace so a local install does not replace the Beta record. Do not commit a `--dev` build. `--stable` (`bun run build:stable`) forces `voidpp-stable` / Production; do not use it until that branch exists. Do not pass `--dev` and `--stable` together.
+`bun run build` reads the current git branch and stamps that channel into `@namespace`, `@environment`, `@downloadURL`, and `@updateURL`. `bun run build:dev` (`--dev`) is local only: sourcemaps, `.dev` plugins, and it forces the `dev` namespace so a local install does not replace the Beta record. Do not commit a `--dev` build. `--stable` (`bun run build:stable`) forces `voidpp-stable` / Production even when the checkout is another branch; do not commit that onto `dev` or `voidpp`. Do not pass `--dev` and `--stable` together.
 
-After a merge into `dev` or `voidpp`, run `bun run build` again on that branch before pushing. The userscript header is baked, so a merge can carry the other channel's header.
+After a merge into `dev`, `voidpp`, or `voidpp-stable`, run `bun run build` again on that branch before pushing. The userscript header is baked, so a merge can carry the other channel's header.
 
-New changes go on `dev`. Promote to `voidpp` only when the change is ready to ship as Beta. The `Void++` branch is retired — do not recreate or fast-forward it. `upstream-main` is the frozen upstream snapshot; do not treat it as a publish line.
+New changes go on `dev`. Promote to `voidpp` only when the change is ready to ship as Beta, then to `voidpp-stable` when it is ready to ship as Stable. The `Void++` branch is retired — do not recreate or fast-forward it. `upstream-main` is the frozen upstream snapshot; do not treat it as a publish line. `bots-default-collapsed` is deleted; do not recreate it.
 
 Canonical **Beta auto-update** URL (both `@downloadURL` and `@updateURL` — GitHub raw, `max-age=300`):
 
@@ -30,18 +30,24 @@ Development auto-update (no badge):
 
 `https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js`
 
+Stable auto-update (no badge; click-to-install is jsDelivr, not this raw URL):
+
+`https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-stable/userscript/VoidPP.user.js`
+
+`https://cdn.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp-stable/userscript/VoidPP.user.js`
+
 Do not point the README badge at `raw.githubusercontent.com`. That origin sends `Content-Security-Policy: sandbox`, so Chrome MV3 Tampermonkey never intercepts the `.user.js` navigation and the tab just dumps source. Do not use `main`, `Void++`, `userscript/Void.user.js`, or jsDelivr `@voidpp` (no `heads/` — 404). Tampermonkey auto-update follows whatever `@updateURL` is already baked into the installed copy; keep that on GitHub raw so a 7-day CDN cache cannot hide a VERSION_DATE bump.
 
-Before any push to `dev` or `voidpp`:
+Before any push to `dev`, `voidpp`, or `voidpp-stable`:
 
 1. Run `bun run build` on the branch you are pushing (not `--dev`, and not `--stable` unless that channel is the target) so `userscript/VoidPP.user.js` is regenerated.
 2. Commit that userscript with the matching source. Do not push source-only.
 3. Confirm the userscript header:
    - `// @version` matches `VERSION_DATE` in `build.ts`. Tampermonkey only reads that header — bumping `build.ts` alone leaves the bundle stale and Check for updates will not fire.
-   - `@namespace` is `https://github.com/0-V-linuxdo/VoidPP/<channel>` for that branch (`dev`, `voidpp`, or later `voidpp-stable`).
+   - `@namespace` is `https://github.com/0-V-linuxdo/VoidPP/<channel>` for that branch (`dev`, `voidpp`, or `voidpp-stable`).
    - `@environment` is Development on `dev`, Beta on `voidpp`, Production on `voidpp-stable`.
    - `@downloadURL` and `@updateURL` are the GitHub raw URL of **that** branch, not the other channel.
-4. README install badge stays the jsDelivr `voidpp` URL above, not GitHub raw, and not `dev`.
+4. README install badge stays the jsDelivr `voidpp` URL above, not GitHub raw, and not `dev` or `voidpp-stable`.
 5. After a `voidpp` push, purge jsDelivr for the Beta file only:
    `curl -s https://purge.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp/userscript/VoidPP.user.js`
 
