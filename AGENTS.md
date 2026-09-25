@@ -132,6 +132,8 @@ Host the fallback as a sibling of `.query-bar` (form / composer shell / `documen
 
 Do not wrap `setChatPageLoaded` to fight hydrate. That fought ModeSync. Restore on dest settle plus observer paint is enough.
 
+Docked DevTools can collapse `innerHeight` and `visualViewport.height` to about 1px. Grok then `setState`s `quotedText` empty and calls `setConversationId` without going through `setQuotedText`. That frame is not navigation. While either height is under 80px, pin the snap, do not `clearLive`, and do not retarget `lastKey`. Restore when the viewport is tall again. A raw store subscription must remember a non-empty `quotedText`, because the setter wrapper never sees a `setState` write. `/project/` is not home: dest empty must not `clearLive` only because `pathCid()` is empty. Do not store the project id in `pathCid`. `officialVisible` must ignore the Tiptap editor and hidden nodes, or the fallback chip is removed while the official chip is already gone.
+
 ## BetterQueue
 
 ModeSync and QueuePersist are one plugin. `mode.ts` captures each queued row's mode, paints the chip, and sends with that mode. `persist.ts` writes the same rows to IndexedDB key `queue-persist:v1` and replays them after refresh. Do not split them back into two plugins. Do not add a second `queueMessage` wrapper — `noteEnqueue` / `afterEnqueue` run inside the mode wrapper. Keep `Symbol.for("voidpp.modeSync.enqueueIntent")` and `Symbol.for("voidpp.modeSync.intent")`. Do not rename the IDB key or `.void-ms-*` classes.
@@ -150,3 +152,4 @@ Regression table:
 - 22.16 three-source dest + `clearLive` on disagree — loss on switch-back
 - 22.17 store dest + dest empty refuses remember + fetch consume — loss on switch-back
 - 22.18 `conversationId` dest, remember on any `quotedText`, no fetch consume, sibling host — persist without leak
+- 25.13 DevTools viewport collapses to 1px and `setState` clears `quotedText` — loss on console toggle

@@ -18,6 +18,7 @@ const logger = new Logger("QuoteSticky");
 const cl = classNameFactory("void-qs-");
 const KEEP = 40;
 const RESTORE_GAP_MS = 80;
+const COLLAPSE_PX = 80;
 const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
 interface Fields {
@@ -48,6 +49,82 @@ let abort: AbortController | null = null;
 let observer: MutationObserver | null = null;
 let mutRaf = 0;
 let armed = false;
+let hold = false;
+let holdKey = "";
+let pendingRestore = "";
+let unsubQuote: (() => void) | null = null;
+
+function onProjectPath(): boolean {
+    try {
+        return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/project/");
+    } catch {
+        return false;
+    }
+}
+
+function viewportHeight(): number {
+    const inner = window.innerHeight || 0;
+    const visual = window.visualViewport?.height ?? inner;
+    if (inner <= 0) return visual;
+    if (visual <= 0) return inner;
+    return Math.min(inner, visual);
+}
+
+function viewportCollapsed(): boolean {
+    const h = viewportHeight();
+    return h > 0 && h < COLLAPSE_PX;
+}
+
+function pinHold() {
+    const live = readText();
+    if (!hold) holdKey = live.key || lastKey || routeCid() || pathCid();
+    hold = true;
+    const key = holdKey;
+    if (!key) return;
+    if (live.text) {
+        remember(key, live.text, live.popup);
+        lastText = live.text;
+        lastPopup = live.popup;
+        return;
+    }
+    const snap = saved.get(key);
+    const text = lastText || snap?.text || "";
+    if (!text) return;
+    remember(key, text, lastPopup ?? snap?.popup);
+}
+
+function settleHold(): boolean {
+    if (!armed || onImaginePage()) return false;
+    if (viewportCollapsed()) {
+        pinHold();
+        return true;
+    }
+    if (!hold && !pendingRestore) return false;
+    const key = (hold ? holdKey : pendingRestore) || lastKey;
+    const dest = destKey();
+    if (dest && key && dest !== key) {
+        hold = false;
+        holdKey = "";
+        pendingRestore = "";
+        return false;
+    }
+    hold = false;
+    holdKey = "";
+    const snap = key ? saved.get(key) : undefined;
+    if (!key || !snap?.text) {
+        pendingRestore = "";
+        return true;
+    }
+    pendingRestore = key;
+    lastKey = key;
+    lastText = snap.text;
+    lastPopup = snap.popup;
+    if (dest !== key) return true;
+    lastRestoreAt = 0;
+    restore(key);
+    pendingRestore = "";
+    return true;
+}
 
 function pathCid(): string {
     try {
@@ -171,6 +248,7 @@ function drop(key: string) {
 }
 
 function clearLive() {
+    if (hold || pendingRestore || viewportCollapsed()) return;
     lastRestoreAt = 0;
     try {
         const chat = ChatPageStore.useChatPageStore.getState();
@@ -208,7 +286,12 @@ function officialVisible(text: string): boolean {
     if (!clip) return false;
     for (const n of bar.querySelectorAll("div, span, button")) {
         if (!(n instanceof HTMLElement) || n.closest(`.${cl("chip")}`)) continue;
-        if (n.offsetHeight > 0 && n.offsetHeight <= 72 && (n.textContent || "").includes(clip)) return true;
+        if (n.closest(".tiptap, [contenteditable='true']")) continue;
+        if (n.querySelector("textarea, [contenteditable='true'], .tiptap")) continue;
+        if (n.offsetHeight <= 0 || n.offsetHeight > 72) continue;
+        const cs = getComputedStyle(n);
+        if (cs.visibility === "hidden" || cs.display === "none" || Number(cs.opacity) === 0) continue;
+        if ((n.textContent || "").includes(clip)) return true;
     }
     return false;
 }
@@ -245,6 +328,7 @@ function makeChip(): HTMLElement {
 function placeChip(el: HTMLElement, bar: HTMLElement) {
     const r = bar.getBoundingClientRect();
     if (r.width < 8 || r.height < 8) {
+        if (hold || viewportCollapsed() || pendingRestore) return;
         el.style.display = "none";
         return;
     }
@@ -257,8 +341,9 @@ function placeChip(el: HTMLElement, bar: HTMLElement) {
 function paintFallback(key: string, snap: Snap) {
     const bar = document.querySelector(QUERY);
     const path = pathCid();
-    if (!key || destKey() !== key || (path && path !== key) || !(bar instanceof HTMLElement) || onImaginePage()) {
-        removeFallback();
+    const quiet = hold || viewportCollapsed() || pendingRestore === key;
+    if (!key || onImaginePage() || destKey() !== key || (path && path !== key) || !(bar instanceof HTMLElement)) {
+        if (!quiet) removeFallback();
         return;
     }
     if (officialVisible(snap.text)) {
@@ -311,6 +396,11 @@ function restore(key: string) {
 
 function ensureChip() {
     if (onImaginePage()) return;
+    if (viewportCollapsed() || hold) {
+        pinHold();
+        return;
+    }
+    if (pendingRestore) return;
     const dest = destKey();
     const path = pathCid();
     if (!dest || (path && path !== dest)) {
@@ -326,6 +416,9 @@ function ensureChip() {
 }
 
 function dismiss() {
+    hold = false;
+    holdKey = "";
+    pendingRestore = "";
     const key = ownKey();
     applying = true;
     try {
@@ -347,6 +440,7 @@ export function routeSel(s: RoutingStoreState): string {
 
 export function onChat() {
     if (!armed || applying || onImaginePage()) return;
+    if (settleHold()) return;
     const now = readText();
     const dest = destKey();
     const key = snapKey();
@@ -359,7 +453,7 @@ export function onChat() {
     if (!dest) {
         stashOutgoing();
         removeFallback();
-        if (!pathCid() && !routeCid()) {
+        if (!pathCid() && !routeCid() && !onProjectPath()) {
             lastText = "";
             lastPopup = undefined;
             clearLive();
@@ -488,6 +582,7 @@ function makeSendWrapper(orig: SendFn): SendFn {
 }
 
 function scheduleRestore() {
+    if (hold || viewportCollapsed() || pendingRestore) return;
     const key = destKey();
     if (!key || !saved.get(key)?.text) return;
     queueMicrotask(() => {
@@ -620,6 +715,27 @@ function onMutate() {
     });
 }
 
+function onStore(state: ChatPageStoreState) {
+    if (!armed || applying) return;
+    const text = String(state.quotedText || "");
+    if (!text) {
+        if (viewportCollapsed() || hold) pinHold();
+        return;
+    }
+    if (viewportCollapsed() || hold) {
+        pinHold();
+        return;
+    }
+    const dest = String(state.conversationId || "");
+    if (dest && lastKey && dest !== lastKey) return;
+    const key = dest || pathCid() || routeCid() || lastKey;
+    if (!key) return;
+    remember(key, text, state.quotePopupData);
+    lastText = text;
+    lastPopup = state.quotePopupData;
+    lastKey = key;
+}
+
 export function startSticky() {
     if (armed) return;
     armed = true;
@@ -634,11 +750,18 @@ export function startSticky() {
     abort = new AbortController();
     document.addEventListener("pointerdown", onPointerDown, { capture: true, signal: abort.signal });
     const poke = () => onMutate();
+    const onViewport = () => {
+        if (!settleHold()) onMutate();
+    };
     window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort.signal });
-    window.addEventListener("resize", poke, { passive: true, signal: abort.signal });
+    window.addEventListener("resize", onViewport, { passive: true, signal: abort.signal });
+    window.visualViewport?.addEventListener("resize", onViewport, { passive: true, signal: abort.signal });
     observer = new MutationObserver(onMutate);
     observer.observe(document.documentElement, { childList: true, subtree: true });
     wrapAll();
+    try {
+        unsubQuote = ChatPageStore.useChatPageStore.subscribe(onStore);
+    } catch { /* store not ready */ }
     ensureChip();
 }
 
@@ -649,6 +772,8 @@ export function stopSticky() {
     abort = null;
     observer?.disconnect();
     observer = null;
+    unsubQuote?.();
+    unsubQuote = null;
     if (mutRaf) cancelAnimationFrame(mutRaf);
     mutRaf = 0;
     unwrapAll();
@@ -659,4 +784,7 @@ export function stopSticky() {
     lastPopup = undefined;
     applying = false;
     lastRestoreAt = 0;
+    hold = false;
+    holdKey = "";
+    pendingRestore = "";
 }
