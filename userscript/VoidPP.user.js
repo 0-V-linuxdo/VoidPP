@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.4
+// @version      20260925.5
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.4] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.5] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -2110,6 +2110,12 @@ ${sourceUrl}`;
       return null;
     }
   }
+  function settingsBagHasPlugins(parsed) {
+    if (!parsed)
+      return false;
+    const { plugins } = parsed;
+    return isObject(plugins) && Object.keys(plugins).length > 0;
+  }
 
   class SettingsStore2 {
     globalListeners = new Set;
@@ -2210,6 +2216,9 @@ ${sourceUrl}`;
       }, SAVE_DEBOUNCE_MS);
     }
     save() {
+      const { plugins } = this.plain;
+      if (!isObject(plugins) || !Object.keys(plugins).length)
+        return;
       try {
         const json = JSON.stringify(this.plain);
         if (typeof GM_setValue === "function") {
@@ -2313,21 +2322,23 @@ ${sourceUrl}`;
   }
   async function readKey(key) {
     const gm = parseStoredSettings(await readGmValue(key));
-    if (gm)
+    if (settingsBagHasPlugins(gm))
       return gm;
     try {
       const idb = parseStoredSettings(await idbGet(key) ?? null);
-      if (idb)
+      if (settingsBagHasPlugins(idb))
         return idb;
     } catch (e) {
       logger8.warn("Failed to read IndexedDB:", e);
     }
     try {
-      return parseStoredSettings(localStorage.getItem(key));
+      const ls = parseStoredSettings(localStorage.getItem(key));
+      if (settingsBagHasPlugins(ls))
+        return ls;
     } catch (e) {
       logger8.warn("Failed to read localStorage:", e);
-      return null;
     }
+    return null;
   }
   async function dropLegacySettings() {
     if (typeof GM_deleteValue === "function") {
@@ -2363,8 +2374,9 @@ ${sourceUrl}`;
       meta.enabled = true;
     if (stored?.fromLegacy) {
       logger8.info(`Copied ${LEGACY_STORAGE_KEY} → ${STORAGE_KEY}; writes to ${LEGACY_STORAGE_KEY} stopped at ${LEGACY_WRITE_STOPPED}`);
-      SettingsStore3.flush();
     }
+    if (stored)
+      SettingsStore3.flush();
     await dropLegacySettings();
   }
   function migratePluginSettings(name, ...oldNames) {
@@ -7560,9 +7572,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2a92a0b"}`
-    }, `(${"2a92a0b"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e539415"}`
+    }, `(${"e539415"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -28993,7 +29005,7 @@ div:has(> #grok-bot-nav-button) {
   messageTimestamps_default.updatedAt = 1789881463000;
   streamerMode_default.updatedAt = 1787870966000;
   consoleJanitor_default.updatedAt = 1787789817000;
-  betterCanvas_default.updatedAt = 1790352737000;
+  betterCanvas_default.updatedAt = 1790353874000;
   noDictation_default.updatedAt = 1788037550000;
   betterQuotes_default.updatedAt = 1790264305000;
   cloneChats_default.updatedAt = 1787870966000;

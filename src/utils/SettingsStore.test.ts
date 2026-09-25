@@ -7,7 +7,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { LEGACY_WRITE_STOPPED } from "./constants";
-import { LEGACY_STORAGE_KEY, parseStoredSettings, STORAGE_KEY } from "./SettingsStore";
+import { LEGACY_STORAGE_KEY, parseStoredSettings, settingsBagHasPlugins, STORAGE_KEY } from "./SettingsStore";
 
 describe("parseStoredSettings", () => {
     test("returns objects as-is", () => {
@@ -23,6 +23,13 @@ describe("parseStoredSettings", () => {
     test("parses a double-encoded JSON string", () => {
         const raw = { plugins: { Settings: { enabled: true } } };
         expect(parseStoredSettings(JSON.stringify(JSON.stringify(raw)))).toEqual(raw);
+    });
+
+    test("settingsBagHasPlugins rejects empty plugin bags", () => {
+        expect(settingsBagHasPlugins(null)).toBe(false);
+        expect(settingsBagHasPlugins({})).toBe(false);
+        expect(settingsBagHasPlugins({ plugins: {} })).toBe(false);
+        expect(settingsBagHasPlugins({ plugins: { Cleaner: { enabled: true } } })).toBe(true);
     });
 
     test("returns null for empty, invalid, or non-object values", () => {

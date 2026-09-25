@@ -33,6 +33,12 @@ export function parseStoredSettings(raw?: unknown): Record<string, unknown> | nu
     }
 }
 
+export function settingsBagHasPlugins(parsed: Record<string, unknown> | null): parsed is Record<string, unknown> {
+    if (!parsed) return false;
+    const { plugins } = parsed;
+    return isObject(plugins) && Object.keys(plugins).length > 0;
+}
+
 export class SettingsStore<T extends object> {
     private globalListeners = new Set<Listener>();
     private pathListeners = new Map<string, Set<Listener>>();
@@ -135,6 +141,9 @@ export class SettingsStore<T extends object> {
     }
 
     private save() {
+        const { plugins } = this.plain as { plugins?: unknown };
+        if (!isObject(plugins) || !Object.keys(plugins).length) return;
+
         try {
             const json = JSON.stringify(this.plain);
             if (typeof GM_setValue === "function") {
