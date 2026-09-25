@@ -4,11 +4,13 @@
 
 ## Install
 
+This branch is published **Beta** (`voidpp-beta`). It is the default branch. The script header is `@environment Beta`, and auto-update follows this branch only.
+
 [![Install userscript](https://img.shields.io/badge/Install-userscript-00d26a?style=for-the-badge)](https://cdn.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp-beta/userscript/VoidPP.user.js)
 
-This badge is the published **Beta** (`voidpp-beta`). Click it to install (jsDelivr, no GitHub `CSP: sandbox`). Tampermonkey auto-update follows the header `@updateURL`: GitHub raw `userscript/VoidPP.user.js` on that same branch.
+Click the badge to install (jsDelivr, no GitHub `CSP: sandbox`). Tampermonkey auto-update follows the header `@updateURL`: GitHub raw `userscript/VoidPP.user.js` on `voidpp-beta`.
 
-`dev` is the development line. `voidpp-stable` is opt-in Stable. Both are published on GitHub raw and have no install badge. Do not enable two copies. Switch by turning the old copy off first; settings and IndexedDB stay shared.
+**Development** ([`dev`](https://github.com/0-V-linuxdo/VoidPP/tree/dev)) moves first. **Stable** ([`voidpp-stable`](https://github.com/0-V-linuxdo/VoidPP/tree/voidpp-stable)) is opt-in. Do not enable two copies. Switch by turning the old copy off first; settings and IndexedDB stay shared.
 
 ## Changes
 
