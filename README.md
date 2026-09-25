@@ -6,7 +6,9 @@
 
 [![Install userscript](https://img.shields.io/badge/Install-userscript-00d26a?style=for-the-badge)](https://cdn.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp/userscript/VoidPP.user.js)
 
-Install by clicking the badge (jsDelivr, default `voidpp` branch, no GitHub `CSP: sandbox`). Tampermonkey auto-update uses GitHub raw `userscript/VoidPP.meta.js` (`@updateURL`).
+This badge is the published **Beta** (`voidpp`). Click it to install (jsDelivr, no GitHub `CSP: sandbox`). Tampermonkey auto-update follows the header `@updateURL`: GitHub raw `userscript/VoidPP.user.js` on that same branch.
+
+`dev` is the development line. It is published on GitHub raw and has no install badge. Do not enable Beta and Development together. Switch by turning the old copy off first; settings and IndexedDB stay shared. Stable (`voidpp-stable`) is not published yet.
 
 ## Changes
 

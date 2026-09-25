@@ -6,7 +6,9 @@
 
 [![Install userscript](https://img.shields.io/badge/安装-用户脚本-00d26a?style=for-the-badge)](https://cdn.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp/userscript/VoidPP.user.js)
 
-点徽章安装（jsDelivr 默认 `voidpp` 分支，避开 GitHub Raw 的 `CSP: sandbox`）。Tampermonkey 自动更新走 GitHub raw 的 `userscript/VoidPP.meta.js`（`@updateURL`）。
+这枚徽章是已发布的 **Beta**（`voidpp`）。点它安装（jsDelivr，避开 GitHub Raw 的 `CSP: sandbox`）。Tampermonkey 自动更新跟着头里的 `@updateURL`：同一分支上的 GitHub raw `userscript/VoidPP.user.js`。
+
+`dev` 是开发分支，GitHub raw 上有脚本，没有安装徽章。不要同时开着 Beta 和 Development。换通道先关掉旧的那条；设置和 IndexedDB 共用，会留下来。Stable（`voidpp-stable`）还没发布。
 
 ## 变更
 

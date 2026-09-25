@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Void++
-// @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260924.2
+// @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp
+// @version      20260925.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
-// @environment  Production
+// @environment  Beta
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
 // @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/assets/logos/app-icon/voidpp-icon.svg
 // @match        *://grok.com/*

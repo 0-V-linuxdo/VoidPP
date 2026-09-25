@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Void++
-// @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260924.2
+// @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp
+// @version      20260925.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
-// @environment  Production
+// @environment  Beta
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
 // @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/assets/logos/app-icon/voidpp-icon.svg
 // @match        *://grok.com/*
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260924.2] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7515,9 +7515,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260924.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"98f72eb"}`
-    }, `(${"98f72eb"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"43773a3"}`
+    }, `(${"43773a3"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -28910,7 +28910,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1787870966000;
-  settings_default.updatedAt = 1789897669000;
+  settings_default.updatedAt = 1790265417000;
   chatBarButtons_default.updatedAt = 1790097681000;
   contextMenu_default.updatedAt = 1781702684000;
   autoCollapse_default.updatedAt = 1787789817000;

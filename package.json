@@ -16,6 +16,7 @@
     "scripts": {
         "build": "bun run build.ts",
         "build:dev": "bun run build.ts --dev",
+        "build:stable": "bun run build.ts --stable",
         "watch": "bun run build.ts --watch",
         "lint": "oxlint -c .oxlintrc.json src",
         "lint:fix": "oxlint -c .oxlintrc.json --fix src",
