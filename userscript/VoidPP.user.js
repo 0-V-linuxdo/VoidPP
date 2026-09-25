@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.6
+// @version      20260925.7
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.6] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3438,9 +3438,15 @@ ${sourceUrl}`;
     const thumb = tokenColor("--border-l2", "#4a4a52", "#c4c4cc");
     const hover = tokenColor("--fg-tertiary", "#9a9aa3", "#8a8a94");
     const track = tokenColor("--surface-l1", "#141416", "#f4f4f5");
+    const scheme = isDark() ? "dark" : "light";
     const root = `:is(${SCROLLER})`;
     return `
+${IFRAME_SEL} {
+    color-scheme: ${scheme} !important;
+}
+
 ${SCROLLER} {
+    color-scheme: ${scheme} !important;
     scrollbar-width: thin !important;
     scrollbar-color: ${thumb} ${track} !important;
 }
@@ -3472,7 +3478,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     const track = dark ? "#141416" : "#f4f4f5";
     const hover = dark ? "#9a9aa3" : "#8a8a94";
     const scheme = dark ? "dark" : "light";
-    return `html{color-scheme:${scheme}!important;scrollbar-width:thin!important;scrollbar-color:${thumb} ${track}!important}` + "html::-webkit-scrollbar,body::-webkit-scrollbar{width:.5rem!important;height:.5rem!important}" + `html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,html::-webkit-scrollbar-corner,body::-webkit-scrollbar-corner{background:${track}!important}` + `html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background-color:${thumb}!important;background-clip:padding-box!important;border:.125rem solid transparent!important;border-radius:999px!important}` + `html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover{background-color:${hover}!important}`;
+    return `html,body,:root{color-scheme:${scheme}!important}` + `*{scrollbar-width:thin!important;scrollbar-color:${thumb} ${track}!important}` + "*::-webkit-scrollbar{width:.5rem!important;height:.5rem!important}" + `*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:${track}!important}` + `*::-webkit-scrollbar-thumb{background-color:${thumb}!important;background-clip:padding-box!important;border:.125rem solid transparent!important;border-radius:999px!important}` + `*::-webkit-scrollbar-thumb:hover{background-color:${hover}!important}`;
   }
   function applyToDocument(doc, dark) {
     let el = doc.getElementById(FRAME_STYLE_ID);
@@ -3503,8 +3509,16 @@ ${root}::-webkit-scrollbar-thumb:hover {
     };
     visit(document);
   }
+  function framePrefersDark() {
+    try {
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches)
+        return true;
+    } catch {}
+    return isDark();
+  }
   function bootstrapPreviewFrame() {
     window.addEventListener("message", onFrameMessage);
+    paintFrameTree(framePrefersDark());
     if (!frameObs) {
       frameObs = new MutationObserver((records) => {
         if (!frameReady)
@@ -3567,12 +3581,10 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function clearIframes() {
     document.querySelectorAll(IFRAME_SEL).forEach(clearIframe);
   }
-  function replyFrame(src, origin, payload) {
+  function replyFrame(src, payload) {
     try {
-      src.postMessage(payload, origin === "null" ? "*" : origin);
-    } catch {
       src.postMessage(payload, "*");
-    }
+    } catch {}
   }
   function onParentMessage(event) {
     const { data } = event;
@@ -3582,10 +3594,10 @@ ${root}::-webkit-scrollbar-thumb:hover {
     if (!src)
       return;
     if (!settings2.store.themedScrollbar) {
-      replyFrame(src, event.origin, { type: MSG, off: true });
+      replyFrame(src, { type: MSG, off: true });
       return;
     }
-    replyFrame(src, event.origin, { type: MSG, dark: isDark() });
+    replyFrame(src, { type: MSG, dark: isDark() });
   }
   function refreshScrollbar() {
     registerStyle(STYLE_NAME, parentCss());
@@ -7589,9 +7601,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ebfb799"}`
-    }, `(${"ebfb799"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9afad96"}`
+    }, `(${"9afad96"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {

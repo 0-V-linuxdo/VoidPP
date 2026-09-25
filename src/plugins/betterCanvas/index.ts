@@ -96,11 +96,17 @@ function parentCss() {
     const thumb = tokenColor("--border-l2", "#4a4a52", "#c4c4cc");
     const hover = tokenColor("--fg-tertiary", "#9a9aa3", "#8a8a94");
     const track = tokenColor("--surface-l1", "#141416", "#f4f4f5");
+    const scheme = isDark() ? "dark" : "light";
     // A comma list only attaches a trailing pseudo to the last clause.
     // Wrap so width/radius/thumb colors stay on the scrollbar, not the Settings form.
     const root = `:is(${SCROLLER})`;
     return `
+${IFRAME_SEL} {
+    color-scheme: ${scheme} !important;
+}
+
 ${SCROLLER} {
+    color-scheme: ${scheme} !important;
     scrollbar-width: thin !important;
     scrollbar-color: ${thumb} ${track} !important;
 }
@@ -133,11 +139,12 @@ function frameCss(dark: boolean) {
     const track = dark ? "#141416" : "#f4f4f5";
     const hover = dark ? "#9a9aa3" : "#8a8a94";
     const scheme = dark ? "dark" : "light";
-    return `html{color-scheme:${scheme}!important;scrollbar-width:thin!important;scrollbar-color:${thumb} ${track}!important}`
-        + "html::-webkit-scrollbar,body::-webkit-scrollbar{width:.5rem!important;height:.5rem!important}"
-        + `html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,html::-webkit-scrollbar-corner,body::-webkit-scrollbar-corner{background:${track}!important}`
-        + `html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background-color:${thumb}!important;background-clip:padding-box!important;border:.125rem solid transparent!important;border-radius:999px!important}`
-        + `html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover{background-color:${hover}!important}`;
+    return `html,body,:root{color-scheme:${scheme}!important}`
+        + `*{scrollbar-width:thin!important;scrollbar-color:${thumb} ${track}!important}`
+        + "*::-webkit-scrollbar{width:.5rem!important;height:.5rem!important}"
+        + `*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:${track}!important}`
+        + `*::-webkit-scrollbar-thumb{background-color:${thumb}!important;background-clip:padding-box!important;border:.125rem solid transparent!important;border-radius:999px!important}`
+        + `*::-webkit-scrollbar-thumb:hover{background-color:${hover}!important}`;
 }
 
 function applyToDocument(doc: Document, dark: boolean) {
@@ -174,8 +181,18 @@ function paintFrameTree(dark: boolean) {
     visit(document);
 }
 
+function framePrefersDark() {
+    try {
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) return true;
+    } catch {
+        void 0;
+    }
+    return isDark();
+}
+
 export function bootstrapPreviewFrame() {
     window.addEventListener("message", onFrameMessage);
+    paintFrameTree(framePrefersDark());
     if (!frameObs) {
         frameObs = new MutationObserver(records => {
             if (!frameReady) return;
@@ -249,11 +266,11 @@ function clearIframes() {
     document.querySelectorAll<HTMLIFrameElement>(IFRAME_SEL).forEach(clearIframe);
 }
 
-function replyFrame(src: Window, origin: string, payload: { type: string; dark?: boolean; off?: boolean }) {
+function replyFrame(src: Window, payload: { type: string; dark?: boolean; off?: boolean }) {
     try {
-        src.postMessage(payload, origin === "null" ? "*" : origin);
-    } catch {
         src.postMessage(payload, "*");
+    } catch {
+        void 0;
     }
 }
 
@@ -263,10 +280,10 @@ function onParentMessage(event: MessageEvent) {
     const src = event.source as Window | null;
     if (!src) return;
     if (!settings.store.themedScrollbar) {
-        replyFrame(src, event.origin, { type: MSG, off: true });
+        replyFrame(src, { type: MSG, off: true });
         return;
     }
-    replyFrame(src, event.origin, { type: MSG, dark: isDark() });
+    replyFrame(src, { type: MSG, dark: isDark() });
 }
 
 function refreshScrollbar() {
