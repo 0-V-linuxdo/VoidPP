@@ -61,7 +61,7 @@ Canonical:
 
 - `window.VoidPP` (`window.Void` stays the same object; do not drop the alias)
 - IndexedDB `VoidPP` — read `Void` once, copy, delete the old database. Never write `Void` after `[20260912]`
-- Settings key `VoidPPSettings` — read `VoidSettings` once, flush to the new key, delete the old key. Never write `VoidSettings` after `[20260912]`. GM is shared across every `@match` origin and is read before grok.com IndexedDB. A bag with no plugin keys is a miss — fall through to IDB. `save()` must not write `{plugins:{}}`. `[20260925.3]` let the `grokusercontent` preview iframe evaluate SettingsStore and `beforeunload`-flush an empty bag into GM; the real toggles stayed in IDB. Preview frames skip `initSettings` and must not flush.
+- Settings key `VoidPPSettings` — read `VoidSettings` once, flush to the new key, delete the old key. Never write `VoidSettings` after `[20260912]`. GM is shared across every `@match` origin and is read before grok.com IndexedDB. A bag with no plugin keys is a miss — fall through to IDB. `save()` must not write `{plugins:{}}`, and must not write at all until `initSettings` calls `markReady()`. Preview frames skip `initSettings`, so they cannot flush. `[20260925.3]` let the `grokusercontent` preview iframe evaluate SettingsStore and `beforeunload`-flush an empty bag into GM.
 - Cookie bridge `voidpp-cookies`
 - Settings tab ids `voidpp_*_tab` and nav group `voidpp`
 

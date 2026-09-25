@@ -98,6 +98,7 @@ export async function initSettings(): Promise<void> {
     if (stored?.fromLegacy) {
         logger.info(`Copied ${LEGACY_STORAGE_KEY} → ${STORAGE_KEY}; writes to ${LEGACY_STORAGE_KEY} stopped at ${LEGACY_WRITE_STOPPED}`);
     }
+    SettingsStore.markReady();
     if (stored) SettingsStore.flush();
     await dropLegacySettings();
 }

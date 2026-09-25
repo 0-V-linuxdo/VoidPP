@@ -46,6 +46,7 @@ export class SettingsStore<T extends object> {
     private defaultGetters = new Map<string, (key: string) => unknown>();
     private saveTimer: ReturnType<typeof setTimeout> | null = null;
     private proxyCache = new WeakMap<object, T>();
+    private ready = false;
 
     public declare store: T;
     public declare plain: T;
@@ -53,10 +54,16 @@ export class SettingsStore<T extends object> {
     constructor(plain: T) {
         this.plain = plain;
         this.store = this.makeProxy(plain as Record<string, unknown>);
+    }
+
+    public markReady() {
+        if (this.ready) return;
+        this.ready = true;
         window.addEventListener("beforeunload", () => this.flush(), { once: true });
     }
 
     public flush() {
+        if (!this.ready) return;
         if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; }
         this.save();
     }
@@ -133,7 +140,7 @@ export class SettingsStore<T extends object> {
     }
 
     private scheduleSave() {
-        if (this.saveTimer) return;
+        if (!this.ready || this.saveTimer) return;
         this.saveTimer = setTimeout(() => {
             this.saveTimer = null;
             this.save();
@@ -141,6 +148,7 @@ export class SettingsStore<T extends object> {
     }
 
     private save() {
+        if (!this.ready) return;
         const { plugins } = this.plain as { plugins?: unknown };
         if (!isObject(plugins) || !Object.keys(plugins).length) return;
 

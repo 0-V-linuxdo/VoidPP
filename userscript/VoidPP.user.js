@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.5
+// @version      20260925.6
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.5] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.6] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -664,6 +664,9 @@
   var compileFactory = (code, header, sourceUrl) => {
     const key = `__void_eval_${compileCounter++}`;
     const script = document.createElement("script");
+    const nonce = [...document.scripts].map((el) => el.nonce).find(Boolean);
+    if (nonce)
+      script.nonce = nonce;
     let src = `window["${key}"]=(${code});`;
     if (header)
       src = `${header}
@@ -677,8 +680,11 @@ ${sourceUrl}`;
     } finally {
       script.remove();
     }
-    const fn = pageWindow[key];
+    let fn = pageWindow[key];
     pageWindow[key] = undefined;
+    if (!fn) {
+      fn = new Function(`return (${code});`)();
+    }
     if (!fn)
       throw new Error("Factory compilation failed (CSP?)");
     return fn;
@@ -2124,12 +2130,20 @@ ${sourceUrl}`;
     defaultGetters = new Map;
     saveTimer = null;
     proxyCache = new WeakMap;
+    ready = false;
     constructor(plain) {
       this.plain = plain;
       this.store = this.makeProxy(plain);
+    }
+    markReady() {
+      if (this.ready)
+        return;
+      this.ready = true;
       window.addEventListener("beforeunload", () => this.flush(), { once: true });
     }
     flush() {
+      if (!this.ready)
+        return;
       if (this.saveTimer) {
         clearTimeout(this.saveTimer);
         this.saveTimer = null;
@@ -2208,7 +2222,7 @@ ${sourceUrl}`;
       this.scheduleSave();
     }
     scheduleSave() {
-      if (this.saveTimer)
+      if (!this.ready || this.saveTimer)
         return;
       this.saveTimer = setTimeout(() => {
         this.saveTimer = null;
@@ -2216,6 +2230,8 @@ ${sourceUrl}`;
       }, SAVE_DEBOUNCE_MS);
     }
     save() {
+      if (!this.ready)
+        return;
       const { plugins } = this.plain;
       if (!isObject(plugins) || !Object.keys(plugins).length)
         return;
@@ -2375,6 +2391,7 @@ ${sourceUrl}`;
     if (stored?.fromLegacy) {
       logger8.info(`Copied ${LEGACY_STORAGE_KEY} → ${STORAGE_KEY}; writes to ${LEGACY_STORAGE_KEY} stopped at ${LEGACY_WRITE_STOPPED}`);
     }
+    SettingsStore3.markReady();
     if (stored)
       SettingsStore3.flush();
     await dropLegacySettings();
@@ -7572,9 +7589,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e539415"}`
-    }, `(${"e539415"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ebfb799"}`
+    }, `(${"ebfb799"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
