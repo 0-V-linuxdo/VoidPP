@@ -45,7 +45,7 @@ const { channel, environment } = resolveChannel(gitBranch());
 const FORK_URL = "https://github.com/0-V-linuxdo/VoidPP";
 const NAMESPACE = `${FORK_URL}/${channel}`;
 const SCRIPT_CDN = `https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/${channel}`;
-const VERSION_DATE = "20260925.2";
+const VERSION_DATE = "20260925.3";
 const displayVersion = `[${VERSION_DATE}] v${pkg.version}`;
 const scriptVersion = VERSION_DATE;
 
@@ -67,6 +67,8 @@ const USERSCRIPT_HEADER = `// ==UserScript==
 // @icon         ${SCRIPT_CDN}/assets/logos/app-icon/voidpp-icon.svg
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
+// @match        *://artifacts.grokusercontent.com/*
+// @match        *://*.grokusercontent.com/*
 // @run-at       document-start
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
