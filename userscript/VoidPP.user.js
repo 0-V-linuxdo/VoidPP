@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.11
+// @version      20260925.12
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.11] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.12] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3400,7 +3400,11 @@ ${sourceUrl}`;
   var collapsing = false;
   var manualUntil = 0;
   var canvasWasOpen = false;
+  var panelWasOpen = false;
+  var seenConv;
+  var convAt = 0;
   var MANUAL_HOLD_MS = 3000;
+  var SWITCH_MS = 250;
   var hooked = new WeakSet;
   function isGrokPreviewFrame() {
     const host = location.hostname;
@@ -3652,28 +3656,43 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function userHeld() {
     return Date.now() < manualUntil;
   }
+  function inProjectsGroup(node) {
+    const group = node.closest("[data-sidebar='group']");
+    if (!group)
+      return false;
+    if (group.querySelector("button[aria-label='Add project'], button[aria-label='All projects'], button[aria-label='添加项目'], button[aria-label='全部项目']"))
+      return true;
+    for (const btn of group.querySelectorAll("button[aria-label]")) {
+      const label = (btn.getAttribute("aria-label") ?? "").trim();
+      if (label === "Projects" || label === "项目")
+        return true;
+    }
+    return false;
+  }
   function markManual(target) {
     if (!(target instanceof Element))
-      return;
+      return false;
     const node = target.closest("button,a,[role='menuitem'],[role='tab'],[role='option']") ?? target;
     const aria = `${node.getAttribute("aria-label") ?? ""} ${node.getAttribute("title") ?? ""}`.toLowerCase();
     const text = (node.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 64);
     const blob = `${aria} ${text}`;
-    const role = node.getAttribute("role");
-    const menu = role === "menuitem" || role === "option";
     const inPane = !!node.closest("[class*='pane-card']");
+    const project = inProjectsGroup(target);
     const named = /^(options|options for )/.test(blob) || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob) || /\btoggle\b/.test(blob) && /\bpanel\b/.test(blob);
-    if (!menu && !inPane && !named)
-      return;
+    if (!project && !inPane && !named)
+      return false;
     manualUntil = Date.now() + MANUAL_HOLD_MS;
+    return true;
   }
   function onManualPointer(e) {
-    markManual(e.target);
+    if (!markManual(e.target))
+      manualUntil = 0;
   }
   function onManualKey(e) {
     if (e.key !== "Enter" && e.key !== " ")
       return;
-    markManual(e.target);
+    if (!markManual(e.target))
+      manualUntil = 0;
   }
   function bindGesture() {
     document.addEventListener("pointerdown", onManualPointer, true);
@@ -3690,7 +3709,30 @@ ${root}::-webkit-scrollbar-thumb:hover {
     fn.call(thisArg);
     return true;
   }
+  function conversationId() {
+    try {
+      const id = ChatPageStore.useChatPageStore?.getState?.()?.conversationId;
+      return typeof id === "string" && id ? id : null;
+    } catch {
+      return null;
+    }
+  }
+  function switchedChat() {
+    const id = conversationId();
+    if (seenConv === undefined) {
+      seenConv = id;
+      return false;
+    }
+    if (id !== seenConv) {
+      seenConv = id;
+      convAt = Date.now();
+    }
+    if (userHeld())
+      return false;
+    return Date.now() - convAt < SWITCH_MS;
+  }
   function collapseCanvas(opts) {
+    const switched = switchedChat();
     if (collapsing || !settings2.store.hideRightPanel)
       return;
     try {
@@ -3704,7 +3746,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       canvasWasOpen = open;
       if (!open)
         return;
-      if (!opts?.force && (userHeld() || !becameOpen))
+      if (!opts?.force && !switched && (userHeld() || !becameOpen))
         return;
       collapsing = true;
       toggle(false, { animate: false });
@@ -3718,16 +3760,21 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function enforce(opts) {
     if (!settings2.store.hideRightPanel)
       return;
-    if (!opts?.force && userHeld())
-      return;
+    const switched = switchedChat();
     collapseCanvas(opts);
     try {
       const hook = ChatPageStore.useChatPageStore;
       if (!hook || typeof hook.getState !== "function")
         return;
       const state = hook.getState();
-      if (!isRightOpen(state))
+      const open = isRightOpen(state);
+      const becameOpen = open && !panelWasOpen;
+      panelWasOpen = open;
+      if (!open)
         return;
+      if (!opts?.force && !switched && (userHeld() || !becameOpen))
+        return;
+      panelWasOpen = false;
       const api = hook;
       if (callFn(state.closeSidePanelExplicitly, state))
         return;
@@ -3805,7 +3852,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       ChatPageStore: {
         selector: isRightOpen,
         handler(open) {
-          if (open && !userHeld())
+          if (open)
             enforce();
         }
       }
@@ -7689,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9417db4"}`
-    }, `(${"9417db4"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"788535d"}`
+    }, `(${"788535d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -20882,7 +20929,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     }
   }
-  function conversationId() {
+  function conversationId2() {
     try {
       const s = ChatPageStore.useChatPageStore.getState();
       return String(s.conversationId || s.optimisticConversationId || "");
@@ -21091,7 +21138,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (n.length < 2)
       return null;
     try {
-      const cid = conversationId();
+      const cid = conversationId2();
       const r = ResponseStore.useResponseStore.getState();
       const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
       for (let i = rows.length - 1;i >= 0; i--) {
@@ -21449,7 +21496,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       if (hit) {
         if (hit.id && hit.id !== hostUuid(skip))
           ids.unshift(hit.id);
-        await hydrate2(hit.cid || conversationId());
+        await hydrate2(hit.cid || conversationId2());
         if (mine !== gen)
           return;
         for (let i = 0;i < WAIT_N; i++) {
@@ -29122,7 +29169,7 @@ div:has(> #grok-bot-nav-button) {
   messageTimestamps_default.updatedAt = 1789881463000;
   streamerMode_default.updatedAt = 1787870966000;
   consoleJanitor_default.updatedAt = 1787789817000;
-  betterCanvas_default.updatedAt = 1790359932000;
+  betterCanvas_default.updatedAt = 1790360447000;
   noDictation_default.updatedAt = 1788037550000;
   betterQuotes_default.updatedAt = 1790264305000;
   cloneChats_default.updatedAt = 1787870966000;

@@ -56,7 +56,11 @@ let cancelWorkspaceWait: (() => void) | null = null;
 let collapsing = false;
 let manualUntil = 0;
 let canvasWasOpen = false;
+let panelWasOpen = false;
+let seenConv: string | null | undefined;
+let convAt = 0;
 const MANUAL_HOLD_MS = 3000;
+const SWITCH_MS = 250;
 const hooked = new WeakSet<HTMLIFrameElement>();
 
 export function isGrokPreviewFrame() {
@@ -345,29 +349,40 @@ function userHeld() {
     return Date.now() < manualUntil;
 }
 
-function markManual(target: EventTarget | null) {
-    if (!(target instanceof Element)) return;
+function inProjectsGroup(node: Element) {
+    const group = node.closest("[data-sidebar='group']");
+    if (!group) return false;
+    if (group.querySelector("button[aria-label='Add project'], button[aria-label='All projects'], button[aria-label='添加项目'], button[aria-label='全部项目']")) return true;
+    for (const btn of group.querySelectorAll("button[aria-label]")) {
+        const label = (btn.getAttribute("aria-label") ?? "").trim();
+        if (label === "Projects" || label === "项目") return true;
+    }
+    return false;
+}
+
+function markManual(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) return false;
     const node = target.closest("button,a,[role='menuitem'],[role='tab'],[role='option']") ?? target;
     const aria = `${node.getAttribute("aria-label") ?? ""} ${node.getAttribute("title") ?? ""}`.toLowerCase();
     const text = (node.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 64);
     const blob = `${aria} ${text}`;
-    const role = node.getAttribute("role");
-    const menu = role === "menuitem" || role === "option";
     const inPane = !!node.closest("[class*='pane-card']");
+    const project = inProjectsGroup(target);
     const named = /^(options|options for )/.test(blob)
         || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob)
         || (/\btoggle\b/.test(blob) && /\bpanel\b/.test(blob));
-    if (!menu && !inPane && !named) return;
+    if (!project && !inPane && !named) return false;
     manualUntil = Date.now() + MANUAL_HOLD_MS;
+    return true;
 }
 
 function onManualPointer(e: Event) {
-    markManual(e.target);
+    if (!markManual(e.target)) manualUntil = 0;
 }
 
 function onManualKey(e: KeyboardEvent) {
     if (e.key !== "Enter" && e.key !== " ") return;
-    markManual(e.target);
+    if (!markManual(e.target)) manualUntil = 0;
 }
 
 function bindGesture() {
@@ -387,7 +402,31 @@ function callFn(fn: unknown, thisArg: unknown): boolean {
     return true;
 }
 
+function conversationId() {
+    try {
+        const id = (ChatPageStore.useChatPageStore?.getState?.() as { conversationId?: string } | undefined)?.conversationId;
+        return typeof id === "string" && id ? id : null;
+    } catch {
+        return null;
+    }
+}
+
+function switchedChat() {
+    const id = conversationId();
+    if (seenConv === undefined) {
+        seenConv = id;
+        return false;
+    }
+    if (id !== seenConv) {
+        seenConv = id;
+        convAt = Date.now();
+    }
+    if (userHeld()) return false;
+    return Date.now() - convAt < SWITCH_MS;
+}
+
 function collapseCanvas(opts?: { force?: boolean }) {
+    const switched = switchedChat();
     if (collapsing || !settings.store.hideRightPanel) return;
     try {
         const hook = WorkspaceStore.useWorkspaceStore;
@@ -398,7 +437,7 @@ function collapseCanvas(opts?: { force?: boolean }) {
         const becameOpen = open && !canvasWasOpen;
         canvasWasOpen = open;
         if (!open) return;
-        if (!opts?.force && (userHeld() || !becameOpen)) return;
+        if (!opts?.force && !switched && (userHeld() || !becameOpen)) return;
         collapsing = true;
         toggle(false, { animate: false });
         canvasWasOpen = false;
@@ -411,13 +450,18 @@ function collapseCanvas(opts?: { force?: boolean }) {
 
 function enforce(opts?: { force?: boolean }) {
     if (!settings.store.hideRightPanel) return;
-    if (!opts?.force && userHeld()) return;
+    const switched = switchedChat();
     collapseCanvas(opts);
     try {
         const hook = ChatPageStore.useChatPageStore;
         if (!hook || typeof hook.getState !== "function") return;
         const state = hook.getState();
-        if (!isRightOpen(state)) return;
+        const open = isRightOpen(state);
+        const becameOpen = open && !panelWasOpen;
+        panelWasOpen = open;
+        if (!open) return;
+        if (!opts?.force && !switched && (userHeld() || !becameOpen)) return;
+        panelWasOpen = false;
         const api = hook as typeof hook & {
             closeSidePanelExplicitly?: () => void;
             closeSidePanel?: () => void;
@@ -498,7 +542,7 @@ export default definePlugin({
         ChatPageStore: {
             selector: isRightOpen,
             handler(open: boolean) {
-                if (open && !userHeld()) enforce();
+                if (open) enforce();
             },
         },
     },

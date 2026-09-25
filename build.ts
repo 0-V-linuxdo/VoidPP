@@ -45,7 +45,7 @@ const { channel, environment } = resolveChannel(gitBranch());
 const FORK_URL = "https://github.com/0-V-linuxdo/VoidPP";
 const NAMESPACE = `${FORK_URL}/${channel}`;
 const SCRIPT_CDN = `https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/${channel}`;
-const VERSION_DATE = "20260925.11";
+const VERSION_DATE = "20260925.12";
 const displayVersion = `[${VERSION_DATE}] v${pkg.version}`;
 const scriptVersion = VERSION_DATE;
 
