@@ -21,40 +21,10 @@ const FRAME_STYLE_ID = "void-better-canvas";
 const MSG = "void-better-canvas";
 const MSG_HELLO = "void-better-canvas-hello";
 
-const SCROLLER = ':is([class*="pane-card"],[class*="masonry"],[class*="lightbox"]) :is([class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"]),main:has([aria-label="Generation mode"]) :is([class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"])';
-const IFRAME_SEL = 'iframe[title="Preview"], [class*="pane-card"] iframe';
-
-const THUMB = "hsl(var(--border-l2))";
-const THUMB_HOVER = "hsl(var(--fg-tertiary))";
-const TRACK = "hsl(var(--surface-l1))";
-
-const CSS = `
-${SCROLLER} {
-    scrollbar-width: thin !important;
-    scrollbar-color: ${THUMB} ${TRACK} !important;
-}
-
-${SCROLLER}::-webkit-scrollbar {
-    width: 0.5rem !important;
-    height: 0.5rem !important;
-}
-
-${SCROLLER}::-webkit-scrollbar-track,
-${SCROLLER}::-webkit-scrollbar-corner {
-    background: ${TRACK} !important;
-}
-
-${SCROLLER}::-webkit-scrollbar-thumb {
-    background-color: ${THUMB} !important;
-    background-clip: padding-box !important;
-    border: 0.125rem solid transparent !important;
-    border-radius: 999px !important;
-}
-
-${SCROLLER}::-webkit-scrollbar-thumb:hover {
-    background-color: ${THUMB_HOVER} !important;
-}
-`;
+const PANE = '[class*="pane-card"],[class*="masonry"],[class*="lightbox"]';
+const OVERFLOW = '[class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-x-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"],[class*="overflow-x-scroll"]';
+const SCROLLER = `:is(${PANE}):is(${OVERFLOW}),:is(${PANE}) :is(${OVERFLOW}),main:has([aria-label="Generation mode"]) :is(${OVERFLOW})`;
+const IFRAME_SEL = 'iframe[title="Preview"],iframe[src*="grokusercontent.com"],iframe[src*="grok-sandbox.com"],[class*="pane-card"] iframe';
 
 const settings = definePluginSettings({
     themedScrollbar: {
@@ -88,20 +58,79 @@ const hooked = new WeakSet<HTMLIFrameElement>();
 
 export function isGrokPreviewFrame() {
     const host = location.hostname;
-    return host === "grok-sandbox.com" || host.endsWith(".grok-sandbox.com");
+    return host === "grok-sandbox.com"
+        || host.endsWith(".grok-sandbox.com")
+        || host === "artifacts.grokusercontent.com"
+        || host.endsWith(".grokusercontent.com");
 }
 
 function isDark() {
+    try {
+        const scheme = getComputedStyle(document.documentElement).colorScheme.trim().toLowerCase();
+        if (scheme === "dark" || scheme.startsWith("dark ")) return true;
+        if (scheme === "light" || scheme.startsWith("light ")) return false;
+    } catch {
+        void 0;
+    }
     const html = document.documentElement;
+    if (html.classList.contains("dark")) return true;
+    if (html.classList.contains("light")) return false;
+    if (html.classList.contains("scheme-light") && !html.classList.contains("dark")) return false;
     const tokens = `${html.className} ${document.body?.className ?? ""} ${html.getAttribute("data-theme") ?? ""} ${html.getAttribute("data-color-scheme") ?? ""}`.toLowerCase();
-    return html.classList.contains("dark") || html.getAttribute("data-theme") === "dark" || /(^|[\s_-])(dark|night)([\s_-]|$)/.test(tokens);
+    return html.getAttribute("data-theme") === "dark" || /(^|[\s_-])(dark|night)([\s_-]|$)/.test(tokens);
+}
+
+function tokenColor(name: string, darkFallback: string, lightFallback: string) {
+    let raw = "";
+    try {
+        raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    } catch {
+        raw = "";
+    }
+    if (!raw) return isDark() ? darkFallback : lightFallback;
+    if (/^(?:#|rgba?\(|hsla?\(|hwb\(|lab\(|lch\(|oklab\(|oklch\(|color\(|var\()/i.test(raw)) return raw;
+    return `hsl(${raw})`;
+}
+
+function parentCss() {
+    const thumb = tokenColor("--border-l2", "#4a4a52", "#c4c4cc");
+    const hover = tokenColor("--fg-tertiary", "#9a9aa3", "#8a8a94");
+    const track = tokenColor("--surface-l1", "#141416", "#f4f4f5");
+    return `
+${SCROLLER} {
+    scrollbar-width: thin !important;
+    scrollbar-color: ${thumb} ${track} !important;
+}
+
+${SCROLLER}::-webkit-scrollbar {
+    width: 0.5rem !important;
+    height: 0.5rem !important;
+}
+
+${SCROLLER}::-webkit-scrollbar-track,
+${SCROLLER}::-webkit-scrollbar-corner {
+    background: ${track} !important;
+}
+
+${SCROLLER}::-webkit-scrollbar-thumb {
+    background-color: ${thumb} !important;
+    background-clip: padding-box !important;
+    border: 0.125rem solid transparent !important;
+    border-radius: 999px !important;
+}
+
+${SCROLLER}::-webkit-scrollbar-thumb:hover {
+    background-color: ${hover} !important;
+}
+`;
 }
 
 function frameCss(dark: boolean) {
     const thumb = dark ? "#4a4a52" : "#c4c4cc";
     const track = dark ? "#141416" : "#f4f4f5";
     const hover = dark ? "#9a9aa3" : "#8a8a94";
-    return `html,body{scrollbar-width:thin!important;scrollbar-color:${thumb} ${track}!important}`
+    const scheme = dark ? "dark" : "light";
+    return `html{color-scheme:${scheme}!important;scrollbar-width:thin!important;scrollbar-color:${thumb} ${track}!important}`
         + "html::-webkit-scrollbar,body::-webkit-scrollbar{width:.5rem!important;height:.5rem!important}"
         + `html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,html::-webkit-scrollbar-corner,body::-webkit-scrollbar-corner{background:${track}!important}`
         + `html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background-color:${thumb}!important;background-clip:padding-box!important;border:.125rem solid transparent!important;border-radius:999px!important}`
@@ -122,9 +151,38 @@ function clearDocument(doc: Document) {
     doc.getElementById(FRAME_STYLE_ID)?.remove();
 }
 
+let frameObs: MutationObserver | null = null;
+let frameDark = false;
+let frameReady = false;
+
+function paintFrameTree(dark: boolean) {
+    frameDark = dark;
+    frameReady = true;
+    const visit = (doc: Document) => {
+        applyToDocument(doc, dark);
+        doc.querySelectorAll("iframe").forEach(frame => {
+            try {
+                if (frame.contentDocument) visit(frame.contentDocument);
+            } catch {
+                void 0;
+            }
+        });
+    };
+    visit(document);
+}
+
 export function bootstrapPreviewFrame() {
-    applyToDocument(document, matchMedia("(prefers-color-scheme: dark)").matches);
     window.addEventListener("message", onFrameMessage);
+    if (!frameObs) {
+        frameObs = new MutationObserver(records => {
+            if (!frameReady) return;
+            const addedFrame = records.some(record => [...record.addedNodes].some(node =>
+                node instanceof Element && (node.tagName === "IFRAME" || !!node.querySelector("iframe")),
+            ));
+            if (addedFrame) paintFrameTree(frameDark);
+        });
+        frameObs.observe(document.documentElement, { childList: true, subtree: true });
+    }
     try {
         window.parent.postMessage({ type: MSG_HELLO }, "*");
     } catch {
@@ -136,10 +194,11 @@ function onFrameMessage(event: MessageEvent) {
     const { data } = event;
     if (!data || data.type !== MSG) return;
     if (data.off) {
+        frameReady = false;
         clearDocument(document);
         return;
     }
-    applyToDocument(document, data.dark === true);
+    paintFrameTree(data.dark === true);
 }
 
 function postIframe(iframe: HTMLIFrameElement, payload: { type: string; dark?: boolean; off?: boolean }) {
@@ -207,14 +266,18 @@ function onParentMessage(event: MessageEvent) {
     replyFrame(src, event.origin, { type: MSG, dark: isDark() });
 }
 
-function startScrollbar() {
-    registerStyle(STYLE_NAME, CSS);
+function refreshScrollbar() {
+    registerStyle(STYLE_NAME, parentCss());
     scanIframes();
+}
+
+function startScrollbar() {
+    refreshScrollbar();
     if (domObs) return;
     domObs = new MutationObserver(scanIframes);
     domObs.observe(document.documentElement, { childList: true, subtree: true });
-    themeObs = new MutationObserver(scanIframes);
-    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme", "data-color-scheme"] });
+    themeObs = new MutationObserver(refreshScrollbar);
+    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme", "data-color-scheme", "style"] });
 }
 
 function stopScrollbar() {

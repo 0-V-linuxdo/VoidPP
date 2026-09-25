@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp-beta
-// @version      20260925.2
+// @version      20260925.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Beta
@@ -9,6 +9,8 @@
 // @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/assets/logos/app-icon/voidpp-icon.svg
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
+// @match        *://artifacts.grokusercontent.com/*
+// @match        *://*.grokusercontent.com/*
 // @run-at       document-start
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
@@ -32,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.2] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3345,38 +3347,10 @@ ${sourceUrl}`;
   var FRAME_STYLE_ID = "void-better-canvas";
   var MSG = "void-better-canvas";
   var MSG_HELLO = "void-better-canvas-hello";
-  var SCROLLER = ':is([class*="pane-card"],[class*="masonry"],[class*="lightbox"]) :is([class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"]),main:has([aria-label="Generation mode"]) :is([class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"])';
-  var IFRAME_SEL = 'iframe[title="Preview"], [class*="pane-card"] iframe';
-  var THUMB = "hsl(var(--border-l2))";
-  var THUMB_HOVER = "hsl(var(--fg-tertiary))";
-  var TRACK = "hsl(var(--surface-l1))";
-  var CSS2 = `
-${SCROLLER} {
-    scrollbar-width: thin !important;
-    scrollbar-color: ${THUMB} ${TRACK} !important;
-}
-
-${SCROLLER}::-webkit-scrollbar {
-    width: 0.5rem !important;
-    height: 0.5rem !important;
-}
-
-${SCROLLER}::-webkit-scrollbar-track,
-${SCROLLER}::-webkit-scrollbar-corner {
-    background: ${TRACK} !important;
-}
-
-${SCROLLER}::-webkit-scrollbar-thumb {
-    background-color: ${THUMB} !important;
-    background-clip: padding-box !important;
-    border: 0.125rem solid transparent !important;
-    border-radius: 999px !important;
-}
-
-${SCROLLER}::-webkit-scrollbar-thumb:hover {
-    background-color: ${THUMB_HOVER} !important;
-}
-`;
+  var PANE = '[class*="pane-card"],[class*="masonry"],[class*="lightbox"]';
+  var OVERFLOW = '[class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-x-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"],[class*="overflow-x-scroll"]';
+  var SCROLLER = `:is(${PANE}):is(${OVERFLOW}),:is(${PANE}) :is(${OVERFLOW}),main:has([aria-label="Generation mode"]) :is(${OVERFLOW})`;
+  var IFRAME_SEL = 'iframe[title="Preview"],iframe[src*="grokusercontent.com"],iframe[src*="grok-sandbox.com"],[class*="pane-card"] iframe';
   var settings2 = definePluginSettings({
     themedScrollbar: {
       type: 3 /* BOOLEAN */,
@@ -3398,18 +3372,77 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
   var hooked = new WeakSet;
   function isGrokPreviewFrame() {
     const host = location.hostname;
-    return host === "grok-sandbox.com" || host.endsWith(".grok-sandbox.com");
+    return host === "grok-sandbox.com" || host.endsWith(".grok-sandbox.com") || host === "artifacts.grokusercontent.com" || host.endsWith(".grokusercontent.com");
   }
   function isDark() {
+    try {
+      const scheme = getComputedStyle(document.documentElement).colorScheme.trim().toLowerCase();
+      if (scheme === "dark" || scheme.startsWith("dark "))
+        return true;
+      if (scheme === "light" || scheme.startsWith("light "))
+        return false;
+    } catch {}
     const html = document.documentElement;
+    if (html.classList.contains("dark"))
+      return true;
+    if (html.classList.contains("light"))
+      return false;
+    if (html.classList.contains("scheme-light") && !html.classList.contains("dark"))
+      return false;
     const tokens = `${html.className} ${document.body?.className ?? ""} ${html.getAttribute("data-theme") ?? ""} ${html.getAttribute("data-color-scheme") ?? ""}`.toLowerCase();
-    return html.classList.contains("dark") || html.getAttribute("data-theme") === "dark" || /(^|[\s_-])(dark|night)([\s_-]|$)/.test(tokens);
+    return html.getAttribute("data-theme") === "dark" || /(^|[\s_-])(dark|night)([\s_-]|$)/.test(tokens);
+  }
+  function tokenColor(name, darkFallback, lightFallback) {
+    let raw = "";
+    try {
+      raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    } catch {
+      raw = "";
+    }
+    if (!raw)
+      return isDark() ? darkFallback : lightFallback;
+    if (/^(?:#|rgba?\(|hsla?\(|hwb\(|lab\(|lch\(|oklab\(|oklch\(|color\(|var\()/i.test(raw))
+      return raw;
+    return `hsl(${raw})`;
+  }
+  function parentCss() {
+    const thumb = tokenColor("--border-l2", "#4a4a52", "#c4c4cc");
+    const hover = tokenColor("--fg-tertiary", "#9a9aa3", "#8a8a94");
+    const track = tokenColor("--surface-l1", "#141416", "#f4f4f5");
+    return `
+${SCROLLER} {
+    scrollbar-width: thin !important;
+    scrollbar-color: ${thumb} ${track} !important;
+}
+
+${SCROLLER}::-webkit-scrollbar {
+    width: 0.5rem !important;
+    height: 0.5rem !important;
+}
+
+${SCROLLER}::-webkit-scrollbar-track,
+${SCROLLER}::-webkit-scrollbar-corner {
+    background: ${track} !important;
+}
+
+${SCROLLER}::-webkit-scrollbar-thumb {
+    background-color: ${thumb} !important;
+    background-clip: padding-box !important;
+    border: 0.125rem solid transparent !important;
+    border-radius: 999px !important;
+}
+
+${SCROLLER}::-webkit-scrollbar-thumb:hover {
+    background-color: ${hover} !important;
+}
+`;
   }
   function frameCss(dark) {
     const thumb = dark ? "#4a4a52" : "#c4c4cc";
     const track = dark ? "#141416" : "#f4f4f5";
     const hover = dark ? "#9a9aa3" : "#8a8a94";
-    return `html,body{scrollbar-width:thin!important;scrollbar-color:${thumb} ${track}!important}` + "html::-webkit-scrollbar,body::-webkit-scrollbar{width:.5rem!important;height:.5rem!important}" + `html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,html::-webkit-scrollbar-corner,body::-webkit-scrollbar-corner{background:${track}!important}` + `html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background-color:${thumb}!important;background-clip:padding-box!important;border:.125rem solid transparent!important;border-radius:999px!important}` + `html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover{background-color:${hover}!important}`;
+    const scheme = dark ? "dark" : "light";
+    return `html{color-scheme:${scheme}!important;scrollbar-width:thin!important;scrollbar-color:${thumb} ${track}!important}` + "html::-webkit-scrollbar,body::-webkit-scrollbar{width:.5rem!important;height:.5rem!important}" + `html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,html::-webkit-scrollbar-corner,body::-webkit-scrollbar-corner{background:${track}!important}` + `html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background-color:${thumb}!important;background-clip:padding-box!important;border:.125rem solid transparent!important;border-radius:999px!important}` + `html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover{background-color:${hover}!important}`;
   }
   function applyToDocument(doc, dark) {
     let el = doc.getElementById(FRAME_STYLE_ID);
@@ -3423,9 +3456,35 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
   function clearDocument(doc) {
     doc.getElementById(FRAME_STYLE_ID)?.remove();
   }
+  var frameObs = null;
+  var frameDark = false;
+  var frameReady = false;
+  function paintFrameTree(dark) {
+    frameDark = dark;
+    frameReady = true;
+    const visit = (doc) => {
+      applyToDocument(doc, dark);
+      doc.querySelectorAll("iframe").forEach((frame) => {
+        try {
+          if (frame.contentDocument)
+            visit(frame.contentDocument);
+        } catch {}
+      });
+    };
+    visit(document);
+  }
   function bootstrapPreviewFrame() {
-    applyToDocument(document, matchMedia("(prefers-color-scheme: dark)").matches);
     window.addEventListener("message", onFrameMessage);
+    if (!frameObs) {
+      frameObs = new MutationObserver((records) => {
+        if (!frameReady)
+          return;
+        const addedFrame = records.some((record) => [...record.addedNodes].some((node) => node instanceof Element && (node.tagName === "IFRAME" || !!node.querySelector("iframe"))));
+        if (addedFrame)
+          paintFrameTree(frameDark);
+      });
+      frameObs.observe(document.documentElement, { childList: true, subtree: true });
+    }
     try {
       window.parent.postMessage({ type: MSG_HELLO }, "*");
     } catch {}
@@ -3435,10 +3494,11 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     if (!data || data.type !== MSG)
       return;
     if (data.off) {
+      frameReady = false;
       clearDocument(document);
       return;
     }
-    applyToDocument(document, data.dark === true);
+    paintFrameTree(data.dark === true);
   }
   function postIframe(iframe, payload) {
     try {
@@ -3497,15 +3557,18 @@ ${SCROLLER}::-webkit-scrollbar-thumb:hover {
     }
     replyFrame(src, event.origin, { type: MSG, dark: isDark() });
   }
-  function startScrollbar() {
-    registerStyle(STYLE_NAME, CSS2);
+  function refreshScrollbar() {
+    registerStyle(STYLE_NAME, parentCss());
     scanIframes();
+  }
+  function startScrollbar() {
+    refreshScrollbar();
     if (domObs)
       return;
     domObs = new MutationObserver(scanIframes);
     domObs.observe(document.documentElement, { childList: true, subtree: true });
-    themeObs = new MutationObserver(scanIframes);
-    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme", "data-color-scheme"] });
+    themeObs = new MutationObserver(refreshScrollbar);
+    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme", "data-color-scheme", "style"] });
   }
   function stopScrollbar() {
     unregisterStyle(STYLE_NAME);
@@ -7515,9 +7578,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a14c16f"}`
-    }, `(${"a14c16f"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5801c35"}`
+    }, `(${"5801c35"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -23424,7 +23487,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
 
   // src/plugins/noGrokBot/index.ts
   var STYLE_NAME5 = "noGrokBot";
-  var CSS3 = `
+  var CSS2 = `
 #grok-bot-nav-button,
 div:has(> #grok-bot-nav-button) {
     display: none !important;
@@ -23441,7 +23504,7 @@ div:has(> #grok-bot-nav-button) {
     tags: ["ui"],
     enabledByDefault: true,
     start() {
-      registerStyle(STYLE_NAME5, CSS3);
+      registerStyle(STYLE_NAME5, CSS2);
     },
     stop() {
       unregisterStyle(STYLE_NAME5);
