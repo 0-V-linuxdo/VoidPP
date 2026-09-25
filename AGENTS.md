@@ -47,7 +47,7 @@ Before any push to `dev`, `voidpp-beta`, or `voidpp-stable`:
    - `@namespace` is `https://github.com/0-V-linuxdo/VoidPP/<channel>` for that branch (`dev`, `voidpp-beta`, or `voidpp-stable`).
    - `@environment` is Development on `dev`, Beta on `voidpp-beta`, Production on `voidpp-stable`.
    - `@downloadURL` and `@updateURL` are the GitHub raw URL of **that** branch, not the other channel.
-4. README install badge stays the jsDelivr `voidpp-beta` URL above, not GitHub raw, and not `dev` or `voidpp-stable`.
+4. The Install section in `README.md` and `README.zh.md` must name the branch you are pushing. Its badge points at that branch's jsDelivr `@heads/<branch>` URL, never at GitHub raw. After a merge, rewrite that section if it still describes another channel.
 5. After a `voidpp-beta` push, purge jsDelivr for the Beta file only:
    `curl -s https://purge.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp-beta/userscript/VoidPP.user.js`
 
