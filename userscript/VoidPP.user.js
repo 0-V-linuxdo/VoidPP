@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.9
+// @version      20260925.10
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.9] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.10] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3745,12 +3745,23 @@ ${root}::-webkit-scrollbar-thumb:hover {
     unsubWorkspace = hook.subscribe(() => collapseCanvas());
     collapseCanvas();
   }
-  function apply(opts) {
+  var hideWasOn = false;
+  function syncScrollbar() {
     if (settings2.store.themedScrollbar)
       startScrollbar();
     else
       stopScrollbar();
-    enforce(opts);
+  }
+  function noteHide() {
+    const hide = !!settings2.store.hideRightPanel;
+    const turnedOn = hide && !hideWasOn;
+    hideWasOn = hide;
+    return turnedOn;
+  }
+  function apply() {
+    syncScrollbar();
+    noteHide();
+    enforce();
   }
   var betterCanvas_default = definePlugin({
     name: "BetterCanvas",
@@ -3770,7 +3781,9 @@ ${root}::-webkit-scrollbar-thumb:hover {
       apply();
     },
     onSettingsChange() {
-      apply({ force: true });
+      syncScrollbar();
+      if (noteHide())
+        enforce({ force: true });
     },
     stop() {
       window.removeEventListener("message", onParentMessage);
@@ -7669,9 +7682,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"837fb8a"}`
-    }, `(${"837fb8a"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"344dbcd"}`
+    }, `(${"344dbcd"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -29102,7 +29115,7 @@ div:has(> #grok-bot-nav-button) {
   messageTimestamps_default.updatedAt = 1789881463000;
   streamerMode_default.updatedAt = 1787870966000;
   consoleJanitor_default.updatedAt = 1787789817000;
-  betterCanvas_default.updatedAt = 1790357576000;
+  betterCanvas_default.updatedAt = 1790358920000;
   noDictation_default.updatedAt = 1788037550000;
   betterQuotes_default.updatedAt = 1790264305000;
   cloneChats_default.updatedAt = 1787870966000;

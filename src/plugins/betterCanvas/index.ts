@@ -433,10 +433,24 @@ function bindWorkspace(mod?: { useWorkspaceStore?: WorkspaceHook }) {
     collapseCanvas();
 }
 
-function apply(opts?: { force?: boolean }) {
+let hideWasOn = false;
+
+function syncScrollbar() {
     if (settings.store.themedScrollbar) startScrollbar();
     else stopScrollbar();
-    enforce(opts);
+}
+
+function noteHide(): boolean {
+    const hide = !!settings.store.hideRightPanel;
+    const turnedOn = hide && !hideWasOn;
+    hideWasOn = hide;
+    return turnedOn;
+}
+
+function apply() {
+    syncScrollbar();
+    noteHide();
+    enforce();
 }
 
 export default definePlugin({
@@ -458,7 +472,8 @@ export default definePlugin({
     },
 
     onSettingsChange() {
-        apply({ force: true });
+        syncScrollbar();
+        if (noteHide()) enforce({ force: true });
     },
 
     stop() {
