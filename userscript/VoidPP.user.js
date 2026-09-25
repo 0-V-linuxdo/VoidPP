@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.7
+// @version      20260925.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.7] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3495,12 +3495,31 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var frameObs = null;
   var frameDark = false;
   var frameReady = false;
+  function paintSrcdoc(iframe, dark) {
+    let src = "";
+    try {
+      src = iframe.getAttribute("srcdoc") || iframe.srcdoc || "";
+    } catch {
+      return;
+    }
+    if (!src)
+      return;
+    const scheme = dark ? "dark" : "light";
+    if (src.includes(`id="${FRAME_STYLE_ID}"`) && src.includes(`color-scheme:${scheme}`))
+      return;
+    const inject = `<meta name="color-scheme" content="${scheme}"><style id="${FRAME_STYLE_ID}">${frameCss(dark)}</style>`;
+    const stripped = src.replaceAll(/<meta\s+name=["']color-scheme["'][^>]*>/gi, "").replaceAll(/<style\s+id=["']void-better-canvas["']>[\s\S]*?<\/style>/gi, "");
+    try {
+      iframe.srcdoc = inject + stripped;
+    } catch {}
+  }
   function paintFrameTree(dark) {
     frameDark = dark;
     frameReady = true;
     const visit = (doc) => {
       applyToDocument(doc, dark);
       doc.querySelectorAll("iframe").forEach((frame) => {
+        paintSrcdoc(frame, dark);
         try {
           if (frame.contentDocument)
             visit(frame.contentDocument);
@@ -3523,11 +3542,15 @@ ${root}::-webkit-scrollbar-thumb:hover {
       frameObs = new MutationObserver((records) => {
         if (!frameReady)
           return;
-        const addedFrame = records.some((record) => [...record.addedNodes].some((node) => node instanceof Element && (node.tagName === "IFRAME" || !!node.querySelector("iframe"))));
-        if (addedFrame)
+        const dirty = records.some((record) => {
+          if (record.type === "attributes")
+            return record.attributeName === "srcdoc";
+          return [...record.addedNodes].some((node) => node instanceof Element && (node.tagName === "IFRAME" || !!node.querySelector("iframe")));
+        });
+        if (dirty)
           paintFrameTree(frameDark);
       });
-      frameObs.observe(document.documentElement, { childList: true, subtree: true });
+      frameObs.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["srcdoc"] });
     }
     try {
       window.parent.postMessage({ type: MSG_HELLO }, "*");
@@ -7601,9 +7624,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9afad96"}`
-    }, `(${"9afad96"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"fb6feb2"}`
+    }, `(${"fb6feb2"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -29034,7 +29057,7 @@ div:has(> #grok-bot-nav-button) {
   messageTimestamps_default.updatedAt = 1789881463000;
   streamerMode_default.updatedAt = 1787870966000;
   consoleJanitor_default.updatedAt = 1787789817000;
-  betterCanvas_default.updatedAt = 1790353874000;
+  betterCanvas_default.updatedAt = 1790356935000;
   noDictation_default.updatedAt = 1788037550000;
   betterQuotes_default.updatedAt = 1790264305000;
   cloneChats_default.updatedAt = 1787870966000;

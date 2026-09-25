@@ -165,12 +165,34 @@ let frameObs: MutationObserver | null = null;
 let frameDark = false;
 let frameReady = false;
 
+function paintSrcdoc(iframe: HTMLIFrameElement, dark: boolean) {
+    let src = "";
+    try {
+        src = iframe.getAttribute("srcdoc") || iframe.srcdoc || "";
+    } catch {
+        return;
+    }
+    if (!src) return;
+    const scheme = dark ? "dark" : "light";
+    if (src.includes(`id="${FRAME_STYLE_ID}"`) && src.includes(`color-scheme:${scheme}`)) return;
+    const inject = `<meta name="color-scheme" content="${scheme}"><style id="${FRAME_STYLE_ID}">${frameCss(dark)}</style>`;
+    const stripped = src
+        .replaceAll(/<meta\s+name=["']color-scheme["'][^>]*>/gi, "")
+        .replaceAll(/<style\s+id=["']void-better-canvas["']>[\s\S]*?<\/style>/gi, "");
+    try {
+        iframe.srcdoc = inject + stripped;
+    } catch {
+        void 0;
+    }
+}
+
 function paintFrameTree(dark: boolean) {
     frameDark = dark;
     frameReady = true;
     const visit = (doc: Document) => {
         applyToDocument(doc, dark);
         doc.querySelectorAll("iframe").forEach(frame => {
+            paintSrcdoc(frame, dark);
             try {
                 if (frame.contentDocument) visit(frame.contentDocument);
             } catch {
@@ -196,12 +218,15 @@ export function bootstrapPreviewFrame() {
     if (!frameObs) {
         frameObs = new MutationObserver(records => {
             if (!frameReady) return;
-            const addedFrame = records.some(record => [...record.addedNodes].some(node =>
-                node instanceof Element && (node.tagName === "IFRAME" || !!node.querySelector("iframe")),
-            ));
-            if (addedFrame) paintFrameTree(frameDark);
+            const dirty = records.some(record => {
+                if (record.type === "attributes") return record.attributeName === "srcdoc";
+                return [...record.addedNodes].some(node =>
+                    node instanceof Element && (node.tagName === "IFRAME" || !!node.querySelector("iframe")),
+                );
+            });
+            if (dirty) paintFrameTree(frameDark);
         });
-        frameObs.observe(document.documentElement, { childList: true, subtree: true });
+        frameObs.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["srcdoc"] });
     }
     try {
         window.parent.postMessage({ type: MSG_HELLO }, "*");
