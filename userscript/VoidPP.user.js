@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.8
+// @version      20260925.9
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.8] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.9] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3388,7 +3388,7 @@ ${sourceUrl}`;
     },
     hideRightPanel: {
       type: 3 /* BOOLEAN */,
-      description: "Keep Grok's right panel closed, including auto-open and restore.",
+      description: "Keep Grok's right panel closed on auto-open and restore. A manual open stays open.",
       default: false
     }
   });
@@ -3398,6 +3398,8 @@ ${sourceUrl}`;
   var unsubWorkspace = null;
   var cancelWorkspaceWait = null;
   var collapsing = false;
+  var manualUntil = 0;
+  var MANUAL_HOLD_MS = 3000;
   var hooked = new WeakSet;
   function isGrokPreviewFrame() {
     const host = location.hostname;
@@ -3646,14 +3648,51 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function isRightOpen(s) {
     return s.sidePanelContent?.type === "rightPanel";
   }
+  function userHeld() {
+    return Date.now() < manualUntil;
+  }
+  function markManual(target) {
+    if (!(target instanceof Element))
+      return;
+    const node = target.closest("button,a,[role='menuitem'],[role='tab'],[role='option']") ?? target;
+    const aria = `${node.getAttribute("aria-label") ?? ""} ${node.getAttribute("title") ?? ""}`.toLowerCase();
+    const text = (node.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 64);
+    const blob = `${aria} ${text}`;
+    const role = node.getAttribute("role");
+    const menu = role === "menuitem" || role === "option";
+    const inPane = !!node.closest("[class*='pane-card']");
+    const named = /^(options|options for )/.test(blob) || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob);
+    if (!menu && !inPane && !named)
+      return;
+    manualUntil = Date.now() + MANUAL_HOLD_MS;
+  }
+  function onManualPointer(e) {
+    markManual(e.target);
+  }
+  function onManualKey(e) {
+    if (e.key !== "Enter" && e.key !== " ")
+      return;
+    markManual(e.target);
+  }
+  function bindGesture() {
+    document.addEventListener("pointerdown", onManualPointer, true);
+    document.addEventListener("keydown", onManualKey, true);
+  }
+  function unbindGesture() {
+    document.removeEventListener("pointerdown", onManualPointer, true);
+    document.removeEventListener("keydown", onManualKey, true);
+    manualUntil = 0;
+  }
   function callFn(fn, thisArg) {
     if (typeof fn !== "function")
       return false;
     fn.call(thisArg);
     return true;
   }
-  function collapseCanvas() {
+  function collapseCanvas(opts) {
     if (collapsing || !settings2.store.hideRightPanel)
+      return;
+    if (!opts?.force && userHeld())
       return;
     try {
       const hook = WorkspaceStore.useWorkspaceStore;
@@ -3670,10 +3709,12 @@ ${root}::-webkit-scrollbar-thumb:hover {
       collapsing = false;
     }
   }
-  function enforce() {
+  function enforce(opts) {
     if (!settings2.store.hideRightPanel)
       return;
-    collapseCanvas();
+    if (!opts?.force && userHeld())
+      return;
+    collapseCanvas(opts);
     try {
       const hook = ChatPageStore.useChatPageStore;
       if (!hook || typeof hook.getState !== "function")
@@ -3704,12 +3745,12 @@ ${root}::-webkit-scrollbar-thumb:hover {
     unsubWorkspace = hook.subscribe(() => collapseCanvas());
     collapseCanvas();
   }
-  function apply() {
+  function apply(opts) {
     if (settings2.store.themedScrollbar)
       startScrollbar();
     else
       stopScrollbar();
-    enforce();
+    enforce(opts);
   }
   var betterCanvas_default = definePlugin({
     name: "BetterCanvas",
@@ -3722,14 +3763,18 @@ ${root}::-webkit-scrollbar-thumb:hover {
     settings: settings2,
     start() {
       window.addEventListener("message", onParentMessage);
+      bindGesture();
       bindWorkspace();
       if (!unsubWorkspace)
         cancelWorkspaceWait = waitFor(filters.byProps("useWorkspaceStore"), bindWorkspace);
       apply();
     },
-    onSettingsChange: apply,
+    onSettingsChange() {
+      apply({ force: true });
+    },
     stop() {
       window.removeEventListener("message", onParentMessage);
+      unbindGesture();
       cancelWorkspaceWait?.();
       cancelWorkspaceWait = null;
       unsubWorkspace?.();
@@ -3740,7 +3785,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       ChatPageStore: {
         selector: isRightOpen,
         handler(open) {
-          if (open)
+          if (open && !userHeld())
             enforce();
         }
       }
@@ -7624,9 +7669,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"fb6feb2"}`
-    }, `(${"fb6feb2"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"837fb8a"}`
+    }, `(${"837fb8a"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -29057,7 +29102,7 @@ div:has(> #grok-bot-nav-button) {
   messageTimestamps_default.updatedAt = 1789881463000;
   streamerMode_default.updatedAt = 1787870966000;
   consoleJanitor_default.updatedAt = 1787789817000;
-  betterCanvas_default.updatedAt = 1790356935000;
+  betterCanvas_default.updatedAt = 1790357576000;
   noDictation_default.updatedAt = 1788037550000;
   betterQuotes_default.updatedAt = 1790264305000;
   cloneChats_default.updatedAt = 1787870966000;

@@ -34,7 +34,7 @@ const settings = definePluginSettings({
     },
     hideRightPanel: {
         type: OptionType.BOOLEAN,
-        description: "Keep Grok's right panel closed, including auto-open and restore.",
+        description: "Keep Grok's right panel closed on auto-open and restore. A manual open stays open.",
         default: false,
     },
 });
@@ -54,6 +54,8 @@ let themeObs: MutationObserver | null = null;
 let unsubWorkspace: (() => void) | null = null;
 let cancelWorkspaceWait: (() => void) | null = null;
 let collapsing = false;
+let manualUntil = 0;
+const MANUAL_HOLD_MS = 3000;
 const hooked = new WeakSet<HTMLIFrameElement>();
 
 export function isGrokPreviewFrame() {
@@ -338,14 +340,54 @@ function isRightOpen(s: ChatPageStoreState) {
     return s.sidePanelContent?.type === "rightPanel";
 }
 
+function userHeld() {
+    return Date.now() < manualUntil;
+}
+
+function markManual(target: EventTarget | null) {
+    if (!(target instanceof Element)) return;
+    const node = target.closest("button,a,[role='menuitem'],[role='tab'],[role='option']") ?? target;
+    const aria = `${node.getAttribute("aria-label") ?? ""} ${node.getAttribute("title") ?? ""}`.toLowerCase();
+    const text = (node.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 64);
+    const blob = `${aria} ${text}`;
+    const role = node.getAttribute("role");
+    const menu = role === "menuitem" || role === "option";
+    const inPane = !!node.closest("[class*='pane-card']");
+    const named = /^(options|options for )/.test(blob)
+        || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob);
+    if (!menu && !inPane && !named) return;
+    manualUntil = Date.now() + MANUAL_HOLD_MS;
+}
+
+function onManualPointer(e: Event) {
+    markManual(e.target);
+}
+
+function onManualKey(e: KeyboardEvent) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    markManual(e.target);
+}
+
+function bindGesture() {
+    document.addEventListener("pointerdown", onManualPointer, true);
+    document.addEventListener("keydown", onManualKey, true);
+}
+
+function unbindGesture() {
+    document.removeEventListener("pointerdown", onManualPointer, true);
+    document.removeEventListener("keydown", onManualKey, true);
+    manualUntil = 0;
+}
+
 function callFn(fn: unknown, thisArg: unknown): boolean {
     if (typeof fn !== "function") return false;
     fn.call(thisArg);
     return true;
 }
 
-function collapseCanvas() {
+function collapseCanvas(opts?: { force?: boolean }) {
     if (collapsing || !settings.store.hideRightPanel) return;
+    if (!opts?.force && userHeld()) return;
     try {
         const hook = WorkspaceStore.useWorkspaceStore;
         if (!hook?.getState) return;
@@ -360,9 +402,10 @@ function collapseCanvas() {
     }
 }
 
-function enforce() {
+function enforce(opts?: { force?: boolean }) {
     if (!settings.store.hideRightPanel) return;
-    collapseCanvas();
+    if (!opts?.force && userHeld()) return;
+    collapseCanvas(opts);
     try {
         const hook = ChatPageStore.useChatPageStore;
         if (!hook || typeof hook.getState !== "function") return;
@@ -390,10 +433,10 @@ function bindWorkspace(mod?: { useWorkspaceStore?: WorkspaceHook }) {
     collapseCanvas();
 }
 
-function apply() {
+function apply(opts?: { force?: boolean }) {
     if (settings.store.themedScrollbar) startScrollbar();
     else stopScrollbar();
-    enforce();
+    enforce(opts);
 }
 
 export default definePlugin({
@@ -408,15 +451,19 @@ export default definePlugin({
 
     start() {
         window.addEventListener("message", onParentMessage);
+        bindGesture();
         bindWorkspace();
         if (!unsubWorkspace) cancelWorkspaceWait = waitFor(filters.byProps("useWorkspaceStore"), bindWorkspace);
         apply();
     },
 
-    onSettingsChange: apply,
+    onSettingsChange() {
+        apply({ force: true });
+    },
 
     stop() {
         window.removeEventListener("message", onParentMessage);
+        unbindGesture();
         cancelWorkspaceWait?.();
         cancelWorkspaceWait = null;
         unsubWorkspace?.();
@@ -428,7 +475,7 @@ export default definePlugin({
         ChatPageStore: {
             selector: isRightOpen,
             handler(open: boolean) {
-                if (open) enforce();
+                if (open && !userHeld()) enforce();
             },
         },
     },
