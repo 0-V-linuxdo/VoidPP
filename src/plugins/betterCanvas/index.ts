@@ -34,7 +34,7 @@ const settings = definePluginSettings({
     },
     hideRightPanel: {
         type: OptionType.BOOLEAN,
-        description: "Keep Grok's right panel closed, including auto-open and restore.",
+        description: "Keep Grok's right panel closed on auto-open and restore. A manual open stays open.",
         default: false,
     },
 });
@@ -54,6 +54,13 @@ let themeObs: MutationObserver | null = null;
 let unsubWorkspace: (() => void) | null = null;
 let cancelWorkspaceWait: (() => void) | null = null;
 let collapsing = false;
+let manualUntil = 0;
+let canvasWasOpen = false;
+let panelWasOpen = false;
+let seenConv: string | null | undefined;
+let convAt = 0;
+const MANUAL_HOLD_MS = 3000;
+const SWITCH_MS = 250;
 const hooked = new WeakSet<HTMLIFrameElement>();
 
 export function isGrokPreviewFrame() {
@@ -96,30 +103,39 @@ function parentCss() {
     const thumb = tokenColor("--border-l2", "#4a4a52", "#c4c4cc");
     const hover = tokenColor("--fg-tertiary", "#9a9aa3", "#8a8a94");
     const track = tokenColor("--surface-l1", "#141416", "#f4f4f5");
+    const scheme = isDark() ? "dark" : "light";
+    // A comma list only attaches a trailing pseudo to the last clause.
+    // Wrap so width/radius/thumb colors stay on the scrollbar, not the Settings form.
+    const root = `:is(${SCROLLER})`;
     return `
+${IFRAME_SEL} {
+    color-scheme: ${scheme} !important;
+}
+
 ${SCROLLER} {
+    color-scheme: ${scheme} !important;
     scrollbar-width: thin !important;
     scrollbar-color: ${thumb} ${track} !important;
 }
 
-${SCROLLER}::-webkit-scrollbar {
+${root}::-webkit-scrollbar {
     width: 0.5rem !important;
     height: 0.5rem !important;
 }
 
-${SCROLLER}::-webkit-scrollbar-track,
-${SCROLLER}::-webkit-scrollbar-corner {
+${root}::-webkit-scrollbar-track,
+${root}::-webkit-scrollbar-corner {
     background: ${track} !important;
 }
 
-${SCROLLER}::-webkit-scrollbar-thumb {
+${root}::-webkit-scrollbar-thumb {
     background-color: ${thumb} !important;
     background-clip: padding-box !important;
     border: 0.125rem solid transparent !important;
     border-radius: 999px !important;
 }
 
-${SCROLLER}::-webkit-scrollbar-thumb:hover {
+${root}::-webkit-scrollbar-thumb:hover {
     background-color: ${hover} !important;
 }
 `;
@@ -130,11 +146,12 @@ function frameCss(dark: boolean) {
     const track = dark ? "#141416" : "#f4f4f5";
     const hover = dark ? "#9a9aa3" : "#8a8a94";
     const scheme = dark ? "dark" : "light";
-    return `html{color-scheme:${scheme}!important;scrollbar-width:thin!important;scrollbar-color:${thumb} ${track}!important}`
-        + "html::-webkit-scrollbar,body::-webkit-scrollbar{width:.5rem!important;height:.5rem!important}"
-        + `html::-webkit-scrollbar-track,body::-webkit-scrollbar-track,html::-webkit-scrollbar-corner,body::-webkit-scrollbar-corner{background:${track}!important}`
-        + `html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background-color:${thumb}!important;background-clip:padding-box!important;border:.125rem solid transparent!important;border-radius:999px!important}`
-        + `html::-webkit-scrollbar-thumb:hover,body::-webkit-scrollbar-thumb:hover{background-color:${hover}!important}`;
+    return `html,body,:root{color-scheme:${scheme}!important}`
+        + `*{scrollbar-width:thin!important;scrollbar-color:${thumb} ${track}!important}`
+        + "*::-webkit-scrollbar{width:.5rem!important;height:.5rem!important}"
+        + `*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:${track}!important}`
+        + `*::-webkit-scrollbar-thumb{background-color:${thumb}!important;background-clip:padding-box!important;border:.125rem solid transparent!important;border-radius:999px!important}`
+        + `*::-webkit-scrollbar-thumb:hover{background-color:${hover}!important}`;
 }
 
 function applyToDocument(doc: Document, dark: boolean) {
@@ -155,12 +172,34 @@ let frameObs: MutationObserver | null = null;
 let frameDark = false;
 let frameReady = false;
 
+function paintSrcdoc(iframe: HTMLIFrameElement, dark: boolean) {
+    let src = "";
+    try {
+        src = iframe.getAttribute("srcdoc") || iframe.srcdoc || "";
+    } catch {
+        return;
+    }
+    if (!src) return;
+    const scheme = dark ? "dark" : "light";
+    if (src.includes(`id="${FRAME_STYLE_ID}"`) && src.includes(`color-scheme:${scheme}`)) return;
+    const inject = `<meta name="color-scheme" content="${scheme}"><style id="${FRAME_STYLE_ID}">${frameCss(dark)}</style>`;
+    const stripped = src
+        .replaceAll(/<meta\s+name=["']color-scheme["'][^>]*>/gi, "")
+        .replaceAll(/<style\s+id=["']void-better-canvas["']>[\s\S]*?<\/style>/gi, "");
+    try {
+        iframe.srcdoc = inject + stripped;
+    } catch {
+        void 0;
+    }
+}
+
 function paintFrameTree(dark: boolean) {
     frameDark = dark;
     frameReady = true;
     const visit = (doc: Document) => {
         applyToDocument(doc, dark);
         doc.querySelectorAll("iframe").forEach(frame => {
+            paintSrcdoc(frame, dark);
             try {
                 if (frame.contentDocument) visit(frame.contentDocument);
             } catch {
@@ -171,17 +210,30 @@ function paintFrameTree(dark: boolean) {
     visit(document);
 }
 
+function framePrefersDark() {
+    try {
+        if (window.matchMedia("(prefers-color-scheme: dark)").matches) return true;
+    } catch {
+        void 0;
+    }
+    return isDark();
+}
+
 export function bootstrapPreviewFrame() {
     window.addEventListener("message", onFrameMessage);
+    paintFrameTree(framePrefersDark());
     if (!frameObs) {
         frameObs = new MutationObserver(records => {
             if (!frameReady) return;
-            const addedFrame = records.some(record => [...record.addedNodes].some(node =>
-                node instanceof Element && (node.tagName === "IFRAME" || !!node.querySelector("iframe")),
-            ));
-            if (addedFrame) paintFrameTree(frameDark);
+            const dirty = records.some(record => {
+                if (record.type === "attributes") return record.attributeName === "srcdoc";
+                return [...record.addedNodes].some(node =>
+                    node instanceof Element && (node.tagName === "IFRAME" || !!node.querySelector("iframe")),
+                );
+            });
+            if (dirty) paintFrameTree(frameDark);
         });
-        frameObs.observe(document.documentElement, { childList: true, subtree: true });
+        frameObs.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["srcdoc"] });
     }
     try {
         window.parent.postMessage({ type: MSG_HELLO }, "*");
@@ -246,11 +298,11 @@ function clearIframes() {
     document.querySelectorAll<HTMLIFrameElement>(IFRAME_SEL).forEach(clearIframe);
 }
 
-function replyFrame(src: Window, origin: string, payload: { type: string; dark?: boolean; off?: boolean }) {
+function replyFrame(src: Window, payload: { type: string; dark?: boolean; off?: boolean }) {
     try {
-        src.postMessage(payload, origin === "null" ? "*" : origin);
-    } catch {
         src.postMessage(payload, "*");
+    } catch {
+        void 0;
     }
 }
 
@@ -260,10 +312,10 @@ function onParentMessage(event: MessageEvent) {
     const src = event.source as Window | null;
     if (!src) return;
     if (!settings.store.themedScrollbar) {
-        replyFrame(src, event.origin, { type: MSG, off: true });
+        replyFrame(src, { type: MSG, off: true });
         return;
     }
-    replyFrame(src, event.origin, { type: MSG, dark: isDark() });
+    replyFrame(src, { type: MSG, dark: isDark() });
 }
 
 function refreshScrollbar() {
@@ -293,21 +345,102 @@ function isRightOpen(s: ChatPageStoreState) {
     return s.sidePanelContent?.type === "rightPanel";
 }
 
+function userHeld() {
+    return Date.now() < manualUntil;
+}
+
+function inProjectsGroup(node: Element) {
+    const group = node.closest("[data-sidebar='group']");
+    if (!group) return false;
+    if (group.querySelector("button[aria-label='Add project'], button[aria-label='All projects'], button[aria-label='添加项目'], button[aria-label='全部项目']")) return true;
+    for (const btn of group.querySelectorAll("button[aria-label]")) {
+        const label = (btn.getAttribute("aria-label") ?? "").trim();
+        if (label === "Projects" || label === "项目") return true;
+    }
+    return false;
+}
+
+function markManual(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) return false;
+    const node = target.closest("button,a,[role='menuitem'],[role='tab'],[role='option']") ?? target;
+    const aria = `${node.getAttribute("aria-label") ?? ""} ${node.getAttribute("title") ?? ""}`.toLowerCase();
+    const text = (node.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 64);
+    const blob = `${aria} ${text}`;
+    const inPane = !!node.closest("[class*='pane-card']");
+    const project = inProjectsGroup(target);
+    const named = /^(options|options for )/.test(blob)
+        || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob)
+        || (/\btoggle\b/.test(blob) && /\bpanel\b/.test(blob));
+    if (!project && !inPane && !named) return false;
+    manualUntil = Date.now() + MANUAL_HOLD_MS;
+    return true;
+}
+
+function onManualPointer(e: Event) {
+    if (!markManual(e.target)) manualUntil = 0;
+}
+
+function onManualKey(e: KeyboardEvent) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    if (!markManual(e.target)) manualUntil = 0;
+}
+
+function bindGesture() {
+    document.addEventListener("pointerdown", onManualPointer, true);
+    document.addEventListener("keydown", onManualKey, true);
+}
+
+function unbindGesture() {
+    document.removeEventListener("pointerdown", onManualPointer, true);
+    document.removeEventListener("keydown", onManualKey, true);
+    manualUntil = 0;
+}
+
 function callFn(fn: unknown, thisArg: unknown): boolean {
     if (typeof fn !== "function") return false;
     fn.call(thisArg);
     return true;
 }
 
-function collapseCanvas() {
+function conversationId() {
+    try {
+        const id = (ChatPageStore.useChatPageStore?.getState?.() as { conversationId?: string } | undefined)?.conversationId;
+        return typeof id === "string" && id ? id : null;
+    } catch {
+        return null;
+    }
+}
+
+function switchedChat() {
+    const id = conversationId();
+    if (seenConv === undefined) {
+        seenConv = id;
+        return false;
+    }
+    if (id !== seenConv) {
+        seenConv = id;
+        convAt = Date.now();
+    }
+    if (userHeld()) return false;
+    return Date.now() - convAt < SWITCH_MS;
+}
+
+function collapseCanvas(opts?: { force?: boolean }) {
+    const switched = switchedChat();
     if (collapsing || !settings.store.hideRightPanel) return;
     try {
         const hook = WorkspaceStore.useWorkspaceStore;
         if (!hook?.getState) return;
         const state = hook.getState();
-        if (!state.canvasExpanded || typeof state.toggleCanvas !== "function") return;
+        const toggle = state.toggleCanvas;
+        const open = !!state.canvasExpanded && typeof toggle === "function";
+        const becameOpen = open && !canvasWasOpen;
+        canvasWasOpen = open;
+        if (!open) return;
+        if (!opts?.force && !switched && (userHeld() || !becameOpen)) return;
         collapsing = true;
-        state.toggleCanvas(false, { animate: false });
+        toggle(false, { animate: false });
+        canvasWasOpen = false;
     } catch (e) {
         logger.debug("hide canvas failed", e);
     } finally {
@@ -315,14 +448,20 @@ function collapseCanvas() {
     }
 }
 
-function enforce() {
+function enforce(opts?: { force?: boolean }) {
     if (!settings.store.hideRightPanel) return;
-    collapseCanvas();
+    const switched = switchedChat();
+    collapseCanvas(opts);
     try {
         const hook = ChatPageStore.useChatPageStore;
         if (!hook || typeof hook.getState !== "function") return;
         const state = hook.getState();
-        if (!isRightOpen(state)) return;
+        const open = isRightOpen(state);
+        const becameOpen = open && !panelWasOpen;
+        panelWasOpen = open;
+        if (!open) return;
+        if (!opts?.force && !switched && (userHeld() || !becameOpen)) return;
+        panelWasOpen = false;
         const api = hook as typeof hook & {
             closeSidePanelExplicitly?: () => void;
             closeSidePanel?: () => void;
@@ -342,12 +481,27 @@ function bindWorkspace(mod?: { useWorkspaceStore?: WorkspaceHook }) {
     const hook = mod?.useWorkspaceStore ?? WorkspaceStore.useWorkspaceStore;
     if (!hook?.subscribe) return;
     unsubWorkspace = hook.subscribe(() => collapseCanvas());
+    canvasWasOpen = false;
     collapseCanvas();
 }
 
-function apply() {
+let hideWasOn = false;
+
+function syncScrollbar() {
     if (settings.store.themedScrollbar) startScrollbar();
     else stopScrollbar();
+}
+
+function noteHide(): boolean {
+    const hide = !!settings.store.hideRightPanel;
+    const turnedOn = hide && !hideWasOn;
+    hideWasOn = hide;
+    return turnedOn;
+}
+
+function apply() {
+    syncScrollbar();
+    noteHide();
     enforce();
 }
 
@@ -363,15 +517,20 @@ export default definePlugin({
 
     start() {
         window.addEventListener("message", onParentMessage);
+        bindGesture();
         bindWorkspace();
         if (!unsubWorkspace) cancelWorkspaceWait = waitFor(filters.byProps("useWorkspaceStore"), bindWorkspace);
         apply();
     },
 
-    onSettingsChange: apply,
+    onSettingsChange() {
+        syncScrollbar();
+        if (noteHide()) enforce({ force: true });
+    },
 
     stop() {
         window.removeEventListener("message", onParentMessage);
+        unbindGesture();
         cancelWorkspaceWait?.();
         cancelWorkspaceWait = null;
         unsubWorkspace?.();

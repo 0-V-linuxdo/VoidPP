@@ -10,7 +10,7 @@ import { idbDelete, idbGet } from "@utils/idb";
 import { Logger } from "@utils/Logger";
 import { mergeDefaults } from "@utils/misc";
 import { useForceUpdater } from "@utils/react";
-import { LEGACY_STORAGE_KEY, parseStoredSettings, SettingsStore as SettingsStoreClass, STORAGE_KEY } from "@utils/SettingsStore";
+import { LEGACY_STORAGE_KEY, parseStoredSettings, settingsBagHasPlugins, SettingsStore as SettingsStoreClass, STORAGE_KEY } from "@utils/SettingsStore";
 import { type DefinedSettings, OptionType, type PluginSettingDef, type PluginSettingValue, type SettingsChecks, type SettingsDefinition } from "@utils/types";
 
 const logger = new Logger("Settings");
@@ -52,21 +52,23 @@ async function readGmValue(key: string): Promise<unknown> {
 
 async function readKey(key: string): Promise<Record<string, unknown> | null> {
     const gm = parseStoredSettings(await readGmValue(key));
-    if (gm) return gm;
+    if (settingsBagHasPlugins(gm)) return gm;
 
     try {
         const idb = parseStoredSettings(await idbGet(key) ?? null);
-        if (idb) return idb;
+        if (settingsBagHasPlugins(idb)) return idb;
     } catch (e) {
         logger.warn("Failed to read IndexedDB:", e);
     }
 
     try {
-        return parseStoredSettings(localStorage.getItem(key));
+        const ls = parseStoredSettings(localStorage.getItem(key));
+        if (settingsBagHasPlugins(ls)) return ls;
     } catch (e) {
         logger.warn("Failed to read localStorage:", e);
-        return null;
     }
+
+    return null;
 }
 
 async function dropLegacySettings() {
@@ -95,8 +97,9 @@ export async function initSettings(): Promise<void> {
     if (meta && meta.enabled === false) meta.enabled = true;
     if (stored?.fromLegacy) {
         logger.info(`Copied ${LEGACY_STORAGE_KEY} → ${STORAGE_KEY}; writes to ${LEGACY_STORAGE_KEY} stopped at ${LEGACY_WRITE_STOPPED}`);
-        SettingsStore.flush();
     }
+    SettingsStore.markReady();
+    if (stored) SettingsStore.flush();
     await dropLegacySettings();
 }
 

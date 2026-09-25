@@ -16,7 +16,7 @@ Three script identities, one data store. Do not enable two copies. Switch by dis
 
 After a merge into `dev`, `voidpp-beta`, or `voidpp-stable`, run `bun run build` again on that branch before pushing. The userscript header is baked, so a merge can carry the other channel's header.
 
-New changes go on `dev`. Promote to `voidpp-beta` only when the change is ready to ship as Beta, then to `voidpp-stable` when it is ready to ship as Stable. The `Void++` branch is retired — do not recreate or fast-forward it. `upstream-main` is the frozen upstream snapshot; do not treat it as a publish line. `bots-default-collapsed` is deleted; do not recreate it. The old branch name `voidpp` is retired; do not recreate it or point `@updateURL` at it.
+New changes go on `dev`. During development, push **only** `dev`. Do not push, cherry-pick, or merge onto `voidpp-beta` or `voidpp-stable` unless the user explicitly says to promote that channel. "脚本更新后,立即推github" means push `dev`. `[20260925.3]` BetterCanvas was pushed to both `dev` and `voidpp-beta`; that beta push was not requested. Promote to `voidpp-beta` only when the user asks to ship Beta, then to `voidpp-stable` only when the user asks to ship Stable. The `Void++` branch is retired — do not recreate or fast-forward it. `upstream-main` is the frozen upstream snapshot; do not treat it as a publish line. `bots-default-collapsed` is deleted; do not recreate it. The old branch name `voidpp` is retired; do not recreate it or point `@updateURL` at it.
 
 Canonical **Beta auto-update** URL (both `@downloadURL` and `@updateURL` — GitHub raw, `max-age=300`):
 
@@ -61,7 +61,9 @@ Canonical:
 
 - `window.VoidPP` (`window.Void` stays the same object; do not drop the alias)
 - IndexedDB `VoidPP` — read `Void` once, copy, delete the old database. Never write `Void` after `[20260912]`
-- Settings key `VoidPPSettings` — read `VoidSettings` once, flush to the new key, delete the old key. Never write `VoidSettings` after `[20260912]`
+- Settings key `VoidPPSettings` — read `VoidSettings` once, flush to the new key, delete the old key. Never write `VoidSettings` after `[20260912]`. GM is shared across every `@match` origin and is read before grok.com IndexedDB. A bag with no plugin keys is a miss — fall through to IDB. `save()` must not write `{plugins:{}}`, and must not write at all until `initSettings` calls `markReady()`. Preview frames skip `initSettings`, so they cannot flush. `[20260925.3]` let the `grokusercontent` preview iframe evaluate SettingsStore and `beforeunload`-flush an empty bag into GM.
+- Preview iframe scrollbars: `bootstrapPreviewFrame` paints from `prefers-color-scheme` immediately, then HELLO. `replyFrame` always uses `"*"`. `frameCss` targets `*::-webkit-scrollbar`, not just `html,body`. Parent also sets `color-scheme` on Preview/grokusercontent iframes. The white H-bar on project file preview is the opaque `srcdoc` child (`allow-scripts` without `allow-same-origin`) inside `artifacts.grokusercontent.com`. `contentDocument` is blocked; prepend `frameCss` into `iframe.srcdoc` and watch the `srcdoc` attribute. Do not add `allow-same-origin`.
+- `hideRightPanel` still blocks `source:"auto"` and `willRestoreRightPanelByIntent`. A manual open is `Toggle Right Panel`, Options / Settings / Files / Preview, a click inside an open pane, or a click in the sidebar Projects group (`Add project` / `All projects` / `Projects`). Do not treat every `menuitem` as manual. A click that is not one of those clears the 3s hold. `collapseCanvas` and `enforce` close only when the pane goes from closed to open, when the conversation id changes without that hold, or when `hideRightPanel` flips off to on. A later workspace tick must not close a pane the user already opened. A chat-row click is not manual — restore must still close the panel. `onSettingsChange` force-closes only when `hideRightPanel` flips off to on. A `themedScrollbar` change refreshes CSS and must not close a manual pane. Turning `hideRightPanel` off does not reopen the pane. Do not close every `sidePanelContent.type === "rightPanel"` write. Do not add `allow-same-origin` to preview iframes.
 - Cookie bridge `voidpp-cookies`
 - Settings tab ids `voidpp_*_tab` and nav group `voidpp`
 
@@ -130,6 +132,8 @@ Host the fallback as a sibling of `.query-bar` (form / composer shell / `documen
 
 Do not wrap `setChatPageLoaded` to fight hydrate. That fought ModeSync. Restore on dest settle plus observer paint is enough.
 
+Docked DevTools can collapse `innerHeight` and `visualViewport.height` to about 1px. Grok then `setState`s `quotedText` empty and calls `setConversationId` without going through `setQuotedText`. That frame is not navigation. While either height is under 80px, pin the snap, do not `clearLive`, and do not retarget `lastKey`. Restore when the viewport is tall again. A raw store subscription must remember a non-empty `quotedText`, because the setter wrapper never sees a `setState` write. `/project/` is not home: dest empty must not `clearLive` only because `pathCid()` is empty. Do not store the project id in `pathCid`. `officialVisible` must ignore the Tiptap editor and hidden nodes, or the fallback chip is removed while the official chip is already gone.
+
 ## BetterQueue
 
 ModeSync and QueuePersist are one plugin. `mode.ts` captures each queued row's mode, paints the chip, and sends with that mode. `persist.ts` writes the same rows to IndexedDB key `queue-persist:v1` and replays them after refresh. Do not split them back into two plugins. Do not add a second `queueMessage` wrapper — `noteEnqueue` / `afterEnqueue` run inside the mode wrapper. Keep `Symbol.for("voidpp.modeSync.enqueueIntent")` and `Symbol.for("voidpp.modeSync.intent")`. Do not rename the IDB key or `.void-ms-*` classes.
@@ -148,3 +152,4 @@ Regression table:
 - 22.16 three-source dest + `clearLive` on disagree — loss on switch-back
 - 22.17 store dest + dest empty refuses remember + fetch consume — loss on switch-back
 - 22.18 `conversationId` dest, remember on any `quotedText`, no fetch consume, sibling host — persist without leak
+- 25.13 DevTools viewport collapses to 1px and `setState` clears `quotedText` — loss on console toggle

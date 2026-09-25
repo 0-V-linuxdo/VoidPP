@@ -32,6 +32,8 @@ const compileFactory: (code: string, header?: string, sourceUrl?: string) => Mod
     : (code, header, sourceUrl) => {
         const key = `__void_eval_${compileCounter++}`;
         const script = document.createElement("script");
+        const nonce = [...document.scripts].map(el => el.nonce).find(Boolean);
+        if (nonce) script.nonce = nonce;
         let src = `window["${key}"]=(${code});`;
         if (header) src = `${header}\n${src}`;
         if (sourceUrl) src += `\n${sourceUrl}`;
@@ -41,8 +43,11 @@ const compileFactory: (code: string, header?: string, sourceUrl?: string) => Mod
         } finally {
             script.remove();
         }
-        const fn = (pageWindow as any)[key];
+        let fn = (pageWindow as any)[key] as ModuleFactory | undefined;
         (pageWindow as any)[key] = undefined;
+        if (!fn) {
+            fn = new Function(`return (${code});`)() as ModuleFactory;
+        }
         if (!fn) throw new Error("Factory compilation failed (CSP?)");
         return fn;
     };
