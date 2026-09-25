@@ -30,14 +30,14 @@ function gitBranch(): string {
     }
 }
 
-type Channel = "dev" | "voidpp" | "voidpp-stable";
+type Channel = "dev" | "voidpp-beta" | "voidpp-stable";
 
 function resolveChannel(branch: string): { channel: Channel; environment: "Development" | "Beta" | "Production" } {
     if (flagStable) return { channel: "voidpp-stable", environment: "Production" };
     if (flagDev) return { channel: "dev", environment: "Development" };
     if (branch === "voidpp-stable") return { channel: "voidpp-stable", environment: "Production" };
     if (branch === "dev") return { channel: "dev", environment: "Development" };
-    return { channel: "voidpp", environment: "Beta" };
+    return { channel: "voidpp-beta", environment: "Beta" };
 }
 
 const { channel, environment } = resolveChannel(gitBranch());
@@ -45,7 +45,7 @@ const { channel, environment } = resolveChannel(gitBranch());
 const FORK_URL = "https://github.com/0-V-linuxdo/VoidPP";
 const NAMESPACE = `${FORK_URL}/${channel}`;
 const SCRIPT_CDN = `https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/${channel}`;
-const VERSION_DATE = "20260925.1";
+const VERSION_DATE = "20260925.2";
 const displayVersion = `[${VERSION_DATE}] v${pkg.version}`;
 const scriptVersion = VERSION_DATE;
 
