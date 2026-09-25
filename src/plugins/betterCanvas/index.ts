@@ -55,6 +55,7 @@ let unsubWorkspace: (() => void) | null = null;
 let cancelWorkspaceWait: (() => void) | null = null;
 let collapsing = false;
 let manualUntil = 0;
+let canvasWasOpen = false;
 const MANUAL_HOLD_MS = 3000;
 const hooked = new WeakSet<HTMLIFrameElement>();
 
@@ -354,7 +355,8 @@ function markManual(target: EventTarget | null) {
     const menu = role === "menuitem" || role === "option";
     const inPane = !!node.closest("[class*='pane-card']");
     const named = /^(options|options for )/.test(blob)
-        || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob);
+        || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob)
+        || (/\btoggle\b/.test(blob) && /\bpanel\b/.test(blob));
     if (!menu && !inPane && !named) return;
     manualUntil = Date.now() + MANUAL_HOLD_MS;
 }
@@ -387,14 +389,19 @@ function callFn(fn: unknown, thisArg: unknown): boolean {
 
 function collapseCanvas(opts?: { force?: boolean }) {
     if (collapsing || !settings.store.hideRightPanel) return;
-    if (!opts?.force && userHeld()) return;
     try {
         const hook = WorkspaceStore.useWorkspaceStore;
         if (!hook?.getState) return;
         const state = hook.getState();
-        if (!state.canvasExpanded || typeof state.toggleCanvas !== "function") return;
+        const toggle = state.toggleCanvas;
+        const open = !!state.canvasExpanded && typeof toggle === "function";
+        const becameOpen = open && !canvasWasOpen;
+        canvasWasOpen = open;
+        if (!open) return;
+        if (!opts?.force && (userHeld() || !becameOpen)) return;
         collapsing = true;
-        state.toggleCanvas(false, { animate: false });
+        toggle(false, { animate: false });
+        canvasWasOpen = false;
     } catch (e) {
         logger.debug("hide canvas failed", e);
     } finally {
@@ -430,6 +437,7 @@ function bindWorkspace(mod?: { useWorkspaceStore?: WorkspaceHook }) {
     const hook = mod?.useWorkspaceStore ?? WorkspaceStore.useWorkspaceStore;
     if (!hook?.subscribe) return;
     unsubWorkspace = hook.subscribe(() => collapseCanvas());
+    canvasWasOpen = false;
     collapseCanvas();
 }
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.10
+// @version      20260925.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.10] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3399,6 +3399,7 @@ ${sourceUrl}`;
   var cancelWorkspaceWait = null;
   var collapsing = false;
   var manualUntil = 0;
+  var canvasWasOpen = false;
   var MANUAL_HOLD_MS = 3000;
   var hooked = new WeakSet;
   function isGrokPreviewFrame() {
@@ -3661,7 +3662,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     const role = node.getAttribute("role");
     const menu = role === "menuitem" || role === "option";
     const inPane = !!node.closest("[class*='pane-card']");
-    const named = /^(options|options for )/.test(blob) || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob);
+    const named = /^(options|options for )/.test(blob) || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob) || /\btoggle\b/.test(blob) && /\bpanel\b/.test(blob);
     if (!menu && !inPane && !named)
       return;
     manualUntil = Date.now() + MANUAL_HOLD_MS;
@@ -3692,17 +3693,22 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function collapseCanvas(opts) {
     if (collapsing || !settings2.store.hideRightPanel)
       return;
-    if (!opts?.force && userHeld())
-      return;
     try {
       const hook = WorkspaceStore.useWorkspaceStore;
       if (!hook?.getState)
         return;
       const state = hook.getState();
-      if (!state.canvasExpanded || typeof state.toggleCanvas !== "function")
+      const toggle = state.toggleCanvas;
+      const open = !!state.canvasExpanded && typeof toggle === "function";
+      const becameOpen = open && !canvasWasOpen;
+      canvasWasOpen = open;
+      if (!open)
+        return;
+      if (!opts?.force && (userHeld() || !becameOpen))
         return;
       collapsing = true;
-      state.toggleCanvas(false, { animate: false });
+      toggle(false, { animate: false });
+      canvasWasOpen = false;
     } catch (e) {
       logger10.debug("hide canvas failed", e);
     } finally {
@@ -3743,6 +3749,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     if (!hook?.subscribe)
       return;
     unsubWorkspace = hook.subscribe(() => collapseCanvas());
+    canvasWasOpen = false;
     collapseCanvas();
   }
   var hideWasOn = false;
@@ -7682,9 +7689,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"344dbcd"}`
-    }, `(${"344dbcd"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9417db4"}`
+    }, `(${"9417db4"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -29115,7 +29122,7 @@ div:has(> #grok-bot-nav-button) {
   messageTimestamps_default.updatedAt = 1789881463000;
   streamerMode_default.updatedAt = 1787870966000;
   consoleJanitor_default.updatedAt = 1787789817000;
-  betterCanvas_default.updatedAt = 1790358920000;
+  betterCanvas_default.updatedAt = 1790359932000;
   noDictation_default.updatedAt = 1788037550000;
   betterQuotes_default.updatedAt = 1790264305000;
   cloneChats_default.updatedAt = 1787870966000;
