@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         Void++
-// @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp
+// @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp-stable
 // @version      20260925.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
-// @environment  Beta
+// @environment  Production
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
-// @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/assets/logos/app-icon/voidpp-icon.svg
+// @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-stable/assets/logos/app-icon/voidpp-icon.svg
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
 // @run-at       document-start
@@ -27,8 +27,8 @@
 // @compatible   opera
 // @license      GPL-3.0-or-later
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP
-// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/userscript/VoidPP.user.js
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp/userscript/VoidPP.user.js
+// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-stable/userscript/VoidPP.user.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-stable/userscript/VoidPP.user.js
 // ==/UserScript==
 
 /**
@@ -7516,8 +7516,8 @@ button .void-info-hint {
       as: "span",
       color: "secondary"
     }, "[20260925.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"43773a3"}`
-    }, `(${"43773a3"})`)), /* @__PURE__ */ React.createElement(Flex, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"21eed2f"}`
+    }, `(${"21eed2f"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
