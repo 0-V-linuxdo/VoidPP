@@ -275,8 +275,31 @@ function hostScore(text: string, needle: string): number {
     return clip.length / Math.max(n.length, 1);
 }
 
+function coverScore(text: string, needle: string): number {
+    const direct = hostScore(text, needle);
+    if (direct > 0) return direct;
+    const hit = textHasClip(text, clipsOf(needle));
+    if (!hit) return 0;
+    return hit.length / Math.max(norm(text).length, 1);
+}
+
+function nodeText(node: { id?: string; content?: { message?: string; query?: string } } | undefined, id = ""): string {
+    const rec = node?.content;
+    let mapped = "";
+    try {
+        if (node) mapped = String(MessageStore.nodeToResponse?.(conversationId(), node as never)?.message || "");
+    } catch { /* mapper missing */ }
+    return String(rec?.message || rec?.query || mapped || storeById(id || node?.id || "")?.message || "");
+}
+
+function blobScore(el: HTMLElement, needle: string): number {
+    const vis = coverScore(collectParts(el, false).blob, needle);
+    if (vis > 0) return vis;
+    return coverScore(collectParts(el, true).blob, needle);
+}
+
 function storeNeedle(needle: string, skipId = ""): { id: string; cid: string; score: number } | null {
-    if (hostClip(needle).length < 8) return null;
+    if (hostClip(needle).length < 8 && !clipsOf(needle).length) return null;
     const cid = conversationId();
     const skip = bareUuid(skipId);
     let childAt = 0;
@@ -288,7 +311,7 @@ function storeNeedle(needle: string, skipId = ""): { id: string; cid: string; sc
     const consider = (id: string, text: string, at: number) => {
         if (!id || id === skip) return;
         if (childAt && at && at > childAt) return;
-        const score = hostScore(text, needle);
+        const score = coverScore(text, needle);
         if (score <= 0) return;
         if (!best || score > best.score || (score === best.score && at < best.at)) best = { id, score, at };
     };
@@ -297,7 +320,7 @@ function storeNeedle(needle: string, skipId = ""): { id: string; cid: string; sc
         if (nodes) {
             for (const node of Object.values(nodes)) {
                 if (!node?.id) continue;
-                consider(node.id, String(node.content?.message || ""), Number(node.createdAt) || 0);
+                consider(node.id, nodeText(node, node.id), Number(node.createdAt) || 0);
             }
         }
     } catch (e) {
@@ -308,7 +331,7 @@ function storeNeedle(needle: string, skipId = ""): { id: string; cid: string; sc
         const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
         for (const row of rows) {
             if (!row?.responseId) continue;
-            consider(row.responseId, String(row.message || ""), Number(row.createTime) || 0);
+            consider(row.responseId, String(row.message || row.query || ""), Number(row.createTime) || 0);
         }
     } catch (e) {
         logger.debug("store search failed", e);
@@ -608,14 +631,21 @@ async function hydrate(cid: string) {
     if (!cid) return;
     try {
         await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
-        return;
     } catch (e) {
         logger.debug("loadResponses failed", e);
+        try {
+            await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
+        } catch (err) {
+            logger.debug("loadMoreResponses failed", err);
+        }
     }
     try {
-        await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
+        const gw = MessageStore.useMessageStore.getState().conversations?.[cid];
+        if (gw?.defaultLeafId && gw.history?.hasMore) {
+            MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
+        }
     } catch (e) {
-        logger.debug("loadMoreResponses failed", e);
+        logger.debug("loadOlderHistory failed", e);
     }
 }
 
@@ -655,7 +685,7 @@ function pickMessage(ids: string[], needle: string, skip?: HTMLElement | null): 
         const el = rows[i];
         if (!el || insideHost(el, skip ?? null)) continue;
         if (childI >= 0 && i > childI) continue;
-        const score = hostScore(collectParts(el, false).blob, needle);
+        const score = blobScore(el, needle);
         if (score <= 0) continue;
         scored.push({ el, i, id: hostUuid(el) || propsId(el), score });
     }
@@ -667,8 +697,7 @@ function pickMessage(ids: string[], needle: string, skip?: HTMLElement | null): 
         return hit.el;
     }
     scored.sort((a, b) => b.score - a.score || a.i - b.i);
-    const top = scored[0];
-    return top && top.score >= 0.08 ? top.el : null;
+    return scored[0]?.el ?? null;
 }
 
 async function jump(origin: HTMLElement | null) {
@@ -677,20 +706,23 @@ async function jump(origin: HTMLElement | null) {
     if (!prefixOf(needle)) return;
     const skip = officialJumpButton(origin) ? hostOf(origin) : null;
     const skipId = hostUuid(skip);
-    let el = pickMessage(ids, needle, skip);
-    const live = el ? hostScore(collectParts(el, false).blob, needle) : 0;
+    const first = pickMessage(ids, needle, skip);
+    let el = first;
+    const live = el ? blobScore(el, needle) : 0;
     const stored = storeNeedle(needle, skipId);
     if (stored && stored.id !== skipId && stored.score > live) {
         ids.unshift(stored.id);
         await hydrate(stored.cid || conversationId());
         if (mine !== gen) return;
+        let found: HTMLElement | null = null;
         for (let i = 0; i < WAIT_N; i++) {
-            el = pickMessage(ids, needle, skip) ?? messageById(stored.id);
-            if (el && !insideHost(el, skip) && hostScore(collectParts(el, false).blob, needle) > 0) break;
-            el = null;
+            found = pickMessage(ids, needle, skip) ?? messageById(stored.id);
+            if (found && !insideHost(found, skip) && blobScore(found, needle) > 0) break;
+            found = null;
             await sleep(WAIT_MS);
             if (mine !== gen) return;
         }
+        el = found ?? first;
     }
     if (mine !== gen) return;
     if (!el) {
@@ -964,10 +996,15 @@ function onClick(e: MouseEvent) {
     if (isDismiss(t) || isEditor(t) || isBarAction(t)) return;
     const chip = composerChip(t);
     const sent = sentQuote(t);
-    if (!chip && !sent) return;
+    const origin = sent ?? chip;
+    if (!origin) return;
+    if (officialJumpButton(origin)) {
+        const { needle, ids } = resolveNeedle(origin);
+        if (!pickMessage(ids, needle, hostOf(origin))) return;
+    }
     e.preventDefault();
     e.stopPropagation();
-    void jump(sent ?? chip);
+    void jump(origin);
 }
 
 export function startJump() {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.12
+// @version      20260926.13
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.12] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.13] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"00353d5"}`
-    }, `(${"00353d5"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"308d830"}`
+    }, `(${"308d830"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21211,8 +21211,32 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return 0;
     return clip.length / Math.max(n.length, 1);
   }
+  function coverScore(text, needle) {
+    const direct = hostScore(text, needle);
+    if (direct > 0)
+      return direct;
+    const hit = textHasClip(text, clipsOf(needle));
+    if (!hit)
+      return 0;
+    return hit.length / Math.max(norm2(text).length, 1);
+  }
+  function nodeText(node, id = "") {
+    const rec = node?.content;
+    let mapped = "";
+    try {
+      if (node)
+        mapped = String(MessageStore.nodeToResponse?.(conversationId2(), node)?.message || "");
+    } catch {}
+    return String(rec?.message || rec?.query || mapped || storeById(id || node?.id || "")?.message || "");
+  }
+  function blobScore(el, needle) {
+    const vis = coverScore(collectParts(el, false).blob, needle);
+    if (vis > 0)
+      return vis;
+    return coverScore(collectParts(el, true).blob, needle);
+  }
   function storeNeedle(needle, skipId = "") {
-    if (hostClip(needle).length < 8)
+    if (hostClip(needle).length < 8 && !clipsOf(needle).length)
       return null;
     const cid = conversationId2();
     const skip = bareUuid(skipId);
@@ -21227,7 +21251,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         return;
       if (childAt && at && at > childAt)
         return;
-      const score = hostScore(text, needle);
+      const score = coverScore(text, needle);
       if (score <= 0)
         return;
       if (!best || score > best.score || score === best.score && at < best.at)
@@ -21239,7 +21263,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         for (const node of Object.values(nodes)) {
           if (!node?.id)
             continue;
-          consider(node.id, String(node.content?.message || ""), Number(node.createdAt) || 0);
+          consider(node.id, nodeText(node, node.id), Number(node.createdAt) || 0);
         }
       }
     } catch (e) {
@@ -21251,7 +21275,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       for (const row of rows) {
         if (!row?.responseId)
           continue;
-        consider(row.responseId, String(row.message || ""), Number(row.createTime) || 0);
+        consider(row.responseId, String(row.message || row.query || ""), Number(row.createTime) || 0);
       }
     } catch (e) {
       logger29.debug("store search failed", e);
@@ -21572,14 +21596,21 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     try {
       await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
-      return;
     } catch (e) {
       logger29.debug("loadResponses failed", e);
+      try {
+        await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
+      } catch (err) {
+        logger29.debug("loadMoreResponses failed", err);
+      }
     }
     try {
-      await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
+      const gw = MessageStore.useMessageStore.getState().conversations?.[cid];
+      if (gw?.defaultLeafId && gw.history?.hasMore) {
+        MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
+      }
     } catch (e) {
-      logger29.debug("loadMoreResponses failed", e);
+      logger29.debug("loadOlderHistory failed", e);
     }
   }
   function resolveNeedle(origin) {
@@ -21619,7 +21650,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         continue;
       if (childI >= 0 && i > childI)
         continue;
-      const score = hostScore(collectParts(el, false).blob, needle);
+      const score = blobScore(el, needle);
       if (score <= 0)
         continue;
       scored.push({ el, i, id: hostUuid(el) || propsId(el), score });
@@ -21634,8 +21665,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return hit.el;
     }
     scored.sort((a, b) => b.score - a.score || a.i - b.i);
-    const top = scored[0];
-    return top && top.score >= 0.08 ? top.el : null;
+    return scored[0]?.el ?? null;
   }
   async function jump2(origin) {
     const mine = ++gen;
@@ -21644,23 +21674,26 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     const skip = officialJumpButton(origin) ? hostOf(origin) : null;
     const skipId = hostUuid(skip);
-    let el = pickMessage(ids, needle, skip);
-    const live = el ? hostScore(collectParts(el, false).blob, needle) : 0;
+    const first = pickMessage(ids, needle, skip);
+    let el = first;
+    const live = el ? blobScore(el, needle) : 0;
     const stored = storeNeedle(needle, skipId);
     if (stored && stored.id !== skipId && stored.score > live) {
       ids.unshift(stored.id);
       await hydrate2(stored.cid || conversationId2());
       if (mine !== gen)
         return;
+      let found = null;
       for (let i = 0;i < WAIT_N; i++) {
-        el = pickMessage(ids, needle, skip) ?? messageById(stored.id);
-        if (el && !insideHost(el, skip) && hostScore(collectParts(el, false).blob, needle) > 0)
+        found = pickMessage(ids, needle, skip) ?? messageById(stored.id);
+        if (found && !insideHost(found, skip) && blobScore(found, needle) > 0)
           break;
-        el = null;
+        found = null;
         await sleep(WAIT_MS);
         if (mine !== gen)
           return;
       }
+      el = found ?? first;
     }
     if (mine !== gen)
       return;
@@ -21952,11 +21985,17 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     const chip = composerChip(t);
     const sent = sentQuote(t);
-    if (!chip && !sent)
+    const origin = sent ?? chip;
+    if (!origin)
       return;
+    if (officialJumpButton(origin)) {
+      const { needle, ids } = resolveNeedle(origin);
+      if (!pickMessage(ids, needle, hostOf(origin)))
+        return;
+    }
     e.preventDefault();
     e.stopPropagation();
-    jump2(sent ?? chip);
+    jump2(origin);
   }
   function startJump() {
     if (jumpArmed)
@@ -30567,7 +30606,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1787789817000;
   betterCanvas_default.updatedAt = 1790360947000;
   noDictation_default.updatedAt = 1788037550000;
-  betterQuotes_default.updatedAt = 1790432257000;
+  betterQuotes_default.updatedAt = 1790433258000;
   cloneChats_default.updatedAt = 1787870966000;
   composerOpacity_default.updatedAt = 1790097681000;
   incognito_default.updatedAt = 1787870966000;
