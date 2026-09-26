@@ -32,8 +32,8 @@ const QUOTE_PATHS = [
 ];
 const WAIT_MS = 50;
 const WAIT_N = 24;
-const ALIGNED_PX = 8;
 const CLUSTER_GAP = 240;
+const COMFORT_PAD = 72;
 
 let abort: AbortController | null = null;
 let gen = 0;
@@ -814,12 +814,43 @@ function highlightRange(range: Range | readonly Range[] | null, el: HTMLElement,
     flashTimer = window.setTimeout(clearHighlight, FLASH_MS);
 }
 
-function visibleMidY(pane: HTMLElement | null): number {
-    const top = pane?.getBoundingClientRect().top ?? 0;
+function comfortBand(pane: HTMLElement): { top: number; bottom: number } {
+    const rect = pane.getBoundingClientRect();
     const bar = document.querySelector(QUERY);
     const barTop = bar instanceof HTMLElement ? bar.getBoundingClientRect().top : 0;
-    const bottom = barTop > top ? barTop : (pane?.getBoundingClientRect().bottom ?? window.innerHeight);
-    return (top + bottom) / 2;
+    const floor = barTop > rect.top + 80 ? barTop : rect.bottom;
+    const room = Math.max(0, floor - rect.top);
+    const pad = Math.min(COMFORT_PAD, Math.max(8, room / 6));
+    return { top: rect.top + pad, bottom: floor - pad };
+}
+
+function aimBox(range: Range | null, el: HTMLElement): DOMRect | null {
+    const line = range && lineBox(range);
+    if (line && line.height > 0) return line;
+    const box = el.getBoundingClientRect();
+    if (box.height < 1) return null;
+    return new DOMRect(box.x, box.y, box.width, Math.min(96, box.height));
+}
+
+function ensureDelta(box: DOMRect, pane: HTMLElement): number {
+    const { top, bottom } = comfortBand(pane);
+    const room = bottom - top;
+    if (room < 40) return box.top - top;
+    if (box.height >= room) return box.top - top;
+    if (box.top >= top && box.bottom <= bottom) return 0;
+    if (box.bottom > bottom) return box.bottom - bottom;
+    return box.top - top;
+}
+
+function ensureVisible(range: Range | null, el: HTMLElement, behavior: ScrollBehavior = "smooth") {
+    if (!el.isConnected) return;
+    const box = aimBox(range, el);
+    if (!box) return;
+    const pane = scrollPane(el);
+    if (!pane) return;
+    const delta = ensureDelta(box, pane);
+    if (Math.abs(delta) < 1) return;
+    pane.scrollTo({ top: pane.scrollTop + delta, behavior });
 }
 
 function lineBox(range: Range | null): DOMRect | null {
@@ -879,20 +910,6 @@ function scrollPane(el: HTMLElement): HTMLElement | null {
     if (named && !named.closest(PANE_SKIP)) return named;
     const pane = paneOf(el) ?? chatPane();
     return pane && pane.contains(el) ? pane : null;
-}
-
-function scrollLineToScreenCenter(range: Range | null, el: HTMLElement) {
-    if (!document.body.contains(el)) return;
-    const box = (range && lineBox(range)) || el.getBoundingClientRect();
-    if (!box || box.height < 1) return;
-    const pane = scrollPane(el);
-    if (!pane) return;
-    const mid = visibleMidY(pane);
-    const tall = !range && box.height > pane.clientHeight * 0.8;
-    const mark = tall ? box.top + Math.min(48, box.height / 2) : box.top + box.height / 2;
-    const delta = mark - mid;
-    if (Math.abs(delta) < ALIGNED_PX) return;
-    pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
 }
 
 function afterLayout(): Promise<void> {
@@ -1028,26 +1045,19 @@ async function revealSource(id: string, skip: HTMLElement | null, mine: number):
     return liveSource(id, skip);
 }
 
-function settleScroll(pane: HTMLElement, range: Range | null, el: HTMLElement, mine: number): Promise<void> {
+function settleScroll(pane: HTMLElement, mine: number, place: () => { anchor: Range | null; target: HTMLElement }): Promise<void> {
     return new Promise(resolve => {
         let done = false;
         const finish = () => {
             if (done) return;
             done = true;
             pane.removeEventListener("scrollend", finish);
-            if (mine !== gen || !el.isConnected) {
+            if (mine !== gen) {
                 resolve();
                 return;
             }
-            const box = (range && lineBox(range)) || el.getBoundingClientRect();
-            if (!box || box.height < 1) {
-                resolve();
-                return;
-            }
-            const tall = !range && box.height > pane.clientHeight * 0.8;
-            const mark = tall ? box.top + Math.min(48, box.height / 2) : box.top + box.height / 2;
-            const delta = mark - visibleMidY(pane);
-            if (Math.abs(delta) >= ALIGNED_PX) pane.scrollTo({ top: pane.scrollTop + delta, behavior: "auto" });
+            const { anchor, target } = place();
+            if (target.isConnected) ensureVisible(anchor, target, "auto");
             resolve();
         };
         pane.addEventListener("scrollend", finish, { once: true });
@@ -1055,7 +1065,7 @@ function settleScroll(pane: HTMLElement, range: Range | null, el: HTMLElement, m
     });
 }
 
-async function land(el: HTMLElement, needle: string, mine: number, pin = "", ownScroll = true) {
+async function land(el: HTMLElement, needle: string, mine: number, pin = "") {
     openAncestors(el, needle);
     await afterLayout();
     if (mine !== gen) return;
@@ -1064,24 +1074,37 @@ async function land(el: HTMLElement, needle: string, mine: number, pin = "", own
         if (fresh?.isConnected) el = fresh;
     }
     if (!el.isConnected) return;
-    const ranges = clipRanges(el, needle);
+    let ranges = clipRanges(el, needle);
     highlightRange(ranges, el, false);
-    if (!ownScroll) return;
-    const anchor = scrollAnchor(ranges);
-    const painted = anchor ? hitOf(anchor) : null;
-    const target = painted?.isConnected ? painted : el;
-    const pane = scrollPane(target) ?? scrollPane(el);
-    scrollLineToScreenCenter(painted ? anchor : null, target);
-    if (pane) await settleScroll(pane, painted ? anchor : null, target, mine);
+    const place = () => {
+        if (!el.isConnected && pin) {
+            const fresh = messageById(pin);
+            if (fresh?.isConnected) el = fresh;
+        }
+        if (el.isConnected && !ranges.some(range => range.startContainer.isConnected)) {
+            ranges = clipRanges(el, needle);
+            highlightRange(ranges, el, false);
+        }
+        const anchor = scrollAnchor(ranges);
+        const painted = anchor ? hitOf(anchor) : null;
+        const target = painted?.isConnected ? painted : el;
+        return { anchor, target };
+    };
+    const first = place();
+    const pane = scrollPane(first.target) ?? scrollPane(el);
+    ensureVisible(first.anchor, first.target);
+    if (pane) await settleScroll(pane, mine, place);
 }
 
 async function paintAfter(needle: string, hard: string) {
     const mine = ++gen;
     const pane = chatPane();
+    let ran = false;
     const done = () => {
-        if (mine !== gen) return;
+        if (ran || mine !== gen) return;
+        ran = true;
         const el = messageById(hard);
-        if (el) void land(el, needle, mine, hard, false);
+        if (el) void land(el, needle, mine, hard);
     };
     if (pane) {
         pane.addEventListener("scrollend", done, { once: true });
@@ -1400,7 +1423,7 @@ async function jumpToCite(cite: Cite | undefined) {
     const ranges = findRanges(card, cite.quoted);
     const anchor = scrollAnchor(ranges);
     const hit = hitOf(anchor) ?? card;
-    scrollLineToScreenCenter(anchor, hit);
+    ensureVisible(anchor, hit);
     highlightRange(ranges, hit);
 }
 

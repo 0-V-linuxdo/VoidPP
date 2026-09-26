@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.28
+// @version      20260926.29
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.28] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.29] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"917ed39"}`
-    }, `(${"917ed39"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.29] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"03e8569"}`
+    }, `(${"03e8569"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21004,8 +21004,8 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   ];
   var WAIT_MS = 50;
   var WAIT_N = 24;
-  var ALIGNED_PX = 8;
   var CLUSTER_GAP = 240;
+  var COMFORT_PAD = 72;
   var abort2 = null;
   var gen = 0;
   var flashTimer2 = 0;
@@ -21785,12 +21785,50 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     flashTimer2 = window.setTimeout(clearHighlight, FLASH_MS2);
   }
-  function visibleMidY(pane) {
-    const top = pane?.getBoundingClientRect().top ?? 0;
+  function comfortBand(pane) {
+    const rect = pane.getBoundingClientRect();
     const bar = document.querySelector(QUERY);
     const barTop = bar instanceof HTMLElement ? bar.getBoundingClientRect().top : 0;
-    const bottom = barTop > top ? barTop : pane?.getBoundingClientRect().bottom ?? window.innerHeight;
-    return (top + bottom) / 2;
+    const floor = barTop > rect.top + 80 ? barTop : rect.bottom;
+    const room = Math.max(0, floor - rect.top);
+    const pad = Math.min(COMFORT_PAD, Math.max(8, room / 6));
+    return { top: rect.top + pad, bottom: floor - pad };
+  }
+  function aimBox(range, el) {
+    const line = range && lineBox(range);
+    if (line && line.height > 0)
+      return line;
+    const box = el.getBoundingClientRect();
+    if (box.height < 1)
+      return null;
+    return new DOMRect(box.x, box.y, box.width, Math.min(96, box.height));
+  }
+  function ensureDelta(box, pane) {
+    const { top, bottom } = comfortBand(pane);
+    const room = bottom - top;
+    if (room < 40)
+      return box.top - top;
+    if (box.height >= room)
+      return box.top - top;
+    if (box.top >= top && box.bottom <= bottom)
+      return 0;
+    if (box.bottom > bottom)
+      return box.bottom - bottom;
+    return box.top - top;
+  }
+  function ensureVisible(range, el, behavior = "smooth") {
+    if (!el.isConnected)
+      return;
+    const box = aimBox(range, el);
+    if (!box)
+      return;
+    const pane = scrollPane(el);
+    if (!pane)
+      return;
+    const delta = ensureDelta(box, pane);
+    if (Math.abs(delta) < 1)
+      return;
+    pane.scrollTo({ top: pane.scrollTop + delta, behavior });
   }
   function lineBox(range) {
     if (!range || !range.startContainer.isConnected)
@@ -21857,23 +21895,6 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return named;
     const pane = paneOf(el) ?? chatPane3();
     return pane && pane.contains(el) ? pane : null;
-  }
-  function scrollLineToScreenCenter(range, el) {
-    if (!document.body.contains(el))
-      return;
-    const box = range && lineBox(range) || el.getBoundingClientRect();
-    if (!box || box.height < 1)
-      return;
-    const pane = scrollPane(el);
-    if (!pane)
-      return;
-    const mid = visibleMidY(pane);
-    const tall = !range && box.height > pane.clientHeight * 0.8;
-    const mark = tall ? box.top + Math.min(48, box.height / 2) : box.top + box.height / 2;
-    const delta = mark - mid;
-    if (Math.abs(delta) < ALIGNED_PX)
-      return;
-    pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
   }
   function afterLayout() {
     return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
@@ -22015,7 +22036,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     return liveSource(id, skip);
   }
-  function settleScroll(pane, range, el, mine) {
+  function settleScroll(pane, mine, place) {
     return new Promise((resolve) => {
       let done = false;
       const finish = () => {
@@ -22023,27 +22044,20 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
           return;
         done = true;
         pane.removeEventListener("scrollend", finish);
-        if (mine !== gen || !el.isConnected) {
+        if (mine !== gen) {
           resolve();
           return;
         }
-        const box = range && lineBox(range) || el.getBoundingClientRect();
-        if (!box || box.height < 1) {
-          resolve();
-          return;
-        }
-        const tall = !range && box.height > pane.clientHeight * 0.8;
-        const mark = tall ? box.top + Math.min(48, box.height / 2) : box.top + box.height / 2;
-        const delta = mark - visibleMidY(pane);
-        if (Math.abs(delta) >= ALIGNED_PX)
-          pane.scrollTo({ top: pane.scrollTop + delta, behavior: "auto" });
+        const { anchor, target } = place();
+        if (target.isConnected)
+          ensureVisible(anchor, target, "auto");
         resolve();
       };
       pane.addEventListener("scrollend", finish, { once: true });
       window.setTimeout(finish, 700);
     });
   }
-  async function land(el, needle, mine, pin = "", ownScroll = true) {
+  async function land(el, needle, mine, pin = "") {
     openAncestors(el, needle);
     await afterLayout();
     if (mine !== gen)
@@ -22055,27 +22069,40 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     if (!el.isConnected)
       return;
-    const ranges = clipRanges(el, needle);
+    let ranges = clipRanges(el, needle);
     highlightRange(ranges, el, false);
-    if (!ownScroll)
-      return;
-    const anchor = scrollAnchor(ranges);
-    const painted = anchor ? hitOf(anchor) : null;
-    const target = painted?.isConnected ? painted : el;
-    const pane = scrollPane(target) ?? scrollPane(el);
-    scrollLineToScreenCenter(painted ? anchor : null, target);
+    const place = () => {
+      if (!el.isConnected && pin) {
+        const fresh = messageById(pin);
+        if (fresh?.isConnected)
+          el = fresh;
+      }
+      if (el.isConnected && !ranges.some((range) => range.startContainer.isConnected)) {
+        ranges = clipRanges(el, needle);
+        highlightRange(ranges, el, false);
+      }
+      const anchor = scrollAnchor(ranges);
+      const painted = anchor ? hitOf(anchor) : null;
+      const target = painted?.isConnected ? painted : el;
+      return { anchor, target };
+    };
+    const first = place();
+    const pane = scrollPane(first.target) ?? scrollPane(el);
+    ensureVisible(first.anchor, first.target);
     if (pane)
-      await settleScroll(pane, painted ? anchor : null, target, mine);
+      await settleScroll(pane, mine, place);
   }
   async function paintAfter(needle, hard) {
     const mine = ++gen;
     const pane = chatPane3();
+    let ran = false;
     const done = () => {
-      if (mine !== gen)
+      if (ran || mine !== gen)
         return;
+      ran = true;
       const el = messageById(hard);
       if (el)
-        land(el, needle, mine, hard, false);
+        land(el, needle, mine, hard);
     };
     if (pane) {
       pane.addEventListener("scrollend", done, { once: true });
@@ -22417,7 +22444,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     const ranges = findRanges(card, cite.quoted);
     const anchor = scrollAnchor(ranges);
     const hit = hitOf(anchor) ?? card;
-    scrollLineToScreenCenter(anchor, hit);
+    ensureVisible(anchor, hit);
     highlightRange(ranges, hit);
   }
   function onBackClick(t) {
@@ -31089,7 +31116,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1790442421000;
   betterCanvas_default.updatedAt = 1790442421000;
   noDictation_default.updatedAt = 1790442421000;
-  betterQuotes_default.updatedAt = 1790444575000;
+  betterQuotes_default.updatedAt = 1790445031000;
   cloneChats_default.updatedAt = 1790442421000;
   composerOpacity_default.updatedAt = 1790442421000;
   incognito_default.updatedAt = 1790442421000;
