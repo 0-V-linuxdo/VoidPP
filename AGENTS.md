@@ -16,7 +16,7 @@ Three script identities, one data store. Do not enable two copies. Switch by dis
 
 After a merge into `dev`, `voidpp-beta`, or `voidpp-stable`, run `bun run build` again on that branch before pushing. The userscript header is baked, so a merge can carry the other channel's header.
 
-New changes go on `dev`. During development, push **only** `dev`. Do not push, cherry-pick, or merge onto `voidpp-beta` or `voidpp-stable` unless the user explicitly says to promote that channel. "脚本更新后,立即推github" means push `dev`. `[20260925.3]` BetterCanvas was pushed to both `dev` and `voidpp-beta`; that beta push was not requested. Promote to `voidpp-beta` only when the user asks to ship Beta, then to `voidpp-stable` only when the user asks to ship Stable. The `Void++` branch is retired — do not recreate or fast-forward it. `upstream-main` is the frozen upstream snapshot; do not treat it as a publish line. `bots-default-collapsed` is deleted; do not recreate it. The old branch name `voidpp` is retired; do not recreate it or point `@updateURL` at it.
+New changes go on `dev`. During development, push **only** `dev`. Do not push, cherry-pick, or merge onto `voidpp-beta` or `voidpp-stable` unless the user explicitly says to promote that channel. "脚本更新后,立即推github" means push `dev`. After that push, give the user the GitHub raw URL of the userscript just pushed. `[20260925.3]` BetterCanvas was pushed to both `dev` and `voidpp-beta`; that beta push was not requested. Promote to `voidpp-beta` only when the user asks to ship Beta, then to `voidpp-stable` only when the user asks to ship Stable. The `Void++` branch is retired — do not recreate or fast-forward it. `upstream-main` is the frozen upstream snapshot; do not treat it as a publish line. `bots-default-collapsed` is deleted; do not recreate it. The old branch name `voidpp` is retired; do not recreate it or point `@updateURL` at it.
 
 Canonical **Beta auto-update** URL (both `@downloadURL` and `@updateURL` — GitHub raw, `max-age=300`):
 
@@ -50,6 +50,7 @@ Before any push to `dev`, `voidpp-beta`, or `voidpp-stable`:
 4. The Install section in `README.md` and `README.zh.md` must name the branch you are pushing. Its badge points at that branch's jsDelivr `@heads/<branch>` URL, never at GitHub raw. After a merge, rewrite that section if it still describes another channel.
 5. After a `voidpp-beta` push, purge jsDelivr for the Beta file only:
    `curl -s https://purge.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp-beta/userscript/VoidPP.user.js`
+6. After the push succeeds, reply with the GitHub raw link of that channel's userscript. Do not stop at the commit hash. `dev` is `https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js`. Beta and Stable use the raw URLs listed above.
 
 Do not write `userscript/Void.user.js`. The hop is gone. Old Tampermonkey installs that already ate `[20260911.8]` or `[20260911.9]` follow `@updateURL` to `VoidPP.user.js`. Anyone still on a pre-hop `@updateURL` must reinstall from the canonical file. `[20260925.2]` moves the Beta identity from `…/voidpp` to `…/voidpp-beta`. That is a new script; the old branch does not update it in place.
 
