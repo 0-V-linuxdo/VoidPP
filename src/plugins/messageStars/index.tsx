@@ -23,18 +23,17 @@ import { dropStar, hasStar, putStar, reloadIfAccountChanged, stars, startStore, 
 
 const logger = new Logger("MessageStars");
 const JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
-const HOLD_MS = 550;
-const SLOP_PX = 6;
-const SUPPRESS_MS = 350;
 const PENDING_MS = 8000;
 const OFFSET_PX = 72;
 const NS = "http://www.w3.org/2000/svg";
 const STAR_D = "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z";
+const MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
+const ACTION_RE = /^(edit|copy|like|dislike|retry|redo|regenerate|share|good response|bad response)\b|^(编辑|复制|拷贝|喜欢|不喜欢|点赞|踩|重新生成|重试|分享)/i;
 
 const settings = definePluginSettings({
     showInSidebar: {
         type: OptionType.BOOLEAN,
-        description: "Show starred messages in the left sidebar.",
+        description: "Show the starred list beside the message navigator.",
         default: true,
     },
 });
@@ -42,13 +41,12 @@ const settings = definePluginSettings({
 let alive = false;
 let ac: AbortController | null = null;
 let mo: MutationObserver | null = null;
-let host: HTMLElement | null = null;
-let pop: HTMLElement | null = null;
-let paintKey = "";
-let suppressUntil = 0;
+let panel: HTMLElement | null = null;
+let toggleBtn: HTMLButtonElement | null = null;
+let listOpen = false;
+let panelKey = "";
 let pendingTimer = 0;
 let pending: { cid: string; id: string; until: number } | null = null;
-let press: { cid: string; id: string; x: number; y: number; timer: number } | null = null;
 
 function currentCid(): string {
     try {
@@ -95,7 +93,7 @@ function shouldPersist(cid: string): boolean {
     } catch { /* settings */ }
     if (temporaryOf(cid)) return false;
     try {
-        const route = RoutingStore.useRoutingStore.getState().route;
+        const { route } = RoutingStore.useRoutingStore.getState();
         if (route?.temporary && currentCid() === cid) return false;
     } catch { /* route */ }
     return true;
@@ -186,46 +184,20 @@ function toggle(cid: string, messageId: string, hint?: Partial<StarredMessage>) 
     putStar(capture(cid, messageId, hint), shouldPersist(cid));
 }
 
-function clearPress() {
-    if (press) window.clearTimeout(press.timer);
-    press = null;
+function onKeyDown(e: KeyboardEvent) {
+    if (e.key !== "Escape" || !listOpen) return;
+    e.preventDefault();
+    listOpen = false;
+    closePanel();
 }
 
 function onPointerDown(e: PointerEvent) {
-    if (pop && e.target instanceof Node && !pop.contains(e.target) && !host?.contains(e.target)) closePop();
-    if (e.button !== 0) return;
-    const target = e.target;
-    if (!(target instanceof Element)) return;
-    const tick = target.closest<HTMLElement>(".void-bn-tick");
-    const messageId = tick?.dataset.responseId ?? "";
-    const cid = currentCid();
-    if (!tick || !messageId || !cid) return;
-    clearPress();
-    const timer = window.setTimeout(() => {
-        const held = press;
-        press = null;
-        if (!held || currentCid() !== held.cid) return;
-        suppressUntil = Date.now() + SUPPRESS_MS;
-        toggle(held.cid, held.id);
-    }, HOLD_MS);
-    press = { cid, id: messageId, x: e.clientX, y: e.clientY, timer };
-}
-
-function onPointerMove(e: PointerEvent) {
-    if (!press) return;
-    if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > SLOP_PX) clearPress();
-}
-
-function onClickCapture(e: MouseEvent) {
-    if (Date.now() >= suppressUntil) return;
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-function onKeyDown(e: KeyboardEvent) {
-    if (e.key !== "Escape" || !pop) return;
-    e.preventDefault();
-    closePop();
+    if (!listOpen) return;
+    const { target } = e;
+    if (!(target instanceof Node)) return;
+    if (panel?.contains(target) || toggleBtn?.contains(target)) return;
+    listOpen = false;
+    closePanel();
 }
 
 function navigatorJump(messageId: string): boolean {
@@ -306,7 +278,8 @@ function navigate(star: StarredMessage) {
 }
 
 function openStar(star: StarredMessage) {
-    closePop();
+    listOpen = false;
+    closePanel();
     if (star.conversationId !== currentCid()) {
         navigate(star);
         armPending(star.conversationId, star.messageId);
@@ -318,8 +291,8 @@ function openStar(star: StarredMessage) {
 function starSvg(): SVGSVGElement {
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", "0 0 24 24");
-    svg.setAttribute("width", "14");
-    svg.setAttribute("height", "14");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
     svg.setAttribute("aria-hidden", "true");
     const path = document.createElementNS(NS, "path");
     path.setAttribute("d", STAR_D);
@@ -328,9 +301,122 @@ function starSvg(): SVGSVGElement {
     return svg;
 }
 
-function closePop() {
-    pop?.remove();
-    pop = null;
+function closePanel() {
+    panel?.remove();
+    panel = null;
+    panelKey = "";
+    toggleBtn?.classList.remove("void-stars-open");
+    toggleBtn?.setAttribute("aria-expanded", "false");
+}
+
+function isActionLabel(label: string): boolean {
+    return ACTION_RE.test(label.trim());
+}
+
+function actionCount(node: HTMLElement): number {
+    let n = 0;
+    for (const btn of node.querySelectorAll<HTMLElement>("button[aria-label], button[title], [role='button'][aria-label]")) {
+        if (btn.classList.contains("void-stars-bubble")) continue;
+        const label = (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
+        if (isActionLabel(label)) n++;
+    }
+    return n;
+}
+
+function actionRow(msg: HTMLElement): HTMLElement | null {
+    let best: HTMLElement | null = null;
+    let bestCount = 0;
+    let bestDepth = 99;
+    for (const btn of msg.querySelectorAll<HTMLElement>("button[aria-label], button[title], [role='button'][aria-label]")) {
+        if (btn.classList.contains("void-stars-bubble")) continue;
+        const label = (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
+        if (!isActionLabel(label)) continue;
+        let node = btn.parentElement;
+        for (let depth = 1; node && node !== msg && depth <= 6; depth++, node = node.parentElement) {
+            const count = actionCount(node);
+            if (count > bestCount || (count === bestCount && depth < bestDepth)) {
+                best = node;
+                bestCount = count;
+                bestDepth = depth;
+            }
+        }
+    }
+    return bestCount > 0 ? best : null;
+}
+
+function messageIdOf(msg: HTMLElement): string {
+    if (msg.id.startsWith("response-")) return msg.id.slice("response-".length);
+    const host = msg.closest<HTMLElement>("[id^='response-']");
+    if (host?.id.startsWith("response-")) return host.id.slice("response-".length);
+    return "";
+}
+
+function bubbleText(msg: HTMLElement): string {
+    const copy = msg.cloneNode(true);
+    if (!(copy instanceof HTMLElement)) return "";
+    copy.querySelectorAll("button, [role='button'], .void-stars-bubble").forEach(node => node.remove());
+    return clipSnippet(copy.textContent ?? "");
+}
+
+function onBubbleClick(ev: MouseEvent) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const { currentTarget } = ev;
+    if (!(currentTarget instanceof HTMLElement)) return;
+    const msg = currentTarget.closest<HTMLElement>(MSG_SEL);
+    const id = msg ? messageIdOf(msg) : "";
+    const cid = currentCid();
+    if (!msg || !id || !cid) return;
+    const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
+    toggle(cid, id, { role, snippet: bubbleText(msg) });
+}
+
+function makeBubble(): HTMLButtonElement {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "void-stars-bubble";
+    btn.appendChild(starSvg());
+    btn.addEventListener("click", onBubbleClick);
+    return btn;
+}
+
+function syncBubble(btn: HTMLButtonElement, cid: string, id: string) {
+    const on = hasStar(cid, id);
+    btn.classList.toggle("void-stars-on", on);
+    btn.setAttribute("aria-label", on ? "Unstar" : "Star");
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+}
+
+function paintBubbles() {
+    const cid = currentCid();
+    const keep = new Set<HTMLElement>();
+    for (const msg of document.querySelectorAll<HTMLElement>(MSG_SEL)) {
+        const id = messageIdOf(msg);
+        if (!cid || !id) continue;
+        const row = actionRow(msg);
+        const parent = row ?? msg;
+        const floating = !row;
+        let btn = parent.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
+        if (!btn) {
+            btn = makeBubble();
+            parent.appendChild(btn);
+        }
+        btn.classList.toggle("void-stars-float", floating);
+        msg.classList.toggle("void-stars-rel", floating);
+        syncBubble(btn, cid, id);
+        keep.add(btn);
+    }
+    for (const btn of document.querySelectorAll<HTMLButtonElement>(".void-stars-bubble")) {
+        if (!keep.has(btn)) btn.remove();
+    }
+    for (const msg of document.querySelectorAll<HTMLElement>(".void-stars-rel")) {
+        if (!msg.querySelector(":scope > .void-stars-bubble.void-stars-float")) msg.classList.remove("void-stars-rel");
+    }
+}
+
+function clearBubbles() {
+    document.querySelectorAll(".void-stars-bubble").forEach(node => node.remove());
+    document.querySelectorAll(".void-stars-rel").forEach(node => node.classList.remove("void-stars-rel"));
 }
 
 function appendList(container: HTMLElement, groups: readonly StarGroup[]) {
@@ -385,38 +471,100 @@ function appendList(container: HTMLElement, groups: readonly StarGroup[]) {
     container.append(head, body);
 }
 
-function openPop(anchor: HTMLElement, groups: readonly StarGroup[]) {
-    closePop();
-    const panel = document.createElement("div");
-    panel.className = "void-stars-pop";
-    appendList(panel, groups);
-    document.body.appendChild(panel);
-    const rect = anchor.getBoundingClientRect();
-    panel.style.left = `${Math.round(rect.right + 8)}px`;
-    panel.style.top = `${Math.round(Math.max(8, rect.top))}px`;
-    pop = panel;
+function signature(groups: readonly StarGroup[]): string {
+    return groups.map(group => `${group.conversationId}:${group.missing ? 1 : 0}:${group.title}:${group.items.map(item => `${item.messageId}:${item.snippet}`).join(",")}`).join(";");
 }
 
-function chatsAnchor(sidebar: Element): Element | null {
-    const plus = sidebar.querySelector("[data-void-chats-plus], .void-chats-plus");
-    const fromPlus = plus?.closest("[data-sidebar=group]");
-    if (fromPlus) return fromPlus;
-    for (const btn of sidebar.querySelectorAll<HTMLElement>("button[aria-expanded]")) {
-        const label = (btn.getAttribute("aria-label") ?? "").trim();
-        if (label === "Chats" || label === "History") return btn.closest("[data-sidebar=group]");
+function railBox(): DOMRect | null {
+    const ticks = document.querySelector<HTMLElement>(".void-bn-ticks");
+    if (ticks) return ticks.getBoundingClientRect();
+    const native = document.querySelector<HTMLElement>("button[aria-label^='Go to response ']");
+    const box = native?.parentElement ?? native;
+    if (!box) return null;
+    const rect = box.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return null;
+    return rect;
+}
+
+function placeToggle(box: DOMRect) {
+    if (!toggleBtn) return;
+    const { top: boxTop, right: boxRight } = box;
+    const size = 28;
+    let top = boxTop - size - 4;
+    if (top < 8) top = Math.max(8, boxTop);
+    const left = Math.min(window.innerWidth - size - 8, Math.max(8, boxRight - size));
+    toggleBtn.style.top = `${Math.round(top)}px`;
+    toggleBtn.style.left = `${Math.round(left)}px`;
+}
+
+function placePanel(box: DOMRect) {
+    if (!panel) return;
+    const { top: boxTop, left: boxLeft, right: boxRight } = box;
+    const width = panel.offsetWidth || 288;
+    const height = panel.offsetHeight || 160;
+    let left = boxLeft - width - 8;
+    if (left < 8) left = Math.min(window.innerWidth - width - 8, boxRight + 8);
+    let top = boxTop;
+    const maxH = Math.max(120, window.innerHeight - top - 8);
+    if (top + height > window.innerHeight - 8) top = Math.max(8, window.innerHeight - Math.min(height, maxH) - 8);
+    panel.style.maxHeight = `${Math.round(Math.min(maxH, window.innerHeight - 16))}px`;
+    panel.style.left = `${Math.round(Math.max(8, left))}px`;
+    panel.style.top = `${Math.round(top)}px`;
+}
+
+function ensureToggle() {
+    if (toggleBtn?.isConnected) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "void-stars-toggle";
+    btn.setAttribute("aria-label", "Starred messages");
+    btn.setAttribute("aria-expanded", "false");
+    btn.appendChild(starSvg());
+    btn.addEventListener("click", ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        listOpen = !listOpen;
+        if (!listOpen) closePanel();
+        schedule();
+    });
+    document.body.appendChild(btn);
+    toggleBtn = btn;
+}
+
+function removeToggle() {
+    toggleBtn?.remove();
+    toggleBtn = null;
+}
+
+function paintRail() {
+    const list = stars();
+    const box = railBox();
+    if (!settings.store.showInSidebar || !list.length || !box) {
+        listOpen = false;
+        closePanel();
+        removeToggle();
+        return;
     }
-    return null;
-}
-
-function isCollapsed(sidebar: Element): boolean {
-    const state = sidebar.getAttribute("data-state") ?? sidebar.closest("[data-state]")?.getAttribute("data-state") ?? "";
-    if (state === "collapsed") return true;
-    const width = sidebar.getBoundingClientRect().width;
-    return width > 0 && width < 88;
-}
-
-function signature(groups: readonly StarGroup[], collapsed: boolean): string {
-    return `${collapsed ? 1 : 0}|${groups.map(group => `${group.conversationId}:${group.missing ? 1 : 0}:${group.title}:${group.items.map(item => `${item.messageId}:${item.snippet}`).join(",")}`).join(";")}`;
+    ensureToggle();
+    placeToggle(box);
+    if (!listOpen) {
+        closePanel();
+        return;
+    }
+    const groups = groupStars(list, currentCid(), leafIds(currentCid()), titlesFor(list), knownIds());
+    const key = signature(groups);
+    if (!panel || panelKey !== key) {
+        panel?.remove();
+        const next = document.createElement("div");
+        next.className = "void-stars-panel";
+        appendList(next, groups);
+        document.body.appendChild(next);
+        panel = next;
+        panelKey = key;
+    }
+    placePanel(box);
+    toggleBtn?.classList.add("void-stars-open");
+    toggleBtn?.setAttribute("aria-expanded", "true");
 }
 
 function paintMarks() {
@@ -440,65 +588,12 @@ function clearMarks() {
     }
 }
 
-function removeHost() {
-    host?.remove();
-    host = null;
-    paintKey = "";
-    closePop();
-}
-
-function paintSidebar() {
-    if (!settings.store.showInSidebar) {
-        removeHost();
-        return;
-    }
-    const list = stars();
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!list.length || !sidebar) {
-        removeHost();
-        return;
-    }
-    const anchor = chatsAnchor(sidebar);
-    const parent = anchor?.parentElement ?? sidebar;
-    const collapsed = isCollapsed(sidebar);
-    const cid = currentCid();
-    const groups = groupStars(list, cid, leafIds(cid), titlesFor(list), knownIds());
-    const key = signature(groups, collapsed);
-    if (host?.isConnected && host.parentElement === parent && key === paintKey) {
-        if (anchor && host.nextElementSibling !== anchor) parent.insertBefore(host, anchor);
-        return;
-    }
-    const next = document.createElement("div");
-    next.className = collapsed ? "void-stars-host void-stars-collapsed" : "void-stars-host";
-    if (!collapsed) appendList(next, groups);
-    const rail = document.createElement("button");
-    rail.type = "button";
-    rail.className = "void-stars-rail";
-    rail.setAttribute("aria-label", "Starred messages");
-    rail.appendChild(starSvg());
-    rail.addEventListener("click", ev => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        if (pop) closePop();
-        else openPop(rail, groups);
-    });
-    next.appendChild(rail);
-    host?.remove();
-    if (anchor) parent.insertBefore(next, anchor);
-    else parent.appendChild(next);
-    host = next;
-    paintKey = key;
-    if (pop) {
-        const anchorEl = rail;
-        openPop(anchorEl, groups);
-    }
-}
-
 function paintAll() {
     if (!alive) return;
     reloadIfAccountChanged();
     paintMarks();
-    paintSidebar();
+    paintBubbles();
+    paintRail();
     settlePending();
 }
 
@@ -526,11 +621,9 @@ function start() {
     const { signal } = ac;
     startStore(schedule);
     document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
-    document.addEventListener("pointermove", onPointerMove, { capture: true, signal });
-    document.addEventListener("pointerup", clearPress, { capture: true, signal });
-    document.addEventListener("pointercancel", clearPress, { capture: true, signal });
-    document.addEventListener("click", onClickCapture, { capture: true, signal });
     document.addEventListener("keydown", onKeyDown, { capture: true, signal });
+    document.addEventListener("scroll", schedule, { capture: true, signal });
+    window.addEventListener("resize", schedule, { signal });
     mo = new MutationObserver(schedule);
     mo.observe(document.documentElement, { childList: true, subtree: true });
     schedule();
@@ -538,13 +631,15 @@ function start() {
 
 function stop() {
     alive = false;
+    listOpen = false;
     ac?.abort();
     ac = null;
     mo?.disconnect();
     mo = null;
-    clearPress();
     clearPending();
-    removeHost();
+    closePanel();
+    removeToggle();
+    clearBubbles();
     clearMarks();
     stopStore();
 }
@@ -552,18 +647,19 @@ function stop() {
 export default definePlugin({
     name: "MessageStars",
     icon: StarIcon,
-    description: "Star any message. Starred ticks turn orange in the message rail, and the left sidebar lists them.",
+    description: "Star any message from its hover toolbar. Starred ticks turn orange, and the list sits beside the message navigator.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: false,
     startAt: StartAt.DOMContentLoaded,
     settings,
     managedStyle: "messageStars",
-    cleanupSelectors: [".void-stars-host", ".void-stars-pop"],
+    cleanupSelectors: [".void-stars-bubble", ".void-stars-toggle", ".void-stars-panel", ".void-stars-host", ".void-stars-pop"],
     start,
     stop,
     onSettingsChange() {
-        paintKey = "";
+        panelKey = "";
+        if (!settings.store.showInSidebar) listOpen = false;
         schedule();
     },
     zustand: {

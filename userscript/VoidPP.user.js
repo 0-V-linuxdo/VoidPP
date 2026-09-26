@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.34
+// @version      20260926.35
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.34] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.35] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.34] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"0eb46b1"}`
-    }, `(${"0eb46b1"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.35] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"02d9f0c"}`
+    }, `(${"02d9f0c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8215,28 +8215,100 @@ button .void-info-hint {
     background: #ff7a17;
 }
 
-.void-stars-host {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    margin: 0.25rem 0.5rem 0.5rem;
-    min-width: 0;
+.void-stars-bubble,
+.void-stars-toggle,
+.void-stars-jump,
+.void-stars-unstar {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
 }
 
-.void-stars-head,
-.void-stars-section {
-    padding: 0.3rem 0.5rem 0.15rem;
-    color: hsl(var(--fg-tertiary));
-    font-size: 0.75rem;
-    line-height: 1.3;
-    letter-spacing: -0.1px;
+.void-stars-bubble {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border-radius: 999px;
+    color: hsl(var(--fg-secondary));
+}
+
+.void-stars-toggle {
+    position: fixed;
+    z-index: 70;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border-radius: 999px;
+    color: #ff7a17;
+    pointer-events: auto;
+}
+
+.void-stars-bubble.void-stars-on,
+.void-stars-toggle.void-stars-open {
+    color: #ff7a17;
+}
+
+.void-stars-bubble:hover,
+.void-stars-bubble:focus-visible,
+.void-stars-toggle:hover,
+.void-stars-toggle:focus-visible {
+    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
+    color: hsl(var(--fg-primary));
+}
+
+.void-stars-rel {
+    position: relative;
+}
+
+.void-stars-bubble.void-stars-float {
+    position: absolute;
+    z-index: 2;
+    top: 0.35rem;
+    inset-inline-end: 0.35rem;
+    opacity: 0;
+    background: hsl(var(--surface-l1));
+}
+
+.void-stars-rel:hover > .void-stars-float,
+.void-stars-bubble.void-stars-float:focus-visible,
+.void-stars-bubble.void-stars-on.void-stars-float {
+    opacity: 1;
+}
+
+.void-stars-panel {
+    position: fixed;
+    z-index: 80;
+    box-sizing: border-box;
+    width: min(18rem, 70vw);
+    overflow: auto;
+    padding: 0.375rem;
+    border: 1px solid hsl(var(--border-l1));
+    border-radius: 0.75rem;
+    background: hsl(var(--surface-l1));
+    color: hsl(var(--fg-primary));
+    pointer-events: auto;
+    scrollbar-width: thin;
 }
 
 .void-stars-head {
     display: flex;
     align-items: center;
     gap: 0.375rem;
+    padding: 0.3rem 0.5rem 0.15rem;
     color: hsl(var(--fg-secondary));
+    font-size: 0.75rem;
+    line-height: 1.3;
+    letter-spacing: -0.1px;
 }
 
 .void-stars-mark {
@@ -8248,9 +8320,7 @@ button .void-info-hint {
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
-    max-height: min(16rem, 40vh);
     overflow: auto;
-    scrollbar-width: thin;
 }
 
 .void-stars-sub {
@@ -8274,16 +8344,6 @@ button .void-info-hint {
 .void-stars-row:hover,
 .void-stars-row:focus-within {
     background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
-}
-
-.void-stars-jump,
-.void-stars-unstar,
-.void-stars-rail {
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    cursor: pointer;
 }
 
 .void-stars-jump {
@@ -8333,46 +8393,6 @@ button .void-info-hint {
 
 .void-stars-missing .void-stars-jump {
     color: hsl(var(--fg-tertiary));
-}
-
-.void-stars-rail {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    margin: 0.25rem auto;
-    border-radius: 0.5rem;
-    color: #ff7a17;
-}
-
-.void-stars-rail:hover,
-.void-stars-rail:focus-visible {
-    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
-}
-
-.void-stars-pop {
-    position: fixed;
-    z-index: 80;
-    box-sizing: border-box;
-    width: min(18rem, 70vw);
-    max-height: min(24rem, 70vh);
-    overflow: auto;
-    padding: 0.375rem;
-    border: 1px solid hsl(var(--border-l1));
-    border-radius: 0.75rem;
-    background: hsl(var(--surface-l1));
-    color: hsl(var(--fg-primary));
-    scrollbar-width: thin;
-}
-
-.void-stars-host.void-stars-collapsed .void-stars-head,
-.void-stars-host.void-stars-collapsed .void-stars-body {
-    display: none;
-}
-
-.void-stars-host.void-stars-collapsed .void-stars-rail {
-    display: flex;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -8609,30 +8629,28 @@ button .void-info-hint {
   // src/plugins/messageStars/index.tsx
   var logger19 = new Logger("MessageStars");
   var JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
-  var HOLD_MS = 550;
-  var SLOP_PX = 6;
-  var SUPPRESS_MS = 350;
   var PENDING_MS = 8000;
   var OFFSET_PX = 72;
   var NS = "http://www.w3.org/2000/svg";
   var STAR_D = "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z";
+  var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
+  var ACTION_RE = /^(edit|copy|like|dislike|retry|redo|regenerate|share|good response|bad response)\b|^(编辑|复制|拷贝|喜欢|不喜欢|点赞|踩|重新生成|重试|分享)/i;
   var settings6 = definePluginSettings({
     showInSidebar: {
       type: 3 /* BOOLEAN */,
-      description: "Show starred messages in the left sidebar.",
+      description: "Show the starred list beside the message navigator.",
       default: true
     }
   });
   var alive2 = false;
   var ac = null;
   var mo = null;
-  var host = null;
-  var pop = null;
-  var paintKey = "";
-  var suppressUntil = 0;
+  var panel = null;
+  var toggleBtn = null;
+  var listOpen = false;
+  var panelKey = "";
   var pendingTimer = 0;
   var pending = null;
-  var press = null;
   function currentCid() {
     try {
       const page = ChatPageStore.useChatPageStore.getState();
@@ -8679,7 +8697,7 @@ button .void-info-hint {
     if (temporaryOf(cid))
       return false;
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       if (route?.temporary && currentCid() === cid)
         return false;
     } catch {}
@@ -8772,52 +8790,23 @@ button .void-info-hint {
     }
     putStar(capture(cid, messageId, hint), shouldPersist(cid));
   }
-  function clearPress() {
-    if (press)
-      window.clearTimeout(press.timer);
-    press = null;
+  function onKeyDown(e) {
+    if (e.key !== "Escape" || !listOpen)
+      return;
+    e.preventDefault();
+    listOpen = false;
+    closePanel();
   }
   function onPointerDown(e) {
-    if (pop && e.target instanceof Node && !pop.contains(e.target) && !host?.contains(e.target))
-      closePop();
-    if (e.button !== 0)
+    if (!listOpen)
       return;
-    const target = e.target;
-    if (!(target instanceof Element))
+    const { target } = e;
+    if (!(target instanceof Node))
       return;
-    const tick = target.closest(".void-bn-tick");
-    const messageId = tick?.dataset.responseId ?? "";
-    const cid = currentCid();
-    if (!tick || !messageId || !cid)
+    if (panel?.contains(target) || toggleBtn?.contains(target))
       return;
-    clearPress();
-    const timer = window.setTimeout(() => {
-      const held = press;
-      press = null;
-      if (!held || currentCid() !== held.cid)
-        return;
-      suppressUntil = Date.now() + SUPPRESS_MS;
-      toggle(held.cid, held.id);
-    }, HOLD_MS);
-    press = { cid, id: messageId, x: e.clientX, y: e.clientY, timer };
-  }
-  function onPointerMove(e) {
-    if (!press)
-      return;
-    if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > SLOP_PX)
-      clearPress();
-  }
-  function onClickCapture(e) {
-    if (Date.now() >= suppressUntil)
-      return;
-    e.preventDefault();
-    e.stopPropagation();
-  }
-  function onKeyDown(e) {
-    if (e.key !== "Escape" || !pop)
-      return;
-    e.preventDefault();
-    closePop();
+    listOpen = false;
+    closePanel();
   }
   function navigatorJump(messageId) {
     const fn = pageWindow[JUMP_SYM];
@@ -8897,7 +8886,8 @@ button .void-info-hint {
     }
   }
   function openStar(star) {
-    closePop();
+    listOpen = false;
+    closePanel();
     if (star.conversationId !== currentCid()) {
       navigate(star);
       armPending(star.conversationId, star.messageId);
@@ -8909,8 +8899,8 @@ button .void-info-hint {
   function starSvg() {
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", "0 0 24 24");
-    svg.setAttribute("width", "14");
-    svg.setAttribute("height", "14");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
     svg.setAttribute("aria-hidden", "true");
     const path = document.createElementNS(NS, "path");
     path.setAttribute("d", STAR_D);
@@ -8918,9 +8908,124 @@ button .void-info-hint {
     svg.appendChild(path);
     return svg;
   }
-  function closePop() {
-    pop?.remove();
-    pop = null;
+  function closePanel() {
+    panel?.remove();
+    panel = null;
+    panelKey = "";
+    toggleBtn?.classList.remove("void-stars-open");
+    toggleBtn?.setAttribute("aria-expanded", "false");
+  }
+  function isActionLabel(label) {
+    return ACTION_RE.test(label.trim());
+  }
+  function actionCount(node) {
+    let n = 0;
+    for (const btn of node.querySelectorAll("button[aria-label], button[title], [role='button'][aria-label]")) {
+      if (btn.classList.contains("void-stars-bubble"))
+        continue;
+      const label = (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
+      if (isActionLabel(label))
+        n++;
+    }
+    return n;
+  }
+  function actionRow(msg) {
+    let best = null;
+    let bestCount = 0;
+    let bestDepth = 99;
+    for (const btn of msg.querySelectorAll("button[aria-label], button[title], [role='button'][aria-label]")) {
+      if (btn.classList.contains("void-stars-bubble"))
+        continue;
+      const label = (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
+      if (!isActionLabel(label))
+        continue;
+      let node = btn.parentElement;
+      for (let depth = 1;node && node !== msg && depth <= 6; depth++, node = node.parentElement) {
+        const count = actionCount(node);
+        if (count > bestCount || count === bestCount && depth < bestDepth) {
+          best = node;
+          bestCount = count;
+          bestDepth = depth;
+        }
+      }
+    }
+    return bestCount > 0 ? best : null;
+  }
+  function messageIdOf(msg) {
+    if (msg.id.startsWith("response-"))
+      return msg.id.slice("response-".length);
+    const host = msg.closest("[id^='response-']");
+    if (host?.id.startsWith("response-"))
+      return host.id.slice("response-".length);
+    return "";
+  }
+  function bubbleText(msg) {
+    const copy = msg.cloneNode(true);
+    if (!(copy instanceof HTMLElement))
+      return "";
+    copy.querySelectorAll("button, [role='button'], .void-stars-bubble").forEach((node) => node.remove());
+    return clipSnippet(copy.textContent ?? "");
+  }
+  function onBubbleClick(ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const { currentTarget } = ev;
+    if (!(currentTarget instanceof HTMLElement))
+      return;
+    const msg = currentTarget.closest(MSG_SEL);
+    const id = msg ? messageIdOf(msg) : "";
+    const cid = currentCid();
+    if (!msg || !id || !cid)
+      return;
+    const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
+    toggle(cid, id, { role, snippet: bubbleText(msg) });
+  }
+  function makeBubble() {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "void-stars-bubble";
+    btn.appendChild(starSvg());
+    btn.addEventListener("click", onBubbleClick);
+    return btn;
+  }
+  function syncBubble(btn, cid, id) {
+    const on = hasStar(cid, id);
+    btn.classList.toggle("void-stars-on", on);
+    btn.setAttribute("aria-label", on ? "Unstar" : "Star");
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+  function paintBubbles() {
+    const cid = currentCid();
+    const keep = new Set;
+    for (const msg of document.querySelectorAll(MSG_SEL)) {
+      const id = messageIdOf(msg);
+      if (!cid || !id)
+        continue;
+      const row = actionRow(msg);
+      const parent = row ?? msg;
+      const floating = !row;
+      let btn = parent.querySelector(":scope > .void-stars-bubble");
+      if (!btn) {
+        btn = makeBubble();
+        parent.appendChild(btn);
+      }
+      btn.classList.toggle("void-stars-float", floating);
+      msg.classList.toggle("void-stars-rel", floating);
+      syncBubble(btn, cid, id);
+      keep.add(btn);
+    }
+    for (const btn of document.querySelectorAll(".void-stars-bubble")) {
+      if (!keep.has(btn))
+        btn.remove();
+    }
+    for (const msg of document.querySelectorAll(".void-stars-rel")) {
+      if (!msg.querySelector(":scope > .void-stars-bubble.void-stars-float"))
+        msg.classList.remove("void-stars-rel");
+    }
+  }
+  function clearBubbles() {
+    document.querySelectorAll(".void-stars-bubble").forEach((node) => node.remove());
+    document.querySelectorAll(".void-stars-rel").forEach((node) => node.classList.remove("void-stars-rel"));
   }
   function appendList(container, groups) {
     const head = document.createElement("div");
@@ -8973,38 +9078,104 @@ button .void-info-hint {
     }
     container.append(head, body);
   }
-  function openPop(anchor, groups) {
-    closePop();
-    const panel = document.createElement("div");
-    panel.className = "void-stars-pop";
-    appendList(panel, groups);
-    document.body.appendChild(panel);
-    const rect = anchor.getBoundingClientRect();
-    panel.style.left = `${Math.round(rect.right + 8)}px`;
-    panel.style.top = `${Math.round(Math.max(8, rect.top))}px`;
-    pop = panel;
+  function signature(groups) {
+    return groups.map((group) => `${group.conversationId}:${group.missing ? 1 : 0}:${group.title}:${group.items.map((item) => `${item.messageId}:${item.snippet}`).join(",")}`).join(";");
   }
-  function chatsAnchor(sidebar) {
-    const plus = sidebar.querySelector("[data-void-chats-plus], .void-chats-plus");
-    const fromPlus = plus?.closest("[data-sidebar=group]");
-    if (fromPlus)
-      return fromPlus;
-    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
-      const label = (btn.getAttribute("aria-label") ?? "").trim();
-      if (label === "Chats" || label === "History")
-        return btn.closest("[data-sidebar=group]");
+  function railBox() {
+    const ticks = document.querySelector(".void-bn-ticks");
+    if (ticks)
+      return ticks.getBoundingClientRect();
+    const native = document.querySelector("button[aria-label^='Go to response ']");
+    const box = native?.parentElement ?? native;
+    if (!box)
+      return null;
+    const rect = box.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1)
+      return null;
+    return rect;
+  }
+  function placeToggle(box) {
+    if (!toggleBtn)
+      return;
+    const { top: boxTop, right: boxRight } = box;
+    const size = 28;
+    let top = boxTop - size - 4;
+    if (top < 8)
+      top = Math.max(8, boxTop);
+    const left = Math.min(window.innerWidth - size - 8, Math.max(8, boxRight - size));
+    toggleBtn.style.top = `${Math.round(top)}px`;
+    toggleBtn.style.left = `${Math.round(left)}px`;
+  }
+  function placePanel(box) {
+    if (!panel)
+      return;
+    const { top: boxTop, left: boxLeft, right: boxRight } = box;
+    const width = panel.offsetWidth || 288;
+    const height = panel.offsetHeight || 160;
+    let left = boxLeft - width - 8;
+    if (left < 8)
+      left = Math.min(window.innerWidth - width - 8, boxRight + 8);
+    let top = boxTop;
+    const maxH = Math.max(120, window.innerHeight - top - 8);
+    if (top + height > window.innerHeight - 8)
+      top = Math.max(8, window.innerHeight - Math.min(height, maxH) - 8);
+    panel.style.maxHeight = `${Math.round(Math.min(maxH, window.innerHeight - 16))}px`;
+    panel.style.left = `${Math.round(Math.max(8, left))}px`;
+    panel.style.top = `${Math.round(top)}px`;
+  }
+  function ensureToggle() {
+    if (toggleBtn?.isConnected)
+      return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "void-stars-toggle";
+    btn.setAttribute("aria-label", "Starred messages");
+    btn.setAttribute("aria-expanded", "false");
+    btn.appendChild(starSvg());
+    btn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      listOpen = !listOpen;
+      if (!listOpen)
+        closePanel();
+      schedule();
+    });
+    document.body.appendChild(btn);
+    toggleBtn = btn;
+  }
+  function removeToggle() {
+    toggleBtn?.remove();
+    toggleBtn = null;
+  }
+  function paintRail() {
+    const list = stars();
+    const box = railBox();
+    if (!settings6.store.showInSidebar || !list.length || !box) {
+      listOpen = false;
+      closePanel();
+      removeToggle();
+      return;
     }
-    return null;
-  }
-  function isCollapsed(sidebar) {
-    const state = sidebar.getAttribute("data-state") ?? sidebar.closest("[data-state]")?.getAttribute("data-state") ?? "";
-    if (state === "collapsed")
-      return true;
-    const width = sidebar.getBoundingClientRect().width;
-    return width > 0 && width < 88;
-  }
-  function signature(groups, collapsed) {
-    return `${collapsed ? 1 : 0}|${groups.map((group) => `${group.conversationId}:${group.missing ? 1 : 0}:${group.title}:${group.items.map((item) => `${item.messageId}:${item.snippet}`).join(",")}`).join(";")}`;
+    ensureToggle();
+    placeToggle(box);
+    if (!listOpen) {
+      closePanel();
+      return;
+    }
+    const groups = groupStars(list, currentCid(), leafIds(currentCid()), titlesFor(list), knownIds());
+    const key = signature(groups);
+    if (!panel || panelKey !== key) {
+      panel?.remove();
+      const next = document.createElement("div");
+      next.className = "void-stars-panel";
+      appendList(next, groups);
+      document.body.appendChild(next);
+      panel = next;
+      panelKey = key;
+    }
+    placePanel(box);
+    toggleBtn?.classList.add("void-stars-open");
+    toggleBtn?.setAttribute("aria-expanded", "true");
   }
   function paintMarks() {
     const cid = currentCid();
@@ -9028,70 +9199,13 @@ button .void-info-hint {
       el.removeAttribute("aria-pressed");
     }
   }
-  function removeHost() {
-    host?.remove();
-    host = null;
-    paintKey = "";
-    closePop();
-  }
-  function paintSidebar() {
-    if (!settings6.store.showInSidebar) {
-      removeHost();
-      return;
-    }
-    const list = stars();
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!list.length || !sidebar) {
-      removeHost();
-      return;
-    }
-    const anchor = chatsAnchor(sidebar);
-    const parent = anchor?.parentElement ?? sidebar;
-    const collapsed = isCollapsed(sidebar);
-    const cid = currentCid();
-    const groups = groupStars(list, cid, leafIds(cid), titlesFor(list), knownIds());
-    const key = signature(groups, collapsed);
-    if (host?.isConnected && host.parentElement === parent && key === paintKey) {
-      if (anchor && host.nextElementSibling !== anchor)
-        parent.insertBefore(host, anchor);
-      return;
-    }
-    const next = document.createElement("div");
-    next.className = collapsed ? "void-stars-host void-stars-collapsed" : "void-stars-host";
-    if (!collapsed)
-      appendList(next, groups);
-    const rail = document.createElement("button");
-    rail.type = "button";
-    rail.className = "void-stars-rail";
-    rail.setAttribute("aria-label", "Starred messages");
-    rail.appendChild(starSvg());
-    rail.addEventListener("click", (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      if (pop)
-        closePop();
-      else
-        openPop(rail, groups);
-    });
-    next.appendChild(rail);
-    host?.remove();
-    if (anchor)
-      parent.insertBefore(next, anchor);
-    else
-      parent.appendChild(next);
-    host = next;
-    paintKey = key;
-    if (pop) {
-      const anchorEl = rail;
-      openPop(anchorEl, groups);
-    }
-  }
   function paintAll() {
     if (!alive2)
       return;
     reloadIfAccountChanged();
     paintMarks();
-    paintSidebar();
+    paintBubbles();
+    paintRail();
     settlePending();
   }
   var schedule = debounce(paintAll, 80);
@@ -9116,42 +9230,44 @@ button .void-info-hint {
     const { signal } = ac;
     startStore(schedule);
     document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
-    document.addEventListener("pointermove", onPointerMove, { capture: true, signal });
-    document.addEventListener("pointerup", clearPress, { capture: true, signal });
-    document.addEventListener("pointercancel", clearPress, { capture: true, signal });
-    document.addEventListener("click", onClickCapture, { capture: true, signal });
     document.addEventListener("keydown", onKeyDown, { capture: true, signal });
+    document.addEventListener("scroll", schedule, { capture: true, signal });
+    window.addEventListener("resize", schedule, { signal });
     mo = new MutationObserver(schedule);
     mo.observe(document.documentElement, { childList: true, subtree: true });
     schedule();
   }
   function stop() {
     alive2 = false;
+    listOpen = false;
     ac?.abort();
     ac = null;
     mo?.disconnect();
     mo = null;
-    clearPress();
     clearPending();
-    removeHost();
+    closePanel();
+    removeToggle();
+    clearBubbles();
     clearMarks();
     stopStore();
   }
   var messageStars_default = definePlugin({
     name: "MessageStars",
     icon: StarIcon,
-    description: "Star any message. Starred ticks turn orange in the message rail, and the left sidebar lists them.",
+    description: "Star any message from its hover toolbar. Starred ticks turn orange, and the list sits beside the message navigator.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: false,
     startAt: "DOMContentLoaded" /* DOMContentLoaded */,
     settings: settings6,
     managedStyle: "messageStars",
-    cleanupSelectors: [".void-stars-host", ".void-stars-pop"],
+    cleanupSelectors: [".void-stars-bubble", ".void-stars-toggle", ".void-stars-panel", ".void-stars-host", ".void-stars-pop"],
     start,
     stop,
     onSettingsChange() {
-      paintKey = "";
+      panelKey = "";
+      if (!settings6.store.showInSidebar)
+        listOpen = false;
       schedule();
     },
     zustand: {
@@ -14920,7 +15036,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var SKIP_NOISE = /^(copy|share|retry|edit|more|thinking|analyzing|searching|continue from here|what can i help with\??|files|add files for grok to use in this project)$/i;
   var FILES_CHROME = /add files for grok to use in this project/i;
   var PANE_SKIP = "[data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
-  var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
+  var MSG_SEL2 = "[data-testid='user-message'], [data-testid='assistant-message']";
   var TIME_TOKEN = /(?:^|\s)\d{1,2}:\d{2}\s*(?:am|pm)\b/gi;
   var STATUS_TOKEN = /\b(?:connected to computer|continuing the(?: task)?|worked for \d+\s*m(?:\s*\d+\s*s)?|worked for \d+\s*s)\b/gi;
   var COUNT_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => ({ label: String(n), value: n, default: n === 5 }));
@@ -14954,7 +15070,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var held2 = false;
   var ctrlHeld = false;
   var keys = null;
-  var host2 = null;
+  var host = null;
   var paintedIds = "";
   var paintedMeta = "";
   var hoverArmed = false;
@@ -16109,7 +16225,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!main)
       return null;
     const skip = (n) => !!n.closest(PANE_SKIP);
-    const msg = main.querySelector(MSG_SEL);
+    const msg = main.querySelector(MSG_SEL2);
     if (msg) {
       const col = msg.closest("[class*='overflow-y-auto'], [class*='overflow-auto']");
       if (col && !skip(col))
@@ -16162,8 +16278,8 @@ html.void-rt-open [data-sidebar="gap"] {
     return inner[0] ?? null;
   }
   function extractTurn(kid) {
-    const tagged = [...kid.querySelectorAll(MSG_SEL)];
-    if (kid.matches(MSG_SEL))
+    const tagged = [...kid.querySelectorAll(MSG_SEL2)];
+    if (kid.matches(MSG_SEL2))
       tagged.unshift(kid);
     if (tagged.length) {
       const lines = [];
@@ -16181,7 +16297,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const userText = scrubText(chromeOff(bubble).innerText ?? "");
     const rest = chromeOff(kid);
     if (bubble !== kid) {
-      rest.querySelectorAll(`${MSG_SEL}, [class*='justify-end'], [class*='self-end'], [class*='ml-auto']`).forEach((n) => n.remove());
+      rest.querySelectorAll(`${MSG_SEL2}, [class*='justify-end'], [class*='self-end'], [class*='ml-auto']`).forEach((n) => n.remove());
     }
     let asstText = scrubText(rest.innerText ?? "");
     if (userText && asstText.includes(userText))
@@ -16210,7 +16326,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const fromMarks = extractMarks(pane);
     if (fromMarks.length)
       return fromMarks;
-    const tagged = [...pane.querySelectorAll(MSG_SEL)];
+    const tagged = [...pane.querySelectorAll(MSG_SEL2)];
     if (tagged.length) {
       const out = [];
       for (const el of tagged) {
@@ -17120,9 +17236,9 @@ html.void-rt-open [data-sidebar="gap"] {
     syncActive();
   }
   function renderList(items) {
-    if (!host2)
+    if (!host)
       return;
-    const panel = host2.querySelector(`.${cl19("panel")}`);
+    const panel = host.querySelector(`.${cl19("panel")}`);
     if (!panel)
       return;
     let list = panel.querySelector(`.${cl19("list")}`);
@@ -17157,9 +17273,9 @@ html.void-rt-open [data-sidebar="gap"] {
     });
   }
   function patchList(items) {
-    if (!host2)
+    if (!host)
       return;
-    const cards = [...host2.querySelectorAll(`.${cl19("card")}`)];
+    const cards = [...host.querySelectorAll(`.${cl19("card")}`)];
     if (cards.length !== items.length) {
       renderList(items);
       return;
@@ -17197,9 +17313,9 @@ html.void-rt-open [data-sidebar="gap"] {
     });
   }
   function syncActive() {
-    if (!host2)
+    if (!host)
       return;
-    const cards = host2.querySelectorAll(`.${cl19("card")}`);
+    const cards = host.querySelectorAll(`.${cl19("card")}`);
     cards.forEach((card, i) => {
       const on = i === selected;
       card.setAttribute("data-active", on ? "true" : "false");
@@ -17222,11 +17338,11 @@ html.void-rt-open [data-sidebar="gap"] {
     const keepId = items[selected]?.id ?? "";
     const ids = items.map((t) => t.id).join("|") || "__empty__";
     const meta = items.map((t) => `${t.title}\x00${t.project}`).join("|");
-    if (!host2) {
-      host2 = buildHost();
-      mountOverlay(host2);
+    if (!host) {
+      host = buildHost();
+      mountOverlay(host);
     }
-    const panel = host2.querySelector(`.${cl19("panel")}`);
+    const panel = host.querySelector(`.${cl19("panel")}`);
     if (!panel)
       return;
     applyTheme(panel);
@@ -17264,12 +17380,12 @@ html.void-rt-open [data-sidebar="gap"] {
     paintedMeta = "";
     hoverArmed = false;
     hoverOrigin = false;
-    if (host2) {
+    if (host) {
       try {
-        host2.hidePopover();
+        host.hidePopover();
       } catch {}
-      host2.remove();
-      host2 = null;
+      host.remove();
+      host = null;
     }
     document.getElementById("void-rt-host")?.remove();
     document.querySelectorAll("dialog.void-rt-root, [popover].void-rt-root").forEach((el) => {
@@ -17731,7 +17847,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   // src/plugins/betterNavigator/index.ts
   var logger27 = new Logger("BetterNavigator");
   var cl20 = classNameFactory("void-bn-");
-  var MSG_SEL2 = "[data-testid='user-message'], [data-testid='assistant-message']";
+  var MSG_SEL3 = "[data-testid='user-message'], [data-testid='assistant-message']";
   var ASST_SEL = "[data-testid='assistant-message']";
   var TICK_SEL = "button[aria-label^='Go to response ']";
   var PREV_SEL = "button[aria-label='Navigate to previous message']";
@@ -17829,7 +17945,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var mainMo = null;
   var ro = null;
   var io = null;
-  var host3 = null;
+  var host2 = null;
   var rail = null;
   var frameTouched = null;
   var framePrevPos = "";
@@ -17890,7 +18006,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!main)
       return null;
     const skip = (n) => !!n.closest(PANE_SKIP2);
-    const msg = main.querySelector(MSG_SEL2);
+    const msg = main.querySelector(MSG_SEL3);
     if (msg) {
       const col = msg.closest("[class*='overflow-y-auto'], [class*='overflow-auto']");
       if (col && !skip(col))
@@ -18179,9 +18295,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function bubbleOf(el) {
     if (!el)
       return null;
-    if (el.matches(MSG_SEL2))
+    if (el.matches(MSG_SEL3))
       return el;
-    return el.querySelector(MSG_SEL2);
+    return el.querySelector(MSG_SEL3);
   }
   function elForId(id) {
     const shell = document.getElementById(`response-${id}`);
@@ -18247,7 +18363,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const showAsst = settings13.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const out = [];
-    for (const el of root.querySelectorAll(MSG_SEL2)) {
+    for (const el of root.querySelectorAll(MSG_SEL3)) {
       if (!document.body.contains(el))
         continue;
       const role = el.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
@@ -18580,20 +18696,20 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return true;
   }
   function markAim(index) {
-    host3?.querySelectorAll(".void-bn-item").forEach((node) => {
+    host2?.querySelectorAll(".void-bn-item").forEach((node) => {
       node.classList.toggle("void-bn-aim", Number(node.dataset.voidBnI) === index);
     });
   }
   function applyActive(index, source = "list") {
     activeIdx = index;
     activeSource = source;
-    host3?.querySelectorAll(".void-bn-item").forEach((node) => {
+    host2?.querySelectorAll(".void-bn-item").forEach((node) => {
       node.classList.toggle("void-bn-active", Number(node.dataset.voidBnI) === index);
     });
-    host3?.querySelectorAll(".void-bn-tick").forEach((node) => {
+    host2?.querySelectorAll(".void-bn-tick").forEach((node) => {
       node.classList.toggle("void-bn-current", Number(node.dataset.voidBnI) === index);
     });
-    const meta = host3?.querySelector(".void-bn-meta");
+    const meta = host2?.querySelector(".void-bn-meta");
     if (meta)
       meta.textContent = metaLabel(index);
   }
@@ -18787,15 +18903,15 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return { top, height };
   }
   function placeHost() {
-    if (!host3)
+    if (!host2)
       return;
     const span = columnSpan();
-    host3.style.top = `${span.top}px`;
-    host3.style.height = `${span.height}px`;
-    host3.style.right = "0.75rem";
-    host3.style.transform = "none";
-    host3.style.justifyContent = "center";
-    const ticks = host3.querySelector(".void-bn-ticks");
+    host2.style.top = `${span.top}px`;
+    host2.style.height = `${span.height}px`;
+    host2.style.right = "0.75rem";
+    host2.style.transform = "none";
+    host2.style.justifyContent = "center";
+    const ticks = host2.querySelector(".void-bn-ticks");
     if (!ticks)
       return;
     ticks.style.height = "auto";
@@ -18819,8 +18935,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function clampMenu() {
     placeHost();
-    const menu = host3?.querySelector(".void-bn-menu");
-    if (!menu || !host3)
+    const menu = host2?.querySelector(".void-bn-menu");
+    if (!menu || !host2)
       return;
     const span = columnSpan();
     const natural = menu.scrollHeight;
@@ -18829,7 +18945,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     menu.style.overflowY = natural > cap + 1 ? "auto" : "hidden";
     menu.style.top = "";
     menu.style.transform = "";
-    const originRect = host3.getBoundingClientRect();
+    const originRect = host2.getBoundingClientRect();
     const mh = menu.offsetHeight || natural;
     const viewTop = originRect.top;
     const viewBottom = originRect.bottom;
@@ -18844,8 +18960,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     menu.style.marginTop = Math.abs(delta) < 1 ? "" : `${delta}px`;
   }
   function alignMenu(index) {
-    const menu = host3?.querySelector(".void-bn-menu");
-    if (!menu || !host3)
+    const menu = host2?.querySelector(".void-bn-menu");
+    if (!menu || !host2)
       return;
     const row = menu.querySelector(`.void-bn-item[data-void-bn-i="${index}"]`);
     row?.scrollIntoView({ block: "nearest" });
@@ -18874,7 +18990,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function patchLabels(nav) {
-    host3?.querySelectorAll(".void-bn-item .void-bn-label").forEach((node, i) => {
+    host2?.querySelectorAll(".void-bn-item .void-bn-label").forEach((node, i) => {
       if (nav[i] && node.textContent !== nav[i].text)
         node.textContent = nav[i].text;
     });
@@ -18905,7 +19021,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       mapped.classList.add("void-bn-native-live");
   }
   function patchLive(nav) {
-    host3?.querySelectorAll(".void-bn-tick").forEach((node, i) => {
+    host2?.querySelectorAll(".void-bn-tick").forEach((node, i) => {
       node.classList.toggle("void-bn-tick-live", !!nav[i]?.live);
     });
     patchLabels(nav);
@@ -18991,8 +19107,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function unmount() {
     rail?.classList.remove(SLOT_CLASS, "void-bn-open");
-    host3?.remove();
-    host3 = null;
+    host2?.remove();
+    host2 = null;
     rail = null;
     paintedKey = "";
     overMenu = false;
@@ -19004,7 +19120,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     document.documentElement.classList.toggle(HIDE_CLASS, !!settings13.store.hideNativeHover);
   }
   function setOpen(on) {
-    host3?.classList.toggle("void-bn-open", on);
+    host2?.classList.toggle("void-bn-open", on);
     rail?.classList.toggle("void-bn-open", on);
     if (!on)
       markAim(-1);
@@ -19045,12 +19161,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     markAim(-1);
   }
   function onKeyDown4(e) {
-    if (!lastNav.length || !host3?.isConnected)
+    if (!lastNav.length || !host2?.isConnected)
       return;
     if (isTypingTarget(e.target) || isTypingTarget(document.activeElement))
       return;
     if (e.key === "Escape") {
-      if (host3.classList.contains("void-bn-open") || rail?.classList.contains("void-bn-open")) {
+      if (host2.classList.contains("void-bn-open") || rail?.classList.contains("void-bn-open")) {
         e.preventDefault();
         setOpen(false);
       }
@@ -19075,7 +19191,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const t = e.target;
     if (!(t instanceof Node))
       return;
-    if (host3?.contains(t) || rail?.contains(t))
+    if (host2?.contains(t) || rail?.contains(t))
       return;
     setOpen(false);
   }
@@ -19106,7 +19222,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       paintedKey = "";
       labelCache.clear();
       hydrateGen++;
-      if (host3)
+      if (host2)
         unmount();
     }
     const nav = collect();
@@ -19120,7 +19236,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const mode = "self";
     document.documentElement.classList.add("void-bn-fullticks");
     const nextKey = structKey(mode, nav);
-    if (nextKey === paintedKey && host3?.isConnected && sameCatalog(nav)) {
+    if (nextKey === paintedKey && host2?.isConnected && sameCatalog(nav)) {
       lastNav = nav;
       patchLive(nav);
       syncNativeDash(nav);
@@ -19140,7 +19256,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     box.classList.add(SLOT_CLASS);
     box.append(tickRail(nav), menuEl(nav));
     frame.appendChild(box);
-    host3 = box;
+    host2 = box;
     lastNav = nav;
     paintedKey = nextKey;
     box.addEventListener("pointerleave", onPointerLeaveRail);
@@ -25856,7 +25972,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var toastedOrder = [];
   var started4 = false;
   var toast = null;
-  var host4 = null;
+  var host3 = null;
   var hideTimer;
   var retryTimer2;
   var hideAt = 0;
@@ -26223,8 +26339,8 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     keys2?.abort();
     keys2 = null;
     toast = null;
-    host4?.remove();
-    host4 = null;
+    host3?.remove();
+    host3 = null;
   }
   function isCurrentToast() {
     if (!toast)
@@ -26347,7 +26463,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     root.addEventListener("pointerenter", pauseTimer, { signal });
     root.addEventListener("pointerleave", resumeTimer, { signal });
     document.body.append(root);
-    host4 = root;
+    host3 = root;
     armTimer();
   }
   function navigateToImagine(id) {
@@ -32071,7 +32187,7 @@ div:has(> #grok-bot-nav-button) {
   contextMenu_default.updatedAt = 1790444048000;
   chatBarButtons_default.updatedAt = 1790444048000;
   betterFiles_default.updatedAt = 1790444048000;
-  messageStars_default.updatedAt = 1790450182000;
+  messageStars_default.updatedAt = 1790450459000;
   usageDisplay_default.updatedAt = 1790444048000;
   betterQueue_default.updatedAt = 1790444048000;
   settingsFlyout_default.updatedAt = 1790444048000;

@@ -33,7 +33,7 @@
 | <img src="https://api.iconify.design/lucide/message-circle.svg?color=%238b949e" width="16" height="16" alt=""> CustomGreeting | 关 | 替换非 Project 首页问候语。项目外默认不换输入框（`heroOnlyOutsideProject`，默认开）。Project 聊天仍用第一句。问候语轮播：进入首页 / 定时 / 点击标题（`mode`、`order`、`intervalSec`）。可选 `imaginePhrases` 用于 Imagine 输入框。 |
 | <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | 开 | 工程栏和 Imagine masonry 滚动条跟随主题（`themedScrollbar`，默认开）。可选在自动打开和恢复时关闭右侧栏（`hideRightPanel`，默认关）。手动展开保持打开。 |
 | <img src="https://api.iconify.design/lucide/scroll-text.svg?color=%238b949e" width="16" height="16" alt=""> BetterNavigator | 开 | 把原生消息导航升级成 Notion 式目录。悬停 tick 可看到当前分支的全部消息，含尚未挂载的历史；正在输出的回答以虚线保留，悬停目录相对轨道垂直居中。一轮对话和右侧栏打开时钉在聊天列上。输入框外 ↑/↓ 按目录逐条跳转（`showAssistant`、`hideNativeHover`、`jumpEffect`）。 |
-| <img src="https://api.iconify.design/lucide/star.svg?color=%238b949e" width="16" height="16" alt=""> MessageStars | 关 | 收藏任意一条消息。长按右侧导航 tick。收藏的 tick 变橙色，左侧栏列出收藏（`showInSidebar`）。 |
+| <img src="https://api.iconify.design/lucide/star.svg?color=%238b949e" width="16" height="16" alt=""> MessageStars | 关 | 在消息悬停工具条上收藏任意一条（用户和助手都有）。收藏的 tick 变橙色，列表从右侧导航旁的星标打开（`showInSidebar`）。 |
 | <img src="https://api.iconify.design/lucide/blend.svg?color=%238b949e" width="16" height="16" alt=""> ComposerOpacity | 开 | 调节输入栏背景透明度和模糊。 |
 | <img src="https://api.iconify.design/lucide/layout-grid.svg?color=%238b949e" width="16" height="16" alt=""> RecentTopics | 开 | Ctrl+` 切换最近会话（玻璃卡片、项目名、上轮问答预览）。 |
 | <img src="https://api.iconify.design/lucide/minimize-2.svg?color=%238b949e" width="16" height="16" alt=""> BetterModeSelect | 开 | 把 1–N 个聊天模式钉成常驻芯片，点一下直接切换，不必打开菜单。 |
