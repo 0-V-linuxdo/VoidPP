@@ -142,12 +142,14 @@ function sourceOfRow(row: GrokResponse | undefined): { parentId: string; quoted:
 }
 
 function sourceFromFiber(el: Element): { parentId: string; quoted: string; ids: string[] } {
+    const child = hostUuid(el);
     let cur = getFiber(el);
     let d = 0;
     let quoted = "";
     while (cur && d < 32) {
         const p = cur.memoizedProps;
         if (p) {
+            const direct = propSourceId(p, child);
             const {response} = p;
             if (response && typeof response === "object") {
                 const rec = response as Record<string, unknown>;
@@ -155,16 +157,39 @@ function sourceFromFiber(el: Element): { parentId: string; quoted: string; ids: 
                 const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object"
                     ? meta.parentQuoteSource as Record<string, unknown>
                     : undefined;
-                const ids = [...new Set([bareUuid(src?.sourceResponseId), bareUuid(rec.parentResponseId)].filter(Boolean))];
+                const ids = [...new Set([direct, bareUuid(src?.sourceResponseId), bareUuid(rec.parentResponseId)].filter(id => id && id !== child))];
                 const fromRow = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
                 if (ids.length || fromRow) return { parentId: ids[0] || "", quoted: fromRow || quoted, ids };
             }
+            if (direct) return { parentId: direct, quoted, ids: [direct] };
             if (!quoted && typeof p.quotedText === "string" && p.quotedText) quoted = p.quotedText;
         }
         cur = cur.return;
         d++;
     }
     return { parentId: "", quoted, ids: [] };
+}
+
+function propSourceId(p: Record<string, unknown>, child: string): string {
+    const take = (value: unknown): string => {
+        if (!value || typeof value !== "object") return "";
+        const rec = value as Record<string, unknown>;
+        const id = bareUuid(rec.sourceResponseId);
+        if (id && id !== child) return id;
+        const nested = rec.parentQuoteSource;
+        if (nested && typeof nested === "object") {
+            const inner = bareUuid((nested as Record<string, unknown>).sourceResponseId);
+            if (inner && inner !== child) return inner;
+        }
+        return "";
+    };
+    const own = bareUuid(p.sourceResponseId);
+    if (own && own !== child) return own;
+    for (const value of Object.values(p)) {
+        const id = take(value);
+        if (id) return id;
+    }
+    return "";
 }
 
 function propsId(el: Element): string {
@@ -744,9 +769,9 @@ function scrollPane(el: HTMLElement): HTMLElement | null {
 }
 
 function scrollLineToScreenCenter(range: Range | null, el: HTMLElement) {
-    if (!range || !document.body.contains(el)) return;
-    const box = lineBox(range);
-    if (!box) return;
+    if (!document.body.contains(el)) return;
+    const box = (range && lineBox(range)) || el.getBoundingClientRect();
+    if (!box || box.height < 1) return;
     const pane = scrollPane(el);
     if (!pane) return;
     const mid = visibleMidY(pane);
@@ -835,13 +860,14 @@ function pickMessage(ids: string[], needle: string, skip?: HTMLElement | null): 
 async function jump(origin: HTMLElement | null) {
     const mine = ++gen;
     const { needle, ids } = resolveNeedle(origin);
-    if (!prefixOf(needle)) return;
     const skip = officialJumpButton(origin) ? hostOf(origin) : null;
     const skipId = hostUuid(skip);
-    const first = pickMessage(ids, needle, skip);
+    const sourceId = ids.map(id => bareUuid(id) || id).find(id => id && id !== skipId) || "";
+    if (!prefixOf(needle) && !sourceId) return;
+    const first = prefixOf(needle) ? pickMessage(ids, needle, skip) : null;
     let el = first;
     const live = el ? blobScore(el, needle) : 0;
-    const stored = storeNeedle(needle, skipId);
+    const stored = prefixOf(needle) ? storeNeedle(needle, skipId) : null;
     if (stored && stored.id !== skipId && stored.score > live) {
         ids.unshift(stored.id);
         await hydrate(stored.cid || conversationId());
@@ -857,6 +883,20 @@ async function jump(origin: HTMLElement | null) {
         el = found ?? first;
     }
     if (mine !== gen) return;
+    if (!el && sourceId) {
+        await hydrate(conversationId());
+        if (mine !== gen) return;
+        for (let i = 0; i < WAIT_N; i++) {
+            const found = messageById(sourceId);
+            if (found && !insideHost(found, skip)) {
+                el = found;
+                break;
+            }
+            await sleep(WAIT_MS);
+            if (mine !== gen) return;
+        }
+    }
+    if (mine !== gen) return;
     if (!el) {
         logger.debug("no source message");
         return;
@@ -865,7 +905,7 @@ async function jump(origin: HTMLElement | null) {
     await afterLayout();
     if (mine !== gen) return;
     if (!el.isConnected) {
-        el = pickMessage(ids, needle, skip);
+        el = (prefixOf(needle) ? pickMessage(ids, needle, skip) : null) ?? (sourceId ? messageById(sourceId) : null);
         if (!el) return;
         openAncestors(el, needle);
         await afterLayout();
@@ -1182,7 +1222,9 @@ function onClick(e: MouseEvent) {
         if (!origin) return;
         if (officialJumpButton(origin)) {
             const { needle, ids } = resolveNeedle(origin);
-            if (!pickMessage(ids, needle, hostOf(origin))) return;
+            const skip = hostUuid(hostOf(origin));
+            const source = ids.map(id => bareUuid(id) || id).find(id => id && id !== skip);
+            if (!source && !pickMessage(ids, needle, hostOf(origin))) return;
         }
         e.preventDefault();
         e.stopPropagation();

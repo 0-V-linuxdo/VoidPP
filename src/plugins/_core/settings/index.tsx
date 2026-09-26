@@ -232,7 +232,7 @@ export default definePlugin({
             find: "pressed_cmd_settings",
             replacement: [
                 {
-                    match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-management"===\i\.group\)\)/,
+                    match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
                     replace: "[...$&,...$self._tabEntries()]",
                 },
                 {

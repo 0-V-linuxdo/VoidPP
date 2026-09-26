@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.19
+// @version      20260926.20
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.19] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.20] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,9 +7755,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.19] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4fa6998"}`
-    }, `(${"4fa6998"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.20] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"3edc8d2"}`
+    }, `(${"3edc8d2"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7878,7 +7878,7 @@ button .void-info-hint {
         find: "pressed_cmd_settings",
         replacement: [
           {
-            match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-management"===\i\.group\)\)/,
+            match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
             replace: "[...$&,...$self._tabEntries()]"
           },
           {
@@ -15078,22 +15078,26 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     };
   }
   function sourceFromFiber(el) {
+    const child = hostUuid(el);
     let cur = getFiber(el);
     let d = 0;
     let quoted = "";
     while (cur && d < 32) {
       const p = cur.memoizedProps;
       if (p) {
+        const direct = propSourceId(p, child);
         const { response } = p;
         if (response && typeof response === "object") {
           const rec = response;
           const meta = rec.metadata && typeof rec.metadata === "object" ? rec.metadata : undefined;
           const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource : undefined;
-          const ids = [...new Set([bareUuid(src?.sourceResponseId), bareUuid(rec.parentResponseId)].filter(Boolean))];
+          const ids = [...new Set([direct, bareUuid(src?.sourceResponseId), bareUuid(rec.parentResponseId)].filter((id) => id && id !== child))];
           const fromRow = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
           if (ids.length || fromRow)
             return { parentId: ids[0] || "", quoted: fromRow || quoted, ids };
         }
+        if (direct)
+          return { parentId: direct, quoted, ids: [direct] };
         if (!quoted && typeof p.quotedText === "string" && p.quotedText)
           quoted = p.quotedText;
       }
@@ -15101,6 +15105,32 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       d++;
     }
     return { parentId: "", quoted, ids: [] };
+  }
+  function propSourceId(p, child) {
+    const take = (value) => {
+      if (!value || typeof value !== "object")
+        return "";
+      const rec = value;
+      const id = bareUuid(rec.sourceResponseId);
+      if (id && id !== child)
+        return id;
+      const nested = rec.parentQuoteSource;
+      if (nested && typeof nested === "object") {
+        const inner = bareUuid(nested.sourceResponseId);
+        if (inner && inner !== child)
+          return inner;
+      }
+      return "";
+    };
+    const own = bareUuid(p.sourceResponseId);
+    if (own && own !== child)
+      return own;
+    for (const value of Object.values(p)) {
+      const id = take(value);
+      if (id)
+        return id;
+    }
+    return "";
   }
   function propsId(el) {
     let cur = getFiber(el);
@@ -15740,10 +15770,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return pane && pane.contains(el) ? pane : null;
   }
   function scrollLineToScreenCenter(range, el) {
-    if (!range || !document.body.contains(el))
+    if (!document.body.contains(el))
       return;
-    const box = lineBox(range);
-    if (!box)
+    const box = range && lineBox(range) || el.getBoundingClientRect();
+    if (!box || box.height < 1)
       return;
     const pane = scrollPane(el);
     if (!pane)
@@ -15836,14 +15866,15 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   async function jump2(origin) {
     const mine = ++gen;
     const { needle, ids } = resolveNeedle(origin);
-    if (!prefixOf(needle))
-      return;
     const skip = officialJumpButton(origin) ? hostOf(origin) : null;
     const skipId = hostUuid(skip);
-    const first = pickMessage(ids, needle, skip);
+    const sourceId = ids.map((id) => bareUuid(id) || id).find((id) => id && id !== skipId) || "";
+    if (!prefixOf(needle) && !sourceId)
+      return;
+    const first = prefixOf(needle) ? pickMessage(ids, needle, skip) : null;
     let el = first;
     const live = el ? blobScore(el, needle) : 0;
-    const stored = storeNeedle(needle, skipId);
+    const stored = prefixOf(needle) ? storeNeedle(needle, skipId) : null;
     if (stored && stored.id !== skipId && stored.score > live) {
       ids.unshift(stored.id);
       await hydrate(stored.cid || conversationId2());
@@ -15863,6 +15894,23 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (mine !== gen)
       return;
+    if (!el && sourceId) {
+      await hydrate(conversationId2());
+      if (mine !== gen)
+        return;
+      for (let i = 0;i < WAIT_N; i++) {
+        const found = messageById(sourceId);
+        if (found && !insideHost(found, skip)) {
+          el = found;
+          break;
+        }
+        await sleep(WAIT_MS);
+        if (mine !== gen)
+          return;
+      }
+    }
+    if (mine !== gen)
+      return;
     if (!el) {
       logger26.debug("no source message");
       return;
@@ -15872,7 +15920,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (mine !== gen)
       return;
     if (!el.isConnected) {
-      el = pickMessage(ids, needle, skip);
+      el = (prefixOf(needle) ? pickMessage(ids, needle, skip) : null) ?? (sourceId ? messageById(sourceId) : null);
       if (!el)
         return;
       openAncestors(el, needle);
@@ -16204,7 +16252,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return;
       if (officialJumpButton(origin)) {
         const { needle, ids } = resolveNeedle(origin);
-        if (!pickMessage(ids, needle, hostOf(origin)))
+        const skip = hostUuid(hostOf(origin));
+        const source = ids.map((id) => bareUuid(id) || id).find((id) => id && id !== skip);
+        if (!source && !pickMessage(ids, needle, hostOf(origin)))
           return;
       }
       e.preventDefault();
@@ -30840,7 +30890,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1790161256000;
   betterNavigator_default.updatedAt = 1790421526000;
   betterQueue_default.updatedAt = 1790246920000;
-  betterQuotes_default.updatedAt = 1790437679000;
+  betterQuotes_default.updatedAt = 1790438241000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;
