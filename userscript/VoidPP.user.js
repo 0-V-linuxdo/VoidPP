@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.3
+// @version      20260926.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.3] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,7 +7755,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260926.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9a01f49"}`
     }, `(${"9a01f49"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -10220,9 +10220,11 @@ button.void-bn-native-edge::before {
     right: 0;
     z-index: 50;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
     width: min(18rem, 70vw);
     max-height: none;
-    overflow: auto;
+    overflow: hidden;
     padding: 0.375rem;
     border: 1px solid hsl(var(--border-l1));
     border-radius: 1.25rem;
@@ -10232,7 +10234,6 @@ button.void-bn-native-edge::before {
     visibility: hidden;
     transform: translate(0.5rem, -50%);
     transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
-    scrollbar-width: thin;
 }
 
 .void-bn-self .void-bn-menu,
@@ -10252,20 +10253,29 @@ button.void-bn-native-edge::before {
 }
 
 .void-bn-meta {
-    padding: 0.25rem 0.625rem 0.375rem;
+    flex: none;
+    margin-top: 0.2rem;
+    padding: 0.4rem 0.5rem 0.28rem;
+    border-top: 1px solid hsl(var(--border-l1) / 55%);
     color: hsl(var(--fg-secondary));
     font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
     line-height: 1.4;
     letter-spacing: -0.2px;
+    text-align: center;
 }
 
 .void-bn-list {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
-    gap: 0.125rem;
+    gap: 0;
+    min-height: 0;
     margin: 0;
     padding: 0;
+    overflow: auto;
     list-style: none;
+    scrollbar-width: thin;
 }
 
 .void-bn-item {
@@ -10276,7 +10286,7 @@ button.void-bn-native-edge::before {
     width: 100%;
     padding: 0.4rem 0.5rem;
     border: 1px solid transparent;
-    border-radius: 0.75rem;
+    border-radius: 0.2rem;
     background: transparent;
     color: hsl(var(--fg-secondary));
     font: inherit;
@@ -10287,15 +10297,30 @@ button.void-bn-native-edge::before {
     cursor: pointer;
 }
 
+.void-bn-item-user {
+    margin-top: 0.25rem;
+    background: hsl(var(--fg-primary) / 10%);
+    color: hsl(var(--fg-primary));
+    font-weight: 500;
+}
+
+.void-bn-list > :first-child .void-bn-item-user {
+    margin-top: 0;
+}
+
+.void-bn-item-asst {
+    background: hsl(var(--fg-primary) / 3%);
+    border-bottom: 1px solid hsl(var(--border-l1) / 50%);
+}
+
 .void-bn-item:hover,
 .void-bn-item:focus-visible,
 .void-bn-item.void-bn-aim {
-    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
+    background-image: linear-gradient(var(--button-ghost-hover, rgb(255 255 255 / 8%)), var(--button-ghost-hover, rgb(255 255 255 / 8%)));
     color: hsl(var(--fg-primary));
 }
 
 .void-bn-item.void-bn-active {
-    background: transparent;
     color: hsl(var(--fg-primary));
     border-color: hsl(var(--border-l1));
 }
@@ -10303,7 +10328,7 @@ button.void-bn-native-edge::before {
 .void-bn-item.void-bn-active:hover,
 .void-bn-item.void-bn-active:focus-visible,
 .void-bn-item.void-bn-active.void-bn-aim {
-    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
+    background-image: linear-gradient(var(--button-ghost-hover, rgb(255 255 255 / 8%)), var(--button-ghost-hover, rgb(255 255 255 / 8%)));
     color: hsl(var(--fg-primary));
     border-color: hsl(var(--border-l1));
 }
@@ -11438,7 +11463,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const natural = menu.scrollHeight;
     const cap = span.height;
     menu.style.maxHeight = `${cap}px`;
-    menu.style.overflowY = natural > cap + 1 ? "auto" : "hidden";
+    menu.style.overflowY = "hidden";
     menu.style.top = "";
     menu.style.transform = "";
     const originRect = host.getBoundingClientRect();
@@ -11542,7 +11567,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = cl19("item");
+      btn.className = cl19("item", item.role === "user" ? "item-user" : "item-asst");
       btn.dataset.voidBnI = String(i);
       const emoji = document.createElement("span");
       emoji.className = cl19("emoji");
@@ -11559,7 +11584,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       li.appendChild(btn);
       ul.appendChild(li);
     });
-    menu.append(meta, ul);
+    menu.append(ul, meta);
     return menu;
   }
   function tickRail(nav) {

@@ -1017,7 +1017,7 @@ function clampMenu() {
     const natural = menu.scrollHeight;
     const cap = span.height;
     menu.style.maxHeight = `${cap}px`;
-    menu.style.overflowY = natural > cap + 1 ? "auto" : "hidden";
+    menu.style.overflowY = "hidden";
     menu.style.top = "";
     menu.style.transform = "";
     const originRect = host.getBoundingClientRect();
@@ -1118,7 +1118,7 @@ function menuEl(nav: NavItem[]): HTMLElement {
         const li = document.createElement("li");
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = cl("item");
+        btn.className = cl("item", item.role === "user" ? "item-user" : "item-asst");
         btn.dataset.voidBnI = String(i);
         const emoji = document.createElement("span");
         emoji.className = cl("emoji");
@@ -1135,7 +1135,7 @@ function menuEl(nav: NavItem[]): HTMLElement {
         li.appendChild(btn);
         ul.appendChild(li);
     });
-    menu.append(meta, ul);
+    menu.append(ul, meta);
     return menu;
 }
 
