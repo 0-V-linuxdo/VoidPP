@@ -260,9 +260,8 @@ function storeById(id: string): GrokResponse | undefined {
 }
 
 function storeNeedle(needle: string): { id: string; cid: string } | null {
-    const n = prefixOf(needle);
-    const clip = n.slice(0, Math.min(n.length, 48));
-    if (clip.length < 2) return null;
+    const clips = clipsOf(needle);
+    if (!clips.length) return null;
     const cid = conversationId();
     try {
         const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
@@ -271,7 +270,7 @@ function storeNeedle(needle: string): { id: string; cid: string } | null {
             for (let i = list.length - 1; i >= 0; i--) {
                 const node = list[i];
                 if (!node?.id) continue;
-                if (norm(String(node.content?.message || "")).includes(clip)) return { id: node.id, cid };
+                if (textHasClip(String(node.content?.message || ""), clips)) return { id: node.id, cid };
             }
         }
     } catch (e) {
@@ -283,7 +282,7 @@ function storeNeedle(needle: string): { id: string; cid: string } | null {
         for (let i = rows.length - 1; i >= 0; i--) {
             const row = rows[i];
             if (!row?.responseId) continue;
-            if (norm(String(row.message || "")).includes(clip)) return { id: row.responseId, cid };
+            if (textHasClip(String(row.message || ""), clips)) return { id: row.responseId, cid };
         }
     } catch (e) {
         logger.debug("store search failed", e);
@@ -295,12 +294,44 @@ function prefixOf(text: string): string {
     return norm(text).replace(/[.…]+$/u, "");
 }
 
+function looseNorm(s: string): string {
+    return norm(s.replaceAll(/(?:^|\s)(?:\d+[.)、]|[-*+•])\s+/g, " "));
+}
+
+function clipsOf(needle: string): string[] {
+    const out: string[] = [];
+    const add = (s: string) => {
+        const t = prefixOf(s);
+        const clip = t.slice(0, Math.min(t.length, 48));
+        if (clip.length >= 8 && !out.includes(clip)) out.push(clip);
+    };
+    add(needle);
+    for (const line of needle.split(/\r?\n/)) add(line.replace(/^\s*(?:\d+[.)、]|[-*+•])\s+/, ""));
+    add(looseNorm(needle));
+    if (!out.length) {
+        const t = prefixOf(looseNorm(needle) || needle);
+        if (t.length >= 2) out.push(t.slice(0, Math.min(t.length, 48)));
+    }
+    return out;
+}
+
+function textHasClip(text: string, clips: string[]): string {
+    const n = norm(text);
+    const loose = looseNorm(text);
+    let hit = "";
+    for (const clip of clips) {
+        if ((n.includes(clip) || loose.includes(clip)) && clip.length > hit.length) hit = clip;
+    }
+    return hit;
+}
+
 function nodeHasNeedle(el: Element, needle: string): boolean {
-    const n = prefixOf(needle);
-    if (n.length < 2) return false;
-    const text = norm(el.textContent || "");
-    const clip = n.slice(0, Math.min(n.length, 48));
-    return text.includes(clip) || (clip.includes(text) && text.length >= 8);
+    const clips = clipsOf(needle);
+    if (!clips.length) return false;
+    const body = el instanceof HTMLElement ? collectParts(el, false).blob : (el.textContent || "");
+    if (textHasClip(body, clips)) return true;
+    const compact = norm(el.textContent || "");
+    return compact.length >= 8 && compact.length < 48 && clips.some(c => c.includes(compact));
 }
 
 function isEditor(el: Element): boolean {
@@ -441,14 +472,17 @@ function collectParts(root: HTMLElement, allowThink: boolean) {
 }
 
 function findRange(root: HTMLElement, needle: string): Range | null {
-    const n = prefixOf(needle);
-    if (n.length < 2) return null;
-    const clip = n.slice(0, Math.min(n.length, 48));
-    const visible = collectParts(root, false);
-    const hit = rangeFromParts(visible.parts, visible.blob, clip);
-    if (hit) return hit;
-    const all = collectParts(root, true);
-    return rangeFromParts(all.parts, all.blob, clip);
+    const clips = clipsOf(needle);
+    if (!clips.length) return null;
+    const ordered = [...clips].sort((a, b) => b.length - a.length);
+    for (const allowThink of [false, true]) {
+        const parts = collectParts(root, allowThink);
+        for (const clip of ordered) {
+            const hit = rangeFromParts(parts.parts, parts.blob, clip);
+            if (hit) return hit;
+        }
+    }
+    return null;
 }
 
 function findHit(root: HTMLElement, needle: string): HTMLElement | null {

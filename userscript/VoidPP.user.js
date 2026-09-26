@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.10
+// @version      20260926.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.10] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"07392ab"}`
-    }, `(${"07392ab"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"071924c"}`
+    }, `(${"071924c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21195,9 +21195,8 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   }
   function storeNeedle(needle) {
-    const n = prefixOf(needle);
-    const clip = n.slice(0, Math.min(n.length, 48));
-    if (clip.length < 2)
+    const clips = clipsOf(needle);
+    if (!clips.length)
       return null;
     const cid = conversationId2();
     try {
@@ -21208,7 +21207,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
           const node = list[i];
           if (!node?.id)
             continue;
-          if (norm2(String(node.content?.message || "")).includes(clip))
+          if (textHasClip(String(node.content?.message || ""), clips))
             return { id: node.id, cid };
         }
       }
@@ -21222,7 +21221,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         const row = rows[i];
         if (!row?.responseId)
           continue;
-        if (norm2(String(row.message || "")).includes(clip))
+        if (textHasClip(String(row.message || ""), clips))
           return { id: row.responseId, cid };
       }
     } catch (e) {
@@ -21233,13 +21232,47 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   function prefixOf(text) {
     return norm2(text).replace(/[.…]+$/u, "");
   }
+  function looseNorm(s) {
+    return norm2(s.replaceAll(/(?:^|\s)(?:\d+[.)、]|[-*+•])\s+/g, " "));
+  }
+  function clipsOf(needle) {
+    const out = [];
+    const add = (s) => {
+      const t = prefixOf(s);
+      const clip = t.slice(0, Math.min(t.length, 48));
+      if (clip.length >= 8 && !out.includes(clip))
+        out.push(clip);
+    };
+    add(needle);
+    for (const line of needle.split(/\r?\n/))
+      add(line.replace(/^\s*(?:\d+[.)、]|[-*+•])\s+/, ""));
+    add(looseNorm(needle));
+    if (!out.length) {
+      const t = prefixOf(looseNorm(needle) || needle);
+      if (t.length >= 2)
+        out.push(t.slice(0, Math.min(t.length, 48)));
+    }
+    return out;
+  }
+  function textHasClip(text, clips) {
+    const n = norm2(text);
+    const loose = looseNorm(text);
+    let hit = "";
+    for (const clip of clips) {
+      if ((n.includes(clip) || loose.includes(clip)) && clip.length > hit.length)
+        hit = clip;
+    }
+    return hit;
+  }
   function nodeHasNeedle(el, needle) {
-    const n = prefixOf(needle);
-    if (n.length < 2)
+    const clips = clipsOf(needle);
+    if (!clips.length)
       return false;
-    const text = norm2(el.textContent || "");
-    const clip = n.slice(0, Math.min(n.length, 48));
-    return text.includes(clip) || clip.includes(text) && text.length >= 8;
+    const body = el instanceof HTMLElement ? collectParts(el, false).blob : el.textContent || "";
+    if (textHasClip(body, clips))
+      return true;
+    const compact = norm2(el.textContent || "");
+    return compact.length >= 8 && compact.length < 48 && clips.some((c) => c.includes(compact));
   }
   function isEditor(el) {
     return !!el.closest(EDITOR);
@@ -21395,16 +21428,19 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     return { parts, blob };
   }
   function findRange(root, needle) {
-    const n = prefixOf(needle);
-    if (n.length < 2)
+    const clips = clipsOf(needle);
+    if (!clips.length)
       return null;
-    const clip = n.slice(0, Math.min(n.length, 48));
-    const visible = collectParts(root, false);
-    const hit = rangeFromParts(visible.parts, visible.blob, clip);
-    if (hit)
-      return hit;
-    const all = collectParts(root, true);
-    return rangeFromParts(all.parts, all.blob, clip);
+    const ordered = [...clips].sort((a, b) => b.length - a.length);
+    for (const allowThink of [false, true]) {
+      const parts = collectParts(root, allowThink);
+      for (const clip of ordered) {
+        const hit = rangeFromParts(parts.parts, parts.blob, clip);
+        if (hit)
+          return hit;
+      }
+    }
+    return null;
   }
   function findHit(root, needle) {
     const range = findRange(root, needle);
@@ -30491,7 +30527,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1787789817000;
   betterCanvas_default.updatedAt = 1790360947000;
   noDictation_default.updatedAt = 1788037550000;
-  betterQuotes_default.updatedAt = 1790430813000;
+  betterQuotes_default.updatedAt = 1790431702000;
   cloneChats_default.updatedAt = 1787870966000;
   composerOpacity_default.updatedAt = 1790097681000;
   incognito_default.updatedAt = 1787870966000;
