@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.23
+// @version      20260926.24
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.23] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.24] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.23] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"780c308"}`
-    }, `(${"780c308"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.24] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5236b51"}`
+    }, `(${"5236b51"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21097,18 +21097,23 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   }
   function sourceOfRow(row) {
     if (!row)
-      return { parentId: "", quoted: "", ids: [] };
+      return { parentId: "", quoted: "", ids: [], hard: "", parent: "" };
     const meta = row.metadata;
     const src = meta && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource : undefined;
-    const ids = [...new Set([bareUuid(src?.sourceResponseId), bareUuid(row.parentResponseId)].filter(Boolean))];
+    const hard = bareUuid(src?.sourceResponseId);
+    const parent = bareUuid(row.parentResponseId);
+    const ids = [...new Set([hard, parent].filter(Boolean))];
     return {
-      parentId: ids[0] || "",
+      parentId: hard || parent || "",
       quoted: String(row.parentQuotedText || ""),
-      ids
+      ids,
+      hard,
+      parent
     };
   }
   function sourceFromFiber(el) {
     const child = hostUuid(el);
+    const empty = { parentId: "", quoted: "", ids: [], hard: "", parent: "" };
     let cur = getFiber(el);
     let d = 0;
     let quoted = "";
@@ -21121,20 +21126,23 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
           const rec = response;
           const meta = rec.metadata && typeof rec.metadata === "object" ? rec.metadata : undefined;
           const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource : undefined;
-          const ids = [...new Set([direct, bareUuid(src?.sourceResponseId), bareUuid(rec.parentResponseId)].filter((id) => id && id !== child))];
+          const hard = [direct, bareUuid(src?.sourceResponseId)].find((id) => id && id !== child) || "";
+          const parentRaw = bareUuid(rec.parentResponseId);
+          const parent = parentRaw && parentRaw !== child ? parentRaw : "";
+          const ids = [...new Set([hard, parent].filter(Boolean))];
           const fromRow = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
           if (ids.length || fromRow)
-            return { parentId: ids[0] || "", quoted: fromRow || quoted, ids };
+            return { parentId: hard || parent, quoted: fromRow || quoted, ids, hard, parent };
         }
         if (direct)
-          return { parentId: direct, quoted, ids: [direct] };
+          return { parentId: direct, quoted, ids: [direct], hard: direct, parent: "" };
         if (!quoted && typeof p.quotedText === "string" && p.quotedText)
           quoted = p.quotedText;
       }
       cur = cur.return;
       d++;
     }
-    return { parentId: "", quoted, ids: [] };
+    return { ...empty, quoted };
   }
   function propSourceId(p, child) {
     const take = (value) => {
@@ -21310,21 +21318,37 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return vis;
     return coverScore(collectParts(el, true).blob, needle);
   }
-  function storeNeedle(needle, skipId = "") {
+  function quotedField(value) {
+    if (!value || typeof value !== "object")
+      return "";
+    const rec = value;
+    if (typeof rec.parentQuotedText === "string")
+      return rec.parentQuotedText;
+    const content = rec.content;
+    if (content && typeof content === "object") {
+      const inner = content.parentQuotedText;
+      if (typeof inner === "string")
+        return inner;
+    }
+    return "";
+  }
+  function passageId(needle, skipId = "", ban = "") {
     if (hostClip(needle).length < 8 && !clipsOf(needle).length)
       return null;
     const cid = conversationId2();
-    const skip = bareUuid(skipId);
+    const skip = new Set([bareUuid(skipId), bareUuid(ban)].filter(Boolean));
     let childAt = 0;
     try {
       const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
-      childAt = Number(nodes?.[skip]?.createdAt) || 0;
+      childAt = Number(nodes?.[bareUuid(skipId)]?.createdAt) || 0;
     } catch {}
     let best = null;
-    const consider = (id, text, at) => {
-      if (!id || id === skip)
+    const consider = (id, text, quoted, at) => {
+      if (!id || skip.has(id))
         return;
       if (childAt && at && at > childAt)
+        return;
+      if (coverScore(quoted, needle) > 0)
         return;
       const score = coverScore(text, needle);
       if (score <= 0)
@@ -21338,11 +21362,11 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         for (const node of Object.values(nodes)) {
           if (!node?.id)
             continue;
-          consider(node.id, nodeText(node, node.id), Number(node.createdAt) || 0);
+          consider(node.id, nodeText(node, node.id), quotedField(node), Number(node.createdAt) || 0);
         }
       }
     } catch (e) {
-      logger29.debug("message search failed", e);
+      logger29.debug("passage search failed", e);
     }
     try {
       const r = ResponseStore.useResponseStore.getState();
@@ -21350,12 +21374,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       for (const row of rows) {
         if (!row?.responseId)
           continue;
-        consider(row.responseId, String(row.message || row.query || ""), Number(row.createTime) || 0);
+        consider(row.responseId, String(row.message || row.query || ""), quotedField(row), Number(row.createTime) || 0);
       }
     } catch (e) {
-      logger29.debug("store search failed", e);
+      logger29.debug("passage rows failed", e);
     }
-    return best ? { id: best.id, cid, score: best.score } : null;
+    return best ? { id: best.id, cid } : null;
   }
   function prefixOf(text) {
     return norm2(text).replace(/[.…]+$/u, "");
@@ -21466,11 +21490,11 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   function hostQuote(id, host) {
     const row = sourceOfRow(id ? storeById(id) : undefined);
     if (row.quoted || row.ids.length)
-      return { quoted: row.quoted, ids: row.ids };
+      return row;
     if (host) {
       const fiber = sourceFromFiber(host);
       if (fiber.quoted || fiber.ids.length)
-        return { quoted: fiber.quoted, ids: fiber.ids };
+        return fiber;
     }
     try {
       const cid = conversationId2();
@@ -21478,9 +21502,9 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       const mapped = node ? MessageStore.nodeToResponse?.(cid, node) : undefined;
       const fromNode = sourceOfRow(mapped);
       if (fromNode.quoted || fromNode.ids.length)
-        return { quoted: fromNode.quoted, ids: fromNode.ids };
+        return fromNode;
     } catch {}
-    return { quoted: row.quoted, ids: row.ids };
+    return row;
   }
   function looksLikeQuote(n) {
     const cls = typeof n.className === "string" ? n.className : "";
@@ -21531,7 +21555,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     return null;
   }
   function hiddenHost(el, allowThink) {
-    if (el.closest("button, svg, [role='toolbar']"))
+    if (el.closest("button, svg, [role='toolbar'], [data-void-qj-preview]"))
       return true;
     if (!allowThink && el.closest(THINK_SEL2) && !el.closest("summary"))
       return true;
@@ -21771,7 +21795,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     const { highlights } = CSS;
     if (list.length && highlights && HighlightCtor) {
       highlights.set(HL, new HighlightCtor(...list));
-    } else {
+    } else if (list.length || !el.closest("[id^='response-']")) {
       flashing2 = el;
       el.classList.add(cl22("hit"));
     }
@@ -21897,19 +21921,17 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       const fiber = sourceFromFiber(jump);
       const row = sourceOfRow(child ? storeById(child) : undefined);
       const needle = row.quoted || fiber.quoted || prefixOf(jump.textContent || "");
-      return { needle, ids: [...new Set([...fiber.ids, ...row.ids])] };
+      return { needle, hard: fiber.hard || row.hard, parent: fiber.parent || row.parent };
     }
     const live = quotedText2();
     if (origin) {
       const msg = origin.closest(MSG2) ?? hostOf(origin);
       const id = msg ? propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] : "";
       const from = hostQuote(id, msg);
-      const skip = hostUuid(msg);
       const text = from.quoted || live || prefixOf(origin.textContent || "");
-      const ids = [...from.ids, ...idsFrom(origin)].filter((x) => x && x !== skip);
-      return { needle: text, ids };
+      return { needle: text, hard: from.hard, parent: from.parent };
     }
-    return { needle: live, ids: idsFrom(null) };
+    return { needle: live, hard: "", parent: "" };
   }
   function insideHost(el, host) {
     return !!el && !!host && (el === host || host.contains(el));
@@ -22047,31 +22069,44 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   }
   async function jump2(origin) {
     const mine = ++gen;
-    const { needle, ids } = resolveNeedle(origin);
+    const { needle, hard, parent } = resolveNeedle(origin);
     const skip = hostOf(origin);
     const skipId = hostUuid(skip);
-    const sourceId = ids.map((id) => bareUuid(id) || id).find((id) => id && id !== skipId) || "";
-    if (!prefixOf(needle) && !sourceId)
+    if (!prefixOf(needle) && !hard)
       return;
-    let el = sourceId ? liveSource(sourceId, skip) : null;
-    if (sourceId && !el) {
-      await hydrate2(conversationId2());
-      if (mine !== gen)
-        return;
-      el = await revealSource(sourceId, skip, mine);
+    const fits = (el) => !!el && (!prefixOf(needle) || blobScore(el, needle) > 0);
+    let el = null;
+    if (hard) {
+      el = liveSource(hard, skip);
+      if (!el) {
+        await hydrate2(conversationId2());
+        if (mine !== gen)
+          return;
+        el = await revealSource(hard, skip, mine);
+      }
+      if (!fits(el))
+        el = null;
     }
-    if (!el && !sourceId && prefixOf(needle)) {
-      const first = pickMessage(ids, needle, skip);
-      el = first;
-      const live = el ? blobScore(el, needle) : 0;
-      const stored = storeNeedle(needle, skipId);
-      if (stored && stored.id !== skipId && stored.score > live) {
-        ids.unshift(stored.id);
+    if (!el && parent && parent !== hard) {
+      const mounted = liveSource(parent, skip);
+      if (fits(mounted))
+        el = mounted;
+    }
+    if (!el && prefixOf(needle)) {
+      const stored = passageId(needle, skipId, parent);
+      if (stored) {
         await hydrate2(stored.cid || conversationId2());
         if (mine !== gen)
           return;
-        el = await revealSource(stored.id, skip, mine) ?? first;
+        const found = await revealSource(stored.id, skip, mine);
+        if (fits(found))
+          el = found;
       }
+    }
+    if (!el && prefixOf(needle)) {
+      const picked = pickMessage([], needle, skip);
+      if (fits(picked))
+        el = picked;
     }
     if (mine !== gen)
       return;
@@ -22437,10 +22472,11 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       if (!origin)
         return;
       if (officialJumpButton(origin)) {
-        const { needle, ids } = resolveNeedle(origin);
-        const skip = hostUuid(hostOf(origin));
-        const source = ids.map((id) => bareUuid(id) || id).find((id) => id && id !== skip);
-        if (!source && !pickMessage(ids, needle, hostOf(origin)))
+        const { needle, hard, parent } = resolveNeedle(origin);
+        const host = hostOf(origin);
+        const mounted = parent ? liveSource(parent, host) : null;
+        const parentOk = !!mounted && blobScore(mounted, needle) > 0;
+        if (!hard && !parentOk && !pickMessage([], needle, host))
           return;
       }
       e.preventDefault();
@@ -31059,7 +31095,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1787789817000;
   betterCanvas_default.updatedAt = 1790360947000;
   noDictation_default.updatedAt = 1788037550000;
-  betterQuotes_default.updatedAt = 1790440522000;
+  betterQuotes_default.updatedAt = 1790441946000;
   cloneChats_default.updatedAt = 1787870966000;
   composerOpacity_default.updatedAt = 1790097681000;
   incognito_default.updatedAt = 1787870966000;

@@ -129,20 +129,25 @@ function officialJumpButton(el: Element | null): HTMLElement | null {
     return btn instanceof HTMLElement ? btn : null;
 }
 
-function sourceOfRow(row: GrokResponse | undefined): { parentId: string; quoted: string; ids: string[] } {
-    if (!row) return { parentId: "", quoted: "", ids: [] };
+function sourceOfRow(row: GrokResponse | undefined): { parentId: string; quoted: string; ids: string[]; hard: string; parent: string } {
+    if (!row) return { parentId: "", quoted: "", ids: [], hard: "", parent: "" };
     const meta = row.metadata;
     const src = meta && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource as Record<string, unknown> : undefined;
-    const ids = [...new Set([bareUuid(src?.sourceResponseId), bareUuid(row.parentResponseId)].filter(Boolean))];
+    const hard = bareUuid(src?.sourceResponseId);
+    const parent = bareUuid(row.parentResponseId);
+    const ids = [...new Set([hard, parent].filter(Boolean))];
     return {
-        parentId: ids[0] || "",
+        parentId: hard || parent || "",
         quoted: String(row.parentQuotedText || ""),
         ids,
+        hard,
+        parent,
     };
 }
 
-function sourceFromFiber(el: Element): { parentId: string; quoted: string; ids: string[] } {
+function sourceFromFiber(el: Element): { parentId: string; quoted: string; ids: string[]; hard: string; parent: string } {
     const child = hostUuid(el);
+    const empty = { parentId: "", quoted: "", ids: [] as string[], hard: "", parent: "" };
     let cur = getFiber(el);
     let d = 0;
     let quoted = "";
@@ -157,17 +162,20 @@ function sourceFromFiber(el: Element): { parentId: string; quoted: string; ids: 
                 const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object"
                     ? meta.parentQuoteSource as Record<string, unknown>
                     : undefined;
-                const ids = [...new Set([direct, bareUuid(src?.sourceResponseId), bareUuid(rec.parentResponseId)].filter(id => id && id !== child))];
+                const hard = [direct, bareUuid(src?.sourceResponseId)].find(id => id && id !== child) || "";
+                const parentRaw = bareUuid(rec.parentResponseId);
+                const parent = parentRaw && parentRaw !== child ? parentRaw : "";
+                const ids = [...new Set([hard, parent].filter(Boolean))];
                 const fromRow = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
-                if (ids.length || fromRow) return { parentId: ids[0] || "", quoted: fromRow || quoted, ids };
+                if (ids.length || fromRow) return { parentId: hard || parent, quoted: fromRow || quoted, ids, hard, parent };
             }
-            if (direct) return { parentId: direct, quoted, ids: [direct] };
+            if (direct) return { parentId: direct, quoted, ids: [direct], hard: direct, parent: "" };
             if (!quoted && typeof p.quotedText === "string" && p.quotedText) quoted = p.quotedText;
         }
         cur = cur.return;
         d++;
     }
-    return { parentId: "", quoted, ids: [] };
+    return { ...empty, quoted };
 }
 
 function propSourceId(p: Record<string, unknown>, child: string): string {
@@ -328,19 +336,32 @@ function blobScore(el: HTMLElement, needle: string): number {
     return coverScore(collectParts(el, true).blob, needle);
 }
 
-function storeNeedle(needle: string, skipId = ""): { id: string; cid: string; score: number } | null {
+function quotedField(value: unknown): string {
+    if (!value || typeof value !== "object") return "";
+    const rec = value as Record<string, unknown>;
+    if (typeof rec.parentQuotedText === "string") return rec.parentQuotedText;
+    const content = rec.content;
+    if (content && typeof content === "object") {
+        const inner = (content as Record<string, unknown>).parentQuotedText;
+        if (typeof inner === "string") return inner;
+    }
+    return "";
+}
+
+function passageId(needle: string, skipId = "", ban = ""): { id: string; cid: string } | null {
     if (hostClip(needle).length < 8 && !clipsOf(needle).length) return null;
     const cid = conversationId();
-    const skip = bareUuid(skipId);
+    const skip = new Set([bareUuid(skipId), bareUuid(ban)].filter(Boolean));
     let childAt = 0;
     try {
         const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
-        childAt = Number(nodes?.[skip]?.createdAt) || 0;
+        childAt = Number(nodes?.[bareUuid(skipId)]?.createdAt) || 0;
     } catch { /* store not ready */ }
     let best: { id: string; score: number; at: number } | null = null;
-    const consider = (id: string, text: string, at: number) => {
-        if (!id || id === skip) return;
+    const consider = (id: string, text: string, quoted: string, at: number) => {
+        if (!id || skip.has(id)) return;
         if (childAt && at && at > childAt) return;
+        if (coverScore(quoted, needle) > 0) return;
         const score = coverScore(text, needle);
         if (score <= 0) return;
         if (!best || score > best.score || (score === best.score && at < best.at)) best = { id, score, at };
@@ -350,23 +371,23 @@ function storeNeedle(needle: string, skipId = ""): { id: string; cid: string; sc
         if (nodes) {
             for (const node of Object.values(nodes)) {
                 if (!node?.id) continue;
-                consider(node.id, nodeText(node, node.id), Number(node.createdAt) || 0);
+                consider(node.id, nodeText(node, node.id), quotedField(node), Number(node.createdAt) || 0);
             }
         }
     } catch (e) {
-        logger.debug("message search failed", e);
+        logger.debug("passage search failed", e);
     }
     try {
         const r = ResponseStore.useResponseStore.getState();
         const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
         for (const row of rows) {
             if (!row?.responseId) continue;
-            consider(row.responseId, String(row.message || row.query || ""), Number(row.createTime) || 0);
+            consider(row.responseId, String(row.message || row.query || ""), quotedField(row), Number(row.createTime) || 0);
         }
     } catch (e) {
-        logger.debug("store search failed", e);
+        logger.debug("passage rows failed", e);
     }
-    return best ? { id: best.id, cid, score: best.score } : null;
+    return best ? { id: best.id, cid } : null;
 }
 
 function prefixOf(text: string): string {
@@ -467,21 +488,21 @@ function composerChip(el: Element): HTMLElement | null {
     return null;
 }
 
-function hostQuote(id: string, host: HTMLElement | null): { quoted: string; ids: string[] } {
+function hostQuote(id: string, host: HTMLElement | null): { quoted: string; ids: string[]; hard: string; parent: string } {
     const row = sourceOfRow(id ? storeById(id) : undefined);
-    if (row.quoted || row.ids.length) return { quoted: row.quoted, ids: row.ids };
+    if (row.quoted || row.ids.length) return row;
     if (host) {
         const fiber = sourceFromFiber(host);
-        if (fiber.quoted || fiber.ids.length) return { quoted: fiber.quoted, ids: fiber.ids };
+        if (fiber.quoted || fiber.ids.length) return fiber;
     }
     try {
         const cid = conversationId();
         const node = cid && id ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id] : undefined;
         const mapped = node ? MessageStore.nodeToResponse?.(cid, node) : undefined;
         const fromNode = sourceOfRow(mapped);
-        if (fromNode.quoted || fromNode.ids.length) return { quoted: fromNode.quoted, ids: fromNode.ids };
+        if (fromNode.quoted || fromNode.ids.length) return fromNode;
     } catch { /* store not ready */ }
-    return { quoted: row.quoted, ids: row.ids };
+    return row;
 }
 
 function looksLikeQuote(n: HTMLElement): boolean {
@@ -526,7 +547,7 @@ function sentQuote(el: Element): HTMLElement | null {
 }
 
 function hiddenHost(el: Element, allowThink: boolean): boolean {
-    if (el.closest("button, svg, [role='toolbar']")) return true;
+    if (el.closest("button, svg, [role='toolbar'], [data-void-qj-preview]")) return true;
     if (!allowThink && el.closest(THINK_SEL) && !el.closest("summary")) return true;
     const d = el.closest("details");
     if (d instanceof HTMLDetailsElement && !d.open && !el.closest("summary")) return true;
@@ -739,7 +760,7 @@ function highlightRange(range: Range | readonly Range[] | null, el: HTMLElement)
     const { highlights } = (CSS as { highlights?: { set(k: string, v: unknown): void } });
     if (list.length && highlights && HighlightCtor) {
         highlights.set(HL, new HighlightCtor(...list));
-    } else {
+    } else if (list.length || !el.closest("[id^='response-']")) {
         flashing = el;
         el.classList.add(cl("hit"));
     }
@@ -851,26 +872,24 @@ async function hydrate(cid: string) {
     }
 }
 
-function resolveNeedle(origin: HTMLElement | null): { needle: string; ids: string[] } {
+function resolveNeedle(origin: HTMLElement | null): { needle: string; hard: string; parent: string } {
     const jump = origin ? officialJumpButton(origin) : null;
     if (jump) {
         const child = hostUuid(jump);
         const fiber = sourceFromFiber(jump);
         const row = sourceOfRow(child ? storeById(child) : undefined);
         const needle = row.quoted || fiber.quoted || prefixOf(jump.textContent || "");
-        return { needle, ids: [...new Set([...fiber.ids, ...row.ids])] };
+        return { needle, hard: fiber.hard || row.hard, parent: fiber.parent || row.parent };
     }
     const live = quotedText();
     if (origin) {
         const msg = origin.closest<HTMLElement>(MSG) ?? hostOf(origin);
         const id = msg ? propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] : "";
         const from = hostQuote(id, msg);
-        const skip = hostUuid(msg);
         const text = from.quoted || live || prefixOf(origin.textContent || "");
-        const ids = [...from.ids, ...idsFrom(origin)].filter(x => x && x !== skip);
-        return { needle: text, ids };
+        return { needle: text, hard: from.hard, parent: from.parent };
     }
-    return { needle: live, ids: idsFrom(null) };
+    return { needle: live, hard: "", parent: "" };
 }
 
 function insideHost(el: HTMLElement | null, host: HTMLElement | null): boolean {
@@ -998,28 +1017,37 @@ async function land(el: HTMLElement, needle: string, mine: number) {
 
 async function jump(origin: HTMLElement | null) {
     const mine = ++gen;
-    const { needle, ids } = resolveNeedle(origin);
+    const { needle, hard, parent } = resolveNeedle(origin);
     const skip = hostOf(origin);
     const skipId = hostUuid(skip);
-    const sourceId = ids.map(id => bareUuid(id) || id).find(id => id && id !== skipId) || "";
-    if (!prefixOf(needle) && !sourceId) return;
-    let el: HTMLElement | null = sourceId ? liveSource(sourceId, skip) : null;
-    if (sourceId && !el) {
-        await hydrate(conversationId());
-        if (mine !== gen) return;
-        el = await revealSource(sourceId, skip, mine);
+    if (!prefixOf(needle) && !hard) return;
+    const fits = (el: HTMLElement | null) => !!el && (!prefixOf(needle) || blobScore(el, needle) > 0);
+    let el: HTMLElement | null = null;
+    if (hard) {
+        el = liveSource(hard, skip);
+        if (!el) {
+            await hydrate(conversationId());
+            if (mine !== gen) return;
+            el = await revealSource(hard, skip, mine);
+        }
+        if (!fits(el)) el = null;
     }
-    if (!el && !sourceId && prefixOf(needle)) {
-        const first = pickMessage(ids, needle, skip);
-        el = first;
-        const live = el ? blobScore(el, needle) : 0;
-        const stored = storeNeedle(needle, skipId);
-        if (stored && stored.id !== skipId && stored.score > live) {
-            ids.unshift(stored.id);
+    if (!el && parent && parent !== hard) {
+        const mounted = liveSource(parent, skip);
+        if (fits(mounted)) el = mounted;
+    }
+    if (!el && prefixOf(needle)) {
+        const stored = passageId(needle, skipId, parent);
+        if (stored) {
             await hydrate(stored.cid || conversationId());
             if (mine !== gen) return;
-            el = await revealSource(stored.id, skip, mine) ?? first;
+            const found = await revealSource(stored.id, skip, mine);
+            if (fits(found)) el = found;
         }
+    }
+    if (!el && prefixOf(needle)) {
+        const picked = pickMessage([], needle, skip);
+        if (fits(picked)) el = picked;
     }
     if (mine !== gen) return;
     if (!el) {
@@ -1363,10 +1391,11 @@ function onClick(e: MouseEvent) {
         const origin = sent ?? chip;
         if (!origin) return;
         if (officialJumpButton(origin)) {
-            const { needle, ids } = resolveNeedle(origin);
-            const skip = hostUuid(hostOf(origin));
-            const source = ids.map(id => bareUuid(id) || id).find(id => id && id !== skip);
-            if (!source && !pickMessage(ids, needle, hostOf(origin))) return;
+            const { needle, hard, parent } = resolveNeedle(origin);
+            const host = hostOf(origin);
+            const mounted = parent ? liveSource(parent, host) : null;
+            const parentOk = !!mounted && blobScore(mounted, needle) > 0;
+            if (!hard && !parentOk && !pickMessage([], needle, host)) return;
         }
         e.preventDefault();
         e.stopPropagation();
