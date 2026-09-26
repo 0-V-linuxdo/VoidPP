@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.27
+// @version      20260925.28
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.27] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.28] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"0df34a7"}`
-    }, `(${"0df34a7"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9646469"}`
+    }, `(${"9646469"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -28983,6 +28983,73 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     syncPm(el, after);
     return true;
   }
+  function caretFromPoint(x, y) {
+    const doc = document;
+    try {
+      const pos = doc.caretPositionFromPoint?.(x, y);
+      if (pos?.offsetNode) {
+        const range = document.createRange();
+        const max = pos.offsetNode.nodeType === Node.TEXT_NODE ? pos.offsetNode.textContent?.length ?? 0 : pos.offsetNode.childNodes.length;
+        range.setStart(pos.offsetNode, Math.min(Math.max(pos.offset, 0), max));
+        range.collapse(true);
+        return range;
+      }
+    } catch {}
+    try {
+      return doc.caretRangeFromPoint?.(x, y) ?? null;
+    } catch {
+      return null;
+    }
+  }
+  function visualLineTops(el) {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const tops = [];
+    for (const rect of range.getClientRects()) {
+      if (rect.height < 1 && rect.width < 1)
+        continue;
+      if (!tops.some((top) => Math.abs(top - rect.top) < 4))
+        tops.push(rect.top);
+    }
+    tops.sort((a, b) => a - b);
+    return tops;
+  }
+  function stepSoftLine(el, older) {
+    const caret = collapsedCaret(el);
+    if (!caret)
+      return 0;
+    const caretRects = caret.getClientRects();
+    const caretRect = caretRects[0] ?? caret.getBoundingClientRect();
+    if (!caretRect.height && !caretRect.width)
+      return 0;
+    const lines = visualLineTops(el);
+    if (lines.length < 2)
+      return 0;
+    let index = 0;
+    let best = Infinity;
+    lines.forEach((line, i) => {
+      const dist = Math.abs(line - caretRect.top);
+      if (dist < best) {
+        best = dist;
+        index = i;
+      }
+    });
+    const next = older ? index - 1 : index + 1;
+    if (next < 0 || next >= lines.length)
+      return 0;
+    const box = el.getBoundingClientRect();
+    const x = Math.min(Math.max(caretRect.left + 1, box.left + 2), box.right - 2);
+    const y = lines[next] + Math.max(4, caretRect.height * 0.4);
+    const hit = caretFromPoint(x, y);
+    if (hit && el.contains(hit.startContainer)) {
+      hit.collapse(true);
+      if (hit.startContainer !== caret.startContainer || hit.startOffset !== caret.startOffset) {
+        applyRange(el, hit);
+        return 1;
+      }
+    }
+    return -1;
+  }
   function nudgeCaret(el, caret, older) {
     const blocks = Array.from(el.children);
     const block = directBlock(el, caret.startContainer);
@@ -29335,15 +29402,25 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       }
       if (!isPlaceholderEditor(el)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
         if (stepLine(el, older)) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          if (applying3)
+            applyCaretMoved = true;
+          return;
+        }
+        const soft = stepSoftLine(el, older);
+        if (soft !== 0) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
           if (applying3)
             applyCaretMoved = true;
           return;
         }
         const stayed = collapsedCaret(el);
         if (stayed && (older ? breakBefore(el, stayed) : breakAfter(el, stayed))) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
           if (nudgeCaret(el, stayed, older) && applying3)
             applyCaretMoved = true;
           return;
@@ -29360,12 +29437,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     cycle2(older, el);
   }
   function onPointerDown4(e) {
-    if (!recalling)
+    if (!recalling || !applying3)
       return;
-    const el = chatEditor(e.target);
-    if (!el)
+    if (!chatEditor(e.target))
       return;
-    dropRecall(el);
+    applyCaretMoved = true;
   }
   function onCompositionStart(e) {
     if (!chatEditor(e.target))
@@ -29708,7 +29784,7 @@ div:has(> #grok-bot-nav-button) {
   betterSidebar_default.updatedAt = 1790265417000;
   autoRetry_default.updatedAt = 1790265417000;
   customSidebarIdentity_default.updatedAt = 1790265417000;
-  inputHistory_default.updatedAt = 1790411034000;
+  inputHistory_default.updatedAt = 1790411075000;
   noGrokBot_default.updatedAt = 1790265417000;
   autoCollapse_default.updatedAt = 1790265417000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [contextMenu_default.name]: contextMenu_default, [chatBarButtons_default.name]: chatBarButtons_default, [betterFiles_default.name]: betterFiles_default, [usageDisplay_default.name]: usageDisplay_default, [betterQueue_default.name]: betterQueue_default, [settingsFlyout_default.name]: settingsFlyout_default, [userQuotes_default.name]: userQuotes_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [betterNavigator_default.name]: betterNavigator_default, [responseNotification_default.name]: responseNotification_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [betterModeSelect_default.name]: betterModeSelect_default, [starry_default.name]: starry_default, [messageTimestamps_default.name]: messageTimestamps_default, [streamerMode_default.name]: streamerMode_default, [consoleJanitor_default.name]: consoleJanitor_default, [betterCanvas_default.name]: betterCanvas_default, [noDictation_default.name]: noDictation_default, [betterQuotes_default.name]: betterQuotes_default, [cloneChats_default.name]: cloneChats_default, [composerOpacity_default.name]: composerOpacity_default, [incognito_default.name]: incognito_default, [chatListStatus_default.name]: chatListStatus_default, [betterLinks_default.name]: betterLinks_default, [noShareLink_default.name]: noShareLink_default, [experiments_default.name]: experiments_default, [downloadTTS_default.name]: downloadTTS_default, [completeToast_default.name]: completeToast_default, [noBuildStarters_default.name]: noBuildStarters_default, [betterImagine_default.name]: betterImagine_default, [cleaner_default.name]: cleaner_default, [widerChat_default.name]: widerChat_default, [betterAvatarPlugins_default.name]: betterAvatarPlugins_default, [oneko_default.name]: oneko_default, [customGreeting_default.name]: customGreeting_default, [stableComposer_default.name]: stableComposer_default, [exportChat_default.name]: exportChat_default, [customInstructions_default.name]: customInstructions_default, [betterSidebar_default.name]: betterSidebar_default, [autoRetry_default.name]: autoRetry_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [inputHistory_default.name]: inputHistory_default, [noGrokBot_default.name]: noGrokBot_default, [autoCollapse_default.name]: autoCollapse_default };

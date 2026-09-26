@@ -368,6 +368,75 @@ function stepLine(el: HTMLElement, older: boolean): boolean {
     return true;
 }
 
+function caretFromPoint(x: number, y: number): Range | null {
+    const doc = document as Document & {
+        caretPositionFromPoint?(x: number, y: number): { offsetNode: Node; offset: number } | null;
+        caretRangeFromPoint?(x: number, y: number): Range | null;
+    };
+    try {
+        const pos = doc.caretPositionFromPoint?.(x, y);
+        if (pos?.offsetNode) {
+            const range = document.createRange();
+            const max = pos.offsetNode.nodeType === Node.TEXT_NODE
+                ? (pos.offsetNode.textContent?.length ?? 0)
+                : pos.offsetNode.childNodes.length;
+            range.setStart(pos.offsetNode, Math.min(Math.max(pos.offset, 0), max));
+            range.collapse(true);
+            return range;
+        }
+    } catch { /* point missed the document */ }
+    try {
+        return doc.caretRangeFromPoint?.(x, y) ?? null;
+    } catch {
+        return null;
+    }
+}
+
+function visualLineTops(el: HTMLElement): number[] {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const tops: number[] = [];
+    for (const rect of range.getClientRects()) {
+        if (rect.height < 1 && rect.width < 1) continue;
+        if (!tops.some(top => Math.abs(top - rect.top) < 4)) tops.push(rect.top);
+    }
+    tops.sort((a, b) => a - b);
+    return tops;
+}
+
+function stepSoftLine(el: HTMLElement, older: boolean): number {
+    const caret = collapsedCaret(el);
+    if (!caret) return 0;
+    const caretRects = caret.getClientRects();
+    const caretRect = caretRects[0] ?? caret.getBoundingClientRect();
+    if (!caretRect.height && !caretRect.width) return 0;
+    const lines = visualLineTops(el);
+    if (lines.length < 2) return 0;
+    let index = 0;
+    let best = Infinity;
+    lines.forEach((line, i) => {
+        const dist = Math.abs(line - caretRect.top);
+        if (dist < best) {
+            best = dist;
+            index = i;
+        }
+    });
+    const next = older ? index - 1 : index + 1;
+    if (next < 0 || next >= lines.length) return 0;
+    const box = el.getBoundingClientRect();
+    const x = Math.min(Math.max(caretRect.left + 1, box.left + 2), box.right - 2);
+    const y = lines[next] + Math.max(4, caretRect.height * 0.4);
+    const hit = caretFromPoint(x, y);
+    if (hit && el.contains(hit.startContainer)) {
+        hit.collapse(true);
+        if (hit.startContainer !== caret.startContainer || hit.startOffset !== caret.startOffset) {
+            applyRange(el, hit);
+            return 1;
+        }
+    }
+    return -1;
+}
+
 function nudgeCaret(el: HTMLElement, caret: Range, older: boolean): boolean {
     const blocks = Array.from(el.children);
     const block = directBlock(el, caret.startContainer);
@@ -685,14 +754,23 @@ function onKeyDown(e: KeyboardEvent) {
             return;
         }
         if (!isPlaceholderEditor(el)) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
             if (stepLine(el, older)) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (applying) applyCaretMoved = true;
+                return;
+            }
+            const soft = stepSoftLine(el, older);
+            if (soft !== 0) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
                 if (applying) applyCaretMoved = true;
                 return;
             }
             const stayed = collapsedCaret(el);
             if (stayed && (older ? breakBefore(el, stayed) : breakAfter(el, stayed))) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
                 if (nudgeCaret(el, stayed, older) && applying) applyCaretMoved = true;
                 return;
             }
@@ -709,10 +787,9 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function onPointerDown(e: PointerEvent) {
-    if (!recalling) return;
-    const el = chatEditor(e.target);
-    if (!el) return;
-    dropRecall(el);
+    if (!recalling || !applying) return;
+    if (!chatEditor(e.target)) return;
+    applyCaretMoved = true;
 }
 
 function onCompositionStart(e: Event) {
