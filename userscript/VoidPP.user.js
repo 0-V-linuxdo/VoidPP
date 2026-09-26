@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.7
+// @version      20260926.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.7] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,7 +7755,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260926.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9a01f49"}`
     }, `(${"9a01f49"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -10220,12 +10220,10 @@ button.void-bn-native-edge::before {
     right: 0;
     z-index: 50;
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
     width: min(18rem, 70vw);
     max-height: none;
-    overflow: hidden;
-    padding: 0.375rem 0.375rem 0.15rem;
+    overflow: auto;
+    padding: 0.375rem;
     border: 1px solid hsl(var(--border-l1));
     border-radius: 1.25rem;
     background: hsl(var(--surface-l1));
@@ -10234,6 +10232,7 @@ button.void-bn-native-edge::before {
     visibility: hidden;
     transform: translate(0.5rem, -50%);
     transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    scrollbar-width: thin;
 }
 
 .void-bn-self .void-bn-menu,
@@ -10253,29 +10252,20 @@ button.void-bn-native-edge::before {
 }
 
 .void-bn-meta {
-    flex: none;
-    padding: 0.12rem 0.5rem 0;
-    border-top: 1px solid hsl(var(--border-l1) / 55%);
+    padding: 0.25rem 0.625rem 0.375rem;
     color: hsl(var(--fg-secondary));
-    font-size: 0.6875rem;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.2;
+    font-size: 0.75rem;
+    line-height: 1.4;
     letter-spacing: -0.2px;
-    text-align: center;
 }
 
 .void-bn-list {
     display: flex;
-    flex: 1 1 auto;
     flex-direction: column;
-    gap: 0;
-    min-height: 0;
+    gap: 0.125rem;
     margin: 0;
-    padding: 0 0 0.25rem;
-    overflow: auto;
+    padding: 0;
     list-style: none;
-    scroll-padding-bottom: 0.25rem;
-    scrollbar-width: thin;
 }
 
 .void-bn-item {
@@ -10286,7 +10276,7 @@ button.void-bn-native-edge::before {
     width: 100%;
     padding: 0.4rem 0.5rem;
     border: 1px solid transparent;
-    border-radius: 0.2rem;
+    border-radius: 0.75rem;
     background: transparent;
     color: hsl(var(--fg-secondary));
     font: inherit;
@@ -10297,26 +10287,15 @@ button.void-bn-native-edge::before {
     cursor: pointer;
 }
 
-html.void-bn-rowtint .void-bn-menu:hover .void-bn-item-user,
-html.void-bn-rowtint .void-bn-menu:focus-within .void-bn-item-user {
-    background: hsl(var(--fg-primary) / 10%);
-    color: hsl(var(--fg-primary));
-    font-weight: 500;
-}
-
-html.void-bn-rowtint .void-bn-menu:hover .void-bn-item-asst,
-html.void-bn-rowtint .void-bn-menu:focus-within .void-bn-item-asst {
-    background: hsl(var(--fg-primary) / 3%);
-}
-
 .void-bn-item:hover,
 .void-bn-item:focus-visible,
 .void-bn-item.void-bn-aim {
-    background-image: linear-gradient(var(--button-ghost-hover, rgb(255 255 255 / 8%)), var(--button-ghost-hover, rgb(255 255 255 / 8%)));
+    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
     color: hsl(var(--fg-primary));
 }
 
 .void-bn-item.void-bn-active {
+    background: transparent;
     color: hsl(var(--fg-primary));
     border-color: hsl(var(--border-l1));
 }
@@ -10324,7 +10303,7 @@ html.void-bn-rowtint .void-bn-menu:focus-within .void-bn-item-asst {
 .void-bn-item.void-bn-active:hover,
 .void-bn-item.void-bn-active:focus-visible,
 .void-bn-item.void-bn-active.void-bn-aim {
-    background-image: linear-gradient(var(--button-ghost-hover, rgb(255 255 255 / 8%)), var(--button-ghost-hover, rgb(255 255 255 / 8%)));
+    background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
     color: hsl(var(--fg-primary));
     border-color: hsl(var(--border-l1));
 }
@@ -10433,7 +10412,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
   var HIDE_CLASS = "void-bn-hidetip";
-  var ROW_TINT_CLASS = "void-bn-rowtint";
   var LIVE_LABEL = "正在输出…";
   var LOADING_LABEL = "加载中…";
   var SUMMARY_MAX = 60;
@@ -10463,11 +10441,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       type: 3 /* BOOLEAN */,
       description: "Hide Grok's single-message hover preview on the native ticks.",
       default: true
-    },
-    hoverRowTint: {
-      type: 3 /* BOOLEAN */,
-      description: "Tint user and assistant rows while the pointer is over the outline.",
-      default: false
     },
     jumpEffect: {
       type: 4 /* SELECT */,
@@ -11465,7 +11438,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const natural = menu.scrollHeight;
     const cap = span.height;
     menu.style.maxHeight = `${cap}px`;
-    menu.style.overflowY = "hidden";
+    menu.style.overflowY = natural > cap + 1 ? "auto" : "hidden";
     menu.style.top = "";
     menu.style.transform = "";
     const originRect = host.getBoundingClientRect();
@@ -11569,7 +11542,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = cl19("item", item.role === "user" ? "item-user" : "item-asst");
+      btn.className = cl19("item");
       btn.dataset.voidBnI = String(i);
       const emoji = document.createElement("span");
       emoji.className = cl19("emoji");
@@ -11586,7 +11559,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       li.appendChild(btn);
       ul.appendChild(li);
     });
-    menu.append(ul, meta);
+    menu.append(meta, ul);
     return menu;
   }
   function tickRail(nav) {
@@ -11636,9 +11609,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     document.documentElement.classList.remove("void-bn-fullticks");
   }
   function syncHideTip() {
-    const root = document.documentElement;
-    root.classList.toggle(HIDE_CLASS, !!settings11.store.hideNativeHover);
-    root.classList.toggle(ROW_TINT_CLASS, !!settings11.store.hoverRowTint);
+    document.documentElement.classList.toggle(HIDE_CLASS, !!settings11.store.hideNativeHover);
   }
   function setOpen(on) {
     host?.classList.toggle("void-bn-open", on);
@@ -11864,7 +11835,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     clearFlash();
     lastNav = [];
     lastPath = "";
-    document.documentElement.classList.remove(HIDE_CLASS, ROW_TINT_CLASS);
+    document.documentElement.classList.remove(HIDE_CLASS);
   }
   var betterNavigator_default = definePlugin({
     name: "BetterNavigator",

@@ -60,7 +60,6 @@ const USER_INTERRUPT = /interrupted by the user|user[- ]interrupt|aborted by the
 const LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
 const DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
 const HIDE_CLASS = "void-bn-hidetip";
-const ROW_TINT_CLASS = "void-bn-rowtint";
 const LIVE_LABEL = "正在输出…";
 const LOADING_LABEL = "加载中…";
 const SUMMARY_MAX = 60;
@@ -91,11 +90,6 @@ const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Hide Grok's single-message hover preview on the native ticks.",
         default: true,
-    },
-    hoverRowTint: {
-        type: OptionType.BOOLEAN,
-        description: "Tint user and assistant rows while the pointer is over the outline.",
-        default: false,
     },
     jumpEffect: {
         type: OptionType.SELECT,
@@ -1023,7 +1017,7 @@ function clampMenu() {
     const natural = menu.scrollHeight;
     const cap = span.height;
     menu.style.maxHeight = `${cap}px`;
-    menu.style.overflowY = "hidden";
+    menu.style.overflowY = natural > cap + 1 ? "auto" : "hidden";
     menu.style.top = "";
     menu.style.transform = "";
     const originRect = host.getBoundingClientRect();
@@ -1124,7 +1118,7 @@ function menuEl(nav: NavItem[]): HTMLElement {
         const li = document.createElement("li");
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = cl("item", item.role === "user" ? "item-user" : "item-asst");
+        btn.className = cl("item");
         btn.dataset.voidBnI = String(i);
         const emoji = document.createElement("span");
         emoji.className = cl("emoji");
@@ -1141,7 +1135,7 @@ function menuEl(nav: NavItem[]): HTMLElement {
         li.appendChild(btn);
         ul.appendChild(li);
     });
-    menu.append(ul, meta);
+    menu.append(meta, ul);
     return menu;
 }
 
@@ -1193,9 +1187,7 @@ function unmount() {
 }
 
 function syncHideTip() {
-    const root = document.documentElement;
-    root.classList.toggle(HIDE_CLASS, !!settings.store.hideNativeHover);
-    root.classList.toggle(ROW_TINT_CLASS, !!settings.store.hoverRowTint);
+    document.documentElement.classList.toggle(HIDE_CLASS, !!settings.store.hideNativeHover);
 }
 
 function setOpen(on: boolean) {
@@ -1422,7 +1414,7 @@ function stop() {
     clearFlash();
     lastNav = [];
     lastPath = "";
-    document.documentElement.classList.remove(HIDE_CLASS, ROW_TINT_CLASS);
+    document.documentElement.classList.remove(HIDE_CLASS);
 }
 
 export default definePlugin({
