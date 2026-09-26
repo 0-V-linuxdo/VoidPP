@@ -6,18 +6,21 @@
 
 import "./styles.css";
 
+import { type ModalProps, closeModal, openModal } from "@api/Modals";
 import { definePluginSettings } from "@api/Settings";
 import { Button, ButtonWithTooltip, ConfirmDialog, Flex, Input, Paragraph } from "@components";
-import { CopyIcon, HistoryIcon, Trash2Icon } from "@components/icons";
+import { ErrorBoundary } from "@components/ErrorBoundary";
+import { CopyIcon, HistoryIcon, TextCursorInputIcon, Trash2Icon } from "@components/icons";
+import { VoidPPDialogShell } from "@components/settings/tabs/VoidPPDialogShell";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
-import { React, useState } from "@turbopack/common/react";
+import { React, useEffect, useRef, useState } from "@turbopack/common/react";
 import { RoutingStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
 import { clamp, copyToClipboard } from "@utils/misc";
 import { pluralize } from "@utils/text";
-import definePlugin, { OptionType } from "@utils/types";
+import definePlugin, { type IPluginOptionComponentProps, OptionType } from "@utils/types";
 
 const logger = new Logger("InputHistory");
 const cl = classNameFactory("void-ih-");
@@ -30,6 +33,7 @@ const MAX_DEFAULT = 100;
 const HUD_GAP_PX = 8;
 const APPLY_QUIET_MS = 120;
 const CAPTURE_DEDUPE_MS = 2000;
+const HISTORY_MODAL_KEY = "void-ih-history";
 
 interface PrivateSettings {
     entries: string[];
@@ -70,6 +74,8 @@ let applyEl: HTMLElement | null = null;
 let applyAtStart = true;
 let applyCaretMoved = false;
 let suppressSelect = 0;
+let historyOpen = false;
+let hudEditor: HTMLElement | null = null;
 
 function isImaginePage(): boolean {
     try {
@@ -546,12 +552,41 @@ function matchesRecall(el: HTMLElement): boolean {
     return newlineCount(inner) === newlineCount(expected) && inner === expected;
 }
 
-function dropRecall(el: HTMLElement) {
+function leaveBrowse() {
     invalidateApply();
     cursor = getEntries().length;
-    draft = editorText(el);
+    lastShown = -1;
     recalling = false;
     hideHud();
+}
+
+function dropRecall(el: HTMLElement) {
+    leaveBrowse();
+    draft = editorText(el);
+}
+
+function cancelBrowse(el: HTMLElement | null) {
+    const saved = draft;
+    leaveBrowse();
+    if (el?.isConnected) setEditorText(el, saved, false);
+}
+
+function browseEditor(): HTMLElement | null {
+    if (hudEditor?.isConnected) return hudEditor;
+    const focused = chatEditor(document.activeElement);
+    if (focused) return focused;
+    return document.querySelector<HTMLElement>(EDITOR_SEL);
+}
+
+function markHistoryClosed() {
+    historyOpen = false;
+    document.querySelector(`.${cl("hud")}`)?.classList.remove(cl("hud-back"));
+}
+
+function closeHistoryModal() {
+    if (!historyOpen) return;
+    markHistoryClosed();
+    closeModal(HISTORY_MODAL_KEY);
 }
 
 function placeCaret(el: HTMLElement, atStart: boolean) {
@@ -693,12 +728,40 @@ function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
     scheduleApplyEnd(gen);
 }
 
+function stopHudEvent(e: Event) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
 function hudEl(): HTMLElement {
     let el = document.querySelector<HTMLElement>(`.${cl("hud")}`);
-    if (el) return el;
+    if (el?.querySelector(`.${cl("hud-count")}`)) return el;
+    el?.remove();
     el = document.createElement("div");
     el.className = cl("hud");
+    el.setAttribute("role", "group");
     el.setAttribute("aria-live", "polite");
+    el.setAttribute("aria-label", "Input history");
+
+    const count = document.createElement("button");
+    count.type = "button";
+    count.className = cl("hud-count");
+    count.addEventListener("click", e => {
+        stopHudEvent(e);
+        openHistoryModal();
+    });
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = cl("hud-x");
+    close.setAttribute("aria-label", "Exit history");
+    close.textContent = "\u00d7";
+    close.addEventListener("click", e => {
+        stopHudEvent(e);
+        cancelBrowse(browseEditor());
+    });
+
+    el.append(count, close);
     document.body.appendChild(el);
     return el;
 }
@@ -710,8 +773,13 @@ function hideHud() {
 function showHud(label: string, editor: HTMLElement) {
     const bar = editor.closest(".query-bar");
     if (!bar) return;
+    hudEditor = editor;
     const el = hudEl();
-    el.textContent = label;
+    const count = el.querySelector<HTMLButtonElement>(`.${cl("hud-count")}`);
+    if (count) {
+        count.textContent = label;
+        count.setAttribute("aria-label", `Show input history (${label})`);
+    }
     requestAnimationFrame(() => {
         const r = bar.getBoundingClientRect();
         el.style.left = `${r.left + r.width / 2}px`;
@@ -750,10 +818,11 @@ function cycle(older: boolean, el: HTMLElement) {
     const next = older ? cursor - 1 : cursor + 1;
     if (next < 0 || next > list.length) return;
     cursor = next;
-    recalling = true;
-    lastShown = next < list.length ? next : -1;
-    setEditorText(el, next === list.length ? draft : list[next], older);
-    if (next < list.length) showHud(`${next + 1} / ${list.length}`, el);
+    const onEntry = next < list.length;
+    recalling = onEntry;
+    lastShown = onEntry ? next : -1;
+    setEditorText(el, onEntry ? list[next] : draft, older);
+    if (onEntry) showHud(`${next + 1} / ${list.length}`, el);
     else hideHud();
 }
 
@@ -781,6 +850,17 @@ function onSelectionChange() {
 }
 
 function onKeyDown(e: KeyboardEvent) {
+    const esc = e.key === "Escape" && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey;
+    if (esc) {
+        if (historyOpen || imeEvent(e)) return;
+        if (recalling || lastShown >= 0) {
+            cancelBrowse(chatEditor(e.target) ?? browseEditor());
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
+        return;
+    }
+    if (historyOpen && (e.key === "ArrowUp" || e.key === "ArrowDown")) return;
     if (imeEvent(e)) return;
     const el = chatEditor(e.target);
     if (!el) return;
@@ -796,14 +876,6 @@ function onKeyDown(e: KeyboardEvent) {
 
     const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
     if (applying && !arrow) invalidateApply();
-
-    if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
-        lastShown = -1;
-        dropRecall(el);
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return;
-    }
 
     if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
         pushEntry(editorText(el));
@@ -924,19 +996,31 @@ function removeEntry(index: number, imagine: boolean) {
     if (imagine === useImagineBucket()) resetBrowse(next.length);
 }
 
-function HistoryPanel() {
+interface HistoryPanelProps {
+    picker?: boolean;
+    onUse?: (text: string, index: number) => void;
+}
+
+function HistoryPanel({ picker, onUse }: Partial<IPluginOptionComponentProps> & HistoryPanelProps = {}) {
     const { entries, imagineEntries, separateImagine } = settings.use(["entries", "imagineEntries", "separateImagine"]);
-    const [bucket, setBucket] = useState<"chat" | "imagine">("chat");
+    const [bucket, setBucket] = useState<"chat" | "imagine">(useImagineBucket() ? "imagine" : "chat");
     const imagine = !!separateImagine && bucket === "imagine";
     const list = imagine ? (imagineEntries ?? []) : (entries ?? []);
+    const sameBucket = imagine === useImagineBucket();
+    const live = picker && sameBucket && cursor >= 0 && cursor < list.length ? cursor : -1;
     const [query, setQuery] = useState("");
     const [openId, setOpenId] = useState<number | null>(null);
     const [confirm, setConfirm] = useState(false);
+    const listRef = useRef<HTMLDivElement>(null);
     const needle = query.trim().toLowerCase();
     const visible = list
         .map((text, index) => ({ text, index }))
         .filter(row => !needle || row.text.toLowerCase().includes(needle))
         .toReversed();
+
+    useEffect(() => {
+        listRef.current?.querySelector(`.${cl("item-live")}`)?.scrollIntoView({ block: "nearest" });
+    }, [live, bucket]);
 
     return (
         <Flex flexDirection="column" gap="0.5rem" className={cl("panel")}>
@@ -974,11 +1058,11 @@ function HistoryPanel() {
             {list.length === 0 && <Paragraph className={cl("empty")}>No stored prompts.</Paragraph>}
             {list.length > 0 && visible.length === 0 && <Paragraph className={cl("empty")}>No matches.</Paragraph>}
             {visible.length > 0 && (
-                <div className={cl("list")}>
+                <div className={cl("list", picker && "list-picker")} ref={listRef}>
                     {visible.map(row => {
                         const expanded = openId === row.index;
                         return (
-                            <div key={row.index} className={cl("item", expanded && "item-on")}>
+                            <div key={row.index} className={cl("item", expanded && "item-on", row.index === live && "item-live")}>
                                 <span className={cl("index")}>{row.index + 1}</span>
                                 <div
                                     className={cl("main")}
@@ -994,6 +1078,18 @@ function HistoryPanel() {
                                     <span className={cl("body", !expanded && "clamp")}>{row.text}</span>
                                 </div>
                                 <div className={cl("actions")}>
+                                    {picker && sameBucket && !!onUse && (
+                                        <ButtonWithTooltip
+                                            variant="tertiary"
+                                            size="sm"
+                                            shape="square"
+                                            tooltipContent="Use"
+                                            aria-label="Use"
+                                            onClick={() => onUse(row.text, row.index)}
+                                        >
+                                            <TextCursorInputIcon size={16} />
+                                        </ButtonWithTooltip>
+                                    )}
                                     <ButtonWithTooltip
                                         variant="tertiary"
                                         size="sm"
@@ -1042,10 +1138,49 @@ function HistoryPanel() {
     );
 }
 
+function adoptEntry(text: string, index: number) {
+    const el = browseEditor();
+    if (!el) return;
+    cursor = index;
+    recalling = true;
+    lastShown = index;
+    setEditorText(el, text, false);
+    showHud(`${index + 1} / ${getEntries().length}`, el);
+}
+
+function HistoryModal({ onClose }: ModalProps) {
+    return (
+        <VoidPPDialogShell title="Input history" subtitle="Stored on this device." onClose={onClose} size="md">
+            <HistoryPanel
+                picker
+                onUse={(text, index) => {
+                    adoptEntry(text, index);
+                    onClose();
+                }}
+            />
+        </VoidPPDialogShell>
+    );
+}
+
+const SafeHistoryModal = ErrorBoundary.wrap(HistoryModal);
+
+function openHistoryModal() {
+    historyOpen = true;
+    document.querySelector(`.${cl("hud")}`)?.classList.add(cl("hud-back"));
+    openModal(props => (
+        <SafeHistoryModal
+            onClose={() => {
+                markHistoryClosed();
+                props.onClose();
+            }}
+        />
+    ), { modalKey: HISTORY_MODAL_KEY });
+}
+
 export default definePlugin({
     name: "InputHistory",
     icon: HistoryIcon,
-    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell. Optional separate Imagine history.",
+    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell. Esc restores your draft. Click the counter to browse history.",
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
@@ -1059,6 +1194,8 @@ export default definePlugin({
         lastShown = -1;
         recalling = false;
         composing = false;
+        historyOpen = false;
+        hudEditor = null;
         invalidateApply();
         keys = new AbortController();
         const { signal } = keys;
@@ -1075,11 +1212,13 @@ export default definePlugin({
     stop() {
         keys?.abort();
         keys = null;
+        closeHistoryModal();
         hideHud();
         recentAt.clear();
         composing = false;
         recalling = false;
         lastShown = -1;
+        hudEditor = null;
         invalidateApply();
     },
 
@@ -1099,6 +1238,7 @@ export default definePlugin({
             selector: (s: RoutingStoreState) => String(s.route?.page ?? ""),
             handler() {
                 resetBrowse(getEntries().length);
+                closeHistoryModal();
             },
         },
     },

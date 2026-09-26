@@ -22,7 +22,7 @@
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | 开 | 上游已有该插件；Void++ 改为默认打开。隐藏升级提示、首页横幅、输入栏 SuperGrok 标记、锁定模型，以及 Imagine 页 Upgrade 按钮（`hideImagineUpgrade`）。 |
 | <img src="https://api.iconify.design/lucide/images.svg?color=%238b949e" width="16" height="16" alt=""> BetterImagine | 关 | Imagine 增强：收藏筛选/排序/搜索、悬停播放、隐藏审核内容、批量超分与复制、智能文件名。`hideDefaultPreviews` 隐藏首页模板（默认关）。快捷键 i/v/r 仅在收藏页生效。 |
-| <img src="https://api.iconify.design/lucide/history.svg?color=%238b949e" width="16" height="16" alt=""> InputHistory | 开 | 在输入框用 ↑ / ↓ 翻看历史提示词，类似终端。可选 `separateImagine` 把 Imagine 提示词单独存一份。 |
+| <img src="https://api.iconify.design/lucide/history.svg?color=%238b949e" width="16" height="16" alt=""> InputHistory | 开 | 在输入框用 ↑ / ↓ 翻看历史提示词，类似终端。Esc 还原草稿。点击计数器打开历史。可选 `separateImagine` 把 Imagine 提示词单独存一份。 |
 | <img src="https://api.iconify.design/lucide/bot-off.svg?color=%238b949e" width="16" height="16" alt=""> NoGrokBot | 开 | 隐藏右上角 Grok Bot 推广按钮。 |
 | <img src="https://api.iconify.design/lucide/user-round-x.svg?color=%238b949e" width="16" height="16" alt=""> NoSidebarIdentity | 开 | 分开开关，隐藏侧栏和账号菜单里的用户名 / 邮箱。头像保留，账号菜单仍可打开。 |
 | <img src="https://api.iconify.design/lucide/user-round-pen.svg?color=%238b949e" width="16" height="16" alt=""> CustomSidebarIdentity | 关 | 替换侧栏头像和显示名。留空则保持官方。Avatar Url 支持粘贴图片或填 `https://` / `data:image`，圆形台可拖拽/缩放裁切。`avatarSize` 可调展开侧栏头像直径（24–64px，默认 40）。折叠轨仍为 32。可选 `applyToMenu` 同时改账号下拉顶栏。 |
