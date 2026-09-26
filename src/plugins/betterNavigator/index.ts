@@ -60,6 +60,7 @@ const USER_INTERRUPT = /interrupted by the user|user[- ]interrupt|aborted by the
 const LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
 const DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
 const HIDE_CLASS = "void-bn-hidetip";
+const ROW_TINT_CLASS = "void-bn-rowtint";
 const LIVE_LABEL = "正在输出…";
 const LOADING_LABEL = "加载中…";
 const SUMMARY_MAX = 60;
@@ -90,6 +91,11 @@ const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Hide Grok's single-message hover preview on the native ticks.",
         default: true,
+    },
+    hoverRowTint: {
+        type: OptionType.BOOLEAN,
+        description: "Tint user and assistant rows while the pointer is over the outline.",
+        default: false,
     },
     jumpEffect: {
         type: OptionType.SELECT,
@@ -1187,7 +1193,9 @@ function unmount() {
 }
 
 function syncHideTip() {
-    document.documentElement.classList.toggle(HIDE_CLASS, !!settings.store.hideNativeHover);
+    const root = document.documentElement;
+    root.classList.toggle(HIDE_CLASS, !!settings.store.hideNativeHover);
+    root.classList.toggle(ROW_TINT_CLASS, !!settings.store.hoverRowTint);
 }
 
 function setOpen(on: boolean) {
@@ -1414,7 +1422,7 @@ function stop() {
     clearFlash();
     lastNav = [];
     lastPath = "";
-    document.documentElement.classList.remove(HIDE_CLASS);
+    document.documentElement.classList.remove(HIDE_CLASS, ROW_TINT_CLASS);
 }
 
 export default definePlugin({

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.6
+// @version      20260926.7
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.6] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,7 +7755,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260926.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9a01f49"}`
     }, `(${"9a01f49"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -10297,15 +10297,15 @@ button.void-bn-native-edge::before {
     cursor: pointer;
 }
 
-.void-bn-menu:hover .void-bn-item-user,
-.void-bn-menu:focus-within .void-bn-item-user {
+html.void-bn-rowtint .void-bn-menu:hover .void-bn-item-user,
+html.void-bn-rowtint .void-bn-menu:focus-within .void-bn-item-user {
     background: hsl(var(--fg-primary) / 10%);
     color: hsl(var(--fg-primary));
     font-weight: 500;
 }
 
-.void-bn-menu:hover .void-bn-item-asst,
-.void-bn-menu:focus-within .void-bn-item-asst {
+html.void-bn-rowtint .void-bn-menu:hover .void-bn-item-asst,
+html.void-bn-rowtint .void-bn-menu:focus-within .void-bn-item-asst {
     background: hsl(var(--fg-primary) / 3%);
 }
 
@@ -10433,6 +10433,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var LIVE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
   var HIDE_CLASS = "void-bn-hidetip";
+  var ROW_TINT_CLASS = "void-bn-rowtint";
   var LIVE_LABEL = "正在输出…";
   var LOADING_LABEL = "加载中…";
   var SUMMARY_MAX = 60;
@@ -10462,6 +10463,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       type: 3 /* BOOLEAN */,
       description: "Hide Grok's single-message hover preview on the native ticks.",
       default: true
+    },
+    hoverRowTint: {
+      type: 3 /* BOOLEAN */,
+      description: "Tint user and assistant rows while the pointer is over the outline.",
+      default: false
     },
     jumpEffect: {
       type: 4 /* SELECT */,
@@ -11630,7 +11636,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     document.documentElement.classList.remove("void-bn-fullticks");
   }
   function syncHideTip() {
-    document.documentElement.classList.toggle(HIDE_CLASS, !!settings11.store.hideNativeHover);
+    const root = document.documentElement;
+    root.classList.toggle(HIDE_CLASS, !!settings11.store.hideNativeHover);
+    root.classList.toggle(ROW_TINT_CLASS, !!settings11.store.hoverRowTint);
   }
   function setOpen(on) {
     host?.classList.toggle("void-bn-open", on);
@@ -11856,7 +11864,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     clearFlash();
     lastNav = [];
     lastPath = "";
-    document.documentElement.classList.remove(HIDE_CLASS);
+    document.documentElement.classList.remove(HIDE_CLASS, ROW_TINT_CLASS);
   }
   var betterNavigator_default = definePlugin({
     name: "BetterNavigator",

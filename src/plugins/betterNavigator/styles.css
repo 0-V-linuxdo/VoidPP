@@ -241,15 +241,15 @@ button.void-bn-native-edge::before {
     cursor: pointer;
 }
 
-.void-bn-menu:hover .void-bn-item-user,
-.void-bn-menu:focus-within .void-bn-item-user {
+html.void-bn-rowtint .void-bn-menu:hover .void-bn-item-user,
+html.void-bn-rowtint .void-bn-menu:focus-within .void-bn-item-user {
     background: hsl(var(--fg-primary) / 10%);
     color: hsl(var(--fg-primary));
     font-weight: 500;
 }
 
-.void-bn-menu:hover .void-bn-item-asst,
-.void-bn-menu:focus-within .void-bn-item-asst {
+html.void-bn-rowtint .void-bn-menu:hover .void-bn-item-asst,
+html.void-bn-rowtint .void-bn-menu:focus-within .void-bn-item-asst {
     background: hsl(var(--fg-primary) / 3%);
 }
 
