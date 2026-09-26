@@ -68,6 +68,7 @@ let applyTimer: ReturnType<typeof setTimeout> | undefined;
 let applyEl: HTMLElement | null = null;
 let applyAtStart = true;
 let applyCaretMoved = false;
+let suppressSelect = 0;
 
 function isImaginePage(): boolean {
     try {
@@ -104,7 +105,11 @@ function setEntries(entries: string[]) {
 }
 
 function normalize(text: string): string {
-    return text.replaceAll(ZWSP, "").replace(/\n$/, "").trim();
+    return text.replaceAll(ZWSP, "").replace(/\r\n?/g, "\n");
+}
+
+function hasContent(text: string): boolean {
+    return text.replace(/[\s\u00a0]/g, "") !== "";
 }
 
 function imeEvent(e: Event): boolean {
@@ -400,17 +405,15 @@ function nudgeCaret(el: HTMLElement, caret: Range, older: boolean): boolean {
     return true;
 }
 
-function flatBreaks(text: string): string {
-    return normalize(text).replace(/\n+/g, "\n");
-}
-
 function matchesRecall(el: HTMLElement): boolean {
     if (!recalling) return false;
     const list = getEntries();
     const expected = cursor < list.length ? list[cursor] : draft;
-    if (editorText(el) === expected) return true;
-    const flat = flatBreaks(expected);
-    return flatBreaks(editorText(el)) === flat || flatBreaks(el.innerText ?? "") === flat;
+    const actual = editorText(el);
+    if (newlineCount(actual) !== newlineCount(expected)) return false;
+    if (actual === expected) return true;
+    const inner = normalize(el.innerText ?? "");
+    return newlineCount(inner) === newlineCount(expected) && inner === expected;
 }
 
 function dropRecall(el: HTMLElement) {
@@ -470,25 +473,6 @@ function breakNodeType(nodes: Record<string, { spec?: { linebreakReplacement?: b
     return null;
 }
 
-function insertHardBreak(el: HTMLElement): boolean {
-    try {
-        const view = pmViewOf(el);
-        const type = view ? breakNodeType(view.state.schema.nodes) : null;
-        if (view && type) {
-            view.dispatch(view.state.tr.replaceSelectionWith(type.create()).scrollIntoView());
-            return true;
-        }
-    } catch (err) {
-        logger.debug("insertHardBreak pm failed:", err);
-    }
-    try {
-        return document.execCommand("insertHTML", false, "<br>");
-    } catch (err) {
-        logger.debug("insertHTML br failed:", err);
-        return false;
-    }
-}
-
 function escapeHtml(text: string): string {
     return text.replace(/[&<>"]/g, ch => {
         if (ch === "&") return "&" + "amp;";
@@ -524,29 +508,34 @@ function insertLinesPm(el: HTMLElement, text: string): boolean {
     }
 }
 
+function linesToHtml(text: string): string {
+    const html = text.split("\n").map(escapeHtml).join("<br>");
+    return text.endsWith("\n") ? html + "\u200b" : html;
+}
+
 function insertLinesHtml(text: string): boolean {
     try {
-        return document.execCommand("insertHTML", false, text.split("\n").map(escapeHtml).join("<br>"));
+        return document.execCommand("insertHTML", false, linesToHtml(text));
     } catch (err) {
         logger.debug("insertLinesHtml failed:", err);
         return false;
     }
 }
 
-function insertLinesFallback(el: HTMLElement, text: string) {
+function insertLinesDom(text: string): boolean {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return false;
+    const range = sel.getRangeAt(0);
     const lines = text.split("\n");
-    document.execCommand("insertText", false, lines[0]);
-    let emptyRun = 0;
-    for (let i = 1; i < lines.length; i++) {
-        insertHardBreak(el);
-        if (!lines[i]) {
-            emptyRun++;
-            continue;
-        }
-        if (emptyRun > 0) insertHardBreak(el);
-        emptyRun = 0;
-        document.execCommand("insertText", false, lines[i]);
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < lines.length; i++) {
+        if (i) frag.appendChild(document.createElement("br"));
+        if (lines[i]) frag.appendChild(document.createTextNode(lines[i]));
     }
+    if (text.endsWith("\n")) frag.appendChild(document.createTextNode("\u200b"));
+    range.deleteContents();
+    range.insertNode(frag);
+    return true;
 }
 
 function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
@@ -562,13 +551,15 @@ function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
     applyAtStart = atStart;
     applyCaretMoved = false;
     const gen = ++applyGen;
+    suppressSelect++;
     try {
         document.execCommand("delete");
-        if (text && !insertLinesPm(el, text) && !insertLinesHtml(text)) insertLinesFallback(el, text);
+        if (text && !insertLinesPm(el, text) && !insertLinesHtml(text)) insertLinesDom(text);
     } catch (err) {
         logger.debug("insertText failed:", err);
     }
     placeCaret(el, atStart);
+    requestAnimationFrame(() => { suppressSelect = Math.max(0, suppressSelect - 1); });
     scheduleApplyEnd(gen);
 }
 
@@ -601,7 +592,7 @@ function showHud(label: string, editor: HTMLElement) {
 
 function pushEntry(text: string) {
     const value = normalize(text);
-    if (!value) return;
+    if (!value || !hasContent(value)) return;
 
     const now = Date.now();
     const prev = recentAt.get(value);
@@ -634,12 +625,38 @@ function cycle(older: boolean, el: HTMLElement) {
     else hideHud();
 }
 
+function caretNav(e: KeyboardEvent): boolean {
+    return e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Home" || e.key === "End";
+}
+
+function atProgrammedEdge(el: HTMLElement, caret: Range, atStart: boolean): boolean {
+    const probe = caret.cloneRange();
+    if (atStart) probe.setStart(el, 0);
+    else probe.setEnd(el, el.childNodes.length);
+    if (probe.toString().replace(ZWSP, "").trim()) return false;
+    for (const br of probe.cloneContents().querySelectorAll("br")) {
+        if (!br.classList.contains(TRAILING_BR)) return false;
+    }
+    return true;
+}
+
+function onSelectionChange() {
+    if (suppressSelect || !applying || applyCaretMoved) return;
+    const el = applyEl;
+    if (!el) return;
+    const caret = collapsedCaret(el);
+    if (!caret || !atProgrammedEdge(el, caret, applyAtStart)) applyCaretMoved = true;
+}
+
 function onKeyDown(e: KeyboardEvent) {
     if (imeEvent(e)) return;
-    if (e.ctrlKey || e.metaKey) return;
-
     const el = chatEditor(e.target);
     if (!el) return;
+    if (applying && caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        applyCaretMoved = true;
+        return;
+    }
+    if (e.ctrlKey || e.metaKey) return;
 
     const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
     if (applying && !arrow) invalidateApply();
@@ -894,6 +911,7 @@ export default definePlugin({
         document.addEventListener("submit", onSubmit, { capture: true, signal });
         document.addEventListener("click", onClick, { capture: true, signal });
         document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
+        document.addEventListener("selectionchange", onSelectionChange, { signal });
     },
 
     stop() {
