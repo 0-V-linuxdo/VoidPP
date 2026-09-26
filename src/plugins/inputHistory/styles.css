@@ -135,6 +135,12 @@
     border-color: hsl(var(--border-l2) / 60%);
 }
 
+.void-ih-list-picker .void-ih-item {
+    grid-template-columns: max-content minmax(0, 1fr) auto;
+    gap: 0.35rem;
+    padding-inline: 0.2rem 0.35rem;
+}
+
 .void-ih-index {
     min-width: 0;
     color: hsl(var(--fg-tertiary));
@@ -142,6 +148,10 @@
     font-variant-numeric: tabular-nums;
     line-height: 1.45;
     text-align: right;
+}
+
+.void-ih-list-picker .void-ih-index {
+    min-width: 2ch;
 }
 
 .void-ih-item-live {
@@ -181,6 +191,14 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
     overflow: hidden;
+}
+
+.void-ih-list-picker .void-ih-clamp {
+    display: block;
+    overflow-wrap: normal;
+    word-break: normal;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .void-ih-item-on .void-ih-body {
