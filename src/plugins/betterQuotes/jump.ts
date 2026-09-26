@@ -11,7 +11,6 @@ import { Logger } from "@utils/Logger";
 import { sleep } from "@utils/misc";
 import { getFiber } from "@utils/react";
 
-import { QUOTE_ICON_SVG } from "./icon";
 import { DISMISS, KEEP, onImaginePage, QUERY } from "./shared";
 
 const logger = new Logger("QuoteJump");
@@ -26,6 +25,12 @@ const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const JUMP_BTN = "button[aria-label='Jump to quoted message']";
 const SCROLLER = "[data-testid='chat-transcript-scroller']";
 const FLASH_MS = 1800;
+const BADGE = 24;
+const QUOTE_PATHS = [
+    "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+    "M8 12a2 2 0 0 0 2-2V8H8",
+    "M14 12a2 2 0 0 0 2-2V8h-2",
+];
 const WAIT_MS = 50;
 const WAIT_N = 24;
 const ALIGNED_PX = 8;
@@ -995,12 +1000,29 @@ function clearBadges() {
     for (const n of document.querySelectorAll(`.${cl("back")}`)) n.remove();
 }
 
+function quoteSvg(): SVGSVGElement {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    for (const d of QUOTE_PATHS) {
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", d);
+        svg.append(path);
+    }
+    return svg;
+}
+
 function ensureGlyph(btn: HTMLElement) {
     if (!btn.querySelector(`.${cl("mark")}`)) {
         const mark = document.createElement("span");
         mark.className = cl("mark");
         mark.setAttribute("aria-hidden", "true");
-        mark.innerHTML = QUOTE_ICON_SVG;
+        mark.append(quoteSvg());
         btn.prepend(mark);
     }
     for (const node of [...btn.childNodes]) {
@@ -1025,6 +1047,32 @@ function paintCount(btn: HTMLElement, n: number) {
     if (el.textContent !== text) el.textContent = text;
 }
 
+function proseBox(host: HTMLElement): DOMRect | null {
+    const bubble = host.matches(MSG) ? host : host.querySelector<HTMLElement>(MSG);
+    const root = bubble ?? host;
+    let left = Infinity;
+    let right = -Infinity;
+    let top = Infinity;
+    let bottom = -Infinity;
+    let n = 0;
+    for (const el of root.querySelectorAll<HTMLElement>("p, li, pre, h1, h2, h3, h4")) {
+        if (el.closest(`${JUMP_BTN}, button, ${THINK_SEL}`)) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < 24 || r.height < 8) continue;
+        left = Math.min(left, r.left);
+        right = Math.max(right, r.right);
+        top = Math.min(top, r.top);
+        bottom = Math.max(bottom, r.bottom);
+        n++;
+    }
+    if (!n) {
+        const r = root.getBoundingClientRect();
+        if (r.width < 40 || r.height < 12) return null;
+        return r;
+    }
+    return new DOMRect(left, top, right - left, bottom - top);
+}
+
 function paintBacklinks() {
     if (!jumpArmed || onImaginePage()) {
         clearBadges();
@@ -1037,8 +1085,14 @@ function paintBacklinks() {
         const named = document.getElementById(`response-${source}`);
         const host = named instanceof HTMLElement ? named : messageById(source);
         if (!(host instanceof HTMLElement) || !host.isConnected) continue;
-        const box = host.getBoundingClientRect();
-        if (box.width < 40 || box.bottom < 24 || box.top > window.innerHeight - 8) continue;
+        const box = proseBox(host);
+        if (!box || box.width < 40 || box.bottom < BADGE) continue;
+        const top = Math.round(box.top + 4);
+        let left = Math.round(box.right - BADGE - 4);
+        const limit = Math.round(window.innerWidth - BADGE - 8);
+        if (left > limit) left = limit;
+        if (top < 0 || top > window.innerHeight - BADGE) continue;
+        if (left < Math.max(8, box.left)) continue;
         seen.add(source);
         let btn = document.querySelector<HTMLElement>(`.${cl("back")}[data-void-qj-src="${source}"]`);
         if (!btn) {
@@ -1052,8 +1106,8 @@ function paintBacklinks() {
         paintCount(btn, cites.length);
         const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
         if (btn.getAttribute("aria-label") !== aria) btn.setAttribute("aria-label", aria);
-        btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 32))}px`;
-        btn.style.top = `${Math.round(Math.max(8, box.top + 8))}px`;
+        btn.style.left = `${left}px`;
+        btn.style.top = `${top}px`;
         if (openSrc === source) placeMenu(btn);
     }
     for (const n of document.querySelectorAll<HTMLElement>(`.${cl("back")}`)) {
@@ -1147,7 +1201,7 @@ function onClick(e: MouseEvent) {
     if (!e.isTrusted || e.button !== 0 || onImaginePage()) return;
     const t = eventEl(e.target);
     if (!t) return;
-    if (t.closest(`.${cl("back")}, .${cl("menu")}`)) {
+    if (!officialJumpButton(t) && t.closest(`.${cl("back")}, .${cl("menu")}`)) {
         e.preventDefault();
         e.stopPropagation();
         onBackClick(t);

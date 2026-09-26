@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.17
+// @version      20260926.18
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.17] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.18] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,9 +7755,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e3000d5"}`
-    }, `(${"e3000d5"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.18] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"71130b9"}`
+    }, `(${"71130b9"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14592,9 +14592,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     padding: 0;
     border: 0;
     border-radius: 999px;
-    background: transparent;
+    background: hsl(var(--surface-l2) / 88%);
     color: hsl(var(--fg-secondary));
     cursor: pointer;
+    box-shadow: inset 0 0 0 1px hsl(var(--fg-secondary));
 }
 
 .void-qj-back:is(:hover, :focus-visible) {
@@ -14966,6 +14967,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var JUMP_BTN = "button[aria-label='Jump to quoted message']";
   var SCROLLER2 = "[data-testid='chat-transcript-scroller']";
   var FLASH_MS2 = 1800;
+  var BADGE = 24;
+  var QUOTE_PATHS = [
+    "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+    "M8 12a2 2 0 0 0 2-2V8H8",
+    "M14 12a2 2 0 0 0 2-2V8h-2"
+  ];
   var WAIT_MS = 50;
   var WAIT_N = 24;
   var ALIGNED_PX = 8;
@@ -16000,12 +16007,28 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     for (const n of document.querySelectorAll(`.${cl20("back")}`))
       n.remove();
   }
+  function quoteSvg() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    for (const d of QUOTE_PATHS) {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", d);
+      svg.append(path);
+    }
+    return svg;
+  }
   function ensureGlyph(btn) {
     if (!btn.querySelector(`.${cl20("mark")}`)) {
       const mark = document.createElement("span");
       mark.className = cl20("mark");
       mark.setAttribute("aria-hidden", "true");
-      mark.innerHTML = QUOTE_ICON_SVG;
+      mark.append(quoteSvg());
       btn.prepend(mark);
     }
     for (const node of [...btn.childNodes]) {
@@ -16030,6 +16053,34 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (el.textContent !== text)
       el.textContent = text;
   }
+  function proseBox(host) {
+    const bubble = host.matches(MSG2) ? host : host.querySelector(MSG2);
+    const root = bubble ?? host;
+    let left = Infinity;
+    let right = -Infinity;
+    let top = Infinity;
+    let bottom = -Infinity;
+    let n = 0;
+    for (const el of root.querySelectorAll("p, li, pre, h1, h2, h3, h4")) {
+      if (el.closest(`${JUMP_BTN}, button, ${THINK_SEL2}`))
+        continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 24 || r.height < 8)
+        continue;
+      left = Math.min(left, r.left);
+      right = Math.max(right, r.right);
+      top = Math.min(top, r.top);
+      bottom = Math.max(bottom, r.bottom);
+      n++;
+    }
+    if (!n) {
+      const r = root.getBoundingClientRect();
+      if (r.width < 40 || r.height < 12)
+        return null;
+      return r;
+    }
+    return new DOMRect(left, top, right - left, bottom - top);
+  }
   function paintBacklinks() {
     if (!jumpArmed || onImaginePage2()) {
       clearBadges();
@@ -16044,8 +16095,17 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const host = named instanceof HTMLElement ? named : messageById(source);
       if (!(host instanceof HTMLElement) || !host.isConnected)
         continue;
-      const box = host.getBoundingClientRect();
-      if (box.width < 40 || box.bottom < 24 || box.top > window.innerHeight - 8)
+      const box = proseBox(host);
+      if (!box || box.width < 40 || box.bottom < BADGE)
+        continue;
+      const top = Math.round(box.top + 4);
+      let left = Math.round(box.right - BADGE - 4);
+      const limit = Math.round(window.innerWidth - BADGE - 8);
+      if (left > limit)
+        left = limit;
+      if (top < 0 || top > window.innerHeight - BADGE)
+        continue;
+      if (left < Math.max(8, box.left))
         continue;
       seen.add(source);
       let btn = document.querySelector(`.${cl20("back")}[data-void-qj-src="${source}"]`);
@@ -16061,8 +16121,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
       if (btn.getAttribute("aria-label") !== aria)
         btn.setAttribute("aria-label", aria);
-      btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 32))}px`;
-      btn.style.top = `${Math.round(Math.max(8, box.top + 8))}px`;
+      btn.style.left = `${left}px`;
+      btn.style.top = `${top}px`;
       if (openSrc === source)
         placeMenu(btn);
     }
@@ -16166,7 +16226,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const t = eventEl(e.target);
     if (!t)
       return;
-    if (t.closest(`.${cl20("back")}, .${cl20("menu")}`)) {
+    if (!officialJumpButton(t) && t.closest(`.${cl20("back")}, .${cl20("menu")}`)) {
       e.preventDefault();
       e.stopPropagation();
       onBackClick(t);
@@ -30814,7 +30874,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1790161256000;
   betterNavigator_default.updatedAt = 1790421526000;
   betterQueue_default.updatedAt = 1790246920000;
-  betterQuotes_default.updatedAt = 1790435615000;
+  betterQuotes_default.updatedAt = 1790436943000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;
