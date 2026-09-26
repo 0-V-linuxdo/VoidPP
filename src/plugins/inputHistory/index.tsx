@@ -398,6 +398,41 @@ function scheduleApplyEnd(gen: number) {
     }, APPLY_QUIET_MS);
 }
 
+function breakNodeType(nodes: Record<string, { spec?: { linebreakReplacement?: boolean }; create(): unknown }>) {
+    for (const name of ["hardBreak", "hard_break", "hardbreak"]) {
+        if (nodes[name]) return nodes[name];
+    }
+    for (const type of Object.values(nodes)) {
+        if (type.spec?.linebreakReplacement) return type;
+    }
+    return null;
+}
+
+function insertHardBreak(el: HTMLElement): boolean {
+    try {
+        const view = (el as unknown as { pmViewDesc?: { view?: {
+            dispatch(tr: unknown): void;
+            state: {
+                schema: { nodes: Record<string, { spec?: { linebreakReplacement?: boolean }; create(): unknown }> };
+                tr: { replaceSelectionWith(node: unknown): { scrollIntoView(): unknown } };
+            };
+        } } }).pmViewDesc?.view;
+        const type = view ? breakNodeType(view.state.schema.nodes) : null;
+        if (view && type) {
+            view.dispatch(view.state.tr.replaceSelectionWith(type.create()).scrollIntoView());
+            return true;
+        }
+    } catch (err) {
+        logger.debug("insertHardBreak pm failed:", err);
+    }
+    try {
+        return document.execCommand("insertHTML", false, "<br>");
+    } catch (err) {
+        logger.debug("insertHTML br failed:", err);
+        return false;
+    }
+}
+
 function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
     el.focus();
     const sel = window.getSelection();
@@ -417,11 +452,8 @@ function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
             const lines = text.split("\n");
             document.execCommand("insertText", false, lines[0]);
             for (let i = 1; i < lines.length; i++) {
-                placeCaret(el, false);
-                document.execCommand("insertLineBreak");
-                if (!lines[i]) continue;
-                placeCaret(el, false);
-                document.execCommand("insertText", false, lines[i]);
+                insertHardBreak(el);
+                if (lines[i]) document.execCommand("insertText", false, lines[i]);
             }
         }
     } catch (err) {
