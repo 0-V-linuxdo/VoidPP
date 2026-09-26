@@ -157,12 +157,82 @@ function blockText(block: Element): string {
     return out;
 }
 
+function pmViewOf(el: HTMLElement) {
+    try {
+        return (el as unknown as { pmViewDesc?: { view?: {
+            composing?: boolean;
+            dispatch(tr: unknown): void;
+            state: {
+                doc: {
+                    forEach(cb: (node: PmBlock) => void): void;
+                    resolve?(pos: number): unknown;
+                };
+                schema: {
+                    nodes: Record<string, { spec?: { linebreakReplacement?: boolean }; create(): PmInline }>;
+                    text(text: string): PmInline;
+                };
+                selection: { from: number; constructor: { atStart(doc: unknown): unknown; atEnd(doc: unknown): unknown; near?(pos: unknown): unknown } };
+                tr: {
+                    deleteSelection(): PmTr;
+                    insert(pos: number, node: PmInline): PmTr;
+                    replaceSelectionWith(node: unknown): { scrollIntoView(): unknown };
+                    setSelection(sel: unknown): { scrollIntoView(): unknown };
+                    scrollIntoView(): unknown;
+                };
+            };
+        } } }).pmViewDesc?.view ?? null;
+    } catch {
+        return null;
+    }
+}
+
+type PmInline = { isText?: boolean; text?: string; type?: unknown; nodeSize: number; forEach(cb: (node: PmInline) => void): void };
+type PmBlock = { forEach(cb: (node: PmInline) => void): void };
+type PmTr = { insert(pos: number, node: PmInline): PmTr; scrollIntoView(): unknown; selection: { from: number } };
+
+function serializePmDoc(doc: { forEach(cb: (node: PmBlock) => void): void }, brType: unknown): string {
+    const blocks: string[] = [];
+    doc.forEach(block => {
+        let line = "";
+        block.forEach(child => {
+            if (child.isText) line += child.text ?? "";
+            else if (brType && child.type === brType) line += "\n";
+            else {
+                child.forEach(grand => {
+                    if (grand.isText) line += grand.text ?? "";
+                    else if (brType && grand.type === brType) line += "\n";
+                });
+            }
+        });
+        blocks.push(line);
+    });
+    return blocks.join("\n");
+}
+
+function newlineCount(text: string): number {
+    let n = 0;
+    for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) === 10) n++;
+    return n;
+}
+
 function editorText(el: HTMLElement): string {
+    let pmNorm: string | null = null;
+    try {
+        const view = pmViewOf(el);
+        if (view?.state?.doc) {
+            const br = breakNodeType(view.state.schema.nodes);
+            pmNorm = normalize(serializePmDoc(view.state.doc, br));
+        }
+    } catch (err) {
+        logger.debug("editorText pm failed:", err);
+    }
     const blocks = el.querySelectorAll(":scope > *");
     const raw = blocks.length
         ? Array.from(blocks, blockText).join("\n")
         : (el.innerText ?? el.textContent ?? "");
-    return normalize(raw);
+    const domNorm = normalize(raw);
+    if (pmNorm != null && newlineCount(pmNorm) >= newlineCount(domNorm)) return pmNorm;
+    return domNorm;
 }
 
 function collapsedCaret(el: HTMLElement): Range | null {
@@ -354,15 +424,7 @@ function dropRecall(el: HTMLElement) {
 function placeCaret(el: HTMLElement, atStart: boolean) {
     if (composing) return;
     try {
-        const view = (el as unknown as { pmViewDesc?: { view?: {
-            composing?: boolean;
-            state: {
-                doc: unknown;
-                selection: { constructor: { atStart(doc: unknown): unknown; atEnd(doc: unknown): unknown } };
-                tr: { setSelection(sel: unknown): { scrollIntoView(): unknown } };
-            };
-            dispatch(tr: unknown): void;
-        } } }).pmViewDesc?.view;
+        const view = pmViewOf(el);
         if (view) {
             if (view.composing) return;
             const Sel = view.state.selection.constructor;
@@ -410,13 +472,7 @@ function breakNodeType(nodes: Record<string, { spec?: { linebreakReplacement?: b
 
 function insertHardBreak(el: HTMLElement): boolean {
     try {
-        const view = (el as unknown as { pmViewDesc?: { view?: {
-            dispatch(tr: unknown): void;
-            state: {
-                schema: { nodes: Record<string, { spec?: { linebreakReplacement?: boolean }; create(): unknown }> };
-                tr: { replaceSelectionWith(node: unknown): { scrollIntoView(): unknown } };
-            };
-        } } }).pmViewDesc?.view;
+        const view = pmViewOf(el);
         const type = view ? breakNodeType(view.state.schema.nodes) : null;
         if (view && type) {
             view.dispatch(view.state.tr.replaceSelectionWith(type.create()).scrollIntoView());
@@ -430,6 +486,66 @@ function insertHardBreak(el: HTMLElement): boolean {
     } catch (err) {
         logger.debug("insertHTML br failed:", err);
         return false;
+    }
+}
+
+function escapeHtml(text: string): string {
+    return text.replace(/[&<>"]/g, ch => {
+        if (ch === "&") return "&" + "amp;";
+        if (ch === "<") return "&" + "lt;";
+        if (ch === ">") return "&" + "gt;";
+        return "&" + "quot;";
+    });
+}
+
+function insertLinesPm(el: HTMLElement, text: string): boolean {
+    const view = pmViewOf(el);
+    if (!view) return false;
+    const brType = breakNodeType(view.state.schema.nodes);
+    if (!brType) return false;
+    const lines = text.split("\n");
+    const nodes: PmInline[] = [];
+    for (let i = 0; i < lines.length; i++) {
+        if (i > 0) nodes.push(brType.create());
+        if (lines[i]) nodes.push(view.state.schema.text(lines[i]));
+    }
+    try {
+        let tr = view.state.tr.deleteSelection();
+        let pos = tr.selection.from;
+        for (const node of nodes) {
+            tr = tr.insert(pos, node);
+            pos += node.nodeSize;
+        }
+        view.dispatch(tr.scrollIntoView());
+        return true;
+    } catch (err) {
+        logger.debug("insertLinesPm failed:", err);
+        return false;
+    }
+}
+
+function insertLinesHtml(text: string): boolean {
+    try {
+        return document.execCommand("insertHTML", false, text.split("\n").map(escapeHtml).join("<br>"));
+    } catch (err) {
+        logger.debug("insertLinesHtml failed:", err);
+        return false;
+    }
+}
+
+function insertLinesFallback(el: HTMLElement, text: string) {
+    const lines = text.split("\n");
+    document.execCommand("insertText", false, lines[0]);
+    let emptyRun = 0;
+    for (let i = 1; i < lines.length; i++) {
+        insertHardBreak(el);
+        if (!lines[i]) {
+            emptyRun++;
+            continue;
+        }
+        if (emptyRun > 0) insertHardBreak(el);
+        emptyRun = 0;
+        document.execCommand("insertText", false, lines[i]);
     }
 }
 
@@ -447,15 +563,8 @@ function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
     applyCaretMoved = false;
     const gen = ++applyGen;
     try {
-        if (!text) document.execCommand("delete");
-        else {
-            const lines = text.split("\n");
-            document.execCommand("insertText", false, lines[0]);
-            for (let i = 1; i < lines.length; i++) {
-                insertHardBreak(el);
-                if (lines[i]) document.execCommand("insertText", false, lines[i]);
-            }
-        }
+        document.execCommand("delete");
+        if (text && !insertLinesPm(el, text) && !insertLinesHtml(text)) insertLinesFallback(el, text);
     } catch (err) {
         logger.debug("insertText failed:", err);
     }
