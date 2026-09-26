@@ -67,6 +67,7 @@ let keys: AbortController | null = null;
 let applyTimer: ReturnType<typeof setTimeout> | undefined;
 let applyEl: HTMLElement | null = null;
 let applyAtStart = true;
+let applyCaretMoved = false;
 
 function isImaginePage(): boolean {
     try {
@@ -117,6 +118,7 @@ function invalidateApply() {
     applyGen++;
     applying = false;
     applyEl = null;
+    applyCaretMoved = false;
     clearTimeout(applyTimer);
     applyTimer = undefined;
 }
@@ -135,15 +137,33 @@ function chatEditor(t: EventTarget | null): HTMLElement | null {
     return null;
 }
 
+const TRAILING_BR = "ProseMirror-trailingBreak";
+
+function blockText(block: Element): string {
+    let out = "";
+    const walk = (node: Node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+            out += node.textContent ?? "";
+            return;
+        }
+        if (!(node instanceof Element)) return;
+        if (node.tagName === "BR") {
+            if (!node.classList.contains(TRAILING_BR)) out += "\n";
+            return;
+        }
+        for (const child of node.childNodes) walk(child);
+    };
+    for (const child of block.childNodes) walk(child);
+    return out;
+}
+
 function editorText(el: HTMLElement): string {
     const blocks = el.querySelectorAll(":scope > *");
     const raw = blocks.length
-        ? Array.from(blocks, b => b.textContent ?? "").join("\n")
+        ? Array.from(blocks, blockText).join("\n")
         : (el.innerText ?? el.textContent ?? "");
     return normalize(raw);
 }
-
-const TRAILING_BR = "ProseMirror-trailingBreak";
 
 function collapsedCaret(el: HTMLElement): Range | null {
     const sel = window.getSelection();
@@ -362,11 +382,13 @@ function scheduleApplyEnd(gen: number) {
         if (gen !== applyGen) return;
         applying = false;
         const el = applyEl;
+        const moved = applyCaretMoved;
         applyEl = null;
+        applyCaretMoved = false;
         if (!el || composing) return;
         if (!recalling) return;
         if (!matchesRecall(el)) dropRecall(el);
-        else placeCaret(el, applyAtStart);
+        else if (!moved) placeCaret(el, applyAtStart);
     }, APPLY_QUIET_MS);
 }
 
@@ -381,6 +403,7 @@ function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
     applying = true;
     applyEl = el;
     applyAtStart = atStart;
+    applyCaretMoved = false;
     const gen = ++applyGen;
     try {
         if (!text) document.execCommand("delete");
@@ -481,14 +504,20 @@ function onKeyDown(e: KeyboardEvent) {
     const older = e.key === "ArrowUp";
     if (!e.altKey) {
         const caret = collapsedCaret(el);
-        if (!caret) return;
+        if (!caret) {
+            if (applying) applyCaretMoved = true;
+            return;
+        }
         if (!isPlaceholderEditor(el)) {
             e.preventDefault();
             e.stopImmediatePropagation();
-            if (stepLine(el, older)) return;
+            if (stepLine(el, older)) {
+                if (applying) applyCaretMoved = true;
+                return;
+            }
             const stayed = collapsedCaret(el);
             if (stayed && (older ? breakBefore(el, stayed) : breakAfter(el, stayed))) {
-                nudgeCaret(el, stayed, older);
+                if (nudgeCaret(el, stayed, older) && applying) applyCaretMoved = true;
                 return;
             }
         }
