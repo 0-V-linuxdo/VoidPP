@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.36
+// @version      20260926.37
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.36] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.37] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.36] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"91be71e"}`
-    }, `(${"91be71e"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.37] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"35cf17a"}`
+    }, `(${"35cf17a"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8231,10 +8231,7 @@ button .void-info-hint {
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
     padding: 0;
-    border-radius: 999px;
     color: hsl(var(--fg-secondary));
 }
 
@@ -8615,7 +8612,11 @@ button .void-info-hint {
   var NS = "http://www.w3.org/2000/svg";
   var STAR_D = "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z";
   var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
-  var ACTION_RE = /^(edit|copy|like|dislike|retry|redo|regenerate|share|good response|bad response)\b|^(编辑|复制|拷贝|喜欢|不喜欢|点赞|踩|重新生成|重试|分享)/i;
+  var COPY_RE = /^(copy|复制|拷贝)\b/i;
+  var EDIT_RE = /^(edit|编辑)\b/i;
+  var LIKE_RE = /^(like|good response|thumbs[- ]?up|upvote|喜欢|点赞)\b/i;
+  var NOT_LIKE_RE = /dislike|bad response|thumbs[- ]?down|downvote|不喜欢|点踩|^踩\b/i;
+  var NOT_COPY_RE = /\b(code|link|table|source)\b|代码|表格|链接|来源/i;
   var settings6 = definePluginSettings({
     showInSidebar: {
       type: 3 /* BOOLEAN */,
@@ -8896,11 +8897,19 @@ button .void-info-hint {
     toggleBtn?.classList.remove("void-stars-open");
     toggleBtn?.setAttribute("aria-expanded", "false");
   }
-  function isActionLabel(label) {
-    return ACTION_RE.test(label.trim());
+  function controlLabel(el) {
+    return (el.getAttribute("aria-label") || el.getAttribute("title") || "").trim();
   }
-  function btnLabel(btn) {
-    return (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
+  function isCopyControl(el) {
+    const label = controlLabel(el);
+    return COPY_RE.test(label) && !NOT_COPY_RE.test(label);
+  }
+  function isEditControl(el) {
+    return EDIT_RE.test(controlLabel(el));
+  }
+  function isLikeControl(el) {
+    const label = controlLabel(el);
+    return LIKE_RE.test(label) && !NOT_LIKE_RE.test(label);
   }
   function shellOf(msg) {
     return msg.closest("[id^='response-']") ?? msg.parentElement ?? msg;
@@ -8909,103 +8918,71 @@ button .void-info-hint {
     if (btn.closest("pre, code"))
       return true;
     let node = btn.parentElement;
-    for (let depth = 0;node && depth < 3; depth++, node = node.parentElement) {
-      if (node.querySelector(":scope > pre"))
+    for (let depth = 0;node && depth < 4; depth++, node = node.parentElement) {
+      if (node.querySelector(":scope > pre, :scope > code"))
         return true;
     }
     return false;
   }
-  function toolbarOk(row, bubble) {
-    if (row.contains(bubble))
-      return false;
-    if (row.querySelector("p, pre, h1, h2, h3, ul, ol, blockquote, table"))
-      return false;
-    const text = (row.innerText || "").replaceAll(/\s+/g, " ").trim();
-    return text.length <= 24;
-  }
-  function labeledActions(shell) {
+  function barControls(row) {
     const out = [];
-    for (const btn of shell.querySelectorAll("button, [role='button']")) {
+    for (const btn of row.querySelectorAll("button, [role='button']")) {
       if (btn.classList.contains("void-stars-bubble") || inCodeChrome(btn))
-        continue;
-      if (!isActionLabel(btnLabel(btn)))
         continue;
       out.push(btn);
     }
     return out;
   }
-  function rowOf(btn, bubble, shell) {
-    let node = btn.parentElement;
-    let row = null;
-    while (node && node !== shell && node !== document.body) {
-      if (toolbarOk(node, bubble))
-        row = node;
-      else if (row)
-        break;
-      node = node.parentElement;
-    }
-    return row;
+  function ownsBubble(row, bubble) {
+    return row === bubble || row.contains(bubble) || bubble.contains(row);
   }
-  function actionRow(msg) {
-    const shell = shellOf(msg);
-    const labeled = labeledActions(shell);
-    const clusters = new Map;
-    for (const btn of labeled) {
-      const row = rowOf(btn, msg, shell);
-      if (!row)
-        continue;
-      const list = clusters.get(row);
-      if (list)
-        list.push(btn);
-      else
-        clusters.set(row, [btn]);
-    }
+  function messageBar(shell, bubble) {
     let best = null;
-    let bestScore = -1;
-    for (const [row, list] of clusters) {
-      const score = list.length * 10 + (msg.contains(row) ? 0 : 5);
-      if (score > bestScore) {
-        best = row;
-        bestScore = score;
+    for (const btn of shell.querySelectorAll("button, [role='button']")) {
+      if (btn.classList.contains("void-stars-bubble") || inCodeChrome(btn) || !isCopyControl(btn))
+        continue;
+      let node = btn.parentElement;
+      let depth = 1;
+      while (node && node !== shell && node !== document.body && depth <= 8) {
+        if (!ownsBubble(node, bubble)) {
+          const buttons = barControls(node);
+          const hasEdit = buttons.some(isEditControl);
+          const hasLike = buttons.some(isLikeControl);
+          const copies = buttons.filter(isCopyControl);
+          const userBar = hasEdit && !hasLike;
+          const asstBar = hasLike && !hasEdit;
+          if ((userBar || asstBar) && copies.length >= 1 && copies.length <= 2 && buttons.length >= 2 && buttons.length <= 12) {
+            if (!best || depth < best.depth)
+              best = { row: node, copy: btn, depth };
+            break;
+          }
+        }
+        node = node.parentElement;
+        depth++;
       }
     }
-    if (best)
-      return { row: best, actions: clusters.get(best) ?? [] };
-    const parent = msg.parentElement;
-    if (!parent)
-      return null;
-    for (const child of parent.children) {
-      if (!(child instanceof HTMLElement) || child === msg || child.contains(msg))
-        continue;
-      const buttons = [...child.querySelectorAll("button, [role='button']")].filter((btn) => !btn.classList.contains("void-stars-bubble") && !inCodeChrome(btn));
-      if (buttons.length < 2 || !toolbarOk(child, msg))
-        continue;
-      return { row: child, actions: [] };
-    }
-    return null;
+    return best ? { row: best.row, copy: best.copy } : null;
   }
-  function anchorChild(row, actions) {
-    let last = null;
-    for (const btn of actions) {
-      if (row.contains(btn))
-        last = btn;
-    }
-    let node = last;
-    while (node && node.parentElement !== row)
-      node = node.parentElement;
-    return node;
+  function placeAfterCopy(row, star, copy) {
+    let anchor = copy;
+    while (anchor && anchor.parentElement !== row)
+      anchor = anchor.parentElement;
+    if (!anchor || anchor.parentElement !== row)
+      return false;
+    if (star.parentElement === row && star.previousElementSibling === anchor)
+      return true;
+    anchor.after(star);
+    return star.parentElement === row;
   }
-  function placeInRow(row, btn, actions) {
-    const anchor = anchorChild(row, actions);
-    if (anchor) {
-      if (btn.parentElement === row && btn.previousElementSibling === anchor)
-        return;
-      anchor.after(btn);
+  function adoptNative(star, copy) {
+    const native = copy.className.replaceAll(/\bvoid-stars-\S+/g, "").trim();
+    if (!native || star.dataset.nativeClass === native)
       return;
-    }
-    if (btn.parentElement === row && row.firstElementChild === btn)
-      return;
-    row.prepend(btn);
+    const on = star.classList.contains("void-stars-on");
+    star.dataset.nativeClass = native;
+    star.className = `${native} void-stars-bubble`;
+    if (on)
+      star.classList.add("void-stars-on");
   }
   function messageIdOf(msg) {
     if (msg.id.startsWith("response-"))
@@ -9056,21 +9033,25 @@ button .void-info-hint {
   function paintBubbles() {
     const cid = currentCid();
     const keep = new Set;
+    const seen = new Set;
     for (const msg of document.querySelectorAll(MSG_SEL)) {
       const id = messageIdOf(msg);
       if (!cid || !id)
         continue;
-      const found = actionRow(msg);
-      if (!found)
+      const found = messageBar(shellOf(msg), msg);
+      if (!found || seen.has(found.row))
         continue;
-      const { row, actions } = found;
+      seen.add(found.row);
+      const { row, copy } = found;
       let btn = row.querySelector(":scope > .void-stars-bubble");
-      if (!btn) {
+      if (!btn)
         btn = makeBubble();
-        row.appendChild(btn);
+      if (!placeAfterCopy(row, btn, copy)) {
+        if (!btn.isConnected)
+          btn.remove();
+        continue;
       }
-      btn.classList.remove("void-stars-float");
-      placeInRow(row, btn, actions);
+      adoptNative(btn, copy);
       const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
       syncBubble(btn, cid, id, role);
       keep.add(btn);
@@ -9079,7 +9060,6 @@ button .void-info-hint {
       if (!keep.has(btn))
         btn.remove();
     }
-    document.querySelectorAll(".void-stars-rel").forEach((node) => node.classList.remove("void-stars-rel"));
   }
   function clearBubbles() {
     document.querySelectorAll(".void-stars-bubble").forEach((node) => node.remove());
@@ -32245,7 +32225,7 @@ div:has(> #grok-bot-nav-button) {
   contextMenu_default.updatedAt = 1790444048000;
   chatBarButtons_default.updatedAt = 1790444048000;
   betterFiles_default.updatedAt = 1790444048000;
-  messageStars_default.updatedAt = 1790451707000;
+  messageStars_default.updatedAt = 1790452011000;
   usageDisplay_default.updatedAt = 1790444048000;
   betterQueue_default.updatedAt = 1790444048000;
   settingsFlyout_default.updatedAt = 1790444048000;

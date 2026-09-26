@@ -28,7 +28,11 @@ const OFFSET_PX = 72;
 const NS = "http://www.w3.org/2000/svg";
 const STAR_D = "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z";
 const MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
-const ACTION_RE = /^(edit|copy|like|dislike|retry|redo|regenerate|share|good response|bad response)\b|^(编辑|复制|拷贝|喜欢|不喜欢|点赞|踩|重新生成|重试|分享)/i;
+const COPY_RE = /^(copy|复制|拷贝)\b/i;
+const EDIT_RE = /^(edit|编辑)\b/i;
+const LIKE_RE = /^(like|good response|thumbs[- ]?up|upvote|喜欢|点赞)\b/i;
+const NOT_LIKE_RE = /dislike|bad response|thumbs[- ]?down|downvote|不喜欢|点踩|^踩\b/i;
+const NOT_COPY_RE = /\b(code|link|table|source)\b|代码|表格|链接|来源/i;
 
 const settings = definePluginSettings({
     showInSidebar: {
@@ -309,12 +313,22 @@ function closePanel() {
     toggleBtn?.setAttribute("aria-expanded", "false");
 }
 
-function isActionLabel(label: string): boolean {
-    return ACTION_RE.test(label.trim());
+function controlLabel(el: HTMLElement): string {
+    return (el.getAttribute("aria-label") || el.getAttribute("title") || "").trim();
 }
 
-function btnLabel(btn: HTMLElement): string {
-    return (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
+function isCopyControl(el: HTMLElement): boolean {
+    const label = controlLabel(el);
+    return COPY_RE.test(label) && !NOT_COPY_RE.test(label);
+}
+
+function isEditControl(el: HTMLElement): boolean {
+    return EDIT_RE.test(controlLabel(el));
+}
+
+function isLikeControl(el: HTMLElement): boolean {
+    const label = controlLabel(el);
+    return LIKE_RE.test(label) && !NOT_LIKE_RE.test(label);
 }
 
 function shellOf(msg: HTMLElement): HTMLElement {
@@ -324,91 +338,67 @@ function shellOf(msg: HTMLElement): HTMLElement {
 function inCodeChrome(btn: HTMLElement): boolean {
     if (btn.closest("pre, code")) return true;
     let node: HTMLElement | null = btn.parentElement;
-    for (let depth = 0; node && depth < 3; depth++, node = node.parentElement) {
-        if (node.querySelector(":scope > pre")) return true;
+    for (let depth = 0; node && depth < 4; depth++, node = node.parentElement) {
+        if (node.querySelector(":scope > pre, :scope > code")) return true;
     }
     return false;
 }
 
-function toolbarOk(row: HTMLElement, bubble: HTMLElement): boolean {
-    if (row.contains(bubble)) return false;
-    if (row.querySelector("p, pre, h1, h2, h3, ul, ol, blockquote, table")) return false;
-    const text = (row.innerText || "").replaceAll(/\s+/g, " ").trim();
-    return text.length <= 24;
-}
-
-function labeledActions(shell: HTMLElement): HTMLElement[] {
+function barControls(row: HTMLElement): HTMLElement[] {
     const out: HTMLElement[] = [];
-    for (const btn of shell.querySelectorAll<HTMLElement>("button, [role='button']")) {
+    for (const btn of row.querySelectorAll<HTMLElement>("button, [role='button']")) {
         if (btn.classList.contains("void-stars-bubble") || inCodeChrome(btn)) continue;
-        if (!isActionLabel(btnLabel(btn))) continue;
         out.push(btn);
     }
     return out;
 }
 
-function rowOf(btn: HTMLElement, bubble: HTMLElement, shell: HTMLElement): HTMLElement | null {
-    let node = btn.parentElement;
-    let row: HTMLElement | null = null;
-    while (node && node !== shell && node !== document.body) {
-        if (toolbarOk(node, bubble)) row = node;
-        else if (row) break;
-        node = node.parentElement;
-    }
-    return row;
+function ownsBubble(row: HTMLElement, bubble: HTMLElement): boolean {
+    return row === bubble || row.contains(bubble) || bubble.contains(row);
 }
 
-function actionRow(msg: HTMLElement): { row: HTMLElement; actions: HTMLElement[] } | null {
-    const shell = shellOf(msg);
-    const labeled = labeledActions(shell);
-    const clusters = new Map<HTMLElement, HTMLElement[]>();
-    for (const btn of labeled) {
-        const row = rowOf(btn, msg, shell);
-        if (!row) continue;
-        const list = clusters.get(row);
-        if (list) list.push(btn);
-        else clusters.set(row, [btn]);
-    }
-    let best: HTMLElement | null = null;
-    let bestScore = -1;
-    for (const [row, list] of clusters) {
-        const score = list.length * 10 + (msg.contains(row) ? 0 : 5);
-        if (score > bestScore) {
-            best = row;
-            bestScore = score;
+function messageBar(shell: HTMLElement, bubble: HTMLElement): { row: HTMLElement; copy: HTMLElement } | null {
+    let best: { row: HTMLElement; copy: HTMLElement; depth: number } | null = null;
+    for (const btn of shell.querySelectorAll<HTMLElement>("button, [role='button']")) {
+        if (btn.classList.contains("void-stars-bubble") || inCodeChrome(btn) || !isCopyControl(btn)) continue;
+        let node = btn.parentElement;
+        let depth = 1;
+        while (node && node !== shell && node !== document.body && depth <= 8) {
+            if (!ownsBubble(node, bubble)) {
+                const buttons = barControls(node);
+                const hasEdit = buttons.some(isEditControl);
+                const hasLike = buttons.some(isLikeControl);
+                const copies = buttons.filter(isCopyControl);
+                const userBar = hasEdit && !hasLike;
+                const asstBar = hasLike && !hasEdit;
+                if ((userBar || asstBar) && copies.length >= 1 && copies.length <= 2 && buttons.length >= 2 && buttons.length <= 12) {
+                    if (!best || depth < best.depth) best = { row: node, copy: btn, depth };
+                    break;
+                }
+            }
+            node = node.parentElement;
+            depth++;
         }
     }
-    if (best) return { row: best, actions: clusters.get(best) ?? [] };
-    const parent = msg.parentElement;
-    if (!parent) return null;
-    for (const child of parent.children) {
-        if (!(child instanceof HTMLElement) || child === msg || child.contains(msg)) continue;
-        const buttons = [...child.querySelectorAll<HTMLElement>("button, [role='button']")].filter(btn => !btn.classList.contains("void-stars-bubble") && !inCodeChrome(btn));
-        if (buttons.length < 2 || !toolbarOk(child, msg)) continue;
-        return { row: child, actions: [] };
-    }
-    return null;
+    return best ? { row: best.row, copy: best.copy } : null;
 }
 
-function anchorChild(row: HTMLElement, actions: HTMLElement[]): HTMLElement | null {
-    let last: HTMLElement | null = null;
-    for (const btn of actions) {
-        if (row.contains(btn)) last = btn;
-    }
-    let node = last;
-    while (node && node.parentElement !== row) node = node.parentElement;
-    return node;
+function placeAfterCopy(row: HTMLElement, star: HTMLButtonElement, copy: HTMLElement): boolean {
+    let anchor: HTMLElement | null = copy;
+    while (anchor && anchor.parentElement !== row) anchor = anchor.parentElement;
+    if (!anchor || anchor.parentElement !== row) return false;
+    if (star.parentElement === row && star.previousElementSibling === anchor) return true;
+    anchor.after(star);
+    return star.parentElement === row;
 }
 
-function placeInRow(row: HTMLElement, btn: HTMLButtonElement, actions: HTMLElement[]) {
-    const anchor = anchorChild(row, actions);
-    if (anchor) {
-        if (btn.parentElement === row && btn.previousElementSibling === anchor) return;
-        anchor.after(btn);
-        return;
-    }
-    if (btn.parentElement === row && row.firstElementChild === btn) return;
-    row.prepend(btn);
+function adoptNative(star: HTMLButtonElement, copy: HTMLElement) {
+    const native = copy.className.replaceAll(/\bvoid-stars-\S+/g, "").trim();
+    if (!native || star.dataset.nativeClass === native) return;
+    const on = star.classList.contains("void-stars-on");
+    star.dataset.nativeClass = native;
+    star.className = `${native} void-stars-bubble`;
+    if (on) star.classList.add("void-stars-on");
 }
 
 function messageIdOf(msg: HTMLElement): string {
@@ -460,19 +450,21 @@ function syncBubble(btn: HTMLButtonElement, cid: string, id: string, role: "user
 function paintBubbles() {
     const cid = currentCid();
     const keep = new Set<HTMLElement>();
+    const seen = new Set<HTMLElement>();
     for (const msg of document.querySelectorAll<HTMLElement>(MSG_SEL)) {
         const id = messageIdOf(msg);
         if (!cid || !id) continue;
-        const found = actionRow(msg);
-        if (!found) continue;
-        const { row, actions } = found;
+        const found = messageBar(shellOf(msg), msg);
+        if (!found || seen.has(found.row)) continue;
+        seen.add(found.row);
+        const { row, copy } = found;
         let btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
-        if (!btn) {
-            btn = makeBubble();
-            row.appendChild(btn);
+        if (!btn) btn = makeBubble();
+        if (!placeAfterCopy(row, btn, copy)) {
+            if (!btn.isConnected) btn.remove();
+            continue;
         }
-        btn.classList.remove("void-stars-float");
-        placeInRow(row, btn, actions);
+        adoptNative(btn, copy);
         const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
         syncBubble(btn, cid, id, role);
         keep.add(btn);
@@ -480,7 +472,6 @@ function paintBubbles() {
     for (const btn of document.querySelectorAll<HTMLButtonElement>(".void-stars-bubble")) {
         if (!keep.has(btn)) btn.remove();
     }
-    document.querySelectorAll(".void-stars-rel").forEach(node => node.classList.remove("void-stars-rel"));
 }
 
 function clearBubbles() {
