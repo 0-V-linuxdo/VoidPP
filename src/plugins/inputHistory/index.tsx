@@ -490,6 +490,7 @@ function insertLinesPm(el: HTMLElement, text: string): boolean {
         if (i > 0) nodes.push(brType.create());
         if (lines[i]) nodes.push(view.state.schema.text(lines[i]));
     }
+    if (text.endsWith("\n")) nodes.push(view.state.schema.text("\u200b"));
     try {
         let tr = view.state.tr.deleteSelection();
         let pos = tr.selection.from;
