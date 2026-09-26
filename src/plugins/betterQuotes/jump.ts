@@ -5,7 +5,7 @@
  */
 
 import type { GrokResponse } from "@grok-types/stores/ResponseStore";
-import { ChatPageStore, ResponseStore } from "@turbopack/common/stores";
+import { ChatPageStore, MessageStore, ResponseStore } from "@turbopack/common/stores";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
 import { sleep } from "@utils/misc";
@@ -35,6 +35,17 @@ let gen = 0;
 let flashTimer = 0;
 let flashing: HTMLElement | null = null;
 let jumpArmed = false;
+let backRaf = 0;
+let backObserver: MutationObserver | null = null;
+let painting = false;
+let openSrc = "";
+let menuCites: Cite[] = [];
+
+interface Cite {
+    id: string;
+    quoted: string;
+    live: boolean;
+}
 
 function norm(s: string): string {
     return s.replaceAll(/\s+/g, " ").trim();
@@ -616,10 +627,254 @@ async function jump(origin: HTMLElement | null) {
     highlightRange(range, hit);
 }
 
+function quoteSource(rec: Record<string, unknown>, fallbackParent = ""): { source: string; quoted: string } {
+    const quoted = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
+    if (norm(quoted).length < 2) return { source: "", quoted: "" };
+    const meta = rec.metadata && typeof rec.metadata === "object" ? rec.metadata as Record<string, unknown> : undefined;
+    const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object"
+        ? meta.parentQuoteSource as Record<string, unknown>
+        : undefined;
+    const source = bareUuid(src?.sourceResponseId) || bareUuid(rec.parentResponseId) || bareUuid(fallbackParent);
+    return source ? { source, quoted } : { source: "", quoted: "" };
+}
+
+function pushCite(map: Map<string, Cite[]>, source: string, cite: Cite) {
+    if (!source) return;
+    const list = map.get(source) ?? [];
+    const quoted = norm(cite.quoted);
+    if (list.some(row => row.live === cite.live && row.id === cite.id && norm(row.quoted) === quoted)) {
+        map.set(source, list);
+        return;
+    }
+    list.push(cite);
+    map.set(source, list);
+}
+
+function citesBySource(): Map<string, Cite[]> {
+    const map = new Map<string, Cite[]>();
+    const cid = conversationId();
+    try {
+        const nodes = MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes;
+        if (nodes) {
+            for (const node of Object.values(nodes)) {
+                const content = node.content;
+                if (!content) continue;
+                const hit = quoteSource(content as unknown as Record<string, unknown>, node.parentId ?? "");
+                if (!hit.source || hit.source === node.id) continue;
+                pushCite(map, hit.source, { id: node.id || content.responseId, quoted: hit.quoted, live: false });
+            }
+        }
+    } catch (e) {
+        logger.debug("message nodes failed", e);
+    }
+    try {
+        const store = ResponseStore.useResponseStore.getState();
+        const rows = (cid ? store.byConversationId?.[cid] : null) ?? Object.values(store.byId ?? {});
+        for (const row of rows) {
+            if (!row?.responseId) continue;
+            const hit = quoteSource(row as unknown as Record<string, unknown>);
+            if (!hit.source || hit.source === row.responseId) continue;
+            pushCite(map, hit.source, { id: row.responseId, quoted: hit.quoted, live: false });
+        }
+    } catch { /* project pages keep this store empty */ }
+    for (const btn of document.querySelectorAll<HTMLElement>(JUMP_BTN)) {
+        const fiber = sourceFromFiber(btn);
+        const quoted = fiber.quoted || prefixOf(btn.textContent || "");
+        if (!fiber.parentId || norm(quoted).length < 2) continue;
+        pushCite(map, fiber.parentId, { id: hostUuid(btn), quoted, live: false });
+    }
+    const live = quotedText();
+    if (norm(live).length >= 2) {
+        const popup = quotePopup();
+        const popupId = popup && typeof popup === "object"
+            ? bareUuid((popup as Record<string, unknown>).responseId)
+            : "";
+        let source = popupId;
+        if (!source) {
+            const clip = norm(live).slice(0, 48);
+            try {
+                const nodes = MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes;
+                if (nodes) {
+                    for (const node of Object.values(nodes)) {
+                        if (norm(String(node.content?.message || "")).includes(clip)) {
+                            source = node.id;
+                            break;
+                        }
+                    }
+                }
+            } catch { /* store not ready */ }
+        }
+        if (source) pushCite(map, source, { id: "", quoted: live, live: true });
+    }
+    return map;
+}
+
+function closeMenu() {
+    openSrc = "";
+    menuCites = [];
+    document.querySelector(`.${cl("menu")}`)?.remove();
+}
+
+function placeMenu(anchor: HTMLElement) {
+    const menu = document.querySelector<HTMLElement>(`.${cl("menu")}`);
+    if (!menu) return;
+    const r = anchor.getBoundingClientRect();
+    menu.style.top = `${Math.round(r.bottom + 4)}px`;
+    const width = menu.offsetWidth || 220;
+    menu.style.left = `${Math.round(Math.max(8, Math.min(r.right - width, window.innerWidth - width - 8)))}px`;
+}
+
+function openMenu(anchor: HTMLElement, cites: Cite[]) {
+    closeMenu();
+    openSrc = anchor.dataset.voidQjSrc || "";
+    menuCites = cites;
+    const menu = document.createElement("div");
+    menu.className = cl("menu");
+    cites.forEach((cite, i) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = cl("item");
+        item.dataset.voidQjI = String(i);
+        const where = cite.live ? "Composer" : "Quote";
+        item.textContent = `${where}: ${norm(cite.quoted).slice(0, 72)}`;
+        menu.append(item);
+    });
+    document.body.append(menu);
+    placeMenu(anchor);
+}
+
+function clearBadges() {
+    closeMenu();
+    for (const n of document.querySelectorAll(`.${cl("back")}`)) n.remove();
+}
+
+function paintBacklinks() {
+    if (!jumpArmed || onImaginePage()) {
+        clearBadges();
+        return;
+    }
+    const map = citesBySource();
+    const seen = new Set<string>();
+    for (const [source, cites] of map) {
+        if (!cites.length) continue;
+        const named = document.getElementById(`response-${source}`);
+        const host = named instanceof HTMLElement ? named : messageById(source);
+        if (!(host instanceof HTMLElement) || !host.isConnected) continue;
+        const box = host.getBoundingClientRect();
+        if (box.width < 40 || box.bottom < 24 || box.top > window.innerHeight - 8) continue;
+        seen.add(source);
+        let btn = document.querySelector<HTMLElement>(`.${cl("back")}[data-void-qj-src="${source}"]`);
+        if (!btn) {
+            btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = cl("back");
+            btn.dataset.voidQjSrc = source;
+            document.body.append(btn);
+        }
+        const label = cites.length > 1 ? String(cites.length) : "↩";
+        if (btn.textContent !== label) btn.textContent = label;
+        const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
+        if (btn.getAttribute("aria-label") !== aria) btn.setAttribute("aria-label", aria);
+        btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
+        btn.style.top = `${Math.round(Math.max(8, box.top + 8))}px`;
+        if (openSrc === source) placeMenu(btn);
+    }
+    for (const n of document.querySelectorAll<HTMLElement>(`.${cl("back")}`)) {
+        const id = n.dataset.voidQjSrc || "";
+        if (seen.has(id)) continue;
+        if (openSrc === id) closeMenu();
+        n.remove();
+    }
+    if (openSrc && !seen.has(openSrc)) closeMenu();
+}
+
+function scheduleBacklinks() {
+    if (!jumpArmed || backRaf || painting) return;
+    backRaf = requestAnimationFrame(() => {
+        backRaf = 0;
+        painting = true;
+        try {
+            paintBacklinks();
+        } finally {
+            painting = false;
+        }
+    });
+}
+
+async function jumpToCite(cite: Cite | undefined) {
+    if (!cite) return;
+    const mine = ++gen;
+    if (cite.live) {
+        const chip = document.querySelector<HTMLElement>(`.void-qs-chip`)
+            ?? document.querySelector<HTMLElement>(`${QUERY} ${JUMP_BTN}`);
+        if (!chip) return;
+        highlightRange(null, chip);
+        return;
+    }
+    let el = messageById(cite.id);
+    const host = () => document.getElementById(`response-${cite.id}`);
+    if (!el && !host()) {
+        await hydrate(conversationId());
+        if (mine !== gen) return;
+        for (let i = 0; i < WAIT_N; i++) {
+            el = messageById(cite.id);
+            if (el || host()) break;
+            await sleep(WAIT_MS);
+            if (mine !== gen) return;
+        }
+    }
+    if (mine !== gen) return;
+    const root = host();
+    const card = root?.querySelector<HTMLElement>(JUMP_BTN) ?? el;
+    if (!card) {
+        logger.debug("no citing message", cite.id);
+        return;
+    }
+    openAncestors(card, cite.quoted);
+    await afterLayout();
+    if (mine !== gen || !card.isConnected) return;
+    const range = findRange(card, cite.quoted);
+    const hit = findHit(card, cite.quoted) ?? card;
+    scrollLineToScreenCenter(range, hit);
+    highlightRange(range, hit);
+}
+
+function onBackClick(t: Element): boolean {
+    const badge = t.closest(`.${cl("back")}`);
+    if (badge instanceof HTMLElement) {
+        const src = badge.dataset.voidQjSrc || "";
+        const cites = citesBySource().get(src) ?? [];
+        if (cites.length <= 1) {
+            closeMenu();
+            void jumpToCite(cites[0]);
+        } else if (openSrc === src) {
+            closeMenu();
+        } else {
+            openMenu(badge, cites);
+        }
+        return true;
+    }
+    const item = t.closest(`.${cl("item")}`);
+    if (item instanceof HTMLElement) {
+        const cite = menuCites[Number(item.dataset.voidQjI)];
+        closeMenu();
+        void jumpToCite(cite);
+        return true;
+    }
+    if (!t.closest(`.${cl("menu")}`)) closeMenu();
+    return false;
+}
+
 function onClick(e: MouseEvent) {
     if (!e.isTrusted || e.button !== 0 || onImaginePage()) return;
     const t = eventEl(e.target);
     if (!t) return;
+    if (t.closest(`.${cl("back")}, .${cl("menu")}`)) {
+        e.preventDefault();
+        e.stopPropagation();
+        onBackClick(t);
+        return;
+    }
     if (isDismiss(t) || isEditor(t) || isBarAction(t)) return;
     const chip = composerChip(t);
     const sent = sentQuote(t);
@@ -634,6 +889,12 @@ export function startJump() {
     jumpArmed = true;
     abort = new AbortController();
     document.addEventListener("click", onClick, { capture: true, signal: abort.signal });
+    const poke = () => scheduleBacklinks();
+    window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort.signal });
+    window.addEventListener("resize", poke, { passive: true, signal: abort.signal });
+    backObserver = new MutationObserver(poke);
+    backObserver.observe(document.documentElement, { childList: true, subtree: true });
+    scheduleBacklinks();
 }
 
 export function stopJump() {
@@ -641,6 +902,11 @@ export function stopJump() {
     jumpArmed = false;
     abort?.abort();
     abort = null;
+    backObserver?.disconnect();
+    backObserver = null;
+    if (backRaf) cancelAnimationFrame(backRaf);
+    backRaf = 0;
     gen++;
     clearHighlight();
+    clearBadges();
 }

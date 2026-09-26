@@ -19,6 +19,7 @@ const cl = classNameFactory("void-qs-");
 const KEEP = 40;
 const RESTORE_GAP_MS = 80;
 const COLLAPSE_PX = 80;
+const CONSUME_MS = 1200;
 const X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
 interface Fields {
@@ -52,7 +53,12 @@ let armed = false;
 let hold = false;
 let holdKey = "";
 let pendingRestore = "";
+let consumedUntil = 0;
 let unsubQuote: (() => void) | null = null;
+
+function justConsumed(): boolean {
+    return performance.now() < consumedUntil;
+}
 
 function onProjectPath(): boolean {
     try {
@@ -95,6 +101,12 @@ function pinHold() {
 
 function settleHold(): boolean {
     if (!armed || onImaginePage()) return false;
+    if (justConsumed()) {
+        hold = false;
+        holdKey = "";
+        pendingRestore = "";
+        return false;
+    }
     if (viewportCollapsed()) {
         pinHold();
         return true;
@@ -368,6 +380,10 @@ function paintFallback(key: string, snap: Snap) {
 }
 
 function restore(key: string) {
+    if (justConsumed()) {
+        removeFallback();
+        return;
+    }
     if (!key || onImaginePage() || destKey() !== key) {
         if (destKey() !== key) removeFallback();
         return;
@@ -396,6 +412,10 @@ function restore(key: string) {
 
 function ensureChip() {
     if (onImaginePage()) return;
+    if (justConsumed()) {
+        removeFallback();
+        return;
+    }
     if (viewportCollapsed() || hold) {
         pinHold();
         return;
@@ -440,6 +460,13 @@ export function routeSel(s: RoutingStoreState): string {
 
 export function onChat() {
     if (!armed || applying || onImaginePage()) return;
+    if (justConsumed()) {
+        hold = false;
+        holdKey = "";
+        pendingRestore = "";
+        removeFallback();
+        return;
+    }
     if (settleHold()) return;
     const now = readText();
     const dest = destKey();
@@ -532,15 +559,59 @@ function isQuoteDismiss(el: Element): boolean {
 }
 
 function markConsumed(key = ownKey()) {
+    hold = false;
+    holdKey = "";
+    pendingRestore = "";
+    consumedUntil = performance.now() + CONSUME_MS;
     drop(key);
+    if (key && key !== lastKey) drop(lastKey);
+    lastText = "";
+    lastPopup = undefined;
     removeFallback();
+    lastRestoreAt = 0;
+    try {
+        const chat = ChatPageStore.useChatPageStore.getState();
+        applying = true;
+        try {
+            if (chat.quotedText) chat.setQuotedText("");
+            if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null) chat.setQuotePopupData(null);
+        } finally {
+            applying = false;
+        }
+    } catch (e) {
+        logger.debug("consume clear failed", e);
+    }
+}
+
+function isComposerSend(el: Element): boolean {
+    const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
+    if (!(btn instanceof HTMLElement) || btn.closest(`.${cl("chip")}`)) return false;
+    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
+    if (DISMISS.test(label) || /attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i.test(label)) return false;
+    return /\b(send|submit)\b|发送|提交/i.test(label);
 }
 
 function onPointerDown(e: PointerEvent) {
     if (!e.isTrusted) return;
     const t = e.target;
-    if (!(t instanceof Element) || !isQuoteDismiss(t)) return;
-    dismiss();
+    if (!(t instanceof Element)) return;
+    if (isQuoteDismiss(t)) {
+        dismiss();
+        return;
+    }
+    if (!isComposerSend(t)) return;
+    const key = ownKey();
+    const had = saved.get(key)?.text || lastText || readText().text;
+    if (had) markConsumed(key);
+}
+
+function onComposerEnter(e: KeyboardEvent) {
+    if (!e.isTrusted || e.key !== "Enter" || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || e.isComposing) return;
+    const t = e.target;
+    if (!(t instanceof Element) || !t.closest(`${QUERY} .tiptap, ${QUERY} [contenteditable='true'], ${QUERY} textarea`)) return;
+    const key = ownKey();
+    const had = saved.get(key)?.text || lastText || readText().text;
+    if (had) markConsumed(key);
 }
 
 function payloadText(rec: Record<string, unknown>): string {
@@ -554,35 +625,44 @@ function payloadText(rec: Record<string, unknown>): string {
     return "";
 }
 
-function isQuoteSend(raw: unknown, want: string): boolean {
-    if (!want || raw == null) return false;
-    if (typeof raw === "string") {
-        if (!raw.startsWith("{") && !raw.startsWith("[")) return false;
-        try {
-            return isQuoteSend(JSON.parse(raw), want);
-        } catch {
-            return false;
+function payloadFromArgs(args: unknown[]): string {
+    for (const raw of args) {
+        if (typeof raw === "string") {
+            const s = raw.trim();
+            if (!s) continue;
+            if (s.startsWith("{") || s.startsWith("[")) {
+                try {
+                    const nested = payloadFromArgs([JSON.parse(s)]);
+                    if (nested) return nested;
+                } catch { /* not json */ }
+                continue;
+            }
+            return s;
+        }
+        if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+            const text = payloadText(raw as Record<string, unknown>);
+            if (text) return text;
         }
     }
-    if (typeof raw !== "object" || Array.isArray(raw)) return false;
-    const rec = raw as Record<string, unknown>;
-    if (!payloadText(rec)) return false;
-    const q = rec.parentQuotedText ?? rec.quotedText;
-    return typeof q === "string" && q.replaceAll(/\s+/g, " ").trim() === want.replaceAll(/\s+/g, " ").trim();
+    return "";
+}
+
+function isQuoteSend(args: unknown[], want: string): boolean {
+    if (!want || !payloadFromArgs(args)) return false;
+    return true;
 }
 
 function makeSendWrapper(orig: SendFn): SendFn {
     return function voidQuoteStickySend(this: unknown, ...args: unknown[]) {
         const key = ownKey();
-        const had = saved.get(key)?.text || readText().text;
-        const result = orig.apply(this, args);
-        if (had && isQuoteSend(args[0], had)) markConsumed(key);
-        return result;
+        const had = saved.get(key)?.text || lastText || readText().text;
+        if (had && isQuoteSend(args, had)) markConsumed(key);
+        return orig.apply(this, args);
     };
 }
 
 function scheduleRestore() {
-    if (hold || viewportCollapsed() || pendingRestore) return;
+    if (justConsumed() || hold || viewportCollapsed() || pendingRestore) return;
     const key = destKey();
     if (!key || !saved.get(key)?.text) return;
     queueMicrotask(() => {
@@ -683,6 +763,7 @@ function wrapAll() {
     wrapOne("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
     wrapOne("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
     wrapOne("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
+    wrapOne("chat.sendResponse", chatState, chatSet, "sendResponse", makeSendWrapper);
     wrapOne("msg.sendMessage", msgState, msgSet, "sendMessage", makeSendWrapper);
     wrapOne("msg.queueMessage", msgState, msgSet, "queueMessage", makeSendWrapper);
 }
@@ -701,6 +782,7 @@ function unwrapAll() {
     unwrapOne(chatState, chatSet, "setQuotePopupData", "chat.setQuotePopupData");
     unwrapOne(chatState, chatSet, "setConversationId", "chat.setConversationId");
     unwrapOne(chatState, chatSet, "setOptimisticConversationId", "chat.setOptimisticConversationId");
+    unwrapOne(chatState, chatSet, "sendResponse", "chat.sendResponse");
     unwrapOne(msgState, msgSet, "sendMessage", "msg.sendMessage");
     unwrapOne(msgState, msgSet, "queueMessage", "msg.queueMessage");
     origFns.clear();
@@ -716,7 +798,7 @@ function onMutate() {
 }
 
 function onStore(state: ChatPageStoreState) {
-    if (!armed || applying) return;
+    if (!armed || applying || justConsumed()) return;
     const text = String(state.quotedText || "");
     if (!text) {
         if (viewportCollapsed() || hold) pinHold();
@@ -749,6 +831,7 @@ export function startSticky() {
     }
     abort = new AbortController();
     document.addEventListener("pointerdown", onPointerDown, { capture: true, signal: abort.signal });
+    document.addEventListener("keydown", onComposerEnter, { capture: true, signal: abort.signal });
     const poke = () => onMutate();
     const onViewport = () => {
         if (!settleHold()) onMutate();
@@ -787,4 +870,5 @@ export function stopSticky() {
     hold = false;
     holdKey = "";
     pendingRestore = "";
+    consumedUntil = 0;
 }
