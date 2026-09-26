@@ -901,43 +901,124 @@ function pickMessage(ids: string[], needle: string, skip?: HTMLElement | null): 
     return scored[0]?.el ?? null;
 }
 
+function liveSource(id: string, skip: HTMLElement | null): HTMLElement | null {
+    const el = messageById(id);
+    if (!el || insideHost(el, skip)) return null;
+    return el;
+}
+
+function nodeIndex(id: string): { at: number; n: number } | null {
+    const cid = conversationId();
+    try {
+        const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
+        if (!nodes) return null;
+        const rows = Object.values(nodes)
+            .filter(node => node?.id)
+            .map(node => ({ id: String(node.id), at: Number(node.createdAt) || 0 }));
+        if (!rows.some(row => row.id === id)) return null;
+        rows.sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
+        return { at: rows.findIndex(row => row.id === id), n: rows.length };
+    } catch {
+        return null;
+    }
+}
+
+async function revealSource(id: string, skip: HTMLElement | null, mine: number): Promise<HTMLElement | null> {
+    const ready = liveSource(id, skip);
+    if (ready) return ready;
+    const pane = chatPane();
+    if (!pane) return null;
+    const order = nodeIndex(id);
+    const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
+    const guess = order ? (order.at / Math.max(order.n - 1, 1)) * max : Math.max(0, pane.scrollTop - pane.clientHeight);
+    const seen = new Set<number>();
+    const hop = async (top: number): Promise<HTMLElement | null> => {
+        if (mine !== gen) return null;
+        const next = Math.max(0, Math.min(max, top));
+        const key = Math.round(next);
+        if (seen.has(key)) return liveSource(id, skip);
+        seen.add(key);
+        pane.scrollTo({ top: next, behavior: "auto" });
+        await afterLayout();
+        await sleep(WAIT_MS);
+        return liveSource(id, skip);
+    };
+    let found = await hop(guess);
+    if (found || mine !== gen) return found;
+    const step = Math.max(pane.clientHeight * 0.85, 480);
+    for (const dir of [-1, 1]) {
+        let top = guess;
+        for (let i = 0; i < 16; i++) {
+            top += dir * step;
+            if (top < 0 || top > max) break;
+            found = await hop(top);
+            if (found || mine !== gen) return found;
+        }
+    }
+    return liveSource(id, skip);
+}
+
+function settleScroll(pane: HTMLElement, range: Range | null, el: HTMLElement, mine: number): Promise<void> {
+    return new Promise(resolve => {
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            pane.removeEventListener("scrollend", finish);
+            if (mine !== gen || !el.isConnected) {
+                resolve();
+                return;
+            }
+            const box = (range && lineBox(range)) || el.getBoundingClientRect();
+            if (!box || box.height < 1) {
+                resolve();
+                return;
+            }
+            const delta = box.top + box.height / 2 - visibleMidY(pane);
+            if (Math.abs(delta) >= ALIGNED_PX) pane.scrollTo({ top: pane.scrollTop + delta, behavior: "auto" });
+            resolve();
+        };
+        pane.addEventListener("scrollend", finish, { once: true });
+        window.setTimeout(finish, 700);
+    });
+}
+
+async function land(el: HTMLElement, needle: string, mine: number) {
+    openAncestors(el, needle);
+    await afterLayout();
+    if (mine !== gen || !el.isConnected) return;
+    const ranges = findRanges(el, needle);
+    const anchor = scrollAnchor(ranges);
+    const hit = hitOf(anchor) ?? el;
+    const pane = scrollPane(hit);
+    scrollLineToScreenCenter(anchor, hit);
+    highlightRange(ranges, hit);
+    if (pane) await settleScroll(pane, anchor, hit, mine);
+}
+
 async function jump(origin: HTMLElement | null) {
     const mine = ++gen;
     const { needle, ids } = resolveNeedle(origin);
-    const skip = officialJumpButton(origin) ? hostOf(origin) : null;
+    const skip = hostOf(origin);
     const skipId = hostUuid(skip);
     const sourceId = ids.map(id => bareUuid(id) || id).find(id => id && id !== skipId) || "";
     if (!prefixOf(needle) && !sourceId) return;
-    const first = prefixOf(needle) ? pickMessage(ids, needle, skip) : null;
-    let el = first;
-    const live = el ? blobScore(el, needle) : 0;
-    const stored = prefixOf(needle) ? storeNeedle(needle, skipId) : null;
-    if (stored && stored.id !== skipId && stored.score > live) {
-        ids.unshift(stored.id);
-        await hydrate(stored.cid || conversationId());
-        if (mine !== gen) return;
-        let found: HTMLElement | null = null;
-        for (let i = 0; i < WAIT_N; i++) {
-            found = pickMessage(ids, needle, skip) ?? messageById(stored.id);
-            if (found && !insideHost(found, skip) && blobScore(found, needle) > 0) break;
-            found = null;
-            await sleep(WAIT_MS);
-            if (mine !== gen) return;
-        }
-        el = found ?? first;
-    }
-    if (mine !== gen) return;
-    if (!el && sourceId) {
+    let el: HTMLElement | null = sourceId ? liveSource(sourceId, skip) : null;
+    if (sourceId && !el) {
         await hydrate(conversationId());
         if (mine !== gen) return;
-        for (let i = 0; i < WAIT_N; i++) {
-            const found = messageById(sourceId);
-            if (found && !insideHost(found, skip)) {
-                el = found;
-                break;
-            }
-            await sleep(WAIT_MS);
+        el = await revealSource(sourceId, skip, mine);
+    }
+    if (!el && !sourceId && prefixOf(needle)) {
+        const first = pickMessage(ids, needle, skip);
+        el = first;
+        const live = el ? blobScore(el, needle) : 0;
+        const stored = storeNeedle(needle, skipId);
+        if (stored && stored.id !== skipId && stored.score > live) {
+            ids.unshift(stored.id);
+            await hydrate(stored.cid || conversationId());
             if (mine !== gen) return;
+            el = await revealSource(stored.id, skip, mine) ?? first;
         }
     }
     if (mine !== gen) return;
@@ -945,21 +1026,7 @@ async function jump(origin: HTMLElement | null) {
         logger.debug("no source message");
         return;
     }
-    openAncestors(el, needle);
-    await afterLayout();
-    if (mine !== gen) return;
-    if (!el.isConnected) {
-        el = (prefixOf(needle) ? pickMessage(ids, needle, skip) : null) ?? (sourceId ? messageById(sourceId) : null);
-        if (!el) return;
-        openAncestors(el, needle);
-        await afterLayout();
-        if (mine !== gen || !el.isConnected) return;
-    }
-    const ranges = findRanges(el, needle);
-    const anchor = scrollAnchor(ranges);
-    const hit = hitOf(anchor) ?? el;
-    scrollLineToScreenCenter(anchor, hit);
-    highlightRange(ranges, hit);
+    await land(el, needle, mine);
 }
 
 function quoteSource(rec: Record<string, unknown>, fallbackParent = ""): { source: string; quoted: string } {
