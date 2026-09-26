@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.24
+// @version      20260926.25
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.24] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.25] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4040,7 +4040,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     }
     updateSettingsPluginData({ chunkFingerprint: current });
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ColorSettingRow.css
+  // voidpp-css:/tmp/VoidPP/src/components/ColorSettingRow.css
   registerStyle("ColorSettingRow", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -4079,7 +4079,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, title), /* @__PURE__ */ React.createElement(SettingsDescription, null, description)));
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ConfirmDialog.css
+  // voidpp-css:/tmp/VoidPP/src/components/ConfirmDialog.css
   registerStyle("ConfirmDialog", `.void-confirm-dialog {
     width: 100%;
     max-width: 28rem;
@@ -4328,7 +4328,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     },
     configurable: true
   });
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ErrorCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/ErrorCard.css
   registerStyle("ErrorCard", `.void-error-card-root {
     contain: content;
     padding: 1rem;
@@ -4388,7 +4388,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       ...restProps
     }, children);
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/Paragraph.css
+  // voidpp-css:/tmp/VoidPP/src/components/Paragraph.css
   registerStyle("Paragraph", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -4480,7 +4480,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       weight: "medium"
     }, title), description && /* @__PURE__ */ React.createElement(Paragraph, null, description));
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/SelectionUI.css
+  // voidpp-css:/tmp/VoidPP/src/components/SelectionUI.css
   registerStyle("SelectionUI", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -5255,7 +5255,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/_core/settings/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/_core/settings/styles.css
   registerStyle("settings", `.void-settings-version,
 .void-settings-version * {
     user-select: text;
@@ -5537,7 +5537,7 @@ button .void-info-hint {
     }
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/CustomCSSTab.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/CustomCSSTab.css
   registerStyle("CustomCSSTab", `.void-css-root {
     height: 100%;
     min-height: 0;
@@ -5548,7 +5548,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/CssEditor.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/CssEditor.css
   registerStyle("CssEditor", `.void-css-wrap {
     flex: 1;
     min-height: 0;
@@ -5824,7 +5824,7 @@ button .void-info-hint {
     }));
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/shared.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/shared.css
   registerStyle("shared", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -5899,7 +5899,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/PluginsTab.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/PluginsTab.css
   registerStyle("PluginsTab", `.void-plugins-reload-banner {
     padding: 0.625rem 0.75rem;
     border-radius: 0.5rem;
@@ -5940,7 +5940,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/PluginCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/PluginCard.css
   registerStyle("PluginCard", `.void-plugin-card-required-icon,
 .void-plugin-card-badge,
 .void-plugin-card-crashed-icon {
@@ -5991,7 +5991,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/BaseCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/BaseCard.css
   registerStyle("BaseCard", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -6271,7 +6271,7 @@ button .void-info-hint {
     });
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/PluginDialog.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/PluginDialog.css
   registerStyle("PluginDialog", `.void-plugin-dialog-settings-list>.px-3 {
     padding-left: 0;
     padding-right: 0;
@@ -6297,7 +6297,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/SettingField.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/SettingField.css
   registerStyle("SettingField", `.void-setting-select-content {
     z-index: 1000 !important;
 }
@@ -6915,7 +6915,7 @@ button .void-info-hint {
     }));
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/ThemesTab.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/ThemesTab.css
   registerStyle("ThemesTab", `.void-themes-add-error {
     color: hsl(var(--fg-danger));
 }
@@ -6938,7 +6938,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/ThemeCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/ThemeCard.css
   registerStyle("ThemeCard", `.void-theme-card-name {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -7216,7 +7216,7 @@ button .void-info-hint {
   var PluginsTab2 = ErrorBoundary.wrap(PluginsTab);
   var ThemesTab2 = ErrorBoundary.wrap(ThemesTab);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/experiments/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/experiments/styles.css
   registerStyle("experiments", `.void-experiments-section {
     padding: 0 1.25rem;
 }
@@ -7594,7 +7594,7 @@ button .void-info-hint {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/pluginsFlyout/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/pluginsFlyout/styles.css
   registerStyle("pluginsFlyout", `.void-pf-icon {
     width: 1rem;
     height: 1rem;
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.24] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5236b51"}`
-    }, `(${"5236b51"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.25] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2d208d1"}`
+    }, `(${"2d208d1"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8059,7 +8059,7 @@ button .void-info-hint {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterFiles/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterFiles/styles.css
   registerStyle("betterFiles", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -8183,7 +8183,7 @@ button .void-info-hint {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/usageDisplay/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/usageDisplay/styles.css
   registerStyle("usageDisplay", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -9750,7 +9750,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterQueue/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterQueue/styles.css
   registerStyle("betterQueue", `.void-ms-qchip {
     display: grid;
     flex-shrink: 0;
@@ -12366,7 +12366,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/settingsFlyout/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/settingsFlyout/styles.css
   registerStyle("settingsFlyout", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -13584,7 +13584,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/recentTopics/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/recentTopics/styles.css
   registerStyle("recentTopics", `.void-rt-root,
 .void-rt-root:popover-open {
     isolation: isolate;
@@ -16447,7 +16447,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterNavigator/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterNavigator/styles.css
   registerStyle("betterNavigator", `.void-bn-host {
     pointer-events: none;
     z-index: 50;
@@ -18634,7 +18634,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterModeSelect/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterModeSelect/styles.css
   registerStyle("betterModeSelect", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -19481,7 +19481,7 @@ html.void-cms-picked .void-cms-ghost {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/messageTimestamps/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/messageTimestamps/styles.css
   registerStyle("messageTimestamps", `.void-timestamp {
     margin-bottom: 0.125rem;
 }
@@ -20277,7 +20277,7 @@ html.void-cms-picked .void-cms-ghost {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/streamerMode/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/streamerMode/styles.css
   registerStyle("streamerMode", `/* stylelint-disable no-descending-specificity */
 
 /* Sidebar avatar */
@@ -20515,7 +20515,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterQuotes/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterQuotes/styles.css
   registerStyle("betterQuotes", `.void-qj-hit {
     border-radius: 0.25rem;
     outline: 2px solid hsl(var(--fg-primary));
@@ -21254,6 +21254,9 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   }
   function messageEls() {
     const root = chatPane3() ?? document.querySelector("main") ?? document.body;
+    const hosts = [...root.querySelectorAll("[id^='response-']")];
+    if (hosts.length)
+      return hosts;
     return [...root.querySelectorAll(MSG2)];
   }
   function messageById(id) {
@@ -21788,14 +21791,14 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     const { highlights } = CSS;
     highlights?.delete(HL);
   }
-  function highlightRange(range, el) {
+  function highlightRange(range, el, flashHost = false) {
     clearHighlight();
     const list = (Array.isArray(range) ? range : range ? [range] : []).filter((item) => !item.collapsed);
     const HighlightCtor = window.Highlight;
     const { highlights } = CSS;
     if (list.length && highlights && HighlightCtor) {
       highlights.set(HL, new HighlightCtor(...list));
-    } else if (list.length || !el.closest("[id^='response-']")) {
+    } else if (list.length || flashHost || !el.closest("[id^='response-']")) {
       flashing2 = el;
       el.classList.add(cl22("hit"));
     }
@@ -22053,19 +22056,27 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       window.setTimeout(finish, 700);
     });
   }
-  async function land(el, needle, mine) {
+  async function land(el, needle, mine, pin = "") {
     openAncestors(el, needle);
     await afterLayout();
-    if (mine !== gen || !el.isConnected)
+    if (mine !== gen)
+      return;
+    if (!el.isConnected && pin) {
+      const fresh = messageById(pin);
+      if (fresh?.isConnected)
+        el = fresh;
+    }
+    if (!el.isConnected)
       return;
     const ranges = findRanges(el, needle);
     const anchor = scrollAnchor(ranges);
-    const hit = hitOf(anchor) ?? el;
-    const pane = scrollPane(hit);
-    scrollLineToScreenCenter(anchor, hit);
-    highlightRange(ranges, hit);
+    const line = anchor ? hitOf(anchor) : null;
+    const target = line?.isConnected ? line : el;
+    const pane = scrollPane(target) ?? scrollPane(el);
+    scrollLineToScreenCenter(line ? anchor : null, target);
+    highlightRange(ranges, ranges.length ? target : el, !ranges.length && !!pin);
     if (pane)
-      await settleScroll(pane, anchor, hit, mine);
+      await settleScroll(pane, line ? anchor : null, target, mine);
   }
   async function jump2(origin) {
     const mine = ++gen;
@@ -22076,6 +22087,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     const fits = (el) => !!el && (!prefixOf(needle) || blobScore(el, needle) > 0);
     let el = null;
+    let pinned = "";
     if (hard) {
       el = liveSource(hard, skip);
       if (!el) {
@@ -22084,7 +22096,9 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
           return;
         el = await revealSource(hard, skip, mine);
       }
-      if (!fits(el))
+      if (el)
+        pinned = hard;
+      else
         el = null;
     }
     if (!el && parent && parent !== hard) {
@@ -22093,7 +22107,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         el = mounted;
     }
     if (!el && prefixOf(needle)) {
-      const stored = passageId(needle, skipId, parent);
+      const stored = passageId(needle, skipId, parent !== hard ? parent : "");
       if (stored) {
         await hydrate2(stored.cid || conversationId2());
         if (mine !== gen)
@@ -22114,7 +22128,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       logger29.debug("no source message");
       return;
     }
-    await land(el, needle, mine);
+    await land(el, needle, mine, pinned);
   }
   function quoteSource(rec, fallbackParent = "") {
     const quoted = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
@@ -23513,7 +23527,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/cloneChats/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/cloneChats/styles.css
   registerStyle("cloneChats", `.void-clone-icon {
     margin-inline-end: 0.5rem;
 }
@@ -23634,7 +23648,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/chatListStatus/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/chatListStatus/styles.css
   registerStyle("chatListStatus", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -24634,7 +24648,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/downloadTTS/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/downloadTTS/styles.css
   registerStyle("downloadTTS", `.void-download-tts-spinner {
     pointer-events: none;
 }
@@ -24696,7 +24710,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     _renderDownloadButton: ErrorBoundary.wrap(DownloadButton)
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/completeToast/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/completeToast/styles.css
   registerStyle("completeToast", `.void-ct-host {
     contain: layout style;
     position: fixed;
@@ -25677,7 +25691,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterImagine/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterImagine/styles.css
   registerStyle("betterImagine", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -26639,7 +26653,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customGreeting/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/customGreeting/styles.css
   registerStyle("customGreeting", `.void-ph-root {
     contain: layout;
 }
@@ -27378,7 +27392,7 @@ Neon rain in a quiet city`
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/exportChat/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/exportChat/styles.css
   registerStyle("exportChat", `.void-export-icon {
     margin-inline-end: 0.5rem;
 }
@@ -27577,7 +27591,7 @@ Neon rain in a quiet city`
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customInstructions/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/customInstructions/styles.css
   registerStyle("customInstructions", `.void-ci-root {
     display: flex;
     flex-direction: column;
@@ -27966,7 +27980,7 @@ Neon rain in a quiet city`
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/headerHover.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterSidebar/headerHover.css
   registerStyle("headerHover", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -28022,7 +28036,7 @@ Neon rain in a quiet city`
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterSidebar/styles.css
   registerStyle("betterSidebar", `.group.peer [data-sidebar="sidebar"] + div,
 .group.peer [data-sidebar="content"] > .grow {
     cursor: default !important;
@@ -28700,7 +28714,7 @@ Neon rain in a quiet city`
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customSidebarIdentity/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/customSidebarIdentity/styles.css
   registerStyle("customSidebarIdentity", `.void-csi-name {
     min-width: 0;
     overflow: hidden;
@@ -29549,7 +29563,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/inputHistory/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/inputHistory/styles.css
   registerStyle("inputHistory", `.void-ih-hud {
     contain: content;
     position: fixed;
@@ -31070,59 +31084,59 @@ div:has(> #grok-bot-nav-button) {
   });
 
   // virtual:~plugins
-  noTelemetry_default.updatedAt = 1787870966000;
-  settings_default.updatedAt = 1790439253000;
-  fixChrome_default.updatedAt = 1787789817000;
+  noTelemetry_default.updatedAt = 1790442421000;
+  settings_default.updatedAt = 1790442421000;
+  fixChrome_default.updatedAt = 1790442421000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  contextMenu_default.updatedAt = 1781702684000;
-  chatBarButtons_default.updatedAt = 1790097681000;
-  betterFiles_default.updatedAt = 1789246749000;
-  usageDisplay_default.updatedAt = 1789172854000;
-  betterQueue_default.updatedAt = 1790246920000;
-  settingsFlyout_default.updatedAt = 1788095208000;
-  userQuotes_default.updatedAt = 1790169322000;
-  chatStateFavicons_default.updatedAt = 1789921507000;
-  pluginsFlyout_default.updatedAt = 1788051053000;
-  recentTopics_default.updatedAt = 1789881195000;
-  betterNavigator_default.updatedAt = 1790421526000;
-  responseNotification_default.updatedAt = 1790093417000;
-  noSidebarIdentity_default.updatedAt = 1788577403000;
-  betterModeSelect_default.updatedAt = 1790161256000;
-  starry_default.updatedAt = 1787870966000;
-  messageTimestamps_default.updatedAt = 1789881463000;
-  streamerMode_default.updatedAt = 1787870966000;
-  consoleJanitor_default.updatedAt = 1787789817000;
-  betterCanvas_default.updatedAt = 1790360947000;
-  noDictation_default.updatedAt = 1788037550000;
-  betterQuotes_default.updatedAt = 1790441946000;
-  cloneChats_default.updatedAt = 1787870966000;
-  composerOpacity_default.updatedAt = 1790097681000;
-  incognito_default.updatedAt = 1787870966000;
-  chatListStatus_default.updatedAt = 1789906500000;
-  betterLinks_default.updatedAt = 1787870966000;
-  noShareLink_default.updatedAt = 1787789817000;
-  experiments_default.updatedAt = 1788047438000;
-  downloadTTS_default.updatedAt = 1787870966000;
-  completeToast_default.updatedAt = 1790093417000;
-  noBuildStarters_default.updatedAt = 1789894247000;
-  betterImagine_default.updatedAt = 1790093417000;
-  cleaner_default.updatedAt = 1790093417000;
-  widerChat_default.updatedAt = 1787870966000;
-  betterAvatarPlugins_default.updatedAt = 1790162678000;
-  oneko_default.updatedAt = 1787870966000;
-  customGreeting_default.updatedAt = 1790164294000;
-  stableComposer_default.updatedAt = 1789125421000;
-  exportChat_default.updatedAt = 1787870966000;
-  customInstructions_default.updatedAt = 1789898438000;
-  betterSidebar_default.updatedAt = 1789807577000;
-  autoRetry_default.updatedAt = 1789906500000;
-  customSidebarIdentity_default.updatedAt = 1789918488000;
-  inputHistory_default.updatedAt = 1790418846000;
-  noGrokBot_default.updatedAt = 1787789817000;
-  autoCollapse_default.updatedAt = 1787789817000;
+  contextMenu_default.updatedAt = 1790442421000;
+  chatBarButtons_default.updatedAt = 1790442421000;
+  betterFiles_default.updatedAt = 1790442421000;
+  usageDisplay_default.updatedAt = 1790442421000;
+  betterQueue_default.updatedAt = 1790442421000;
+  settingsFlyout_default.updatedAt = 1790442421000;
+  userQuotes_default.updatedAt = 1790442421000;
+  chatStateFavicons_default.updatedAt = 1790442421000;
+  pluginsFlyout_default.updatedAt = 1790442421000;
+  recentTopics_default.updatedAt = 1790442421000;
+  betterNavigator_default.updatedAt = 1790442421000;
+  responseNotification_default.updatedAt = 1790442421000;
+  noSidebarIdentity_default.updatedAt = 1790442421000;
+  betterModeSelect_default.updatedAt = 1790442421000;
+  starry_default.updatedAt = 1790442421000;
+  messageTimestamps_default.updatedAt = 1790442421000;
+  streamerMode_default.updatedAt = 1790442421000;
+  consoleJanitor_default.updatedAt = 1790442421000;
+  betterCanvas_default.updatedAt = 1790442421000;
+  noDictation_default.updatedAt = 1790442421000;
+  betterQuotes_default.updatedAt = 1790442421000;
+  cloneChats_default.updatedAt = 1790442421000;
+  composerOpacity_default.updatedAt = 1790442421000;
+  incognito_default.updatedAt = 1790442421000;
+  chatListStatus_default.updatedAt = 1790442421000;
+  betterLinks_default.updatedAt = 1790442421000;
+  noShareLink_default.updatedAt = 1790442421000;
+  experiments_default.updatedAt = 1790442421000;
+  downloadTTS_default.updatedAt = 1790442421000;
+  completeToast_default.updatedAt = 1790442421000;
+  noBuildStarters_default.updatedAt = 1790442421000;
+  betterImagine_default.updatedAt = 1790442421000;
+  cleaner_default.updatedAt = 1790442421000;
+  widerChat_default.updatedAt = 1790442421000;
+  betterAvatarPlugins_default.updatedAt = 1790442421000;
+  oneko_default.updatedAt = 1790442421000;
+  customGreeting_default.updatedAt = 1790442421000;
+  stableComposer_default.updatedAt = 1790442421000;
+  exportChat_default.updatedAt = 1790442421000;
+  customInstructions_default.updatedAt = 1790442421000;
+  betterSidebar_default.updatedAt = 1790442421000;
+  autoRetry_default.updatedAt = 1790442421000;
+  customSidebarIdentity_default.updatedAt = 1790442421000;
+  inputHistory_default.updatedAt = 1790442421000;
+  noGrokBot_default.updatedAt = 1790442421000;
+  autoCollapse_default.updatedAt = 1790442421000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [contextMenu_default.name]: contextMenu_default, [chatBarButtons_default.name]: chatBarButtons_default, [betterFiles_default.name]: betterFiles_default, [usageDisplay_default.name]: usageDisplay_default, [betterQueue_default.name]: betterQueue_default, [settingsFlyout_default.name]: settingsFlyout_default, [userQuotes_default.name]: userQuotes_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [betterNavigator_default.name]: betterNavigator_default, [responseNotification_default.name]: responseNotification_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [betterModeSelect_default.name]: betterModeSelect_default, [starry_default.name]: starry_default, [messageTimestamps_default.name]: messageTimestamps_default, [streamerMode_default.name]: streamerMode_default, [consoleJanitor_default.name]: consoleJanitor_default, [betterCanvas_default.name]: betterCanvas_default, [noDictation_default.name]: noDictation_default, [betterQuotes_default.name]: betterQuotes_default, [cloneChats_default.name]: cloneChats_default, [composerOpacity_default.name]: composerOpacity_default, [incognito_default.name]: incognito_default, [chatListStatus_default.name]: chatListStatus_default, [betterLinks_default.name]: betterLinks_default, [noShareLink_default.name]: noShareLink_default, [experiments_default.name]: experiments_default, [downloadTTS_default.name]: downloadTTS_default, [completeToast_default.name]: completeToast_default, [noBuildStarters_default.name]: noBuildStarters_default, [betterImagine_default.name]: betterImagine_default, [cleaner_default.name]: cleaner_default, [widerChat_default.name]: widerChat_default, [betterAvatarPlugins_default.name]: betterAvatarPlugins_default, [oneko_default.name]: oneko_default, [customGreeting_default.name]: customGreeting_default, [stableComposer_default.name]: stableComposer_default, [exportChat_default.name]: exportChat_default, [customInstructions_default.name]: customInstructions_default, [betterSidebar_default.name]: betterSidebar_default, [autoRetry_default.name]: autoRetry_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [inputHistory_default.name]: inputHistory_default, [noGrokBot_default.name]: noGrokBot_default, [autoCollapse_default.name]: autoCollapse_default };
-  // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
+  // voidpp-css:/tmp/VoidPP/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
     display: flex;

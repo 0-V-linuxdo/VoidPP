@@ -275,6 +275,8 @@ function paneOf(el: HTMLElement): HTMLElement | null {
 
 function messageEls(): HTMLElement[] {
     const root = chatPane() ?? document.querySelector("main") ?? document.body;
+    const hosts = [...root.querySelectorAll<HTMLElement>("[id^='response-']")];
+    if (hosts.length) return hosts;
     return [...root.querySelectorAll<HTMLElement>(MSG)];
 }
 
@@ -753,14 +755,14 @@ function clearHighlight() {
     highlights?.delete(HL);
 }
 
-function highlightRange(range: Range | readonly Range[] | null, el: HTMLElement) {
+function highlightRange(range: Range | readonly Range[] | null, el: HTMLElement, flashHost = false) {
     clearHighlight();
     const list = (Array.isArray(range) ? range : range ? [range] : []).filter(item => !item.collapsed);
     const HighlightCtor = (window as unknown as { Highlight?: new (...ranges: Range[]) => unknown }).Highlight;
     const { highlights } = (CSS as { highlights?: { set(k: string, v: unknown): void } });
     if (list.length && highlights && HighlightCtor) {
         highlights.set(HL, new HighlightCtor(...list));
-    } else if (list.length || !el.closest("[id^='response-']")) {
+    } else if (list.length || flashHost || !el.closest("[id^='response-']")) {
         flashing = el;
         el.classList.add(cl("hit"));
     }
@@ -1002,17 +1004,23 @@ function settleScroll(pane: HTMLElement, range: Range | null, el: HTMLElement, m
     });
 }
 
-async function land(el: HTMLElement, needle: string, mine: number) {
+async function land(el: HTMLElement, needle: string, mine: number, pin = "") {
     openAncestors(el, needle);
     await afterLayout();
-    if (mine !== gen || !el.isConnected) return;
+    if (mine !== gen) return;
+    if (!el.isConnected && pin) {
+        const fresh = messageById(pin);
+        if (fresh?.isConnected) el = fresh;
+    }
+    if (!el.isConnected) return;
     const ranges = findRanges(el, needle);
     const anchor = scrollAnchor(ranges);
-    const hit = hitOf(anchor) ?? el;
-    const pane = scrollPane(hit);
-    scrollLineToScreenCenter(anchor, hit);
-    highlightRange(ranges, hit);
-    if (pane) await settleScroll(pane, anchor, hit, mine);
+    const line = anchor ? hitOf(anchor) : null;
+    const target = line?.isConnected ? line : el;
+    const pane = scrollPane(target) ?? scrollPane(el);
+    scrollLineToScreenCenter(line ? anchor : null, target);
+    highlightRange(ranges, ranges.length ? target : el, !ranges.length && !!pin);
+    if (pane) await settleScroll(pane, line ? anchor : null, target, mine);
 }
 
 async function jump(origin: HTMLElement | null) {
@@ -1023,6 +1031,7 @@ async function jump(origin: HTMLElement | null) {
     if (!prefixOf(needle) && !hard) return;
     const fits = (el: HTMLElement | null) => !!el && (!prefixOf(needle) || blobScore(el, needle) > 0);
     let el: HTMLElement | null = null;
+    let pinned = "";
     if (hard) {
         el = liveSource(hard, skip);
         if (!el) {
@@ -1030,14 +1039,15 @@ async function jump(origin: HTMLElement | null) {
             if (mine !== gen) return;
             el = await revealSource(hard, skip, mine);
         }
-        if (!fits(el)) el = null;
+        if (el) pinned = hard;
+        else el = null;
     }
     if (!el && parent && parent !== hard) {
         const mounted = liveSource(parent, skip);
         if (fits(mounted)) el = mounted;
     }
     if (!el && prefixOf(needle)) {
-        const stored = passageId(needle, skipId, parent);
+        const stored = passageId(needle, skipId, parent !== hard ? parent : "");
         if (stored) {
             await hydrate(stored.cid || conversationId());
             if (mine !== gen) return;
@@ -1054,7 +1064,7 @@ async function jump(origin: HTMLElement | null) {
         logger.debug("no source message");
         return;
     }
-    await land(el, needle, mine);
+    await land(el, needle, mine, pinned);
 }
 
 function quoteSource(rec: Record<string, unknown>, fallbackParent = ""): { source: string; quoted: string } {
