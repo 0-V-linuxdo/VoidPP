@@ -251,7 +251,6 @@ button.void-bn-native-edge::before {
 .void-bn-menu:hover .void-bn-item-asst,
 .void-bn-menu:focus-within .void-bn-item-asst {
     background: hsl(var(--fg-primary) / 3%);
-    border-bottom-color: hsl(var(--border-l1) / 50%);
 }
 
 .void-bn-item:hover,
