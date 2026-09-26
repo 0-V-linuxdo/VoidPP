@@ -683,9 +683,54 @@ function blockRanges(root: HTMLElement, needle: string, allowThink: boolean): Ra
     return ranges;
 }
 
+function clipRanges(root: HTMLElement, needle: string): Range[] {
+    const wants = paintLines(needle).filter(line => line.length >= 4);
+    const whole = prefixOf(needle);
+    if (whole.length >= 4 && !wants.includes(whole)) wants.unshift(whole);
+    if (!wants.length) return [];
+    const nodes: { node: Text; start: number }[] = [];
+    let blob = "";
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let cur: Node | null;
+    while ((cur = walker.nextNode())) {
+        const raw = cur.nodeValue || "";
+        if (!raw) continue;
+        const el = cur.parentElement;
+        if (!el || hiddenHost(el, true) || el.closest("td, th")) continue;
+        nodes.push({ node: cur as Text, start: blob.length });
+        blob += raw;
+    }
+    const locate = (at: number) => {
+        let hit: { node: Text; start: number } | null = null;
+        for (const part of nodes) {
+            if (part.start > at) break;
+            hit = part;
+        }
+        return hit;
+    };
+    const ranges: Range[] = [];
+    for (const want of wants) {
+        const at = blob.indexOf(want);
+        if (at < 0) continue;
+        const end = at + want.length - 1;
+        const a = locate(at);
+        const b = locate(end);
+        if (!a || !b) continue;
+        try {
+            const range = document.createRange();
+            range.setStart(a.node, at - a.start);
+            range.setEnd(b.node, end - b.start + 1);
+            if (!range.collapsed) ranges.push(range);
+        } catch { /* detached */ }
+    }
+    return ranges;
+}
+
 function findRanges(root: HTMLElement, needle: string): Range[] {
     const lines = paintLines(needle);
     if (!lines.length) return [];
+    const clips = clipRanges(root, needle);
+    if (clips.length) return clips;
     for (const allowThink of [false, true]) {
         const blocks = blockRanges(root, needle, allowThink);
         if (blocks.length) return blocks;
@@ -1043,7 +1088,7 @@ async function land(el: HTMLElement, needle: string, mine: number, pin = "") {
     const target = line?.isConnected ? line : el;
     const pane = scrollPane(target) ?? scrollPane(el);
     scrollLineToScreenCenter(painted ? anchor : null, target);
-    highlightRange(ranges, ranges.length ? target : line ?? el, !ranges.length && !!pin);
+    highlightRange(ranges, target, false);
     if (pane) await settleScroll(pane, painted ? anchor : null, target, mine);
 }
 
