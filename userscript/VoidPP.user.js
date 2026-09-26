@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.27
+// @version      20260926.28
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.27] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.28] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"67fde73"}`
-    }, `(${"67fde73"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"917ed39"}`
+    }, `(${"917ed39"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21306,83 +21306,11 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return 0;
     return hit.length / Math.max(norm2(text).length, 1);
   }
-  function nodeText(node, id = "") {
-    const rec = node?.content;
-    let mapped = "";
-    try {
-      if (node)
-        mapped = String(MessageStore.nodeToResponse?.(conversationId2(), node)?.message || "");
-    } catch {}
-    return String(rec?.message || rec?.query || mapped || storeById(id || node?.id || "")?.message || "");
-  }
   function blobScore(el, needle) {
     const vis = coverScore(collectParts(el, false).blob, needle);
     if (vis > 0)
       return vis;
     return coverScore(collectParts(el, true).blob, needle);
-  }
-  function quotedField(value) {
-    if (!value || typeof value !== "object")
-      return "";
-    const rec = value;
-    if (typeof rec.parentQuotedText === "string")
-      return rec.parentQuotedText;
-    const content = rec.content;
-    if (content && typeof content === "object") {
-      const inner = content.parentQuotedText;
-      if (typeof inner === "string")
-        return inner;
-    }
-    return "";
-  }
-  function passageId(needle, skipId = "", ban = "") {
-    if (hostClip(needle).length < 8 && !clipsOf(needle).length)
-      return null;
-    const cid = conversationId2();
-    const skip = new Set([bareUuid(skipId), bareUuid(ban)].filter(Boolean));
-    let childAt = 0;
-    try {
-      const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
-      childAt = Number(nodes?.[bareUuid(skipId)]?.createdAt) || 0;
-    } catch {}
-    let best = null;
-    const consider = (id, text, quoted, at) => {
-      if (!id || skip.has(id))
-        return;
-      if (childAt && at && at > childAt)
-        return;
-      if (coverScore(quoted, needle) > 0)
-        return;
-      const score = coverScore(text, needle);
-      if (score <= 0)
-        return;
-      if (!best || score > best.score || score === best.score && at < best.at)
-        best = { id, score, at };
-    };
-    try {
-      const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
-      if (nodes) {
-        for (const node of Object.values(nodes)) {
-          if (!node?.id)
-            continue;
-          consider(node.id, nodeText(node, node.id), quotedField(node), Number(node.createdAt) || 0);
-        }
-      }
-    } catch (e) {
-      logger29.debug("passage search failed", e);
-    }
-    try {
-      const r = ResponseStore.useResponseStore.getState();
-      const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
-      for (const row of rows) {
-        if (!row?.responseId)
-          continue;
-        consider(row.responseId, String(row.message || row.query || ""), quotedField(row), Number(row.createTime) || 0);
-      }
-    } catch (e) {
-      logger29.debug("passage rows failed", e);
-    }
-    return best ? { id: best.id, cid } : null;
   }
   function prefixOf(text) {
     return norm2(text).replace(/[.…]+$/u, "");
@@ -21972,27 +21900,6 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       logger29.debug("loadOlderHistory failed", e);
     }
   }
-  function locateLine(root, needle) {
-    const clips = clipsOf(needle);
-    if (!clips.length)
-      return null;
-    let best = null;
-    let bestLen = Infinity;
-    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, span, div")) {
-      if (!(el instanceof HTMLElement))
-        continue;
-      if (el.closest("button, svg, [role='toolbar'], td, th, [data-void-qj-preview]"))
-        continue;
-      const text = norm2(el.textContent || "");
-      if (!textHasClip(text, clips))
-        continue;
-      if (text.length && text.length < bestLen) {
-        best = el;
-        bestLen = text.length;
-      }
-    }
-    return best;
-  }
   function resolveNeedle(origin) {
     const jump = origin ? officialJumpButton(origin) : null;
     if (jump) {
@@ -22005,11 +21912,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     const live = quotedText2();
     if (origin) {
+      const shown = prefixOf(origin.textContent || "");
       const msg = origin.closest(MSG2) ?? hostOf(origin);
       const id = msg ? propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] : "";
       const from = hostQuote(id, msg);
-      const text = from.quoted || live || prefixOf(origin.textContent || "");
-      return { needle: text, hard: from.hard, parent: from.parent };
+      const needle = (shown.length >= 8 ? shown : "") || from.quoted || shown;
+      return { needle, hard: from.hard, parent: from.parent };
     }
     return { needle: live, hard: "", parent: "" };
   }
@@ -22135,7 +22043,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       window.setTimeout(finish, 700);
     });
   }
-  async function land(el, needle, mine, pin = "") {
+  async function land(el, needle, mine, pin = "", ownScroll = true) {
     openAncestors(el, needle);
     await afterLayout();
     if (mine !== gen)
@@ -22147,25 +22055,40 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     if (!el.isConnected)
       return;
-    const ranges = findRanges(el, needle);
+    const ranges = clipRanges(el, needle);
+    highlightRange(ranges, el, false);
+    if (!ownScroll)
+      return;
     const anchor = scrollAnchor(ranges);
     const painted = anchor ? hitOf(anchor) : null;
-    const line = painted ?? locateLine(el, needle);
-    const target = line?.isConnected ? line : el;
+    const target = painted?.isConnected ? painted : el;
     const pane = scrollPane(target) ?? scrollPane(el);
     scrollLineToScreenCenter(painted ? anchor : null, target);
-    highlightRange(ranges, target, false);
     if (pane)
       await settleScroll(pane, painted ? anchor : null, target, mine);
   }
+  async function paintAfter(needle, hard) {
+    const mine = ++gen;
+    const pane = chatPane3();
+    const done = () => {
+      if (mine !== gen)
+        return;
+      const el = messageById(hard);
+      if (el)
+        land(el, needle, mine, hard, false);
+    };
+    if (pane) {
+      pane.addEventListener("scrollend", done, { once: true });
+      window.setTimeout(done, 700);
+    } else
+      window.setTimeout(done, 80);
+  }
   async function jump2(origin) {
     const mine = ++gen;
-    const { needle, hard, parent } = resolveNeedle(origin);
+    const { needle, hard } = resolveNeedle(origin);
     const skip = hostOf(origin);
-    const skipId = hostUuid(skip);
     if (!prefixOf(needle) && !hard)
       return;
-    const fits = (el) => !!el && (!prefixOf(needle) || blobScore(el, needle) > 0);
     let el = null;
     let pinned = "";
     if (hard) {
@@ -22178,34 +22101,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       }
       if (el)
         pinned = hard;
-      else
-        el = null;
     }
-    if (!el && parent && parent !== hard) {
-      const mounted = liveSource(parent, skip);
-      if (fits(mounted))
-        el = mounted;
-    }
-    if (!el && prefixOf(needle)) {
-      const stored = passageId(needle, skipId, parent !== hard ? parent : "");
-      if (stored) {
-        await hydrate2(stored.cid || conversationId2());
-        if (mine !== gen)
-          return;
-        const found = await revealSource(stored.id, skip, mine);
-        if (fits(found))
-          el = found;
-      }
-    }
-    if (!el && prefixOf(needle)) {
-      const picked = pickMessage([], needle, skip);
-      if (fits(picked))
-        el = picked;
-    }
-    if (mine !== gen)
-      return;
-    if (!el) {
-      logger29.debug("no source message");
+    if (!el && prefixOf(needle))
+      el = pickMessage([], needle, skip);
+    if (mine !== gen || !el) {
+      if (!el)
+        logger29.debug("no source message");
       return;
     }
     await land(el, needle, mine, pinned);
@@ -22566,12 +22467,11 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       if (!origin)
         return;
       if (officialJumpButton(origin)) {
-        const { needle, hard, parent } = resolveNeedle(origin);
-        const host = hostOf(origin);
-        const mounted = parent ? liveSource(parent, host) : null;
-        const parentOk = !!mounted && blobScore(mounted, needle) > 0;
-        if (!hard && !parentOk && !pickMessage([], needle, host))
+        const { needle, hard } = resolveNeedle(origin);
+        if (hard && liveSource(hard, hostOf(origin))) {
+          paintAfter(needle, hard);
           return;
+        }
       }
       e.preventDefault();
       e.stopPropagation();
@@ -31189,7 +31089,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1790442421000;
   betterCanvas_default.updatedAt = 1790442421000;
   noDictation_default.updatedAt = 1790442421000;
-  betterQuotes_default.updatedAt = 1790444048000;
+  betterQuotes_default.updatedAt = 1790444575000;
   cloneChats_default.updatedAt = 1790442421000;
   composerOpacity_default.updatedAt = 1790442421000;
   incognito_default.updatedAt = 1790442421000;

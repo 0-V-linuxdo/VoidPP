@@ -921,24 +921,6 @@ async function hydrate(cid: string) {
     }
 }
 
-function locateLine(root: HTMLElement, needle: string): HTMLElement | null {
-    const clips = clipsOf(needle);
-    if (!clips.length) return null;
-    let best: HTMLElement | null = null;
-    let bestLen = Infinity;
-    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, span, div")) {
-        if (!(el instanceof HTMLElement)) continue;
-        if (el.closest("button, svg, [role='toolbar'], td, th, [data-void-qj-preview]")) continue;
-        const text = norm(el.textContent || "");
-        if (!textHasClip(text, clips)) continue;
-        if (text.length && text.length < bestLen) {
-            best = el;
-            bestLen = text.length;
-        }
-    }
-    return best;
-}
-
 function resolveNeedle(origin: HTMLElement | null): { needle: string; hard: string; parent: string } {
     const jump = origin ? officialJumpButton(origin) : null;
     if (jump) {
@@ -951,11 +933,12 @@ function resolveNeedle(origin: HTMLElement | null): { needle: string; hard: stri
     }
     const live = quotedText();
     if (origin) {
+        const shown = prefixOf(origin.textContent || "");
         const msg = origin.closest<HTMLElement>(MSG) ?? hostOf(origin);
         const id = msg ? propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] : "";
         const from = hostQuote(id, msg);
-        const text = from.quoted || live || prefixOf(origin.textContent || "");
-        return { needle: text, hard: from.hard, parent: from.parent };
+        const needle = (shown.length >= 8 ? shown : "") || from.quoted || shown;
+        return { needle, hard: from.hard, parent: from.parent };
     }
     return { needle: live, hard: "", parent: "" };
 }
@@ -1072,7 +1055,7 @@ function settleScroll(pane: HTMLElement, range: Range | null, el: HTMLElement, m
     });
 }
 
-async function land(el: HTMLElement, needle: string, mine: number, pin = "") {
+async function land(el: HTMLElement, needle: string, mine: number, pin = "", ownScroll = true) {
     openAncestors(el, needle);
     await afterLayout();
     if (mine !== gen) return;
@@ -1081,24 +1064,36 @@ async function land(el: HTMLElement, needle: string, mine: number, pin = "") {
         if (fresh?.isConnected) el = fresh;
     }
     if (!el.isConnected) return;
-    const ranges = findRanges(el, needle);
+    const ranges = clipRanges(el, needle);
+    highlightRange(ranges, el, false);
+    if (!ownScroll) return;
     const anchor = scrollAnchor(ranges);
     const painted = anchor ? hitOf(anchor) : null;
-    const line = painted ?? locateLine(el, needle);
-    const target = line?.isConnected ? line : el;
+    const target = painted?.isConnected ? painted : el;
     const pane = scrollPane(target) ?? scrollPane(el);
     scrollLineToScreenCenter(painted ? anchor : null, target);
-    highlightRange(ranges, target, false);
     if (pane) await settleScroll(pane, painted ? anchor : null, target, mine);
+}
+
+async function paintAfter(needle: string, hard: string) {
+    const mine = ++gen;
+    const pane = chatPane();
+    const done = () => {
+        if (mine !== gen) return;
+        const el = messageById(hard);
+        if (el) void land(el, needle, mine, hard, false);
+    };
+    if (pane) {
+        pane.addEventListener("scrollend", done, { once: true });
+        window.setTimeout(done, 700);
+    } else window.setTimeout(done, 80);
 }
 
 async function jump(origin: HTMLElement | null) {
     const mine = ++gen;
-    const { needle, hard, parent } = resolveNeedle(origin);
+    const { needle, hard } = resolveNeedle(origin);
     const skip = hostOf(origin);
-    const skipId = hostUuid(skip);
     if (!prefixOf(needle) && !hard) return;
-    const fits = (el: HTMLElement | null) => !!el && (!prefixOf(needle) || blobScore(el, needle) > 0);
     let el: HTMLElement | null = null;
     let pinned = "";
     if (hard) {
@@ -1109,28 +1104,10 @@ async function jump(origin: HTMLElement | null) {
             el = await revealSource(hard, skip, mine);
         }
         if (el) pinned = hard;
-        else el = null;
     }
-    if (!el && parent && parent !== hard) {
-        const mounted = liveSource(parent, skip);
-        if (fits(mounted)) el = mounted;
-    }
-    if (!el && prefixOf(needle)) {
-        const stored = passageId(needle, skipId, parent !== hard ? parent : "");
-        if (stored) {
-            await hydrate(stored.cid || conversationId());
-            if (mine !== gen) return;
-            const found = await revealSource(stored.id, skip, mine);
-            if (fits(found)) el = found;
-        }
-    }
-    if (!el && prefixOf(needle)) {
-        const picked = pickMessage([], needle, skip);
-        if (fits(picked)) el = picked;
-    }
-    if (mine !== gen) return;
-    if (!el) {
-        logger.debug("no source message");
+    if (!el && prefixOf(needle)) el = pickMessage([], needle, skip);
+    if (mine !== gen || !el) {
+        if (!el) logger.debug("no source message");
         return;
     }
     await land(el, needle, mine, pinned);
@@ -1470,11 +1447,11 @@ function onClick(e: MouseEvent) {
         const origin = sent ?? chip;
         if (!origin) return;
         if (officialJumpButton(origin)) {
-            const { needle, hard, parent } = resolveNeedle(origin);
-            const host = hostOf(origin);
-            const mounted = parent ? liveSource(parent, host) : null;
-            const parentOk = !!mounted && blobScore(mounted, needle) > 0;
-            if (!hard && !parentOk && !pickMessage([], needle, host)) return;
+            const { needle, hard } = resolveNeedle(origin);
+            if (hard && liveSource(hard, hostOf(origin))) {
+                void paintAfter(needle, hard);
+                return;
+            }
         }
         e.preventDefault();
         e.stopPropagation();
