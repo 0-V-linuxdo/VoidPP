@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.16
+// @version      20260925.17
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.16] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.17] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"69e2955"}`
-    }, `(${"69e2955"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"222d394"}`
+    }, `(${"222d394"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -28696,8 +28696,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var applyTimer;
   var applyEl = null;
   var applyAtStart = true;
-  var probeGen = 0;
-  var probeArmed = false;
   function isImaginePage3() {
     try {
       const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
@@ -28768,12 +28766,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `) : el.innerText ?? el.textContent ?? "";
     return normalize(raw);
   }
-  var CARET_Y_SLOP_PX = 4;
   var TRAILING_BR = "ProseMirror-trailingBreak";
-  function cancelProbe() {
-    probeGen++;
-    probeArmed = false;
-  }
   function collapsedCaret(el) {
     const sel = window.getSelection();
     if (!sel?.rangeCount || !sel.isCollapsed)
@@ -28853,74 +28846,104 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return false;
     return true;
   }
-  function pmFrom(el) {
-    const view = el.pmViewDesc?.view;
-    const sel = view?.state?.selection;
-    if (!sel?.empty || typeof sel.from !== "number")
-      return null;
-    return sel.from;
+  function isPlaceholderEditor(el) {
+    const text = (el.textContent ?? "").replaceAll(ZWSP, "").trim();
+    if (text)
+      return false;
+    if (el.children.length > 1)
+      return false;
+    return el.querySelectorAll("br").length <= 1;
   }
-  function caretTop(range) {
-    const rects = range.getClientRects();
-    for (const rect of rects) {
-      if (!Number.isFinite(rect.top))
-        continue;
-      if (rect.height > 0 || rect.width > 0)
-        return rect.top;
+  function syncPm(el, range) {
+    try {
+      const view = el.pmViewDesc?.view;
+      if (!view?.posAtDOM)
+        return;
+      const pos = view.posAtDOM(range.startContainer, range.startOffset);
+      if (typeof pos !== "number" || pos < 0)
+        return;
+      const near = view.state.selection.constructor.near;
+      if (!near)
+        return;
+      const pmSel = near(view.state.doc.resolve(pos));
+      if (!pmSel)
+        return;
+      view.dispatch(view.state.tr.setSelection(pmSel).scrollIntoView());
+    } catch (err) {
+      logger42.debug("syncPm failed:", err);
     }
-    const box = range.getBoundingClientRect();
-    if (!Number.isFinite(box.top))
-      return null;
-    if (box.height > 0 || box.width > 0 || box.top !== 0 || box.left !== 0)
-      return box.top;
-    return null;
   }
-  function snapCaret(el) {
-    const range = collapsedCaret(el);
-    return {
-      from: pmFrom(el),
-      y: range ? caretTop(range) : null
-    };
+  function applyRange(el, range) {
+    const sel = window.getSelection();
+    if (!sel)
+      return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    syncPm(el, range);
   }
-  function editorFocused(el) {
-    const active = document.activeElement;
-    return active === el || active instanceof Node && el.contains(active);
-  }
-  function caretStayed(before, after, focused) {
-    if (before.from == null && before.y == null)
+  function stepLine(el, older) {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount || !sel.isCollapsed || typeof sel.modify !== "function")
       return false;
-    if (before.from != null && before.from !== after.from)
+    const before = sel.getRangeAt(0);
+    const node = before.startContainer;
+    const offset = before.startOffset;
+    if (!el.contains(node))
       return false;
-    if (!focused)
-      return before.from != null;
-    if (before.y != null && (after.y == null || Math.abs(before.y - after.y) > CARET_Y_SLOP_PX))
+    sel.modify("move", older ? "backward" : "forward", "line");
+    if (!sel.rangeCount || !sel.isCollapsed)
+      return true;
+    const after = sel.getRangeAt(0);
+    if (!el.contains(after.startContainer)) {
+      const back = document.createRange();
+      back.setStart(node, offset);
+      back.collapse(true);
+      applyRange(el, back);
       return false;
-    return before.from != null || before.y != null;
+    }
+    if (after.startContainer === node && after.startOffset === offset)
+      return false;
+    syncPm(el, after);
+    return true;
   }
-  function armProbe(el, older) {
-    const gen = ++probeGen;
-    probeArmed = true;
-    const before = snapCaret(el);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (gen !== probeGen)
-          return;
-        probeArmed = false;
-        if (!el.isConnected || composing)
-          return;
-        const focused = editorFocused(el);
-        if (!caretStayed(before, snapCaret(el), focused))
-          return;
-        const list = getEntries();
-        if (older && (!list.length || cursor <= 0))
-          return;
-        if (!older && cursor >= list.length)
-          return;
-        if (!focused)
-          el.focus();
-        cycle2(older, el);
-      });
-    });
+  function nudgeCaret(el, caret, older) {
+    const blocks = Array.from(el.children);
+    const block = directBlock(el, caret.startContainer);
+    const range = document.createRange();
+    if (block && blocks.length > 1) {
+      const idx = blocks.indexOf(block);
+      const dest = idx >= 0 ? blocks[older ? idx - 1 : idx + 1] : undefined;
+      if (dest) {
+        range.selectNodeContents(dest);
+        range.collapse(!older);
+        applyRange(el, range);
+        return true;
+      }
+    }
+    let target = null;
+    for (const br of el.querySelectorAll("br")) {
+      if (br.classList.contains(TRAILING_BR))
+        continue;
+      const side = caret.comparePoint(br, 0);
+      if (older) {
+        if (side <= 0)
+          target = br;
+      } else if (side > 0) {
+        target = br;
+        break;
+      }
+    }
+    if (!target)
+      return false;
+    if (older)
+      range.setStartBefore(target);
+    else
+      range.setStartAfter(target);
+    range.collapse(true);
+    if (!el.contains(range.startContainer))
+      return false;
+    applyRange(el, range);
+    return true;
   }
   function matchesRecall(el) {
     if (!recalling)
@@ -29067,17 +29090,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       hideHud();
   }
   function onKeyDown5(e) {
-    const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
-    const keepProbe = arrow && e.repeat && probeArmed && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey && !imeEvent(e);
-    if (keepProbe) {
-      const active = document.activeElement;
-      if (!(active instanceof Element) || !active.closest(EDITOR_SEL3)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-      return;
-    }
-    cancelProbe();
     if (imeEvent(e))
       return;
     if (e.ctrlKey || e.metaKey)
@@ -29085,6 +29097,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const el = chatEditor(e.target);
     if (!el)
       return;
+    const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
     if (applying3 && !arrow)
       invalidateApply();
     if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
@@ -29100,29 +29113,32 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (!arrow || e.shiftKey)
       return;
     const older = e.key === "ArrowUp";
+    if (!e.altKey) {
+      const caret = collapsedCaret(el);
+      if (!caret)
+        return;
+      if (!isPlaceholderEditor(el)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (stepLine(el, older))
+          return;
+        const stayed = collapsedCaret(el);
+        if (stayed && (older ? breakBefore(el, stayed) : breakAfter(el, stayed))) {
+          nudgeCaret(el, stayed, older);
+          return;
+        }
+      }
+    }
     const list = getEntries();
     if (older && (!list.length || cursor <= 0))
       return;
     if (!older && cursor >= list.length)
       return;
-    if (!e.altKey) {
-      const caret = collapsedCaret(el);
-      if (!caret)
-        return;
-      const filled = !!el.innerText?.trim();
-      if (filled && (older ? breakBefore(el, caret) : breakAfter(el, caret)))
-        return;
-      if (filled) {
-        armProbe(el, older);
-        return;
-      }
-    }
     e.preventDefault();
     e.stopImmediatePropagation();
     cycle2(older, el);
   }
   function onPointerDown4(e) {
-    cancelProbe();
     if (!recalling)
       return;
     const el = chatEditor(e.target);
@@ -29134,7 +29150,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (!chatEditor(e.target))
       return;
     composing = true;
-    cancelProbe();
     invalidateApply();
   }
   function onCompositionEnd(e) {
@@ -29149,8 +29164,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const el = chatEditor(e.target);
     if (!el)
       return;
-    if (!applying3)
-      cancelProbe();
     if (imeEvent(e)) {
       if (applying3)
         invalidateApply();
@@ -29338,7 +29351,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       recalling = false;
       composing = false;
       invalidateApply();
-      cancelProbe();
       keys3 = new AbortController;
       const { signal } = keys3;
       document.addEventListener("keydown", onKeyDown5, { capture: true, signal });
@@ -29357,7 +29369,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       composing = false;
       recalling = false;
       invalidateApply();
-      cancelProbe();
     },
     onSettingsChange() {
       const current = getEntries();
@@ -29476,7 +29487,7 @@ div:has(> #grok-bot-nav-button) {
   betterSidebar_default.updatedAt = 1790265417000;
   autoRetry_default.updatedAt = 1790265417000;
   customSidebarIdentity_default.updatedAt = 1790265417000;
-  inputHistory_default.updatedAt = 1790403073000;
+  inputHistory_default.updatedAt = 1790404468000;
   noGrokBot_default.updatedAt = 1790265417000;
   autoCollapse_default.updatedAt = 1790265417000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [contextMenu_default.name]: contextMenu_default, [chatBarButtons_default.name]: chatBarButtons_default, [betterFiles_default.name]: betterFiles_default, [usageDisplay_default.name]: usageDisplay_default, [betterQueue_default.name]: betterQueue_default, [settingsFlyout_default.name]: settingsFlyout_default, [userQuotes_default.name]: userQuotes_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [betterNavigator_default.name]: betterNavigator_default, [responseNotification_default.name]: responseNotification_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [betterModeSelect_default.name]: betterModeSelect_default, [starry_default.name]: starry_default, [messageTimestamps_default.name]: messageTimestamps_default, [streamerMode_default.name]: streamerMode_default, [consoleJanitor_default.name]: consoleJanitor_default, [betterCanvas_default.name]: betterCanvas_default, [noDictation_default.name]: noDictation_default, [betterQuotes_default.name]: betterQuotes_default, [cloneChats_default.name]: cloneChats_default, [composerOpacity_default.name]: composerOpacity_default, [incognito_default.name]: incognito_default, [chatListStatus_default.name]: chatListStatus_default, [betterLinks_default.name]: betterLinks_default, [noShareLink_default.name]: noShareLink_default, [experiments_default.name]: experiments_default, [downloadTTS_default.name]: downloadTTS_default, [completeToast_default.name]: completeToast_default, [noBuildStarters_default.name]: noBuildStarters_default, [betterImagine_default.name]: betterImagine_default, [cleaner_default.name]: cleaner_default, [widerChat_default.name]: widerChat_default, [betterAvatarPlugins_default.name]: betterAvatarPlugins_default, [oneko_default.name]: oneko_default, [customGreeting_default.name]: customGreeting_default, [stableComposer_default.name]: stableComposer_default, [exportChat_default.name]: exportChat_default, [customInstructions_default.name]: customInstructions_default, [betterSidebar_default.name]: betterSidebar_default, [autoRetry_default.name]: autoRetry_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [inputHistory_default.name]: inputHistory_default, [noGrokBot_default.name]: noGrokBot_default, [autoCollapse_default.name]: autoCollapse_default };

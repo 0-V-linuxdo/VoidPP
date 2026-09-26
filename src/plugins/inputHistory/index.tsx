@@ -67,8 +67,6 @@ let keys: AbortController | null = null;
 let applyTimer: ReturnType<typeof setTimeout> | undefined;
 let applyEl: HTMLElement | null = null;
 let applyAtStart = true;
-let probeGen = 0;
-let probeArmed = false;
 
 function isImaginePage(): boolean {
     try {
@@ -145,18 +143,7 @@ function editorText(el: HTMLElement): string {
     return normalize(raw);
 }
 
-const CARET_Y_SLOP_PX = 4;
 const TRAILING_BR = "ProseMirror-trailingBreak";
-
-interface CaretSnap {
-    from: number | null;
-    y: number | null;
-}
-
-function cancelProbe() {
-    probeGen++;
-    probeArmed = false;
-}
 
 function collapsedCaret(el: HTMLElement): Range | null {
     const sel = window.getSelection();
@@ -228,64 +215,99 @@ function breakAfter(el: HTMLElement, caret: Range): boolean {
     return true;
 }
 
-function pmFrom(el: HTMLElement): number | null {
-    const view = (el as unknown as { pmViewDesc?: { view?: { state?: { selection?: { empty?: boolean; from?: number } } } } }).pmViewDesc?.view;
-    const sel = view?.state?.selection;
-    if (!sel?.empty || typeof sel.from !== "number") return null;
-    return sel.from;
+function isPlaceholderEditor(el: HTMLElement): boolean {
+    const text = (el.textContent ?? "").replaceAll(ZWSP, "").trim();
+    if (text) return false;
+    if (el.children.length > 1) return false;
+    return el.querySelectorAll("br").length <= 1;
 }
 
-function caretTop(range: Range): number | null {
-    const rects = range.getClientRects();
-    for (const rect of rects) {
-        if (!Number.isFinite(rect.top)) continue;
-        if (rect.height > 0 || rect.width > 0) return rect.top;
+function syncPm(el: HTMLElement, range: Range) {
+    try {
+        const view = (el as unknown as { pmViewDesc?: { view?: {
+            posAtDOM?(node: Node, offset: number): number;
+            dispatch(tr: unknown): void;
+            state: {
+                doc: { resolve(pos: number): unknown };
+                selection: { constructor: { near?(pos: unknown): unknown } };
+                tr: { setSelection(sel: unknown): { scrollIntoView(): unknown } };
+            };
+        } } }).pmViewDesc?.view;
+        if (!view?.posAtDOM) return;
+        const pos = view.posAtDOM(range.startContainer, range.startOffset);
+        if (typeof pos !== "number" || pos < 0) return;
+        const near = view.state.selection.constructor.near;
+        if (!near) return;
+        const pmSel = near(view.state.doc.resolve(pos));
+        if (!pmSel) return;
+        view.dispatch(view.state.tr.setSelection(pmSel).scrollIntoView());
+    } catch (err) {
+        logger.debug("syncPm failed:", err);
     }
-    const box = range.getBoundingClientRect();
-    if (!Number.isFinite(box.top)) return null;
-    if (box.height > 0 || box.width > 0 || box.top !== 0 || box.left !== 0) return box.top;
-    return null;
 }
 
-function snapCaret(el: HTMLElement): CaretSnap {
-    const range = collapsedCaret(el);
-    return {
-        from: pmFrom(el),
-        y: range ? caretTop(range) : null,
-    };
+function applyRange(el: HTMLElement, range: Range) {
+    const sel = window.getSelection();
+    if (!sel) return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    syncPm(el, range);
 }
 
-function editorFocused(el: HTMLElement): boolean {
-    const active = document.activeElement;
-    return active === el || (active instanceof Node && el.contains(active));
+function stepLine(el: HTMLElement, older: boolean): boolean {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount || !sel.isCollapsed || typeof sel.modify !== "function") return false;
+    const before = sel.getRangeAt(0);
+    const node = before.startContainer;
+    const offset = before.startOffset;
+    if (!el.contains(node)) return false;
+    sel.modify("move", older ? "backward" : "forward", "line");
+    if (!sel.rangeCount || !sel.isCollapsed) return true;
+    const after = sel.getRangeAt(0);
+    if (!el.contains(after.startContainer)) {
+        const back = document.createRange();
+        back.setStart(node, offset);
+        back.collapse(true);
+        applyRange(el, back);
+        return false;
+    }
+    if (after.startContainer === node && after.startOffset === offset) return false;
+    syncPm(el, after);
+    return true;
 }
 
-function caretStayed(before: CaretSnap, after: CaretSnap, focused: boolean): boolean {
-    if (before.from == null && before.y == null) return false;
-    if (before.from != null && before.from !== after.from) return false;
-    if (!focused) return before.from != null;
-    if (before.y != null && (after.y == null || Math.abs(before.y - after.y) > CARET_Y_SLOP_PX)) return false;
-    return before.from != null || before.y != null;
-}
-
-function armProbe(el: HTMLElement, older: boolean) {
-    const gen = ++probeGen;
-    probeArmed = true;
-    const before = snapCaret(el);
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            if (gen !== probeGen) return;
-            probeArmed = false;
-            if (!el.isConnected || composing) return;
-            const focused = editorFocused(el);
-            if (!caretStayed(before, snapCaret(el), focused)) return;
-            const list = getEntries();
-            if (older && (!list.length || cursor <= 0)) return;
-            if (!older && cursor >= list.length) return;
-            if (!focused) el.focus();
-            cycle(older, el);
-        });
-    });
+function nudgeCaret(el: HTMLElement, caret: Range, older: boolean): boolean {
+    const blocks = Array.from(el.children);
+    const block = directBlock(el, caret.startContainer);
+    const range = document.createRange();
+    if (block && blocks.length > 1) {
+        const idx = blocks.indexOf(block);
+        const dest = idx >= 0 ? blocks[older ? idx - 1 : idx + 1] : undefined;
+        if (dest) {
+            range.selectNodeContents(dest);
+            range.collapse(!older);
+            applyRange(el, range);
+            return true;
+        }
+    }
+    let target: Element | null = null;
+    for (const br of el.querySelectorAll("br")) {
+        if (br.classList.contains(TRAILING_BR)) continue;
+        const side = caret.comparePoint(br, 0);
+        if (older) {
+            if (side <= 0) target = br;
+        } else if (side > 0) {
+            target = br;
+            break;
+        }
+    }
+    if (!target) return false;
+    if (older) range.setStartBefore(target);
+    else range.setStartAfter(target);
+    range.collapse(true);
+    if (!el.contains(range.startContainer)) return false;
+    applyRange(el, range);
+    return true;
 }
 
 function matchesRecall(el: HTMLElement): boolean {
@@ -433,24 +455,13 @@ function cycle(older: boolean, el: HTMLElement) {
 }
 
 function onKeyDown(e: KeyboardEvent) {
-    const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
-    const keepProbe = arrow && e.repeat && probeArmed && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey && !imeEvent(e);
-    if (keepProbe) {
-        const active = document.activeElement;
-        if (!(active instanceof Element) || !active.closest(EDITOR_SEL)) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-        }
-        return;
-    }
-    cancelProbe();
-
     if (imeEvent(e)) return;
     if (e.ctrlKey || e.metaKey) return;
 
     const el = chatEditor(e.target);
     if (!el) return;
 
+    const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
     if (applying && !arrow) invalidateApply();
 
     if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
@@ -468,20 +479,24 @@ function onKeyDown(e: KeyboardEvent) {
     if (!arrow || e.shiftKey) return;
 
     const older = e.key === "ArrowUp";
-    const list = getEntries();
-    if (older && (!list.length || cursor <= 0)) return;
-    if (!older && cursor >= list.length) return;
-
     if (!e.altKey) {
         const caret = collapsedCaret(el);
         if (!caret) return;
-        const filled = !!el.innerText?.trim();
-        if (filled && (older ? breakBefore(el, caret) : breakAfter(el, caret))) return;
-        if (filled) {
-            armProbe(el, older);
-            return;
+        if (!isPlaceholderEditor(el)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (stepLine(el, older)) return;
+            const stayed = collapsedCaret(el);
+            if (stayed && (older ? breakBefore(el, stayed) : breakAfter(el, stayed))) {
+                nudgeCaret(el, stayed, older);
+                return;
+            }
         }
     }
+
+    const list = getEntries();
+    if (older && (!list.length || cursor <= 0)) return;
+    if (!older && cursor >= list.length) return;
 
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -489,7 +504,6 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function onPointerDown(e: PointerEvent) {
-    cancelProbe();
     if (!recalling) return;
     const el = chatEditor(e.target);
     if (!el) return;
@@ -499,7 +513,6 @@ function onPointerDown(e: PointerEvent) {
 function onCompositionStart(e: Event) {
     if (!chatEditor(e.target)) return;
     composing = true;
-    cancelProbe();
     invalidateApply();
 }
 
@@ -513,7 +526,6 @@ function onCompositionEnd(e: Event) {
 function onInput(e: Event) {
     const el = chatEditor(e.target);
     if (!el) return;
-    if (!applying) cancelProbe();
     if (imeEvent(e)) {
         if (applying) invalidateApply();
         return;
@@ -688,7 +700,6 @@ export default definePlugin({
         recalling = false;
         composing = false;
         invalidateApply();
-        cancelProbe();
         keys = new AbortController();
         const { signal } = keys;
         document.addEventListener("keydown", onKeyDown, { capture: true, signal });
@@ -708,7 +719,6 @@ export default definePlugin({
         composing = false;
         recalling = false;
         invalidateApply();
-        cancelProbe();
     },
 
     onSettingsChange() {
