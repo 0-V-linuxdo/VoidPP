@@ -330,11 +330,17 @@ function nudgeCaret(el: HTMLElement, caret: Range, older: boolean): boolean {
     return true;
 }
 
+function flatBreaks(text: string): string {
+    return normalize(text).replace(/\n+/g, "\n");
+}
+
 function matchesRecall(el: HTMLElement): boolean {
     if (!recalling) return false;
     const list = getEntries();
     const expected = cursor < list.length ? list[cursor] : draft;
-    return editorText(el) === expected || normalize(el.innerText ?? "") === expected;
+    if (editorText(el) === expected) return true;
+    const flat = flatBreaks(expected);
+    return flatBreaks(editorText(el)) === flat || flatBreaks(el.innerText ?? "") === flat;
 }
 
 function dropRecall(el: HTMLElement) {
@@ -407,7 +413,17 @@ function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
     const gen = ++applyGen;
     try {
         if (!text) document.execCommand("delete");
-        else document.execCommand("insertText", false, text);
+        else {
+            const lines = text.split("\n");
+            document.execCommand("insertText", false, lines[0]);
+            for (let i = 1; i < lines.length; i++) {
+                placeCaret(el, false);
+                document.execCommand("insertLineBreak");
+                if (!lines[i]) continue;
+                placeCaret(el, false);
+                document.execCommand("insertText", false, lines[i]);
+            }
+        }
     } catch (err) {
         logger.debug("insertText failed:", err);
     }
@@ -559,9 +575,8 @@ function onInput(e: Event) {
         if (applying) invalidateApply();
         return;
     }
-    const recalled = matchesRecall(el);
-    if (applying && recalled) return;
-    if (recalling && !recalled) dropRecall(el);
+    if (applying) return;
+    if (recalling && !matchesRecall(el)) dropRecall(el);
 }
 
 function onSubmit(e: Event) {
