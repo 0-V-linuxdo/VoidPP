@@ -15,7 +15,7 @@ import { ChatPageStore, MessageStore, ResponseStore } from "@turbopack/common/st
 import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
-import { debounce } from "@utils/misc";
+import { debounce, pageWindow } from "@utils/misc";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 
 const logger = new Logger("BetterNavigator");
@@ -79,6 +79,7 @@ const HYDRATE_MS = 2400;
 const HYDRATE_STEP = 80;
 const LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
 const LIVE_PHASE = new Set(["sending", "streaming"]);
+const JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
 
 const settings = definePluginSettings({
     showAssistant: {
@@ -783,6 +784,22 @@ function jump(item: NavItem, index: number) {
     window.setTimeout(() => flash(el), 180);
 }
 
+function jumpById(messageId: string): boolean {
+    const index = lastNav.findIndex(item => item.id === messageId);
+    if (index < 0) return false;
+    jump(lastNav[index], index);
+    return true;
+}
+
+function publishJump() {
+    (pageWindow as unknown as Record<symbol, unknown>)[JUMP_SYM] = jumpById;
+}
+
+function unpublishJump() {
+    const host = pageWindow as unknown as Record<symbol, unknown>;
+    if (host[JUMP_SYM] === jumpById) delete host[JUMP_SYM];
+}
+
 function stepItem(dir: -1 | 1): boolean {
     const next = activeIdx + dir;
     if (next < 0 || next >= lastNav.length) return false;
@@ -1120,6 +1137,7 @@ function menuEl(nav: NavItem[]): HTMLElement {
         btn.type = "button";
         btn.className = cl("item");
         btn.dataset.voidBnI = String(i);
+        if (item.id) btn.dataset.responseId = item.id;
         const emoji = document.createElement("span");
         emoji.className = cl("emoji");
         emoji.textContent = item.role === "user" ? "❓" : "🤖";
@@ -1147,6 +1165,7 @@ function tickRail(nav: NavItem[]): HTMLElement {
         tick.type = "button";
         tick.className = cl("tick", item.role === "user" ? "tick-user" : "tick-asst", { "tick-live": item.live });
         tick.dataset.voidBnI = String(i);
+        if (item.id) tick.dataset.responseId = item.id;
         tick.setAttribute("aria-label", `Go to message ${i + 1} of ${nav.length}`);
         tick.addEventListener("click", e => {
             e.preventDefault();
@@ -1378,6 +1397,7 @@ function start() {
     ac = new AbortController();
     const { signal } = ac;
     lastPath = chatPath();
+    publishJump();
     syncHideTip();
     paint();
     bindWatchers();
@@ -1394,6 +1414,7 @@ function start() {
 }
 
 function stop() {
+    unpublishJump();
     ac?.abort();
     ac = null;
     paneMo?.disconnect();
