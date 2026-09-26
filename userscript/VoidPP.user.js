@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.9
+// @version      20260926.10
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.9] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.10] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8202431"}`
-    }, `(${"8202431"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"07392ab"}`
+    }, `(${"07392ab"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21052,12 +21052,14 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   }
   function sourceOfRow(row) {
     if (!row)
-      return { parentId: "", quoted: "" };
+      return { parentId: "", quoted: "", ids: [] };
     const meta = row.metadata;
     const src = meta && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource : undefined;
+    const ids = [...new Set([bareUuid(src?.sourceResponseId), bareUuid(row.parentResponseId)].filter(Boolean))];
     return {
-      parentId: bareUuid(row.parentResponseId) || bareUuid(src?.sourceResponseId),
-      quoted: String(row.parentQuotedText || "")
+      parentId: ids[0] || "",
+      quoted: String(row.parentQuotedText || ""),
+      ids
     };
   }
   function sourceFromFiber(el) {
@@ -21067,15 +21069,15 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     while (cur && d < 32) {
       const p = cur.memoizedProps;
       if (p) {
-        const response = p.response;
+        const { response } = p;
         if (response && typeof response === "object") {
           const rec = response;
           const meta = rec.metadata && typeof rec.metadata === "object" ? rec.metadata : undefined;
           const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource : undefined;
-          const parentId = bareUuid(rec.parentResponseId) || bareUuid(src?.sourceResponseId);
+          const ids = [...new Set([bareUuid(src?.sourceResponseId), bareUuid(rec.parentResponseId)].filter(Boolean))];
           const fromRow = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
-          if (parentId || fromRow)
-            return { parentId, quoted: fromRow || quoted };
+          if (ids.length || fromRow)
+            return { parentId: ids[0] || "", quoted: fromRow || quoted, ids };
         }
         if (!quoted && typeof p.quotedText === "string" && p.quotedText)
           quoted = p.quotedText;
@@ -21083,7 +21085,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       cur = cur.return;
       d++;
     }
-    return { parentId: "", quoted };
+    return { parentId: "", quoted, ids: [] };
   }
   function propsId(el) {
     let cur = getFiber(el);
@@ -21193,18 +21195,34 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   }
   function storeNeedle(needle) {
-    const n = norm2(needle);
-    if (n.length < 2)
+    const n = prefixOf(needle);
+    const clip = n.slice(0, Math.min(n.length, 48));
+    if (clip.length < 2)
       return null;
+    const cid = conversationId2();
     try {
-      const cid = conversationId2();
+      const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
+      if (nodes) {
+        const list = Object.values(nodes);
+        for (let i = list.length - 1;i >= 0; i--) {
+          const node = list[i];
+          if (!node?.id)
+            continue;
+          if (norm2(String(node.content?.message || "")).includes(clip))
+            return { id: node.id, cid };
+        }
+      }
+    } catch (e) {
+      logger29.debug("message search failed", e);
+    }
+    try {
       const r = ResponseStore.useResponseStore.getState();
       const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
       for (let i = rows.length - 1;i >= 0; i--) {
         const row = rows[i];
         if (!row?.responseId)
           continue;
-        if (norm2(String(row.message || "")).includes(n))
+        if (norm2(String(row.message || "")).includes(clip))
           return { id: row.responseId, cid };
       }
     } catch (e) {
@@ -21505,9 +21523,8 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       const child = hostUuid(jump);
       const fiber = sourceFromFiber(jump);
       const row = sourceOfRow(child ? storeById(child) : undefined);
-      const parent = fiber.parentId || row.parentId;
       const needle = row.quoted || fiber.quoted || prefixOf(jump.textContent || "");
-      return { needle, ids: parent ? [parent] : [] };
+      return { needle, ids: [...new Set([...fiber.ids, ...row.ids])] };
     }
     const live = quotedText2();
     if (origin) {
@@ -21526,12 +21543,14 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     return !!el && !!host && (el === host || host.contains(el));
   }
   function pickMessage(ids, needle, skip) {
+    const n = prefixOf(needle);
     for (const id of ids) {
       const el = messageById(bareUuid(id) || id);
-      if (el && !insideHost(el, skip ?? null))
+      if (!el || insideHost(el, skip ?? null))
+        continue;
+      if (n && nodeHasNeedle(el, n))
         return el;
     }
-    const n = prefixOf(needle);
     if (!n)
       return null;
     const rows = messageEls();
@@ -21550,11 +21569,10 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     const skip = officialJumpButton(origin) ? hostOf(origin) : null;
     let el = pickMessage(ids, needle, skip);
-    if (!el || !findHit(el, needle) && !nodeHasNeedle(el, needle)) {
+    if (!el) {
       const hit = storeNeedle(needle);
-      if (hit) {
-        if (hit.id && hit.id !== hostUuid(skip))
-          ids.unshift(hit.id);
+      if (hit?.id && hit.id !== hostUuid(skip)) {
+        ids.unshift(hit.id);
         await hydrate2(hit.cid || conversationId2());
         if (mine !== gen)
           return;
@@ -21620,7 +21638,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       const nodes = MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes;
       if (nodes) {
         for (const node of Object.values(nodes)) {
-          const content = node.content;
+          const { content } = node;
           if (!content)
             continue;
           const hit = quoteSource(content, node.parentId ?? "");
@@ -21778,7 +21796,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     const mine = ++gen;
     if (cite.live) {
-      const chip = document.querySelector(`.void-qs-chip`) ?? document.querySelector(`${QUERY} ${JUMP_BTN}`);
+      const chip = document.querySelector(".void-qs-chip") ?? document.querySelector(`${QUERY} ${JUMP_BTN}`);
       if (!chip)
         return;
       highlightRange(null, chip);
@@ -22449,8 +22467,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     lastPopup = undefined;
     removeFallback();
     lastRestoreAt = 0;
+  }
+  function clearQuoteStore() {
     try {
       const chat = ChatPageStore.useChatPageStore.getState();
+      if (!chat.quotedText && chat.quotePopupData == null)
+        return;
       applying2 = true;
       try {
         if (chat.quotedText)
@@ -22546,9 +22568,15 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     return function voidQuoteStickySend(...args) {
       const key = ownKey();
       const had = saved.get(key)?.text || lastText || readText().text;
-      if (had && isQuoteSend(args, had))
+      const sending = !!(had && isQuoteSend(args, had));
+      if (sending)
         markConsumed(key);
-      return orig.apply(this, args);
+      try {
+        return orig.apply(this, args);
+      } finally {
+        if (sending)
+          clearQuoteStore();
+      }
     };
   }
   function scheduleRestore() {
@@ -30438,57 +30466,57 @@ div:has(> #grok-bot-nav-button) {
   });
 
   // virtual:~plugins
-  noTelemetry_default.updatedAt = 1790408586000;
-  settings_default.updatedAt = 1790408586000;
-  fixChrome_default.updatedAt = 1790408586000;
+  noTelemetry_default.updatedAt = 1787870966000;
+  settings_default.updatedAt = 1790265417000;
+  fixChrome_default.updatedAt = 1787789817000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  contextMenu_default.updatedAt = 1790408586000;
-  chatBarButtons_default.updatedAt = 1790408586000;
-  betterFiles_default.updatedAt = 1790408586000;
-  usageDisplay_default.updatedAt = 1790408586000;
-  betterQueue_default.updatedAt = 1790408586000;
-  settingsFlyout_default.updatedAt = 1790408586000;
-  userQuotes_default.updatedAt = 1790408586000;
-  chatStateFavicons_default.updatedAt = 1790408586000;
-  pluginsFlyout_default.updatedAt = 1790408586000;
-  recentTopics_default.updatedAt = 1790408586000;
+  contextMenu_default.updatedAt = 1781702684000;
+  chatBarButtons_default.updatedAt = 1790097681000;
+  betterFiles_default.updatedAt = 1789246749000;
+  usageDisplay_default.updatedAt = 1789172854000;
+  betterQueue_default.updatedAt = 1790246920000;
+  settingsFlyout_default.updatedAt = 1788095208000;
+  userQuotes_default.updatedAt = 1790169322000;
+  chatStateFavicons_default.updatedAt = 1789921507000;
+  pluginsFlyout_default.updatedAt = 1788051053000;
+  recentTopics_default.updatedAt = 1789881195000;
   betterNavigator_default.updatedAt = 1790421526000;
-  responseNotification_default.updatedAt = 1790408586000;
-  noSidebarIdentity_default.updatedAt = 1790408586000;
-  betterModeSelect_default.updatedAt = 1790408586000;
-  starry_default.updatedAt = 1790408586000;
-  messageTimestamps_default.updatedAt = 1790408586000;
-  streamerMode_default.updatedAt = 1790408586000;
-  consoleJanitor_default.updatedAt = 1790408586000;
-  betterCanvas_default.updatedAt = 1790408586000;
-  noDictation_default.updatedAt = 1790408586000;
-  betterQuotes_default.updatedAt = 1790408586000;
-  cloneChats_default.updatedAt = 1790408586000;
-  composerOpacity_default.updatedAt = 1790408586000;
-  incognito_default.updatedAt = 1790408586000;
-  chatListStatus_default.updatedAt = 1790408586000;
-  betterLinks_default.updatedAt = 1790408586000;
-  noShareLink_default.updatedAt = 1790408586000;
-  experiments_default.updatedAt = 1790408586000;
-  downloadTTS_default.updatedAt = 1790408586000;
-  completeToast_default.updatedAt = 1790408586000;
-  noBuildStarters_default.updatedAt = 1790408586000;
-  betterImagine_default.updatedAt = 1790408586000;
-  cleaner_default.updatedAt = 1790408586000;
-  widerChat_default.updatedAt = 1790408586000;
-  betterAvatarPlugins_default.updatedAt = 1790408586000;
-  oneko_default.updatedAt = 1790408586000;
-  customGreeting_default.updatedAt = 1790408586000;
-  stableComposer_default.updatedAt = 1790408586000;
-  exportChat_default.updatedAt = 1790408586000;
-  customInstructions_default.updatedAt = 1790408586000;
-  betterSidebar_default.updatedAt = 1790408586000;
-  autoRetry_default.updatedAt = 1790408586000;
-  customSidebarIdentity_default.updatedAt = 1790408586000;
+  responseNotification_default.updatedAt = 1790093417000;
+  noSidebarIdentity_default.updatedAt = 1788577403000;
+  betterModeSelect_default.updatedAt = 1790161256000;
+  starry_default.updatedAt = 1787870966000;
+  messageTimestamps_default.updatedAt = 1789881463000;
+  streamerMode_default.updatedAt = 1787870966000;
+  consoleJanitor_default.updatedAt = 1787789817000;
+  betterCanvas_default.updatedAt = 1790360947000;
+  noDictation_default.updatedAt = 1788037550000;
+  betterQuotes_default.updatedAt = 1790430813000;
+  cloneChats_default.updatedAt = 1787870966000;
+  composerOpacity_default.updatedAt = 1790097681000;
+  incognito_default.updatedAt = 1787870966000;
+  chatListStatus_default.updatedAt = 1789906500000;
+  betterLinks_default.updatedAt = 1787870966000;
+  noShareLink_default.updatedAt = 1787789817000;
+  experiments_default.updatedAt = 1788047438000;
+  downloadTTS_default.updatedAt = 1787870966000;
+  completeToast_default.updatedAt = 1790093417000;
+  noBuildStarters_default.updatedAt = 1789894247000;
+  betterImagine_default.updatedAt = 1790093417000;
+  cleaner_default.updatedAt = 1790093417000;
+  widerChat_default.updatedAt = 1787870966000;
+  betterAvatarPlugins_default.updatedAt = 1790162678000;
+  oneko_default.updatedAt = 1787870966000;
+  customGreeting_default.updatedAt = 1790164294000;
+  stableComposer_default.updatedAt = 1789125421000;
+  exportChat_default.updatedAt = 1787870966000;
+  customInstructions_default.updatedAt = 1789898438000;
+  betterSidebar_default.updatedAt = 1789807577000;
+  autoRetry_default.updatedAt = 1789906500000;
+  customSidebarIdentity_default.updatedAt = 1789918488000;
   inputHistory_default.updatedAt = 1790418846000;
-  noGrokBot_default.updatedAt = 1790408586000;
-  autoCollapse_default.updatedAt = 1790408586000;
+  noGrokBot_default.updatedAt = 1787789817000;
+  autoCollapse_default.updatedAt = 1787789817000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [contextMenu_default.name]: contextMenu_default, [chatBarButtons_default.name]: chatBarButtons_default, [betterFiles_default.name]: betterFiles_default, [usageDisplay_default.name]: usageDisplay_default, [betterQueue_default.name]: betterQueue_default, [settingsFlyout_default.name]: settingsFlyout_default, [userQuotes_default.name]: userQuotes_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [betterNavigator_default.name]: betterNavigator_default, [responseNotification_default.name]: responseNotification_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [betterModeSelect_default.name]: betterModeSelect_default, [starry_default.name]: starry_default, [messageTimestamps_default.name]: messageTimestamps_default, [streamerMode_default.name]: streamerMode_default, [consoleJanitor_default.name]: consoleJanitor_default, [betterCanvas_default.name]: betterCanvas_default, [noDictation_default.name]: noDictation_default, [betterQuotes_default.name]: betterQuotes_default, [cloneChats_default.name]: cloneChats_default, [composerOpacity_default.name]: composerOpacity_default, [incognito_default.name]: incognito_default, [chatListStatus_default.name]: chatListStatus_default, [betterLinks_default.name]: betterLinks_default, [noShareLink_default.name]: noShareLink_default, [experiments_default.name]: experiments_default, [downloadTTS_default.name]: downloadTTS_default, [completeToast_default.name]: completeToast_default, [noBuildStarters_default.name]: noBuildStarters_default, [betterImagine_default.name]: betterImagine_default, [cleaner_default.name]: cleaner_default, [widerChat_default.name]: widerChat_default, [betterAvatarPlugins_default.name]: betterAvatarPlugins_default, [oneko_default.name]: oneko_default, [customGreeting_default.name]: customGreeting_default, [stableComposer_default.name]: stableComposer_default, [exportChat_default.name]: exportChat_default, [customInstructions_default.name]: customInstructions_default, [betterSidebar_default.name]: betterSidebar_default, [autoRetry_default.name]: autoRetry_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [inputHistory_default.name]: inputHistory_default, [noGrokBot_default.name]: noGrokBot_default, [autoCollapse_default.name]: autoCollapse_default };
   // voidpp-css:/tmp/VoidPP/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {

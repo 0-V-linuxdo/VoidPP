@@ -124,40 +124,42 @@ function officialJumpButton(el: Element | null): HTMLElement | null {
     return btn instanceof HTMLElement ? btn : null;
 }
 
-function sourceOfRow(row: GrokResponse | undefined): { parentId: string; quoted: string } {
-    if (!row) return { parentId: "", quoted: "" };
+function sourceOfRow(row: GrokResponse | undefined): { parentId: string; quoted: string; ids: string[] } {
+    if (!row) return { parentId: "", quoted: "", ids: [] };
     const meta = row.metadata;
     const src = meta && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource as Record<string, unknown> : undefined;
+    const ids = [...new Set([bareUuid(src?.sourceResponseId), bareUuid(row.parentResponseId)].filter(Boolean))];
     return {
-        parentId: bareUuid(row.parentResponseId) || bareUuid(src?.sourceResponseId),
+        parentId: ids[0] || "",
         quoted: String(row.parentQuotedText || ""),
+        ids,
     };
 }
 
-function sourceFromFiber(el: Element): { parentId: string; quoted: string } {
+function sourceFromFiber(el: Element): { parentId: string; quoted: string; ids: string[] } {
     let cur = getFiber(el);
     let d = 0;
     let quoted = "";
     while (cur && d < 32) {
         const p = cur.memoizedProps;
         if (p) {
-            const response = p.response;
+            const {response} = p;
             if (response && typeof response === "object") {
                 const rec = response as Record<string, unknown>;
                 const meta = rec.metadata && typeof rec.metadata === "object" ? rec.metadata as Record<string, unknown> : undefined;
                 const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object"
                     ? meta.parentQuoteSource as Record<string, unknown>
                     : undefined;
-                const parentId = bareUuid(rec.parentResponseId) || bareUuid(src?.sourceResponseId);
+                const ids = [...new Set([bareUuid(src?.sourceResponseId), bareUuid(rec.parentResponseId)].filter(Boolean))];
                 const fromRow = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
-                if (parentId || fromRow) return { parentId, quoted: fromRow || quoted };
+                if (ids.length || fromRow) return { parentId: ids[0] || "", quoted: fromRow || quoted, ids };
             }
             if (!quoted && typeof p.quotedText === "string" && p.quotedText) quoted = p.quotedText;
         }
         cur = cur.return;
         d++;
     }
-    return { parentId: "", quoted };
+    return { parentId: "", quoted, ids: [] };
 }
 
 function propsId(el: Element): string {
@@ -258,16 +260,30 @@ function storeById(id: string): GrokResponse | undefined {
 }
 
 function storeNeedle(needle: string): { id: string; cid: string } | null {
-    const n = norm(needle);
-    if (n.length < 2) return null;
+    const n = prefixOf(needle);
+    const clip = n.slice(0, Math.min(n.length, 48));
+    if (clip.length < 2) return null;
+    const cid = conversationId();
     try {
-        const cid = conversationId();
+        const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
+        if (nodes) {
+            const list = Object.values(nodes);
+            for (let i = list.length - 1; i >= 0; i--) {
+                const node = list[i];
+                if (!node?.id) continue;
+                if (norm(String(node.content?.message || "")).includes(clip)) return { id: node.id, cid };
+            }
+        }
+    } catch (e) {
+        logger.debug("message search failed", e);
+    }
+    try {
         const r = ResponseStore.useResponseStore.getState();
         const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
         for (let i = rows.length - 1; i >= 0; i--) {
             const row = rows[i];
             if (!row?.responseId) continue;
-            if (norm(String(row.message || "")).includes(n)) return { id: row.responseId, cid };
+            if (norm(String(row.message || "")).includes(clip)) return { id: row.responseId, cid };
         }
     } catch (e) {
         logger.debug("store search failed", e);
@@ -549,9 +565,8 @@ function resolveNeedle(origin: HTMLElement | null): { needle: string; ids: strin
         const child = hostUuid(jump);
         const fiber = sourceFromFiber(jump);
         const row = sourceOfRow(child ? storeById(child) : undefined);
-        const parent = fiber.parentId || row.parentId;
         const needle = row.quoted || fiber.quoted || prefixOf(jump.textContent || "");
-        return { needle, ids: parent ? [parent] : [] };
+        return { needle, ids: [...new Set([...fiber.ids, ...row.ids])] };
     }
     const live = quotedText();
     if (origin) {
@@ -572,11 +587,12 @@ function insideHost(el: HTMLElement | null, host: HTMLElement | null): boolean {
 }
 
 function pickMessage(ids: string[], needle: string, skip?: HTMLElement | null): HTMLElement | null {
+    const n = prefixOf(needle);
     for (const id of ids) {
         const el = messageById(bareUuid(id) || id);
-        if (el && !insideHost(el, skip ?? null)) return el;
+        if (!el || insideHost(el, skip ?? null)) continue;
+        if (n && nodeHasNeedle(el, n)) return el;
     }
-    const n = prefixOf(needle);
     if (!n) return null;
     const rows = messageEls();
     for (let i = rows.length - 1; i >= 0; i--) {
@@ -592,10 +608,10 @@ async function jump(origin: HTMLElement | null) {
     if (!prefixOf(needle)) return;
     const skip = officialJumpButton(origin) ? hostOf(origin) : null;
     let el = pickMessage(ids, needle, skip);
-    if (!el || (!findHit(el, needle) && !nodeHasNeedle(el, needle))) {
+    if (!el) {
         const hit = storeNeedle(needle);
-        if (hit) {
-            if (hit.id && hit.id !== hostUuid(skip)) ids.unshift(hit.id);
+        if (hit?.id && hit.id !== hostUuid(skip)) {
+            ids.unshift(hit.id);
             await hydrate(hit.cid || conversationId());
             if (mine !== gen) return;
             for (let i = 0; i < WAIT_N; i++) {
@@ -657,7 +673,7 @@ function citesBySource(): Map<string, Cite[]> {
         const nodes = MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes;
         if (nodes) {
             for (const node of Object.values(nodes)) {
-                const content = node.content;
+                const {content} = node;
                 if (!content) continue;
                 const hit = quoteSource(content as unknown as Record<string, unknown>, node.parentId ?? "");
                 if (!hit.source || hit.source === node.id) continue;
@@ -805,7 +821,7 @@ async function jumpToCite(cite: Cite | undefined) {
     if (!cite) return;
     const mine = ++gen;
     if (cite.live) {
-        const chip = document.querySelector<HTMLElement>(`.void-qs-chip`)
+        const chip = document.querySelector<HTMLElement>(".void-qs-chip")
             ?? document.querySelector<HTMLElement>(`${QUERY} ${JUMP_BTN}`);
         if (!chip) return;
         highlightRange(null, chip);

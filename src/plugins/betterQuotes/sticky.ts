@@ -569,8 +569,12 @@ function markConsumed(key = ownKey()) {
     lastPopup = undefined;
     removeFallback();
     lastRestoreAt = 0;
+}
+
+function clearQuoteStore() {
     try {
         const chat = ChatPageStore.useChatPageStore.getState();
+        if (!chat.quotedText && chat.quotePopupData == null) return;
         applying = true;
         try {
             if (chat.quotedText) chat.setQuotedText("");
@@ -656,8 +660,13 @@ function makeSendWrapper(orig: SendFn): SendFn {
     return function voidQuoteStickySend(this: unknown, ...args: unknown[]) {
         const key = ownKey();
         const had = saved.get(key)?.text || lastText || readText().text;
-        if (had && isQuoteSend(args, had)) markConsumed(key);
-        return orig.apply(this, args);
+        const sending = !!(had && isQuoteSend(args, had));
+        if (sending) markConsumed(key);
+        try {
+            return orig.apply(this, args);
+        } finally {
+            if (sending) clearQuoteStore();
+        }
     };
 }
 
