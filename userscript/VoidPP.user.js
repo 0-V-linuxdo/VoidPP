@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp-beta
-// @version      20260925.13
+// @version      20260926.24
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Beta
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.13] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.24] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"df160d11"}`
-    }, `(${"df160d11"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.24] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"14da2b2"}`
+    }, `(${"14da2b2"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7859,7 +7859,7 @@ button .void-info-hint {
         find: "pressed_cmd_settings",
         replacement: [
           {
-            match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-management"===\i\.group\)\)/,
+            match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
             replace: "[...$&,...$self._tabEntries()]"
           },
           {
@@ -20606,6 +20606,100 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     width: 0.875rem;
     height: 0.875rem;
 }
+
+[data-void-qj-preview],
+[data-void-qj-preview] * {
+    cursor: pointer;
+}
+
+.void-qj-back {
+    position: fixed;
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: hsl(var(--surface-l2));
+    color: hsl(var(--fg-secondary));
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px hsl(var(--fg-secondary));
+}
+
+.void-qj-back:is(:hover, :focus-visible) {
+    background: hsl(var(--button-ghost-hover));
+    color: hsl(var(--fg-primary));
+}
+
+.void-qj-back:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px hsl(var(--fg-accent));
+}
+
+.void-qj-mark,
+.void-qj-mark svg {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+    pointer-events: none;
+}
+
+.void-qj-count {
+    position: absolute;
+    top: -0.1875rem;
+    right: -0.1875rem;
+    min-width: 0.75rem;
+    height: 0.75rem;
+    padding: 0 0.125rem;
+    border-radius: 999px;
+    background: hsl(var(--fg-primary));
+    color: hsl(var(--surface-l1));
+    font-size: 0.5625rem;
+    font-weight: 650;
+    line-height: 0.75rem;
+    text-align: center;
+    pointer-events: none;
+}
+
+.void-qj-menu {
+    position: fixed;
+    z-index: 31;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    width: max-content;
+    max-width: 16rem;
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    background: hsl(var(--surface-l2));
+    color: hsl(var(--fg-primary));
+    box-shadow:
+        inset 0 0 0 1px hsl(var(--border-l2)),
+        0 0.5rem 1.25rem rgb(0 0 0 / 24%);
+}
+
+.void-qj-item {
+    max-width: 16rem;
+    padding: 0.35rem 0.5rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: inherit;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: start;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    cursor: pointer;
+}
+
+.void-qj-item:is(:hover, :focus-visible) {
+    background: hsl(var(--button-ghost-hover));
+    color: hsl(var(--fg-primary));
+}
 `);
 
   // src/plugins/betterQuotes/shared.ts
@@ -20903,15 +20997,25 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var JUMP_BTN = "button[aria-label='Jump to quoted message']";
   var SCROLLER2 = "[data-testid='chat-transcript-scroller']";
   var FLASH_MS2 = 1800;
+  var QUOTE_PATHS = [
+    "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+    "M8 12a2 2 0 0 0 2-2V8H8",
+    "M14 12a2 2 0 0 0 2-2V8h-2"
+  ];
   var WAIT_MS = 50;
   var WAIT_N = 24;
   var ALIGNED_PX = 8;
-  var MSG_OFFSET = 72;
+  var CLUSTER_GAP = 240;
   var abort2 = null;
   var gen = 0;
   var flashTimer2 = 0;
   var flashing2 = null;
   var jumpArmed = false;
+  var backRaf = 0;
+  var backObserver = null;
+  var painting = false;
+  var openSrc = "";
+  var menuCites = [];
   function norm2(s) {
     return s.replaceAll(/\s+/g, " ").trim();
   }
@@ -20993,38 +21097,78 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   }
   function sourceOfRow(row) {
     if (!row)
-      return { parentId: "", quoted: "" };
+      return { parentId: "", quoted: "", ids: [], hard: "", parent: "" };
     const meta = row.metadata;
     const src = meta && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource : undefined;
+    const hard = bareUuid(src?.sourceResponseId);
+    const parent = bareUuid(row.parentResponseId);
+    const ids = [...new Set([hard, parent].filter(Boolean))];
     return {
-      parentId: bareUuid(row.parentResponseId) || bareUuid(src?.sourceResponseId),
-      quoted: String(row.parentQuotedText || "")
+      parentId: hard || parent || "",
+      quoted: String(row.parentQuotedText || ""),
+      ids,
+      hard,
+      parent
     };
   }
   function sourceFromFiber(el) {
+    const child = hostUuid(el);
+    const empty = { parentId: "", quoted: "", ids: [], hard: "", parent: "" };
     let cur = getFiber(el);
     let d = 0;
     let quoted = "";
     while (cur && d < 32) {
       const p = cur.memoizedProps;
       if (p) {
-        const response = p.response;
+        const direct = propSourceId(p, child);
+        const { response } = p;
         if (response && typeof response === "object") {
           const rec = response;
           const meta = rec.metadata && typeof rec.metadata === "object" ? rec.metadata : undefined;
           const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource : undefined;
-          const parentId = bareUuid(rec.parentResponseId) || bareUuid(src?.sourceResponseId);
+          const hard = [direct, bareUuid(src?.sourceResponseId)].find((id) => id && id !== child) || "";
+          const parentRaw = bareUuid(rec.parentResponseId);
+          const parent = parentRaw && parentRaw !== child ? parentRaw : "";
+          const ids = [...new Set([hard, parent].filter(Boolean))];
           const fromRow = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
-          if (parentId || fromRow)
-            return { parentId, quoted: fromRow || quoted };
+          if (ids.length || fromRow)
+            return { parentId: hard || parent, quoted: fromRow || quoted, ids, hard, parent };
         }
+        if (direct)
+          return { parentId: direct, quoted, ids: [direct], hard: direct, parent: "" };
         if (!quoted && typeof p.quotedText === "string" && p.quotedText)
           quoted = p.quotedText;
       }
       cur = cur.return;
       d++;
     }
-    return { parentId: "", quoted };
+    return { ...empty, quoted };
+  }
+  function propSourceId(p, child) {
+    const take = (value) => {
+      if (!value || typeof value !== "object")
+        return "";
+      const rec = value;
+      const id = bareUuid(rec.sourceResponseId);
+      if (id && id !== child)
+        return id;
+      const nested = rec.parentQuoteSource;
+      if (nested && typeof nested === "object") {
+        const inner = bareUuid(nested.sourceResponseId);
+        if (inner && inner !== child)
+          return inner;
+      }
+      return "";
+    };
+    const own = bareUuid(p.sourceResponseId);
+    if (own && own !== child)
+      return own;
+    for (const value of Object.values(p)) {
+      const id = take(value);
+      if (id)
+        return id;
+    }
+    return "";
   }
   function propsId(el) {
     let cur = getFiber(el);
@@ -21133,36 +21277,154 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     }
   }
-  function storeNeedle(needle) {
-    const n = norm2(needle);
-    if (n.length < 2)
-      return null;
+  function hostClip(needle) {
+    const raw = prefixOf(needle).slice(0, 48);
+    const loose = prefixOf(looseNorm(needle)).slice(0, 48);
+    if (raw.length >= 8)
+      return raw;
+    return loose;
+  }
+  function hostScore(text, needle) {
+    const clip = hostClip(needle);
+    if (clip.length < 8)
+      return 0;
+    const n = norm2(text);
+    const loose = looseNorm(text);
+    if (!n.includes(clip) && !loose.includes(clip))
+      return 0;
+    return clip.length / Math.max(n.length, 1);
+  }
+  function coverScore(text, needle) {
+    const direct = hostScore(text, needle);
+    if (direct > 0)
+      return direct;
+    const hit = textHasClip(text, clipsOf(needle));
+    if (!hit)
+      return 0;
+    return hit.length / Math.max(norm2(text).length, 1);
+  }
+  function nodeText(node, id = "") {
+    const rec = node?.content;
+    let mapped = "";
     try {
-      const cid = conversationId2();
-      const r = ResponseStore.useResponseStore.getState();
-      const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
-      for (let i = rows.length - 1;i >= 0; i--) {
-        const row = rows[i];
-        if (!row?.responseId)
-          continue;
-        if (norm2(String(row.message || "")).includes(n))
-          return { id: row.responseId, cid };
+      if (node)
+        mapped = String(MessageStore.nodeToResponse?.(conversationId2(), node)?.message || "");
+    } catch {}
+    return String(rec?.message || rec?.query || mapped || storeById(id || node?.id || "")?.message || "");
+  }
+  function blobScore(el, needle) {
+    const vis = coverScore(collectParts(el, false).blob, needle);
+    if (vis > 0)
+      return vis;
+    return coverScore(collectParts(el, true).blob, needle);
+  }
+  function quotedField(value) {
+    if (!value || typeof value !== "object")
+      return "";
+    const rec = value;
+    if (typeof rec.parentQuotedText === "string")
+      return rec.parentQuotedText;
+    const content = rec.content;
+    if (content && typeof content === "object") {
+      const inner = content.parentQuotedText;
+      if (typeof inner === "string")
+        return inner;
+    }
+    return "";
+  }
+  function passageId(needle, skipId = "", ban = "") {
+    if (hostClip(needle).length < 8 && !clipsOf(needle).length)
+      return null;
+    const cid = conversationId2();
+    const skip = new Set([bareUuid(skipId), bareUuid(ban)].filter(Boolean));
+    let childAt = 0;
+    try {
+      const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
+      childAt = Number(nodes?.[bareUuid(skipId)]?.createdAt) || 0;
+    } catch {}
+    let best = null;
+    const consider = (id, text, quoted, at) => {
+      if (!id || skip.has(id))
+        return;
+      if (childAt && at && at > childAt)
+        return;
+      if (coverScore(quoted, needle) > 0)
+        return;
+      const score = coverScore(text, needle);
+      if (score <= 0)
+        return;
+      if (!best || score > best.score || score === best.score && at < best.at)
+        best = { id, score, at };
+    };
+    try {
+      const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
+      if (nodes) {
+        for (const node of Object.values(nodes)) {
+          if (!node?.id)
+            continue;
+          consider(node.id, nodeText(node, node.id), quotedField(node), Number(node.createdAt) || 0);
+        }
       }
     } catch (e) {
-      logger29.debug("store search failed", e);
+      logger29.debug("passage search failed", e);
     }
-    return null;
+    try {
+      const r = ResponseStore.useResponseStore.getState();
+      const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
+      for (const row of rows) {
+        if (!row?.responseId)
+          continue;
+        consider(row.responseId, String(row.message || row.query || ""), quotedField(row), Number(row.createTime) || 0);
+      }
+    } catch (e) {
+      logger29.debug("passage rows failed", e);
+    }
+    return best ? { id: best.id, cid } : null;
   }
   function prefixOf(text) {
     return norm2(text).replace(/[.…]+$/u, "");
   }
+  function looseNorm(s) {
+    return norm2(s.replaceAll(/(?:^|\s)(?:\d+[.)、]|[-*+•])\s+/g, " "));
+  }
+  function clipsOf(needle) {
+    const out = [];
+    const add = (s) => {
+      const t = prefixOf(s);
+      const clip = t.slice(0, Math.min(t.length, 48));
+      if (clip.length >= 8 && !out.includes(clip))
+        out.push(clip);
+    };
+    add(needle);
+    for (const line of needle.split(/\r?\n/))
+      add(line.replace(/^\s*(?:\d+[.)、]|[-*+•])\s+/, ""));
+    add(looseNorm(needle));
+    if (!out.length) {
+      const t = prefixOf(looseNorm(needle) || needle);
+      if (t.length >= 2)
+        out.push(t.slice(0, Math.min(t.length, 48)));
+    }
+    return out;
+  }
+  function textHasClip(text, clips) {
+    const n = norm2(text);
+    const loose = looseNorm(text);
+    let hit = "";
+    for (const clip of clips) {
+      if ((n.includes(clip) || loose.includes(clip)) && clip.length > hit.length)
+        hit = clip;
+    }
+    return hit;
+  }
   function nodeHasNeedle(el, needle) {
-    const n = prefixOf(needle);
-    if (n.length < 2)
+    const clips = clipsOf(needle);
+    if (!clips.length)
       return false;
-    const text = norm2(el.textContent || "");
-    const clip = n.slice(0, Math.min(n.length, 48));
-    return text.includes(clip) || clip.includes(text) && text.length >= 8;
+    const body = el instanceof HTMLElement ? collectParts(el, false).blob : el.textContent || "";
+    if (textHasClip(body, clips))
+      return true;
+    const compact = norm2(el.textContent || "");
+    return compact.length >= 8 && compact.length < 48 && clips.some((c) => c.includes(compact));
   }
   function isEditor(el) {
     return !!el.closest(EDITOR);
@@ -21225,10 +21487,61 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     return null;
   }
+  function hostQuote(id, host) {
+    const row = sourceOfRow(id ? storeById(id) : undefined);
+    if (row.quoted || row.ids.length)
+      return row;
+    if (host) {
+      const fiber = sourceFromFiber(host);
+      if (fiber.quoted || fiber.ids.length)
+        return fiber;
+    }
+    try {
+      const cid = conversationId2();
+      const node = cid && id ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id] : undefined;
+      const mapped = node ? MessageStore.nodeToResponse?.(cid, node) : undefined;
+      const fromNode = sourceOfRow(mapped);
+      if (fromNode.quoted || fromNode.ids.length)
+        return fromNode;
+    } catch {}
+    return row;
+  }
+  function looksLikeQuote(n) {
+    const cls = typeof n.className === "string" ? n.className : "";
+    const h = n.offsetHeight;
+    if (h <= 0 || h > 160)
+      return false;
+    if (/whitespace-pre-wrap/.test(cls) && /text-secondary|text-fg-secondary|bg-surface/.test(cls))
+      return true;
+    return h <= 96 && !!n.querySelector("svg") && /flex/.test(cls) && /items-start|gap-1/.test(cls);
+  }
+  function textIsQuote(text, quote) {
+    if (text.length < 8 || text.length >= 800 || quote.length < 8)
+      return false;
+    return quote.startsWith(text.slice(0, 24)) || text.includes(quote.slice(0, 24)) || quote.includes(text.slice(0, 48));
+  }
+  function quotePreview(el) {
+    if (isEditor(el) || el.closest("a, button, [role='button']"))
+      return null;
+    const host = hostOf(el);
+    if (!host)
+      return null;
+    const quote = norm2(hostQuote(hostUuid(host), host).quoted);
+    let n = el instanceof HTMLElement ? el : el.parentElement;
+    while (n && n !== host) {
+      if (looksLikeQuote(n) && textIsQuote(norm2(n.textContent || ""), quote))
+        return n;
+      n = n.parentElement;
+    }
+    return null;
+  }
   function sentQuote(el) {
     const jump = officialJumpButton(el);
     if (jump)
       return jump;
+    const preview = quotePreview(el);
+    if (preview)
+      return preview;
     const bq = el.closest("[data-testid='user-message'] blockquote");
     if (bq instanceof HTMLElement)
       return bq;
@@ -21242,7 +21555,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     return null;
   }
   function hiddenHost(el, allowThink) {
-    if (el.closest("button, svg, [role='toolbar']"))
+    if (el.closest("button, svg, [role='toolbar'], [data-void-qj-preview]"))
       return true;
     if (!allowThink && el.closest(THINK_SEL2) && !el.closest("summary"))
       return true;
@@ -21275,28 +21588,163 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     return i;
   }
-  function rangeFromParts(parts, blob, clip) {
-    const at = blob.indexOf(clip);
+  function rangeCovering(parts, from, to) {
+    const at = (index) => {
+      for (const part of parts) {
+        const compact = norm2(part.raw);
+        if (!compact)
+          continue;
+        if (index >= part.start && index < part.start + compact.length)
+          return part;
+      }
+      return null;
+    };
+    let startIdx = from;
+    let endIdx = to - 1;
+    while (startIdx < to && !at(startIdx))
+      startIdx++;
+    while (endIdx >= startIdx && !at(endIdx))
+      endIdx--;
+    const a = at(startIdx);
+    const b = at(endIdx);
+    if (!a || !b)
+      return null;
+    try {
+      const range = document.createRange();
+      range.setStart(a.node, Math.min(rawIndexForNorm(a.raw, startIdx - a.start), a.node.length));
+      range.setEnd(b.node, Math.min(rawIndexForNorm(b.raw, endIdx - b.start + 1), b.node.length));
+      return range.collapsed ? null : range;
+    } catch {
+      return null;
+    }
+  }
+  function findLoose(blob, clip, from) {
+    if (from > blob.length)
+      return null;
+    const direct = blob.indexOf(clip, from);
+    if (direct >= 0)
+      return { at: direct, len: clip.length };
+    const want = looseNorm(clip);
+    if (want.length < 2)
+      return null;
+    const mark = /(?:\d+[.)、]|[-*+•]) /y;
+    let loose = "";
+    const map = [];
+    for (let i = from;i < blob.length; ) {
+      mark.lastIndex = i;
+      const hit = mark.exec(blob);
+      if (hit && hit.index === i) {
+        i += hit[0].length;
+        continue;
+      }
+      map.push(i);
+      loose += blob[i];
+      i++;
+    }
+    const at = loose.indexOf(want);
     if (at < 0)
       return null;
-    for (const part of parts) {
-      const compact = norm2(part.raw);
-      if (!compact)
-        continue;
-      const end = part.start + compact.length;
-      if (at >= end)
-        continue;
-      const local = Math.max(0, at - part.start);
-      const rawIdx = rawIndexForNorm(part.raw, local);
-      const take = Math.min(Math.max(2, clip.length), part.raw.length - rawIdx);
-      if (rawIdx < 0 || take < 2)
-        continue;
-      const range = document.createRange();
-      range.setStart(part.node, rawIdx);
-      range.setEnd(part.node, rawIdx + take);
-      return range;
+    const start = map[at];
+    const end = map[at + want.length - 1];
+    if (start == null || end == null)
+      return null;
+    return { at: start, len: end - start + 1 };
+  }
+  function paintLines(needle) {
+    const lines = needle.split(/\r?\n/).map((line) => prefixOf(line.replace(/^\s*(?:\d+[.)、]|[-*+•])\s+/, ""))).filter((line) => line.length >= 2);
+    if (lines.length > 1)
+      return lines;
+    const whole = prefixOf(needle);
+    return whole.length >= 2 ? [whole] : lines;
+  }
+  function flex(s) {
+    return looseNorm(s).replaceAll(/[`"'“”‘’]/g, "").replaceAll(/\s+/g, "");
+  }
+  function blockFits(text, want, lines) {
+    if (text.length < 4)
+      return false;
+    let shardOf = 0;
+    for (const line of lines) {
+      if (line.length > text.length && line.includes(text) && line.length > shardOf)
+        shardOf = line.length;
     }
-    return null;
+    if (shardOf && (text.length < 8 || text.length * 10 < shardOf * 6))
+      return false;
+    for (const line of lines) {
+      if (text === line)
+        return true;
+      if (line.length >= 8 && text.includes(line) && text.length <= line.length + 12)
+        return true;
+    }
+    return want.length >= 8 && text.length >= 8 && want.includes(text) && !shardOf;
+  }
+  function blockRanges(root, needle, allowThink) {
+    const want = flex(needle);
+    const lines = paintLines(needle).map(flex).filter((line) => line.length >= 4);
+    if (want.length < 4 && !lines.length)
+      return [];
+    const ranges = [];
+    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote")) {
+      if (!(el instanceof HTMLElement))
+        continue;
+      if (el.closest("button, svg, [role='toolbar'], td, th"))
+        continue;
+      if (el.querySelector("p, li"))
+        continue;
+      if (hiddenHost(el, allowThink))
+        continue;
+      const text = flex(el.textContent || "");
+      if (!blockFits(text, want, lines))
+        continue;
+      try {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        if (!range.collapsed)
+          ranges.push(range);
+      } catch {}
+    }
+    return ranges;
+  }
+  function findRanges(root, needle) {
+    const lines = paintLines(needle);
+    if (!lines.length)
+      return [];
+    for (const allowThink of [false, true]) {
+      const blocks = blockRanges(root, needle, allowThink);
+      if (blocks.length)
+        return blocks;
+      const { parts, blob } = collectParts(root, allowThink);
+      const whole = prefixOf(needle);
+      if (whole.length >= 8) {
+        const hit = findLoose(blob, whole, 0);
+        if (hit) {
+          const span = rangeCovering(parts, hit.at, hit.at + hit.len);
+          if (span)
+            return [span];
+        }
+      }
+      const ranges = [];
+      let cursor = 0;
+      let first = -1;
+      let last = -1;
+      for (const line of lines) {
+        const hit = findLoose(blob, line, cursor) ?? (cursor ? findLoose(blob, line, 0) : null);
+        if (!hit)
+          continue;
+        if (first < 0)
+          first = hit.at;
+        last = hit.at + hit.len;
+        cursor = Math.max(cursor, last);
+      }
+      if (first >= 0 && last > first) {
+        const span = rangeCovering(parts, first, last);
+        if (span)
+          ranges.push(span);
+      }
+      if (ranges.length)
+        return ranges;
+    }
+    return [];
   }
   function collectParts(root, allowThink) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -21316,26 +21764,6 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       blob += norm2(raw);
     }
     return { parts, blob };
-  }
-  function findRange(root, needle) {
-    const n = prefixOf(needle);
-    if (n.length < 2)
-      return null;
-    const clip = n.slice(0, Math.min(n.length, 48));
-    const visible = collectParts(root, false);
-    const hit = rangeFromParts(visible.parts, visible.blob, clip);
-    if (hit)
-      return hit;
-    const all = collectParts(root, true);
-    return rangeFromParts(all.parts, all.blob, clip);
-  }
-  function findHit(root, needle) {
-    const range = findRange(root, needle);
-    if (!range)
-      return null;
-    const node = range.startContainer;
-    const el = node instanceof HTMLElement ? node : node.parentElement;
-    return el?.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, blockquote, span") ?? el;
   }
   function openAncestors(el, needle) {
     for (let n = el;n; n = n.parentElement) {
@@ -21362,11 +21790,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   }
   function highlightRange(range, el) {
     clearHighlight();
+    const list = (Array.isArray(range) ? range : range ? [range] : []).filter((item) => !item.collapsed);
     const HighlightCtor = window.Highlight;
     const { highlights } = CSS;
-    if (range && highlights && HighlightCtor) {
-      highlights.set(HL, new HighlightCtor(range));
-    } else {
+    if (list.length && highlights && HighlightCtor) {
+      highlights.set(HL, new HighlightCtor(...list));
+    } else if (list.length || !el.closest("[id^='response-']")) {
       flashing2 = el;
       el.classList.add(cl22("hit"));
     }
@@ -21389,6 +21818,55 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     const box = range.getBoundingClientRect();
     return box.height > 0 || box.width > 0 ? box : null;
   }
+  function hitOf(range) {
+    if (!range)
+      return null;
+    const node = range.startContainer;
+    const el = node instanceof HTMLElement ? node : node.parentElement;
+    return el?.closest("p, h1, h2, h3, h4, h5, h6, li, pre, blockquote") ?? el;
+  }
+  function scrollAnchor(ranges) {
+    const kept = [];
+    for (const range of ranges) {
+      if (range.collapsed || !range.startContainer.isConnected)
+        continue;
+      const node = range.startContainer;
+      const el = node instanceof Element ? node : node.parentElement;
+      if (el?.closest("td, th, button"))
+        continue;
+      if (flex(range.toString()).length < 8)
+        continue;
+      kept.push(range);
+    }
+    const pool = kept.length ? kept : ranges.filter((range) => !range.collapsed);
+    if (!pool.length)
+      return null;
+    const ordered = pool.toSorted((a, b) => a.compareBoundaryPoints(Range.START_TO_START, b));
+    let best = [];
+    let bestScore = -1;
+    let cur = [];
+    let prev = Number.NEGATIVE_INFINITY;
+    const flush = () => {
+      if (!cur.length)
+        return;
+      const score = cur.reduce((sum, range) => sum + flex(range.toString()).length, 0);
+      if (score > bestScore) {
+        bestScore = score;
+        best = cur;
+      }
+      cur = [];
+    };
+    for (const range of ordered) {
+      const top = lineBox(range)?.top;
+      if (cur.length && top != null && Number.isFinite(prev) && top - prev > CLUSTER_GAP)
+        flush();
+      cur.push(range);
+      if (top != null)
+        prev = top;
+    }
+    flush();
+    return best[0] ?? ordered[0] ?? null;
+  }
   function scrollPane(el) {
     const named = el.closest(SCROLLER2);
     if (named && !named.closest(PANE_SKIP3))
@@ -21396,23 +21874,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     const pane = paneOf(el) ?? chatPane3();
     return pane && pane.contains(el) ? pane : null;
   }
-  function scrollMessageTop(el) {
-    const host = el.closest("[id^='response-']") ?? el;
-    const pane = scrollPane(host);
-    if (!pane)
-      return;
-    const pr = pane.getBoundingClientRect();
-    const er = host.getBoundingClientRect();
-    pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - MSG_OFFSET, behavior: "smooth" });
-  }
   function scrollLineToScreenCenter(range, el) {
     if (!document.body.contains(el))
       return;
-    const box = lineBox(range);
-    if (!box) {
-      scrollMessageTop(el.closest(MSG2) ?? el);
+    const box = range && lineBox(range) || el.getBoundingClientRect();
+    if (!box || box.height < 1)
       return;
-    }
     const pane = scrollPane(el);
     if (!pane)
       return;
@@ -21430,14 +21897,21 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     try {
       await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
-      return;
     } catch (e) {
       logger29.debug("loadResponses failed", e);
+      try {
+        await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
+      } catch (err) {
+        logger29.debug("loadMoreResponses failed", err);
+      }
     }
     try {
-      await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
+      const gw = MessageStore.useMessageStore.getState().conversations?.[cid];
+      if (gw?.defaultLeafId && gw.history?.hasMore) {
+        MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
+      }
     } catch (e) {
-      logger29.debug("loadMoreResponses failed", e);
+      logger29.debug("loadOlderHistory failed", e);
     }
   }
   function resolveNeedle(origin) {
@@ -21446,68 +21920,193 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       const child = hostUuid(jump);
       const fiber = sourceFromFiber(jump);
       const row = sourceOfRow(child ? storeById(child) : undefined);
-      const parent = fiber.parentId || row.parentId;
       const needle = row.quoted || fiber.quoted || prefixOf(jump.textContent || "");
-      return { needle, ids: parent ? [parent] : [] };
+      return { needle, hard: fiber.hard || row.hard, parent: fiber.parent || row.parent };
     }
     const live = quotedText2();
     if (origin) {
-      const msg = origin.closest(MSG2);
+      const msg = origin.closest(MSG2) ?? hostOf(origin);
       const id = msg ? propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] : "";
-      const row = id ? storeById(id) : undefined;
-      const sent = String(row?.parentQuotedText || "");
-      const parent = String(row?.parentResponseId || "");
-      const text = sent || live || prefixOf(origin.textContent || "");
-      const ids = [bareUuid(parent) || parent, ...idsFrom(origin, row)].filter(Boolean);
-      return { needle: text, ids };
+      const from = hostQuote(id, msg);
+      const text = from.quoted || live || prefixOf(origin.textContent || "");
+      return { needle: text, hard: from.hard, parent: from.parent };
     }
-    return { needle: live, ids: idsFrom(null) };
+    return { needle: live, hard: "", parent: "" };
   }
   function insideHost(el, host) {
     return !!el && !!host && (el === host || host.contains(el));
   }
   function pickMessage(ids, needle, skip) {
-    for (const id of ids) {
-      const el = messageById(bareUuid(id) || id);
-      if (el && !insideHost(el, skip ?? null))
-        return el;
-    }
-    const n = prefixOf(needle);
-    if (!n)
+    if (hostClip(needle).length < 8)
       return null;
     const rows = messageEls();
-    for (let i = rows.length - 1;i >= 0; i--) {
-      if (insideHost(rows[i], skip ?? null))
+    const childI = skip ? rows.findIndex((el) => insideHost(el, skip)) : -1;
+    const scored = [];
+    for (let i = 0;i < rows.length; i++) {
+      const el = rows[i];
+      if (!el || insideHost(el, skip ?? null))
         continue;
-      if (nodeHasNeedle(rows[i], n))
-        return rows[i];
+      if (childI >= 0 && i > childI)
+        continue;
+      const score = blobScore(el, needle);
+      if (score <= 0)
+        continue;
+      scored.push({ el, i, id: hostUuid(el) || propsId(el), score });
     }
-    return null;
+    for (const id of ids) {
+      const want = bareUuid(id) || id;
+      const hit = scored.find((x) => x.id === want);
+      if (!hit)
+        continue;
+      if (hit.score < 0.08 && scored.some((x) => x !== hit && x.score >= 0.08 && x.score > hit.score * 2))
+        continue;
+      return hit.el;
+    }
+    scored.sort((a, b) => b.score - a.score || a.i - b.i);
+    return scored[0]?.el ?? null;
+  }
+  function liveSource(id, skip) {
+    const el = messageById(id);
+    if (!el || insideHost(el, skip))
+      return null;
+    return el;
+  }
+  function nodeIndex(id) {
+    const cid = conversationId2();
+    try {
+      const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
+      if (!nodes)
+        return null;
+      const rows = Object.values(nodes).filter((node) => node?.id).map((node) => ({ id: String(node.id), at: Number(node.createdAt) || 0 }));
+      if (!rows.some((row) => row.id === id))
+        return null;
+      rows.sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
+      return { at: rows.findIndex((row) => row.id === id), n: rows.length };
+    } catch {
+      return null;
+    }
+  }
+  async function revealSource(id, skip, mine) {
+    const ready = liveSource(id, skip);
+    if (ready)
+      return ready;
+    const pane = chatPane3();
+    if (!pane)
+      return null;
+    const order = nodeIndex(id);
+    const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
+    const guess = order ? order.at / Math.max(order.n - 1, 1) * max : Math.max(0, pane.scrollTop - pane.clientHeight);
+    const seen = new Set;
+    const hop = async (top) => {
+      if (mine !== gen)
+        return null;
+      const next = Math.max(0, Math.min(max, top));
+      const key = Math.round(next);
+      if (seen.has(key))
+        return liveSource(id, skip);
+      seen.add(key);
+      pane.scrollTo({ top: next, behavior: "auto" });
+      await afterLayout();
+      await sleep(WAIT_MS);
+      return liveSource(id, skip);
+    };
+    let found = await hop(guess);
+    if (found || mine !== gen)
+      return found;
+    const step = Math.max(pane.clientHeight * 0.85, 480);
+    for (const dir of [-1, 1]) {
+      let top = guess;
+      for (let i = 0;i < 16; i++) {
+        top += dir * step;
+        if (top < 0 || top > max)
+          break;
+        found = await hop(top);
+        if (found || mine !== gen)
+          return found;
+      }
+    }
+    return liveSource(id, skip);
+  }
+  function settleScroll(pane, range, el, mine) {
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done)
+          return;
+        done = true;
+        pane.removeEventListener("scrollend", finish);
+        if (mine !== gen || !el.isConnected) {
+          resolve();
+          return;
+        }
+        const box = range && lineBox(range) || el.getBoundingClientRect();
+        if (!box || box.height < 1) {
+          resolve();
+          return;
+        }
+        const delta = box.top + box.height / 2 - visibleMidY(pane);
+        if (Math.abs(delta) >= ALIGNED_PX)
+          pane.scrollTo({ top: pane.scrollTop + delta, behavior: "auto" });
+        resolve();
+      };
+      pane.addEventListener("scrollend", finish, { once: true });
+      window.setTimeout(finish, 700);
+    });
+  }
+  async function land(el, needle, mine) {
+    openAncestors(el, needle);
+    await afterLayout();
+    if (mine !== gen || !el.isConnected)
+      return;
+    const ranges = findRanges(el, needle);
+    const anchor = scrollAnchor(ranges);
+    const hit = hitOf(anchor) ?? el;
+    const pane = scrollPane(hit);
+    scrollLineToScreenCenter(anchor, hit);
+    highlightRange(ranges, hit);
+    if (pane)
+      await settleScroll(pane, anchor, hit, mine);
   }
   async function jump2(origin) {
     const mine = ++gen;
-    const { needle, ids } = resolveNeedle(origin);
-    if (!prefixOf(needle))
+    const { needle, hard, parent } = resolveNeedle(origin);
+    const skip = hostOf(origin);
+    const skipId = hostUuid(skip);
+    if (!prefixOf(needle) && !hard)
       return;
-    const skip = officialJumpButton(origin) ? hostOf(origin) : null;
-    let el = pickMessage(ids, needle, skip);
-    if (!el || !findHit(el, needle) && !nodeHasNeedle(el, needle)) {
-      const hit = storeNeedle(needle);
-      if (hit) {
-        if (hit.id && hit.id !== hostUuid(skip))
-          ids.unshift(hit.id);
-        await hydrate2(hit.cid || conversationId2());
+    const fits = (el) => !!el && (!prefixOf(needle) || blobScore(el, needle) > 0);
+    let el = null;
+    if (hard) {
+      el = liveSource(hard, skip);
+      if (!el) {
+        await hydrate2(conversationId2());
         if (mine !== gen)
           return;
-        for (let i = 0;i < WAIT_N; i++) {
-          el = pickMessage(ids, needle, skip);
-          if (el)
-            break;
-          await sleep(WAIT_MS);
-          if (mine !== gen)
-            return;
-        }
+        el = await revealSource(hard, skip, mine);
       }
+      if (!fits(el))
+        el = null;
+    }
+    if (!el && parent && parent !== hard) {
+      const mounted = liveSource(parent, skip);
+      if (fits(mounted))
+        el = mounted;
+    }
+    if (!el && prefixOf(needle)) {
+      const stored = passageId(needle, skipId, parent);
+      if (stored) {
+        await hydrate2(stored.cid || conversationId2());
+        if (mine !== gen)
+          return;
+        const found = await revealSource(stored.id, skip, mine);
+        if (fits(found))
+          el = found;
+      }
+    }
+    if (!el && prefixOf(needle)) {
+      const picked = pickMessage([], needle, skip);
+      if (fits(picked))
+        el = picked;
     }
     if (mine !== gen)
       return;
@@ -21515,39 +22114,377 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       logger29.debug("no source message");
       return;
     }
-    openAncestors(el, needle);
-    await afterLayout();
+    await land(el, needle, mine);
+  }
+  function quoteSource(rec, fallbackParent = "") {
+    const quoted = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
+    if (norm2(quoted).length < 2)
+      return { source: "", quoted: "" };
+    const meta = rec.metadata && typeof rec.metadata === "object" ? rec.metadata : undefined;
+    const src = meta?.parentQuoteSource && typeof meta.parentQuoteSource === "object" ? meta.parentQuoteSource : undefined;
+    const source = bareUuid(src?.sourceResponseId) || bareUuid(rec.parentResponseId) || bareUuid(fallbackParent);
+    return source ? { source, quoted } : { source: "", quoted: "" };
+  }
+  function pushCite(map, source, cite) {
+    if (!source)
+      return;
+    const list = map.get(source) ?? [];
+    const quoted = norm2(cite.quoted);
+    if (list.some((row) => row.live === cite.live && row.id === cite.id && norm2(row.quoted) === quoted)) {
+      map.set(source, list);
+      return;
+    }
+    list.push(cite);
+    map.set(source, list);
+  }
+  function citesBySource() {
+    const map = new Map;
+    const cid = conversationId2();
+    try {
+      const nodes = MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes;
+      if (nodes) {
+        for (const node of Object.values(nodes)) {
+          const { content } = node;
+          if (!content)
+            continue;
+          const hit = quoteSource(content, node.parentId ?? "");
+          if (!hit.source || hit.source === node.id)
+            continue;
+          pushCite(map, hit.source, { id: node.id || content.responseId, quoted: hit.quoted, live: false });
+        }
+      }
+    } catch (e) {
+      logger29.debug("message nodes failed", e);
+    }
+    try {
+      const store = ResponseStore.useResponseStore.getState();
+      const rows = (cid ? store.byConversationId?.[cid] : null) ?? Object.values(store.byId ?? {});
+      for (const row of rows) {
+        if (!row?.responseId)
+          continue;
+        const hit = quoteSource(row);
+        if (!hit.source || hit.source === row.responseId)
+          continue;
+        pushCite(map, hit.source, { id: row.responseId, quoted: hit.quoted, live: false });
+      }
+    } catch {}
+    for (const btn of document.querySelectorAll(JUMP_BTN)) {
+      const fiber = sourceFromFiber(btn);
+      const quoted = fiber.quoted || prefixOf(btn.textContent || "");
+      if (!fiber.parentId || norm2(quoted).length < 2)
+        continue;
+      pushCite(map, fiber.parentId, { id: hostUuid(btn), quoted, live: false });
+    }
+    const live = quotedText2();
+    if (norm2(live).length >= 2) {
+      const popup = quotePopup();
+      const popupId = popup && typeof popup === "object" ? bareUuid(popup.responseId) : "";
+      let source = popupId;
+      if (!source) {
+        const clip = norm2(live).slice(0, 48);
+        try {
+          const nodes = MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes;
+          if (nodes) {
+            for (const node of Object.values(nodes)) {
+              if (norm2(String(node.content?.message || "")).includes(clip)) {
+                source = node.id;
+                break;
+              }
+            }
+          }
+        } catch {}
+      }
+      if (source)
+        pushCite(map, source, { id: "", quoted: live, live: true });
+    }
+    return map;
+  }
+  function closeMenu2() {
+    openSrc = "";
+    menuCites = [];
+    document.querySelector(`.${cl22("menu")}`)?.remove();
+  }
+  function placeMenu(anchor) {
+    const menu = document.querySelector(`.${cl22("menu")}`);
+    if (!menu)
+      return;
+    const r = anchor.getBoundingClientRect();
+    menu.style.top = `${Math.round(r.bottom + 4)}px`;
+    const width = menu.offsetWidth || 220;
+    menu.style.left = `${Math.round(Math.max(8, Math.min(r.right - width, window.innerWidth - width - 8)))}px`;
+  }
+  function openMenu2(anchor, cites) {
+    closeMenu2();
+    openSrc = anchor.dataset.voidQjSrc || "";
+    menuCites = cites;
+    const menu = document.createElement("div");
+    menu.className = cl22("menu");
+    cites.forEach((cite, i) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = cl22("item");
+      item.dataset.voidQjI = String(i);
+      const where = cite.live ? "Composer" : "Quote";
+      item.textContent = `${where}: ${norm2(cite.quoted).slice(0, 72)}`;
+      menu.append(item);
+    });
+    document.body.append(menu);
+    placeMenu(anchor);
+  }
+  function clearBadges() {
+    closeMenu2();
+    for (const n of document.querySelectorAll(`.${cl22("back")}`))
+      n.remove();
+    for (const n of document.querySelectorAll("[data-void-qj-preview]"))
+      n.removeAttribute("data-void-qj-preview");
+  }
+  function quoteSvg() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    for (const d of QUOTE_PATHS) {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", d);
+      svg.append(path);
+    }
+    return svg;
+  }
+  function ensureGlyph(btn) {
+    if (!btn.querySelector(`.${cl22("mark")}`)) {
+      const mark = document.createElement("span");
+      mark.className = cl22("mark");
+      mark.setAttribute("aria-hidden", "true");
+      mark.append(quoteSvg());
+      btn.prepend(mark);
+    }
+    for (const node of [...btn.childNodes]) {
+      if (node.nodeType === Node.TEXT_NODE)
+        node.remove();
+    }
+  }
+  function paintCount(btn, n) {
+    const cur = btn.querySelector(`.${cl22("count")}`);
+    if (n <= 1) {
+      cur?.remove();
+      return;
+    }
+    const text = String(n);
+    let el = cur;
+    if (!el) {
+      el = document.createElement("span");
+      el.className = cl22("count");
+      el.setAttribute("aria-hidden", "true");
+      btn.append(el);
+    }
+    if (el.textContent !== text)
+      el.textContent = text;
+  }
+  function stampPreviews() {
+    const keep = new Set;
+    const root = chatPane3() ?? document.querySelector("main") ?? document.body;
+    for (const host of root.querySelectorAll("[id^='response-']")) {
+      if (host.closest(PANE_SKIP3))
+        continue;
+      const quote = norm2(hostQuote(hostUuid(host), host).quoted);
+      if (quote.length < 8)
+        continue;
+      for (const n of host.querySelectorAll("[class*='whitespace-pre-wrap'], [class*='items-start']")) {
+        if (n.closest("a, button, [role='button']"))
+          continue;
+        if (!looksLikeQuote(n) || !textIsQuote(norm2(n.textContent || ""), quote))
+          continue;
+        let covered = false;
+        for (const outer of keep) {
+          if (outer.contains(n)) {
+            covered = true;
+            break;
+          }
+          if (n.contains(outer))
+            keep.delete(outer);
+        }
+        if (!covered)
+          keep.add(n);
+      }
+    }
+    for (const n of document.querySelectorAll("[data-void-qj-preview]")) {
+      if (!keep.has(n))
+        n.removeAttribute("data-void-qj-preview");
+    }
+    for (const n of keep) {
+      if (!n.hasAttribute("data-void-qj-preview"))
+        n.setAttribute("data-void-qj-preview", "");
+    }
+  }
+  function paintBacklinks() {
+    if (!jumpArmed || onImaginePage3()) {
+      clearBadges();
+      return;
+    }
+    const map = citesBySource();
+    const seen = new Set;
+    for (const [source, cites] of map) {
+      if (!cites.length)
+        continue;
+      const named = document.getElementById(`response-${source}`);
+      const host = named instanceof HTMLElement ? named : messageById(source);
+      if (!(host instanceof HTMLElement) || !host.isConnected)
+        continue;
+      const box = host.getBoundingClientRect();
+      if (box.width < 40 || box.bottom < 24 || box.top > window.innerHeight - 8)
+        continue;
+      seen.add(source);
+      let btn = document.querySelector(`.${cl22("back")}[data-void-qj-src="${source}"]`);
+      if (!btn) {
+        btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = cl22("back");
+        btn.dataset.voidQjSrc = source;
+        document.body.append(btn);
+      }
+      ensureGlyph(btn);
+      paintCount(btn, cites.length);
+      const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
+      if (btn.getAttribute("aria-label") !== aria)
+        btn.setAttribute("aria-label", aria);
+      btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
+      btn.style.top = `${Math.round(Math.max(8, box.top + 8))}px`;
+      if (openSrc === source)
+        placeMenu(btn);
+    }
+    for (const n of document.querySelectorAll(`.${cl22("back")}`)) {
+      const id = n.dataset.voidQjSrc || "";
+      if (seen.has(id))
+        continue;
+      if (openSrc === id)
+        closeMenu2();
+      n.remove();
+    }
+    if (openSrc && !seen.has(openSrc))
+      closeMenu2();
+    stampPreviews();
+  }
+  function scheduleBacklinks() {
+    if (!jumpArmed || backRaf || painting)
+      return;
+    backRaf = requestAnimationFrame(() => {
+      backRaf = 0;
+      painting = true;
+      try {
+        paintBacklinks();
+      } finally {
+        painting = false;
+      }
+    });
+  }
+  async function jumpToCite(cite) {
+    if (!cite)
+      return;
+    const mine = ++gen;
+    if (cite.live) {
+      const chip = document.querySelector(".void-qs-chip") ?? document.querySelector(`${QUERY} ${JUMP_BTN}`);
+      if (!chip)
+        return;
+      highlightRange(null, chip);
+      return;
+    }
+    let el = messageById(cite.id);
+    const host = () => document.getElementById(`response-${cite.id}`);
+    if (!el && !host()) {
+      await hydrate2(conversationId2());
+      if (mine !== gen)
+        return;
+      for (let i = 0;i < WAIT_N; i++) {
+        el = messageById(cite.id);
+        if (el || host())
+          break;
+        await sleep(WAIT_MS);
+        if (mine !== gen)
+          return;
+      }
+    }
     if (mine !== gen)
       return;
-    if (!el.isConnected) {
-      el = pickMessage(ids, needle, skip);
-      if (!el)
-        return;
-      openAncestors(el, needle);
-      await afterLayout();
-      if (mine !== gen || !el.isConnected)
-        return;
+    const root = host();
+    const card = root?.querySelector(JUMP_BTN) ?? el;
+    if (!card) {
+      logger29.debug("no citing message", cite.id);
+      return;
     }
-    const range = findRange(el, needle);
-    const hit = findHit(el, needle) ?? el;
-    scrollLineToScreenCenter(range, hit);
-    highlightRange(range, hit);
+    openAncestors(card, cite.quoted);
+    await afterLayout();
+    if (mine !== gen || !card.isConnected)
+      return;
+    const ranges = findRanges(card, cite.quoted);
+    const anchor = scrollAnchor(ranges);
+    const hit = hitOf(anchor) ?? card;
+    scrollLineToScreenCenter(anchor, hit);
+    highlightRange(ranges, hit);
+  }
+  function onBackClick(t) {
+    const badge = t.closest(`.${cl22("back")}`);
+    if (badge instanceof HTMLElement) {
+      const src = badge.dataset.voidQjSrc || "";
+      const cites = citesBySource().get(src) ?? [];
+      if (cites.length <= 1) {
+        closeMenu2();
+        jumpToCite(cites[0]);
+      } else if (openSrc === src) {
+        closeMenu2();
+      } else {
+        openMenu2(badge, cites);
+      }
+      return true;
+    }
+    const item = t.closest(`.${cl22("item")}`);
+    if (item instanceof HTMLElement) {
+      const cite = menuCites[Number(item.dataset.voidQjI)];
+      closeMenu2();
+      jumpToCite(cite);
+      return true;
+    }
+    if (!t.closest(`.${cl22("menu")}`))
+      closeMenu2();
+    return false;
   }
   function onClick(e) {
-    if (!e.isTrusted || e.button !== 0 || onImaginePage3())
-      return;
-    const t = eventEl(e.target);
-    if (!t)
-      return;
-    if (isDismiss(t) || isEditor(t) || isBarAction(t))
-      return;
-    const chip = composerChip(t);
-    const sent = sentQuote(t);
-    if (!chip && !sent)
-      return;
-    e.preventDefault();
-    e.stopPropagation();
-    jump2(sent ?? chip);
+    try {
+      if (!e.isTrusted || e.button !== 0 || onImaginePage3())
+        return;
+      const t = eventEl(e.target);
+      if (!t)
+        return;
+      if (t.closest(`.${cl22("back")}, .${cl22("menu")}`)) {
+        e.preventDefault();
+        e.stopPropagation();
+        onBackClick(t);
+        return;
+      }
+      if (isDismiss(t) || isEditor(t) || isBarAction(t))
+        return;
+      const chip = composerChip(t);
+      const sent = sentQuote(t);
+      const origin = sent ?? chip;
+      if (!origin)
+        return;
+      if (officialJumpButton(origin)) {
+        const { needle, hard, parent } = resolveNeedle(origin);
+        const host = hostOf(origin);
+        const mounted = parent ? liveSource(parent, host) : null;
+        const parentOk = !!mounted && blobScore(mounted, needle) > 0;
+        if (!hard && !parentOk && !pickMessage([], needle, host))
+          return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      jump2(origin);
+    } catch (err) {
+      logger29.debug("click", err);
+    }
   }
   function startJump() {
     if (jumpArmed)
@@ -21555,6 +22492,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     jumpArmed = true;
     abort2 = new AbortController;
     document.addEventListener("click", onClick, { capture: true, signal: abort2.signal });
+    const poke = () => scheduleBacklinks();
+    window.addEventListener("scroll", poke, { capture: true, passive: true, signal: abort2.signal });
+    window.addEventListener("resize", poke, { passive: true, signal: abort2.signal });
+    backObserver = new MutationObserver(poke);
+    backObserver.observe(document.documentElement, { childList: true, subtree: true });
+    scheduleBacklinks();
   }
   function stopJump() {
     if (!jumpArmed && !abort2)
@@ -21562,8 +22505,14 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     jumpArmed = false;
     abort2?.abort();
     abort2 = null;
+    backObserver?.disconnect();
+    backObserver = null;
+    if (backRaf)
+      cancelAnimationFrame(backRaf);
+    backRaf = 0;
     gen++;
     clearHighlight();
+    clearBadges();
   }
 
   // src/plugins/betterQuotes/sticky.ts
@@ -21572,6 +22521,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var KEEP2 = 40;
   var RESTORE_GAP_MS = 80;
   var COLLAPSE_PX = 80;
+  var CONSUME_MS = 1200;
   var X_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   var saved = new Map;
   var origFns2 = new Map;
@@ -21588,7 +22538,11 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var hold = false;
   var holdKey = "";
   var pendingRestore = "";
+  var consumedUntil = 0;
   var unsubQuote = null;
+  function justConsumed() {
+    return performance.now() < consumedUntil;
+  }
   function onProjectPath() {
     try {
       return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/project/");
@@ -21632,6 +22586,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   function settleHold() {
     if (!armed2 || onImaginePage3())
       return false;
+    if (justConsumed()) {
+      hold = false;
+      holdKey = "";
+      pendingRestore = "";
+      return false;
+    }
     if (viewportCollapsed()) {
       pinHold();
       return true;
@@ -21912,6 +22872,10 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     placeChip(el, bar);
   }
   function restore2(key) {
+    if (justConsumed()) {
+      removeFallback();
+      return;
+    }
     if (!key || onImaginePage3() || destKey() !== key) {
       if (destKey() !== key)
         removeFallback();
@@ -21941,6 +22905,10 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   function ensureChip() {
     if (onImaginePage3())
       return;
+    if (justConsumed()) {
+      removeFallback();
+      return;
+    }
     if (viewportCollapsed() || hold) {
       pinHold();
       return;
@@ -21986,6 +22954,13 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   function onChat() {
     if (!armed2 || applying2 || onImaginePage3())
       return;
+    if (justConsumed()) {
+      hold = false;
+      holdKey = "";
+      pendingRestore = "";
+      removeFallback();
+      return;
+    }
     if (settleHold())
       return;
     const now = readText();
@@ -22085,16 +23060,72 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     return false;
   }
   function markConsumed(key = ownKey()) {
+    hold = false;
+    holdKey = "";
+    pendingRestore = "";
+    consumedUntil = performance.now() + CONSUME_MS;
     drop(key);
+    if (key && key !== lastKey)
+      drop(lastKey);
+    lastText = "";
+    lastPopup = undefined;
     removeFallback();
+    lastRestoreAt = 0;
+  }
+  function clearQuoteStore() {
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      if (!chat.quotedText && chat.quotePopupData == null)
+        return;
+      applying2 = true;
+      try {
+        if (chat.quotedText)
+          chat.setQuotedText("");
+        if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
+          chat.setQuotePopupData(null);
+      } finally {
+        applying2 = false;
+      }
+    } catch (e) {
+      logger30.debug("consume clear failed", e);
+    }
+  }
+  function isComposerSend(el) {
+    const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
+    if (!(btn instanceof HTMLElement) || btn.closest(`.${cl23("chip")}`))
+      return false;
+    const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
+    if (DISMISS.test(label) || /attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i.test(label))
+      return false;
+    return /\b(send|submit)\b|发送|提交/i.test(label);
   }
   function onPointerDown3(e) {
     if (!e.isTrusted)
       return;
     const t = e.target;
-    if (!(t instanceof Element) || !isQuoteDismiss(t))
+    if (!(t instanceof Element))
       return;
-    dismiss();
+    if (isQuoteDismiss(t)) {
+      dismiss();
+      return;
+    }
+    if (!isComposerSend(t))
+      return;
+    const key = ownKey();
+    const had = saved.get(key)?.text || lastText || readText().text;
+    if (had)
+      markConsumed(key);
+  }
+  function onComposerEnter(e) {
+    if (!e.isTrusted || e.key !== "Enter" || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || e.isComposing)
+      return;
+    const t = e.target;
+    if (!(t instanceof Element) || !t.closest(`${QUERY} .tiptap, ${QUERY} [contenteditable='true'], ${QUERY} textarea`))
+      return;
+    const key = ownKey();
+    const had = saved.get(key)?.text || lastText || readText().text;
+    if (had)
+      markConsumed(key);
   }
   function payloadText(rec) {
     const raw = rec.message ?? rec.text ?? rec.query;
@@ -22108,38 +23139,52 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     return "";
   }
-  function isQuoteSend(raw, want) {
-    if (!want || raw == null)
-      return false;
-    if (typeof raw === "string") {
-      if (!raw.startsWith("{") && !raw.startsWith("["))
-        return false;
-      try {
-        return isQuoteSend(JSON.parse(raw), want);
-      } catch {
-        return false;
+  function payloadFromArgs(args) {
+    for (const raw of args) {
+      if (typeof raw === "string") {
+        const s = raw.trim();
+        if (!s)
+          continue;
+        if (s.startsWith("{") || s.startsWith("[")) {
+          try {
+            const nested = payloadFromArgs([JSON.parse(s)]);
+            if (nested)
+              return nested;
+          } catch {}
+          continue;
+        }
+        return s;
+      }
+      if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+        const text = payloadText(raw);
+        if (text)
+          return text;
       }
     }
-    if (typeof raw !== "object" || Array.isArray(raw))
+    return "";
+  }
+  function isQuoteSend(args, want) {
+    if (!want || !payloadFromArgs(args))
       return false;
-    const rec = raw;
-    if (!payloadText(rec))
-      return false;
-    const q = rec.parentQuotedText ?? rec.quotedText;
-    return typeof q === "string" && q.replaceAll(/\s+/g, " ").trim() === want.replaceAll(/\s+/g, " ").trim();
+    return true;
   }
   function makeSendWrapper2(orig) {
     return function voidQuoteStickySend(...args) {
       const key = ownKey();
-      const had = saved.get(key)?.text || readText().text;
-      const result = orig.apply(this, args);
-      if (had && isQuoteSend(args[0], had))
+      const had = saved.get(key)?.text || lastText || readText().text;
+      const sending = !!(had && isQuoteSend(args, had));
+      if (sending)
         markConsumed(key);
-      return result;
+      try {
+        return orig.apply(this, args);
+      } finally {
+        if (sending)
+          clearQuoteStore();
+      }
     };
   }
   function scheduleRestore() {
-    if (hold || viewportCollapsed() || pendingRestore)
+    if (justConsumed() || hold || viewportCollapsed() || pendingRestore)
       return;
     const key = destKey();
     if (!key || !saved.get(key)?.text)
@@ -22240,6 +23285,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     wrapOne2("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
     wrapOne2("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
     wrapOne2("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
+    wrapOne2("chat.sendResponse", chatState, chatSet, "sendResponse", makeSendWrapper2);
     wrapOne2("msg.sendMessage", msgState, msgSet, "sendMessage", makeSendWrapper2);
     wrapOne2("msg.queueMessage", msgState, msgSet, "queueMessage", makeSendWrapper2);
   }
@@ -22258,6 +23304,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     unwrapOne(chatState, chatSet, "setQuotePopupData", "chat.setQuotePopupData");
     unwrapOne(chatState, chatSet, "setConversationId", "chat.setConversationId");
     unwrapOne(chatState, chatSet, "setOptimisticConversationId", "chat.setOptimisticConversationId");
+    unwrapOne(chatState, chatSet, "sendResponse", "chat.sendResponse");
     unwrapOne(msgState, msgSet, "sendMessage", "msg.sendMessage");
     unwrapOne(msgState, msgSet, "queueMessage", "msg.queueMessage");
     origFns2.clear();
@@ -22273,7 +23320,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     });
   }
   function onStore(state) {
-    if (!armed2 || applying2)
+    if (!armed2 || applying2 || justConsumed())
       return;
     const text = String(state.quotedText || "");
     if (!text) {
@@ -22310,6 +23357,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     abort3 = new AbortController;
     document.addEventListener("pointerdown", onPointerDown3, { capture: true, signal: abort3.signal });
+    document.addEventListener("keydown", onComposerEnter, { capture: true, signal: abort3.signal });
     const poke = () => onMutate();
     const onViewport = () => {
       if (!settleHold())
@@ -22350,6 +23398,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     hold = false;
     holdKey = "";
     pendingRestore = "";
+    consumedUntil = 0;
   }
 
   // src/plugins/betterQuotes/index.ts
@@ -22357,7 +23406,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var settings20 = definePluginSettings({
     jumpToPassage: {
       type: 3 /* BOOLEAN */,
-      description: "Click the composer quote chip or a sent Jump-to-quoted-message card to scroll to the exact passage.",
+      description: "Click a quote chip to jump to the passage, or the badge on that passage to jump back to the quotes.",
       default: true
     },
     persistAcrossChats: {
@@ -22430,14 +23479,14 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var betterQuotes_default = definePlugin({
     name: "BetterQuotes",
     icon: MessageSquareQuoteIcon,
-    description: "Scroll a composer quote chip or a sent quote to the exact passage, and keep that quote card when switching chats.",
+    description: "Jump between a quote and its source, and keep the composer quote card when switching chats.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
     settings: settings20,
     managedStyle: "betterQuotes",
-    cleanupSelectors: [".void-qs-chip", "[data-void-bq-icon]"],
+    cleanupSelectors: [".void-qs-chip", ".void-qj-back", ".void-qj-menu", "[data-void-bq-icon]"],
     start() {
       startIcons();
       apply5();
@@ -28230,7 +29279,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var failed = new Set;
   var treeObs2 = null;
   var raf6 = 0;
-  var painting = false;
+  var painting2 = false;
   var started6 = false;
   function trimName() {
     return String(settings33.store.displayName ?? "").trim();
@@ -28421,15 +29470,15 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     document.documentElement.style.removeProperty(SIZE_VAR);
   }
   function apply8() {
-    if (!started6 || painting)
+    if (!started6 || painting2)
       return;
-    painting = true;
+    painting2 = true;
     try {
       applySize();
       paintFooter();
       paintMenu();
     } finally {
-      painting = false;
+      painting2 = false;
     }
   }
   function schedule3() {
@@ -28441,7 +29490,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     });
   }
   function onMut(muts) {
-    if (painting || !started6)
+    if (painting2 || !started6)
       return;
     for (const m of muts) {
       if (m.type !== "attributes") {
@@ -28505,6 +29554,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     contain: content;
     position: fixed;
     z-index: 2147483646;
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
     padding: 0.25rem 0.5rem;
     border: 1px solid hsl(var(--border-l2));
     border-radius: 0.5rem;
@@ -28521,6 +29573,40 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 
 .void-ih-hud-on {
     opacity: 1;
+}
+
+.void-ih-hud-on :is(.void-ih-hud-count, .void-ih-hud-x) {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.void-ih-hud-count,
+.void-ih-hud-x {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-variant-numeric: inherit;
+    line-height: inherit;
+}
+
+.void-ih-hud-x {
+    width: 0.875rem;
+    font-size: 0.875rem;
+    line-height: 1;
+}
+
+.void-ih-hud-count:hover,
+.void-ih-hud-x:hover {
+    color: hsl(var(--fg-primary));
+}
+
+.void-ih-hud-count:focus-visible,
+.void-ih-hud-x:focus-visible {
+    outline: 1px solid hsl(var(--fg-primary));
+    outline-offset: 1px;
 }
 
 .void-ih-panel {
@@ -28567,6 +29653,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     scrollbar-color: hsl(var(--border-l2) / 80%) transparent;
 }
 
+.void-ih-list-picker {
+    max-height: min(24rem, 55vh);
+}
+
 .void-ih-item {
     display: grid;
     grid-template-columns: 3ch minmax(0, 1fr) auto;
@@ -28589,6 +29679,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     border-color: hsl(var(--border-l2) / 60%);
 }
 
+.void-ih-list-picker .void-ih-item {
+    grid-template-columns: max-content minmax(0, 1fr) auto;
+    gap: 0.35rem;
+    padding-inline: 0 0.35rem;
+}
+
 .void-ih-index {
     min-width: 0;
     color: hsl(var(--fg-tertiary));
@@ -28596,6 +29692,19 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     font-variant-numeric: tabular-nums;
     line-height: 1.45;
     text-align: right;
+}
+
+.void-ih-list-picker .void-ih-index {
+    min-width: 2ch;
+    text-align: start;
+}
+
+.void-ih-item-live {
+    border-color: hsl(var(--fg-primary) / 45%);
+}
+
+.void-ih-item-live .void-ih-index {
+    color: hsl(var(--fg-primary));
 }
 
 .void-ih-item-on .void-ih-index {
@@ -28627,6 +29736,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
     overflow: hidden;
+}
+
+.void-ih-list-picker .void-ih-clamp {
+    display: block;
+    overflow-wrap: normal;
+    word-break: normal;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .void-ih-item-on .void-ih-body {
@@ -28667,6 +29784,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var HUD_GAP_PX = 8;
   var APPLY_QUIET_MS = 120;
   var CAPTURE_DEDUPE_MS = 2000;
+  var HISTORY_MODAL_KEY = "void-ih-history";
   var settings34 = definePluginSettings({
     maxEntries: {
       type: 5 /* SLIDER */,
@@ -28687,6 +29805,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }).withPrivateSettings();
   var recentAt = new Map;
   var cursor = 0;
+  var lastShown = -1;
   var draft = "";
   var recalling = false;
   var applying3 = false;
@@ -28696,6 +29815,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var applyTimer;
   var applyEl = null;
   var applyAtStart = true;
+  var applyCaretMoved = false;
+  var suppressSelect = 0;
+  var historyOpen = false;
+  var hudEditor = null;
   function isImaginePage3() {
     try {
       const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
@@ -28728,7 +29851,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       settings34.store.entries = entries;
   }
   function normalize(text) {
-    return text.replaceAll(ZWSP, "").replace(/\n$/, "").trim();
+    return text.replaceAll(ZWSP, "").replace(/\r\n?/g, `
+`);
+  }
+  function hasContent(text) {
+    return text.replace(/[\s\u00a0]/g, "") !== "";
   }
   function imeEvent(e) {
     if (composing)
@@ -28743,12 +29870,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     applyGen++;
     applying3 = false;
     applyEl = null;
+    applyCaretMoved = false;
     clearTimeout(applyTimer);
     applyTimer = undefined;
   }
   function resetBrowse(length) {
     invalidateApply();
     cursor = length;
+    lastShown = -1;
     draft = "";
     recalling = false;
     hideHud();
@@ -28760,71 +29889,448 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return t.closest(EDITOR_SEL3) ?? null;
     return null;
   }
+  var TRAILING_BR = "ProseMirror-trailingBreak";
+  function blockText(block) {
+    let out = "";
+    const walk = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        out += node.textContent ?? "";
+        return;
+      }
+      if (!(node instanceof Element))
+        return;
+      if (node.tagName === "BR") {
+        if (!node.classList.contains(TRAILING_BR))
+          out += `
+`;
+        return;
+      }
+      for (const child of node.childNodes)
+        walk(child);
+    };
+    for (const child of block.childNodes)
+      walk(child);
+    return out;
+  }
+  function pmViewOf(el) {
+    try {
+      return el.pmViewDesc?.view ?? null;
+    } catch {
+      return null;
+    }
+  }
+  function serializePmDoc(doc, brType) {
+    const blocks = [];
+    doc.forEach((block) => {
+      let line = "";
+      block.forEach((child) => {
+        if (child.isText)
+          line += child.text ?? "";
+        else if (brType && child.type === brType)
+          line += `
+`;
+        else {
+          child.forEach((grand) => {
+            if (grand.isText)
+              line += grand.text ?? "";
+            else if (brType && grand.type === brType)
+              line += `
+`;
+          });
+        }
+      });
+      blocks.push(line);
+    });
+    return blocks.join(`
+`);
+  }
+  function newlineCount(text) {
+    let n = 0;
+    for (let i = 0;i < text.length; i++)
+      if (text.charCodeAt(i) === 10)
+        n++;
+    return n;
+  }
   function editorText(el) {
+    try {
+      const view = pmViewOf(el);
+      if (view?.state?.doc) {
+        const br = breakNodeType(view.state.schema.nodes);
+        return normalize(serializePmDoc(view.state.doc, br));
+      }
+    } catch (err) {
+      logger42.debug("editorText pm failed:", err);
+    }
     const blocks = el.querySelectorAll(":scope > *");
-    const raw = blocks.length ? Array.from(blocks, (b) => b.textContent ?? "").join(`
+    const raw = blocks.length ? Array.from(blocks, blockText).join(`
 `) : el.innerText ?? el.textContent ?? "";
     return normalize(raw);
   }
-  function spanHeight(range) {
-    const rects = range.getClientRects();
-    let top = Infinity;
-    let bottom = -Infinity;
-    for (const r of rects) {
-      if (r.height === 0 && r.width === 0)
-        continue;
-      if (r.top < top)
-        top = r.top;
-      if (r.bottom > bottom)
-        bottom = r.bottom;
-    }
-    if (top === Infinity)
-      return range.getBoundingClientRect().height;
-    return bottom - top;
-  }
-  function caretOnEdge(el) {
+  function collapsedCaret(el) {
     const sel = window.getSelection();
     if (!sel?.rangeCount || !sel.isCollapsed)
-      return { first: false, last: false };
-    const caret = sel.getRangeAt(0);
-    if (!el.contains(caret.startContainer))
-      return { first: false, last: false };
-    if (!el.innerText?.trim())
-      return { first: true, last: true };
-    const before = document.createRange();
-    before.selectNodeContents(el);
-    before.setEnd(caret.startContainer, caret.startOffset);
-    const after = document.createRange();
-    after.selectNodeContents(el);
-    after.setStart(caret.startContainer, caret.startOffset);
-    const { lineHeight, fontSize } = getComputedStyle(el);
-    const lh = parseFloat(lineHeight);
-    const fs = parseFloat(fontSize) || 16;
-    const budget = (lh > 0 ? lh : fs * 1.5) * 1.5;
-    return {
-      first: spanHeight(before) <= budget,
-      last: spanHeight(after) <= budget
-    };
+      return null;
+    const range = sel.getRangeAt(0);
+    return el.contains(range.startContainer) ? range : null;
+  }
+  function directBlock(el, node) {
+    let cur = node;
+    while (cur && cur.parentNode !== el)
+      cur = cur.parentNode;
+    return cur instanceof Element ? cur : null;
+  }
+  function sideText(el, caret, before) {
+    const range = caret.cloneRange();
+    if (before)
+      range.setStart(el, 0);
+    else
+      range.setEnd(el, el.childNodes.length);
+    return range.toString();
+  }
+  function contentAround(el, node, before) {
+    const range = document.createRange();
+    if (before) {
+      range.setStart(el, 0);
+      range.setEndBefore(node);
+    } else {
+      range.setStartAfter(node);
+      range.setEnd(el, el.childNodes.length);
+    }
+    if (range.toString().replace(ZWSP, "").trim())
+      return true;
+    return !!range.cloneContents().querySelector("br");
+  }
+  function brPast(el, caret, before) {
+    let hit = false;
+    let onlyTrailing = true;
+    for (const br of el.querySelectorAll("br")) {
+      const side = caret.comparePoint(br, 0);
+      const onBreak = side === 0 && contentAround(el, br, before);
+      const past = (before ? side < 0 : side > 0) || onBreak;
+      if (!past)
+        continue;
+      hit = true;
+      if (!br.classList.contains(TRAILING_BR))
+        onlyTrailing = false;
+    }
+    return { hit, onlyTrailing };
+  }
+  function breakBefore(el, caret) {
+    const blocks = el.children;
+    const block = directBlock(el, caret.startContainer);
+    if (blocks.length > 1 && block && block !== blocks[0])
+      return true;
+    if (sideText(el, caret, true).includes(`
+`))
+      return true;
+    const prior = brPast(el, caret, true);
+    if (!prior.hit)
+      return false;
+    const first = !block || blocks.length === 0 || block === blocks[0];
+    const nothingAfter = !brPast(el, caret, false).hit && !sideText(el, caret, false).replace(ZWSP, "").trim();
+    if (prior.onlyTrailing && first && nothingAfter)
+      return false;
+    return true;
+  }
+  function breakAfter(el, caret) {
+    const blocks = el.children;
+    const block = directBlock(el, caret.startContainer);
+    if (blocks.length > 1 && block && block !== blocks[blocks.length - 1])
+      return true;
+    if (sideText(el, caret, false).includes(`
+`))
+      return true;
+    const later = brPast(el, caret, false);
+    if (!later.hit || later.onlyTrailing)
+      return false;
+    return true;
+  }
+  function isPlaceholderEditor(el) {
+    const text = (el.textContent ?? "").replaceAll(ZWSP, "").trim();
+    if (text)
+      return false;
+    if (el.children.length > 1)
+      return false;
+    return el.querySelectorAll("br").length <= 1;
+  }
+  function syncPm(el, range) {
+    try {
+      const view = el.pmViewDesc?.view;
+      if (!view?.posAtDOM)
+        return;
+      const pos = view.posAtDOM(range.startContainer, range.startOffset);
+      if (typeof pos !== "number" || pos < 0)
+        return;
+      const near = view.state.selection.constructor.near;
+      if (!near)
+        return;
+      const pmSel = near(view.state.doc.resolve(pos));
+      if (!pmSel)
+        return;
+      view.dispatch(view.state.tr.setSelection(pmSel).scrollIntoView());
+    } catch (err) {
+      logger42.debug("syncPm failed:", err);
+    }
+  }
+  function applyRange(el, range) {
+    const sel = window.getSelection();
+    if (!sel)
+      return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    syncPm(el, range);
+  }
+  function stepLine(el, older) {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount || !sel.isCollapsed || typeof sel.modify !== "function")
+      return false;
+    const before = sel.getRangeAt(0);
+    const node = before.startContainer;
+    const offset = before.startOffset;
+    if (!el.contains(node))
+      return false;
+    sel.modify("move", older ? "backward" : "forward", "line");
+    if (!sel.rangeCount || !sel.isCollapsed)
+      return true;
+    const after = sel.getRangeAt(0);
+    if (!el.contains(after.startContainer)) {
+      const back = document.createRange();
+      back.setStart(node, offset);
+      back.collapse(true);
+      applyRange(el, back);
+      return false;
+    }
+    if (after.startContainer === node && after.startOffset === offset)
+      return false;
+    syncPm(el, after);
+    return true;
+  }
+  function caretFromPoint(x, y) {
+    const doc = document;
+    try {
+      const pos = doc.caretPositionFromPoint?.(x, y);
+      if (pos?.offsetNode) {
+        const range = document.createRange();
+        const max = pos.offsetNode.nodeType === Node.TEXT_NODE ? pos.offsetNode.textContent?.length ?? 0 : pos.offsetNode.childNodes.length;
+        range.setStart(pos.offsetNode, Math.min(Math.max(pos.offset, 0), max));
+        range.collapse(true);
+        return range;
+      }
+    } catch {}
+    try {
+      return doc.caretRangeFromPoint?.(x, y) ?? null;
+    } catch {
+      return null;
+    }
+  }
+  function visualLineTops(el) {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const tops = [];
+    for (const rect of range.getClientRects()) {
+      if (rect.height < 1 && rect.width < 1)
+        continue;
+      if (!tops.some((top) => Math.abs(top - rect.top) < 4))
+        tops.push(rect.top);
+    }
+    tops.sort((a, b) => a - b);
+    return tops;
+  }
+  function stepSoftLine(el, older) {
+    const caret = collapsedCaret(el);
+    if (!caret)
+      return 0;
+    const caretRects = caret.getClientRects();
+    const caretRect = caretRects[0] ?? caret.getBoundingClientRect();
+    if (!caretRect.height && !caretRect.width)
+      return 0;
+    const lines = visualLineTops(el);
+    if (lines.length < 2)
+      return 0;
+    let index = 0;
+    let best = Infinity;
+    lines.forEach((line, i) => {
+      const dist = Math.abs(line - caretRect.top);
+      if (dist < best) {
+        best = dist;
+        index = i;
+      }
+    });
+    const next = older ? index - 1 : index + 1;
+    if (next < 0 || next >= lines.length)
+      return 0;
+    const box = el.getBoundingClientRect();
+    const x = Math.min(Math.max(caretRect.left + 1, box.left + 2), box.right - 2);
+    const y = lines[next] + Math.max(4, caretRect.height * 0.4);
+    const hit = caretFromPoint(x, y);
+    if (hit && el.contains(hit.startContainer)) {
+      hit.collapse(true);
+      if (hit.startContainer !== caret.startContainer || hit.startOffset !== caret.startOffset) {
+        applyRange(el, hit);
+        return 1;
+      }
+    }
+    return -1;
+  }
+  function nudgeCaret(el, caret, older) {
+    const blocks = Array.from(el.children);
+    const block = directBlock(el, caret.startContainer);
+    const range = document.createRange();
+    if (block && blocks.length > 1) {
+      const idx = blocks.indexOf(block);
+      const dest = idx >= 0 ? blocks[older ? idx - 1 : idx + 1] : undefined;
+      if (dest) {
+        range.selectNodeContents(dest);
+        range.collapse(!older);
+        applyRange(el, range);
+        return true;
+      }
+    }
+    let target = null;
+    for (const br of el.querySelectorAll("br")) {
+      if (br.classList.contains(TRAILING_BR))
+        continue;
+      const side = caret.comparePoint(br, 0);
+      if (older) {
+        if (side <= 0)
+          target = br;
+      } else if (side > 0) {
+        target = br;
+        break;
+      }
+    }
+    if (!target)
+      return false;
+    if (older)
+      range.setStartBefore(target);
+    else
+      range.setStartAfter(target);
+    range.collapse(true);
+    if (!el.contains(range.startContainer))
+      return false;
+    applyRange(el, range);
+    return true;
+  }
+  function atDocEdge(el, start) {
+    const caret = collapsedCaret(el);
+    if (caret)
+      return atProgrammedEdge(el, caret, start);
+    try {
+      const view = pmViewOf(el);
+      const sel = view?.state?.selection;
+      const doc = view?.state?.doc;
+      if (!sel || sel.empty === false || typeof sel.from !== "number")
+        return false;
+      if (start)
+        return sel.from <= 1;
+      const size = doc?.content?.size;
+      return typeof size === "number" && typeof sel.to === "number" && sel.to >= size - 1;
+    } catch {
+      return false;
+    }
+  }
+  function onTopVisualLine(el) {
+    const caret = collapsedCaret(el);
+    if (!caret)
+      return false;
+    const caretRects = caret.getClientRects();
+    const caretRect = caretRects[0] ?? caret.getBoundingClientRect();
+    if (!caretRect.height && !caretRect.width)
+      return true;
+    const lines = visualLineTops(el);
+    if (lines.length < 2)
+      return true;
+    let index = 0;
+    let best = Infinity;
+    lines.forEach((line, i) => {
+      const dist = Math.abs(line - caretRect.top);
+      if (dist < best) {
+        best = dist;
+        index = i;
+      }
+    });
+    return index <= 0;
+  }
+  function bodyKey(text) {
+    return normalize(text).replace(/\n+$/, "");
+  }
+  function shownBody() {
+    const list = getEntries();
+    if (recalling)
+      return bodyKey(cursor < list.length ? list[cursor] : draft);
+    if (lastShown >= 0 && lastShown < list.length)
+      return bodyKey(list[lastShown]);
+    return null;
+  }
+  function userEdit(e) {
+    if (!(e instanceof InputEvent))
+      return false;
+    const t = e.inputType;
+    if (t.startsWith("delete"))
+      return true;
+    return t === "insertText" || t === "insertParagraph" || t === "insertLineBreak" || t === "insertCompositionText" || t === "insertFromPaste" || t === "insertFromDrop" || t === "insertReplacementText" || t === "historyUndo" || t === "historyRedo";
   }
   function matchesRecall(el) {
     if (!recalling)
       return false;
     const list = getEntries();
     const expected = cursor < list.length ? list[cursor] : draft;
-    return editorText(el) === expected || normalize(el.innerText ?? "") === expected;
+    const actual = editorText(el);
+    if (newlineCount(actual) !== newlineCount(expected))
+      return false;
+    if (actual === expected)
+      return true;
+    const inner = normalize(el.innerText ?? "");
+    return newlineCount(inner) === newlineCount(expected) && inner === expected;
   }
-  function dropRecall(el) {
+  function leaveBrowse() {
     invalidateApply();
     cursor = getEntries().length;
-    draft = editorText(el);
+    lastShown = -1;
     recalling = false;
     hideHud();
+  }
+  function dropRecall(el) {
+    leaveBrowse();
+    draft = editorText(el);
+  }
+  function cancelBrowse(el) {
+    const saved = draft;
+    leaveBrowse();
+    if (el?.isConnected)
+      setEditorText(el, saved, false);
+  }
+  function browseEditor() {
+    if (hudEditor?.isConnected)
+      return hudEditor;
+    const focused = chatEditor(document.activeElement);
+    if (focused)
+      return focused;
+    return document.querySelector(EDITOR_SEL3);
+  }
+  function markHistoryClosed() {
+    const wasOpen = historyOpen;
+    historyOpen = false;
+    if (!wasOpen)
+      return;
+    const el = hudEditor;
+    if (!recalling || !el?.isConnected || lastShown < 0)
+      return;
+    const list = getEntries();
+    if (lastShown < list.length)
+      showHud(`${lastShown + 1} / ${list.length}`, el);
+  }
+  function closeHistoryModal() {
+    if (!historyOpen)
+      return;
+    markHistoryClosed();
+    closeModal(HISTORY_MODAL_KEY);
   }
   function placeCaret(el, atStart) {
     if (composing)
       return;
     try {
-      const view = el.pmViewDesc?.view;
+      const view = pmViewOf(el);
       if (view) {
         if (view.composing)
           return;
@@ -28852,16 +30358,106 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       applying3 = false;
       const el = applyEl;
+      const moved = applyCaretMoved;
       applyEl = null;
+      applyCaretMoved = false;
       if (!el || composing)
         return;
       if (!recalling)
         return;
-      if (!matchesRecall(el))
-        dropRecall(el);
-      else
+      if (matchesRecall(el) && !moved)
         placeCaret(el, applyAtStart);
     }, APPLY_QUIET_MS);
+  }
+  function breakNodeType(nodes) {
+    for (const name of ["hardBreak", "hard_break", "hardbreak"]) {
+      if (nodes[name])
+        return nodes[name];
+    }
+    for (const type of Object.values(nodes)) {
+      if (type.spec?.linebreakReplacement)
+        return type;
+    }
+    return null;
+  }
+  function escapeHtml2(text) {
+    return text.replace(/[&<>"]/g, (ch) => {
+      if (ch === "&")
+        return "&" + "amp;";
+      if (ch === "<")
+        return "&" + "lt;";
+      if (ch === ">")
+        return "&" + "gt;";
+      return "&" + "quot;";
+    });
+  }
+  function insertLinesPm(el, text) {
+    const view = pmViewOf(el);
+    if (!view)
+      return false;
+    const brType = breakNodeType(view.state.schema.nodes);
+    if (!brType)
+      return false;
+    const lines = text.split(`
+`);
+    const nodes = [];
+    for (let i = 0;i < lines.length; i++) {
+      if (i > 0)
+        nodes.push(brType.create());
+      if (lines[i])
+        nodes.push(view.state.schema.text(lines[i]));
+    }
+    if (text.endsWith(`
+`))
+      nodes.push(view.state.schema.text("​"));
+    try {
+      let tr = view.state.tr.deleteSelection();
+      let pos = tr.selection.from;
+      for (const node of nodes) {
+        tr = tr.insert(pos, node);
+        pos += node.nodeSize;
+      }
+      view.dispatch(tr.scrollIntoView());
+      return true;
+    } catch (err) {
+      logger42.debug("insertLinesPm failed:", err);
+      return false;
+    }
+  }
+  function linesToHtml(text) {
+    const html = text.split(`
+`).map(escapeHtml2).join("<br>");
+    return text.endsWith(`
+`) ? html + "​" : html;
+  }
+  function insertLinesHtml(text) {
+    try {
+      return document.execCommand("insertHTML", false, linesToHtml(text));
+    } catch (err) {
+      logger42.debug("insertLinesHtml failed:", err);
+      return false;
+    }
+  }
+  function insertLinesDom(text) {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount)
+      return false;
+    const range = sel.getRangeAt(0);
+    const lines = text.split(`
+`);
+    const frag = document.createDocumentFragment();
+    for (let i = 0;i < lines.length; i++) {
+      if (i)
+        frag.appendChild(document.createElement("br"));
+      if (lines[i])
+        frag.appendChild(document.createTextNode(lines[i]));
+    }
+    if (text.endsWith(`
+`))
+      frag.appendChild(document.createTextNode("​"));
+    range.deleteContents();
+    range.insertNode(frag);
+    return true;
   }
   function setEditorText(el, text, atStart) {
     el.focus();
@@ -28875,25 +30471,53 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     applying3 = true;
     applyEl = el;
     applyAtStart = atStart;
+    applyCaretMoved = false;
     const gen = ++applyGen;
+    suppressSelect++;
     try {
-      if (!text)
-        document.execCommand("delete");
-      else
-        document.execCommand("insertText", false, text);
+      document.execCommand("delete");
+      if (text && !insertLinesPm(el, text) && !insertLinesHtml(text))
+        insertLinesDom(text);
     } catch (err) {
       logger42.debug("insertText failed:", err);
     }
     placeCaret(el, atStart);
+    requestAnimationFrame(() => {
+      suppressSelect = Math.max(0, suppressSelect - 1);
+    });
     scheduleApplyEnd(gen);
+  }
+  function stopHudEvent(e) {
+    e.preventDefault();
+    e.stopPropagation();
   }
   function hudEl() {
     let el = document.querySelector(`.${cl31("hud")}`);
-    if (el)
+    if (el?.querySelector(`.${cl31("hud-count")}`))
       return el;
+    el?.remove();
     el = document.createElement("div");
     el.className = cl31("hud");
+    el.setAttribute("role", "group");
     el.setAttribute("aria-live", "polite");
+    el.setAttribute("aria-label", "Input history");
+    const count = document.createElement("button");
+    count.type = "button";
+    count.className = cl31("hud-count");
+    count.addEventListener("click", (e) => {
+      stopHudEvent(e);
+      openHistoryModal();
+    });
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = cl31("hud-x");
+    close.setAttribute("aria-label", "Exit history");
+    close.textContent = "×";
+    close.addEventListener("click", (e) => {
+      stopHudEvent(e);
+      cancelBrowse(browseEditor());
+    });
+    el.append(count, close);
     document.body.appendChild(el);
     return el;
   }
@@ -28901,12 +30525,21 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     document.querySelector(`.${cl31("hud")}`)?.classList.remove(cl31("hud-on"));
   }
   function showHud(label, editor) {
+    if (historyOpen)
+      return;
     const bar = editor.closest(".query-bar");
     if (!bar)
       return;
+    hudEditor = editor;
     const el = hudEl();
-    el.textContent = label;
+    const count = el.querySelector(`.${cl31("hud-count")}`);
+    if (count) {
+      count.textContent = label;
+      count.setAttribute("aria-label", `Show input history (${label})`);
+    }
     requestAnimationFrame(() => {
+      if (historyOpen || !bar.isConnected)
+        return;
       const r = bar.getBoundingClientRect();
       el.style.left = `${r.left + r.width / 2}px`;
       el.style.top = `${r.top - HUD_GAP_PX}px`;
@@ -28915,7 +30548,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   function pushEntry(text) {
     const value = normalize(text);
-    if (!value)
+    if (!value || !hasContent(value))
       return;
     const now = Date.now();
     const prev = recentAt.get(value);
@@ -28935,7 +30568,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const list = getEntries();
     if (!list.length && older)
       return;
-    if (cursor >= list.length) {
+    if ((!recalling || cursor >= list.length) && lastShown >= 0 && lastShown < list.length)
+      cursor = lastShown;
+    else if (cursor >= list.length) {
       draft = editorText(el);
       cursor = list.length;
     }
@@ -28943,60 +30578,133 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (next < 0 || next > list.length)
       return;
     cursor = next;
-    recalling = true;
-    setEditorText(el, next === list.length ? draft : list[next], older);
-    if (next < list.length)
+    const onEntry = next < list.length;
+    recalling = onEntry;
+    lastShown = onEntry ? next : -1;
+    setEditorText(el, onEntry ? list[next] : draft, older);
+    if (onEntry)
       showHud(`${next + 1} / ${list.length}`, el);
     else
       hideHud();
   }
-  function onKeyDown5(e) {
-    if (imeEvent(e))
+  function caretNav(e) {
+    return e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Home" || e.key === "End";
+  }
+  function atProgrammedEdge(el, caret, atStart) {
+    const probe = caret.cloneRange();
+    if (atStart)
+      probe.setStart(el, 0);
+    else
+      probe.setEnd(el, el.childNodes.length);
+    if (probe.toString().replace(ZWSP, "").trim())
+      return false;
+    for (const br of probe.cloneContents().querySelectorAll("br")) {
+      if (!br.classList.contains(TRAILING_BR))
+        return false;
+    }
+    return true;
+  }
+  function onSelectionChange() {
+    if (suppressSelect || !applying3 || applyCaretMoved)
       return;
-    if (e.ctrlKey || e.metaKey)
+    const el = applyEl;
+    if (!el)
+      return;
+    const caret = collapsedCaret(el);
+    if (!caret || !atProgrammedEdge(el, caret, applyAtStart))
+      applyCaretMoved = true;
+  }
+  function onKeyDown5(e) {
+    const esc = e.key === "Escape" && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey;
+    if (esc) {
+      if (historyOpen || imeEvent(e))
+        return;
+      if (recalling || lastShown >= 0) {
+        cancelBrowse(chatEditor(e.target) ?? browseEditor());
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+      return;
+    }
+    if (historyOpen && (e.key === "ArrowUp" || e.key === "ArrowDown"))
+      return;
+    if (imeEvent(e))
       return;
     const el = chatEditor(e.target);
     if (!el)
       return;
-    if (applying3 && e.key !== "ArrowUp" && e.key !== "ArrowDown")
-      invalidateApply();
-    if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
-      dropRecall(el);
-      e.preventDefault();
-      e.stopImmediatePropagation();
+    if (applying3 && caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+      applyCaretMoved = true;
       return;
     }
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+      pushEntry(editorText(el));
+      return;
+    }
+    if (e.ctrlKey || e.metaKey)
+      return;
+    const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
+    if (applying3 && !arrow)
+      invalidateApply();
     if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
       pushEntry(editorText(el));
       return;
     }
-    if (e.key !== "ArrowUp" && e.key !== "ArrowDown")
-      return;
-    if (e.shiftKey)
+    if (!arrow || e.shiftKey)
       return;
     const older = e.key === "ArrowUp";
-    const force = e.altKey;
-    const list = getEntries();
-    if (!force) {
-      const edge = caretOnEdge(el);
-      if (older && !edge.first || !older && !edge.last)
+    if (!e.altKey) {
+      const caret = collapsedCaret(el);
+      if (!caret) {
+        if (applying3)
+          applyCaretMoved = true;
         return;
+      }
+      if (!isPlaceholderEditor(el)) {
+        const pinned = older ? atDocEdge(el, true) : atDocEdge(el, false);
+        if (!pinned) {
+          if (stepLine(el, older)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (applying3)
+              applyCaretMoved = true;
+            return;
+          }
+          const soft = stepSoftLine(el, older);
+          if (soft > 0 || soft < 0 && !(older && onTopVisualLine(el))) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (applying3)
+              applyCaretMoved = true;
+            return;
+          }
+          const stayed = collapsedCaret(el);
+          if (stayed && (older ? breakBefore(el, stayed) : breakAfter(el, stayed))) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (nudgeCaret(el, stayed, older) && applying3)
+              applyCaretMoved = true;
+            return;
+          }
+        }
+      }
     }
-    if (older && (!list.length || cursor <= 0))
+    const list = getEntries();
+    const resume = lastShown >= 0 && lastShown < list.length && (!recalling || cursor >= list.length);
+    if (older && (!list.length || !resume && cursor <= 0))
       return;
-    if (!older && cursor >= list.length)
+    if (!older && !resume && cursor >= list.length)
       return;
     e.preventDefault();
     e.stopImmediatePropagation();
     cycle2(older, el);
   }
   function onPointerDown4(e) {
-    if (!recalling)
+    if (!recalling || !applying3)
       return;
-    const el = chatEditor(e.target);
-    if (!el)
+    if (!chatEditor(e.target))
       return;
-    dropRecall(el);
+    applyCaretMoved = true;
   }
   function onCompositionStart(e) {
     if (!chatEditor(e.target))
@@ -29009,8 +30717,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (!el)
       return;
     composing = false;
-    if (recalling && !matchesRecall(el))
-      dropRecall(el);
+    if (!recalling)
+      return;
+    const shown = shownBody();
+    if (shown != null && bodyKey(editorText(el)) === shown)
+      return;
+    lastShown = -1;
+    dropRecall(el);
   }
   function onInput(e) {
     const el = chatEditor(e.target);
@@ -29021,10 +30734,15 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         invalidateApply();
       return;
     }
-    const recalled = matchesRecall(el);
-    if (applying3 && recalled)
+    if (applying3)
       return;
-    if (recalling && !recalled)
+    if (!userEdit(e))
+      return;
+    const shown = shownBody();
+    if (shown != null && bodyKey(editorText(el)) === shown)
+      return;
+    lastShown = -1;
+    if (recalling)
       dropRecall(el);
   }
   function onSubmit(e) {
@@ -29065,16 +30783,22 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (imagine === useImagineBucket())
       resetBrowse(next.length);
   }
-  function HistoryPanel() {
+  function HistoryPanel({ picker, onUse } = {}) {
     const { entries, imagineEntries, separateImagine } = settings34.use(["entries", "imagineEntries", "separateImagine"]);
-    const [bucket, setBucket] = useState("chat");
+    const [bucket, setBucket] = useState(useImagineBucket() ? "imagine" : "chat");
     const imagine = !!separateImagine && bucket === "imagine";
     const list = imagine ? imagineEntries ?? [] : entries ?? [];
+    const sameBucket = imagine === useImagineBucket();
+    const live = picker && sameBucket && cursor >= 0 && cursor < list.length ? cursor : -1;
     const [query, setQuery] = useState("");
     const [openId, setOpenId] = useState(null);
     const [confirm, setConfirm] = useState(false);
+    const listRef = useRef(null);
     const needle = query.trim().toLowerCase();
     const visible = list.map((text, index) => ({ text, index })).filter((row) => !needle || row.text.toLowerCase().includes(needle)).toReversed();
+    useEffect(() => {
+      listRef.current?.querySelector(`.${cl31("item-live")}`)?.scrollIntoView({ block: "nearest" });
+    }, [live, bucket]);
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
@@ -29119,12 +30843,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }, "No stored prompts."), list.length > 0 && visible.length === 0 && /* @__PURE__ */ React.createElement(Paragraph, {
       className: cl31("empty")
     }, "No matches."), visible.length > 0 && /* @__PURE__ */ React.createElement("div", {
-      className: cl31("list")
+      className: cl31("list", picker && "list-picker"),
+      ref: listRef
     }, visible.map((row) => {
       const expanded = openId === row.index;
       return /* @__PURE__ */ React.createElement("div", {
         key: row.index,
-        className: cl31("item", expanded && "item-on")
+        className: cl31("item", expanded && "item-on", row.index === live && "item-live")
       }, /* @__PURE__ */ React.createElement("span", {
         className: cl31("index")
       }, row.index + 1), /* @__PURE__ */ React.createElement("div", {
@@ -29142,7 +30867,16 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         className: cl31("body", !expanded && "clamp")
       }, row.text)), /* @__PURE__ */ React.createElement("div", {
         className: cl31("actions")
-      }, /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
+      }, picker && sameBucket && !!onUse && /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
+        variant: "tertiary",
+        size: "sm",
+        shape: "square",
+        tooltipContent: "Use",
+        "aria-label": "Use",
+        onClick: () => onUse(row.text, row.index)
+      }, /* @__PURE__ */ React.createElement(TextCursorInputIcon, {
+        size: 16
+      })), /* @__PURE__ */ React.createElement(ButtonWithTooltip, {
         variant: "tertiary",
         size: "sm",
         shape: "square",
@@ -29186,10 +30920,45 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       }
     }));
   }
+  function adoptEntry(text, index) {
+    const el = browseEditor();
+    if (!el)
+      return;
+    cursor = index;
+    recalling = true;
+    lastShown = index;
+    setEditorText(el, text, false);
+    showHud(`${index + 1} / ${getEntries().length}`, el);
+  }
+  function HistoryModal({ onClose }) {
+    return /* @__PURE__ */ React.createElement(VoidPPDialogShell, {
+      title: "Input history",
+      subtitle: "Stored on this device.",
+      onClose,
+      size: "md"
+    }, /* @__PURE__ */ React.createElement(HistoryPanel, {
+      picker: true,
+      onUse: (text, index) => {
+        adoptEntry(text, index);
+        onClose();
+      }
+    }));
+  }
+  var SafeHistoryModal = ErrorBoundary.wrap(HistoryModal);
+  function openHistoryModal() {
+    historyOpen = true;
+    hideHud();
+    openModal((props) => /* @__PURE__ */ React.createElement(SafeHistoryModal, {
+      onClose: () => {
+        markHistoryClosed();
+        props.onClose();
+      }
+    }), { modalKey: HISTORY_MODAL_KEY });
+  }
   var inputHistory_default = definePlugin({
     name: "InputHistory",
     icon: HistoryIcon,
-    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell. Optional separate Imagine history.",
+    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell. Esc restores your draft. Click the counter to browse history.",
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
@@ -29200,8 +30969,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (keys3)
         return;
       cursor = getEntries().length;
+      lastShown = -1;
       recalling = false;
       composing = false;
+      historyOpen = false;
+      hudEditor = null;
       invalidateApply();
       keys3 = new AbortController;
       const { signal } = keys3;
@@ -29212,14 +30984,18 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       document.addEventListener("submit", onSubmit, { capture: true, signal });
       document.addEventListener("click", onClick2, { capture: true, signal });
       document.addEventListener("pointerdown", onPointerDown4, { capture: true, signal });
+      document.addEventListener("selectionchange", onSelectionChange, { signal });
     },
     stop() {
       keys3?.abort();
       keys3 = null;
+      closeHistoryModal();
       hideHud();
       recentAt.clear();
       composing = false;
       recalling = false;
+      lastShown = -1;
+      hudEditor = null;
       invalidateApply();
     },
     onSettingsChange() {
@@ -29229,6 +31005,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         setEntries(next);
       if (cursor > next.length)
         cursor = next.length;
+      if (lastShown >= next.length)
+        lastShown = -1;
       const imagine = listOf(settings34.plain.imagineEntries);
       const imagineNext = cap(imagine);
       if (imagineNext.length !== imagine.length)
@@ -29239,6 +31017,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         selector: (s) => String(s.route?.page ?? ""),
         handler() {
           resetBrowse(getEntries().length);
+          closeHistoryModal();
         }
       }
     }
@@ -29314,9 +31093,9 @@ div:has(> #grok-bot-nav-button) {
   messageTimestamps_default.updatedAt = 1789881463000;
   streamerMode_default.updatedAt = 1787870966000;
   consoleJanitor_default.updatedAt = 1787789817000;
-  betterCanvas_default.updatedAt = 1790352834000;
+  betterCanvas_default.updatedAt = 1790360947000;
   noDictation_default.updatedAt = 1788037550000;
-  betterQuotes_default.updatedAt = 1790264305000;
+  betterQuotes_default.updatedAt = 1790362069000;
   cloneChats_default.updatedAt = 1787870966000;
   composerOpacity_default.updatedAt = 1790097681000;
   incognito_default.updatedAt = 1787870966000;

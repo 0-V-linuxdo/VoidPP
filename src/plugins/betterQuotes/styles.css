@@ -88,3 +88,97 @@
     width: 0.875rem;
     height: 0.875rem;
 }
+
+[data-void-qj-preview],
+[data-void-qj-preview] * {
+    cursor: pointer;
+}
+
+.void-qj-back {
+    position: fixed;
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: hsl(var(--surface-l2));
+    color: hsl(var(--fg-secondary));
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px hsl(var(--fg-secondary));
+}
+
+.void-qj-back:is(:hover, :focus-visible) {
+    background: hsl(var(--button-ghost-hover));
+    color: hsl(var(--fg-primary));
+}
+
+.void-qj-back:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px hsl(var(--fg-accent));
+}
+
+.void-qj-mark,
+.void-qj-mark svg {
+    display: block;
+    width: 0.875rem;
+    height: 0.875rem;
+    pointer-events: none;
+}
+
+.void-qj-count {
+    position: absolute;
+    top: -0.1875rem;
+    right: -0.1875rem;
+    min-width: 0.75rem;
+    height: 0.75rem;
+    padding: 0 0.125rem;
+    border-radius: 999px;
+    background: hsl(var(--fg-primary));
+    color: hsl(var(--surface-l1));
+    font-size: 0.5625rem;
+    font-weight: 650;
+    line-height: 0.75rem;
+    text-align: center;
+    pointer-events: none;
+}
+
+.void-qj-menu {
+    position: fixed;
+    z-index: 31;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    width: max-content;
+    max-width: 16rem;
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    background: hsl(var(--surface-l2));
+    color: hsl(var(--fg-primary));
+    box-shadow:
+        inset 0 0 0 1px hsl(var(--border-l2)),
+        0 0.5rem 1.25rem rgb(0 0 0 / 24%);
+}
+
+.void-qj-item {
+    max-width: 16rem;
+    padding: 0.35rem 0.5rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: inherit;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: start;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    cursor: pointer;
+}
+
+.void-qj-item:is(:hover, :focus-visible) {
+    background: hsl(var(--button-ghost-hover));
+    color: hsl(var(--fg-primary));
+}

@@ -6,18 +6,21 @@
 
 import "./styles.css";
 
+import { type ModalProps, closeModal, openModal } from "@api/Modals";
 import { definePluginSettings } from "@api/Settings";
 import { Button, ButtonWithTooltip, ConfirmDialog, Flex, Input, Paragraph } from "@components";
-import { CopyIcon, HistoryIcon, Trash2Icon } from "@components/icons";
+import { ErrorBoundary } from "@components/ErrorBoundary";
+import { CopyIcon, HistoryIcon, TextCursorInputIcon, Trash2Icon } from "@components/icons";
+import { VoidPPDialogShell } from "@components/settings/tabs/VoidPPDialogShell";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
-import { React, useState } from "@turbopack/common/react";
+import { React, useEffect, useRef, useState } from "@turbopack/common/react";
 import { RoutingStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
 import { clamp, copyToClipboard } from "@utils/misc";
 import { pluralize } from "@utils/text";
-import definePlugin, { OptionType } from "@utils/types";
+import definePlugin, { type IPluginOptionComponentProps, OptionType } from "@utils/types";
 
 const logger = new Logger("InputHistory");
 const cl = classNameFactory("void-ih-");
@@ -30,6 +33,7 @@ const MAX_DEFAULT = 100;
 const HUD_GAP_PX = 8;
 const APPLY_QUIET_MS = 120;
 const CAPTURE_DEDUPE_MS = 2000;
+const HISTORY_MODAL_KEY = "void-ih-history";
 
 interface PrivateSettings {
     entries: string[];
@@ -58,6 +62,7 @@ const settings = definePluginSettings({
 const recentAt = new Map<string, number>();
 
 let cursor = 0;
+let lastShown = -1;
 let draft = "";
 let recalling = false;
 let applying = false;
@@ -67,6 +72,10 @@ let keys: AbortController | null = null;
 let applyTimer: ReturnType<typeof setTimeout> | undefined;
 let applyEl: HTMLElement | null = null;
 let applyAtStart = true;
+let applyCaretMoved = false;
+let suppressSelect = 0;
+let historyOpen = false;
+let hudEditor: HTMLElement | null = null;
 
 function isImaginePage(): boolean {
     try {
@@ -103,7 +112,11 @@ function setEntries(entries: string[]) {
 }
 
 function normalize(text: string): string {
-    return text.replaceAll(ZWSP, "").replace(/\n$/, "").trim();
+    return text.replaceAll(ZWSP, "").replace(/\r\n?/g, "\n");
+}
+
+function hasContent(text: string): boolean {
+    return text.replace(/[\s\u00a0]/g, "") !== "";
 }
 
 function imeEvent(e: Event): boolean {
@@ -117,6 +130,7 @@ function invalidateApply() {
     applyGen++;
     applying = false;
     applyEl = null;
+    applyCaretMoved = false;
     clearTimeout(applyTimer);
     applyTimer = undefined;
 }
@@ -124,6 +138,7 @@ function invalidateApply() {
 function resetBrowse(length: number) {
     invalidateApply();
     cursor = length;
+    lastShown = -1;
     draft = "";
     recalling = false;
     hideHud();
@@ -135,79 +150,454 @@ function chatEditor(t: EventTarget | null): HTMLElement | null {
     return null;
 }
 
+const TRAILING_BR = "ProseMirror-trailingBreak";
+
+function blockText(block: Element): string {
+    let out = "";
+    const walk = (node: Node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+            out += node.textContent ?? "";
+            return;
+        }
+        if (!(node instanceof Element)) return;
+        if (node.tagName === "BR") {
+            if (!node.classList.contains(TRAILING_BR)) out += "\n";
+            return;
+        }
+        for (const child of node.childNodes) walk(child);
+    };
+    for (const child of block.childNodes) walk(child);
+    return out;
+}
+
+function pmViewOf(el: HTMLElement) {
+    try {
+        return (el as unknown as { pmViewDesc?: { view?: {
+            composing?: boolean;
+            dispatch(tr: unknown): void;
+            state: {
+                doc: {
+                    forEach(cb: (node: PmBlock) => void): void;
+                    resolve?(pos: number): unknown;
+                };
+                schema: {
+                    nodes: Record<string, { spec?: { linebreakReplacement?: boolean }; create(): PmInline }>;
+                    text(text: string): PmInline;
+                };
+                selection: { from: number; constructor: { atStart(doc: unknown): unknown; atEnd(doc: unknown): unknown; near?(pos: unknown): unknown } };
+                tr: {
+                    deleteSelection(): PmTr;
+                    insert(pos: number, node: PmInline): PmTr;
+                    replaceSelectionWith(node: unknown): { scrollIntoView(): unknown };
+                    setSelection(sel: unknown): { scrollIntoView(): unknown };
+                    scrollIntoView(): unknown;
+                };
+            };
+        } } }).pmViewDesc?.view ?? null;
+    } catch {
+        return null;
+    }
+}
+
+type PmInline = { isText?: boolean; text?: string; type?: unknown; nodeSize: number; forEach(cb: (node: PmInline) => void): void };
+type PmBlock = { forEach(cb: (node: PmInline) => void): void };
+type PmTr = { insert(pos: number, node: PmInline): PmTr; scrollIntoView(): unknown; selection: { from: number } };
+
+function serializePmDoc(doc: { forEach(cb: (node: PmBlock) => void): void }, brType: unknown): string {
+    const blocks: string[] = [];
+    doc.forEach(block => {
+        let line = "";
+        block.forEach(child => {
+            if (child.isText) line += child.text ?? "";
+            else if (brType && child.type === brType) line += "\n";
+            else {
+                child.forEach(grand => {
+                    if (grand.isText) line += grand.text ?? "";
+                    else if (brType && grand.type === brType) line += "\n";
+                });
+            }
+        });
+        blocks.push(line);
+    });
+    return blocks.join("\n");
+}
+
+function newlineCount(text: string): number {
+    let n = 0;
+    for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) === 10) n++;
+    return n;
+}
+
 function editorText(el: HTMLElement): string {
+    try {
+        const view = pmViewOf(el);
+        if (view?.state?.doc) {
+            const br = breakNodeType(view.state.schema.nodes);
+            return normalize(serializePmDoc(view.state.doc, br));
+        }
+    } catch (err) {
+        logger.debug("editorText pm failed:", err);
+    }
     const blocks = el.querySelectorAll(":scope > *");
     const raw = blocks.length
-        ? Array.from(blocks, b => b.textContent ?? "").join("\n")
+        ? Array.from(blocks, blockText).join("\n")
         : (el.innerText ?? el.textContent ?? "");
     return normalize(raw);
 }
 
-function spanHeight(range: Range): number {
-    const rects = range.getClientRects();
-    let top = Infinity;
-    let bottom = -Infinity;
-    for (const r of rects) {
-        if (r.height === 0 && r.width === 0) continue;
-        if (r.top < top) top = r.top;
-        if (r.bottom > bottom) bottom = r.bottom;
-    }
-    if (top === Infinity) return range.getBoundingClientRect().height;
-    return bottom - top;
+function collapsedCaret(el: HTMLElement): Range | null {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount || !sel.isCollapsed) return null;
+    const range = sel.getRangeAt(0);
+    return el.contains(range.startContainer) ? range : null;
 }
 
-function caretOnEdge(el: HTMLElement): { first: boolean; last: boolean } {
+function directBlock(el: HTMLElement, node: Node): Element | null {
+    let cur: Node | null = node;
+    while (cur && cur.parentNode !== el) cur = cur.parentNode;
+    return cur instanceof Element ? cur : null;
+}
+
+function sideText(el: HTMLElement, caret: Range, before: boolean): string {
+    const range = caret.cloneRange();
+    if (before) range.setStart(el, 0);
+    else range.setEnd(el, el.childNodes.length);
+    return range.toString();
+}
+
+function contentAround(el: HTMLElement, node: Node, before: boolean): boolean {
+    const range = document.createRange();
+    if (before) {
+        range.setStart(el, 0);
+        range.setEndBefore(node);
+    } else {
+        range.setStartAfter(node);
+        range.setEnd(el, el.childNodes.length);
+    }
+    if (range.toString().replace(ZWSP, "").trim()) return true;
+    return !!range.cloneContents().querySelector("br");
+}
+
+function brPast(el: HTMLElement, caret: Range, before: boolean): { hit: boolean; onlyTrailing: boolean } {
+    let hit = false;
+    let onlyTrailing = true;
+    for (const br of el.querySelectorAll("br")) {
+        const side = caret.comparePoint(br, 0);
+        const onBreak = side === 0 && contentAround(el, br, before);
+        const past = (before ? side < 0 : side > 0) || onBreak;
+        if (!past) continue;
+        hit = true;
+        if (!br.classList.contains(TRAILING_BR)) onlyTrailing = false;
+    }
+    return { hit, onlyTrailing };
+}
+
+function breakBefore(el: HTMLElement, caret: Range): boolean {
+    const blocks = el.children;
+    const block = directBlock(el, caret.startContainer);
+    if (blocks.length > 1 && block && block !== blocks[0]) return true;
+    if (sideText(el, caret, true).includes("\n")) return true;
+    const prior = brPast(el, caret, true);
+    if (!prior.hit) return false;
+    const first = !block || blocks.length === 0 || block === blocks[0];
+    const nothingAfter = !brPast(el, caret, false).hit && !sideText(el, caret, false).replace(ZWSP, "").trim();
+    if (prior.onlyTrailing && first && nothingAfter) return false;
+    return true;
+}
+
+function breakAfter(el: HTMLElement, caret: Range): boolean {
+    const blocks = el.children;
+    const block = directBlock(el, caret.startContainer);
+    if (blocks.length > 1 && block && block !== blocks[blocks.length - 1]) return true;
+    if (sideText(el, caret, false).includes("\n")) return true;
+    const later = brPast(el, caret, false);
+    if (!later.hit || later.onlyTrailing) return false;
+    return true;
+}
+
+function isPlaceholderEditor(el: HTMLElement): boolean {
+    const text = (el.textContent ?? "").replaceAll(ZWSP, "").trim();
+    if (text) return false;
+    if (el.children.length > 1) return false;
+    return el.querySelectorAll("br").length <= 1;
+}
+
+function syncPm(el: HTMLElement, range: Range) {
+    try {
+        const view = (el as unknown as { pmViewDesc?: { view?: {
+            posAtDOM?(node: Node, offset: number): number;
+            dispatch(tr: unknown): void;
+            state: {
+                doc: { resolve(pos: number): unknown };
+                selection: { constructor: { near?(pos: unknown): unknown } };
+                tr: { setSelection(sel: unknown): { scrollIntoView(): unknown } };
+            };
+        } } }).pmViewDesc?.view;
+        if (!view?.posAtDOM) return;
+        const pos = view.posAtDOM(range.startContainer, range.startOffset);
+        if (typeof pos !== "number" || pos < 0) return;
+        const near = view.state.selection.constructor.near;
+        if (!near) return;
+        const pmSel = near(view.state.doc.resolve(pos));
+        if (!pmSel) return;
+        view.dispatch(view.state.tr.setSelection(pmSel).scrollIntoView());
+    } catch (err) {
+        logger.debug("syncPm failed:", err);
+    }
+}
+
+function applyRange(el: HTMLElement, range: Range) {
     const sel = window.getSelection();
-    if (!sel?.rangeCount || !sel.isCollapsed) return { first: false, last: false };
-    const caret = sel.getRangeAt(0);
-    if (!el.contains(caret.startContainer)) return { first: false, last: false };
-    if (!el.innerText?.trim()) return { first: true, last: true };
+    if (!sel) return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    syncPm(el, range);
+}
 
-    const before = document.createRange();
-    before.selectNodeContents(el);
-    before.setEnd(caret.startContainer, caret.startOffset);
-    const after = document.createRange();
-    after.selectNodeContents(el);
-    after.setStart(caret.startContainer, caret.startOffset);
+function stepLine(el: HTMLElement, older: boolean): boolean {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount || !sel.isCollapsed || typeof sel.modify !== "function") return false;
+    const before = sel.getRangeAt(0);
+    const node = before.startContainer;
+    const offset = before.startOffset;
+    if (!el.contains(node)) return false;
+    sel.modify("move", older ? "backward" : "forward", "line");
+    if (!sel.rangeCount || !sel.isCollapsed) return true;
+    const after = sel.getRangeAt(0);
+    if (!el.contains(after.startContainer)) {
+        const back = document.createRange();
+        back.setStart(node, offset);
+        back.collapse(true);
+        applyRange(el, back);
+        return false;
+    }
+    if (after.startContainer === node && after.startOffset === offset) return false;
+    syncPm(el, after);
+    return true;
+}
 
-    const { lineHeight, fontSize } = getComputedStyle(el);
-    const lh = parseFloat(lineHeight);
-    const fs = parseFloat(fontSize) || 16;
-    const budget = (lh > 0 ? lh : fs * 1.5) * 1.5;
-
-    return {
-        first: spanHeight(before) <= budget,
-        last: spanHeight(after) <= budget,
+function caretFromPoint(x: number, y: number): Range | null {
+    const doc = document as Document & {
+        caretPositionFromPoint?(x: number, y: number): { offsetNode: Node; offset: number } | null;
+        caretRangeFromPoint?(x: number, y: number): Range | null;
     };
+    try {
+        const pos = doc.caretPositionFromPoint?.(x, y);
+        if (pos?.offsetNode) {
+            const range = document.createRange();
+            const max = pos.offsetNode.nodeType === Node.TEXT_NODE
+                ? (pos.offsetNode.textContent?.length ?? 0)
+                : pos.offsetNode.childNodes.length;
+            range.setStart(pos.offsetNode, Math.min(Math.max(pos.offset, 0), max));
+            range.collapse(true);
+            return range;
+        }
+    } catch { /* point missed the document */ }
+    try {
+        return doc.caretRangeFromPoint?.(x, y) ?? null;
+    } catch {
+        return null;
+    }
+}
+
+function visualLineTops(el: HTMLElement): number[] {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const tops: number[] = [];
+    for (const rect of range.getClientRects()) {
+        if (rect.height < 1 && rect.width < 1) continue;
+        if (!tops.some(top => Math.abs(top - rect.top) < 4)) tops.push(rect.top);
+    }
+    tops.sort((a, b) => a - b);
+    return tops;
+}
+
+function stepSoftLine(el: HTMLElement, older: boolean): number {
+    const caret = collapsedCaret(el);
+    if (!caret) return 0;
+    const caretRects = caret.getClientRects();
+    const caretRect = caretRects[0] ?? caret.getBoundingClientRect();
+    if (!caretRect.height && !caretRect.width) return 0;
+    const lines = visualLineTops(el);
+    if (lines.length < 2) return 0;
+    let index = 0;
+    let best = Infinity;
+    lines.forEach((line, i) => {
+        const dist = Math.abs(line - caretRect.top);
+        if (dist < best) {
+            best = dist;
+            index = i;
+        }
+    });
+    const next = older ? index - 1 : index + 1;
+    if (next < 0 || next >= lines.length) return 0;
+    const box = el.getBoundingClientRect();
+    const x = Math.min(Math.max(caretRect.left + 1, box.left + 2), box.right - 2);
+    const y = lines[next] + Math.max(4, caretRect.height * 0.4);
+    const hit = caretFromPoint(x, y);
+    if (hit && el.contains(hit.startContainer)) {
+        hit.collapse(true);
+        if (hit.startContainer !== caret.startContainer || hit.startOffset !== caret.startOffset) {
+            applyRange(el, hit);
+            return 1;
+        }
+    }
+    return -1;
+}
+
+function nudgeCaret(el: HTMLElement, caret: Range, older: boolean): boolean {
+    const blocks = Array.from(el.children);
+    const block = directBlock(el, caret.startContainer);
+    const range = document.createRange();
+    if (block && blocks.length > 1) {
+        const idx = blocks.indexOf(block);
+        const dest = idx >= 0 ? blocks[older ? idx - 1 : idx + 1] : undefined;
+        if (dest) {
+            range.selectNodeContents(dest);
+            range.collapse(!older);
+            applyRange(el, range);
+            return true;
+        }
+    }
+    let target: Element | null = null;
+    for (const br of el.querySelectorAll("br")) {
+        if (br.classList.contains(TRAILING_BR)) continue;
+        const side = caret.comparePoint(br, 0);
+        if (older) {
+            if (side <= 0) target = br;
+        } else if (side > 0) {
+            target = br;
+            break;
+        }
+    }
+    if (!target) return false;
+    if (older) range.setStartBefore(target);
+    else range.setStartAfter(target);
+    range.collapse(true);
+    if (!el.contains(range.startContainer)) return false;
+    applyRange(el, range);
+    return true;
+}
+
+function atDocEdge(el: HTMLElement, start: boolean): boolean {
+    const caret = collapsedCaret(el);
+    if (caret) return atProgrammedEdge(el, caret, start);
+    try {
+        const view = pmViewOf(el);
+        const sel = view?.state?.selection as { empty?: boolean; from?: number; to?: number } | undefined;
+        const doc = view?.state?.doc as { content?: { size?: number } } | undefined;
+        if (!sel || sel.empty === false || typeof sel.from !== "number") return false;
+        if (start) return sel.from <= 1;
+        const size = doc?.content?.size;
+        return typeof size === "number" && typeof sel.to === "number" && sel.to >= size - 1;
+    } catch {
+        return false;
+    }
+}
+
+function onTopVisualLine(el: HTMLElement): boolean {
+    const caret = collapsedCaret(el);
+    if (!caret) return false;
+    const caretRects = caret.getClientRects();
+    const caretRect = caretRects[0] ?? caret.getBoundingClientRect();
+    if (!caretRect.height && !caretRect.width) return true;
+    const lines = visualLineTops(el);
+    if (lines.length < 2) return true;
+    let index = 0;
+    let best = Infinity;
+    lines.forEach((line, i) => {
+        const dist = Math.abs(line - caretRect.top);
+        if (dist < best) {
+            best = dist;
+            index = i;
+        }
+    });
+    return index <= 0;
+}
+
+function bodyKey(text: string): string {
+    return normalize(text).replace(/\n+$/, "");
+}
+
+function shownBody(): string | null {
+    const list = getEntries();
+    if (recalling) return bodyKey(cursor < list.length ? list[cursor] : draft);
+    if (lastShown >= 0 && lastShown < list.length) return bodyKey(list[lastShown]);
+    return null;
+}
+
+function userEdit(e: Event): boolean {
+    if (!(e instanceof InputEvent)) return false;
+    const t = e.inputType;
+    if (t.startsWith("delete")) return true;
+    return t === "insertText"
+        || t === "insertParagraph"
+        || t === "insertLineBreak"
+        || t === "insertCompositionText"
+        || t === "insertFromPaste"
+        || t === "insertFromDrop"
+        || t === "insertReplacementText"
+        || t === "historyUndo"
+        || t === "historyRedo";
 }
 
 function matchesRecall(el: HTMLElement): boolean {
     if (!recalling) return false;
     const list = getEntries();
     const expected = cursor < list.length ? list[cursor] : draft;
-    return editorText(el) === expected || normalize(el.innerText ?? "") === expected;
+    const actual = editorText(el);
+    if (newlineCount(actual) !== newlineCount(expected)) return false;
+    if (actual === expected) return true;
+    const inner = normalize(el.innerText ?? "");
+    return newlineCount(inner) === newlineCount(expected) && inner === expected;
+}
+
+function leaveBrowse() {
+    invalidateApply();
+    cursor = getEntries().length;
+    lastShown = -1;
+    recalling = false;
+    hideHud();
 }
 
 function dropRecall(el: HTMLElement) {
-    invalidateApply();
-    cursor = getEntries().length;
+    leaveBrowse();
     draft = editorText(el);
-    recalling = false;
-    hideHud();
+}
+
+function cancelBrowse(el: HTMLElement | null) {
+    const saved = draft;
+    leaveBrowse();
+    if (el?.isConnected) setEditorText(el, saved, false);
+}
+
+function browseEditor(): HTMLElement | null {
+    if (hudEditor?.isConnected) return hudEditor;
+    const focused = chatEditor(document.activeElement);
+    if (focused) return focused;
+    return document.querySelector<HTMLElement>(EDITOR_SEL);
+}
+
+function markHistoryClosed() {
+    const wasOpen = historyOpen;
+    historyOpen = false;
+    if (!wasOpen) return;
+    const el = hudEditor;
+    if (!recalling || !el?.isConnected || lastShown < 0) return;
+    const list = getEntries();
+    if (lastShown < list.length) showHud(`${lastShown + 1} / ${list.length}`, el);
+}
+
+function closeHistoryModal() {
+    if (!historyOpen) return;
+    markHistoryClosed();
+    closeModal(HISTORY_MODAL_KEY);
 }
 
 function placeCaret(el: HTMLElement, atStart: boolean) {
     if (composing) return;
     try {
-        const view = (el as unknown as { pmViewDesc?: { view?: {
-            composing?: boolean;
-            state: {
-                doc: unknown;
-                selection: { constructor: { atStart(doc: unknown): unknown; atEnd(doc: unknown): unknown } };
-                tr: { setSelection(sel: unknown): { scrollIntoView(): unknown } };
-            };
-            dispatch(tr: unknown): void;
-        } } }).pmViewDesc?.view;
+        const view = pmViewOf(el);
         if (view) {
             if (view.composing) return;
             const Sel = view.state.selection.constructor;
@@ -233,12 +623,89 @@ function scheduleApplyEnd(gen: number) {
         if (gen !== applyGen) return;
         applying = false;
         const el = applyEl;
+        const moved = applyCaretMoved;
         applyEl = null;
+        applyCaretMoved = false;
         if (!el || composing) return;
         if (!recalling) return;
-        if (!matchesRecall(el)) dropRecall(el);
-        else placeCaret(el, applyAtStart);
+        if (matchesRecall(el) && !moved) placeCaret(el, applyAtStart);
     }, APPLY_QUIET_MS);
+}
+
+function breakNodeType(nodes: Record<string, { spec?: { linebreakReplacement?: boolean }; create(): unknown }>) {
+    for (const name of ["hardBreak", "hard_break", "hardbreak"]) {
+        if (nodes[name]) return nodes[name];
+    }
+    for (const type of Object.values(nodes)) {
+        if (type.spec?.linebreakReplacement) return type;
+    }
+    return null;
+}
+
+function escapeHtml(text: string): string {
+    return text.replace(/[&<>"]/g, ch => {
+        if (ch === "&") return "&" + "amp;";
+        if (ch === "<") return "&" + "lt;";
+        if (ch === ">") return "&" + "gt;";
+        return "&" + "quot;";
+    });
+}
+
+function insertLinesPm(el: HTMLElement, text: string): boolean {
+    const view = pmViewOf(el);
+    if (!view) return false;
+    const brType = breakNodeType(view.state.schema.nodes);
+    if (!brType) return false;
+    const lines = text.split("\n");
+    const nodes: PmInline[] = [];
+    for (let i = 0; i < lines.length; i++) {
+        if (i > 0) nodes.push(brType.create());
+        if (lines[i]) nodes.push(view.state.schema.text(lines[i]));
+    }
+    if (text.endsWith("\n")) nodes.push(view.state.schema.text("\u200b"));
+    try {
+        let tr = view.state.tr.deleteSelection();
+        let pos = tr.selection.from;
+        for (const node of nodes) {
+            tr = tr.insert(pos, node);
+            pos += node.nodeSize;
+        }
+        view.dispatch(tr.scrollIntoView());
+        return true;
+    } catch (err) {
+        logger.debug("insertLinesPm failed:", err);
+        return false;
+    }
+}
+
+function linesToHtml(text: string): string {
+    const html = text.split("\n").map(escapeHtml).join("<br>");
+    return text.endsWith("\n") ? html + "\u200b" : html;
+}
+
+function insertLinesHtml(text: string): boolean {
+    try {
+        return document.execCommand("insertHTML", false, linesToHtml(text));
+    } catch (err) {
+        logger.debug("insertLinesHtml failed:", err);
+        return false;
+    }
+}
+
+function insertLinesDom(text: string): boolean {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return false;
+    const range = sel.getRangeAt(0);
+    const lines = text.split("\n");
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < lines.length; i++) {
+        if (i) frag.appendChild(document.createElement("br"));
+        if (lines[i]) frag.appendChild(document.createTextNode(lines[i]));
+    }
+    if (text.endsWith("\n")) frag.appendChild(document.createTextNode("\u200b"));
+    range.deleteContents();
+    range.insertNode(frag);
+    return true;
 }
 
 function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
@@ -252,23 +719,54 @@ function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
     applying = true;
     applyEl = el;
     applyAtStart = atStart;
+    applyCaretMoved = false;
     const gen = ++applyGen;
+    suppressSelect++;
     try {
-        if (!text) document.execCommand("delete");
-        else document.execCommand("insertText", false, text);
+        document.execCommand("delete");
+        if (text && !insertLinesPm(el, text) && !insertLinesHtml(text)) insertLinesDom(text);
     } catch (err) {
         logger.debug("insertText failed:", err);
     }
     placeCaret(el, atStart);
+    requestAnimationFrame(() => { suppressSelect = Math.max(0, suppressSelect - 1); });
     scheduleApplyEnd(gen);
+}
+
+function stopHudEvent(e: Event) {
+    e.preventDefault();
+    e.stopPropagation();
 }
 
 function hudEl(): HTMLElement {
     let el = document.querySelector<HTMLElement>(`.${cl("hud")}`);
-    if (el) return el;
+    if (el?.querySelector(`.${cl("hud-count")}`)) return el;
+    el?.remove();
     el = document.createElement("div");
     el.className = cl("hud");
+    el.setAttribute("role", "group");
     el.setAttribute("aria-live", "polite");
+    el.setAttribute("aria-label", "Input history");
+
+    const count = document.createElement("button");
+    count.type = "button";
+    count.className = cl("hud-count");
+    count.addEventListener("click", e => {
+        stopHudEvent(e);
+        openHistoryModal();
+    });
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = cl("hud-x");
+    close.setAttribute("aria-label", "Exit history");
+    close.textContent = "\u00d7";
+    close.addEventListener("click", e => {
+        stopHudEvent(e);
+        cancelBrowse(browseEditor());
+    });
+
+    el.append(count, close);
     document.body.appendChild(el);
     return el;
 }
@@ -278,11 +776,18 @@ function hideHud() {
 }
 
 function showHud(label: string, editor: HTMLElement) {
+    if (historyOpen) return;
     const bar = editor.closest(".query-bar");
     if (!bar) return;
+    hudEditor = editor;
     const el = hudEl();
-    el.textContent = label;
+    const count = el.querySelector<HTMLButtonElement>(`.${cl("hud-count")}`);
+    if (count) {
+        count.textContent = label;
+        count.setAttribute("aria-label", `Show input history (${label})`);
+    }
     requestAnimationFrame(() => {
+        if (historyOpen || !bar.isConnected) return;
         const r = bar.getBoundingClientRect();
         el.style.left = `${r.left + r.width / 2}px`;
         el.style.top = `${r.top - HUD_GAP_PX}px`;
@@ -292,7 +797,7 @@ function showHud(label: string, editor: HTMLElement) {
 
 function pushEntry(text: string) {
     const value = normalize(text);
-    if (!value) return;
+    if (!value || !hasContent(value)) return;
 
     const now = Date.now();
     const prev = recentAt.get(value);
@@ -312,53 +817,118 @@ function pushEntry(text: string) {
 function cycle(older: boolean, el: HTMLElement) {
     const list = getEntries();
     if (!list.length && older) return;
-    if (cursor >= list.length) {
+    if ((!recalling || cursor >= list.length) && lastShown >= 0 && lastShown < list.length) cursor = lastShown;
+    else if (cursor >= list.length) {
         draft = editorText(el);
         cursor = list.length;
     }
     const next = older ? cursor - 1 : cursor + 1;
     if (next < 0 || next > list.length) return;
     cursor = next;
-    recalling = true;
-    setEditorText(el, next === list.length ? draft : list[next], older);
-    if (next < list.length) showHud(`${next + 1} / ${list.length}`, el);
+    const onEntry = next < list.length;
+    recalling = onEntry;
+    lastShown = onEntry ? next : -1;
+    setEditorText(el, onEntry ? list[next] : draft, older);
+    if (onEntry) showHud(`${next + 1} / ${list.length}`, el);
     else hideHud();
 }
 
-function onKeyDown(e: KeyboardEvent) {
-    if (imeEvent(e)) return;
-    if (e.ctrlKey || e.metaKey) return;
+function caretNav(e: KeyboardEvent): boolean {
+    return e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Home" || e.key === "End";
+}
 
-    const el = chatEditor(e.target);
+function atProgrammedEdge(el: HTMLElement, caret: Range, atStart: boolean): boolean {
+    const probe = caret.cloneRange();
+    if (atStart) probe.setStart(el, 0);
+    else probe.setEnd(el, el.childNodes.length);
+    if (probe.toString().replace(ZWSP, "").trim()) return false;
+    for (const br of probe.cloneContents().querySelectorAll("br")) {
+        if (!br.classList.contains(TRAILING_BR)) return false;
+    }
+    return true;
+}
+
+function onSelectionChange() {
+    if (suppressSelect || !applying || applyCaretMoved) return;
+    const el = applyEl;
     if (!el) return;
+    const caret = collapsedCaret(el);
+    if (!caret || !atProgrammedEdge(el, caret, applyAtStart)) applyCaretMoved = true;
+}
 
-    if (applying && e.key !== "ArrowUp" && e.key !== "ArrowDown") invalidateApply();
-
-    if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
-        dropRecall(el);
-        e.preventDefault();
-        e.stopImmediatePropagation();
+function onKeyDown(e: KeyboardEvent) {
+    const esc = e.key === "Escape" && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey;
+    if (esc) {
+        if (historyOpen || imeEvent(e)) return;
+        if (recalling || lastShown >= 0) {
+            cancelBrowse(chatEditor(e.target) ?? browseEditor());
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
         return;
     }
+    if (historyOpen && (e.key === "ArrowUp" || e.key === "ArrowDown")) return;
+    if (imeEvent(e)) return;
+    const el = chatEditor(e.target);
+    if (!el) return;
+    if (applying && caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        applyCaretMoved = true;
+        return;
+    }
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        pushEntry(editorText(el));
+        return;
+    }
+    if (e.ctrlKey || e.metaKey) return;
+
+    const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
+    if (applying && !arrow) invalidateApply();
 
     if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
         pushEntry(editorText(el));
         return;
     }
 
-    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-    if (e.shiftKey) return;
+    if (!arrow || e.shiftKey) return;
 
     const older = e.key === "ArrowUp";
-    const force = e.altKey;
-    const list = getEntries();
-    if (!force) {
-        const edge = caretOnEdge(el);
-        if ((older && !edge.first) || (!older && !edge.last)) return;
+    if (!e.altKey) {
+        const caret = collapsedCaret(el);
+        if (!caret) {
+            if (applying) applyCaretMoved = true;
+            return;
+        }
+        if (!isPlaceholderEditor(el)) {
+            const pinned = older ? atDocEdge(el, true) : atDocEdge(el, false);
+            if (!pinned) {
+                if (stepLine(el, older)) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    if (applying) applyCaretMoved = true;
+                    return;
+                }
+                const soft = stepSoftLine(el, older);
+                if (soft > 0 || (soft < 0 && !(older && onTopVisualLine(el)))) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    if (applying) applyCaretMoved = true;
+                    return;
+                }
+                const stayed = collapsedCaret(el);
+                if (stayed && (older ? breakBefore(el, stayed) : breakAfter(el, stayed))) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    if (nudgeCaret(el, stayed, older) && applying) applyCaretMoved = true;
+                    return;
+                }
+            }
+        }
     }
 
-    if (older && (!list.length || cursor <= 0)) return;
-    if (!older && cursor >= list.length) return;
+    const list = getEntries();
+    const resume = lastShown >= 0 && lastShown < list.length && (!recalling || cursor >= list.length);
+    if (older && (!list.length || (!resume && cursor <= 0))) return;
+    if (!older && !resume && cursor >= list.length) return;
 
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -366,10 +936,9 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function onPointerDown(e: PointerEvent) {
-    if (!recalling) return;
-    const el = chatEditor(e.target);
-    if (!el) return;
-    dropRecall(el);
+    if (!recalling || !applying) return;
+    if (!chatEditor(e.target)) return;
+    applyCaretMoved = true;
 }
 
 function onCompositionStart(e: Event) {
@@ -382,7 +951,11 @@ function onCompositionEnd(e: Event) {
     const el = chatEditor(e.target);
     if (!el) return;
     composing = false;
-    if (recalling && !matchesRecall(el)) dropRecall(el);
+    if (!recalling) return;
+    const shown = shownBody();
+    if (shown != null && bodyKey(editorText(el)) === shown) return;
+    lastShown = -1;
+    dropRecall(el);
 }
 
 function onInput(e: Event) {
@@ -392,9 +965,12 @@ function onInput(e: Event) {
         if (applying) invalidateApply();
         return;
     }
-    const recalled = matchesRecall(el);
-    if (applying && recalled) return;
-    if (recalling && !recalled) dropRecall(el);
+    if (applying) return;
+    if (!userEdit(e)) return;
+    const shown = shownBody();
+    if (shown != null && bodyKey(editorText(el)) === shown) return;
+    lastShown = -1;
+    if (recalling) dropRecall(el);
 }
 
 function onSubmit(e: Event) {
@@ -427,19 +1003,31 @@ function removeEntry(index: number, imagine: boolean) {
     if (imagine === useImagineBucket()) resetBrowse(next.length);
 }
 
-function HistoryPanel() {
+interface HistoryPanelProps {
+    picker?: boolean;
+    onUse?: (text: string, index: number) => void;
+}
+
+function HistoryPanel({ picker, onUse }: Partial<IPluginOptionComponentProps> & HistoryPanelProps = {}) {
     const { entries, imagineEntries, separateImagine } = settings.use(["entries", "imagineEntries", "separateImagine"]);
-    const [bucket, setBucket] = useState<"chat" | "imagine">("chat");
+    const [bucket, setBucket] = useState<"chat" | "imagine">(useImagineBucket() ? "imagine" : "chat");
     const imagine = !!separateImagine && bucket === "imagine";
     const list = imagine ? (imagineEntries ?? []) : (entries ?? []);
+    const sameBucket = imagine === useImagineBucket();
+    const live = picker && sameBucket && cursor >= 0 && cursor < list.length ? cursor : -1;
     const [query, setQuery] = useState("");
     const [openId, setOpenId] = useState<number | null>(null);
     const [confirm, setConfirm] = useState(false);
+    const listRef = useRef<HTMLDivElement>(null);
     const needle = query.trim().toLowerCase();
     const visible = list
         .map((text, index) => ({ text, index }))
         .filter(row => !needle || row.text.toLowerCase().includes(needle))
         .toReversed();
+
+    useEffect(() => {
+        listRef.current?.querySelector(`.${cl("item-live")}`)?.scrollIntoView({ block: "nearest" });
+    }, [live, bucket]);
 
     return (
         <Flex flexDirection="column" gap="0.5rem" className={cl("panel")}>
@@ -477,11 +1065,11 @@ function HistoryPanel() {
             {list.length === 0 && <Paragraph className={cl("empty")}>No stored prompts.</Paragraph>}
             {list.length > 0 && visible.length === 0 && <Paragraph className={cl("empty")}>No matches.</Paragraph>}
             {visible.length > 0 && (
-                <div className={cl("list")}>
+                <div className={cl("list", picker && "list-picker")} ref={listRef}>
                     {visible.map(row => {
                         const expanded = openId === row.index;
                         return (
-                            <div key={row.index} className={cl("item", expanded && "item-on")}>
+                            <div key={row.index} className={cl("item", expanded && "item-on", row.index === live && "item-live")}>
                                 <span className={cl("index")}>{row.index + 1}</span>
                                 <div
                                     className={cl("main")}
@@ -497,6 +1085,18 @@ function HistoryPanel() {
                                     <span className={cl("body", !expanded && "clamp")}>{row.text}</span>
                                 </div>
                                 <div className={cl("actions")}>
+                                    {picker && sameBucket && !!onUse && (
+                                        <ButtonWithTooltip
+                                            variant="tertiary"
+                                            size="sm"
+                                            shape="square"
+                                            tooltipContent="Use"
+                                            aria-label="Use"
+                                            onClick={() => onUse(row.text, row.index)}
+                                        >
+                                            <TextCursorInputIcon size={16} />
+                                        </ButtonWithTooltip>
+                                    )}
                                     <ButtonWithTooltip
                                         variant="tertiary"
                                         size="sm"
@@ -545,10 +1145,49 @@ function HistoryPanel() {
     );
 }
 
+function adoptEntry(text: string, index: number) {
+    const el = browseEditor();
+    if (!el) return;
+    cursor = index;
+    recalling = true;
+    lastShown = index;
+    setEditorText(el, text, false);
+    showHud(`${index + 1} / ${getEntries().length}`, el);
+}
+
+function HistoryModal({ onClose }: ModalProps) {
+    return (
+        <VoidPPDialogShell title="Input history" subtitle="Stored on this device." onClose={onClose} size="md">
+            <HistoryPanel
+                picker
+                onUse={(text, index) => {
+                    adoptEntry(text, index);
+                    onClose();
+                }}
+            />
+        </VoidPPDialogShell>
+    );
+}
+
+const SafeHistoryModal = ErrorBoundary.wrap(HistoryModal);
+
+function openHistoryModal() {
+    historyOpen = true;
+    hideHud();
+    openModal(props => (
+        <SafeHistoryModal
+            onClose={() => {
+                markHistoryClosed();
+                props.onClose();
+            }}
+        />
+    ), { modalKey: HISTORY_MODAL_KEY });
+}
+
 export default definePlugin({
     name: "InputHistory",
     icon: HistoryIcon,
-    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell. Optional separate Imagine history.",
+    description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell. Esc restores your draft. Click the counter to browse history.",
     authors: [Devs.p],
     tags: ["chat"],
     enabledByDefault: true,
@@ -559,8 +1198,11 @@ export default definePlugin({
     start() {
         if (keys) return;
         cursor = getEntries().length;
+        lastShown = -1;
         recalling = false;
         composing = false;
+        historyOpen = false;
+        hudEditor = null;
         invalidateApply();
         keys = new AbortController();
         const { signal } = keys;
@@ -571,15 +1213,19 @@ export default definePlugin({
         document.addEventListener("submit", onSubmit, { capture: true, signal });
         document.addEventListener("click", onClick, { capture: true, signal });
         document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
+        document.addEventListener("selectionchange", onSelectionChange, { signal });
     },
 
     stop() {
         keys?.abort();
         keys = null;
+        closeHistoryModal();
         hideHud();
         recentAt.clear();
         composing = false;
         recalling = false;
+        lastShown = -1;
+        hudEditor = null;
         invalidateApply();
     },
 
@@ -588,6 +1234,7 @@ export default definePlugin({
         const next = cap(current);
         if (next.length !== current.length) setEntries(next);
         if (cursor > next.length) cursor = next.length;
+        if (lastShown >= next.length) lastShown = -1;
         const imagine = listOf(settings.plain.imagineEntries);
         const imagineNext = cap(imagine);
         if (imagineNext.length !== imagine.length) settings.store.imagineEntries = imagineNext;
@@ -598,6 +1245,7 @@ export default definePlugin({
             selector: (s: RoutingStoreState) => String(s.route?.page ?? ""),
             handler() {
                 resetBrowse(getEntries().length);
+                closeHistoryModal();
             },
         },
     },
