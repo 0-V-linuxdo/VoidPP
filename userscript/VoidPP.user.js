@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.2
+// @version      20260926.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.2] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,9 +7755,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"0c0eca8"}`
-    }, `(${"0c0eca8"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9a01f49"}`
+    }, `(${"9a01f49"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -22229,14 +22229,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     cursor: pointer;
 }
 
-.void-ih-hud-back {
-    z-index: 1;
-}
-
-.void-ih-hud-back :is(.void-ih-hud-count, .void-ih-hud-x) {
-    pointer-events: none;
-}
-
 .void-ih-hud-count,
 .void-ih-hud-x {
     margin: 0;
@@ -22339,7 +22331,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 .void-ih-list-picker .void-ih-item {
     grid-template-columns: max-content minmax(0, 1fr) auto;
     gap: 0.35rem;
-    padding-inline: 0.2rem 0.35rem;
+    padding-inline: 0 0.35rem;
 }
 
 .void-ih-index {
@@ -22353,6 +22345,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 
 .void-ih-list-picker .void-ih-index {
     min-width: 2ch;
+    text-align: start;
 }
 
 .void-ih-item-live {
@@ -22965,8 +22958,16 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return document.querySelector(EDITOR_SEL3);
   }
   function markHistoryClosed() {
+    const wasOpen = historyOpen;
     historyOpen = false;
-    document.querySelector(`.${cl28("hud")}`)?.classList.remove(cl28("hud-back"));
+    if (!wasOpen)
+      return;
+    const el = hudEditor;
+    if (!recalling || !el?.isConnected || lastShown < 0)
+      return;
+    const list = getEntries();
+    if (lastShown < list.length)
+      showHud(`${lastShown + 1} / ${list.length}`, el);
   }
   function closeHistoryModal() {
     if (!historyOpen)
@@ -23173,6 +23174,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     document.querySelector(`.${cl28("hud")}`)?.classList.remove(cl28("hud-on"));
   }
   function showHud(label, editor) {
+    if (historyOpen)
+      return;
     const bar = editor.closest(".query-bar");
     if (!bar)
       return;
@@ -23184,6 +23187,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       count.setAttribute("aria-label", `Show input history (${label})`);
     }
     requestAnimationFrame(() => {
+      if (historyOpen || !bar.isConnected)
+        return;
       const r = bar.getBoundingClientRect();
       el.style.left = `${r.left + r.width / 2}px`;
       el.style.top = `${r.top - HUD_GAP_PX}px`;
@@ -23591,7 +23596,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var SafeHistoryModal = ErrorBoundary.wrap(HistoryModal);
   function openHistoryModal() {
     historyOpen = true;
-    document.querySelector(`.${cl28("hud")}`)?.classList.add(cl28("hud-back"));
+    hideHud();
     openModal((props) => /* @__PURE__ */ React.createElement(SafeHistoryModal, {
       onClose: () => {
         markHistoryClosed();
@@ -30049,7 +30054,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   experiments_default.updatedAt = 1788047438000;
   exportChat_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
-  inputHistory_default.updatedAt = 1790417570000;
+  inputHistory_default.updatedAt = 1790418307000;
   messageTimestamps_default.updatedAt = 1789881463000;
   noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1788037550000;

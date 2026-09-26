@@ -28,14 +28,6 @@
     cursor: pointer;
 }
 
-.void-ih-hud-back {
-    z-index: 1;
-}
-
-.void-ih-hud-back :is(.void-ih-hud-count, .void-ih-hud-x) {
-    pointer-events: none;
-}
-
 .void-ih-hud-count,
 .void-ih-hud-x {
     margin: 0;
@@ -138,7 +130,7 @@
 .void-ih-list-picker .void-ih-item {
     grid-template-columns: max-content minmax(0, 1fr) auto;
     gap: 0.35rem;
-    padding-inline: 0.2rem 0.35rem;
+    padding-inline: 0 0.35rem;
 }
 
 .void-ih-index {
@@ -152,6 +144,7 @@
 
 .void-ih-list-picker .void-ih-index {
     min-width: 2ch;
+    text-align: start;
 }
 
 .void-ih-item-live {

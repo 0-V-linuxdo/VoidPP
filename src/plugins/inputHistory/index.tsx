@@ -579,8 +579,13 @@ function browseEditor(): HTMLElement | null {
 }
 
 function markHistoryClosed() {
+    const wasOpen = historyOpen;
     historyOpen = false;
-    document.querySelector(`.${cl("hud")}`)?.classList.remove(cl("hud-back"));
+    if (!wasOpen) return;
+    const el = hudEditor;
+    if (!recalling || !el?.isConnected || lastShown < 0) return;
+    const list = getEntries();
+    if (lastShown < list.length) showHud(`${lastShown + 1} / ${list.length}`, el);
 }
 
 function closeHistoryModal() {
@@ -771,6 +776,7 @@ function hideHud() {
 }
 
 function showHud(label: string, editor: HTMLElement) {
+    if (historyOpen) return;
     const bar = editor.closest(".query-bar");
     if (!bar) return;
     hudEditor = editor;
@@ -781,6 +787,7 @@ function showHud(label: string, editor: HTMLElement) {
         count.setAttribute("aria-label", `Show input history (${label})`);
     }
     requestAnimationFrame(() => {
+        if (historyOpen || !bar.isConnected) return;
         const r = bar.getBoundingClientRect();
         el.style.left = `${r.left + r.width / 2}px`;
         el.style.top = `${r.top - HUD_GAP_PX}px`;
@@ -1166,7 +1173,7 @@ const SafeHistoryModal = ErrorBoundary.wrap(HistoryModal);
 
 function openHistoryModal() {
     historyOpen = true;
-    document.querySelector(`.${cl("hud")}`)?.classList.add(cl("hud-back"));
+    hideHud();
     openModal(props => (
         <SafeHistoryModal
             onClose={() => {
