@@ -546,10 +546,39 @@ function paintLines(needle: string): string[] {
     return whole.length >= 2 ? [whole] : lines;
 }
 
+function flex(s: string): string {
+    return looseNorm(s).replaceAll(/[`"'“”‘’]/g, "").replaceAll(/\s+/g, "");
+}
+
+function blockRanges(root: HTMLElement, needle: string, allowThink: boolean): Range[] {
+    const want = flex(needle);
+    const lines = paintLines(needle).map(flex).filter(line => line.length >= 4);
+    if (want.length < 4 && !lines.length) return [];
+    const ranges: Range[] = [];
+    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, td, th")) {
+        if (!(el instanceof HTMLElement)) continue;
+        if (el.closest("button, svg, [role='toolbar']")) continue;
+        if (el.querySelector("p, li")) continue;
+        if (hiddenHost(el, allowThink)) continue;
+        const text = flex(el.textContent || "");
+        if (text.length < 4) continue;
+        const hit = (want.length >= 4 && want.includes(text)) || lines.some(line => text.includes(line));
+        if (!hit) continue;
+        try {
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            if (!range.collapsed) ranges.push(range);
+        } catch { /* detached */ }
+    }
+    return ranges;
+}
+
 function findRanges(root: HTMLElement, needle: string): Range[] {
     const lines = paintLines(needle);
     if (!lines.length) return [];
     for (const allowThink of [false, true]) {
+        const blocks = blockRanges(root, needle, allowThink);
+        if (blocks.length) return blocks;
         const { parts, blob } = collectParts(root, allowThink);
         const whole = prefixOf(needle);
         if (whole.length >= 8) {
@@ -561,13 +590,18 @@ function findRanges(root: HTMLElement, needle: string): Range[] {
         }
         const ranges: Range[] = [];
         let cursor = 0;
+        let first = -1;
+        let last = -1;
         for (const line of lines) {
             const hit = findLoose(blob, line, cursor) ?? (cursor ? findLoose(blob, line, 0) : null);
             if (!hit) continue;
-            const range = rangeCovering(parts, hit.at, hit.at + hit.len);
-            if (!range) continue;
-            ranges.push(range);
-            cursor = Math.max(cursor, hit.at + hit.len);
+            if (first < 0) first = hit.at;
+            last = hit.at + hit.len;
+            cursor = Math.max(cursor, last);
+        }
+        if (first >= 0 && last > first) {
+            const span = rangeCovering(parts, first, last);
+            if (span) ranges.push(span);
         }
         if (ranges.length) return ranges;
     }

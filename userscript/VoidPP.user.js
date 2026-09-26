@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.14
+// @version      20260926.15
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.14] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.15] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"53ef89d"}`
-    }, `(${"53ef89d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a0c47cf"}`
+    }, `(${"a0c47cf"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21507,11 +21507,47 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     const whole = prefixOf(needle);
     return whole.length >= 2 ? [whole] : lines;
   }
+  function flex(s) {
+    return looseNorm(s).replaceAll(/[`"'“”‘’]/g, "").replaceAll(/\s+/g, "");
+  }
+  function blockRanges(root, needle, allowThink) {
+    const want = flex(needle);
+    const lines = paintLines(needle).map(flex).filter((line) => line.length >= 4);
+    if (want.length < 4 && !lines.length)
+      return [];
+    const ranges = [];
+    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, td, th")) {
+      if (!(el instanceof HTMLElement))
+        continue;
+      if (el.closest("button, svg, [role='toolbar']"))
+        continue;
+      if (el.querySelector("p, li"))
+        continue;
+      if (hiddenHost(el, allowThink))
+        continue;
+      const text = flex(el.textContent || "");
+      if (text.length < 4)
+        continue;
+      const hit = want.length >= 4 && want.includes(text) || lines.some((line) => text.includes(line));
+      if (!hit)
+        continue;
+      try {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        if (!range.collapsed)
+          ranges.push(range);
+      } catch {}
+    }
+    return ranges;
+  }
   function findRanges(root, needle) {
     const lines = paintLines(needle);
     if (!lines.length)
       return [];
     for (const allowThink of [false, true]) {
+      const blocks = blockRanges(root, needle, allowThink);
+      if (blocks.length)
+        return blocks;
       const { parts, blob } = collectParts(root, allowThink);
       const whole = prefixOf(needle);
       if (whole.length >= 8) {
@@ -21524,15 +21560,21 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       }
       const ranges = [];
       let cursor = 0;
+      let first = -1;
+      let last = -1;
       for (const line of lines) {
         const hit = findLoose(blob, line, cursor) ?? (cursor ? findLoose(blob, line, 0) : null);
         if (!hit)
           continue;
-        const range = rangeCovering(parts, hit.at, hit.at + hit.len);
-        if (!range)
-          continue;
-        ranges.push(range);
-        cursor = Math.max(cursor, hit.at + hit.len);
+        if (first < 0)
+          first = hit.at;
+        last = hit.at + hit.len;
+        cursor = Math.max(cursor, last);
+      }
+      if (first >= 0 && last > first) {
+        const span = rangeCovering(parts, first, last);
+        if (span)
+          ranges.push(span);
       }
       if (ranges.length)
         return ranges;
@@ -30675,7 +30717,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1787789817000;
   betterCanvas_default.updatedAt = 1790360947000;
   noDictation_default.updatedAt = 1788037550000;
-  betterQuotes_default.updatedAt = 1790433951000;
+  betterQuotes_default.updatedAt = 1790434599000;
   cloneChats_default.updatedAt = 1787870966000;
   composerOpacity_default.updatedAt = 1790097681000;
   incognito_default.updatedAt = 1787870966000;
