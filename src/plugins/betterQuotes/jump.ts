@@ -828,15 +828,43 @@ function centerDelta(box: DOMRect, pane: HTMLElement): number {
     return Math.abs(delta) < 24 ? 0 : delta;
 }
 
-function ensureVisible(range: Range | null, el: HTMLElement) {
-    if (!el.isConnected) return;
+function aimDelta(range: Range | null, el: HTMLElement): { pane: HTMLElement; delta: number; room: number } | null {
+    if (!el.isConnected) return null;
     const box = aimBox(range, el);
-    if (!box) return;
+    if (!box) return null;
     const pane = scrollPane(el);
-    if (!pane) return;
-    const delta = centerDelta(box, pane);
-    if (Math.abs(delta) < 1) return;
-    pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
+    if (!pane) return null;
+    return { pane, delta: centerDelta(box, pane), room: viewMid(pane).room || pane.clientHeight || 1 };
+}
+
+async function settleCenter(
+    read: () => { range: Range | null; el: HTMLElement } | null,
+    mine: number,
+    pin = "",
+) {
+    const measure = () => {
+        const shot = read();
+        if (!shot) return null;
+        let el = shot.el;
+        if (!el.isConnected && pin) {
+            const fresh = messageById(pin);
+            if (fresh?.isConnected) el = fresh;
+        }
+        return el.isConnected ? aimDelta(shot.range, el) : null;
+    };
+    const first = measure();
+    if (!first || Math.abs(first.delta) < 1) return;
+    const near = Math.abs(first.delta) <= first.room * 1.2;
+    first.pane.scrollTo({ top: first.pane.scrollTop + first.delta, behavior: near ? "smooth" : "auto" });
+    if (near) return;
+    await afterLayout();
+    if (mine !== gen) return;
+    if (pin && !messageById(pin)) await revealSource(pin, null, mine);
+    if (mine !== gen) return;
+    const again = measure();
+    if (!again || Math.abs(again.delta) < 1) return;
+    const fix = Math.abs(again.delta) <= again.room * 1.2;
+    again.pane.scrollTo({ top: again.pane.scrollTop + again.delta, behavior: fix ? "smooth" : "auto" });
 }
 
 function aimBox(range: Range | null, el: HTMLElement): DOMRect | null {
@@ -1048,12 +1076,19 @@ async function land(el: HTMLElement, needle: string, mine: number, pin = "") {
         if (fresh?.isConnected) el = fresh;
     }
     if (!el.isConnected) return;
-    const ranges = clipRanges(el, needle);
-    highlightRange(ranges, el, false);
-    const anchor = scrollAnchor(ranges);
-    const painted = anchor ? hitOf(anchor) : null;
-    const target = painted?.isConnected ? painted : el;
-    ensureVisible(anchor, target);
+    await settleCenter(() => {
+        if (!el.isConnected && pin) {
+            const fresh = messageById(pin);
+            if (fresh?.isConnected) el = fresh;
+        }
+        if (!el.isConnected) return null;
+        const ranges = clipRanges(el, needle);
+        highlightRange(ranges, el, false);
+        const anchor = scrollAnchor(ranges);
+        const painted = anchor ? hitOf(anchor) : null;
+        const target = painted?.isConnected ? painted : el;
+        return { range: anchor, el: target };
+    }, mine, pin);
 }
 
 async function jump(origin: HTMLElement | null) {
@@ -1071,8 +1106,9 @@ async function jump(origin: HTMLElement | null) {
             el = await revealSource(hard, skip, mine);
         }
         if (el) pinned = hard;
+    } else if (prefixOf(needle)) {
+        el = pickMessage([], needle, skip);
     }
-    if (!el && prefixOf(needle)) el = pickMessage([], needle, skip);
     if (mine !== gen || !el) {
         if (!el) logger.debug("no source message");
         return;
@@ -1364,11 +1400,14 @@ async function jumpToCite(cite: Cite | undefined) {
     openAncestors(card, cite.quoted);
     await afterLayout();
     if (mine !== gen || !card.isConnected) return;
-    const ranges = findRanges(card, cite.quoted);
-    const anchor = scrollAnchor(ranges);
-    const hit = hitOf(anchor) ?? card;
-    ensureVisible(anchor, hit);
-    highlightRange(ranges, hit);
+    await settleCenter(() => {
+        if (!card.isConnected) return null;
+        const ranges = findRanges(card, cite.quoted);
+        const anchor = scrollAnchor(ranges);
+        const hit = hitOf(anchor) ?? card;
+        highlightRange(ranges, hit);
+        return { range: anchor, el: hit.isConnected ? hit : card };
+    }, mine, cite.id);
 }
 
 function onBackClick(t: Element): boolean {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.30
+// @version      20260926.31
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.30] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.31] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.30] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"914af4c"}`
-    }, `(${"914af4c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.31] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a9fdcb6"}`
+    }, `(${"a9fdcb6"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21798,19 +21798,49 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     const delta = box.top + box.height / 2 - view.mid;
     return Math.abs(delta) < 24 ? 0 : delta;
   }
-  function ensureVisible(range, el) {
+  function aimDelta(range, el) {
     if (!el.isConnected)
-      return;
+      return null;
     const box = aimBox(range, el);
     if (!box)
-      return;
+      return null;
     const pane = scrollPane(el);
     if (!pane)
+      return null;
+    return { pane, delta: centerDelta(box, pane), room: viewMid(pane).room || pane.clientHeight || 1 };
+  }
+  async function settleCenter(read, mine, pin = "") {
+    const measure = () => {
+      const shot = read();
+      if (!shot)
+        return null;
+      let el = shot.el;
+      if (!el.isConnected && pin) {
+        const fresh = messageById(pin);
+        if (fresh?.isConnected)
+          el = fresh;
+      }
+      return el.isConnected ? aimDelta(shot.range, el) : null;
+    };
+    const first = measure();
+    if (!first || Math.abs(first.delta) < 1)
       return;
-    const delta = centerDelta(box, pane);
-    if (Math.abs(delta) < 1)
+    const near = Math.abs(first.delta) <= first.room * 1.2;
+    first.pane.scrollTo({ top: first.pane.scrollTop + first.delta, behavior: near ? "smooth" : "auto" });
+    if (near)
       return;
-    pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
+    await afterLayout();
+    if (mine !== gen)
+      return;
+    if (pin && !messageById(pin))
+      await revealSource(pin, null, mine);
+    if (mine !== gen)
+      return;
+    const again = measure();
+    if (!again || Math.abs(again.delta) < 1)
+      return;
+    const fix = Math.abs(again.delta) <= again.room * 1.2;
+    again.pane.scrollTo({ top: again.pane.scrollTop + again.delta, behavior: fix ? "smooth" : "auto" });
   }
   function aimBox(range, el) {
     const line = range && lineBox(range);
@@ -22039,12 +22069,21 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     if (!el.isConnected)
       return;
-    const ranges = clipRanges(el, needle);
-    highlightRange(ranges, el, false);
-    const anchor = scrollAnchor(ranges);
-    const painted = anchor ? hitOf(anchor) : null;
-    const target = painted?.isConnected ? painted : el;
-    ensureVisible(anchor, target);
+    await settleCenter(() => {
+      if (!el.isConnected && pin) {
+        const fresh = messageById(pin);
+        if (fresh?.isConnected)
+          el = fresh;
+      }
+      if (!el.isConnected)
+        return null;
+      const ranges = clipRanges(el, needle);
+      highlightRange(ranges, el, false);
+      const anchor = scrollAnchor(ranges);
+      const painted = anchor ? hitOf(anchor) : null;
+      const target = painted?.isConnected ? painted : el;
+      return { range: anchor, el: target };
+    }, mine, pin);
   }
   async function jump2(origin) {
     const mine = ++gen;
@@ -22064,9 +22103,9 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       }
       if (el)
         pinned = hard;
-    }
-    if (!el && prefixOf(needle))
+    } else if (prefixOf(needle)) {
       el = pickMessage([], needle, skip);
+    }
     if (mine !== gen || !el) {
       if (!el)
         logger29.debug("no source message");
@@ -22377,11 +22416,15 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     await afterLayout();
     if (mine !== gen || !card.isConnected)
       return;
-    const ranges = findRanges(card, cite.quoted);
-    const anchor = scrollAnchor(ranges);
-    const hit = hitOf(anchor) ?? card;
-    ensureVisible(anchor, hit);
-    highlightRange(ranges, hit);
+    await settleCenter(() => {
+      if (!card.isConnected)
+        return null;
+      const ranges = findRanges(card, cite.quoted);
+      const anchor = scrollAnchor(ranges);
+      const hit = hitOf(anchor) ?? card;
+      highlightRange(ranges, hit);
+      return { range: anchor, el: hit.isConnected ? hit : card };
+    }, mine, cite.id);
   }
   function onBackClick(t) {
     const badge = t.closest(`.${cl22("back")}`);
@@ -31045,7 +31088,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1790442421000;
   betterCanvas_default.updatedAt = 1790442421000;
   noDictation_default.updatedAt = 1790442421000;
-  betterQuotes_default.updatedAt = 1790445431000;
+  betterQuotes_default.updatedAt = 1790445793000;
   cloneChats_default.updatedAt = 1790442421000;
   composerOpacity_default.updatedAt = 1790442421000;
   incognito_default.updatedAt = 1790442421000;
