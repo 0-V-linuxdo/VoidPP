@@ -80,25 +80,6 @@
     color: hsl(var(--fg-primary));
 }
 
-.void-stars-rel {
-    position: relative;
-}
-
-.void-stars-bubble.void-stars-float {
-    position: absolute;
-    z-index: 2;
-    top: 0.35rem;
-    inset-inline-end: 0.35rem;
-    opacity: 0;
-    background: hsl(var(--surface-l1));
-}
-
-.void-stars-rel:hover > .void-stars-float,
-.void-stars-bubble.void-stars-float:focus-visible,
-.void-stars-bubble.void-stars-on.void-stars-float {
-    opacity: 1;
-}
-
 .void-stars-panel {
     position: fixed;
     z-index: 80;

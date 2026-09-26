@@ -313,35 +313,102 @@ function isActionLabel(label: string): boolean {
     return ACTION_RE.test(label.trim());
 }
 
-function actionCount(node: HTMLElement): number {
-    let n = 0;
-    for (const btn of node.querySelectorAll<HTMLElement>("button[aria-label], button[title], [role='button'][aria-label]")) {
-        if (btn.classList.contains("void-stars-bubble")) continue;
-        const label = (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
-        if (isActionLabel(label)) n++;
-    }
-    return n;
+function btnLabel(btn: HTMLElement): string {
+    return (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
 }
 
-function actionRow(msg: HTMLElement): HTMLElement | null {
+function shellOf(msg: HTMLElement): HTMLElement {
+    return msg.closest<HTMLElement>("[id^='response-']") ?? msg.parentElement ?? msg;
+}
+
+function inCodeChrome(btn: HTMLElement): boolean {
+    if (btn.closest("pre, code")) return true;
+    let node: HTMLElement | null = btn.parentElement;
+    for (let depth = 0; node && depth < 3; depth++, node = node.parentElement) {
+        if (node.querySelector(":scope > pre")) return true;
+    }
+    return false;
+}
+
+function toolbarOk(row: HTMLElement, bubble: HTMLElement): boolean {
+    if (row.contains(bubble)) return false;
+    if (row.querySelector("p, pre, h1, h2, h3, ul, ol, blockquote, table")) return false;
+    const text = (row.innerText || "").replaceAll(/\s+/g, " ").trim();
+    return text.length <= 24;
+}
+
+function labeledActions(shell: HTMLElement): HTMLElement[] {
+    const out: HTMLElement[] = [];
+    for (const btn of shell.querySelectorAll<HTMLElement>("button, [role='button']")) {
+        if (btn.classList.contains("void-stars-bubble") || inCodeChrome(btn)) continue;
+        if (!isActionLabel(btnLabel(btn))) continue;
+        out.push(btn);
+    }
+    return out;
+}
+
+function rowOf(btn: HTMLElement, bubble: HTMLElement, shell: HTMLElement): HTMLElement | null {
+    let node = btn.parentElement;
+    let row: HTMLElement | null = null;
+    while (node && node !== shell && node !== document.body) {
+        if (toolbarOk(node, bubble)) row = node;
+        else if (row) break;
+        node = node.parentElement;
+    }
+    return row;
+}
+
+function actionRow(msg: HTMLElement): { row: HTMLElement; actions: HTMLElement[] } | null {
+    const shell = shellOf(msg);
+    const labeled = labeledActions(shell);
+    const clusters = new Map<HTMLElement, HTMLElement[]>();
+    for (const btn of labeled) {
+        const row = rowOf(btn, msg, shell);
+        if (!row) continue;
+        const list = clusters.get(row);
+        if (list) list.push(btn);
+        else clusters.set(row, [btn]);
+    }
     let best: HTMLElement | null = null;
-    let bestCount = 0;
-    let bestDepth = 99;
-    for (const btn of msg.querySelectorAll<HTMLElement>("button[aria-label], button[title], [role='button'][aria-label]")) {
-        if (btn.classList.contains("void-stars-bubble")) continue;
-        const label = (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
-        if (!isActionLabel(label)) continue;
-        let node = btn.parentElement;
-        for (let depth = 1; node && node !== msg && depth <= 6; depth++, node = node.parentElement) {
-            const count = actionCount(node);
-            if (count > bestCount || (count === bestCount && depth < bestDepth)) {
-                best = node;
-                bestCount = count;
-                bestDepth = depth;
-            }
+    let bestScore = -1;
+    for (const [row, list] of clusters) {
+        const score = list.length * 10 + (msg.contains(row) ? 0 : 5);
+        if (score > bestScore) {
+            best = row;
+            bestScore = score;
         }
     }
-    return bestCount > 0 ? best : null;
+    if (best) return { row: best, actions: clusters.get(best) ?? [] };
+    const parent = msg.parentElement;
+    if (!parent) return null;
+    for (const child of parent.children) {
+        if (!(child instanceof HTMLElement) || child === msg || child.contains(msg)) continue;
+        const buttons = [...child.querySelectorAll<HTMLElement>("button, [role='button']")].filter(btn => !btn.classList.contains("void-stars-bubble") && !inCodeChrome(btn));
+        if (buttons.length < 2 || !toolbarOk(child, msg)) continue;
+        return { row: child, actions: [] };
+    }
+    return null;
+}
+
+function anchorChild(row: HTMLElement, actions: HTMLElement[]): HTMLElement | null {
+    let last: HTMLElement | null = null;
+    for (const btn of actions) {
+        if (row.contains(btn)) last = btn;
+    }
+    let node = last;
+    while (node && node.parentElement !== row) node = node.parentElement;
+    return node;
+}
+
+function placeInRow(row: HTMLElement, btn: HTMLButtonElement, actions: HTMLElement[]) {
+    const anchor = anchorChild(row, actions);
+    if (anchor) {
+        if (btn.parentElement === row && btn.previousElementSibling === anchor) return;
+        anchor.after(btn);
+        return;
+    }
+    if (btn.parentElement === row && row.firstElementChild === btn) return;
+    row.prepend(btn);
 }
 
 function messageIdOf(msg: HTMLElement): string {
@@ -363,12 +430,13 @@ function onBubbleClick(ev: MouseEvent) {
     ev.stopPropagation();
     const { currentTarget } = ev;
     if (!(currentTarget instanceof HTMLElement)) return;
-    const msg = currentTarget.closest<HTMLElement>(MSG_SEL);
-    const id = msg ? messageIdOf(msg) : "";
+    const id = currentTarget.dataset.responseId || "";
     const cid = currentCid();
-    if (!msg || !id || !cid) return;
-    const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
-    toggle(cid, id, { role, snippet: bubbleText(msg) });
+    if (!id || !cid) return;
+    const role = currentTarget.dataset.role === "user" ? "user" : "assistant";
+    const shell = currentTarget.closest<HTMLElement>("[id^='response-']");
+    const msg = shell?.querySelector<HTMLElement>(MSG_SEL) ?? currentTarget.closest<HTMLElement>(MSG_SEL);
+    toggle(cid, id, { role, snippet: msg ? bubbleText(msg) : "" });
 }
 
 function makeBubble(): HTMLButtonElement {
@@ -380,8 +448,10 @@ function makeBubble(): HTMLButtonElement {
     return btn;
 }
 
-function syncBubble(btn: HTMLButtonElement, cid: string, id: string) {
+function syncBubble(btn: HTMLButtonElement, cid: string, id: string, role: "user" | "assistant") {
     const on = hasStar(cid, id);
+    btn.dataset.responseId = id;
+    btn.dataset.role = role;
     btn.classList.toggle("void-stars-on", on);
     btn.setAttribute("aria-label", on ? "Unstar" : "Star");
     btn.setAttribute("aria-pressed", on ? "true" : "false");
@@ -393,25 +463,24 @@ function paintBubbles() {
     for (const msg of document.querySelectorAll<HTMLElement>(MSG_SEL)) {
         const id = messageIdOf(msg);
         if (!cid || !id) continue;
-        const row = actionRow(msg);
-        const parent = row ?? msg;
-        const floating = !row;
-        let btn = parent.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
+        const found = actionRow(msg);
+        if (!found) continue;
+        const { row, actions } = found;
+        let btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
         if (!btn) {
             btn = makeBubble();
-            parent.appendChild(btn);
+            row.appendChild(btn);
         }
-        btn.classList.toggle("void-stars-float", floating);
-        msg.classList.toggle("void-stars-rel", floating);
-        syncBubble(btn, cid, id);
+        btn.classList.remove("void-stars-float");
+        placeInRow(row, btn, actions);
+        const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
+        syncBubble(btn, cid, id, role);
         keep.add(btn);
     }
     for (const btn of document.querySelectorAll<HTMLButtonElement>(".void-stars-bubble")) {
         if (!keep.has(btn)) btn.remove();
     }
-    for (const msg of document.querySelectorAll<HTMLElement>(".void-stars-rel")) {
-        if (!msg.querySelector(":scope > .void-stars-bubble.void-stars-float")) msg.classList.remove("void-stars-rel");
-    }
+    document.querySelectorAll(".void-stars-rel").forEach(node => node.classList.remove("void-stars-rel"));
 }
 
 function clearBubbles() {

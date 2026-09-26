@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.35
+// @version      20260926.36
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.35] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.36] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.35] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"02d9f0c"}`
-    }, `(${"02d9f0c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.36] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"91be71e"}`
+    }, `(${"91be71e"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8264,25 +8264,6 @@ button .void-info-hint {
 .void-stars-toggle:focus-visible {
     background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
     color: hsl(var(--fg-primary));
-}
-
-.void-stars-rel {
-    position: relative;
-}
-
-.void-stars-bubble.void-stars-float {
-    position: absolute;
-    z-index: 2;
-    top: 0.35rem;
-    inset-inline-end: 0.35rem;
-    opacity: 0;
-    background: hsl(var(--surface-l1));
-}
-
-.void-stars-rel:hover > .void-stars-float,
-.void-stars-bubble.void-stars-float:focus-visible,
-.void-stars-bubble.void-stars-on.void-stars-float {
-    opacity: 1;
 }
 
 .void-stars-panel {
@@ -8918,38 +8899,113 @@ button .void-info-hint {
   function isActionLabel(label) {
     return ACTION_RE.test(label.trim());
   }
-  function actionCount(node) {
-    let n = 0;
-    for (const btn of node.querySelectorAll("button[aria-label], button[title], [role='button'][aria-label]")) {
-      if (btn.classList.contains("void-stars-bubble"))
-        continue;
-      const label = (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
-      if (isActionLabel(label))
-        n++;
+  function btnLabel(btn) {
+    return (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
+  }
+  function shellOf(msg) {
+    return msg.closest("[id^='response-']") ?? msg.parentElement ?? msg;
+  }
+  function inCodeChrome(btn) {
+    if (btn.closest("pre, code"))
+      return true;
+    let node = btn.parentElement;
+    for (let depth = 0;node && depth < 3; depth++, node = node.parentElement) {
+      if (node.querySelector(":scope > pre"))
+        return true;
     }
-    return n;
+    return false;
+  }
+  function toolbarOk(row, bubble) {
+    if (row.contains(bubble))
+      return false;
+    if (row.querySelector("p, pre, h1, h2, h3, ul, ol, blockquote, table"))
+      return false;
+    const text = (row.innerText || "").replaceAll(/\s+/g, " ").trim();
+    return text.length <= 24;
+  }
+  function labeledActions(shell) {
+    const out = [];
+    for (const btn of shell.querySelectorAll("button, [role='button']")) {
+      if (btn.classList.contains("void-stars-bubble") || inCodeChrome(btn))
+        continue;
+      if (!isActionLabel(btnLabel(btn)))
+        continue;
+      out.push(btn);
+    }
+    return out;
+  }
+  function rowOf(btn, bubble, shell) {
+    let node = btn.parentElement;
+    let row = null;
+    while (node && node !== shell && node !== document.body) {
+      if (toolbarOk(node, bubble))
+        row = node;
+      else if (row)
+        break;
+      node = node.parentElement;
+    }
+    return row;
   }
   function actionRow(msg) {
+    const shell = shellOf(msg);
+    const labeled = labeledActions(shell);
+    const clusters = new Map;
+    for (const btn of labeled) {
+      const row = rowOf(btn, msg, shell);
+      if (!row)
+        continue;
+      const list = clusters.get(row);
+      if (list)
+        list.push(btn);
+      else
+        clusters.set(row, [btn]);
+    }
     let best = null;
-    let bestCount = 0;
-    let bestDepth = 99;
-    for (const btn of msg.querySelectorAll("button[aria-label], button[title], [role='button'][aria-label]")) {
-      if (btn.classList.contains("void-stars-bubble"))
-        continue;
-      const label = (btn.getAttribute("aria-label") || btn.getAttribute("title") || "").trim();
-      if (!isActionLabel(label))
-        continue;
-      let node = btn.parentElement;
-      for (let depth = 1;node && node !== msg && depth <= 6; depth++, node = node.parentElement) {
-        const count = actionCount(node);
-        if (count > bestCount || count === bestCount && depth < bestDepth) {
-          best = node;
-          bestCount = count;
-          bestDepth = depth;
-        }
+    let bestScore = -1;
+    for (const [row, list] of clusters) {
+      const score = list.length * 10 + (msg.contains(row) ? 0 : 5);
+      if (score > bestScore) {
+        best = row;
+        bestScore = score;
       }
     }
-    return bestCount > 0 ? best : null;
+    if (best)
+      return { row: best, actions: clusters.get(best) ?? [] };
+    const parent = msg.parentElement;
+    if (!parent)
+      return null;
+    for (const child of parent.children) {
+      if (!(child instanceof HTMLElement) || child === msg || child.contains(msg))
+        continue;
+      const buttons = [...child.querySelectorAll("button, [role='button']")].filter((btn) => !btn.classList.contains("void-stars-bubble") && !inCodeChrome(btn));
+      if (buttons.length < 2 || !toolbarOk(child, msg))
+        continue;
+      return { row: child, actions: [] };
+    }
+    return null;
+  }
+  function anchorChild(row, actions) {
+    let last = null;
+    for (const btn of actions) {
+      if (row.contains(btn))
+        last = btn;
+    }
+    let node = last;
+    while (node && node.parentElement !== row)
+      node = node.parentElement;
+    return node;
+  }
+  function placeInRow(row, btn, actions) {
+    const anchor = anchorChild(row, actions);
+    if (anchor) {
+      if (btn.parentElement === row && btn.previousElementSibling === anchor)
+        return;
+      anchor.after(btn);
+      return;
+    }
+    if (btn.parentElement === row && row.firstElementChild === btn)
+      return;
+    row.prepend(btn);
   }
   function messageIdOf(msg) {
     if (msg.id.startsWith("response-"))
@@ -8972,13 +9028,14 @@ button .void-info-hint {
     const { currentTarget } = ev;
     if (!(currentTarget instanceof HTMLElement))
       return;
-    const msg = currentTarget.closest(MSG_SEL);
-    const id = msg ? messageIdOf(msg) : "";
+    const id = currentTarget.dataset.responseId || "";
     const cid = currentCid();
-    if (!msg || !id || !cid)
+    if (!id || !cid)
       return;
-    const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
-    toggle(cid, id, { role, snippet: bubbleText(msg) });
+    const role = currentTarget.dataset.role === "user" ? "user" : "assistant";
+    const shell = currentTarget.closest("[id^='response-']");
+    const msg = shell?.querySelector(MSG_SEL) ?? currentTarget.closest(MSG_SEL);
+    toggle(cid, id, { role, snippet: msg ? bubbleText(msg) : "" });
   }
   function makeBubble() {
     const btn = document.createElement("button");
@@ -8988,8 +9045,10 @@ button .void-info-hint {
     btn.addEventListener("click", onBubbleClick);
     return btn;
   }
-  function syncBubble(btn, cid, id) {
+  function syncBubble(btn, cid, id, role) {
     const on = hasStar(cid, id);
+    btn.dataset.responseId = id;
+    btn.dataset.role = role;
     btn.classList.toggle("void-stars-on", on);
     btn.setAttribute("aria-label", on ? "Unstar" : "Star");
     btn.setAttribute("aria-pressed", on ? "true" : "false");
@@ -9001,27 +9060,26 @@ button .void-info-hint {
       const id = messageIdOf(msg);
       if (!cid || !id)
         continue;
-      const row = actionRow(msg);
-      const parent = row ?? msg;
-      const floating = !row;
-      let btn = parent.querySelector(":scope > .void-stars-bubble");
+      const found = actionRow(msg);
+      if (!found)
+        continue;
+      const { row, actions } = found;
+      let btn = row.querySelector(":scope > .void-stars-bubble");
       if (!btn) {
         btn = makeBubble();
-        parent.appendChild(btn);
+        row.appendChild(btn);
       }
-      btn.classList.toggle("void-stars-float", floating);
-      msg.classList.toggle("void-stars-rel", floating);
-      syncBubble(btn, cid, id);
+      btn.classList.remove("void-stars-float");
+      placeInRow(row, btn, actions);
+      const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
+      syncBubble(btn, cid, id, role);
       keep.add(btn);
     }
     for (const btn of document.querySelectorAll(".void-stars-bubble")) {
       if (!keep.has(btn))
         btn.remove();
     }
-    for (const msg of document.querySelectorAll(".void-stars-rel")) {
-      if (!msg.querySelector(":scope > .void-stars-bubble.void-stars-float"))
-        msg.classList.remove("void-stars-rel");
-    }
+    document.querySelectorAll(".void-stars-rel").forEach((node) => node.classList.remove("void-stars-rel"));
   }
   function clearBubbles() {
     document.querySelectorAll(".void-stars-bubble").forEach((node) => node.remove());
@@ -32187,7 +32245,7 @@ div:has(> #grok-bot-nav-button) {
   contextMenu_default.updatedAt = 1790444048000;
   chatBarButtons_default.updatedAt = 1790444048000;
   betterFiles_default.updatedAt = 1790444048000;
-  messageStars_default.updatedAt = 1790450459000;
+  messageStars_default.updatedAt = 1790451707000;
   usageDisplay_default.updatedAt = 1790444048000;
   betterQueue_default.updatedAt = 1790444048000;
   settingsFlyout_default.updatedAt = 1790444048000;
