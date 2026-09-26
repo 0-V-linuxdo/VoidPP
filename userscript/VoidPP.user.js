@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.13
+// @version      20260926.14
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.13] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"308d830"}`
-    }, `(${"308d830"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"53ef89d"}`
+    }, `(${"53ef89d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21438,28 +21438,109 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     return i;
   }
-  function rangeFromParts(parts, blob, clip) {
-    const at = blob.indexOf(clip);
+  function rangeCovering(parts, from, to) {
+    const at = (index) => {
+      for (const part of parts) {
+        const compact = norm2(part.raw);
+        if (!compact)
+          continue;
+        if (index >= part.start && index < part.start + compact.length)
+          return part;
+      }
+      return null;
+    };
+    let startIdx = from;
+    let endIdx = to - 1;
+    while (startIdx < to && !at(startIdx))
+      startIdx++;
+    while (endIdx >= startIdx && !at(endIdx))
+      endIdx--;
+    const a = at(startIdx);
+    const b = at(endIdx);
+    if (!a || !b)
+      return null;
+    try {
+      const range = document.createRange();
+      range.setStart(a.node, Math.min(rawIndexForNorm(a.raw, startIdx - a.start), a.node.length));
+      range.setEnd(b.node, Math.min(rawIndexForNorm(b.raw, endIdx - b.start + 1), b.node.length));
+      return range.collapsed ? null : range;
+    } catch {
+      return null;
+    }
+  }
+  function findLoose(blob, clip, from) {
+    if (from > blob.length)
+      return null;
+    const direct = blob.indexOf(clip, from);
+    if (direct >= 0)
+      return { at: direct, len: clip.length };
+    const want = looseNorm(clip);
+    if (want.length < 2)
+      return null;
+    const mark = /(?:\d+[.)、]|[-*+•]) /y;
+    let loose = "";
+    const map = [];
+    for (let i = from;i < blob.length; ) {
+      mark.lastIndex = i;
+      const hit = mark.exec(blob);
+      if (hit && hit.index === i) {
+        i += hit[0].length;
+        continue;
+      }
+      map.push(i);
+      loose += blob[i];
+      i++;
+    }
+    const at = loose.indexOf(want);
     if (at < 0)
       return null;
-    for (const part of parts) {
-      const compact = norm2(part.raw);
-      if (!compact)
-        continue;
-      const end = part.start + compact.length;
-      if (at >= end)
-        continue;
-      const local = Math.max(0, at - part.start);
-      const rawIdx = rawIndexForNorm(part.raw, local);
-      const take = Math.min(Math.max(2, clip.length), part.raw.length - rawIdx);
-      if (rawIdx < 0 || take < 2)
-        continue;
-      const range = document.createRange();
-      range.setStart(part.node, rawIdx);
-      range.setEnd(part.node, rawIdx + take);
-      return range;
+    const start = map[at];
+    const end = map[at + want.length - 1];
+    if (start == null || end == null)
+      return null;
+    return { at: start, len: end - start + 1 };
+  }
+  function paintLines(needle) {
+    const lines = needle.split(/\r?\n/).map((line) => prefixOf(line.replace(/^\s*(?:\d+[.)、]|[-*+•])\s+/, ""))).filter((line) => line.length >= 2);
+    if (lines.length > 1)
+      return lines;
+    const whole = prefixOf(needle);
+    return whole.length >= 2 ? [whole] : lines;
+  }
+  function findRanges(root, needle) {
+    const lines = paintLines(needle);
+    if (!lines.length)
+      return [];
+    for (const allowThink of [false, true]) {
+      const { parts, blob } = collectParts(root, allowThink);
+      const whole = prefixOf(needle);
+      if (whole.length >= 8) {
+        const hit = findLoose(blob, whole, 0);
+        if (hit) {
+          const span = rangeCovering(parts, hit.at, hit.at + hit.len);
+          if (span)
+            return [span];
+        }
+      }
+      const ranges = [];
+      let cursor = 0;
+      for (const line of lines) {
+        const hit = findLoose(blob, line, cursor) ?? (cursor ? findLoose(blob, line, 0) : null);
+        if (!hit)
+          continue;
+        const range = rangeCovering(parts, hit.at, hit.at + hit.len);
+        if (!range)
+          continue;
+        ranges.push(range);
+        cursor = Math.max(cursor, hit.at + hit.len);
+      }
+      if (ranges.length)
+        return ranges;
     }
-    return null;
+    return [];
+  }
+  function findRange(root, needle) {
+    return findRanges(root, needle)[0] ?? null;
   }
   function collectParts(root, allowThink) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -21479,21 +21560,6 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       blob += norm2(raw);
     }
     return { parts, blob };
-  }
-  function findRange(root, needle) {
-    const clips = clipsOf(needle);
-    if (!clips.length)
-      return null;
-    const ordered = [...clips].sort((a, b) => b.length - a.length);
-    for (const allowThink of [false, true]) {
-      const parts = collectParts(root, allowThink);
-      for (const clip of ordered) {
-        const hit = rangeFromParts(parts.parts, parts.blob, clip);
-        if (hit)
-          return hit;
-      }
-    }
-    return null;
   }
   function findHit(root, needle) {
     const range = findRange(root, needle);
@@ -21528,10 +21594,11 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   }
   function highlightRange(range, el) {
     clearHighlight();
+    const list = (Array.isArray(range) ? range : range ? [range] : []).filter((item) => !item.collapsed);
     const HighlightCtor = window.Highlight;
     const { highlights } = CSS;
-    if (range && highlights && HighlightCtor) {
-      highlights.set(HL, new HighlightCtor(range));
+    if (list.length && highlights && HighlightCtor) {
+      highlights.set(HL, new HighlightCtor(...list));
     } else {
       flashing2 = el;
       el.classList.add(cl22("hit"));
@@ -21714,10 +21781,11 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       if (mine !== gen || !el.isConnected)
         return;
     }
-    const range = findRange(el, needle);
+    const ranges = findRanges(el, needle);
+    const range = ranges[0] ?? null;
     const hit = findHit(el, needle) ?? el;
     scrollLineToScreenCenter(range, hit);
-    highlightRange(range, hit);
+    highlightRange(ranges, hit);
   }
   function quoteSource(rec, fallbackParent = "") {
     const quoted = typeof rec.parentQuotedText === "string" ? rec.parentQuotedText : "";
@@ -21938,10 +22006,11 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     await afterLayout();
     if (mine !== gen || !card.isConnected)
       return;
-    const range = findRange(card, cite.quoted);
+    const ranges = findRanges(card, cite.quoted);
+    const range = ranges[0] ?? null;
     const hit = findHit(card, cite.quoted) ?? card;
     scrollLineToScreenCenter(range, hit);
-    highlightRange(range, hit);
+    highlightRange(ranges, hit);
   }
   function onBackClick(t) {
     const badge = t.closest(`.${cl22("back")}`);
@@ -30606,7 +30675,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1787789817000;
   betterCanvas_default.updatedAt = 1790360947000;
   noDictation_default.updatedAt = 1788037550000;
-  betterQuotes_default.updatedAt = 1790433258000;
+  betterQuotes_default.updatedAt = 1790433951000;
   cloneChats_default.updatedAt = 1787870966000;
   composerOpacity_default.updatedAt = 1790097681000;
   incognito_default.updatedAt = 1787870966000;
