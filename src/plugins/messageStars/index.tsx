@@ -7,7 +7,6 @@
 import "./styles.css";
 
 import { type ContextMenuLocationMap, MenuItem } from "@api/ContextMenus";
-import { definePluginSettings } from "@api/Settings";
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { StarFilledIcon, StarIcon } from "@components/icons";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
@@ -19,39 +18,28 @@ import { ChatPageStore, ConversationStore, MessageStore, RoutingStore, SettingsS
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import { debounce, pageWindow } from "@utils/misc";
-import definePlugin, { OptionType, StartAt } from "@utils/types";
+import definePlugin, { StartAt } from "@utils/types";
 
 import { clipSnippet, groupStars, type StarGroup, type StarredMessage } from "./model";
 import { dropStar, hasStar, putStar, reloadIfAccountChanged, stars, startStore, stopStore } from "./store";
 
 const logger = new Logger("MessageStars");
 const JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
-const HOLD_MS = 550;
-const SLOP_PX = 6;
-const SUPPRESS_MS = 350;
 const PENDING_MS = 8000;
 const OFFSET_PX = 72;
+const PANEL_GAP = 8;
 const NS = "http://www.w3.org/2000/svg";
 const STAR_D = "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z";
-
-const settings = definePluginSettings({
-    showInSidebar: {
-        type: OptionType.BOOLEAN,
-        description: "Show starred messages in the left sidebar.",
-        default: true,
-    },
-});
 
 let alive = false;
 let ac: AbortController | null = null;
 let mo: MutationObserver | null = null;
-let host: HTMLElement | null = null;
-let pop: HTMLElement | null = null;
+let toggleBtn: HTMLButtonElement | null = null;
+let panel: HTMLElement | null = null;
 let paintKey = "";
-let suppressUntil = 0;
+let pinned = false;
 let pendingTimer = 0;
 let pending: { cid: string; id: string; until: number } | null = null;
-let press: { cid: string; id: string; x: number; y: number; timer: number } | null = null;
 
 function currentCid(): string {
     try {
@@ -98,7 +86,7 @@ function shouldPersist(cid: string): boolean {
     } catch { /* settings */ }
     if (temporaryOf(cid)) return false;
     try {
-        const route = RoutingStore.useRoutingStore.getState().route;
+        const { route } = RoutingStore.useRoutingStore.getState();
         if (route?.temporary && currentCid() === cid) return false;
     } catch { /* route */ }
     return true;
@@ -180,7 +168,7 @@ function capture(cid: string, messageId: string, hint?: Partial<StarredMessage>)
     };
 }
 
-function toggle(cid: string, messageId: string, hint?: Partial<StarredMessage>) {
+function flipStar(cid: string, messageId: string, hint?: Partial<StarredMessage>) {
     if (!cid || !messageId) return;
     if (hasStar(cid, messageId)) {
         dropStar(cid, messageId);
@@ -195,10 +183,10 @@ function roleFromResponse(response: ContextMenuLocationMap["message"]["response"
     return "assistant";
 }
 
-function toggleFromResponse(cid: string, messageId: string, response: ContextMenuLocationMap["message"]["response"]) {
+function flipFromResponse(cid: string, messageId: string, response: ContextMenuLocationMap["message"]["response"]) {
     const role = roleFromResponse(response);
     const raw = role === "user" ? (response.query || response.message || "") : (response.message || response.query || "");
-    toggle(cid, messageId, { role, snippet: clipSnippet(String(raw)) });
+    flipStar(cid, messageId, { role, snippet: clipSnippet(String(raw)) });
 }
 
 function StarItem({ response }: ContextMenuLocationMap["message"]) {
@@ -207,53 +195,11 @@ function StarItem({ response }: ContextMenuLocationMap["message"]) {
     if (!messageId || !cid) return null;
     const on = hasStar(cid, messageId);
     return (
-        <MenuItem onSelect={() => toggleFromResponse(cid, messageId, response)}>
+        <MenuItem onSelect={() => flipFromResponse(cid, messageId, response)}>
             {on ? <StarFilledIcon size={16} /> : <StarIcon size={16} />}
             {on ? "Unstar" : "Star"}
         </MenuItem>
     );
-}
-
-function clearPress() {
-    if (press) window.clearTimeout(press.timer);
-    press = null;
-}
-
-function onPointerDown(e: PointerEvent) {
-    if (pop && e.target instanceof Node && !pop.contains(e.target) && !host?.contains(e.target)) closePop();
-    if (e.button !== 0) return;
-    const target = e.target;
-    if (!(target instanceof Element)) return;
-    const tick = target.closest<HTMLElement>(".void-bn-tick");
-    const messageId = tick?.dataset.responseId ?? "";
-    const cid = currentCid();
-    if (!tick || !messageId || !cid) return;
-    clearPress();
-    const timer = window.setTimeout(() => {
-        const held = press;
-        press = null;
-        if (!held || currentCid() !== held.cid) return;
-        suppressUntil = Date.now() + SUPPRESS_MS;
-        toggle(held.cid, held.id);
-    }, HOLD_MS);
-    press = { cid, id: messageId, x: e.clientX, y: e.clientY, timer };
-}
-
-function onPointerMove(e: PointerEvent) {
-    if (!press) return;
-    if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > SLOP_PX) clearPress();
-}
-
-function onClickCapture(e: MouseEvent) {
-    if (Date.now() >= suppressUntil) return;
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-function onKeyDown(e: KeyboardEvent) {
-    if (e.key !== "Escape" || !pop) return;
-    e.preventDefault();
-    closePop();
 }
 
 function navigatorJump(messageId: string): boolean {
@@ -334,7 +280,6 @@ function navigate(star: StarredMessage) {
 }
 
 function openStar(star: StarredMessage) {
-    closePop();
     if (star.conversationId !== currentCid()) {
         navigate(star);
         armPending(star.conversationId, star.messageId);
@@ -356,9 +301,43 @@ function starSvg(): SVGSVGElement {
     return svg;
 }
 
-function closePop() {
-    pop?.remove();
-    pop = null;
+function railRoot(): HTMLElement | null {
+    return document.querySelector<HTMLElement>(".void-bn-host");
+}
+
+function closePanel() {
+    pinned = false;
+    panel?.remove();
+    panel = null;
+    paintKey = "";
+    if (toggleBtn) {
+        toggleBtn.classList.remove("void-stars-open");
+        toggleBtn.setAttribute("aria-expanded", "false");
+    }
+}
+
+function detachRail() {
+    closePanel();
+    toggleBtn?.remove();
+    toggleBtn = null;
+}
+
+function signature(groups: readonly StarGroup[]): string {
+    return groups.map(group => `${group.conversationId}:${group.missing ? 1 : 0}:${group.title}:${group.items.map(item => `${item.messageId}:${item.snippet}`).join(",")}`).join(";");
+}
+
+function placePanel(el: HTMLElement, root: HTMLElement) {
+    const rect = root.getBoundingClientRect();
+    const width = Math.min(288, Math.max(160, window.innerWidth * 0.7));
+    const maxHeight = Math.max(160, Math.min(window.innerHeight * 0.7, rect.height || window.innerHeight * 0.7));
+    let left = rect.left - width - PANEL_GAP;
+    if (left < 8) left = 8;
+    let top = Math.max(8, rect.top);
+    if (top + maxHeight > window.innerHeight - 8) top = Math.max(8, window.innerHeight - 8 - maxHeight);
+    el.style.left = `${Math.round(left)}px`;
+    el.style.top = `${Math.round(top)}px`;
+    el.style.width = `${Math.round(width)}px`;
+    el.style.maxHeight = `${Math.round(maxHeight)}px`;
 }
 
 function appendList(container: HTMLElement, groups: readonly StarGroup[]) {
@@ -413,120 +392,159 @@ function appendList(container: HTMLElement, groups: readonly StarGroup[]) {
     container.append(head, body);
 }
 
-function openPop(anchor: HTMLElement, groups: readonly StarGroup[]) {
-    closePop();
-    const panel = document.createElement("div");
-    panel.className = "void-stars-pop";
-    appendList(panel, groups);
-    document.body.appendChild(panel);
-    const rect = anchor.getBoundingClientRect();
-    panel.style.left = `${Math.round(rect.right + 8)}px`;
-    panel.style.top = `${Math.round(Math.max(8, rect.top))}px`;
-    pop = panel;
+function currentGroups(): StarGroup[] {
+    const list = stars();
+    const cid = currentCid();
+    return groupStars(list, cid, leafIds(cid), titlesFor(list), knownIds());
 }
 
-function chatsAnchor(sidebar: Element): Element | null {
-    const plus = sidebar.querySelector("[data-void-chats-plus], .void-chats-plus");
-    const fromPlus = plus?.closest("[data-sidebar=group]");
-    if (fromPlus) return fromPlus;
-    for (const btn of sidebar.querySelectorAll<HTMLElement>("button[aria-expanded]")) {
-        const label = (btn.getAttribute("aria-label") ?? "").trim();
-        if (label === "Chats" || label === "History") return btn.closest("[data-sidebar=group]");
+function makeToggle(): HTMLButtonElement {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "void-stars-toggle";
+    btn.setAttribute("aria-label", "Starred messages");
+    btn.setAttribute("aria-expanded", "false");
+    btn.appendChild(starSvg());
+    btn.addEventListener("click", ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!stars().length) {
+            closePanel();
+            return;
+        }
+        if (pinned) closePanel();
+        else {
+            pinned = true;
+            paintKey = "";
+            paintRail();
+        }
+        btn.blur();
+    });
+    return btn;
+}
+
+function paintRail() {
+    const list = stars();
+    const root = railRoot();
+    if (!list.length || !root) {
+        detachRail();
+        return;
     }
-    return null;
+    if (!toggleBtn?.isConnected || toggleBtn.parentElement !== root) {
+        toggleBtn?.remove();
+        toggleBtn = makeToggle();
+        root.appendChild(toggleBtn);
+    }
+    toggleBtn.classList.toggle("void-stars-open", pinned);
+    toggleBtn.setAttribute("aria-expanded", pinned ? "true" : "false");
+    if (!pinned) {
+        panel?.remove();
+        panel = null;
+        paintKey = "";
+        return;
+    }
+    const groups = currentGroups();
+    const key = signature(groups);
+    if (!panel?.isConnected) {
+        panel?.remove();
+        const next = document.createElement("div");
+        next.className = "void-stars-panel";
+        next.setAttribute("role", "dialog");
+        next.setAttribute("aria-label", "Starred messages");
+        document.body.appendChild(next);
+        panel = next;
+        paintKey = "";
+    }
+    if (key !== paintKey && panel) {
+        panel.replaceChildren();
+        appendList(panel, groups);
+        paintKey = key;
+    }
+    if (panel) placePanel(panel, root);
 }
 
-function isCollapsed(sidebar: Element): boolean {
-    const state = sidebar.getAttribute("data-state") ?? sidebar.closest("[data-state]")?.getAttribute("data-state") ?? "";
-    if (state === "collapsed") return true;
-    const width = sidebar.getBoundingClientRect().width;
-    return width > 0 && width < 88;
-}
-
-function signature(groups: readonly StarGroup[], collapsed: boolean): string {
-    return `${collapsed ? 1 : 0}|${groups.map(group => `${group.conversationId}:${group.missing ? 1 : 0}:${group.title}:${group.items.map(item => `${item.messageId}:${item.snippet}`).join(",")}`).join(";")}`;
+function bindItemStar(item: HTMLElement) {
+    let btn = item.querySelector<HTMLElement>(":scope > .void-stars-item-btn");
+    if (btn) return btn;
+    btn = document.createElement("span");
+    btn.className = "void-stars-item-btn";
+    btn.setAttribute("role", "button");
+    btn.tabIndex = 0;
+    btn.appendChild(starSvg());
+    const activate = (ev: Event) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const messageId = item.dataset.responseId ?? "";
+        const cid = currentCid();
+        if (!messageId || !cid) return;
+        flipStar(cid, messageId);
+    };
+    btn.addEventListener("click", activate);
+    btn.addEventListener("pointerdown", ev => ev.stopPropagation());
+    btn.addEventListener("keydown", ev => {
+        if (ev.key !== "Enter" && ev.key !== " ") return;
+        activate(ev);
+    });
+    item.appendChild(btn);
+    return btn;
 }
 
 function paintMarks() {
     const cid = currentCid();
-    for (const el of document.querySelectorAll<HTMLElement>(".void-bn-tick, .void-bn-item")) {
-        const id = el.dataset.responseId ?? "";
+    for (const tick of document.querySelectorAll<HTMLElement>(".void-bn-tick")) {
+        const id = tick.dataset.responseId ?? "";
+        tick.classList.toggle("void-bn-tick-star", !!cid && !!id && hasStar(cid, id));
+    }
+    for (const item of document.querySelectorAll<HTMLElement>(".void-bn-item")) {
+        const id = item.dataset.responseId ?? "";
         const on = !!cid && !!id && hasStar(cid, id);
-        if (el.classList.contains("void-bn-tick")) {
-            el.classList.toggle("void-bn-tick-star", on);
-            if (on) el.setAttribute("aria-pressed", "true");
-            else el.removeAttribute("aria-pressed");
+        if (!cid || !id) {
+            item.querySelector(":scope > .void-stars-item-btn")?.remove();
+            continue;
         }
-        if (el.classList.contains("void-bn-item")) el.classList.toggle("void-bn-item-star", on);
+        const btn = bindItemStar(item);
+        btn.classList.toggle("void-stars-item-on", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+        btn.setAttribute("aria-label", on ? "Unstar" : "Star");
     }
 }
 
 function clearMarks() {
-    for (const el of document.querySelectorAll<HTMLElement>(".void-bn-tick-star, .void-bn-item-star")) {
-        el.classList.remove("void-bn-tick-star", "void-bn-item-star");
-        el.removeAttribute("aria-pressed");
+    for (const el of document.querySelectorAll<HTMLElement>(".void-bn-tick-star")) {
+        el.classList.remove("void-bn-tick-star");
     }
+    for (const btn of document.querySelectorAll(".void-stars-item-btn")) btn.remove();
 }
 
-function removeHost() {
-    host?.remove();
-    host = null;
-    paintKey = "";
-    closePop();
+function onPointerDown(e: PointerEvent) {
+    if (!pinned || !panel) return;
+    const { target } = e;
+    if (!(target instanceof Node)) return;
+    if (panel.contains(target) || toggleBtn?.contains(target)) return;
+    closePanel();
 }
 
-function paintSidebar() {
-    if (!settings.store.showInSidebar) {
-        removeHost();
+function onKeyDown(e: KeyboardEvent) {
+    if (e.key !== "Escape" || !pinned) return;
+    e.preventDefault();
+    closePanel();
+}
+
+function onReflow() {
+    if (!pinned || !panel) return;
+    const root = railRoot();
+    if (!root) {
+        detachRail();
         return;
     }
-    const list = stars();
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!list.length || !sidebar) {
-        removeHost();
-        return;
-    }
-    const anchor = chatsAnchor(sidebar);
-    const parent = anchor?.parentElement ?? sidebar;
-    const collapsed = isCollapsed(sidebar);
-    const cid = currentCid();
-    const groups = groupStars(list, cid, leafIds(cid), titlesFor(list), knownIds());
-    const key = signature(groups, collapsed);
-    if (host?.isConnected && host.parentElement === parent && key === paintKey) {
-        if (anchor && host.nextElementSibling !== anchor) parent.insertBefore(host, anchor);
-        return;
-    }
-    const next = document.createElement("div");
-    next.className = collapsed ? "void-stars-host void-stars-collapsed" : "void-stars-host";
-    if (!collapsed) appendList(next, groups);
-    const rail = document.createElement("button");
-    rail.type = "button";
-    rail.className = "void-stars-rail";
-    rail.setAttribute("aria-label", "Starred messages");
-    rail.appendChild(starSvg());
-    rail.addEventListener("click", ev => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        if (pop) closePop();
-        else openPop(rail, groups);
-    });
-    next.appendChild(rail);
-    host?.remove();
-    if (anchor) parent.insertBefore(next, anchor);
-    else parent.appendChild(next);
-    host = next;
-    paintKey = key;
-    if (pop) {
-        const anchorEl = rail;
-        openPop(anchorEl, groups);
-    }
+    placePanel(panel, root);
 }
 
 function paintAll() {
     if (!alive) return;
     reloadIfAccountChanged();
     paintMarks();
-    paintSidebar();
+    paintRail();
     settlePending();
 }
 
@@ -554,11 +572,9 @@ function start() {
     const { signal } = ac;
     startStore(schedule);
     document.addEventListener("pointerdown", onPointerDown, { capture: true, signal });
-    document.addEventListener("pointermove", onPointerMove, { capture: true, signal });
-    document.addEventListener("pointerup", clearPress, { capture: true, signal });
-    document.addEventListener("pointercancel", clearPress, { capture: true, signal });
-    document.addEventListener("click", onClickCapture, { capture: true, signal });
     document.addEventListener("keydown", onKeyDown, { capture: true, signal });
+    window.addEventListener("resize", onReflow, { signal });
+    window.addEventListener("scroll", onReflow, { capture: true, passive: true, signal });
     mo = new MutationObserver(schedule);
     mo.observe(document.documentElement, { childList: true, subtree: true });
     schedule();
@@ -570,9 +586,8 @@ function stop() {
     ac = null;
     mo?.disconnect();
     mo = null;
-    clearPress();
     clearPending();
-    removeHost();
+    detachRail();
     clearMarks();
     stopStore();
 }
@@ -580,14 +595,13 @@ function stop() {
 export default definePlugin({
     name: "MessageStars",
     icon: StarIcon,
-    description: "Star any message. Starred ticks turn orange in the message rail, and the left sidebar lists them.",
+    description: "Star any message. Click the star on a navigator row, or open the list from the star above the ticks.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: false,
     startAt: StartAt.DOMContentLoaded,
-    settings,
     managedStyle: "messageStars",
-    cleanupSelectors: [".void-stars-host", ".void-stars-pop"],
+    cleanupSelectors: [".void-stars-toggle", ".void-stars-panel", ".void-stars-item-btn"],
     contextMenuItems: {
         message: {
             label: "Star",
@@ -596,10 +610,6 @@ export default definePlugin({
     },
     start,
     stop,
-    onSettingsChange() {
-        paintKey = "";
-        schedule();
-    },
     zustand: {
         ChatPageStore: { selector: pageSlice, handler: schedule },
         MessageStore: { selector: messageSlice, handler: schedule },
