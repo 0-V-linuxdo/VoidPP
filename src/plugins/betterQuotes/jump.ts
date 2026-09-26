@@ -28,7 +28,7 @@ const FLASH_MS = 1800;
 const WAIT_MS = 50;
 const WAIT_N = 24;
 const ALIGNED_PX = 8;
-const MSG_OFFSET = 72;
+const CLUSTER_GAP = 240;
 
 let abort: AbortController | null = null;
 let gen = 0;
@@ -550,20 +550,32 @@ function flex(s: string): string {
     return looseNorm(s).replaceAll(/[`"'“”‘’]/g, "").replaceAll(/\s+/g, "");
 }
 
+function blockFits(text: string, want: string, lines: string[]): boolean {
+    if (text.length < 4) return false;
+    let shardOf = 0;
+    for (const line of lines) {
+        if (line.length > text.length && line.includes(text) && line.length > shardOf) shardOf = line.length;
+    }
+    if (shardOf && (text.length < 8 || text.length * 10 < shardOf * 6)) return false;
+    for (const line of lines) {
+        if (text === line) return true;
+        if (line.length >= 8 && text.includes(line) && text.length <= line.length + 12) return true;
+    }
+    return want.length >= 8 && text.length >= 8 && want.includes(text) && !shardOf;
+}
+
 function blockRanges(root: HTMLElement, needle: string, allowThink: boolean): Range[] {
     const want = flex(needle);
     const lines = paintLines(needle).map(flex).filter(line => line.length >= 4);
     if (want.length < 4 && !lines.length) return [];
     const ranges: Range[] = [];
-    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, td, th")) {
+    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote")) {
         if (!(el instanceof HTMLElement)) continue;
-        if (el.closest("button, svg, [role='toolbar']")) continue;
+        if (el.closest("button, svg, [role='toolbar'], td, th")) continue;
         if (el.querySelector("p, li")) continue;
         if (hiddenHost(el, allowThink)) continue;
         const text = flex(el.textContent || "");
-        if (text.length < 4) continue;
-        const hit = (want.length >= 4 && want.includes(text)) || lines.some(line => text.includes(line));
-        if (!hit) continue;
+        if (!blockFits(text, want, lines)) continue;
         try {
             const range = document.createRange();
             range.selectNodeContents(el);
@@ -608,10 +620,6 @@ function findRanges(root: HTMLElement, needle: string): Range[] {
     return [];
 }
 
-function findRange(root: HTMLElement, needle: string): Range | null {
-    return findRanges(root, needle)[0] ?? null;
-}
-
 function collectParts(root: HTMLElement, allowThink: boolean) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const parts: { node: Text; raw: string; start: number }[] = [];
@@ -627,14 +635,6 @@ function collectParts(root: HTMLElement, allowThink: boolean) {
         blob += norm(raw);
     }
     return { parts, blob };
-}
-
-function findHit(root: HTMLElement, needle: string): HTMLElement | null {
-    const range = findRange(root, needle);
-    if (!range) return null;
-    const node = range.startContainer;
-    const el = node instanceof HTMLElement ? node : node.parentElement;
-    return el?.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, blockquote, span") ?? el;
 }
 
 function openAncestors(el: HTMLElement, needle?: string) {
@@ -688,6 +688,49 @@ function lineBox(range: Range | null): DOMRect | null {
     return box.height > 0 || box.width > 0 ? box : null;
 }
 
+function hitOf(range: Range | null): HTMLElement | null {
+    if (!range) return null;
+    const node = range.startContainer;
+    const el = node instanceof HTMLElement ? node : node.parentElement;
+    return el?.closest("p, h1, h2, h3, h4, h5, h6, li, pre, blockquote") ?? el;
+}
+
+function scrollAnchor(ranges: readonly Range[]): Range | null {
+    const kept: Range[] = [];
+    for (const range of ranges) {
+        if (range.collapsed || !range.startContainer.isConnected) continue;
+        const node = range.startContainer;
+        const el = node instanceof Element ? node : node.parentElement;
+        if (el?.closest("td, th, button")) continue;
+        if (flex(range.toString()).length < 8) continue;
+        kept.push(range);
+    }
+    const pool = kept.length ? kept : ranges.filter(range => !range.collapsed);
+    if (!pool.length) return null;
+    const ordered = pool.toSorted((a, b) => a.compareBoundaryPoints(Range.START_TO_START, b));
+    let best: Range[] = [];
+    let bestScore = -1;
+    let cur: Range[] = [];
+    let prev = Number.NEGATIVE_INFINITY;
+    const flush = () => {
+        if (!cur.length) return;
+        const score = cur.reduce((sum, range) => sum + flex(range.toString()).length, 0);
+        if (score > bestScore) {
+            bestScore = score;
+            best = cur;
+        }
+        cur = [];
+    };
+    for (const range of ordered) {
+        const top = lineBox(range)?.top;
+        if (cur.length && top != null && Number.isFinite(prev) && top - prev > CLUSTER_GAP) flush();
+        cur.push(range);
+        if (top != null) prev = top;
+    }
+    flush();
+    return best[0] ?? ordered[0] ?? null;
+}
+
 function scrollPane(el: HTMLElement): HTMLElement | null {
     const named = el.closest<HTMLElement>(SCROLLER);
     if (named && !named.closest(PANE_SKIP)) return named;
@@ -695,22 +738,10 @@ function scrollPane(el: HTMLElement): HTMLElement | null {
     return pane && pane.contains(el) ? pane : null;
 }
 
-function scrollMessageTop(el: HTMLElement) {
-    const host = el.closest<HTMLElement>("[id^='response-']") ?? el;
-    const pane = scrollPane(host);
-    if (!pane) return;
-    const pr = pane.getBoundingClientRect();
-    const er = host.getBoundingClientRect();
-    pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - MSG_OFFSET, behavior: "smooth" });
-}
-
 function scrollLineToScreenCenter(range: Range | null, el: HTMLElement) {
-    if (!document.body.contains(el)) return;
+    if (!range || !document.body.contains(el)) return;
     const box = lineBox(range);
-    if (!box) {
-        scrollMessageTop(el.closest<HTMLElement>(MSG) ?? el);
-        return;
-    }
+    if (!box) return;
     const pane = scrollPane(el);
     if (!pane) return;
     const mid = visibleMidY(pane);
@@ -836,9 +867,9 @@ async function jump(origin: HTMLElement | null) {
         if (mine !== gen || !el.isConnected) return;
     }
     const ranges = findRanges(el, needle);
-    const range = ranges[0] ?? null;
-    const hit = findHit(el, needle) ?? el;
-    scrollLineToScreenCenter(range, hit);
+    const anchor = scrollAnchor(ranges);
+    const hit = hitOf(anchor) ?? el;
+    scrollLineToScreenCenter(anchor, hit);
     highlightRange(ranges, hit);
 }
 
@@ -1049,9 +1080,9 @@ async function jumpToCite(cite: Cite | undefined) {
     await afterLayout();
     if (mine !== gen || !card.isConnected) return;
     const ranges = findRanges(card, cite.quoted);
-    const range = ranges[0] ?? null;
-    const hit = findHit(card, cite.quoted) ?? card;
-    scrollLineToScreenCenter(range, hit);
+    const anchor = scrollAnchor(ranges);
+    const hit = hitOf(anchor) ?? card;
+    scrollLineToScreenCenter(anchor, hit);
     highlightRange(ranges, hit);
 }
 

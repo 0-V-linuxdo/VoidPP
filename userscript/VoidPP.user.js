@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.15
+// @version      20260926.16
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.15] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.16] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a0c47cf"}`
-    }, `(${"a0c47cf"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ea3352f"}`
+    }, `(${"ea3352f"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -20960,7 +20960,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var WAIT_MS = 50;
   var WAIT_N = 24;
   var ALIGNED_PX = 8;
-  var MSG_OFFSET = 72;
+  var CLUSTER_GAP = 240;
   var abort2 = null;
   var gen = 0;
   var flashTimer2 = 0;
@@ -21510,26 +21510,41 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   function flex(s) {
     return looseNorm(s).replaceAll(/[`"'“”‘’]/g, "").replaceAll(/\s+/g, "");
   }
+  function blockFits(text, want, lines) {
+    if (text.length < 4)
+      return false;
+    let shardOf = 0;
+    for (const line of lines) {
+      if (line.length > text.length && line.includes(text) && line.length > shardOf)
+        shardOf = line.length;
+    }
+    if (shardOf && (text.length < 8 || text.length * 10 < shardOf * 6))
+      return false;
+    for (const line of lines) {
+      if (text === line)
+        return true;
+      if (line.length >= 8 && text.includes(line) && text.length <= line.length + 12)
+        return true;
+    }
+    return want.length >= 8 && text.length >= 8 && want.includes(text) && !shardOf;
+  }
   function blockRanges(root, needle, allowThink) {
     const want = flex(needle);
     const lines = paintLines(needle).map(flex).filter((line) => line.length >= 4);
     if (want.length < 4 && !lines.length)
       return [];
     const ranges = [];
-    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, td, th")) {
+    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote")) {
       if (!(el instanceof HTMLElement))
         continue;
-      if (el.closest("button, svg, [role='toolbar']"))
+      if (el.closest("button, svg, [role='toolbar'], td, th"))
         continue;
       if (el.querySelector("p, li"))
         continue;
       if (hiddenHost(el, allowThink))
         continue;
       const text = flex(el.textContent || "");
-      if (text.length < 4)
-        continue;
-      const hit = want.length >= 4 && want.includes(text) || lines.some((line) => text.includes(line));
-      if (!hit)
+      if (!blockFits(text, want, lines))
         continue;
       try {
         const range = document.createRange();
@@ -21581,9 +21596,6 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     return [];
   }
-  function findRange(root, needle) {
-    return findRanges(root, needle)[0] ?? null;
-  }
   function collectParts(root, allowThink) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const parts = [];
@@ -21602,14 +21614,6 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       blob += norm2(raw);
     }
     return { parts, blob };
-  }
-  function findHit(root, needle) {
-    const range = findRange(root, needle);
-    if (!range)
-      return null;
-    const node = range.startContainer;
-    const el = node instanceof HTMLElement ? node : node.parentElement;
-    return el?.closest("p, h1, h2, h3, h4, h5, h6, li, td, th, pre, blockquote, span") ?? el;
   }
   function openAncestors(el, needle) {
     for (let n = el;n; n = n.parentElement) {
@@ -21664,6 +21668,55 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     const box = range.getBoundingClientRect();
     return box.height > 0 || box.width > 0 ? box : null;
   }
+  function hitOf(range) {
+    if (!range)
+      return null;
+    const node = range.startContainer;
+    const el = node instanceof HTMLElement ? node : node.parentElement;
+    return el?.closest("p, h1, h2, h3, h4, h5, h6, li, pre, blockquote") ?? el;
+  }
+  function scrollAnchor(ranges) {
+    const kept = [];
+    for (const range of ranges) {
+      if (range.collapsed || !range.startContainer.isConnected)
+        continue;
+      const node = range.startContainer;
+      const el = node instanceof Element ? node : node.parentElement;
+      if (el?.closest("td, th, button"))
+        continue;
+      if (flex(range.toString()).length < 8)
+        continue;
+      kept.push(range);
+    }
+    const pool = kept.length ? kept : ranges.filter((range) => !range.collapsed);
+    if (!pool.length)
+      return null;
+    const ordered = pool.toSorted((a, b) => a.compareBoundaryPoints(Range.START_TO_START, b));
+    let best = [];
+    let bestScore = -1;
+    let cur = [];
+    let prev = Number.NEGATIVE_INFINITY;
+    const flush = () => {
+      if (!cur.length)
+        return;
+      const score = cur.reduce((sum, range) => sum + flex(range.toString()).length, 0);
+      if (score > bestScore) {
+        bestScore = score;
+        best = cur;
+      }
+      cur = [];
+    };
+    for (const range of ordered) {
+      const top = lineBox(range)?.top;
+      if (cur.length && top != null && Number.isFinite(prev) && top - prev > CLUSTER_GAP)
+        flush();
+      cur.push(range);
+      if (top != null)
+        prev = top;
+    }
+    flush();
+    return best[0] ?? ordered[0] ?? null;
+  }
   function scrollPane(el) {
     const named = el.closest(SCROLLER2);
     if (named && !named.closest(PANE_SKIP3))
@@ -21671,23 +21724,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     const pane = paneOf(el) ?? chatPane3();
     return pane && pane.contains(el) ? pane : null;
   }
-  function scrollMessageTop(el) {
-    const host = el.closest("[id^='response-']") ?? el;
-    const pane = scrollPane(host);
-    if (!pane)
-      return;
-    const pr = pane.getBoundingClientRect();
-    const er = host.getBoundingClientRect();
-    pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - MSG_OFFSET, behavior: "smooth" });
-  }
   function scrollLineToScreenCenter(range, el) {
-    if (!document.body.contains(el))
+    if (!range || !document.body.contains(el))
       return;
     const box = lineBox(range);
-    if (!box) {
-      scrollMessageTop(el.closest(MSG2) ?? el);
+    if (!box)
       return;
-    }
     const pane = scrollPane(el);
     if (!pane)
       return;
@@ -21824,9 +21866,9 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         return;
     }
     const ranges = findRanges(el, needle);
-    const range = ranges[0] ?? null;
-    const hit = findHit(el, needle) ?? el;
-    scrollLineToScreenCenter(range, hit);
+    const anchor = scrollAnchor(ranges);
+    const hit = hitOf(anchor) ?? el;
+    scrollLineToScreenCenter(anchor, hit);
     highlightRange(ranges, hit);
   }
   function quoteSource(rec, fallbackParent = "") {
@@ -22049,9 +22091,9 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (mine !== gen || !card.isConnected)
       return;
     const ranges = findRanges(card, cite.quoted);
-    const range = ranges[0] ?? null;
-    const hit = findHit(card, cite.quoted) ?? card;
-    scrollLineToScreenCenter(range, hit);
+    const anchor = scrollAnchor(ranges);
+    const hit = hitOf(anchor) ?? card;
+    scrollLineToScreenCenter(anchor, hit);
     highlightRange(ranges, hit);
   }
   function onBackClick(t) {
@@ -30717,7 +30759,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1787789817000;
   betterCanvas_default.updatedAt = 1790360947000;
   noDictation_default.updatedAt = 1788037550000;
-  betterQuotes_default.updatedAt = 1790434599000;
+  betterQuotes_default.updatedAt = 1790434918000;
   cloneChats_default.updatedAt = 1787870966000;
   composerOpacity_default.updatedAt = 1790097681000;
   incognito_default.updatedAt = 1787870966000;
