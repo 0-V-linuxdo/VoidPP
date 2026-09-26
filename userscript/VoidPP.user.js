@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.4
+// @version      20260926.5
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.4] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.5] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,7 +7755,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260926.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9a01f49"}`
     }, `(${"9a01f49"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -10225,7 +10225,7 @@ button.void-bn-native-edge::before {
     width: min(18rem, 70vw);
     max-height: none;
     overflow: hidden;
-    padding: 0.375rem;
+    padding: 0.375rem 0.375rem 0.15rem;
     border: 1px solid hsl(var(--border-l1));
     border-radius: 1.25rem;
     background: hsl(var(--surface-l1));
@@ -10254,13 +10254,12 @@ button.void-bn-native-edge::before {
 
 .void-bn-meta {
     flex: none;
-    margin-top: 0.2rem;
-    padding: 0.4rem 0.5rem 0.28rem;
+    padding: 0.12rem 0.5rem 0;
     border-top: 1px solid hsl(var(--border-l1) / 55%);
     color: hsl(var(--fg-secondary));
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-variant-numeric: tabular-nums;
-    line-height: 1.4;
+    line-height: 1.2;
     letter-spacing: -0.2px;
     text-align: center;
 }
@@ -10272,9 +10271,10 @@ button.void-bn-native-edge::before {
     gap: 0;
     min-height: 0;
     margin: 0;
-    padding: 0;
+    padding: 0 0 0.25rem;
     overflow: auto;
     list-style: none;
+    scroll-padding-bottom: 0.25rem;
     scrollbar-width: thin;
 }
 
@@ -10297,20 +10297,17 @@ button.void-bn-native-edge::before {
     cursor: pointer;
 }
 
-.void-bn-item-user {
-    margin-top: 0.25rem;
+.void-bn-menu:hover .void-bn-item-user,
+.void-bn-menu:focus-within .void-bn-item-user {
     background: hsl(var(--fg-primary) / 10%);
     color: hsl(var(--fg-primary));
     font-weight: 500;
 }
 
-.void-bn-list > :first-child .void-bn-item-user {
-    margin-top: 0;
-}
-
-.void-bn-item-asst {
+.void-bn-menu:hover .void-bn-item-asst,
+.void-bn-menu:focus-within .void-bn-item-asst {
     background: hsl(var(--fg-primary) / 3%);
-    border-bottom: 1px solid hsl(var(--border-l1) / 50%);
+    border-bottom-color: hsl(var(--border-l1) / 50%);
 }
 
 .void-bn-item:hover,
