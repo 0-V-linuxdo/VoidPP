@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.15
+// @version      20260925.16
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.15] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.16] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a9edc32"}`
-    }, `(${"a9edc32"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"69e2955"}`
+    }, `(${"69e2955"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -28696,6 +28696,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var applyTimer;
   var applyEl = null;
   var applyAtStart = true;
+  var probeGen = 0;
+  var probeArmed = false;
   function isImaginePage3() {
     try {
       const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
@@ -28766,300 +28768,159 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `) : el.innerText ?? el.textContent ?? "";
     return normalize(raw);
   }
-  var EDGE_SLOP_MIN_PX = 4;
+  var CARET_Y_SLOP_PX = 4;
   var TRAILING_BR = "ProseMirror-trailingBreak";
-  var BREAK_NAMES = new Set(["hardBreak", "hard_break", "hard-break"]);
-  function isBreakNode(node) {
-    const name = node?.type?.name ?? "";
-    return BREAK_NAMES.has(name) || !!node?.type?.spec?.linebreakReplacement;
+  function cancelProbe() {
+    probeGen++;
+    probeArmed = false;
   }
-  function parentBreaks(view, before) {
-    try {
-      const $from = view.state.selection.$from;
-      const parent = $from.parent;
-      if (!parent?.childCount)
-        return false;
-      const target = $from.parentOffset;
-      let offset = 0;
-      for (let i = 0;i < parent.childCount; i++) {
-        const child = parent.child(i);
-        const size = child.nodeSize ?? 1;
-        if (before) {
-          if (offset + size > target)
-            break;
-          if (isBreakNode(child))
-            return true;
-        } else if (offset >= target && isBreakNode(child)) {
-          return true;
-        }
-        offset += size;
-      }
-    } catch {}
-    return false;
-  }
-  function domBreakBeside(el, caret) {
-    let before = false;
-    let after = false;
-    for (const br of el.querySelectorAll("br")) {
-      if (br.classList.contains(TRAILING_BR))
-        continue;
-      try {
-        const side = caret.comparePoint(br, 0);
-        if (side < 0)
-          before = true;
-        else if (side > 0)
-          after = true;
-      } catch {}
-    }
-    return { before, after };
-  }
-  function editorView(el) {
-    try {
-      const view = el.pmViewDesc?.view;
-      if (!view?.coordsAtPos || !view.state?.selection)
-        return null;
-      return view;
-    } catch {
+  function collapsedCaret(el) {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount || !sel.isCollapsed)
       return null;
-    }
+    const range = sel.getRangeAt(0);
+    return el.contains(range.startContainer) ? range : null;
   }
-  function lineSlop(el) {
-    const { lineHeight, fontSize } = getComputedStyle(el);
-    const lh = parseFloat(lineHeight);
-    const fs = parseFloat(fontSize) || 16;
-    const px = Number.isFinite(lh) && lh > 8 ? lh : fs * 1.5;
-    return Math.max(EDGE_SLOP_MIN_PX, px / 2);
-  }
-  function sameLine(a, b, slop) {
-    return Math.abs(a - b) <= slop;
-  }
-  function finiteBox(top, bottom) {
-    if (!Number.isFinite(top) || !Number.isFinite(bottom) || bottom - top <= 0)
-      return null;
-    return { top, bottom };
-  }
-  function rangeBox(range) {
-    const rects = range.getClientRects();
-    let top = Infinity;
-    let bottom = -Infinity;
-    for (const r of rects) {
-      if (r.height <= 0)
-        continue;
-      if (r.top < top)
-        top = r.top;
-      if (r.bottom > bottom)
-        bottom = r.bottom;
-    }
-    if (top !== Infinity)
-      return { top, bottom };
-    const bounds = range.getBoundingClientRect();
-    return bounds.height > 0 ? { top: bounds.top, bottom: bounds.bottom } : null;
-  }
-  function textCharBox(node, offset, bias) {
-    if (node.nodeType !== Node.TEXT_NODE)
-      return null;
-    const len = node.textContent?.length ?? 0;
-    const range = document.createRange();
-    try {
-      if (bias > 0 && offset < len) {
-        range.setStart(node, offset);
-        range.setEnd(node, offset + 1);
-      } else if (bias < 0 && offset > 0) {
-        range.setStart(node, offset - 1);
-        range.setEnd(node, offset);
-      } else {
-        return null;
-      }
-      return rangeBox(range);
-    } catch {
-      return null;
-    }
-  }
-  function blockOf(el, node) {
+  function directBlock(el, node) {
     let cur = node;
     while (cur && cur.parentNode !== el)
       cur = cur.parentNode;
     return cur instanceof Element ? cur : null;
   }
-  function domCaretBox(range, slop) {
-    const before = textCharBox(range.startContainer, range.startOffset, -1);
-    const after = textCharBox(range.startContainer, range.startOffset, 1);
-    if (before && after && !sameLine(before.top, after.top, slop)) {
-      const collapsed = rangeBox(range);
-      if (collapsed) {
-        const pick = Math.abs(collapsed.top - before.top) <= Math.abs(collapsed.top - after.top) ? before : after;
-        return { box: pick, ambiguous: false };
-      }
-      return { box: after, ambiguous: true };
-    }
-    const box = after ?? before ?? rangeBox(range);
-    return box ? { box, ambiguous: false } : null;
+  function sideText(el, caret, before) {
+    const range = caret.cloneRange();
+    if (before)
+      range.setStart(el, 0);
+    else
+      range.setEnd(el, el.childNodes.length);
+    return range.toString();
   }
-  function blockLineBox(block, edge) {
-    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
-    const texts = [];
-    let node = walker.nextNode();
-    while (node) {
-      if ((node.textContent ?? "").replace(ZWSP, "").length)
-        texts.push(node);
-      node = walker.nextNode();
-    }
-    const text = edge === "start" ? texts[0] : texts[texts.length - 1];
-    if (text) {
-      const raw = text.textContent ?? "";
-      if (edge === "start") {
-        const offset = raw.search(/[^\u200B]/);
-        if (offset >= 0) {
-          const box = textCharBox(text, offset, 1);
-          if (box)
-            return box;
-        }
-      } else {
-        let offset = raw.length;
-        while (offset > 0 && raw[offset - 1] === "​")
-          offset--;
-        const box = textCharBox(text, offset, -1);
-        if (box)
-          return box;
-      }
-    }
-    const brs = block.querySelectorAll("br");
-    const br = edge === "start" ? brs[0] : brs[brs.length - 1];
-    if (!br)
-      return null;
+  function contentAround(el, node, before) {
     const range = document.createRange();
-    range.selectNode(br);
-    return rangeBox(range);
-  }
-  function domLineEdge(el, caret, slop) {
-    const blocks = Array.from(el.children);
-    const block = blockOf(el, caret.startContainer);
-    const inFirst = blocks.length === 0 || block == null || block === blocks[0];
-    const inLast = blocks.length === 0 || block == null || block === blocks[blocks.length - 1];
-    if (!inFirst && !inLast)
-      return { first: false, last: false };
-    const caretBox = domCaretBox(caret, slop);
-    const start = blockLineBox(blocks[0] instanceof Element ? blocks[0] : el, "start");
-    const end = blockLineBox(blocks[blocks.length - 1] instanceof Element ? blocks[blocks.length - 1] : el, "end");
-    if (!caretBox || !start)
-      return { first: false, last: false };
-    return {
-      first: inFirst && !caretBox.ambiguous && sameLine(caretBox.box.top, start.top, slop),
-      last: inLast && !caretBox.ambiguous && !!end && sameLine(caretBox.box.bottom, end.bottom, slop)
-    };
-  }
-  function coordSamples(view, pos) {
-    const out = [];
-    for (const side of [-1, 1]) {
-      try {
-        const c = view.coordsAtPos(pos, side);
-        const box = finiteBox(c?.top, c?.bottom);
-        if (box)
-          out.push(box);
-      } catch {}
+    if (before) {
+      range.setStart(el, 0);
+      range.setEndBefore(node);
+    } else {
+      range.setStartAfter(node);
+      range.setEnd(el, el.childNodes.length);
     }
-    if (out.length)
-      return out;
-    try {
-      const c = view.coordsAtPos(pos);
-      const box = finiteBox(c?.top, c?.bottom);
-      return box ? [box] : [];
-    } catch {
-      return [];
-    }
+    if (range.toString().replace(ZWSP, "").trim())
+      return true;
+    return !!range.cloneContents().querySelector("br");
   }
-  function pickSide(samples, domTop, slop) {
-    if (!samples.length)
+  function brPast(el, caret, before) {
+    let hit = false;
+    let onlyTrailing = true;
+    for (const br of el.querySelectorAll("br")) {
+      const side = caret.comparePoint(br, 0);
+      const onBreak = side === 0 && contentAround(el, br, before);
+      const past = (before ? side < 0 : side > 0) || onBreak;
+      if (!past)
+        continue;
+      hit = true;
+      if (!br.classList.contains(TRAILING_BR))
+        onlyTrailing = false;
+    }
+    return { hit, onlyTrailing };
+  }
+  function breakBefore(el, caret) {
+    const blocks = el.children;
+    const block = directBlock(el, caret.startContainer);
+    if (blocks.length > 1 && block && block !== blocks[0])
+      return true;
+    if (sideText(el, caret, true).includes(`
+`))
+      return true;
+    const prior = brPast(el, caret, true);
+    if (!prior.hit)
+      return false;
+    const first = !block || blocks.length === 0 || block === blocks[0];
+    const nothingAfter = !brPast(el, caret, false).hit && !sideText(el, caret, false).replace(ZWSP, "").trim();
+    if (prior.onlyTrailing && first && nothingAfter)
+      return false;
+    return true;
+  }
+  function breakAfter(el, caret) {
+    const blocks = el.children;
+    const block = directBlock(el, caret.startContainer);
+    if (blocks.length > 1 && block && block !== blocks[blocks.length - 1])
+      return true;
+    if (sideText(el, caret, false).includes(`
+`))
+      return true;
+    const later = brPast(el, caret, false);
+    if (!later.hit || later.onlyTrailing)
+      return false;
+    return true;
+  }
+  function pmFrom(el) {
+    const view = el.pmViewDesc?.view;
+    const sel = view?.state?.selection;
+    if (!sel?.empty || typeof sel.from !== "number")
       return null;
-    if (samples.length === 1 || sameLine(samples[0].top, samples[1].top, slop)) {
-      return { box: samples[0], ambiguous: false };
+    return sel.from;
+  }
+  function caretTop(range) {
+    const rects = range.getClientRects();
+    for (const rect of rects) {
+      if (!Number.isFinite(rect.top))
+        continue;
+      if (rect.height > 0 || rect.width > 0)
+        return rect.top;
     }
-    if (domTop == null)
-      return { box: samples[1], ambiguous: true };
-    const pick = Math.abs(samples[0].top - domTop) <= Math.abs(samples[1].top - domTop) ? samples[0] : samples[1];
-    return { box: pick, ambiguous: false };
-  }
-  function pmLineEdge(el, caret, slop) {
-    const view = editorView(el);
-    if (!view || view.composing)
+    const box = range.getBoundingClientRect();
+    if (!Number.isFinite(box.top))
       return null;
-    const sel = view.state.selection;
-    if (!sel.empty)
-      return { first: false, last: false };
-    let index = 0;
-    let childCount = 1;
-    try {
-      index = sel.$from.index(0);
-      childCount = view.state.doc.childCount;
-    } catch {
-      return null;
-    }
-    if (childCount < 1)
-      return { first: true, last: true };
-    const inFirst = index === 0;
-    const inLast = index === childCount - 1;
-    if (!inFirst && !inLast)
-      return { first: false, last: false };
-    let startPos = 1;
-    let endPos = Math.max(1, view.state.doc.content.size - 1);
-    try {
-      startPos = sel.constructor.atStart(view.state.doc).from;
-      endPos = sel.constructor.atEnd(view.state.doc).from;
-    } catch {}
-    const dom = domCaretBox(caret, slop);
-    const caretSide = pickSide(coordSamples(view, sel.from), dom?.ambiguous ? null : dom?.box.top ?? null, slop);
-    const startSamples = coordSamples(view, startPos);
-    const endSamples = coordSamples(view, endPos);
-    const startTop = startSamples.length ? Math.min(...startSamples.map((box) => box.top)) : null;
-    const endBottom = endSamples.length ? Math.max(...endSamples.map((box) => box.bottom)) : null;
-    let upBlocked = false;
-    let downBlocked = false;
-    let hasTextblockApi = false;
-    try {
-      if (view.endOfTextblock) {
-        hasTextblockApi = true;
-        upBlocked = view.endOfTextblock("up");
-        downBlocked = view.endOfTextblock("down");
-      }
-    } catch {}
-    const coordsFirst = !!caretSide && startTop != null && !caretSide.ambiguous && sameLine(caretSide.box.top, startTop, slop);
-    const coordsLast = !!caretSide && endBottom != null && !caretSide.ambiguous && sameLine(caretSide.box.bottom, endBottom, slop);
-    const visualFirst = hasTextblockApi ? upBlocked : coordsFirst;
-    const visualLast = hasTextblockApi ? downBlocked : coordsLast;
+    if (box.height > 0 || box.width > 0 || box.top !== 0 || box.left !== 0)
+      return box.top;
+    return null;
+  }
+  function snapCaret(el) {
+    const range = collapsedCaret(el);
     return {
-      first: inFirst && !parentBreaks(view, true) && visualFirst,
-      last: inLast && !parentBreaks(view, false) && visualLast
+      from: pmFrom(el),
+      y: range ? caretTop(range) : null
     };
   }
-  function domVisualVeto(el, caret, slop) {
-    const dom = domCaretBox(caret, slop);
-    if (!dom || dom.ambiguous)
-      return { notFirst: false, notLast: false };
-    const blocks = Array.from(el.children);
-    const start = blockLineBox(blocks[0] instanceof Element ? blocks[0] : el, "start");
-    const end = blockLineBox(blocks[blocks.length - 1] instanceof Element ? blocks[blocks.length - 1] : el, "end");
-    return {
-      notFirst: !!start && dom.box.top > start.top + slop,
-      notLast: !!end && dom.box.top + slop < end.top
-    };
+  function editorFocused(el) {
+    const active = document.activeElement;
+    return active === el || active instanceof Node && el.contains(active);
   }
-  function caretOnEdge(el) {
-    const sel = window.getSelection();
-    if (!sel?.rangeCount || !sel.isCollapsed)
-      return { first: false, last: false };
-    const caret = sel.getRangeAt(0);
-    if (!el.contains(caret.startContainer))
-      return { first: false, last: false };
-    if (!el.innerText?.trim())
-      return { first: true, last: true };
-    const slop = lineSlop(el);
-    const edge = pmLineEdge(el, caret, slop) ?? domLineEdge(el, caret, slop);
-    const br = domBreakBeside(el, caret);
-    const visual = domVisualVeto(el, caret, slop);
-    return {
-      first: edge.first && !br.before && !visual.notFirst,
-      last: edge.last && !br.after && !visual.notLast
-    };
+  function caretStayed(before, after, focused) {
+    if (before.from == null && before.y == null)
+      return false;
+    if (before.from != null && before.from !== after.from)
+      return false;
+    if (!focused)
+      return before.from != null;
+    if (before.y != null && (after.y == null || Math.abs(before.y - after.y) > CARET_Y_SLOP_PX))
+      return false;
+    return before.from != null || before.y != null;
+  }
+  function armProbe(el, older) {
+    const gen = ++probeGen;
+    probeArmed = true;
+    const before = snapCaret(el);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (gen !== probeGen)
+          return;
+        probeArmed = false;
+        if (!el.isConnected || composing)
+          return;
+        const focused = editorFocused(el);
+        if (!caretStayed(before, snapCaret(el), focused))
+          return;
+        const list = getEntries();
+        if (older && (!list.length || cursor <= 0))
+          return;
+        if (!older && cursor >= list.length)
+          return;
+        if (!focused)
+          el.focus();
+        cycle2(older, el);
+      });
+    });
   }
   function matchesRecall(el) {
     if (!recalling)
@@ -29206,6 +29067,17 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       hideHud();
   }
   function onKeyDown5(e) {
+    const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
+    const keepProbe = arrow && e.repeat && probeArmed && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey && !imeEvent(e);
+    if (keepProbe) {
+      const active = document.activeElement;
+      if (!(active instanceof Element) || !active.closest(EDITOR_SEL3)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+      return;
+    }
+    cancelProbe();
     if (imeEvent(e))
       return;
     if (e.ctrlKey || e.metaKey)
@@ -29213,7 +29085,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const el = chatEditor(e.target);
     if (!el)
       return;
-    if (applying3 && e.key !== "ArrowUp" && e.key !== "ArrowDown")
+    if (applying3 && !arrow)
       invalidateApply();
     if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
       dropRecall(el);
@@ -29225,27 +29097,32 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       pushEntry(editorText(el));
       return;
     }
-    if (e.key !== "ArrowUp" && e.key !== "ArrowDown")
-      return;
-    if (e.shiftKey)
+    if (!arrow || e.shiftKey)
       return;
     const older = e.key === "ArrowUp";
-    const force = e.altKey;
     const list = getEntries();
-    if (!force) {
-      const edge = caretOnEdge(el);
-      if (older && !edge.first || !older && !edge.last)
-        return;
-    }
     if (older && (!list.length || cursor <= 0))
       return;
     if (!older && cursor >= list.length)
       return;
+    if (!e.altKey) {
+      const caret = collapsedCaret(el);
+      if (!caret)
+        return;
+      const filled = !!el.innerText?.trim();
+      if (filled && (older ? breakBefore(el, caret) : breakAfter(el, caret)))
+        return;
+      if (filled) {
+        armProbe(el, older);
+        return;
+      }
+    }
     e.preventDefault();
     e.stopImmediatePropagation();
     cycle2(older, el);
   }
   function onPointerDown4(e) {
+    cancelProbe();
     if (!recalling)
       return;
     const el = chatEditor(e.target);
@@ -29257,6 +29134,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (!chatEditor(e.target))
       return;
     composing = true;
+    cancelProbe();
     invalidateApply();
   }
   function onCompositionEnd(e) {
@@ -29271,6 +29149,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const el = chatEditor(e.target);
     if (!el)
       return;
+    if (!applying3)
+      cancelProbe();
     if (imeEvent(e)) {
       if (applying3)
         invalidateApply();
@@ -29458,6 +29338,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       recalling = false;
       composing = false;
       invalidateApply();
+      cancelProbe();
       keys3 = new AbortController;
       const { signal } = keys3;
       document.addEventListener("keydown", onKeyDown5, { capture: true, signal });
@@ -29476,6 +29357,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       composing = false;
       recalling = false;
       invalidateApply();
+      cancelProbe();
     },
     onSettingsChange() {
       const current = getEntries();
@@ -29594,7 +29476,7 @@ div:has(> #grok-bot-nav-button) {
   betterSidebar_default.updatedAt = 1790265417000;
   autoRetry_default.updatedAt = 1790265417000;
   customSidebarIdentity_default.updatedAt = 1790265417000;
-  inputHistory_default.updatedAt = 1790401539000;
+  inputHistory_default.updatedAt = 1790403073000;
   noGrokBot_default.updatedAt = 1790265417000;
   autoCollapse_default.updatedAt = 1790265417000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [contextMenu_default.name]: contextMenu_default, [chatBarButtons_default.name]: chatBarButtons_default, [betterFiles_default.name]: betterFiles_default, [usageDisplay_default.name]: usageDisplay_default, [betterQueue_default.name]: betterQueue_default, [settingsFlyout_default.name]: settingsFlyout_default, [userQuotes_default.name]: userQuotes_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [betterNavigator_default.name]: betterNavigator_default, [responseNotification_default.name]: responseNotification_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [betterModeSelect_default.name]: betterModeSelect_default, [starry_default.name]: starry_default, [messageTimestamps_default.name]: messageTimestamps_default, [streamerMode_default.name]: streamerMode_default, [consoleJanitor_default.name]: consoleJanitor_default, [betterCanvas_default.name]: betterCanvas_default, [noDictation_default.name]: noDictation_default, [betterQuotes_default.name]: betterQuotes_default, [cloneChats_default.name]: cloneChats_default, [composerOpacity_default.name]: composerOpacity_default, [incognito_default.name]: incognito_default, [chatListStatus_default.name]: chatListStatus_default, [betterLinks_default.name]: betterLinks_default, [noShareLink_default.name]: noShareLink_default, [experiments_default.name]: experiments_default, [downloadTTS_default.name]: downloadTTS_default, [completeToast_default.name]: completeToast_default, [noBuildStarters_default.name]: noBuildStarters_default, [betterImagine_default.name]: betterImagine_default, [cleaner_default.name]: cleaner_default, [widerChat_default.name]: widerChat_default, [betterAvatarPlugins_default.name]: betterAvatarPlugins_default, [oneko_default.name]: oneko_default, [customGreeting_default.name]: customGreeting_default, [stableComposer_default.name]: stableComposer_default, [exportChat_default.name]: exportChat_default, [customInstructions_default.name]: customInstructions_default, [betterSidebar_default.name]: betterSidebar_default, [autoRetry_default.name]: autoRetry_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [inputHistory_default.name]: inputHistory_default, [noGrokBot_default.name]: noGrokBot_default, [autoCollapse_default.name]: autoCollapse_default };
