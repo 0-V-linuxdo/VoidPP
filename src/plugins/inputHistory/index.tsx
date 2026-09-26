@@ -143,17 +143,264 @@ function editorText(el: HTMLElement): string {
     return normalize(raw);
 }
 
-function spanHeight(range: Range): number {
+const EDGE_SLOP_MIN_PX = 4;
+
+interface LineBox {
+    top: number;
+    bottom: number;
+}
+
+interface PmCoords {
+    top: number;
+    bottom: number;
+}
+
+interface PmView {
+    composing?: boolean;
+    coordsAtPos(pos: number, side?: number): PmCoords;
+    endOfTextblock?(dir: "up" | "down" | "left" | "right"): boolean;
+    state: {
+        doc: { childCount: number; content: { size: number } };
+        selection: {
+            from: number;
+            empty: boolean;
+            $from: { index(depth: number): number };
+            constructor: {
+                atStart(doc: unknown): { from: number };
+                atEnd(doc: unknown): { from: number };
+            };
+        };
+    };
+}
+
+function editorView(el: HTMLElement): PmView | null {
+    try {
+        const view = (el as unknown as { pmViewDesc?: { view?: PmView } }).pmViewDesc?.view;
+        if (!view?.coordsAtPos || !view.state?.selection) return null;
+        return view;
+    } catch {
+        return null;
+    }
+}
+
+function lineSlop(el: HTMLElement): number {
+    const { lineHeight, fontSize } = getComputedStyle(el);
+    const lh = parseFloat(lineHeight);
+    const fs = parseFloat(fontSize) || 16;
+    // "normal" is NaN. A unitless "1.5" is not a pixel height.
+    const px = Number.isFinite(lh) && lh > 8 ? lh : fs * 1.5;
+    return Math.max(EDGE_SLOP_MIN_PX, px / 2);
+}
+
+function sameLine(a: number, b: number, slop: number): boolean {
+    return Math.abs(a - b) <= slop;
+}
+
+function finiteBox(top: number, bottom: number): LineBox | null {
+    if (!Number.isFinite(top) || !Number.isFinite(bottom) || bottom - top <= 0) return null;
+    return { top, bottom };
+}
+
+function rangeBox(range: Range): LineBox | null {
     const rects = range.getClientRects();
     let top = Infinity;
     let bottom = -Infinity;
     for (const r of rects) {
-        if (r.height === 0 && r.width === 0) continue;
+        if (r.height <= 0) continue;
         if (r.top < top) top = r.top;
         if (r.bottom > bottom) bottom = r.bottom;
     }
-    if (top === Infinity) return range.getBoundingClientRect().height;
-    return bottom - top;
+    if (top !== Infinity) return { top, bottom };
+    const bounds = range.getBoundingClientRect();
+    return bounds.height > 0 ? { top: bounds.top, bottom: bounds.bottom } : null;
+}
+
+function textCharBox(node: Node, offset: number, bias: -1 | 1): LineBox | null {
+    if (node.nodeType !== Node.TEXT_NODE) return null;
+    const len = node.textContent?.length ?? 0;
+    const range = document.createRange();
+    try {
+        if (bias > 0 && offset < len) {
+            range.setStart(node, offset);
+            range.setEnd(node, offset + 1);
+        } else if (bias < 0 && offset > 0) {
+            range.setStart(node, offset - 1);
+            range.setEnd(node, offset);
+        } else {
+            return null;
+        }
+        return rangeBox(range);
+    } catch {
+        return null;
+    }
+}
+
+function blockOf(el: HTMLElement, node: Node): Element | null {
+    let cur: Node | null = node;
+    while (cur && cur.parentNode !== el) cur = cur.parentNode;
+    return cur instanceof Element ? cur : null;
+}
+
+function domCaretBox(range: Range, slop: number): { box: LineBox; ambiguous: boolean } | null {
+    const before = textCharBox(range.startContainer, range.startOffset, -1);
+    const after = textCharBox(range.startContainer, range.startOffset, 1);
+    if (before && after && !sameLine(before.top, after.top, slop)) {
+        const collapsed = rangeBox(range);
+        if (collapsed) {
+            const pick = Math.abs(collapsed.top - before.top) <= Math.abs(collapsed.top - after.top) ? before : after;
+            return { box: pick, ambiguous: false };
+        }
+        // Soft-wrap boundary and no painted caret. Do not call this the first line.
+        return { box: after, ambiguous: true };
+    }
+    const box = after ?? before ?? rangeBox(range);
+    return box ? { box, ambiguous: false } : null;
+}
+
+function blockLineBox(block: Element, edge: "start" | "end"): LineBox | null {
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    const texts: Text[] = [];
+    let node = walker.nextNode();
+    while (node) {
+        if ((node.textContent ?? "").replace(ZWSP, "").length) texts.push(node as Text);
+        node = walker.nextNode();
+    }
+    const text = edge === "start" ? texts[0] : texts[texts.length - 1];
+    if (text) {
+        const raw = text.textContent ?? "";
+        if (edge === "start") {
+            const offset = raw.search(/[^\u200B]/);
+            if (offset >= 0) {
+                const box = textCharBox(text, offset, 1);
+                if (box) return box;
+            }
+        } else {
+            let offset = raw.length;
+            while (offset > 0 && raw[offset - 1] === "\u200B") offset--;
+            const box = textCharBox(text, offset, -1);
+            if (box) return box;
+        }
+    }
+    const brs = block.querySelectorAll("br");
+    const br = edge === "start" ? brs[0] : brs[brs.length - 1];
+    if (!br) return null;
+    const range = document.createRange();
+    range.selectNode(br);
+    return rangeBox(range);
+}
+
+function domLineEdge(el: HTMLElement, caret: Range, slop: number): { first: boolean; last: boolean } {
+    const blocks = Array.from(el.children);
+    const block = blockOf(el, caret.startContainer);
+    const inFirst = blocks.length === 0 || block == null || block === blocks[0];
+    const inLast = blocks.length === 0 || block == null || block === blocks[blocks.length - 1];
+    if (!inFirst && !inLast) return { first: false, last: false };
+
+    const caretBox = domCaretBox(caret, slop);
+    const start = blockLineBox((blocks[0] instanceof Element ? blocks[0] : el), "start");
+    const end = blockLineBox((blocks[blocks.length - 1] instanceof Element ? blocks[blocks.length - 1] : el), "end");
+    if (!caretBox || !start) return { first: false, last: false };
+
+    return {
+        first: inFirst && !caretBox.ambiguous && sameLine(caretBox.box.top, start.top, slop),
+        last: inLast && !caretBox.ambiguous && !!end && sameLine(caretBox.box.bottom, end.bottom, slop),
+    };
+}
+
+function coordSamples(view: PmView, pos: number): LineBox[] {
+    const out: LineBox[] = [];
+    for (const side of [-1, 1] as const) {
+        try {
+            const c = view.coordsAtPos(pos, side);
+            const box = finiteBox(c?.top, c?.bottom);
+            if (box) out.push(box);
+        } catch {
+            /* one side is out of range at the doc edge */
+        }
+    }
+    if (out.length) return out;
+    try {
+        const c = view.coordsAtPos(pos);
+        const box = finiteBox(c?.top, c?.bottom);
+        return box ? [box] : [];
+    } catch {
+        return [];
+    }
+}
+
+function pickSide(samples: LineBox[], domTop: number | null, slop: number): { box: LineBox; ambiguous: boolean } | null {
+    if (!samples.length) return null;
+    if (samples.length === 1 || sameLine(samples[0].top, samples[1].top, slop)) {
+        return { box: samples[0], ambiguous: false };
+    }
+    if (domTop == null) return { box: samples[1], ambiguous: true };
+    const pick = Math.abs(samples[0].top - domTop) <= Math.abs(samples[1].top - domTop) ? samples[0] : samples[1];
+    return { box: pick, ambiguous: false };
+}
+
+// Whole-editor visual line. A later block is never the first line.
+// Soft wraps compare both coordsAtPos sides to the caret. Do not measure
+// the height of everything before the caret — that calls line 2's start "first".
+function pmLineEdge(el: HTMLElement, caret: Range, slop: number): { first: boolean; last: boolean } | null {
+    const view = editorView(el);
+    if (!view || view.composing) return null;
+    const sel = view.state.selection;
+    if (!sel.empty) return { first: false, last: false };
+
+    let index = 0;
+    let childCount = 1;
+    try {
+        index = sel.$from.index(0);
+        childCount = view.state.doc.childCount;
+    } catch {
+        return null;
+    }
+    if (childCount < 1) return { first: true, last: true };
+
+    const inFirst = index === 0;
+    const inLast = index === childCount - 1;
+    if (!inFirst && !inLast) return { first: false, last: false };
+
+    let startPos = 1;
+    let endPos = Math.max(1, view.state.doc.content.size - 1);
+    try {
+        startPos = sel.constructor.atStart(view.state.doc).from;
+        endPos = sel.constructor.atEnd(view.state.doc).from;
+    } catch {
+        /* a single paragraph still has the defaults */
+    }
+
+    const dom = domCaretBox(caret, slop);
+    const caretSide = pickSide(coordSamples(view, sel.from), dom?.ambiguous ? null : (dom?.box.top ?? null), slop);
+    const startSamples = coordSamples(view, startPos);
+    const endSamples = coordSamples(view, endPos);
+    const startTop = startSamples.length ? Math.min(...startSamples.map(box => box.top)) : null;
+    const endBottom = endSamples.length ? Math.max(...endSamples.map(box => box.bottom)) : null;
+
+    let upBlocked = false;
+    let downBlocked = false;
+    try {
+        // Visual edge of this textblock only. Never enough on its own.
+        if (view.endOfTextblock) {
+            upBlocked = view.endOfTextblock("up");
+            downBlocked = view.endOfTextblock("down");
+        }
+    } catch {
+        /* coords still decide */
+    }
+
+    return {
+        first: inFirst && (
+            caretSide && startTop != null
+                ? !caretSide.ambiguous && sameLine(caretSide.box.top, startTop, slop)
+                : upBlocked
+        ),
+        last: inLast && (
+            caretSide && endBottom != null
+                ? !caretSide.ambiguous && sameLine(caretSide.box.bottom, endBottom, slop)
+                : downBlocked
+        ),
+    };
 }
 
 function caretOnEdge(el: HTMLElement): { first: boolean; last: boolean } {
@@ -163,22 +410,8 @@ function caretOnEdge(el: HTMLElement): { first: boolean; last: boolean } {
     if (!el.contains(caret.startContainer)) return { first: false, last: false };
     if (!el.innerText?.trim()) return { first: true, last: true };
 
-    const before = document.createRange();
-    before.selectNodeContents(el);
-    before.setEnd(caret.startContainer, caret.startOffset);
-    const after = document.createRange();
-    after.selectNodeContents(el);
-    after.setStart(caret.startContainer, caret.startOffset);
-
-    const { lineHeight, fontSize } = getComputedStyle(el);
-    const lh = parseFloat(lineHeight);
-    const fs = parseFloat(fontSize) || 16;
-    const budget = (lh > 0 ? lh : fs * 1.5) * 1.5;
-
-    return {
-        first: spanHeight(before) <= budget,
-        last: spanHeight(after) <= budget,
-    };
+    const slop = lineSlop(el);
+    return pmLineEdge(el, caret, slop) ?? domLineEdge(el, caret, slop);
 }
 
 function matchesRecall(el: HTMLElement): boolean {
