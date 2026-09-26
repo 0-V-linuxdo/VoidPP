@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.18
+// @version      20260926.19
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.18] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.19] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,9 +7755,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.18] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"71130b9"}`
-    }, `(${"71130b9"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.19] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4fa6998"}`
+    }, `(${"4fa6998"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14592,7 +14592,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     padding: 0;
     border: 0;
     border-radius: 999px;
-    background: hsl(var(--surface-l2) / 88%);
+    background: hsl(var(--surface-l2));
     color: hsl(var(--fg-secondary));
     cursor: pointer;
     box-shadow: inset 0 0 0 1px hsl(var(--fg-secondary));
@@ -14967,7 +14967,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var JUMP_BTN = "button[aria-label='Jump to quoted message']";
   var SCROLLER2 = "[data-testid='chat-transcript-scroller']";
   var FLASH_MS2 = 1800;
-  var BADGE = 24;
   var QUOTE_PATHS = [
     "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
     "M8 12a2 2 0 0 0 2-2V8H8",
@@ -16053,34 +16052,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (el.textContent !== text)
       el.textContent = text;
   }
-  function proseBox(host) {
-    const bubble = host.matches(MSG2) ? host : host.querySelector(MSG2);
-    const root = bubble ?? host;
-    let left = Infinity;
-    let right = -Infinity;
-    let top = Infinity;
-    let bottom = -Infinity;
-    let n = 0;
-    for (const el of root.querySelectorAll("p, li, pre, h1, h2, h3, h4")) {
-      if (el.closest(`${JUMP_BTN}, button, ${THINK_SEL2}`))
-        continue;
-      const r = el.getBoundingClientRect();
-      if (r.width < 24 || r.height < 8)
-        continue;
-      left = Math.min(left, r.left);
-      right = Math.max(right, r.right);
-      top = Math.min(top, r.top);
-      bottom = Math.max(bottom, r.bottom);
-      n++;
-    }
-    if (!n) {
-      const r = root.getBoundingClientRect();
-      if (r.width < 40 || r.height < 12)
-        return null;
-      return r;
-    }
-    return new DOMRect(left, top, right - left, bottom - top);
-  }
   function paintBacklinks() {
     if (!jumpArmed || onImaginePage2()) {
       clearBadges();
@@ -16095,17 +16066,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const host = named instanceof HTMLElement ? named : messageById(source);
       if (!(host instanceof HTMLElement) || !host.isConnected)
         continue;
-      const box = proseBox(host);
-      if (!box || box.width < 40 || box.bottom < BADGE)
-        continue;
-      const top = Math.round(box.top + 4);
-      let left = Math.round(box.right - BADGE - 4);
-      const limit = Math.round(window.innerWidth - BADGE - 8);
-      if (left > limit)
-        left = limit;
-      if (top < 0 || top > window.innerHeight - BADGE)
-        continue;
-      if (left < Math.max(8, box.left))
+      const box = host.getBoundingClientRect();
+      if (box.width < 40 || box.bottom < 24 || box.top > window.innerHeight - 8)
         continue;
       seen.add(source);
       let btn = document.querySelector(`.${cl20("back")}[data-void-qj-src="${source}"]`);
@@ -16121,8 +16083,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
       if (btn.getAttribute("aria-label") !== aria)
         btn.setAttribute("aria-label", aria);
-      btn.style.left = `${left}px`;
-      btn.style.top = `${top}px`;
+      btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
+      btn.style.top = `${Math.round(Math.max(8, box.top + 8))}px`;
       if (openSrc === source)
         placeMenu(btn);
     }
@@ -16221,32 +16183,36 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return false;
   }
   function onClick(e) {
-    if (!e.isTrusted || e.button !== 0 || onImaginePage2())
-      return;
-    const t = eventEl(e.target);
-    if (!t)
-      return;
-    if (!officialJumpButton(t) && t.closest(`.${cl20("back")}, .${cl20("menu")}`)) {
+    try {
+      if (!e.isTrusted || e.button !== 0 || onImaginePage2())
+        return;
+      const t = eventEl(e.target);
+      if (!t)
+        return;
+      if (t.closest(`.${cl20("back")}, .${cl20("menu")}`)) {
+        e.preventDefault();
+        e.stopPropagation();
+        onBackClick(t);
+        return;
+      }
+      if (isDismiss(t) || isEditor(t) || isBarAction(t))
+        return;
+      const chip = composerChip(t);
+      const sent = sentQuote(t);
+      const origin = sent ?? chip;
+      if (!origin)
+        return;
+      if (officialJumpButton(origin)) {
+        const { needle, ids } = resolveNeedle(origin);
+        if (!pickMessage(ids, needle, hostOf(origin)))
+          return;
+      }
       e.preventDefault();
       e.stopPropagation();
-      onBackClick(t);
-      return;
+      jump2(origin);
+    } catch (err) {
+      logger26.debug("click", err);
     }
-    if (isDismiss(t) || isEditor(t) || isBarAction(t))
-      return;
-    const chip = composerChip(t);
-    const sent = sentQuote(t);
-    const origin = sent ?? chip;
-    if (!origin)
-      return;
-    if (officialJumpButton(origin)) {
-      const { needle, ids } = resolveNeedle(origin);
-      if (!pickMessage(ids, needle, hostOf(origin)))
-        return;
-    }
-    e.preventDefault();
-    e.stopPropagation();
-    jump2(origin);
   }
   function startJump() {
     if (jumpArmed)
@@ -30874,7 +30840,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1790161256000;
   betterNavigator_default.updatedAt = 1790421526000;
   betterQueue_default.updatedAt = 1790246920000;
-  betterQuotes_default.updatedAt = 1790436943000;
+  betterQuotes_default.updatedAt = 1790437679000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;

@@ -25,7 +25,6 @@ const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const JUMP_BTN = "button[aria-label='Jump to quoted message']";
 const SCROLLER = "[data-testid='chat-transcript-scroller']";
 const FLASH_MS = 1800;
-const BADGE = 24;
 const QUOTE_PATHS = [
     "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
     "M8 12a2 2 0 0 0 2-2V8H8",
@@ -1047,32 +1046,6 @@ function paintCount(btn: HTMLElement, n: number) {
     if (el.textContent !== text) el.textContent = text;
 }
 
-function proseBox(host: HTMLElement): DOMRect | null {
-    const bubble = host.matches(MSG) ? host : host.querySelector<HTMLElement>(MSG);
-    const root = bubble ?? host;
-    let left = Infinity;
-    let right = -Infinity;
-    let top = Infinity;
-    let bottom = -Infinity;
-    let n = 0;
-    for (const el of root.querySelectorAll<HTMLElement>("p, li, pre, h1, h2, h3, h4")) {
-        if (el.closest(`${JUMP_BTN}, button, ${THINK_SEL}`)) continue;
-        const r = el.getBoundingClientRect();
-        if (r.width < 24 || r.height < 8) continue;
-        left = Math.min(left, r.left);
-        right = Math.max(right, r.right);
-        top = Math.min(top, r.top);
-        bottom = Math.max(bottom, r.bottom);
-        n++;
-    }
-    if (!n) {
-        const r = root.getBoundingClientRect();
-        if (r.width < 40 || r.height < 12) return null;
-        return r;
-    }
-    return new DOMRect(left, top, right - left, bottom - top);
-}
-
 function paintBacklinks() {
     if (!jumpArmed || onImaginePage()) {
         clearBadges();
@@ -1085,14 +1058,8 @@ function paintBacklinks() {
         const named = document.getElementById(`response-${source}`);
         const host = named instanceof HTMLElement ? named : messageById(source);
         if (!(host instanceof HTMLElement) || !host.isConnected) continue;
-        const box = proseBox(host);
-        if (!box || box.width < 40 || box.bottom < BADGE) continue;
-        const top = Math.round(box.top + 4);
-        let left = Math.round(box.right - BADGE - 4);
-        const limit = Math.round(window.innerWidth - BADGE - 8);
-        if (left > limit) left = limit;
-        if (top < 0 || top > window.innerHeight - BADGE) continue;
-        if (left < Math.max(8, box.left)) continue;
+        const box = host.getBoundingClientRect();
+        if (box.width < 40 || box.bottom < 24 || box.top > window.innerHeight - 8) continue;
         seen.add(source);
         let btn = document.querySelector<HTMLElement>(`.${cl("back")}[data-void-qj-src="${source}"]`);
         if (!btn) {
@@ -1106,8 +1073,8 @@ function paintBacklinks() {
         paintCount(btn, cites.length);
         const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
         if (btn.getAttribute("aria-label") !== aria) btn.setAttribute("aria-label", aria);
-        btn.style.left = `${left}px`;
-        btn.style.top = `${top}px`;
+        btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
+        btn.style.top = `${Math.round(Math.max(8, box.top + 8))}px`;
         if (openSrc === source) placeMenu(btn);
     }
     for (const n of document.querySelectorAll<HTMLElement>(`.${cl("back")}`)) {
@@ -1198,27 +1165,31 @@ function onBackClick(t: Element): boolean {
 }
 
 function onClick(e: MouseEvent) {
-    if (!e.isTrusted || e.button !== 0 || onImaginePage()) return;
-    const t = eventEl(e.target);
-    if (!t) return;
-    if (!officialJumpButton(t) && t.closest(`.${cl("back")}, .${cl("menu")}`)) {
+    try {
+        if (!e.isTrusted || e.button !== 0 || onImaginePage()) return;
+        const t = eventEl(e.target);
+        if (!t) return;
+        if (t.closest(`.${cl("back")}, .${cl("menu")}`)) {
+            e.preventDefault();
+            e.stopPropagation();
+            onBackClick(t);
+            return;
+        }
+        if (isDismiss(t) || isEditor(t) || isBarAction(t)) return;
+        const chip = composerChip(t);
+        const sent = sentQuote(t);
+        const origin = sent ?? chip;
+        if (!origin) return;
+        if (officialJumpButton(origin)) {
+            const { needle, ids } = resolveNeedle(origin);
+            if (!pickMessage(ids, needle, hostOf(origin))) return;
+        }
         e.preventDefault();
         e.stopPropagation();
-        onBackClick(t);
-        return;
+        void jump(origin);
+    } catch (err) {
+        logger.debug("click", err);
     }
-    if (isDismiss(t) || isEditor(t) || isBarAction(t)) return;
-    const chip = composerChip(t);
-    const sent = sentQuote(t);
-    const origin = sent ?? chip;
-    if (!origin) return;
-    if (officialJumpButton(origin)) {
-        const { needle, ids } = resolveNeedle(origin);
-        if (!pickMessage(ids, needle, hostOf(origin))) return;
-    }
-    e.preventDefault();
-    e.stopPropagation();
-    void jump(origin);
 }
 
 export function startJump() {
