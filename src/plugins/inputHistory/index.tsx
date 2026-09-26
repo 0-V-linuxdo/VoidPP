@@ -155,6 +155,11 @@ interface PmCoords {
     bottom: number;
 }
 
+interface PmNode {
+    nodeSize: number;
+    type?: { name?: string; spec?: { linebreakReplacement?: boolean } };
+}
+
 interface PmView {
     composing?: boolean;
     coordsAtPos(pos: number, side?: number): PmCoords;
@@ -164,13 +169,69 @@ interface PmView {
         selection: {
             from: number;
             empty: boolean;
-            $from: { index(depth: number): number };
+            $from: {
+                index(depth: number): number;
+                parentOffset: number;
+                parent?: { childCount: number; child(i: number): PmNode };
+            };
             constructor: {
                 atStart(doc: unknown): { from: number };
                 atEnd(doc: unknown): { from: number };
             };
         };
     };
+}
+
+const TRAILING_BR = "ProseMirror-trailingBreak";
+const BREAK_NAMES = new Set(["hardBreak", "hard_break", "hard-break"]);
+
+function isBreakNode(node: PmNode | null | undefined): boolean {
+    const name = node?.type?.name ?? "";
+    return BREAK_NAMES.has(name) || !!node?.type?.spec?.linebreakReplacement;
+}
+
+// Shift+Enter in the Grok composer is a hard break inside one paragraph.
+// coordsAtPos(-1) at the start of that next line still paints the previous
+// line, so a top comparison calls it "first". A break before the caret
+// means this is not the first visual line of the textblock.
+function parentBreaks(view: PmView, before: boolean): boolean {
+    try {
+        const $from = view.state.selection.$from;
+        const parent = $from.parent;
+        if (!parent?.childCount) return false;
+        const target = $from.parentOffset;
+        let offset = 0;
+        for (let i = 0; i < parent.childCount; i++) {
+            const child = parent.child(i);
+            const size = child.nodeSize ?? 1;
+            if (before) {
+                if (offset + size > target) break;
+                if (isBreakNode(child)) return true;
+            } else if (offset >= target && isBreakNode(child)) {
+                return true;
+            }
+            offset += size;
+        }
+    } catch {
+        /* schema probe only */
+    }
+    return false;
+}
+
+function domBreakBeside(el: HTMLElement, caret: Range): { before: boolean; after: boolean } {
+    let before = false;
+    let after = false;
+    for (const br of el.querySelectorAll("br")) {
+        if (br.classList.contains(TRAILING_BR)) continue;
+        try {
+            const side = caret.comparePoint(br, 0);
+            if (side < 0) before = true;
+            else if (side > 0) after = true;
+        } catch {
+            /* br is not in this tree */
+        }
+    }
+    return { before, after };
 }
 
 function editorView(el: HTMLElement): PmView | null {
@@ -379,9 +440,13 @@ function pmLineEdge(el: HTMLElement, caret: Range, slop: number): { first: boole
 
     let upBlocked = false;
     let downBlocked = false;
+    let hasTextblockApi = false;
     try {
-        // Visual edge of this textblock only. Never enough on its own.
+        // Visual edge of this textblock only. Never enough on its own —
+        // endOfTextblock also uses coordsAtPos(+1) and can stay true at a
+        // hard-break line start. Break-before is the veto for that case.
         if (view.endOfTextblock) {
+            hasTextblockApi = true;
             upBlocked = view.endOfTextblock("up");
             downBlocked = view.endOfTextblock("down");
         }
@@ -389,17 +454,28 @@ function pmLineEdge(el: HTMLElement, caret: Range, slop: number): { first: boole
         /* coords still decide */
     }
 
+    const coordsFirst = !!caretSide && startTop != null
+        && !caretSide.ambiguous && sameLine(caretSide.box.top, startTop, slop);
+    const coordsLast = !!caretSide && endBottom != null
+        && !caretSide.ambiguous && sameLine(caretSide.box.bottom, endBottom, slop);
+    const visualFirst = hasTextblockApi ? upBlocked : coordsFirst;
+    const visualLast = hasTextblockApi ? downBlocked : coordsLast;
+
     return {
-        first: inFirst && (
-            caretSide && startTop != null
-                ? !caretSide.ambiguous && sameLine(caretSide.box.top, startTop, slop)
-                : upBlocked
-        ),
-        last: inLast && (
-            caretSide && endBottom != null
-                ? !caretSide.ambiguous && sameLine(caretSide.box.bottom, endBottom, slop)
-                : downBlocked
-        ),
+        first: inFirst && !parentBreaks(view, true) && visualFirst,
+        last: inLast && !parentBreaks(view, false) && visualLast,
+    };
+}
+
+function domVisualVeto(el: HTMLElement, caret: Range, slop: number): { notFirst: boolean; notLast: boolean } {
+    const dom = domCaretBox(caret, slop);
+    if (!dom || dom.ambiguous) return { notFirst: false, notLast: false };
+    const blocks = Array.from(el.children);
+    const start = blockLineBox((blocks[0] instanceof Element ? blocks[0] : el), "start");
+    const end = blockLineBox((blocks[blocks.length - 1] instanceof Element ? blocks[blocks.length - 1] : el), "end");
+    return {
+        notFirst: !!start && dom.box.top > start.top + slop,
+        notLast: !!end && dom.box.top + slop < end.top,
     };
 }
 
@@ -411,7 +487,13 @@ function caretOnEdge(el: HTMLElement): { first: boolean; last: boolean } {
     if (!el.innerText?.trim()) return { first: true, last: true };
 
     const slop = lineSlop(el);
-    return pmLineEdge(el, caret, slop) ?? domLineEdge(el, caret, slop);
+    const edge = pmLineEdge(el, caret, slop) ?? domLineEdge(el, caret, slop);
+    const br = domBreakBeside(el, caret);
+    const visual = domVisualVeto(el, caret, slop);
+    return {
+        first: edge.first && !br.before && !visual.notFirst,
+        last: edge.last && !br.after && !visual.notLast,
+    };
 }
 
 function matchesRecall(el: HTMLElement): boolean {
