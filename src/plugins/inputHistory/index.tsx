@@ -68,8 +68,7 @@ let applyTimer: ReturnType<typeof setTimeout> | undefined;
 let applyEl: HTMLElement | null = null;
 let applyAtStart = true;
 let applyCaretMoved = false;
-let applyTyped = false;
-let ignoreInput = 0;
+let userMovedCaret = false;
 let suppressSelect = 0;
 
 function isImaginePage(): boolean {
@@ -126,13 +125,13 @@ function invalidateApply() {
     applying = false;
     applyEl = null;
     applyCaretMoved = false;
-    applyTyped = false;
     clearTimeout(applyTimer);
     applyTimer = undefined;
 }
 
 function resetBrowse(length: number) {
     invalidateApply();
+    userMovedCaret = false;
     cursor = length;
     draft = "";
     recalling = false;
@@ -474,6 +473,17 @@ function nudgeCaret(el: HTMLElement, caret: Range, older: boolean): boolean {
     return true;
 }
 
+function trailingDecoration(actual: string, expected: string): boolean {
+    return actual === expected || actual === `${expected}\n` || expected === `${actual}\n`;
+}
+
+function keepBrowse(el: HTMLElement): boolean {
+    if (!userMovedCaret || !recalling) return false;
+    const list = getEntries();
+    const expected = cursor < list.length ? list[cursor] : draft;
+    return trailingDecoration(editorText(el), expected);
+}
+
 function matchesRecall(el: HTMLElement): boolean {
     if (!recalling) return false;
     const list = getEntries();
@@ -487,6 +497,7 @@ function matchesRecall(el: HTMLElement): boolean {
 
 function dropRecall(el: HTMLElement) {
     invalidateApply();
+    userMovedCaret = false;
     cursor = getEntries().length;
     draft = editorText(el);
     recalling = false;
@@ -523,14 +534,12 @@ function scheduleApplyEnd(gen: number) {
         applying = false;
         const el = applyEl;
         const moved = applyCaretMoved;
-        const typed = applyTyped;
         applyEl = null;
         applyCaretMoved = false;
-        applyTyped = false;
         if (!el || composing) return;
         if (!recalling) return;
-        if (typed || (!moved && !matchesRecall(el))) dropRecall(el);
-        else if (!moved) placeCaret(el, applyAtStart);
+        if (!matchesRecall(el) && !keepBrowse(el)) dropRecall(el);
+        else if (!moved && matchesRecall(el)) placeCaret(el, applyAtStart);
     }, APPLY_QUIET_MS);
 }
 
@@ -622,17 +631,13 @@ function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
     applyEl = el;
     applyAtStart = atStart;
     applyCaretMoved = false;
-    applyTyped = false;
     const gen = ++applyGen;
     suppressSelect++;
-    ignoreInput++;
     try {
         document.execCommand("delete");
         if (text && !insertLinesPm(el, text) && !insertLinesHtml(text)) insertLinesDom(text);
     } catch (err) {
         logger.debug("insertText failed:", err);
-    } finally {
-        ignoreInput = Math.max(0, ignoreInput - 1);
     }
     placeCaret(el, atStart);
     requestAnimationFrame(() => { suppressSelect = Math.max(0, suppressSelect - 1); });
@@ -685,9 +690,22 @@ function pushEntry(text: string) {
     resetBrowse(next.length);
 }
 
+function parkedIndex(list: string[], text: string): number {
+    if (cursor < list.length && trailingDecoration(text, list[cursor])) return cursor;
+    for (let i = list.length - 1; i >= 0; i--) {
+        if (trailingDecoration(text, list[i])) return i;
+    }
+    return -1;
+}
+
 function cycle(older: boolean, el: HTMLElement) {
     const list = getEntries();
     if (!list.length && older) return;
+    if (userMovedCaret && cursor >= list.length) {
+        const parked = parkedIndex(list, editorText(el));
+        if (parked >= 0) cursor = parked;
+    }
+    userMovedCaret = false;
     if (cursor >= list.length) {
         draft = editorText(el);
         cursor = list.length;
@@ -728,6 +746,11 @@ function onKeyDown(e: KeyboardEvent) {
     if (imeEvent(e)) return;
     const el = chatEditor(e.target);
     if (!el) return;
+    if (recalling && caretNav(e) && (e.ctrlKey || e.metaKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        userMovedCaret = true;
+        if (applying) applyCaretMoved = true;
+        return;
+    }
     if (applying && caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
         applyCaretMoved = true;
         return;
@@ -796,16 +819,10 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function onPointerDown(e: PointerEvent) {
-    if (!recalling || !applying) return;
+    if (!recalling) return;
     if (!chatEditor(e.target)) return;
-    applyCaretMoved = true;
-}
-
-function textInput(e: Event): boolean {
-    if (!(e instanceof InputEvent)) return false;
-    const kind = e.inputType;
-    if (!kind) return false;
-    return kind.startsWith("insert") || kind.startsWith("delete") || kind.startsWith("history") || kind.startsWith("format");
+    userMovedCaret = true;
+    if (applying) applyCaretMoved = true;
 }
 
 function onCompositionStart(e: Event) {
@@ -818,22 +835,18 @@ function onCompositionEnd(e: Event) {
     const el = chatEditor(e.target);
     if (!el) return;
     composing = false;
-    if (recalling && !matchesRecall(el)) dropRecall(el);
+    if (recalling && !matchesRecall(el) && !keepBrowse(el)) dropRecall(el);
 }
 
 function onInput(e: Event) {
-    if (ignoreInput) return;
     const el = chatEditor(e.target);
     if (!el) return;
     if (imeEvent(e)) {
         if (applying) invalidateApply();
         return;
     }
-    if (applying) {
-        if (textInput(e)) applyTyped = true;
-        return;
-    }
-    if (recalling && textInput(e) && !matchesRecall(el)) dropRecall(el);
+    if (applying) return;
+    if (recalling && !matchesRecall(el) && !keepBrowse(el)) dropRecall(el);
 }
 
 function onSubmit(e: Event) {
@@ -999,6 +1012,7 @@ export default definePlugin({
         if (keys) return;
         cursor = getEntries().length;
         recalling = false;
+        userMovedCaret = false;
         composing = false;
         invalidateApply();
         keys = new AbortController();
@@ -1020,6 +1034,7 @@ export default definePlugin({
         recentAt.clear();
         composing = false;
         recalling = false;
+        userMovedCaret = false;
         invalidateApply();
     },
 
