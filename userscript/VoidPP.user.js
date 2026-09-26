@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.31
+// @version      20260925.32
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.31] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.32] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.31] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"44e7080"}`
-    }, `(${"44e7080"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.32] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"eade953"}`
+    }, `(${"eade953"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -28697,7 +28697,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var applyEl = null;
   var applyAtStart = true;
   var applyCaretMoved = false;
-  var userMovedCaret = false;
   var suppressSelect = 0;
   function isImaginePage3() {
     try {
@@ -28756,7 +28755,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   function resetBrowse(length) {
     invalidateApply();
-    userMovedCaret = false;
     cursor = length;
     draft = "";
     recalling = false;
@@ -29091,17 +29089,25 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     applyRange(el, range);
     return true;
   }
-  function trailingDecoration(actual, expected) {
-    return actual === expected || actual === `${expected}
-` || expected === `${actual}
-`;
+  function bodyKey(text) {
+    return normalize(text).replace(/\n+$/, "");
   }
-  function keepBrowse(el) {
-    if (!userMovedCaret || !recalling)
+  function parkedIndex(list, text) {
+    const key = bodyKey(text);
+    if (!hasContent(key))
+      return -1;
+    for (let i = list.length - 1;i >= 0; i--) {
+      if (bodyKey(list[i]) === key)
+        return i;
+    }
+    return -1;
+  }
+  function recallBody(el) {
+    if (!recalling)
       return false;
     const list = getEntries();
     const expected = cursor < list.length ? list[cursor] : draft;
-    return trailingDecoration(editorText(el), expected);
+    return bodyKey(editorText(el)) === bodyKey(expected);
   }
   function matchesRecall(el) {
     if (!recalling)
@@ -29118,7 +29124,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   function dropRecall(el) {
     invalidateApply();
-    userMovedCaret = false;
     cursor = getEntries().length;
     draft = editorText(el);
     recalling = false;
@@ -29163,7 +29168,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       if (!recalling)
         return;
-      if (!matchesRecall(el) && !keepBrowse(el))
+      if (!matchesRecall(el) && !recallBody(el))
         dropRecall(el);
       else if (!moved && matchesRecall(el))
         placeCaret(el, applyAtStart);
@@ -29331,28 +29336,18 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     setEntries(next);
     resetBrowse(next.length);
   }
-  function parkedIndex(list, text) {
-    if (cursor < list.length && trailingDecoration(text, list[cursor]))
-      return cursor;
-    for (let i = list.length - 1;i >= 0; i--) {
-      if (trailingDecoration(text, list[i]))
-        return i;
-    }
-    return -1;
-  }
   function cycle2(older, el) {
     const list = getEntries();
     if (!list.length && older)
       return;
-    if (userMovedCaret && cursor >= list.length) {
+    if (!recalling || cursor >= list.length) {
       const parked = parkedIndex(list, editorText(el));
       if (parked >= 0)
         cursor = parked;
-    }
-    userMovedCaret = false;
-    if (cursor >= list.length) {
-      draft = editorText(el);
-      cursor = list.length;
+      else {
+        draft = editorText(el);
+        cursor = list.length;
+      }
     }
     const next = older ? cursor - 1 : cursor + 1;
     if (next < 0 || next > list.length)
@@ -29398,12 +29393,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const el = chatEditor(e.target);
     if (!el)
       return;
-    if (recalling && caretNav(e) && (e.ctrlKey || e.metaKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-      userMovedCaret = true;
-      if (applying3)
-        applyCaretMoved = true;
-      return;
-    }
     if (applying3 && caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
       applyCaretMoved = true;
       return;
@@ -29473,13 +29462,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     cycle2(older, el);
   }
   function onPointerDown4(e) {
-    if (!recalling)
+    if (!recalling || !applying3)
       return;
     if (!chatEditor(e.target))
       return;
-    userMovedCaret = true;
-    if (applying3)
-      applyCaretMoved = true;
+    applyCaretMoved = true;
   }
   function onCompositionStart(e) {
     if (!chatEditor(e.target))
@@ -29492,7 +29479,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (!el)
       return;
     composing = false;
-    if (recalling && !matchesRecall(el) && !keepBrowse(el))
+    if (recalling && !matchesRecall(el) && !recallBody(el))
       dropRecall(el);
   }
   function onInput(e) {
@@ -29506,7 +29493,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
     if (applying3)
       return;
-    if (recalling && !matchesRecall(el) && !keepBrowse(el))
+    if (recalling && !matchesRecall(el) && !recallBody(el))
       dropRecall(el);
   }
   function onSubmit(e) {
@@ -29683,7 +29670,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       cursor = getEntries().length;
       recalling = false;
-      userMovedCaret = false;
       composing = false;
       invalidateApply();
       keys3 = new AbortController;
@@ -29704,7 +29690,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       recentAt.clear();
       composing = false;
       recalling = false;
-      userMovedCaret = false;
       invalidateApply();
     },
     onSettingsChange() {
@@ -29824,7 +29809,7 @@ div:has(> #grok-bot-nav-button) {
   betterSidebar_default.updatedAt = 1790265417000;
   autoRetry_default.updatedAt = 1790265417000;
   customSidebarIdentity_default.updatedAt = 1790265417000;
-  inputHistory_default.updatedAt = 1790412470000;
+  inputHistory_default.updatedAt = 1790412849000;
   noGrokBot_default.updatedAt = 1790265417000;
   autoCollapse_default.updatedAt = 1790265417000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [contextMenu_default.name]: contextMenu_default, [chatBarButtons_default.name]: chatBarButtons_default, [betterFiles_default.name]: betterFiles_default, [usageDisplay_default.name]: usageDisplay_default, [betterQueue_default.name]: betterQueue_default, [settingsFlyout_default.name]: settingsFlyout_default, [userQuotes_default.name]: userQuotes_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [betterNavigator_default.name]: betterNavigator_default, [responseNotification_default.name]: responseNotification_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [betterModeSelect_default.name]: betterModeSelect_default, [starry_default.name]: starry_default, [messageTimestamps_default.name]: messageTimestamps_default, [streamerMode_default.name]: streamerMode_default, [consoleJanitor_default.name]: consoleJanitor_default, [betterCanvas_default.name]: betterCanvas_default, [noDictation_default.name]: noDictation_default, [betterQuotes_default.name]: betterQuotes_default, [cloneChats_default.name]: cloneChats_default, [composerOpacity_default.name]: composerOpacity_default, [incognito_default.name]: incognito_default, [chatListStatus_default.name]: chatListStatus_default, [betterLinks_default.name]: betterLinks_default, [noShareLink_default.name]: noShareLink_default, [experiments_default.name]: experiments_default, [downloadTTS_default.name]: downloadTTS_default, [completeToast_default.name]: completeToast_default, [noBuildStarters_default.name]: noBuildStarters_default, [betterImagine_default.name]: betterImagine_default, [cleaner_default.name]: cleaner_default, [widerChat_default.name]: widerChat_default, [betterAvatarPlugins_default.name]: betterAvatarPlugins_default, [oneko_default.name]: oneko_default, [customGreeting_default.name]: customGreeting_default, [stableComposer_default.name]: stableComposer_default, [exportChat_default.name]: exportChat_default, [customInstructions_default.name]: customInstructions_default, [betterSidebar_default.name]: betterSidebar_default, [autoRetry_default.name]: autoRetry_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [inputHistory_default.name]: inputHistory_default, [noGrokBot_default.name]: noGrokBot_default, [autoCollapse_default.name]: autoCollapse_default };

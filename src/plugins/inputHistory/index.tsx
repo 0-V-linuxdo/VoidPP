@@ -68,7 +68,6 @@ let applyTimer: ReturnType<typeof setTimeout> | undefined;
 let applyEl: HTMLElement | null = null;
 let applyAtStart = true;
 let applyCaretMoved = false;
-let userMovedCaret = false;
 let suppressSelect = 0;
 
 function isImaginePage(): boolean {
@@ -131,7 +130,6 @@ function invalidateApply() {
 
 function resetBrowse(length: number) {
     invalidateApply();
-    userMovedCaret = false;
     cursor = length;
     draft = "";
     recalling = false;
@@ -473,15 +471,24 @@ function nudgeCaret(el: HTMLElement, caret: Range, older: boolean): boolean {
     return true;
 }
 
-function trailingDecoration(actual: string, expected: string): boolean {
-    return actual === expected || actual === `${expected}\n` || expected === `${actual}\n`;
+function bodyKey(text: string): string {
+    return normalize(text).replace(/\n+$/, "");
 }
 
-function keepBrowse(el: HTMLElement): boolean {
-    if (!userMovedCaret || !recalling) return false;
+function parkedIndex(list: string[], text: string): number {
+    const key = bodyKey(text);
+    if (!hasContent(key)) return -1;
+    for (let i = list.length - 1; i >= 0; i--) {
+        if (bodyKey(list[i]) === key) return i;
+    }
+    return -1;
+}
+
+function recallBody(el: HTMLElement): boolean {
+    if (!recalling) return false;
     const list = getEntries();
     const expected = cursor < list.length ? list[cursor] : draft;
-    return trailingDecoration(editorText(el), expected);
+    return bodyKey(editorText(el)) === bodyKey(expected);
 }
 
 function matchesRecall(el: HTMLElement): boolean {
@@ -497,7 +504,6 @@ function matchesRecall(el: HTMLElement): boolean {
 
 function dropRecall(el: HTMLElement) {
     invalidateApply();
-    userMovedCaret = false;
     cursor = getEntries().length;
     draft = editorText(el);
     recalling = false;
@@ -538,7 +544,7 @@ function scheduleApplyEnd(gen: number) {
         applyCaretMoved = false;
         if (!el || composing) return;
         if (!recalling) return;
-        if (!matchesRecall(el) && !keepBrowse(el)) dropRecall(el);
+        if (!matchesRecall(el) && !recallBody(el)) dropRecall(el);
         else if (!moved && matchesRecall(el)) placeCaret(el, applyAtStart);
     }, APPLY_QUIET_MS);
 }
@@ -690,25 +696,16 @@ function pushEntry(text: string) {
     resetBrowse(next.length);
 }
 
-function parkedIndex(list: string[], text: string): number {
-    if (cursor < list.length && trailingDecoration(text, list[cursor])) return cursor;
-    for (let i = list.length - 1; i >= 0; i--) {
-        if (trailingDecoration(text, list[i])) return i;
-    }
-    return -1;
-}
-
 function cycle(older: boolean, el: HTMLElement) {
     const list = getEntries();
     if (!list.length && older) return;
-    if (userMovedCaret && cursor >= list.length) {
+    if (!recalling || cursor >= list.length) {
         const parked = parkedIndex(list, editorText(el));
         if (parked >= 0) cursor = parked;
-    }
-    userMovedCaret = false;
-    if (cursor >= list.length) {
-        draft = editorText(el);
-        cursor = list.length;
+        else {
+            draft = editorText(el);
+            cursor = list.length;
+        }
     }
     const next = older ? cursor - 1 : cursor + 1;
     if (next < 0 || next > list.length) return;
@@ -746,11 +743,6 @@ function onKeyDown(e: KeyboardEvent) {
     if (imeEvent(e)) return;
     const el = chatEditor(e.target);
     if (!el) return;
-    if (recalling && caretNav(e) && (e.ctrlKey || e.metaKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-        userMovedCaret = true;
-        if (applying) applyCaretMoved = true;
-        return;
-    }
     if (applying && caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
         applyCaretMoved = true;
         return;
@@ -819,10 +811,9 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function onPointerDown(e: PointerEvent) {
-    if (!recalling) return;
+    if (!recalling || !applying) return;
     if (!chatEditor(e.target)) return;
-    userMovedCaret = true;
-    if (applying) applyCaretMoved = true;
+    applyCaretMoved = true;
 }
 
 function onCompositionStart(e: Event) {
@@ -835,7 +826,7 @@ function onCompositionEnd(e: Event) {
     const el = chatEditor(e.target);
     if (!el) return;
     composing = false;
-    if (recalling && !matchesRecall(el) && !keepBrowse(el)) dropRecall(el);
+    if (recalling && !matchesRecall(el) && !recallBody(el)) dropRecall(el);
 }
 
 function onInput(e: Event) {
@@ -846,7 +837,7 @@ function onInput(e: Event) {
         return;
     }
     if (applying) return;
-    if (recalling && !matchesRecall(el) && !keepBrowse(el)) dropRecall(el);
+    if (recalling && !matchesRecall(el) && !recallBody(el)) dropRecall(el);
 }
 
 function onSubmit(e: Event) {
@@ -1012,7 +1003,6 @@ export default definePlugin({
         if (keys) return;
         cursor = getEntries().length;
         recalling = false;
-        userMovedCaret = false;
         composing = false;
         invalidateApply();
         keys = new AbortController();
@@ -1034,7 +1024,6 @@ export default definePlugin({
         recentAt.clear();
         composing = false;
         recalling = false;
-        userMovedCaret = false;
         invalidateApply();
     },
 
