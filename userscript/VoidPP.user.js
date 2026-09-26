@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260925.29
+// @version      20260925.30
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260925.29] v1.0.0 — A modification for grok.com
+ * Void++ [20260925.30] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260925.29] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"364833a"}`
-    }, `(${"364833a"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260925.30] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ed46439"}`
+    }, `(${"ed46439"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -28697,6 +28697,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var applyEl = null;
   var applyAtStart = true;
   var applyCaretMoved = false;
+  var applyTyped = false;
+  var ignoreInput = 0;
   var suppressSelect = 0;
   function isImaginePage3() {
     try {
@@ -28750,6 +28752,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     applying3 = false;
     applyEl = null;
     applyCaretMoved = false;
+    applyTyped = false;
     clearTimeout(applyTimer);
     applyTimer = undefined;
   }
@@ -28821,6 +28824,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     });
     return blocks.join(`
 `);
+  }
+  function newlineCount(text) {
+    let n = 0;
+    for (let i = 0;i < text.length; i++)
+      if (text.charCodeAt(i) === 10)
+        n++;
+    return n;
   }
   function editorText(el) {
     try {
@@ -29082,22 +29092,18 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     applyRange(el, range);
     return true;
   }
-  function sameRecallText(actual, expected) {
-    if (actual === expected)
-      return true;
-    return actual === `${expected}
-` || expected === `${actual}
-`;
-  }
   function matchesRecall(el) {
     if (!recalling)
       return false;
     const list = getEntries();
     const expected = cursor < list.length ? list[cursor] : draft;
     const actual = editorText(el);
-    if (sameRecallText(actual, expected))
+    if (newlineCount(actual) !== newlineCount(expected))
+      return false;
+    if (actual === expected)
       return true;
-    return sameRecallText(normalize(el.innerText ?? ""), expected);
+    const inner = normalize(el.innerText ?? "");
+    return newlineCount(inner) === newlineCount(expected) && inner === expected;
   }
   function dropRecall(el) {
     invalidateApply();
@@ -29139,13 +29145,15 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       applying3 = false;
       const el = applyEl;
       const moved = applyCaretMoved;
+      const typed = applyTyped;
       applyEl = null;
       applyCaretMoved = false;
+      applyTyped = false;
       if (!el || composing)
         return;
       if (!recalling)
         return;
-      if (!matchesRecall(el))
+      if (typed || !moved && !matchesRecall(el))
         dropRecall(el);
       else if (!moved)
         placeCaret(el, applyAtStart);
@@ -29254,14 +29262,18 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     applyEl = el;
     applyAtStart = atStart;
     applyCaretMoved = false;
+    applyTyped = false;
     const gen = ++applyGen;
     suppressSelect++;
+    ignoreInput++;
     try {
       document.execCommand("delete");
       if (text && !insertLinesPm(el, text) && !insertLinesHtml(text))
         insertLinesDom(text);
     } catch (err) {
       logger42.debug("insertText failed:", err);
+    } finally {
+      ignoreInput = Math.max(0, ignoreInput - 1);
     }
     placeCaret(el, atStart);
     requestAnimationFrame(() => {
@@ -29365,9 +29377,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const el = chatEditor(e.target);
     if (!el)
       return;
-    if (caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-      if (applying3 || recalling)
-        applyCaretMoved = true;
+    if (applying3 && caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+      applyCaretMoved = true;
       return;
     }
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
@@ -29435,11 +29446,19 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     cycle2(older, el);
   }
   function onPointerDown4(e) {
-    if (!recalling)
+    if (!recalling || !applying3)
       return;
     if (!chatEditor(e.target))
       return;
     applyCaretMoved = true;
+  }
+  function textInput(e) {
+    if (!(e instanceof InputEvent))
+      return false;
+    const kind = e.inputType;
+    if (!kind)
+      return false;
+    return kind.startsWith("insert") || kind.startsWith("delete") || kind.startsWith("history") || kind.startsWith("format");
   }
   function onCompositionStart(e) {
     if (!chatEditor(e.target))
@@ -29456,6 +29475,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       dropRecall(el);
   }
   function onInput(e) {
+    if (ignoreInput)
+      return;
     const el = chatEditor(e.target);
     if (!el)
       return;
@@ -29464,9 +29485,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         invalidateApply();
       return;
     }
-    if (applying3)
+    if (applying3) {
+      if (textInput(e))
+        applyTyped = true;
       return;
-    if (recalling && !matchesRecall(el))
+    }
+    if (recalling && textInput(e) && !matchesRecall(el))
       dropRecall(el);
   }
   function onSubmit(e) {
@@ -29782,7 +29806,7 @@ div:has(> #grok-bot-nav-button) {
   betterSidebar_default.updatedAt = 1790265417000;
   autoRetry_default.updatedAt = 1790265417000;
   customSidebarIdentity_default.updatedAt = 1790265417000;
-  inputHistory_default.updatedAt = 1790411373000;
+  inputHistory_default.updatedAt = 1790411891000;
   noGrokBot_default.updatedAt = 1790265417000;
   autoCollapse_default.updatedAt = 1790265417000;
   var __plugins_default = { [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [contextMenu_default.name]: contextMenu_default, [chatBarButtons_default.name]: chatBarButtons_default, [betterFiles_default.name]: betterFiles_default, [usageDisplay_default.name]: usageDisplay_default, [betterQueue_default.name]: betterQueue_default, [settingsFlyout_default.name]: settingsFlyout_default, [userQuotes_default.name]: userQuotes_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [betterNavigator_default.name]: betterNavigator_default, [responseNotification_default.name]: responseNotification_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [betterModeSelect_default.name]: betterModeSelect_default, [starry_default.name]: starry_default, [messageTimestamps_default.name]: messageTimestamps_default, [streamerMode_default.name]: streamerMode_default, [consoleJanitor_default.name]: consoleJanitor_default, [betterCanvas_default.name]: betterCanvas_default, [noDictation_default.name]: noDictation_default, [betterQuotes_default.name]: betterQuotes_default, [cloneChats_default.name]: cloneChats_default, [composerOpacity_default.name]: composerOpacity_default, [incognito_default.name]: incognito_default, [chatListStatus_default.name]: chatListStatus_default, [betterLinks_default.name]: betterLinks_default, [noShareLink_default.name]: noShareLink_default, [experiments_default.name]: experiments_default, [downloadTTS_default.name]: downloadTTS_default, [completeToast_default.name]: completeToast_default, [noBuildStarters_default.name]: noBuildStarters_default, [betterImagine_default.name]: betterImagine_default, [cleaner_default.name]: cleaner_default, [widerChat_default.name]: widerChat_default, [betterAvatarPlugins_default.name]: betterAvatarPlugins_default, [oneko_default.name]: oneko_default, [customGreeting_default.name]: customGreeting_default, [stableComposer_default.name]: stableComposer_default, [exportChat_default.name]: exportChat_default, [customInstructions_default.name]: customInstructions_default, [betterSidebar_default.name]: betterSidebar_default, [autoRetry_default.name]: autoRetry_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [inputHistory_default.name]: inputHistory_default, [noGrokBot_default.name]: noGrokBot_default, [autoCollapse_default.name]: autoCollapse_default };

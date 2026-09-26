@@ -68,6 +68,8 @@ let applyTimer: ReturnType<typeof setTimeout> | undefined;
 let applyEl: HTMLElement | null = null;
 let applyAtStart = true;
 let applyCaretMoved = false;
+let applyTyped = false;
+let ignoreInput = 0;
 let suppressSelect = 0;
 
 function isImaginePage(): boolean {
@@ -124,6 +126,7 @@ function invalidateApply() {
     applying = false;
     applyEl = null;
     applyCaretMoved = false;
+    applyTyped = false;
     clearTimeout(applyTimer);
     applyTimer = undefined;
 }
@@ -471,18 +474,15 @@ function nudgeCaret(el: HTMLElement, caret: Range, older: boolean): boolean {
     return true;
 }
 
-function sameRecallText(actual: string, expected: string): boolean {
-    if (actual === expected) return true;
-    return actual === `${expected}\n` || expected === `${actual}\n`;
-}
-
 function matchesRecall(el: HTMLElement): boolean {
     if (!recalling) return false;
     const list = getEntries();
     const expected = cursor < list.length ? list[cursor] : draft;
     const actual = editorText(el);
-    if (sameRecallText(actual, expected)) return true;
-    return sameRecallText(normalize(el.innerText ?? ""), expected);
+    if (newlineCount(actual) !== newlineCount(expected)) return false;
+    if (actual === expected) return true;
+    const inner = normalize(el.innerText ?? "");
+    return newlineCount(inner) === newlineCount(expected) && inner === expected;
 }
 
 function dropRecall(el: HTMLElement) {
@@ -523,11 +523,13 @@ function scheduleApplyEnd(gen: number) {
         applying = false;
         const el = applyEl;
         const moved = applyCaretMoved;
+        const typed = applyTyped;
         applyEl = null;
         applyCaretMoved = false;
+        applyTyped = false;
         if (!el || composing) return;
         if (!recalling) return;
-        if (!matchesRecall(el)) dropRecall(el);
+        if (typed || (!moved && !matchesRecall(el))) dropRecall(el);
         else if (!moved) placeCaret(el, applyAtStart);
     }, APPLY_QUIET_MS);
 }
@@ -620,13 +622,17 @@ function setEditorText(el: HTMLElement, text: string, atStart: boolean) {
     applyEl = el;
     applyAtStart = atStart;
     applyCaretMoved = false;
+    applyTyped = false;
     const gen = ++applyGen;
     suppressSelect++;
+    ignoreInput++;
     try {
         document.execCommand("delete");
         if (text && !insertLinesPm(el, text) && !insertLinesHtml(text)) insertLinesDom(text);
     } catch (err) {
         logger.debug("insertText failed:", err);
+    } finally {
+        ignoreInput = Math.max(0, ignoreInput - 1);
     }
     placeCaret(el, atStart);
     requestAnimationFrame(() => { suppressSelect = Math.max(0, suppressSelect - 1); });
@@ -722,8 +728,8 @@ function onKeyDown(e: KeyboardEvent) {
     if (imeEvent(e)) return;
     const el = chatEditor(e.target);
     if (!el) return;
-    if (caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-        if (applying || recalling) applyCaretMoved = true;
+    if (applying && caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        applyCaretMoved = true;
         return;
     }
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
@@ -790,9 +796,16 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function onPointerDown(e: PointerEvent) {
-    if (!recalling) return;
+    if (!recalling || !applying) return;
     if (!chatEditor(e.target)) return;
     applyCaretMoved = true;
+}
+
+function textInput(e: Event): boolean {
+    if (!(e instanceof InputEvent)) return false;
+    const kind = e.inputType;
+    if (!kind) return false;
+    return kind.startsWith("insert") || kind.startsWith("delete") || kind.startsWith("history") || kind.startsWith("format");
 }
 
 function onCompositionStart(e: Event) {
@@ -809,14 +822,18 @@ function onCompositionEnd(e: Event) {
 }
 
 function onInput(e: Event) {
+    if (ignoreInput) return;
     const el = chatEditor(e.target);
     if (!el) return;
     if (imeEvent(e)) {
         if (applying) invalidateApply();
         return;
     }
-    if (applying) return;
-    if (recalling && !matchesRecall(el)) dropRecall(el);
+    if (applying) {
+        if (textInput(e)) applyTyped = true;
+        return;
+    }
+    if (recalling && textInput(e) && !matchesRecall(el)) dropRecall(el);
 }
 
 function onSubmit(e: Event) {
