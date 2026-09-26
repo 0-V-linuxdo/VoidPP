@@ -89,6 +89,11 @@
     height: 0.875rem;
 }
 
+[data-void-qj-preview],
+[data-void-qj-preview] * {
+    cursor: pointer;
+}
+
 .void-qj-back {
     position: fixed;
     z-index: 30;

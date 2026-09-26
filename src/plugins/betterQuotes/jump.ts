@@ -492,19 +492,19 @@ function looksLikeQuote(n: HTMLElement): boolean {
     return h <= 96 && !!n.querySelector("svg") && /flex/.test(cls) && /items-start|gap-1/.test(cls);
 }
 
+function textIsQuote(text: string, quote: string): boolean {
+    if (text.length < 8 || text.length >= 800 || quote.length < 8) return false;
+    return quote.startsWith(text.slice(0, 24)) || text.includes(quote.slice(0, 24)) || quote.includes(text.slice(0, 48));
+}
+
 function quotePreview(el: Element): HTMLElement | null {
     if (isEditor(el) || el.closest("a, button, [role='button']")) return null;
     const host = hostOf(el);
     if (!host) return null;
-    const pack = hostQuote(hostUuid(host), host);
-    const quote = norm(pack.quoted);
-    if (quote.length < 8) return null;
+    const quote = norm(hostQuote(hostUuid(host), host).quoted);
     let n: HTMLElement | null = el instanceof HTMLElement ? el : el.parentElement;
     while (n && n !== host) {
-        const text = norm(n.textContent || "");
-        if (looksLikeQuote(n) && text.length >= 8 && text.length < 800 && (quote.startsWith(text.slice(0, 24)) || text.includes(quote.slice(0, 24)) || quote.includes(text.slice(0, 48)))) {
-            return n;
-        }
+        if (looksLikeQuote(n) && textIsQuote(norm(n.textContent || ""), quote)) return n;
         n = n.parentElement;
     }
     return null;
@@ -1081,6 +1081,7 @@ function openMenu(anchor: HTMLElement, cites: Cite[]) {
 function clearBadges() {
     closeMenu();
     for (const n of document.querySelectorAll(`.${cl("back")}`)) n.remove();
+    for (const n of document.querySelectorAll("[data-void-qj-preview]")) n.removeAttribute("data-void-qj-preview");
 }
 
 function quoteSvg(): SVGSVGElement {
@@ -1130,6 +1131,35 @@ function paintCount(btn: HTMLElement, n: number) {
     if (el.textContent !== text) el.textContent = text;
 }
 
+function stampPreviews() {
+    const keep = new Set<HTMLElement>();
+    const root = chatPane() ?? document.querySelector("main") ?? document.body;
+    for (const host of root.querySelectorAll<HTMLElement>("[id^='response-']")) {
+        if (host.closest(PANE_SKIP)) continue;
+        const quote = norm(hostQuote(hostUuid(host), host).quoted);
+        if (quote.length < 8) continue;
+        for (const n of host.querySelectorAll<HTMLElement>("[class*='whitespace-pre-wrap'], [class*='items-start']")) {
+            if (n.closest("a, button, [role='button']")) continue;
+            if (!looksLikeQuote(n) || !textIsQuote(norm(n.textContent || ""), quote)) continue;
+            let covered = false;
+            for (const outer of keep) {
+                if (outer.contains(n)) {
+                    covered = true;
+                    break;
+                }
+                if (n.contains(outer)) keep.delete(outer);
+            }
+            if (!covered) keep.add(n);
+        }
+    }
+    for (const n of document.querySelectorAll<HTMLElement>("[data-void-qj-preview]")) {
+        if (!keep.has(n)) n.removeAttribute("data-void-qj-preview");
+    }
+    for (const n of keep) {
+        if (!n.hasAttribute("data-void-qj-preview")) n.setAttribute("data-void-qj-preview", "");
+    }
+}
+
 function paintBacklinks() {
     if (!jumpArmed || onImaginePage()) {
         clearBadges();
@@ -1168,6 +1198,7 @@ function paintBacklinks() {
         n.remove();
     }
     if (openSrc && !seen.has(openSrc)) closeMenu();
+    stampPreviews();
 }
 
 function scheduleBacklinks() {

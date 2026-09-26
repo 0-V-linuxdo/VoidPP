@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.21
+// @version      20260926.22
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.21] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.22] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,9 +7755,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"72fe06d"}`
-    }, `(${"72fe06d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a0ec0eb"}`
+    }, `(${"a0ec0eb"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14582,6 +14582,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     height: 0.875rem;
 }
 
+[data-void-qj-preview],
+[data-void-qj-preview] * {
+    cursor: pointer;
+}
+
 .void-qj-back {
     position: fixed;
     z-index: 30;
@@ -15461,22 +15466,22 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return true;
     return h <= 96 && !!n.querySelector("svg") && /flex/.test(cls) && /items-start|gap-1/.test(cls);
   }
+  function textIsQuote(text, quote) {
+    if (text.length < 8 || text.length >= 800 || quote.length < 8)
+      return false;
+    return quote.startsWith(text.slice(0, 24)) || text.includes(quote.slice(0, 24)) || quote.includes(text.slice(0, 48));
+  }
   function quotePreview(el) {
     if (isEditor(el) || el.closest("a, button, [role='button']"))
       return null;
     const host = hostOf(el);
     if (!host)
       return null;
-    const pack = hostQuote(hostUuid(host), host);
-    const quote = norm2(pack.quoted);
-    if (quote.length < 8)
-      return null;
+    const quote = norm2(hostQuote(hostUuid(host), host).quoted);
     let n = el instanceof HTMLElement ? el : el.parentElement;
     while (n && n !== host) {
-      const text = norm2(n.textContent || "");
-      if (looksLikeQuote(n) && text.length >= 8 && text.length < 800 && (quote.startsWith(text.slice(0, 24)) || text.includes(quote.slice(0, 24)) || quote.includes(text.slice(0, 48)))) {
+      if (looksLikeQuote(n) && textIsQuote(norm2(n.textContent || ""), quote))
         return n;
-      }
       n = n.parentElement;
     }
     return null;
@@ -16103,6 +16108,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     closeMenu2();
     for (const n of document.querySelectorAll(`.${cl20("back")}`))
       n.remove();
+    for (const n of document.querySelectorAll("[data-void-qj-preview]"))
+      n.removeAttribute("data-void-qj-preview");
   }
   function quoteSvg() {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -16150,6 +16157,42 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (el.textContent !== text)
       el.textContent = text;
   }
+  function stampPreviews() {
+    const keep = new Set;
+    const root = chatPane2() ?? document.querySelector("main") ?? document.body;
+    for (const host of root.querySelectorAll("[id^='response-']")) {
+      if (host.closest(PANE_SKIP2))
+        continue;
+      const quote = norm2(hostQuote(hostUuid(host), host).quoted);
+      if (quote.length < 8)
+        continue;
+      for (const n of host.querySelectorAll("[class*='whitespace-pre-wrap'], [class*='items-start']")) {
+        if (n.closest("a, button, [role='button']"))
+          continue;
+        if (!looksLikeQuote(n) || !textIsQuote(norm2(n.textContent || ""), quote))
+          continue;
+        let covered = false;
+        for (const outer of keep) {
+          if (outer.contains(n)) {
+            covered = true;
+            break;
+          }
+          if (n.contains(outer))
+            keep.delete(outer);
+        }
+        if (!covered)
+          keep.add(n);
+      }
+    }
+    for (const n of document.querySelectorAll("[data-void-qj-preview]")) {
+      if (!keep.has(n))
+        n.removeAttribute("data-void-qj-preview");
+    }
+    for (const n of keep) {
+      if (!n.hasAttribute("data-void-qj-preview"))
+        n.setAttribute("data-void-qj-preview", "");
+    }
+  }
   function paintBacklinks() {
     if (!jumpArmed || onImaginePage2()) {
       clearBadges();
@@ -16196,6 +16239,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (openSrc && !seen.has(openSrc))
       closeMenu2();
+    stampPreviews();
   }
   function scheduleBacklinks() {
     if (!jumpArmed || backRaf || painting)
@@ -30940,7 +30984,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1790161256000;
   betterNavigator_default.updatedAt = 1790421526000;
   betterQueue_default.updatedAt = 1790246920000;
-  betterQuotes_default.updatedAt = 1790439253000;
+  betterQuotes_default.updatedAt = 1790440069000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;
