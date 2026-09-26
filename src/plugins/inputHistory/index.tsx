@@ -656,6 +656,10 @@ function onKeyDown(e: KeyboardEvent) {
         applyCaretMoved = true;
         return;
     }
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        pushEntry(editorText(el));
+        return;
+    }
     if (e.ctrlKey || e.metaKey) return;
 
     const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
