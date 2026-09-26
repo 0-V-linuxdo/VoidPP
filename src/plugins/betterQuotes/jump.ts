@@ -11,6 +11,7 @@ import { Logger } from "@utils/Logger";
 import { sleep } from "@utils/misc";
 import { getFiber } from "@utils/react";
 
+import { QUOTE_ICON_SVG } from "./icon";
 import { DISMISS, KEEP, onImaginePage, QUERY } from "./shared";
 
 const logger = new Logger("QuoteJump");
@@ -994,6 +995,36 @@ function clearBadges() {
     for (const n of document.querySelectorAll(`.${cl("back")}`)) n.remove();
 }
 
+function ensureGlyph(btn: HTMLElement) {
+    if (!btn.querySelector(`.${cl("mark")}`)) {
+        const mark = document.createElement("span");
+        mark.className = cl("mark");
+        mark.setAttribute("aria-hidden", "true");
+        mark.innerHTML = QUOTE_ICON_SVG;
+        btn.prepend(mark);
+    }
+    for (const node of [...btn.childNodes]) {
+        if (node.nodeType === Node.TEXT_NODE) node.remove();
+    }
+}
+
+function paintCount(btn: HTMLElement, n: number) {
+    const cur = btn.querySelector<HTMLElement>(`.${cl("count")}`);
+    if (n <= 1) {
+        cur?.remove();
+        return;
+    }
+    const text = String(n);
+    let el = cur;
+    if (!el) {
+        el = document.createElement("span");
+        el.className = cl("count");
+        el.setAttribute("aria-hidden", "true");
+        btn.append(el);
+    }
+    if (el.textContent !== text) el.textContent = text;
+}
+
 function paintBacklinks() {
     if (!jumpArmed || onImaginePage()) {
         clearBadges();
@@ -1017,11 +1048,11 @@ function paintBacklinks() {
             btn.dataset.voidQjSrc = source;
             document.body.append(btn);
         }
-        const label = cites.length > 1 ? String(cites.length) : "↩";
-        if (btn.textContent !== label) btn.textContent = label;
+        ensureGlyph(btn);
+        paintCount(btn, cites.length);
         const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
         if (btn.getAttribute("aria-label") !== aria) btn.setAttribute("aria-label", aria);
-        btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
+        btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 32))}px`;
         btn.style.top = `${Math.round(Math.max(8, box.top + 8))}px`;
         if (openSrc === source) placeMenu(btn);
     }
