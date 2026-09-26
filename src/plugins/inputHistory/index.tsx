@@ -471,15 +471,18 @@ function nudgeCaret(el: HTMLElement, caret: Range, older: boolean): boolean {
     return true;
 }
 
+function sameRecallText(actual: string, expected: string): boolean {
+    if (actual === expected) return true;
+    return actual === `${expected}\n` || expected === `${actual}\n`;
+}
+
 function matchesRecall(el: HTMLElement): boolean {
     if (!recalling) return false;
     const list = getEntries();
     const expected = cursor < list.length ? list[cursor] : draft;
     const actual = editorText(el);
-    if (newlineCount(actual) !== newlineCount(expected)) return false;
-    if (actual === expected) return true;
-    const inner = normalize(el.innerText ?? "");
-    return newlineCount(inner) === newlineCount(expected) && inner === expected;
+    if (sameRecallText(actual, expected)) return true;
+    return sameRecallText(normalize(el.innerText ?? ""), expected);
 }
 
 function dropRecall(el: HTMLElement) {
@@ -719,8 +722,8 @@ function onKeyDown(e: KeyboardEvent) {
     if (imeEvent(e)) return;
     const el = chatEditor(e.target);
     if (!el) return;
-    if (applying && caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-        applyCaretMoved = true;
+    if (caretNav(e) && (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Home" || e.key === "End" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        if (applying || recalling) applyCaretMoved = true;
         return;
     }
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
@@ -787,7 +790,7 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function onPointerDown(e: PointerEvent) {
-    if (!recalling || !applying) return;
+    if (!recalling) return;
     if (!chatEditor(e.target)) return;
     applyCaretMoved = true;
 }
