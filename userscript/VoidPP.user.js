@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         Void++
-// @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp-beta
+// @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
 // @version      20260926.32
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
-// @environment  Beta
+// @environment  Development
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
-// @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/assets/logos/app-icon/voidpp-icon.svg
+// @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/assets/logos/app-icon/voidpp-icon.svg
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
 // @match        *://artifacts.grokusercontent.com/*
@@ -29,8 +29,8 @@
 // @compatible   opera
 // @license      GPL-3.0-or-later
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP
-// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/userscript/VoidPP.user.js
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/userscript/VoidPP.user.js
+// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
 // ==/UserScript==
 
 /**
@@ -7756,8 +7756,8 @@ button .void-info-hint {
       as: "span",
       color: "secondary"
     }, "[20260926.32] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"266002a"}`
-    }, `(${"266002a"})`)), /* @__PURE__ */ React.createElement(Flex, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d9a3850"}`
+    }, `(${"d9a3850"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -32109,7 +32109,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterImagine_default.updatedAt = 1790093417000;
   betterLinks_default.updatedAt = 1787870966000;
   betterModeSelect_default.updatedAt = 1790161256000;
-  betterNavigator_default.updatedAt = 1790421526000;
+  betterNavigator_default.updatedAt = 1790448450000;
   betterQueue_default.updatedAt = 1790246920000;
   betterQuotes_default.updatedAt = 1790446202000;
   betterSidebar_default.updatedAt = 1789807577000;
@@ -32128,7 +32128,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   exportChat_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
   inputHistory_default.updatedAt = 1790418846000;
-  messageStars_default.updatedAt = 0;
+  messageStars_default.updatedAt = 1790448450000;
   messageTimestamps_default.updatedAt = 1789881463000;
   noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1788037550000;
