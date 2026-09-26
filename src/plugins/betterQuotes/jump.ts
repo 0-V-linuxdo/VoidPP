@@ -467,9 +467,54 @@ function composerChip(el: Element): HTMLElement | null {
     return null;
 }
 
+function hostQuote(id: string, host: HTMLElement | null): { quoted: string; ids: string[] } {
+    const row = sourceOfRow(id ? storeById(id) : undefined);
+    if (row.quoted || row.ids.length) return { quoted: row.quoted, ids: row.ids };
+    if (host) {
+        const fiber = sourceFromFiber(host);
+        if (fiber.quoted || fiber.ids.length) return { quoted: fiber.quoted, ids: fiber.ids };
+    }
+    try {
+        const cid = conversationId();
+        const node = cid && id ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id] : undefined;
+        const mapped = node ? MessageStore.nodeToResponse?.(cid, node) : undefined;
+        const fromNode = sourceOfRow(mapped);
+        if (fromNode.quoted || fromNode.ids.length) return { quoted: fromNode.quoted, ids: fromNode.ids };
+    } catch { /* store not ready */ }
+    return { quoted: row.quoted, ids: row.ids };
+}
+
+function looksLikeQuote(n: HTMLElement): boolean {
+    const cls = typeof n.className === "string" ? n.className : "";
+    const h = n.offsetHeight;
+    if (h <= 0 || h > 160) return false;
+    if (/whitespace-pre-wrap/.test(cls) && /text-secondary|text-fg-secondary|bg-surface/.test(cls)) return true;
+    return h <= 96 && !!n.querySelector("svg") && /flex/.test(cls) && /items-start|gap-1/.test(cls);
+}
+
+function quotePreview(el: Element): HTMLElement | null {
+    if (isEditor(el) || el.closest("a, button, [role='button']")) return null;
+    const host = hostOf(el);
+    if (!host) return null;
+    const pack = hostQuote(hostUuid(host), host);
+    const quote = norm(pack.quoted);
+    if (quote.length < 8) return null;
+    let n: HTMLElement | null = el instanceof HTMLElement ? el : el.parentElement;
+    while (n && n !== host) {
+        const text = norm(n.textContent || "");
+        if (looksLikeQuote(n) && text.length >= 8 && text.length < 800 && (quote.startsWith(text.slice(0, 24)) || text.includes(quote.slice(0, 24)) || quote.includes(text.slice(0, 48)))) {
+            return n;
+        }
+        n = n.parentElement;
+    }
+    return null;
+}
+
 function sentQuote(el: Element): HTMLElement | null {
     const jump = officialJumpButton(el);
     if (jump) return jump;
+    const preview = quotePreview(el);
+    if (preview) return preview;
     const bq = el.closest("[data-testid='user-message'] blockquote");
     if (bq instanceof HTMLElement) return bq;
     const msg = el.closest("[data-testid='user-message']");
@@ -817,13 +862,12 @@ function resolveNeedle(origin: HTMLElement | null): { needle: string; ids: strin
     }
     const live = quotedText();
     if (origin) {
-        const msg = origin.closest<HTMLElement>(MSG);
+        const msg = origin.closest<HTMLElement>(MSG) ?? hostOf(origin);
         const id = msg ? propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] : "";
-        const row = id ? storeById(id) : undefined;
-        const sent = String(row?.parentQuotedText || "");
-        const parent = String(row?.parentResponseId || "");
-        const text = sent || live || prefixOf(origin.textContent || "");
-        const ids = [bareUuid(parent) || parent, ...idsFrom(origin, row)].filter(Boolean);
+        const from = hostQuote(id, msg);
+        const skip = hostUuid(msg);
+        const text = from.quoted || live || prefixOf(origin.textContent || "");
+        const ids = [...from.ids, ...idsFrom(origin)].filter(x => x && x !== skip);
         return { needle: text, ids };
     }
     return { needle: live, ids: idsFrom(null) };

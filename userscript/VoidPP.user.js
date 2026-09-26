@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.20
+// @version      20260926.21
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.20] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.21] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,9 +7755,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.20] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"3edc8d2"}`
-    }, `(${"3edc8d2"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"72fe06d"}`
+    }, `(${"72fe06d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -15433,10 +15433,61 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     return null;
   }
+  function hostQuote(id, host) {
+    const row = sourceOfRow(id ? storeById(id) : undefined);
+    if (row.quoted || row.ids.length)
+      return { quoted: row.quoted, ids: row.ids };
+    if (host) {
+      const fiber = sourceFromFiber(host);
+      if (fiber.quoted || fiber.ids.length)
+        return { quoted: fiber.quoted, ids: fiber.ids };
+    }
+    try {
+      const cid = conversationId2();
+      const node = cid && id ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id] : undefined;
+      const mapped = node ? MessageStore.nodeToResponse?.(cid, node) : undefined;
+      const fromNode = sourceOfRow(mapped);
+      if (fromNode.quoted || fromNode.ids.length)
+        return { quoted: fromNode.quoted, ids: fromNode.ids };
+    } catch {}
+    return { quoted: row.quoted, ids: row.ids };
+  }
+  function looksLikeQuote(n) {
+    const cls = typeof n.className === "string" ? n.className : "";
+    const h = n.offsetHeight;
+    if (h <= 0 || h > 160)
+      return false;
+    if (/whitespace-pre-wrap/.test(cls) && /text-secondary|text-fg-secondary|bg-surface/.test(cls))
+      return true;
+    return h <= 96 && !!n.querySelector("svg") && /flex/.test(cls) && /items-start|gap-1/.test(cls);
+  }
+  function quotePreview(el) {
+    if (isEditor(el) || el.closest("a, button, [role='button']"))
+      return null;
+    const host = hostOf(el);
+    if (!host)
+      return null;
+    const pack = hostQuote(hostUuid(host), host);
+    const quote = norm2(pack.quoted);
+    if (quote.length < 8)
+      return null;
+    let n = el instanceof HTMLElement ? el : el.parentElement;
+    while (n && n !== host) {
+      const text = norm2(n.textContent || "");
+      if (looksLikeQuote(n) && text.length >= 8 && text.length < 800 && (quote.startsWith(text.slice(0, 24)) || text.includes(quote.slice(0, 24)) || quote.includes(text.slice(0, 48)))) {
+        return n;
+      }
+      n = n.parentElement;
+    }
+    return null;
+  }
   function sentQuote(el) {
     const jump = officialJumpButton(el);
     if (jump)
       return jump;
+    const preview = quotePreview(el);
+    if (preview)
+      return preview;
     const bq = el.closest("[data-testid='user-message'] blockquote");
     if (bq instanceof HTMLElement)
       return bq;
@@ -15820,13 +15871,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     const live = quotedText2();
     if (origin) {
-      const msg = origin.closest(MSG2);
+      const msg = origin.closest(MSG2) ?? hostOf(origin);
       const id = msg ? propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] : "";
-      const row = id ? storeById(id) : undefined;
-      const sent = String(row?.parentQuotedText || "");
-      const parent = String(row?.parentResponseId || "");
-      const text = sent || live || prefixOf(origin.textContent || "");
-      const ids = [bareUuid(parent) || parent, ...idsFrom(origin, row)].filter(Boolean);
+      const from = hostQuote(id, msg);
+      const skip = hostUuid(msg);
+      const text = from.quoted || live || prefixOf(origin.textContent || "");
+      const ids = [...from.ids, ...idsFrom(origin)].filter((x) => x && x !== skip);
       return { needle: text, ids };
     }
     return { needle: live, ids: idsFrom(null) };
@@ -30877,7 +30927,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1787870966000;
-  settings_default.updatedAt = 1790265417000;
+  settings_default.updatedAt = 1790439253000;
   chatBarButtons_default.updatedAt = 1790097681000;
   contextMenu_default.updatedAt = 1781702684000;
   autoCollapse_default.updatedAt = 1787789817000;
@@ -30890,7 +30940,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1790161256000;
   betterNavigator_default.updatedAt = 1790421526000;
   betterQueue_default.updatedAt = 1790246920000;
-  betterQuotes_default.updatedAt = 1790438241000;
+  betterQuotes_default.updatedAt = 1790439253000;
   betterSidebar_default.updatedAt = 1789807577000;
   chatListStatus_default.updatedAt = 1789906500000;
   chatStateFavicons_default.updatedAt = 1789921507000;
