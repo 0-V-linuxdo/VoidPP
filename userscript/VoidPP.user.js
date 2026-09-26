@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.37
+// @version      20260926.38
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.37] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.38] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.37] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"35cf17a"}`
-    }, `(${"35cf17a"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.38] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"86087b8"}`
+    }, `(${"86087b8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8617,6 +8617,8 @@ button .void-info-hint {
   var LIKE_RE = /^(like|good response|thumbs[- ]?up|upvote|喜欢|点赞)\b/i;
   var NOT_LIKE_RE = /dislike|bad response|thumbs[- ]?down|downvote|不喜欢|点踩|^踩\b/i;
   var NOT_COPY_RE = /\b(code|link|table|source)\b|代码|表格|链接|来源/i;
+  var MORE_RE = /^(more|更多)(\b| )|more actions|更多操作|更多选项|more-actions/i;
+  var PAGER_RE = /previous message|next message|navigate to previous|navigate to next|上一条|下一条/i;
   var settings6 = definePluginSettings({
     showInSidebar: {
       type: 3 /* BOOLEAN */,
@@ -8963,15 +8965,49 @@ button .void-info-hint {
     }
     return best ? { row: best.row, copy: best.copy } : null;
   }
-  function placeAfterCopy(row, star, copy) {
-    let anchor = copy;
-    while (anchor && anchor.parentElement !== row)
-      anchor = anchor.parentElement;
-    if (!anchor || anchor.parentElement !== row)
-      return false;
-    if (star.parentElement === row && star.previousElementSibling === anchor)
+  function isOverflow(el) {
+    if (el.closest("[data-testid*='more-action']"))
       return true;
-    anchor.after(star);
+    return MORE_RE.test(controlLabel(el));
+  }
+  function isPager(el) {
+    if (PAGER_RE.test(controlLabel(el)))
+      return true;
+    for (const btn of el.querySelectorAll("button, [role='button']")) {
+      if (btn.classList.contains("void-stars-bubble"))
+        continue;
+      if (PAGER_RE.test(controlLabel(btn)))
+        return true;
+    }
+    const text = (el.innerText || "").replaceAll(/\s+/g, "");
+    return /^\d+\/\d+$/.test(text);
+  }
+  function slotKind(slot) {
+    if (isOverflow(slot) || isPager(slot))
+      return isOverflow(slot) ? "overflow" : "pager";
+    for (const btn of slot.querySelectorAll("button, [role='button']")) {
+      if (btn.classList.contains("void-stars-bubble"))
+        continue;
+      if (isOverflow(btn))
+        return "overflow";
+      if (isPager(btn))
+        return "pager";
+    }
+    return "primary";
+  }
+  function placeBeforeOverflow(row, star) {
+    let lastPrimary = null;
+    for (const child of row.children) {
+      if (!(child instanceof HTMLElement) || child.classList.contains("void-stars-bubble"))
+        continue;
+      if (slotKind(child) === "primary")
+        lastPrimary = child;
+    }
+    if (!lastPrimary)
+      return false;
+    if (star.parentElement === row && star.previousElementSibling === lastPrimary)
+      return true;
+    lastPrimary.after(star);
     return star.parentElement === row;
   }
   function adoptNative(star, copy) {
@@ -9046,7 +9082,7 @@ button .void-info-hint {
       let btn = row.querySelector(":scope > .void-stars-bubble");
       if (!btn)
         btn = makeBubble();
-      if (!placeAfterCopy(row, btn, copy)) {
+      if (!placeBeforeOverflow(row, btn)) {
         if (!btn.isConnected)
           btn.remove();
         continue;
@@ -32225,7 +32261,7 @@ div:has(> #grok-bot-nav-button) {
   contextMenu_default.updatedAt = 1790444048000;
   chatBarButtons_default.updatedAt = 1790444048000;
   betterFiles_default.updatedAt = 1790444048000;
-  messageStars_default.updatedAt = 1790452011000;
+  messageStars_default.updatedAt = 1790452417000;
   usageDisplay_default.updatedAt = 1790444048000;
   betterQueue_default.updatedAt = 1790444048000;
   settingsFlyout_default.updatedAt = 1790444048000;

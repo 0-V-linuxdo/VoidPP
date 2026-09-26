@@ -33,6 +33,8 @@ const EDIT_RE = /^(edit|编辑)\b/i;
 const LIKE_RE = /^(like|good response|thumbs[- ]?up|upvote|喜欢|点赞)\b/i;
 const NOT_LIKE_RE = /dislike|bad response|thumbs[- ]?down|downvote|不喜欢|点踩|^踩\b/i;
 const NOT_COPY_RE = /\b(code|link|table|source)\b|代码|表格|链接|来源/i;
+const MORE_RE = /^(more|更多)(\b| )|more actions|更多操作|更多选项|more-actions/i;
+const PAGER_RE = /previous message|next message|navigate to previous|navigate to next|上一条|下一条/i;
 
 const settings = definePluginSettings({
     showInSidebar: {
@@ -383,12 +385,40 @@ function messageBar(shell: HTMLElement, bubble: HTMLElement): { row: HTMLElement
     return best ? { row: best.row, copy: best.copy } : null;
 }
 
-function placeAfterCopy(row: HTMLElement, star: HTMLButtonElement, copy: HTMLElement): boolean {
-    let anchor: HTMLElement | null = copy;
-    while (anchor && anchor.parentElement !== row) anchor = anchor.parentElement;
-    if (!anchor || anchor.parentElement !== row) return false;
-    if (star.parentElement === row && star.previousElementSibling === anchor) return true;
-    anchor.after(star);
+function isOverflow(el: HTMLElement): boolean {
+    if (el.closest("[data-testid*='more-action']")) return true;
+    return MORE_RE.test(controlLabel(el));
+}
+
+function isPager(el: HTMLElement): boolean {
+    if (PAGER_RE.test(controlLabel(el))) return true;
+    for (const btn of el.querySelectorAll<HTMLElement>("button, [role='button']")) {
+        if (btn.classList.contains("void-stars-bubble")) continue;
+        if (PAGER_RE.test(controlLabel(btn))) return true;
+    }
+    const text = (el.innerText || "").replaceAll(/\s+/g, "");
+    return /^\d+\/\d+$/.test(text);
+}
+
+function slotKind(slot: HTMLElement): "overflow" | "pager" | "primary" {
+    if (isOverflow(slot) || isPager(slot)) return isOverflow(slot) ? "overflow" : "pager";
+    for (const btn of slot.querySelectorAll<HTMLElement>("button, [role='button']")) {
+        if (btn.classList.contains("void-stars-bubble")) continue;
+        if (isOverflow(btn)) return "overflow";
+        if (isPager(btn)) return "pager";
+    }
+    return "primary";
+}
+
+function placeBeforeOverflow(row: HTMLElement, star: HTMLButtonElement): boolean {
+    let lastPrimary: HTMLElement | null = null;
+    for (const child of row.children) {
+        if (!(child instanceof HTMLElement) || child.classList.contains("void-stars-bubble")) continue;
+        if (slotKind(child) === "primary") lastPrimary = child;
+    }
+    if (!lastPrimary) return false;
+    if (star.parentElement === row && star.previousElementSibling === lastPrimary) return true;
+    lastPrimary.after(star);
     return star.parentElement === row;
 }
 
@@ -460,7 +490,7 @@ function paintBubbles() {
         const { row, copy } = found;
         let btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
         if (!btn) btn = makeBubble();
-        if (!placeAfterCopy(row, btn, copy)) {
+        if (!placeBeforeOverflow(row, btn)) {
             if (!btn.isConnected) btn.remove();
             continue;
         }
