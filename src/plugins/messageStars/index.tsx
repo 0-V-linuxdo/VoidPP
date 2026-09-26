@@ -6,15 +6,12 @@
 
 import "./styles.css";
 
-import { type ContextMenuLocationMap, MenuItem } from "@api/ContextMenus";
 import { definePluginSettings } from "@api/Settings";
-import { ErrorBoundary } from "@components/ErrorBoundary";
-import { StarFilledIcon, StarIcon } from "@components/icons";
+import { StarIcon } from "@components/icons";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { ConversationStoreState, GrokConversation } from "@grok-types/stores/ConversationStore";
 import type { MessageStoreState } from "@grok-types/stores/MessageStore";
 import type { GrokRoute } from "@grok-types/stores/RoutingStore";
-import { React } from "@turbopack/common/react";
 import { ChatPageStore, ConversationStore, MessageStore, RoutingStore, SettingsStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
@@ -187,31 +184,6 @@ function toggle(cid: string, messageId: string, hint?: Partial<StarredMessage>) 
         return;
     }
     putStar(capture(cid, messageId, hint), shouldPersist(cid));
-}
-
-function roleFromResponse(response: ContextMenuLocationMap["message"]["response"]): "user" | "assistant" {
-    const sender = String(response.sender ?? "").toLowerCase();
-    if (sender === "human" || sender === "user") return "user";
-    return "assistant";
-}
-
-function toggleFromResponse(cid: string, messageId: string, response: ContextMenuLocationMap["message"]["response"]) {
-    const role = roleFromResponse(response);
-    const raw = role === "user" ? (response.query || response.message || "") : (response.message || response.query || "");
-    toggle(cid, messageId, { role, snippet: clipSnippet(String(raw)) });
-}
-
-function StarItem({ response }: ContextMenuLocationMap["message"]) {
-    const messageId = response?.responseId;
-    const cid = response?.conversationId || currentCid();
-    if (!messageId || !cid) return null;
-    const on = hasStar(cid, messageId);
-    return (
-        <MenuItem onSelect={() => toggleFromResponse(cid, messageId, response)}>
-            {on ? <StarFilledIcon size={16} /> : <StarIcon size={16} />}
-            {on ? "Unstar" : "Star"}
-        </MenuItem>
-    );
 }
 
 function clearPress() {
@@ -588,12 +560,6 @@ export default definePlugin({
     settings,
     managedStyle: "messageStars",
     cleanupSelectors: [".void-stars-host", ".void-stars-pop"],
-    contextMenuItems: {
-        message: {
-            label: "Star",
-            render: ErrorBoundary.wrap(StarItem),
-        },
-    },
     start,
     stop,
     onSettingsChange() {
