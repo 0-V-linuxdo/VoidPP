@@ -667,7 +667,7 @@ function blockRanges(root: HTMLElement, needle: string, allowThink: boolean): Ra
     const lines = paintLines(needle).map(flex).filter(line => line.length >= 4);
     if (want.length < 4 && !lines.length) return [];
     const ranges: Range[] = [];
-    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote")) {
+    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, span")) {
         if (!(el instanceof HTMLElement)) continue;
         if (el.closest("button, svg, [role='toolbar'], td, th")) continue;
         if (el.querySelector("p, li")) continue;
@@ -843,7 +843,9 @@ function scrollLineToScreenCenter(range: Range | null, el: HTMLElement) {
     const pane = scrollPane(el);
     if (!pane) return;
     const mid = visibleMidY(pane);
-    const delta = box.top + box.height / 2 - mid;
+    const tall = !range && box.height > pane.clientHeight * 0.8;
+    const mark = tall ? box.top + Math.min(48, box.height / 2) : box.top + box.height / 2;
+    const delta = mark - mid;
     if (Math.abs(delta) < ALIGNED_PX) return;
     pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
 }
@@ -874,13 +876,32 @@ async function hydrate(cid: string) {
     }
 }
 
+function locateLine(root: HTMLElement, needle: string): HTMLElement | null {
+    const clips = clipsOf(needle);
+    if (!clips.length) return null;
+    let best: HTMLElement | null = null;
+    let bestLen = Infinity;
+    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, span, div")) {
+        if (!(el instanceof HTMLElement)) continue;
+        if (el.closest("button, svg, [role='toolbar'], td, th, [data-void-qj-preview]")) continue;
+        const text = norm(el.textContent || "");
+        if (!textHasClip(text, clips)) continue;
+        if (text.length && text.length < bestLen) {
+            best = el;
+            bestLen = text.length;
+        }
+    }
+    return best;
+}
+
 function resolveNeedle(origin: HTMLElement | null): { needle: string; hard: string; parent: string } {
     const jump = origin ? officialJumpButton(origin) : null;
     if (jump) {
         const child = hostUuid(jump);
         const fiber = sourceFromFiber(jump);
         const row = sourceOfRow(child ? storeById(child) : undefined);
-        const needle = row.quoted || fiber.quoted || prefixOf(jump.textContent || "");
+        const shown = prefixOf(jump.textContent || "");
+        const needle = (shown.length >= 8 ? shown : "") || row.quoted || fiber.quoted || shown;
         return { needle, hard: fiber.hard || row.hard, parent: fiber.parent || row.parent };
     }
     const live = quotedText();
@@ -995,7 +1016,9 @@ function settleScroll(pane: HTMLElement, range: Range | null, el: HTMLElement, m
                 resolve();
                 return;
             }
-            const delta = box.top + box.height / 2 - visibleMidY(pane);
+            const tall = !range && box.height > pane.clientHeight * 0.8;
+            const mark = tall ? box.top + Math.min(48, box.height / 2) : box.top + box.height / 2;
+            const delta = mark - visibleMidY(pane);
             if (Math.abs(delta) >= ALIGNED_PX) pane.scrollTo({ top: pane.scrollTop + delta, behavior: "auto" });
             resolve();
         };
@@ -1015,12 +1038,13 @@ async function land(el: HTMLElement, needle: string, mine: number, pin = "") {
     if (!el.isConnected) return;
     const ranges = findRanges(el, needle);
     const anchor = scrollAnchor(ranges);
-    const line = anchor ? hitOf(anchor) : null;
+    const painted = anchor ? hitOf(anchor) : null;
+    const line = painted ?? locateLine(el, needle);
     const target = line?.isConnected ? line : el;
     const pane = scrollPane(target) ?? scrollPane(el);
-    scrollLineToScreenCenter(line ? anchor : null, target);
-    highlightRange(ranges, ranges.length ? target : el, !ranges.length && !!pin);
-    if (pane) await settleScroll(pane, line ? anchor : null, target, mine);
+    scrollLineToScreenCenter(painted ? anchor : null, target);
+    highlightRange(ranges, ranges.length ? target : line ?? el, !ranges.length && !!pin);
+    if (pane) await settleScroll(pane, painted ? anchor : null, target, mine);
 }
 
 async function jump(origin: HTMLElement | null) {

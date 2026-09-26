@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.25
+// @version      20260926.26
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.25] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.26] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.25] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2d208d1"}`
-    }, `(${"2d208d1"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.26] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"22845c8"}`
+    }, `(${"22845c8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21687,7 +21687,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (want.length < 4 && !lines.length)
       return [];
     const ranges = [];
-    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote")) {
+    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, span")) {
       if (!(el instanceof HTMLElement))
         continue;
       if (el.closest("button, svg, [role='toolbar'], td, th"))
@@ -21887,7 +21887,9 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (!pane)
       return;
     const mid = visibleMidY(pane);
-    const delta = box.top + box.height / 2 - mid;
+    const tall = !range && box.height > pane.clientHeight * 0.8;
+    const mark = tall ? box.top + Math.min(48, box.height / 2) : box.top + box.height / 2;
+    const delta = mark - mid;
     if (Math.abs(delta) < ALIGNED_PX)
       return;
     pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
@@ -21917,13 +21919,35 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       logger29.debug("loadOlderHistory failed", e);
     }
   }
+  function locateLine(root, needle) {
+    const clips = clipsOf(needle);
+    if (!clips.length)
+      return null;
+    let best = null;
+    let bestLen = Infinity;
+    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, span, div")) {
+      if (!(el instanceof HTMLElement))
+        continue;
+      if (el.closest("button, svg, [role='toolbar'], td, th, [data-void-qj-preview]"))
+        continue;
+      const text = norm2(el.textContent || "");
+      if (!textHasClip(text, clips))
+        continue;
+      if (text.length && text.length < bestLen) {
+        best = el;
+        bestLen = text.length;
+      }
+    }
+    return best;
+  }
   function resolveNeedle(origin) {
     const jump = origin ? officialJumpButton(origin) : null;
     if (jump) {
       const child = hostUuid(jump);
       const fiber = sourceFromFiber(jump);
       const row = sourceOfRow(child ? storeById(child) : undefined);
-      const needle = row.quoted || fiber.quoted || prefixOf(jump.textContent || "");
+      const shown = prefixOf(jump.textContent || "");
+      const needle = (shown.length >= 8 ? shown : "") || row.quoted || fiber.quoted || shown;
       return { needle, hard: fiber.hard || row.hard, parent: fiber.parent || row.parent };
     }
     const live = quotedText2();
@@ -22047,7 +22071,9 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
           resolve();
           return;
         }
-        const delta = box.top + box.height / 2 - visibleMidY(pane);
+        const tall = !range && box.height > pane.clientHeight * 0.8;
+        const mark = tall ? box.top + Math.min(48, box.height / 2) : box.top + box.height / 2;
+        const delta = mark - visibleMidY(pane);
         if (Math.abs(delta) >= ALIGNED_PX)
           pane.scrollTo({ top: pane.scrollTop + delta, behavior: "auto" });
         resolve();
@@ -22070,13 +22096,14 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     const ranges = findRanges(el, needle);
     const anchor = scrollAnchor(ranges);
-    const line = anchor ? hitOf(anchor) : null;
+    const painted = anchor ? hitOf(anchor) : null;
+    const line = painted ?? locateLine(el, needle);
     const target = line?.isConnected ? line : el;
     const pane = scrollPane(target) ?? scrollPane(el);
-    scrollLineToScreenCenter(line ? anchor : null, target);
-    highlightRange(ranges, ranges.length ? target : el, !ranges.length && !!pin);
+    scrollLineToScreenCenter(painted ? anchor : null, target);
+    highlightRange(ranges, ranges.length ? target : line ?? el, !ranges.length && !!pin);
     if (pane)
-      await settleScroll(pane, line ? anchor : null, target, mine);
+      await settleScroll(pane, painted ? anchor : null, target, mine);
   }
   async function jump2(origin) {
     const mine = ++gen;
@@ -31109,7 +31136,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1790442421000;
   betterCanvas_default.updatedAt = 1790442421000;
   noDictation_default.updatedAt = 1790442421000;
-  betterQuotes_default.updatedAt = 1790442421000;
+  betterQuotes_default.updatedAt = 1790443558000;
   cloneChats_default.updatedAt = 1790442421000;
   composerOpacity_default.updatedAt = 1790442421000;
   incognito_default.updatedAt = 1790442421000;
