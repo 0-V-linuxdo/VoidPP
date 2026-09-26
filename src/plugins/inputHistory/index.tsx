@@ -58,6 +58,7 @@ const settings = definePluginSettings({
 const recentAt = new Map<string, number>();
 
 let cursor = 0;
+let lastShown = -1;
 let draft = "";
 let recalling = false;
 let applying = false;
@@ -131,6 +132,7 @@ function invalidateApply() {
 function resetBrowse(length: number) {
     invalidateApply();
     cursor = length;
+    lastShown = -1;
     draft = "";
     recalling = false;
     hideHud();
@@ -471,24 +473,66 @@ function nudgeCaret(el: HTMLElement, caret: Range, older: boolean): boolean {
     return true;
 }
 
+function atDocEdge(el: HTMLElement, start: boolean): boolean {
+    const caret = collapsedCaret(el);
+    if (caret) return atProgrammedEdge(el, caret, start);
+    try {
+        const view = pmViewOf(el);
+        const sel = view?.state?.selection as { empty?: boolean; from?: number; to?: number } | undefined;
+        const doc = view?.state?.doc as { content?: { size?: number } } | undefined;
+        if (!sel || sel.empty === false || typeof sel.from !== "number") return false;
+        if (start) return sel.from <= 1;
+        const size = doc?.content?.size;
+        return typeof size === "number" && typeof sel.to === "number" && sel.to >= size - 1;
+    } catch {
+        return false;
+    }
+}
+
+function onTopVisualLine(el: HTMLElement): boolean {
+    const caret = collapsedCaret(el);
+    if (!caret) return false;
+    const caretRects = caret.getClientRects();
+    const caretRect = caretRects[0] ?? caret.getBoundingClientRect();
+    if (!caretRect.height && !caretRect.width) return true;
+    const lines = visualLineTops(el);
+    if (lines.length < 2) return true;
+    let index = 0;
+    let best = Infinity;
+    lines.forEach((line, i) => {
+        const dist = Math.abs(line - caretRect.top);
+        if (dist < best) {
+            best = dist;
+            index = i;
+        }
+    });
+    return index <= 0;
+}
+
 function bodyKey(text: string): string {
     return normalize(text).replace(/\n+$/, "");
 }
 
-function parkedIndex(list: string[], text: string): number {
-    const key = bodyKey(text);
-    if (!hasContent(key)) return -1;
-    for (let i = list.length - 1; i >= 0; i--) {
-        if (bodyKey(list[i]) === key) return i;
-    }
-    return -1;
+function shownBody(): string | null {
+    const list = getEntries();
+    if (recalling) return bodyKey(cursor < list.length ? list[cursor] : draft);
+    if (lastShown >= 0 && lastShown < list.length) return bodyKey(list[lastShown]);
+    return null;
 }
 
-function recallBody(el: HTMLElement): boolean {
-    if (!recalling) return false;
-    const list = getEntries();
-    const expected = cursor < list.length ? list[cursor] : draft;
-    return bodyKey(editorText(el)) === bodyKey(expected);
+function userEdit(e: Event): boolean {
+    if (!(e instanceof InputEvent)) return false;
+    const t = e.inputType;
+    if (t.startsWith("delete")) return true;
+    return t === "insertText"
+        || t === "insertParagraph"
+        || t === "insertLineBreak"
+        || t === "insertCompositionText"
+        || t === "insertFromPaste"
+        || t === "insertFromDrop"
+        || t === "insertReplacementText"
+        || t === "historyUndo"
+        || t === "historyRedo";
 }
 
 function matchesRecall(el: HTMLElement): boolean {
@@ -544,8 +588,7 @@ function scheduleApplyEnd(gen: number) {
         applyCaretMoved = false;
         if (!el || composing) return;
         if (!recalling) return;
-        if (!matchesRecall(el) && !recallBody(el)) dropRecall(el);
-        else if (!moved && matchesRecall(el)) placeCaret(el, applyAtStart);
+        if (matchesRecall(el) && !moved) placeCaret(el, applyAtStart);
     }, APPLY_QUIET_MS);
 }
 
@@ -699,18 +742,16 @@ function pushEntry(text: string) {
 function cycle(older: boolean, el: HTMLElement) {
     const list = getEntries();
     if (!list.length && older) return;
-    if (!recalling || cursor >= list.length) {
-        const parked = parkedIndex(list, editorText(el));
-        if (parked >= 0) cursor = parked;
-        else {
-            draft = editorText(el);
-            cursor = list.length;
-        }
+    if ((!recalling || cursor >= list.length) && lastShown >= 0 && lastShown < list.length) cursor = lastShown;
+    else if (cursor >= list.length) {
+        draft = editorText(el);
+        cursor = list.length;
     }
     const next = older ? cursor - 1 : cursor + 1;
     if (next < 0 || next > list.length) return;
     cursor = next;
     recalling = true;
+    lastShown = next < list.length ? next : -1;
     setEditorText(el, next === list.length ? draft : list[next], older);
     if (next < list.length) showHud(`${next + 1} / ${list.length}`, el);
     else hideHud();
@@ -757,6 +798,7 @@ function onKeyDown(e: KeyboardEvent) {
     if (applying && !arrow) invalidateApply();
 
     if (e.key === "Escape" && recalling && !e.altKey && !e.shiftKey) {
+        lastShown = -1;
         dropRecall(el);
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -778,32 +820,36 @@ function onKeyDown(e: KeyboardEvent) {
             return;
         }
         if (!isPlaceholderEditor(el)) {
-            if (stepLine(el, older)) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                if (applying) applyCaretMoved = true;
-                return;
-            }
-            const soft = stepSoftLine(el, older);
-            if (soft !== 0) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                if (applying) applyCaretMoved = true;
-                return;
-            }
-            const stayed = collapsedCaret(el);
-            if (stayed && (older ? breakBefore(el, stayed) : breakAfter(el, stayed))) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                if (nudgeCaret(el, stayed, older) && applying) applyCaretMoved = true;
-                return;
+            const pinned = older ? atDocEdge(el, true) : atDocEdge(el, false);
+            if (!pinned) {
+                if (stepLine(el, older)) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    if (applying) applyCaretMoved = true;
+                    return;
+                }
+                const soft = stepSoftLine(el, older);
+                if (soft > 0 || (soft < 0 && !(older && onTopVisualLine(el)))) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    if (applying) applyCaretMoved = true;
+                    return;
+                }
+                const stayed = collapsedCaret(el);
+                if (stayed && (older ? breakBefore(el, stayed) : breakAfter(el, stayed))) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    if (nudgeCaret(el, stayed, older) && applying) applyCaretMoved = true;
+                    return;
+                }
             }
         }
     }
 
     const list = getEntries();
-    if (older && (!list.length || cursor <= 0)) return;
-    if (!older && cursor >= list.length) return;
+    const resume = lastShown >= 0 && lastShown < list.length && (!recalling || cursor >= list.length);
+    if (older && (!list.length || (!resume && cursor <= 0))) return;
+    if (!older && !resume && cursor >= list.length) return;
 
     e.preventDefault();
     e.stopImmediatePropagation();
@@ -826,7 +872,11 @@ function onCompositionEnd(e: Event) {
     const el = chatEditor(e.target);
     if (!el) return;
     composing = false;
-    if (recalling && !matchesRecall(el) && !recallBody(el)) dropRecall(el);
+    if (!recalling) return;
+    const shown = shownBody();
+    if (shown != null && bodyKey(editorText(el)) === shown) return;
+    lastShown = -1;
+    dropRecall(el);
 }
 
 function onInput(e: Event) {
@@ -837,7 +887,11 @@ function onInput(e: Event) {
         return;
     }
     if (applying) return;
-    if (recalling && !matchesRecall(el) && !recallBody(el)) dropRecall(el);
+    if (!userEdit(e)) return;
+    const shown = shownBody();
+    if (shown != null && bodyKey(editorText(el)) === shown) return;
+    lastShown = -1;
+    if (recalling) dropRecall(el);
 }
 
 function onSubmit(e: Event) {
@@ -1002,6 +1056,7 @@ export default definePlugin({
     start() {
         if (keys) return;
         cursor = getEntries().length;
+        lastShown = -1;
         recalling = false;
         composing = false;
         invalidateApply();
@@ -1024,6 +1079,7 @@ export default definePlugin({
         recentAt.clear();
         composing = false;
         recalling = false;
+        lastShown = -1;
         invalidateApply();
     },
 
@@ -1032,6 +1088,7 @@ export default definePlugin({
         const next = cap(current);
         if (next.length !== current.length) setEntries(next);
         if (cursor > next.length) cursor = next.length;
+        if (lastShown >= next.length) lastShown = -1;
         const imagine = listOf(settings.plain.imagineEntries);
         const imagineNext = cap(imagine);
         if (imagineNext.length !== imagine.length) settings.store.imagineEntries = imagineNext;
