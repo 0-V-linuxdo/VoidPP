@@ -221,12 +221,11 @@ function newlineCount(text: string): number {
 }
 
 function editorText(el: HTMLElement): string {
-    let pmNorm: string | null = null;
     try {
         const view = pmViewOf(el);
         if (view?.state?.doc) {
             const br = breakNodeType(view.state.schema.nodes);
-            pmNorm = normalize(serializePmDoc(view.state.doc, br));
+            return normalize(serializePmDoc(view.state.doc, br));
         }
     } catch (err) {
         logger.debug("editorText pm failed:", err);
@@ -235,9 +234,7 @@ function editorText(el: HTMLElement): string {
     const raw = blocks.length
         ? Array.from(blocks, blockText).join("\n")
         : (el.innerText ?? el.textContent ?? "");
-    const domNorm = normalize(raw);
-    if (pmNorm != null && newlineCount(pmNorm) >= newlineCount(domNorm)) return pmNorm;
-    return domNorm;
+    return normalize(raw);
 }
 
 function collapsedCaret(el: HTMLElement): Range | null {
