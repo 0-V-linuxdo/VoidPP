@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260926.11
+// @version      20260926.12
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260926.11] v1.0.0 — A modification for grok.com
+ * Void++ [20260926.12] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260926.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"071924c"}`
-    }, `(${"071924c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260926.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"00353d5"}`
+    }, `(${"00353d5"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21194,21 +21194,52 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return;
     }
   }
-  function storeNeedle(needle) {
-    const clips = clipsOf(needle);
-    if (!clips.length)
+  function hostClip(needle) {
+    const raw = prefixOf(needle).slice(0, 48);
+    const loose = prefixOf(looseNorm(needle)).slice(0, 48);
+    if (raw.length >= 8)
+      return raw;
+    return loose;
+  }
+  function hostScore(text, needle) {
+    const clip = hostClip(needle);
+    if (clip.length < 8)
+      return 0;
+    const n = norm2(text);
+    const loose = looseNorm(text);
+    if (!n.includes(clip) && !loose.includes(clip))
+      return 0;
+    return clip.length / Math.max(n.length, 1);
+  }
+  function storeNeedle(needle, skipId = "") {
+    if (hostClip(needle).length < 8)
       return null;
     const cid = conversationId2();
+    const skip = bareUuid(skipId);
+    let childAt = 0;
+    try {
+      const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
+      childAt = Number(nodes?.[skip]?.createdAt) || 0;
+    } catch {}
+    let best = null;
+    const consider = (id, text, at) => {
+      if (!id || id === skip)
+        return;
+      if (childAt && at && at > childAt)
+        return;
+      const score = hostScore(text, needle);
+      if (score <= 0)
+        return;
+      if (!best || score > best.score || score === best.score && at < best.at)
+        best = { id, score, at };
+    };
     try {
       const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
       if (nodes) {
-        const list = Object.values(nodes);
-        for (let i = list.length - 1;i >= 0; i--) {
-          const node = list[i];
+        for (const node of Object.values(nodes)) {
           if (!node?.id)
             continue;
-          if (textHasClip(String(node.content?.message || ""), clips))
-            return { id: node.id, cid };
+          consider(node.id, String(node.content?.message || ""), Number(node.createdAt) || 0);
         }
       }
     } catch (e) {
@@ -21217,17 +21248,15 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     try {
       const r = ResponseStore.useResponseStore.getState();
       const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
-      for (let i = rows.length - 1;i >= 0; i--) {
-        const row = rows[i];
+      for (const row of rows) {
         if (!row?.responseId)
           continue;
-        if (textHasClip(String(row.message || ""), clips))
-          return { id: row.responseId, cid };
+        consider(row.responseId, String(row.message || ""), Number(row.createTime) || 0);
       }
     } catch (e) {
       logger29.debug("store search failed", e);
     }
-    return null;
+    return best ? { id: best.id, cid, score: best.score } : null;
   }
   function prefixOf(text) {
     return norm2(text).replace(/[.…]+$/u, "");
@@ -21579,24 +21608,34 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     return !!el && !!host && (el === host || host.contains(el));
   }
   function pickMessage(ids, needle, skip) {
-    const n = prefixOf(needle);
-    for (const id of ids) {
-      const el = messageById(bareUuid(id) || id);
-      if (!el || insideHost(el, skip ?? null))
-        continue;
-      if (n && nodeHasNeedle(el, n))
-        return el;
-    }
-    if (!n)
+    if (hostClip(needle).length < 8)
       return null;
     const rows = messageEls();
-    for (let i = rows.length - 1;i >= 0; i--) {
-      if (insideHost(rows[i], skip ?? null))
+    const childI = skip ? rows.findIndex((el) => insideHost(el, skip)) : -1;
+    const scored = [];
+    for (let i = 0;i < rows.length; i++) {
+      const el = rows[i];
+      if (!el || insideHost(el, skip ?? null))
         continue;
-      if (nodeHasNeedle(rows[i], n))
-        return rows[i];
+      if (childI >= 0 && i > childI)
+        continue;
+      const score = hostScore(collectParts(el, false).blob, needle);
+      if (score <= 0)
+        continue;
+      scored.push({ el, i, id: hostUuid(el) || propsId(el), score });
     }
-    return null;
+    for (const id of ids) {
+      const want = bareUuid(id) || id;
+      const hit = scored.find((x) => x.id === want);
+      if (!hit)
+        continue;
+      if (hit.score < 0.08 && scored.some((x) => x !== hit && x.score >= 0.08 && x.score > hit.score * 2))
+        continue;
+      return hit.el;
+    }
+    scored.sort((a, b) => b.score - a.score || a.i - b.i);
+    const top = scored[0];
+    return top && top.score >= 0.08 ? top.el : null;
   }
   async function jump2(origin) {
     const mine = ++gen;
@@ -21604,22 +21643,23 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (!prefixOf(needle))
       return;
     const skip = officialJumpButton(origin) ? hostOf(origin) : null;
+    const skipId = hostUuid(skip);
     let el = pickMessage(ids, needle, skip);
-    if (!el) {
-      const hit = storeNeedle(needle);
-      if (hit?.id && hit.id !== hostUuid(skip)) {
-        ids.unshift(hit.id);
-        await hydrate2(hit.cid || conversationId2());
+    const live = el ? hostScore(collectParts(el, false).blob, needle) : 0;
+    const stored = storeNeedle(needle, skipId);
+    if (stored && stored.id !== skipId && stored.score > live) {
+      ids.unshift(stored.id);
+      await hydrate2(stored.cid || conversationId2());
+      if (mine !== gen)
+        return;
+      for (let i = 0;i < WAIT_N; i++) {
+        el = pickMessage(ids, needle, skip) ?? messageById(stored.id);
+        if (el && !insideHost(el, skip) && hostScore(collectParts(el, false).blob, needle) > 0)
+          break;
+        el = null;
+        await sleep(WAIT_MS);
         if (mine !== gen)
           return;
-        for (let i = 0;i < WAIT_N; i++) {
-          el = pickMessage(ids, needle, skip);
-          if (el)
-            break;
-          await sleep(WAIT_MS);
-          if (mine !== gen)
-            return;
-        }
       }
     }
     if (mine !== gen)
@@ -30527,7 +30567,7 @@ div:has(> #grok-bot-nav-button) {
   consoleJanitor_default.updatedAt = 1787789817000;
   betterCanvas_default.updatedAt = 1790360947000;
   noDictation_default.updatedAt = 1788037550000;
-  betterQuotes_default.updatedAt = 1790431702000;
+  betterQuotes_default.updatedAt = 1790432257000;
   cloneChats_default.updatedAt = 1787870966000;
   composerOpacity_default.updatedAt = 1790097681000;
   incognito_default.updatedAt = 1787870966000;

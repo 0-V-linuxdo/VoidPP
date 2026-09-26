@@ -259,18 +259,45 @@ function storeById(id: string): GrokResponse | undefined {
     }
 }
 
-function storeNeedle(needle: string): { id: string; cid: string } | null {
-    const clips = clipsOf(needle);
-    if (!clips.length) return null;
+function hostClip(needle: string): string {
+    const raw = prefixOf(needle).slice(0, 48);
+    const loose = prefixOf(looseNorm(needle)).slice(0, 48);
+    if (raw.length >= 8) return raw;
+    return loose;
+}
+
+function hostScore(text: string, needle: string): number {
+    const clip = hostClip(needle);
+    if (clip.length < 8) return 0;
+    const n = norm(text);
+    const loose = looseNorm(text);
+    if (!n.includes(clip) && !loose.includes(clip)) return 0;
+    return clip.length / Math.max(n.length, 1);
+}
+
+function storeNeedle(needle: string, skipId = ""): { id: string; cid: string; score: number } | null {
+    if (hostClip(needle).length < 8) return null;
     const cid = conversationId();
+    const skip = bareUuid(skipId);
+    let childAt = 0;
+    try {
+        const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
+        childAt = Number(nodes?.[skip]?.createdAt) || 0;
+    } catch { /* store not ready */ }
+    let best: { id: string; score: number; at: number } | null = null;
+    const consider = (id: string, text: string, at: number) => {
+        if (!id || id === skip) return;
+        if (childAt && at && at > childAt) return;
+        const score = hostScore(text, needle);
+        if (score <= 0) return;
+        if (!best || score > best.score || (score === best.score && at < best.at)) best = { id, score, at };
+    };
     try {
         const nodes = cid ? MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes : undefined;
         if (nodes) {
-            const list = Object.values(nodes);
-            for (let i = list.length - 1; i >= 0; i--) {
-                const node = list[i];
+            for (const node of Object.values(nodes)) {
                 if (!node?.id) continue;
-                if (textHasClip(String(node.content?.message || ""), clips)) return { id: node.id, cid };
+                consider(node.id, String(node.content?.message || ""), Number(node.createdAt) || 0);
             }
         }
     } catch (e) {
@@ -279,15 +306,14 @@ function storeNeedle(needle: string): { id: string; cid: string } | null {
     try {
         const r = ResponseStore.useResponseStore.getState();
         const rows = (cid ? r.byConversationId[cid] : null) ?? Object.values(r.byId);
-        for (let i = rows.length - 1; i >= 0; i--) {
-            const row = rows[i];
+        for (const row of rows) {
             if (!row?.responseId) continue;
-            if (textHasClip(String(row.message || ""), clips)) return { id: row.responseId, cid };
+            consider(row.responseId, String(row.message || ""), Number(row.createTime) || 0);
         }
     } catch (e) {
         logger.debug("store search failed", e);
     }
-    return null;
+    return best ? { id: best.id, cid, score: best.score } : null;
 }
 
 function prefixOf(text: string): string {
@@ -621,19 +647,28 @@ function insideHost(el: HTMLElement | null, host: HTMLElement | null): boolean {
 }
 
 function pickMessage(ids: string[], needle: string, skip?: HTMLElement | null): HTMLElement | null {
-    const n = prefixOf(needle);
-    for (const id of ids) {
-        const el = messageById(bareUuid(id) || id);
-        if (!el || insideHost(el, skip ?? null)) continue;
-        if (n && nodeHasNeedle(el, n)) return el;
-    }
-    if (!n) return null;
+    if (hostClip(needle).length < 8) return null;
     const rows = messageEls();
-    for (let i = rows.length - 1; i >= 0; i--) {
-        if (insideHost(rows[i], skip ?? null)) continue;
-        if (nodeHasNeedle(rows[i], n)) return rows[i];
+    const childI = skip ? rows.findIndex(el => insideHost(el, skip)) : -1;
+    const scored: { el: HTMLElement; i: number; id: string; score: number }[] = [];
+    for (let i = 0; i < rows.length; i++) {
+        const el = rows[i];
+        if (!el || insideHost(el, skip ?? null)) continue;
+        if (childI >= 0 && i > childI) continue;
+        const score = hostScore(collectParts(el, false).blob, needle);
+        if (score <= 0) continue;
+        scored.push({ el, i, id: hostUuid(el) || propsId(el), score });
     }
-    return null;
+    for (const id of ids) {
+        const want = bareUuid(id) || id;
+        const hit = scored.find(x => x.id === want);
+        if (!hit) continue;
+        if (hit.score < 0.08 && scored.some(x => x !== hit && x.score >= 0.08 && x.score > hit.score * 2)) continue;
+        return hit.el;
+    }
+    scored.sort((a, b) => b.score - a.score || a.i - b.i);
+    const top = scored[0];
+    return top && top.score >= 0.08 ? top.el : null;
 }
 
 async function jump(origin: HTMLElement | null) {
@@ -641,19 +676,20 @@ async function jump(origin: HTMLElement | null) {
     const { needle, ids } = resolveNeedle(origin);
     if (!prefixOf(needle)) return;
     const skip = officialJumpButton(origin) ? hostOf(origin) : null;
+    const skipId = hostUuid(skip);
     let el = pickMessage(ids, needle, skip);
-    if (!el) {
-        const hit = storeNeedle(needle);
-        if (hit?.id && hit.id !== hostUuid(skip)) {
-            ids.unshift(hit.id);
-            await hydrate(hit.cid || conversationId());
+    const live = el ? hostScore(collectParts(el, false).blob, needle) : 0;
+    const stored = storeNeedle(needle, skipId);
+    if (stored && stored.id !== skipId && stored.score > live) {
+        ids.unshift(stored.id);
+        await hydrate(stored.cid || conversationId());
+        if (mine !== gen) return;
+        for (let i = 0; i < WAIT_N; i++) {
+            el = pickMessage(ids, needle, skip) ?? messageById(stored.id);
+            if (el && !insideHost(el, skip) && hostScore(collectParts(el, false).blob, needle) > 0) break;
+            el = null;
+            await sleep(WAIT_MS);
             if (mine !== gen) return;
-            for (let i = 0; i < WAIT_N; i++) {
-                el = pickMessage(ids, needle, skip);
-                if (el) break;
-                await sleep(WAIT_MS);
-                if (mine !== gen) return;
-            }
         }
     }
     if (mine !== gen) return;
