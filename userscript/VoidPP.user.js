@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.12
+// @version      20260927.13
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.12] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.13] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4bcc32e"}`
-    }, `(${"4bcc32e"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ee911ba"}`
+    }, `(${"ee911ba"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18033,6 +18033,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var lastNav = [];
   var flashTimer = 0;
   var flashing = null;
+  var flashId = "";
+  var flashUntil = 0;
   var raf2 = 0;
   var activeIdx = 0;
   var activeSource = "list";
@@ -18594,18 +18596,53 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function clearFlash() {
     if (flashTimer)
-      window.clearTimeout(flashTimer);
+      cancelAnimationFrame(flashTimer);
     flashTimer = 0;
+    flashUntil = 0;
+    flashId = "";
     flashing?.classList.remove("void-bn-flash");
     flashing = null;
   }
-  function flash(el) {
-    clearFlash();
-    if (settings13.store.jumpEffect !== "border")
+  function paintFlash() {
+    if (!flashId)
       return;
-    flashing = el;
+    const el = document.getElementById(`response-${flashId}`);
+    if (!(el instanceof HTMLElement))
+      return;
+    if (flashing !== el) {
+      flashing?.classList.remove("void-bn-flash");
+      flashing = el;
+    }
     el.classList.add("void-bn-flash");
-    flashTimer = window.setTimeout(clearFlash, reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
+  }
+  function armFlash(id) {
+    if (settings13.store.jumpEffect !== "border" || !id)
+      return;
+    if (flashId === id && performance.now() < flashUntil)
+      return;
+    flashing?.classList.remove("void-bn-flash");
+    flashing = null;
+    if (flashTimer)
+      cancelAnimationFrame(flashTimer);
+    flashId = id;
+    flashUntil = performance.now() + (reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
+    const step = () => {
+      if (!flashId || performance.now() >= flashUntil) {
+        clearFlash();
+        return;
+      }
+      paintFlash();
+      flashTimer = requestAnimationFrame(step);
+    };
+    paintFlash();
+    flashTimer = requestAnimationFrame(step);
+  }
+  function inPaneView(el, pane) {
+    if (!pane.contains(el))
+      return false;
+    const { top, bottom } = el.getBoundingClientRect();
+    const { top: paneTop, bottom: paneBottom } = pane.getBoundingClientRect();
+    return bottom > paneTop + 8 && top < paneBottom - 8;
   }
   function mountedAssistantIndexes() {
     const out = [];
@@ -18840,11 +18877,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       await frame();
     }
   }
-  function finishJump(gen, el) {
-    window.setTimeout(() => {
-      if (gen === hydrateGen)
-        flash(el);
-    }, 180);
+  function finishJump() {
     lockUntil = performance.now() + LOCK_MS;
   }
   async function ensureJump(item, index) {
@@ -18891,8 +18924,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         }
         if (el && box.contains(el)) {
           edgeSince = 0;
+          if (cur.id && inPaneView(el, box))
+            armFlash(cur.id);
           if (await settleAim(el, box, gen)) {
-            finishJump(gen, el);
+            finishJump();
             return;
           }
           continue;
@@ -32504,7 +32539,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790533949000;
+  betterNavigator_default.updatedAt = 1790534450000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;

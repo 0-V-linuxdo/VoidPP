@@ -126,6 +126,8 @@ let lastPath = "";
 let lastNav: NavItem[] = [];
 let flashTimer = 0;
 let flashing: HTMLElement | null = null;
+let flashId = "";
+let flashUntil = 0;
 let raf = 0;
 let activeIdx = 0;
 let activeSource: "native" | "list" = "list";
@@ -640,18 +642,50 @@ function metaLabel(index: number): string {
 }
 
 function clearFlash() {
-    if (flashTimer) window.clearTimeout(flashTimer);
+    if (flashTimer) cancelAnimationFrame(flashTimer);
     flashTimer = 0;
+    flashUntil = 0;
+    flashId = "";
     flashing?.classList.remove("void-bn-flash");
     flashing = null;
 }
 
-function flash(el: HTMLElement) {
-    clearFlash();
-    if (settings.store.jumpEffect !== "border") return;
-    flashing = el;
+function paintFlash() {
+    if (!flashId) return;
+    const el = document.getElementById(`response-${flashId}`);
+    if (!(el instanceof HTMLElement)) return;
+    if (flashing !== el) {
+        flashing?.classList.remove("void-bn-flash");
+        flashing = el;
+    }
     el.classList.add("void-bn-flash");
-    flashTimer = window.setTimeout(clearFlash, reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
+}
+
+function armFlash(id: string) {
+    if (settings.store.jumpEffect !== "border" || !id) return;
+    if (flashId === id && performance.now() < flashUntil) return;
+    flashing?.classList.remove("void-bn-flash");
+    flashing = null;
+    if (flashTimer) cancelAnimationFrame(flashTimer);
+    flashId = id;
+    flashUntil = performance.now() + (reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
+    const step = () => {
+        if (!flashId || performance.now() >= flashUntil) {
+            clearFlash();
+            return;
+        }
+        paintFlash();
+        flashTimer = requestAnimationFrame(step);
+    };
+    paintFlash();
+    flashTimer = requestAnimationFrame(step);
+}
+
+function inPaneView(el: HTMLElement, pane: HTMLElement): boolean {
+    if (!pane.contains(el)) return false;
+    const { top, bottom } = el.getBoundingClientRect();
+    const { top: paneTop, bottom: paneBottom } = pane.getBoundingClientRect();
+    return bottom > paneTop + 8 && top < paneBottom - 8;
 }
 
 function mountedAssistantIndexes(): number[] {
@@ -893,10 +927,7 @@ async function waitGrow(pane: HTMLElement, height: number, head: string, gen: nu
     }
 }
 
-function finishJump(gen: number, el: HTMLElement) {
-    window.setTimeout(() => {
-        if (gen === hydrateGen) flash(el);
-    }, 180);
+function finishJump() {
     lockUntil = performance.now() + LOCK_MS;
 }
 
@@ -942,8 +973,9 @@ async function ensureJump(item: NavItem, index: number) {
             }
             if (el && box.contains(el)) {
                 edgeSince = 0;
+                if (cur.id && inPaneView(el, box)) armFlash(cur.id);
                 if (await settleAim(el, box, gen)) {
-                    finishJump(gen, el);
+                    finishJump();
                     return;
                 }
                 continue;
