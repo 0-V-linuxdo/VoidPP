@@ -71,18 +71,28 @@
 }
 
 .void-stars-toggle {
-    position: fixed;
-    z-index: 70;
     display: inline-flex;
     flex: none;
     align-items: center;
     justify-content: center;
     width: 1.75rem;
     height: 1.75rem;
+    margin: 0;
     padding: 0;
     border-radius: 999px;
     color: hsl(var(--fg-tertiary));
     pointer-events: auto;
+}
+
+.void-stars-toggle.void-stars-float {
+    position: fixed;
+    z-index: 70;
+}
+
+.void-stars-toggle.void-stars-docked {
+    position: relative;
+    z-index: 2;
+    align-self: center;
 }
 
 .void-stars-bubble.void-stars-on,

@@ -36,7 +36,7 @@ const NOT_COPY_RE = /\b(code|link|table|source)\b|代码|表格|链接|来源/i;
 const settings = definePluginSettings({
     showInSidebar: {
         type: OptionType.BOOLEAN,
-        description: "Show the starred list beside the message navigator.",
+        description: "Show the starred list to the left of the chat More button.",
         default: true,
     },
 });
@@ -50,6 +50,7 @@ let listOpen = false;
 let panelKey = "";
 let pendingTimer = 0;
 let pending: { cid: string; id: string; until: number } | null = null;
+let toldRail = false;
 
 function currentCid(): string {
     try {
@@ -551,11 +552,69 @@ function appendList(container: HTMLElement, groups: readonly StarGroup[]) {
             body.appendChild(row);
         }
     }
+    if (!groups.length) {
+        const empty = document.createElement("div");
+        empty.className = "void-stars-sub";
+        empty.textContent = "No starred messages";
+        body.appendChild(empty);
+    }
     container.append(head, body);
 }
 
 function signature(groups: readonly StarGroup[]): string {
     return groups.map(group => `${group.conversationId}:${group.missing ? 1 : 0}:${group.title}:${group.items.map(item => `${item.messageId}:${item.snippet}`).join(",")}`).join(";");
+}
+
+function headerSkipped(el: HTMLElement): boolean {
+    if (el.classList.contains("void-stars-toggle") || el.classList.contains("void-stars-bubble")) return true;
+    if (el.closest("[data-sidebar], .query-bar, [class*='pane-card'], [role='dialog'], [role='menu'], [id^='response-'], .void-bn-host, .void-stars-panel")) return true;
+    const style = getComputedStyle(el);
+    if (style.display === "none" || style.visibility === "hidden") return true;
+    const box = el.getBoundingClientRect();
+    return box.width < 16 || box.height < 16 || box.width > 64 || box.height > 64;
+}
+
+function isShareButton(el: HTMLElement): boolean {
+    const label = controlLabel(el).toLowerCase();
+    return label === "create share link" || label === "share project";
+}
+
+function isRightPanelToggle(el: HTMLElement): boolean {
+    return /\bright panel\b/i.test(controlLabel(el));
+}
+
+function headerMore(): HTMLElement | null {
+    let panel: HTMLElement | null = null;
+    let panelBox: DOMRect | null = null;
+    const buttons: HTMLElement[] = [];
+    for (const el of document.querySelectorAll<HTMLElement>("button")) {
+        if (headerSkipped(el)) continue;
+        const box = el.getBoundingClientRect();
+        if (isRightPanelToggle(el)) {
+            if (!panelBox || box.top < panelBox.top) {
+                panel = el;
+                panelBox = box;
+            }
+            continue;
+        }
+        buttons.push(el);
+    }
+    if (!panel || !panelBox || panelBox.top > 160) return null;
+    const mid = (panelBox.top + panelBox.bottom) / 2;
+    let best: HTMLElement | null = null;
+    let bestRight = -Infinity;
+    for (const el of buttons) {
+        if (isShareButton(el)) continue;
+        const box = el.getBoundingClientRect();
+        if (Math.abs((box.top + box.bottom) / 2 - mid) > 14) continue;
+        const gap = panelBox.left - box.right;
+        if (gap < -4 || gap > 48) continue;
+        if (box.right > bestRight) {
+            best = el;
+            bestRight = box.right;
+        }
+    }
+    return best;
 }
 
 function railBox(): DOMRect | null {
@@ -580,29 +639,17 @@ function placeToggle(box: DOMRect) {
     toggleBtn.style.left = `${Math.round(left)}px`;
 }
 
-function placePanel(box: DOMRect) {
-    if (!panel) return;
-    const { top: boxTop, left: boxLeft, right: boxRight } = box;
-    const width = panel.offsetWidth || 288;
-    const height = panel.offsetHeight || 160;
-    let left = boxLeft - width - 8;
-    if (left < 8) left = Math.min(window.innerWidth - width - 8, boxRight + 8);
-    let top = boxTop;
-    const maxH = Math.max(120, window.innerHeight - top - 8);
-    if (top + height > window.innerHeight - 8) top = Math.max(8, window.innerHeight - Math.min(height, maxH) - 8);
-    panel.style.maxHeight = `${Math.round(Math.min(maxH, window.innerHeight - 16))}px`;
-    panel.style.left = `${Math.round(Math.max(8, left))}px`;
-    panel.style.top = `${Math.round(top)}px`;
-}
-
 function ensureToggle() {
-    if (toggleBtn?.isConnected) return;
+    if (toggleBtn) return;
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "void-stars-toggle";
     btn.setAttribute("aria-label", "Starred messages");
     btn.setAttribute("aria-expanded", "false");
     btn.appendChild(starSvg());
+    btn.addEventListener("pointerdown", ev => {
+        ev.stopPropagation();
+    });
     btn.addEventListener("click", ev => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -610,7 +657,6 @@ function ensureToggle() {
         if (!listOpen) closePanel();
         schedule();
     });
-    document.body.appendChild(btn);
     toggleBtn = btn;
 }
 
@@ -619,17 +665,79 @@ function removeToggle() {
     toggleBtn = null;
 }
 
+function dockToggle(more: HTMLElement) {
+    ensureToggle();
+    const btn = toggleBtn;
+    if (!btn) return;
+    btn.classList.add("void-stars-docked");
+    btn.classList.remove("void-stars-float");
+    const box = more.getBoundingClientRect();
+    btn.style.top = "";
+    btn.style.left = "";
+    btn.style.width = `${Math.round(box.width)}px`;
+    btn.style.height = `${Math.round(box.height)}px`;
+    if (btn.parentElement !== more.parentElement || btn.nextElementSibling !== more) more.before(btn);
+}
+
+function floatToggle(box: DOMRect) {
+    ensureToggle();
+    const btn = toggleBtn;
+    if (!btn) return;
+    btn.classList.add("void-stars-float");
+    btn.classList.remove("void-stars-docked");
+    btn.style.width = "";
+    btn.style.height = "";
+    if (btn.parentElement !== document.body) document.body.appendChild(btn);
+    placeToggle(box);
+}
+
+function placeOpenPanel(anchor: DOMRect, docked: boolean) {
+    if (!panel) return;
+    const width = panel.offsetWidth || 288;
+    const height = panel.offsetHeight || 160;
+    let left: number;
+    let top: number;
+    if (docked) {
+        left = anchor.right - width;
+        top = anchor.bottom + 6;
+        if (top + height > window.innerHeight - 8) top = Math.max(8, anchor.top - height - 6);
+    } else {
+        const { top: boxTop, left: boxLeft, right: boxRight } = anchor;
+        left = boxLeft - width - 8;
+        if (left < 8) left = Math.min(window.innerWidth - width - 8, boxRight + 8);
+        top = boxTop;
+        if (top + height > window.innerHeight - 8) top = Math.max(8, window.innerHeight - Math.min(height, window.innerHeight - 16) - 8);
+    }
+    const maxH = Math.max(120, window.innerHeight - top - 8);
+    panel.style.maxHeight = `${Math.round(Math.min(maxH, window.innerHeight - 16))}px`;
+    panel.style.left = `${Math.round(Math.max(8, Math.min(left, window.innerWidth - width - 8)))}px`;
+    panel.style.top = `${Math.round(Math.max(8, top))}px`;
+}
+
 function paintRail() {
+    if (!settings.store.showInSidebar) {
+        listOpen = false;
+        closePanel();
+        removeToggle();
+        toldRail = false;
+        return;
+    }
+    const more = headerMore();
     const list = stars();
-    const box = railBox();
-    if (!settings.store.showInSidebar || !list.length || !box) {
+    const rail = railBox();
+    if (more) {
+        dockToggle(more);
+        toldRail = false;
+    } else if (list.length && rail) {
+        if (!toldRail) logger.debug("chat More missing; star stays on the navigator");
+        toldRail = true;
+        floatToggle(rail);
+    } else {
         listOpen = false;
         closePanel();
         removeToggle();
         return;
     }
-    ensureToggle();
-    placeToggle(box);
     const cid = currentCid();
     const here = !!cid && list.some(star => star.conversationId === cid);
     toggleBtn?.classList.toggle("void-stars-here", here);
@@ -648,7 +756,8 @@ function paintRail() {
         panel = next;
         panelKey = key;
     }
-    placePanel(box);
+    const anchor = toggleBtn?.getBoundingClientRect();
+    if (anchor && anchor.width > 1) placeOpenPanel(anchor, !!more);
     toggleBtn?.classList.add("void-stars-open");
     toggleBtn?.setAttribute("aria-expanded", "true");
 }
@@ -725,6 +834,7 @@ function stop() {
     clearPending();
     closePanel();
     removeToggle();
+    toldRail = false;
     clearBubbles();
     clearMarks();
     stopStore();
@@ -733,7 +843,7 @@ function stop() {
 export default definePlugin({
     name: "MessageStars",
     icon: StarIcon,
-    description: "Star any message from its hover toolbar. Starred ticks turn orange, and the list sits beside the message navigator.",
+    description: "Star any message from its hover toolbar. Starred ticks turn orange, and the list opens from a star to the left of the chat More button.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: false,
