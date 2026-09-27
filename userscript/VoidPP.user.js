@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.23
+// @version      20260927.24
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.23] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.24] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,7 +7755,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.23] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260927.24] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b247fe1"}`
     }, `(${"b247fe1"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -25291,12 +25291,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     background: rgb(255 122 23 / 14%);
 }
 
-.void-stars-bubble.void-stars-on svg,
-.void-stars-toggle.void-stars-here svg {
-    fill: currentcolor;
-    stroke-width: 0;
-}
-
 .void-stars-bubble:hover,
 .void-stars-bubble:focus-visible,
 .void-stars-toggle:hover,
@@ -26234,7 +26228,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     btn.dataset.responseId = id;
     btn.dataset.role = role;
     btn.classList.toggle("void-stars-on", on);
-    btn.setAttribute("aria-label", on ? "Unstar" : "Star");
+    const label = on ? "Unstar" : "Star";
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
     btn.setAttribute("aria-pressed", on ? "true" : "false");
   }
   function paintBubbles() {
@@ -26311,6 +26307,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         unstar.type = "button";
         unstar.className = "void-stars-unstar";
         unstar.setAttribute("aria-label", "Unstar");
+        unstar.title = "Unstar";
         unstar.appendChild(starSvg());
         unstar.addEventListener("click", (ev) => {
           ev.preventDefault();
@@ -26420,6 +26417,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     btn.type = "button";
     btn.className = "void-stars-toggle";
     btn.setAttribute("aria-label", "Starred messages");
+    btn.title = "Starred messages";
     btn.setAttribute("aria-expanded", "false");
     btn.appendChild(starSvg());
     btn.addEventListener("pointerdown", (ev) => {

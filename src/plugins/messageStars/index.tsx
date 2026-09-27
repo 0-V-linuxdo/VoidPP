@@ -562,7 +562,9 @@ function syncBubble(btn: HTMLButtonElement, cid: string, id: string, role: "user
     btn.dataset.responseId = id;
     btn.dataset.role = role;
     btn.classList.toggle("void-stars-on", on);
-    btn.setAttribute("aria-label", on ? "Unstar" : "Star");
+    const label = on ? "Unstar" : "Star";
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
     btn.setAttribute("aria-pressed", on ? "true" : "false");
 }
 
@@ -638,6 +640,7 @@ function appendList(container: HTMLElement, groups: readonly StarGroup[]) {
             unstar.type = "button";
             unstar.className = "void-stars-unstar";
             unstar.setAttribute("aria-label", "Unstar");
+            unstar.title = "Unstar";
             unstar.appendChild(starSvg());
             unstar.addEventListener("click", ev => {
                 ev.preventDefault();
@@ -741,6 +744,7 @@ function ensureToggle() {
     btn.type = "button";
     btn.className = "void-stars-toggle";
     btn.setAttribute("aria-label", "Starred messages");
+    btn.title = "Starred messages";
     btn.setAttribute("aria-expanded", "false");
     btn.appendChild(starSvg());
     btn.addEventListener("pointerdown", ev => {

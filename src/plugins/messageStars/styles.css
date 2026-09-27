@@ -124,12 +124,6 @@
     background: rgb(255 122 23 / 14%);
 }
 
-.void-stars-bubble.void-stars-on svg,
-.void-stars-toggle.void-stars-here svg {
-    fill: currentcolor;
-    stroke-width: 0;
-}
-
 .void-stars-bubble:hover,
 .void-stars-bubble:focus-visible,
 .void-stars-toggle:hover,
