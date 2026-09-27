@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.10
+// @version      20260927.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.10] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a20f745"}`
-    }, `(${"a20f745"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"abb2b9b"}`
+    }, `(${"abb2b9b"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -32383,7 +32383,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790530906000;
+  betterNavigator_default.updatedAt = 1790530421000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;
