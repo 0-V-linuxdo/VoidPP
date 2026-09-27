@@ -134,11 +134,6 @@ let overMenu = false;
 let observedPane: HTMLElement | null = null;
 let hydrateGen = 0;
 let olderAsked = "";
-let prefetchTimer = 0;
-let prefetching = false;
-let jumpBusy = false;
-let readyCid = "";
-let readyAt = 0;
 const labelCache = new Map<string, string>();
 
 function isVisible(el: Element): boolean {
@@ -543,6 +538,11 @@ function collectLeaf(): NavItem[] {
     const cid = currentCid();
     const gw = gatewayOf(cid);
     if (!gw) return [];
+    const olderKey = `${cid}:${gw.history.nextBeforeId}`;
+    if (gw.history.hasMore && gw.defaultLeafId && olderKey !== olderAsked) {
+        olderAsked = olderKey;
+        MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
+    }
     const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length) return [];
     const showAsst = settings.store.showAssistant;
@@ -751,70 +751,6 @@ function requestOlder(): boolean {
     }
 }
 
-function pageReady(): boolean {
-    const cid = currentCid();
-    if (!cid || storeLive() === true) {
-        readyCid = "";
-        return false;
-    }
-    const pane = livePane();
-    if (!pane?.querySelector("[id^='response-']")) {
-        readyCid = "";
-        return false;
-    }
-    if (cid !== readyCid) {
-        readyCid = cid;
-        readyAt = performance.now();
-        return false;
-    }
-    return performance.now() - readyAt >= AIM_MS;
-}
-
-function clearPrefetch() {
-    if (prefetchTimer) window.clearTimeout(prefetchTimer);
-    prefetchTimer = 0;
-    prefetching = false;
-    readyCid = "";
-    readyAt = 0;
-}
-
-function armPrefetch() {
-    if (!ac || prefetchTimer || prefetching) return;
-    prefetchTimer = window.setTimeout(() => {
-        prefetchTimer = 0;
-        void prefetchStep();
-    }, AIM_MS);
-}
-
-async function prefetchStep() {
-    if (!ac || prefetching) return;
-    if (jumpBusy || !pageReady()) {
-        armPrefetch();
-        return;
-    }
-    const cid = currentCid();
-    const gw = gatewayOf(cid);
-    if (!gw?.history.hasMore) return;
-    const before = `${cid}:${gw.history.nextBeforeId ?? ""}`;
-    prefetching = true;
-    try {
-        if (requestOlder()) {
-            const until = performance.now() + 800;
-            while (performance.now() < until) {
-                if (!ac || currentCid() !== cid || jumpBusy) break;
-                const now = gatewayOf(cid);
-                const key = `${cid}:${now?.history.nextBeforeId ?? ""}`;
-                if (!now?.history.hasMore || key !== before) break;
-                await frame();
-            }
-        }
-    } finally {
-        prefetching = false;
-    }
-    if (!ac || currentCid() !== cid || jumpBusy) return;
-    if (gatewayOf(cid)?.history.hasMore) armPrefetch();
-}
-
 function seekOlder(index: number): boolean {
     let before = false;
     let any = false;
@@ -868,7 +804,6 @@ function finishJump(gen: number, el: HTMLElement) {
 
 async function ensureJump(item: NavItem, index: number) {
     const gen = ++hydrateGen;
-    jumpBusy = true;
     lockIdx = index;
     lockUntil = performance.now() + ENSURE_MS;
     applyActive(index);
@@ -952,12 +887,10 @@ async function ensureJump(item: NavItem, index: number) {
             await frame();
         }
     } finally {
-        jumpBusy = false;
         if (gen === hydrateGen && held?.isConnected) {
             held.style.scrollBehavior = prevBehavior;
             held.style.overflowAnchor = prevAnchor;
         }
-        if (ac) armPrefetch();
     }
 }
 
@@ -1487,8 +1420,6 @@ function paint() {
         paintedKey = "";
         labelCache.clear();
         hydrateGen++;
-        olderAsked = "";
-        clearPrefetch();
         if (host) unmount();
     }
 
@@ -1534,7 +1465,6 @@ function paint() {
     setActive(nav);
     syncNativeDash(nav);
     clampMenu();
-    armPrefetch();
 }
 
 const debouncedPaint = debounce(paint, 160);
@@ -1614,7 +1544,6 @@ function stop() {
     raf = 0;
     hydrateGen++;
     olderAsked = "";
-    clearPrefetch();
     labelCache.clear();
     unmount();
     clearFlash();
