@@ -74,7 +74,8 @@ const LOCK_MS = 1000;
 const ENSURE_MS = 10000;
 const SNAP_PX = 16;
 const AIM_MS = 300;
-const DOWN_MS = 16;
+const SETTLE_MS = 100;
+const HOP_SCREENS = 3;
 const DENSE_N = 16;
 const SLOT_CLASS = "void-bn-rail";
 const LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
@@ -722,7 +723,7 @@ function landed(el: HTMLElement, pane: HTMLElement): boolean {
 }
 
 async function settleAim(el: HTMLElement, pane: HTMLElement, gen: number): Promise<boolean> {
-    const until = performance.now() + AIM_MS;
+    const until = performance.now() + SETTLE_MS;
     while (performance.now() < until) {
         if (gen !== hydrateGen || !pane.isConnected || !pane.contains(el)) return false;
         if (landed(el, pane)) return true;
@@ -773,6 +774,10 @@ function jumpEdge(pane: HTMLElement) {
     pane.scrollTop = 0;
 }
 
+function jumpEnd(pane: HTMLElement) {
+    pane.scrollTop = Math.max(0, pane.scrollHeight - pane.clientHeight);
+}
+
 function nudge(pane: HTMLElement, dir: -1 | 1, screens: number) {
     const vh = Math.max(120, pane.clientHeight || window.innerHeight);
     const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
@@ -811,11 +816,9 @@ async function ensureJump(item: NavItem, index: number) {
     const deadline = performance.now() + ENSURE_MS;
     let clicked = false;
     let edgeSince = 0;
-    let tickWatch = false;
-    let tickTop = -1;
-    let tickMovedAt = 0;
+    let tickLeft = 0;
+    let hop = HOP_SCREENS;
     let blankHold = 0;
-    let lastFrame = performance.now();
     let held: HTMLElement | null = null;
     let prevBehavior = "";
     let prevAnchor = "";
@@ -847,16 +850,12 @@ async function ensureJump(item: NavItem, index: number) {
             }
             const older = seekOlder(index);
             const now = performance.now();
-            const dt = now - lastFrame;
-            lastFrame = now;
             if (!clicked) {
                 clicked = true;
                 const tick = cur.role === "assistant" ? nativeTickFor(cur, index) : undefined;
                 if (tick) {
                     tick.click();
-                    tickWatch = true;
-                    tickTop = box.scrollTop;
-                    tickMovedAt = now;
+                    tickLeft = 2;
                 }
             }
             if (older) {
@@ -878,28 +877,31 @@ async function ensureJump(item: NavItem, index: number) {
                     edgeSince = 0;
                     jumpEdge(box);
                 }
-            } else if (tickWatch) {
-                const top = box.scrollTop;
-                if (Math.abs(top - tickTop) >= 1) {
-                    tickTop = top;
-                    tickMovedAt = now;
-                } else if (now - tickMovedAt >= 50) {
-                    tickWatch = false;
-                }
+            } else if (tickLeft > 0) {
+                tickLeft -= 1;
                 edgeSince = 0;
             } else if (!firstResponseId(box)) {
                 nudge(box, -1, 1);
+                hop = 1;
                 blankHold = 2;
                 edgeSince = 0;
             } else if (blankHold > 0) {
                 blankHold -= 1;
+            } else if (index >= lastNav.length - 1) {
+                jumpEnd(box);
+                if (atRealEdge(box, false)) {
+                    if (!edgeSince) edgeSince = now;
+                    if (now - edgeSince > AIM_MS) break;
+                } else {
+                    edgeSince = 0;
+                }
             } else if (atRealEdge(box, false)) {
                 if (!edgeSince) edgeSince = now;
                 if (now - edgeSince > AIM_MS) break;
             } else {
                 edgeSince = 0;
-                const screens = Math.min(1, Math.max(0, dt) / DOWN_MS);
-                if (screens > 0) nudge(box, 1, screens);
+                nudge(box, 1, hop);
+                if (hop < HOP_SCREENS) hop += 1;
             }
             await frame();
         }
