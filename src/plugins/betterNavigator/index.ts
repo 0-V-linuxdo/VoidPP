@@ -768,9 +768,14 @@ function atRealEdge(pane: HTMLElement, older: boolean): boolean {
     return pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 2;
 }
 
-function jumpEdge(pane: HTMLElement, older: boolean) {
+function jumpEdge(pane: HTMLElement) {
+    pane.scrollTop = 0;
+}
+
+function nudge(pane: HTMLElement, dir: -1 | 1, screens: number) {
+    const vh = Math.max(120, pane.clientHeight || window.innerHeight);
     const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
-    pane.scrollTop = older ? 0 : max;
+    pane.scrollTop = Math.max(0, Math.min(max, pane.scrollTop + dir * vh * screens));
 }
 
 function firstResponseId(pane: HTMLElement): string {
@@ -805,6 +810,8 @@ async function ensureJump(item: NavItem, index: number) {
     const deadline = performance.now() + ENSURE_MS;
     let clicked = false;
     let edgeSince = 0;
+    let handsOffUntil = 0;
+    let blankHold = 0;
     let held: HTMLElement | null = null;
     let prevBehavior = "";
     let prevAnchor = "";
@@ -838,25 +845,44 @@ async function ensureJump(item: NavItem, index: number) {
             if (!clicked) {
                 clicked = true;
                 const tick = cur.role === "assistant" ? nativeTickFor(cur, index) : undefined;
-                tick?.click();
-            }
-            if (atRealEdge(box, older)) {
-                if (!edgeSince) edgeSince = performance.now();
-                if (older && requestOlder()) {
-                    const height = box.scrollHeight;
-                    const head = firstResponseId(box);
-                    await waitGrow(box, height, head, gen);
-                    if (gen !== hydrateGen) break;
-                    const fresh = targetEl(lastNav[index] ?? item);
-                    if (fresh && box.contains(fresh)) aim(fresh, box);
-                    else if (box.isConnected) box.scrollTop = 0;
-                    edgeSince = 0;
-                } else if (!historyPending() && performance.now() - edgeSince > AIM_MS) {
-                    break;
+                if (tick) {
+                    tick.click();
+                    handsOffUntil = performance.now() + AIM_MS;
                 }
+            }
+            if (older) {
+                if (atRealEdge(box, true)) {
+                    if (!edgeSince) edgeSince = performance.now();
+                    if (requestOlder()) {
+                        const height = box.scrollHeight;
+                        const head = firstResponseId(box);
+                        await waitGrow(box, height, head, gen);
+                        if (gen !== hydrateGen) break;
+                        const fresh = targetEl(lastNav[index] ?? item);
+                        if (fresh && box.contains(fresh)) aim(fresh, box);
+                        else if (box.isConnected) box.scrollTop = 0;
+                        edgeSince = 0;
+                    } else if (!historyPending() && performance.now() - edgeSince > AIM_MS) {
+                        break;
+                    }
+                } else {
+                    edgeSince = 0;
+                    jumpEdge(box);
+                }
+            } else if (performance.now() < handsOffUntil) {
+                edgeSince = 0;
+            } else if (!firstResponseId(box)) {
+                nudge(box, -1, 1);
+                blankHold = 2;
+                edgeSince = 0;
+            } else if (blankHold > 0) {
+                blankHold -= 1;
+            } else if (atRealEdge(box, false)) {
+                if (!edgeSince) edgeSince = performance.now();
+                if (performance.now() - edgeSince > AIM_MS) break;
             } else {
                 edgeSince = 0;
-                jumpEdge(box, older);
+                nudge(box, 1, 1.5);
             }
             await frame();
         }
