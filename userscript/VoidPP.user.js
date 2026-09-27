@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.15
+// @version      20260927.16
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.15] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.16] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"dfbbd7c"}`
-    }, `(${"dfbbd7c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d7ae5be"}`
+    }, `(${"d7ae5be"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18896,7 +18896,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   async function ensureJump(item, index) {
     const gen = ++hydrateGen;
     lockIdx = index;
-    lockUntil = performance.now() + ENSURE_MS;
+    lockUntil = performance.now() + LOCK_MS;
     applyActive(index);
     const deadline = performance.now() + ENSURE_MS;
     let clicked = false;
@@ -18915,9 +18915,25 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     let held = null;
     let prevBehavior = "";
     let prevAnchor = "";
+    let gestured = false;
+    let ungesture = () => {};
+    const armGesture = (pane) => {
+      ungesture();
+      const stop = () => {
+        gestured = true;
+      };
+      pane.addEventListener("wheel", stop, { capture: true, passive: true });
+      pane.addEventListener("pointerdown", stop, { capture: true, passive: true });
+      pane.addEventListener("touchstart", stop, { capture: true, passive: true });
+      ungesture = () => {
+        pane.removeEventListener("wheel", stop, true);
+        pane.removeEventListener("pointerdown", stop, true);
+        pane.removeEventListener("touchstart", stop, true);
+      };
+    };
     try {
       while (performance.now() < deadline) {
-        if (gen !== hydrateGen)
+        if (gen !== hydrateGen || gestured)
           break;
         const cur = lastNav[index] ?? item;
         const el = targetEl(cur);
@@ -18934,6 +18950,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           box.style.scrollBehavior = "auto";
           box.style.overflowAnchor = "none";
           held = box;
+          armGesture(box);
         }
         if (el && box.contains(el)) {
           edgeSince = 0;
@@ -19000,20 +19017,18 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           hunt.step = 1;
           edgeSince = 0;
         } else if (index >= lastNav.length - 1) {
-          jumpEnd(box);
           if (atRealEdge(box, false)) {
-            if (!edgeSince)
-              edgeSince = now;
-            if (now - edgeSince > AIM_MS)
-              break;
-          } else {
-            edgeSince = 0;
+            finishJump();
+            break;
           }
+          jumpEnd(box);
         } else if (atRealEdge(box, false)) {
           if (!edgeSince)
             edgeSince = now;
-          if (now - edgeSince > AIM_MS)
+          if (now - edgeSince > AIM_MS || gestured) {
+            finishJump();
             break;
+          }
         } else {
           edgeSince = 0;
           advanceDown(box, index, hunt);
@@ -19021,6 +19036,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         await frame();
       }
     } finally {
+      ungesture();
       if (gen === hydrateGen && held?.isConnected) {
         held.style.scrollBehavior = prevBehavior;
         held.style.overflowAnchor = prevAnchor;
@@ -19528,34 +19544,59 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const prevAnchor = pane.style.overflowAnchor;
     pane.style.scrollBehavior = "auto";
     pane.style.overflowAnchor = "none";
+    let gestured = false;
+    let parked = 0;
+    const stop = () => {
+      gestured = true;
+    };
+    pane.addEventListener("wheel", stop, { capture: true, passive: true });
+    pane.addEventListener("pointerdown", stop, { capture: true, passive: true });
+    pane.addEventListener("touchstart", stop, { capture: true, passive: true });
     try {
       while (performance.now() < deadline) {
-        if (gen !== hydrateGen || !pane.isConnected)
+        if (gen !== hydrateGen || gestured || !pane.isConnected)
           return;
-        if (up)
-          jumpEdge(pane);
-        else
+        if (up) {
+          if (historyPending() && atRealEdge(pane, true)) {
+            parked = 0;
+            const height = pane.scrollHeight;
+            const head = firstResponseId(pane);
+            requestOlder();
+            await waitGrow(pane, height, head, gen);
+            if (gen !== hydrateGen || gestured)
+              return;
+            if (pane.scrollHeight !== height || firstResponseId(pane) !== head)
+              continue;
+            break;
+          }
+          if (atRealEdge(pane, true)) {
+            parked += 1;
+            if (parked >= 2)
+              break;
+          } else {
+            parked = 0;
+            jumpEdge(pane);
+          }
+        } else if (atRealEdge(pane, false)) {
+          parked += 1;
+          if (parked >= 2)
+            break;
+        } else {
+          parked = 0;
           jumpEnd(pane);
-        if (up && historyPending() && atRealEdge(pane, true)) {
-          const height = pane.scrollHeight;
-          const head = firstResponseId(pane);
-          requestOlder();
-          await waitGrow(pane, height, head, gen);
-          if (gen !== hydrateGen)
-            return;
-          if (pane.scrollHeight !== height || firstResponseId(pane) !== head)
-            continue;
-          break;
         }
         const top = pane.scrollTop;
         const height = pane.scrollHeight;
         await frame();
-        if (gen !== hydrateGen || !pane.isConnected)
+        if (gen !== hydrateGen || gestured || !pane.isConnected)
           return;
-        if (pane.scrollTop === top && pane.scrollHeight === height)
+        if (up && !atRealEdge(pane, true) && pane.scrollTop === top && pane.scrollHeight === height)
           break;
       }
     } finally {
+      pane.removeEventListener("wheel", stop, true);
+      pane.removeEventListener("pointerdown", stop, true);
+      pane.removeEventListener("touchstart", stop, true);
       if (gen === hydrateGen && pane.isConnected) {
         pane.style.scrollBehavior = prevBehavior;
         pane.style.overflowAnchor = prevAnchor;
@@ -32596,7 +32637,7 @@ div:has(> #grok-bot-nav-button) {
   contextMenu_default.updatedAt = 1790444048000;
   chatBarButtons_default.updatedAt = 1790444048000;
   betterFiles_default.updatedAt = 1790444048000;
-  messageStars_default.updatedAt = 1790530108000;
+  messageStars_default.updatedAt = 1790535846000;
   usageDisplay_default.updatedAt = 1790444048000;
   betterQueue_default.updatedAt = 1790444048000;
   settingsFlyout_default.updatedAt = 1790444048000;
@@ -32604,7 +32645,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790535262000;
+  betterNavigator_default.updatedAt = 1790535846000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;

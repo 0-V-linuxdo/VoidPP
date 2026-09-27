@@ -943,7 +943,7 @@ function finishJump() {
 async function ensureJump(item: NavItem, index: number) {
     const gen = ++hydrateGen;
     lockIdx = index;
-    lockUntil = performance.now() + ENSURE_MS;
+    lockUntil = performance.now() + LOCK_MS;
     applyActive(index);
     const deadline = performance.now() + ENSURE_MS;
     let clicked = false;
@@ -962,9 +962,23 @@ async function ensureJump(item: NavItem, index: number) {
     let held: HTMLElement | null = null;
     let prevBehavior = "";
     let prevAnchor = "";
+    let gestured = false;
+    let ungesture = () => {};
+    const armGesture = (pane: HTMLElement) => {
+        ungesture();
+        const stop = () => { gestured = true; };
+        pane.addEventListener("wheel", stop, { capture: true, passive: true });
+        pane.addEventListener("pointerdown", stop, { capture: true, passive: true });
+        pane.addEventListener("touchstart", stop, { capture: true, passive: true });
+        ungesture = () => {
+            pane.removeEventListener("wheel", stop, true);
+            pane.removeEventListener("pointerdown", stop, true);
+            pane.removeEventListener("touchstart", stop, true);
+        };
+    };
     try {
         while (performance.now() < deadline) {
-            if (gen !== hydrateGen) break;
+            if (gen !== hydrateGen || gestured) break;
             const cur = lastNav[index] ?? item;
             const el = targetEl(cur);
             const box = livePane(el);
@@ -979,6 +993,7 @@ async function ensureJump(item: NavItem, index: number) {
                 box.style.scrollBehavior = "auto";
                 box.style.overflowAnchor = "none";
                 held = box;
+                armGesture(box);
             }
             if (el && box.contains(el)) {
                 edgeSince = 0;
@@ -1035,16 +1050,17 @@ async function ensureJump(item: NavItem, index: number) {
                 hunt.step = 1;
                 edgeSince = 0;
             } else if (index >= lastNav.length - 1) {
-                jumpEnd(box);
                 if (atRealEdge(box, false)) {
-                    if (!edgeSince) edgeSince = now;
-                    if (now - edgeSince > AIM_MS) break;
-                } else {
-                    edgeSince = 0;
+                    finishJump();
+                    break;
                 }
+                jumpEnd(box);
             } else if (atRealEdge(box, false)) {
                 if (!edgeSince) edgeSince = now;
-                if (now - edgeSince > AIM_MS) break;
+                if (now - edgeSince > AIM_MS || gestured) {
+                    finishJump();
+                    break;
+                }
             } else {
                 edgeSince = 0;
                 advanceDown(box, index, hunt);
@@ -1052,6 +1068,7 @@ async function ensureJump(item: NavItem, index: number) {
             await frame();
         }
     } finally {
+        ungesture();
         if (gen === hydrateGen && held?.isConnected) {
             held.style.scrollBehavior = prevBehavior;
             held.style.overflowAnchor = prevAnchor;
@@ -1533,27 +1550,50 @@ async function scrollEdge(up: boolean) {
     const prevAnchor = pane.style.overflowAnchor;
     pane.style.scrollBehavior = "auto";
     pane.style.overflowAnchor = "none";
+    let gestured = false;
+    let parked = 0;
+    const stop = () => { gestured = true; };
+    pane.addEventListener("wheel", stop, { capture: true, passive: true });
+    pane.addEventListener("pointerdown", stop, { capture: true, passive: true });
+    pane.addEventListener("touchstart", stop, { capture: true, passive: true });
     try {
         while (performance.now() < deadline) {
-            if (gen !== hydrateGen || !pane.isConnected) return;
-            if (up) jumpEdge(pane);
-            else jumpEnd(pane);
-            if (up && historyPending() && atRealEdge(pane, true)) {
-                const height = pane.scrollHeight;
-                const head = firstResponseId(pane);
-                requestOlder();
-                await waitGrow(pane, height, head, gen);
-                if (gen !== hydrateGen) return;
-                if (pane.scrollHeight !== height || firstResponseId(pane) !== head) continue;
-                break;
+            if (gen !== hydrateGen || gestured || !pane.isConnected) return;
+            if (up) {
+                if (historyPending() && atRealEdge(pane, true)) {
+                    parked = 0;
+                    const height = pane.scrollHeight;
+                    const head = firstResponseId(pane);
+                    requestOlder();
+                    await waitGrow(pane, height, head, gen);
+                    if (gen !== hydrateGen || gestured) return;
+                    if (pane.scrollHeight !== height || firstResponseId(pane) !== head) continue;
+                    break;
+                }
+                if (atRealEdge(pane, true)) {
+                    parked += 1;
+                    if (parked >= 2) break;
+                } else {
+                    parked = 0;
+                    jumpEdge(pane);
+                }
+            } else if (atRealEdge(pane, false)) {
+                parked += 1;
+                if (parked >= 2) break;
+            } else {
+                parked = 0;
+                jumpEnd(pane);
             }
             const top = pane.scrollTop;
             const height = pane.scrollHeight;
             await frame();
-            if (gen !== hydrateGen || !pane.isConnected) return;
-            if (pane.scrollTop === top && pane.scrollHeight === height) break;
+            if (gen !== hydrateGen || gestured || !pane.isConnected) return;
+            if (up && !atRealEdge(pane, true) && pane.scrollTop === top && pane.scrollHeight === height) break;
         }
     } finally {
+        pane.removeEventListener("wheel", stop, true);
+        pane.removeEventListener("pointerdown", stop, true);
+        pane.removeEventListener("touchstart", stop, true);
         if (gen === hydrateGen && pane.isConnected) {
             pane.style.scrollBehavior = prevBehavior;
             pane.style.overflowAnchor = prevAnchor;
