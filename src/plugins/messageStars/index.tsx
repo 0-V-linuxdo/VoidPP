@@ -368,9 +368,13 @@ function starSvg(): SVGSVGElement {
     svg.setAttribute("width", "16");
     svg.setAttribute("height", "16");
     svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
     const path = document.createElementNS(NS, "path");
     path.setAttribute("d", STAR_D);
-    path.setAttribute("fill", "currentColor");
     svg.appendChild(path);
     return svg;
 }
