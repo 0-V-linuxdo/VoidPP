@@ -11,6 +11,19 @@
     flex: 1;
 }
 
+.void-plugins-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding-bottom: 1rem;
+    margin-bottom: -1rem;
+    background: hsl(var(--surface-base));
+}
+
+.alpha-mask-y:has(.void-plugins-header) {
+    --alpha-mask-top: 0px !important;
+}
+
 .void-plugins-tabs {
     display: flex;
     flex-wrap: wrap;
