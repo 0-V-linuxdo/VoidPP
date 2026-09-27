@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.6
+// @version      20260927.7
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.6] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f020c66"}`
-    }, `(${"f020c66"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9ce8833"}`
+    }, `(${"9ce8833"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -17992,9 +17992,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var LOCK_MS = 1000;
   var ENSURE_MS = 1e4;
   var SNAP_PX = 16;
+  var AIM_MS = 300;
   var DENSE_N = 16;
   var SLOT_CLASS = "void-bn-rail";
-  var HYDRATE_STEP = 80;
   var LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
   var LIVE_PHASE = new Set(["sending", "streaming"]);
   var JUMP_SYM2 = Symbol.for("voidpp.betterNavigator.jump");
@@ -18650,9 +18650,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return pool[tickIndex];
     return Math.min(tickIndex, Math.max(0, lastNav.length - 1));
   }
-  function sleep3(ms) {
+  function frame() {
     return new Promise((resolve) => {
-      window.setTimeout(resolve, ms);
+      requestAnimationFrame(() => resolve());
     });
   }
   function livePane(el) {
@@ -18676,6 +18676,18 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return false;
     const delta = el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
     return Math.abs(delta) <= SNAP_PX;
+  }
+  async function settleAim(el, pane, gen) {
+    const until = performance.now() + AIM_MS;
+    while (performance.now() < until) {
+      if (gen !== hydrateGen || !pane.isConnected || !pane.contains(el))
+        return false;
+      if (landed(el, pane))
+        return true;
+      aim(el, pane);
+      await frame();
+    }
+    return pane.isConnected && pane.contains(el) && landed(el, pane);
   }
   function historyPending() {
     return !!gatewayOf(currentCid4())?.history.hasMore;
@@ -18716,21 +18728,23 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return pane.scrollTop <= 1;
     return pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 2;
   }
-  function stepWindow(pane, older) {
-    const vh = Math.max(120, pane.clientHeight || window.innerHeight);
+  function jumpEdge(pane, older) {
     const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
-    const next = pane.scrollTop + (older ? -vh * 0.85 : vh * 0.85);
-    pane.scrollTop = Math.max(0, Math.min(max, next));
+    pane.scrollTop = older ? 0 : max;
   }
   function firstResponseId(pane) {
     return pane.querySelector("[id^='response-']")?.id ?? "";
   }
+  function targetEl(item) {
+    const found = mountedEl(item) ?? (item.id ? document.getElementById(`response-${item.id}`) : null);
+    return found instanceof HTMLElement ? found : null;
+  }
   async function waitGrow(pane, height, head, gen) {
-    const until = performance.now() + 800;
+    const until = performance.now() + AIM_MS;
     while (performance.now() < until) {
       if (gen !== hydrateGen || !pane.isConnected || pane.scrollHeight !== height || firstResponseId(pane) !== head)
         return;
-      await sleep3(HYDRATE_STEP);
+      await frame();
     }
   }
   function finishJump(gen, el) {
@@ -18747,8 +18761,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     applyActive(index);
     const deadline = performance.now() + ENSURE_MS;
     let clicked = false;
-    let stuck = 0;
-    let lastMark = "";
+    let edgeSince = 0;
     let held = null;
     let prevBehavior = "";
     let prevAnchor = "";
@@ -18757,8 +18770,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         if (gen !== hydrateGen)
           break;
         const cur = lastNav[index] ?? item;
-        const found = mountedEl(cur) ?? (cur.id ? document.getElementById(`response-${cur.id}`) : null);
-        const el = found instanceof HTMLElement ? found : null;
+        const el = targetEl(cur);
         const box = livePane(el);
         if (!box)
           break;
@@ -18774,47 +18786,42 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           held = box;
         }
         if (el && box.contains(el)) {
-          if (landed(el, box)) {
+          edgeSince = 0;
+          if (await settleAim(el, box, gen)) {
             finishJump(gen, el);
             return;
           }
-          aim(el, box);
-          await new Promise((resolve) => {
-            requestAnimationFrame(() => resolve());
-          });
-          if (gen !== hydrateGen)
-            break;
-          if (box.isConnected && box.contains(el) && !landed(el, box))
-            aim(el, box);
-        } else {
-          const older = seekOlder(index);
-          if (!clicked) {
-            clicked = true;
-            const tick = cur.role === "assistant" ? nativeTickFor(cur, index) : undefined;
-            if (tick) {
-              tick.click();
-              await sleep3(HYDRATE_STEP);
-              continue;
-            }
-          }
-          if (older && atRealEdge(box, true) && requestOlder()) {
+          continue;
+        }
+        const older = seekOlder(index);
+        if (!clicked) {
+          clicked = true;
+          const tick = cur.role === "assistant" ? nativeTickFor(cur, index) : undefined;
+          tick?.click();
+        }
+        if (atRealEdge(box, older)) {
+          if (!edgeSince)
+            edgeSince = performance.now();
+          if (older && requestOlder()) {
             const height = box.scrollHeight;
             const head = firstResponseId(box);
-            const top = box.scrollTop;
             await waitGrow(box, height, head, gen);
             if (gen !== hydrateGen)
               break;
-            if (box.isConnected && box.scrollHeight > height)
-              box.scrollTop = Math.max(0, top);
-          }
-          const mark = `${Math.round(box.scrollTop)}:${box.scrollHeight}`;
-          stuck = mark === lastMark ? stuck + 1 : 0;
-          lastMark = mark;
-          if (stuck >= 6 && atRealEdge(box, older) && !historyPending())
+            const fresh = targetEl(lastNav[index] ?? item);
+            if (fresh && box.contains(fresh))
+              aim(fresh, box);
+            else if (box.isConnected)
+              box.scrollTop = 0;
+            edgeSince = 0;
+          } else if (!historyPending() && performance.now() - edgeSince > AIM_MS) {
             break;
-          stepWindow(box, older);
+          }
+        } else {
+          edgeSince = 0;
+          jumpEdge(box, older);
         }
-        await sleep3(HYDRATE_STEP);
+        await frame();
       }
     } finally {
       if (gen === hydrateGen && held?.isConnected) {
@@ -32341,7 +32348,7 @@ div:has(> #grok-bot-nav-button) {
   contextMenu_default.updatedAt = 1790444048000;
   chatBarButtons_default.updatedAt = 1790444048000;
   betterFiles_default.updatedAt = 1790444048000;
-  messageStars_default.updatedAt = 1790529682000;
+  messageStars_default.updatedAt = 1790530108000;
   usageDisplay_default.updatedAt = 1790444048000;
   betterQueue_default.updatedAt = 1790444048000;
   settingsFlyout_default.updatedAt = 1790444048000;
@@ -32349,7 +32356,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790529682000;
+  betterNavigator_default.updatedAt = 1790530108000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;

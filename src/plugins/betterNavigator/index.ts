@@ -73,9 +73,9 @@ const OFFSET_PX = 72;
 const LOCK_MS = 1000;
 const ENSURE_MS = 10000;
 const SNAP_PX = 16;
+const AIM_MS = 300;
 const DENSE_N = 16;
 const SLOT_CLASS = "void-bn-rail";
-const HYDRATE_STEP = 80;
 const LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
 const LIVE_PHASE = new Set(["sending", "streaming"]);
 const JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
@@ -691,9 +691,9 @@ function navIndexFromTick(tick: HTMLButtonElement, tickIndex: number): number {
     return Math.min(tickIndex, Math.max(0, lastNav.length - 1));
 }
 
-function sleep(ms: number): Promise<void> {
+function frame(): Promise<void> {
     return new Promise(resolve => {
-        window.setTimeout(resolve, ms);
+        requestAnimationFrame(() => resolve());
     });
 }
 
@@ -718,6 +718,17 @@ function landed(el: HTMLElement, pane: HTMLElement): boolean {
     if (!pane.contains(el)) return false;
     const delta = el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
     return Math.abs(delta) <= SNAP_PX;
+}
+
+async function settleAim(el: HTMLElement, pane: HTMLElement, gen: number): Promise<boolean> {
+    const until = performance.now() + AIM_MS;
+    while (performance.now() < until) {
+        if (gen !== hydrateGen || !pane.isConnected || !pane.contains(el)) return false;
+        if (landed(el, pane)) return true;
+        aim(el, pane);
+        await frame();
+    }
+    return pane.isConnected && pane.contains(el) && landed(el, pane);
 }
 
 function historyPending(): boolean {
@@ -757,22 +768,25 @@ function atRealEdge(pane: HTMLElement, older: boolean): boolean {
     return pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 2;
 }
 
-function stepWindow(pane: HTMLElement, older: boolean) {
-    const vh = Math.max(120, pane.clientHeight || window.innerHeight);
+function jumpEdge(pane: HTMLElement, older: boolean) {
     const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
-    const next = pane.scrollTop + (older ? -vh * 0.85 : vh * 0.85);
-    pane.scrollTop = Math.max(0, Math.min(max, next));
+    pane.scrollTop = older ? 0 : max;
 }
 
 function firstResponseId(pane: HTMLElement): string {
     return pane.querySelector("[id^='response-']")?.id ?? "";
 }
 
+function targetEl(item: NavItem): HTMLElement | null {
+    const found = mountedEl(item) ?? (item.id ? document.getElementById(`response-${item.id}`) : null);
+    return found instanceof HTMLElement ? found : null;
+}
+
 async function waitGrow(pane: HTMLElement, height: number, head: string, gen: number) {
-    const until = performance.now() + 800;
+    const until = performance.now() + AIM_MS;
     while (performance.now() < until) {
         if (gen !== hydrateGen || !pane.isConnected || pane.scrollHeight !== height || firstResponseId(pane) !== head) return;
-        await sleep(HYDRATE_STEP);
+        await frame();
     }
 }
 
@@ -790,8 +804,7 @@ async function ensureJump(item: NavItem, index: number) {
     applyActive(index);
     const deadline = performance.now() + ENSURE_MS;
     let clicked = false;
-    let stuck = 0;
-    let lastMark = "";
+    let edgeSince = 0;
     let held: HTMLElement | null = null;
     let prevBehavior = "";
     let prevAnchor = "";
@@ -799,8 +812,7 @@ async function ensureJump(item: NavItem, index: number) {
         while (performance.now() < deadline) {
             if (gen !== hydrateGen) break;
             const cur = lastNav[index] ?? item;
-            const found = mountedEl(cur) ?? (cur.id ? document.getElementById(`response-${cur.id}`) : null);
-            const el = found instanceof HTMLElement ? found : null;
+            const el = targetEl(cur);
             const box = livePane(el);
             if (!box) break;
             if (held !== box) {
@@ -815,42 +827,38 @@ async function ensureJump(item: NavItem, index: number) {
                 held = box;
             }
             if (el && box.contains(el)) {
-                if (landed(el, box)) {
+                edgeSince = 0;
+                if (await settleAim(el, box, gen)) {
                     finishJump(gen, el);
                     return;
                 }
-                aim(el, box);
-                await new Promise<void>(resolve => {
-                    requestAnimationFrame(() => resolve());
-                });
-                if (gen !== hydrateGen) break;
-                if (box.isConnected && box.contains(el) && !landed(el, box)) aim(el, box);
-            } else {
-                const older = seekOlder(index);
-                if (!clicked) {
-                    clicked = true;
-                    const tick = cur.role === "assistant" ? nativeTickFor(cur, index) : undefined;
-                    if (tick) {
-                        tick.click();
-                        await sleep(HYDRATE_STEP);
-                        continue;
-                    }
-                }
-                if (older && atRealEdge(box, true) && requestOlder()) {
+                continue;
+            }
+            const older = seekOlder(index);
+            if (!clicked) {
+                clicked = true;
+                const tick = cur.role === "assistant" ? nativeTickFor(cur, index) : undefined;
+                tick?.click();
+            }
+            if (atRealEdge(box, older)) {
+                if (!edgeSince) edgeSince = performance.now();
+                if (older && requestOlder()) {
                     const height = box.scrollHeight;
                     const head = firstResponseId(box);
-                    const top = box.scrollTop;
                     await waitGrow(box, height, head, gen);
                     if (gen !== hydrateGen) break;
-                    if (box.isConnected && box.scrollHeight > height) box.scrollTop = Math.max(0, top);
+                    const fresh = targetEl(lastNav[index] ?? item);
+                    if (fresh && box.contains(fresh)) aim(fresh, box);
+                    else if (box.isConnected) box.scrollTop = 0;
+                    edgeSince = 0;
+                } else if (!historyPending() && performance.now() - edgeSince > AIM_MS) {
+                    break;
                 }
-                const mark = `${Math.round(box.scrollTop)}:${box.scrollHeight}`;
-                stuck = mark === lastMark ? stuck + 1 : 0;
-                lastMark = mark;
-                if (stuck >= 6 && atRealEdge(box, older) && !historyPending()) break;
-                stepWindow(box, older);
+            } else {
+                edgeSince = 0;
+                jumpEdge(box, older);
             }
-            await sleep(HYDRATE_STEP);
+            await frame();
         }
     } finally {
         if (gen === hydrateGen && held?.isConnected) {
