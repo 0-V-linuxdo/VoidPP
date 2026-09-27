@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.8
+// @version      20260927.9
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.8] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.9] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"abb2b9b"}`
-    }, `(${"abb2b9b"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4fef7a1"}`
+    }, `(${"4fef7a1"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18483,11 +18483,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const gw = gatewayOf(cid);
     if (!gw)
       return [];
-    const olderKey = `${cid}:${gw.history.nextBeforeId}`;
-    if (gw.history.hasMore && gw.defaultLeafId && olderKey !== olderAsked) {
-      olderAsked = olderKey;
-      MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
-    }
     const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length)
       return [];
@@ -19474,13 +19469,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (!gw)
         return cid;
       const path = extendPath(gw, pathToLeaf(gw));
+      const head = path[0]?.id ?? "";
       const gen = gw.activeGeneration;
       const genNode = gen?.assistantId ? gw.nodes?.[gen.assistantId] : undefined;
       const phase = generationPhase(gw);
       const lastAsst = [...path].reverse().find((n) => n.role === "assistant");
       const lastKey = lastAsst ? `${lastAsst.id}:${lastAsst.status}:${lastAsst.content?.state ?? ""}` : "";
       const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
-      return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.map((n) => `${n.id}:${n.status}`).join(",")}`;
+      return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.length}:${head}|${gw.history.hasMore ? 1 : 0}`;
     } catch (e) {
       logger27.debug("message key failed:", e);
       return "";
@@ -32383,7 +32379,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790530421000;
+  betterNavigator_default.updatedAt = 1790530689000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;

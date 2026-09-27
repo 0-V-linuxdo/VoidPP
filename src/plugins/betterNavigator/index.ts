@@ -538,11 +538,6 @@ function collectLeaf(): NavItem[] {
     const cid = currentCid();
     const gw = gatewayOf(cid);
     if (!gw) return [];
-    const olderKey = `${cid}:${gw.history.nextBeforeId}`;
-    if (gw.history.hasMore && gw.defaultLeafId && olderKey !== olderAsked) {
-        olderAsked = olderKey;
-        MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
-    }
     const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length) return [];
     const showAsst = settings.store.showAssistant;
@@ -1489,13 +1484,14 @@ function messageKey(s: MessageStoreState): string {
         const gw = s.conversations?.[cid];
         if (!gw) return cid;
         const path = extendPath(gw, pathToLeaf(gw));
+        const head = path[0]?.id ?? "";
         const gen = gw.activeGeneration;
         const genNode = gen?.assistantId ? gw.nodes?.[gen.assistantId] : undefined;
         const phase = generationPhase(gw);
         const lastAsst = [...path].reverse().find(n => n.role === "assistant");
         const lastKey = lastAsst ? `${lastAsst.id}:${lastAsst.status}:${lastAsst.content?.state ?? ""}` : "";
         const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
-        return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.map(n => `${n.id}:${n.status}`).join(",")}`;
+        return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.length}:${head}|${gw.history.hasMore ? 1 : 0}`;
     } catch (e) {
         logger.debug("message key failed:", e);
         return "";
