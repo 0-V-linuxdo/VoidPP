@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.5
+// @version      20260927.6
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.5] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.6] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"16a8e6b"}`
-    }, `(${"16a8e6b"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f020c66"}`
+    }, `(${"f020c66"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8629,7 +8629,6 @@ button .void-info-hint {
   var logger19 = new Logger("MessageStars");
   var JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
   var PENDING_MS = 8000;
-  var OFFSET_PX = 72;
   var NS = "http://www.w3.org/2000/svg";
   var STAR_D = "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z";
   var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
@@ -8815,34 +8814,8 @@ button .void-info-hint {
     const fn = pageWindow[JUMP_SYM];
     return typeof fn === "function" && fn(messageId) === true;
   }
-  function findPane(el) {
-    const skip = "[data-sidebar], [class*='pane-card']";
-    for (let node = el.parentElement;node && node !== document.body; node = node.parentElement) {
-      if (node.closest(skip))
-        continue;
-      const oy = getComputedStyle(node).overflowY;
-      if (oy === "auto" || oy === "scroll")
-        return node;
-    }
-    const scroller = document.querySelector("[data-testid='chat-transcript-scroller']");
-    if (scroller && scroller.contains(el))
-      return scroller;
-    return null;
-  }
-  function scrollResponse(el) {
-    const pane = findPane(el);
-    if (!pane)
-      return false;
-    const delta = el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
-    const behavior = Math.abs(delta) > pane.clientHeight ? "auto" : "smooth";
-    pane.scrollTo({ top: Math.max(0, pane.scrollTop + delta), behavior });
-    return true;
-  }
   function jumpLocal(messageId) {
-    if (navigatorJump(messageId))
-      return true;
-    const el = document.getElementById(`response-${messageId}`);
-    return el instanceof HTMLElement && scrollResponse(el);
+    return navigatorJump(messageId);
   }
   function clearPending() {
     pending = null;
@@ -18015,7 +17988,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var HEAD_HYST = 24;
   var EDGE_PX = 8;
   var EDGE_TAIL = 80;
-  var OFFSET_PX2 = 72;
+  var OFFSET_PX = 72;
   var LOCK_MS = 1000;
   var ENSURE_MS = 1e4;
   var SNAP_PX = 16;
@@ -18682,31 +18655,27 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       window.setTimeout(resolve, ms);
     });
   }
-  function jumpPane(el) {
+  function livePane(el) {
     const tagged = document.querySelector("[data-testid='chat-transcript-scroller']");
-    if (tagged && !tagged.closest(PANE_SKIP2) && (!el || tagged.contains(el)))
+    const taggedOk = !!tagged && !tagged.closest(PANE_SKIP2) && tagged.scrollHeight > tagged.clientHeight + 2;
+    if (taggedOk && tagged && (!el || tagged.contains(el)))
       return tagged;
     return chatPane2();
   }
-  function misalign(el, pane) {
-    return el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX2;
-  }
-  function place(el, behavior) {
-    el.style.scrollMarginTop = `${OFFSET_PX2}px`;
-    const pane = jumpPane(el);
-    if (pane?.contains(el)) {
-      pane.scrollTo({ top: Math.max(0, pane.scrollTop + misalign(el, pane)), behavior });
+  function aim(el, pane) {
+    el.style.scrollMarginTop = `${OFFSET_PX}px`;
+    if (!pane.contains(el)) {
+      el.scrollIntoView({ behavior: "auto", block: "start" });
       return;
     }
-    el.scrollIntoView({ behavior, block: "start" });
+    const top = pane.scrollTop + el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
+    pane.scrollTop = Math.max(0, top);
   }
-  function farTarget(el) {
-    if (reduceMotion())
-      return true;
-    const pane = jumpPane(el);
-    const vh = pane?.clientHeight || window.innerHeight;
-    const origin = pane?.getBoundingClientRect().top ?? 0;
-    return Math.abs(el.getBoundingClientRect().top - origin) > vh;
+  function landed(el, pane) {
+    if (!pane.contains(el))
+      return false;
+    const delta = el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
+    return Math.abs(delta) <= SNAP_PX;
   }
   function historyPending() {
     return !!gatewayOf(currentCid4())?.history.hasMore;
@@ -18715,57 +18684,54 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const cid = currentCid4();
     const gw = gatewayOf(cid);
     if (!gw?.history.hasMore || !gw.defaultLeafId)
-      return;
+      return false;
     const key = `${cid}:${gw.history.nextBeforeId ?? ""}`;
     if (key === olderAsked)
-      return;
+      return false;
     olderAsked = key;
     try {
       MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
+      return true;
     } catch (e) {
       logger27.debug("loadOlderHistory failed:", e);
+      return false;
     }
   }
-  function nudge(index, pane) {
-    const vh = Math.max(120, pane.clientHeight || window.innerHeight);
-    let before = -1;
-    let after = -1;
-    for (let i = 0;i < lastNav.length; i++) {
-      if (!mountedEl(lastNav[i]))
-        continue;
-      if (i < index)
-        before = i;
-      else if (after < 0)
-        after = i;
-    }
-    if (before < 0) {
-      pane.scrollTo({ top: Math.max(0, pane.scrollTop - vh * 0.85), behavior: "auto" });
-      return;
-    }
-    if (after < 0) {
-      pane.scrollTo({ top: pane.scrollTop + vh * 0.85, behavior: "auto" });
-      return;
-    }
-    const el = mountedEl(lastNav[before]);
-    if (el)
-      place(el, "auto");
-  }
-  function edgeBlocked(pane, index) {
+  function seekOlder(index) {
     let before = false;
-    let after = false;
+    let any = false;
     for (let i = 0;i < lastNav.length; i++) {
       if (!mountedEl(lastNav[i]))
         continue;
+      any = true;
       if (i < index)
         before = true;
-      else if (i > index)
-        after = true;
     }
-    if (!before)
+    if (!any)
+      return index * 2 < lastNav.length;
+    return !before;
+  }
+  function atRealEdge(pane, older) {
+    if (older)
       return pane.scrollTop <= 1;
-    if (!after)
-      return pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 2;
-    return false;
+    return pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 2;
+  }
+  function stepWindow(pane, older) {
+    const vh = Math.max(120, pane.clientHeight || window.innerHeight);
+    const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
+    const next = pane.scrollTop + (older ? -vh * 0.85 : vh * 0.85);
+    pane.scrollTop = Math.max(0, Math.min(max, next));
+  }
+  function firstResponseId(pane) {
+    return pane.querySelector("[id^='response-']")?.id ?? "";
+  }
+  async function waitGrow(pane, height, head, gen) {
+    const until = performance.now() + 800;
+    while (performance.now() < until) {
+      if (gen !== hydrateGen || !pane.isConnected || pane.scrollHeight !== height || firstResponseId(pane) !== head)
+        return;
+      await sleep3(HYDRATE_STEP);
+    }
   }
   function finishJump(gen, el) {
     window.setTimeout(() => {
@@ -18779,52 +18745,49 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     lockIdx = index;
     lockUntil = performance.now() + ENSURE_MS;
     applyActive(index);
-    const pane = jumpPane(mountedEl(item));
-    const prevAnchor = pane?.style.overflowAnchor ?? "";
-    if (pane)
-      pane.style.overflowAnchor = "none";
     const deadline = performance.now() + ENSURE_MS;
     let clicked = false;
-    let issued = false;
-    let behavior = "auto";
-    let lastDelta = Number.POSITIVE_INFINITY;
-    let idle = 0;
-    let snaps = 0;
-    let lastMark = "";
     let stuck = 0;
+    let lastMark = "";
+    let held = null;
+    let prevBehavior = "";
+    let prevAnchor = "";
     try {
       while (performance.now() < deadline) {
         if (gen !== hydrateGen)
           break;
         const cur = lastNav[index] ?? item;
-        const el = mountedEl(cur);
-        const box = pane?.isConnected ? pane : jumpPane(el);
-        if (el && box?.contains(el)) {
-          const delta = Math.abs(misalign(el, box));
-          if (delta <= SNAP_PX) {
+        const found = mountedEl(cur) ?? (cur.id ? document.getElementById(`response-${cur.id}`) : null);
+        const el = found instanceof HTMLElement ? found : null;
+        const box = livePane(el);
+        if (!box)
+          break;
+        if (held !== box) {
+          if (held?.isConnected) {
+            held.style.scrollBehavior = prevBehavior;
+            held.style.overflowAnchor = prevAnchor;
+          }
+          prevBehavior = box.style.scrollBehavior;
+          prevAnchor = box.style.overflowAnchor;
+          box.style.scrollBehavior = "auto";
+          box.style.overflowAnchor = "none";
+          held = box;
+        }
+        if (el && box.contains(el)) {
+          if (landed(el, box)) {
             finishJump(gen, el);
             return;
           }
-          if (!issued) {
-            behavior = farTarget(el) ? "auto" : "smooth";
-            place(el, behavior);
-            issued = true;
-          } else if (behavior === "auto" && snaps < 6) {
-            place(el, "auto");
-            snaps++;
-          } else if (idle >= 3 && snaps < 3) {
-            behavior = "auto";
-            place(el, "auto");
-            snaps++;
-            idle = 0;
-          } else if (idle >= 3)
-            return;
-          idle = Math.abs(delta - lastDelta) < 2 ? idle + 1 : 0;
-          lastDelta = delta;
-        } else if (box) {
-          issued = false;
-          idle = 0;
-          snaps = 0;
+          aim(el, box);
+          await new Promise((resolve) => {
+            requestAnimationFrame(() => resolve());
+          });
+          if (gen !== hydrateGen)
+            break;
+          if (box.isConnected && box.contains(el) && !landed(el, box))
+            aim(el, box);
+        } else {
+          const older = seekOlder(index);
           if (!clicked) {
             clicked = true;
             const tick = cur.role === "assistant" ? nativeTickFor(cur, index) : undefined;
@@ -18834,20 +18797,30 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
               continue;
             }
           }
-          requestOlder();
+          if (older && atRealEdge(box, true) && requestOlder()) {
+            const height = box.scrollHeight;
+            const head = firstResponseId(box);
+            const top = box.scrollTop;
+            await waitGrow(box, height, head, gen);
+            if (gen !== hydrateGen)
+              break;
+            if (box.isConnected && box.scrollHeight > height)
+              box.scrollTop = Math.max(0, top);
+          }
           const mark = `${Math.round(box.scrollTop)}:${box.scrollHeight}`;
           stuck = mark === lastMark ? stuck + 1 : 0;
           lastMark = mark;
-          if (stuck >= 4 && edgeBlocked(box, index) && !historyPending())
+          if (stuck >= 6 && atRealEdge(box, older) && !historyPending())
             break;
-          nudge(index, box);
-        } else
-          break;
+          stepWindow(box, older);
+        }
         await sleep3(HYDRATE_STEP);
       }
     } finally {
-      if (gen === hydrateGen && pane?.isConnected)
-        pane.style.overflowAnchor = prevAnchor;
+      if (gen === hydrateGen && held?.isConnected) {
+        held.style.scrollBehavior = prevBehavior;
+        held.style.overflowAnchor = prevAnchor;
+      }
     }
   }
   function jump(item, index) {
@@ -32368,7 +32341,7 @@ div:has(> #grok-bot-nav-button) {
   contextMenu_default.updatedAt = 1790444048000;
   chatBarButtons_default.updatedAt = 1790444048000;
   betterFiles_default.updatedAt = 1790444048000;
-  messageStars_default.updatedAt = 1790528908000;
+  messageStars_default.updatedAt = 1790529682000;
   usageDisplay_default.updatedAt = 1790444048000;
   betterQueue_default.updatedAt = 1790444048000;
   settingsFlyout_default.updatedAt = 1790444048000;
@@ -32376,7 +32349,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790448450000;
+  betterNavigator_default.updatedAt = 1790529682000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;

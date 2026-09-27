@@ -24,7 +24,6 @@ import { dropStar, hasStar, putStar, reloadIfAccountChanged, stars, startStore, 
 const logger = new Logger("MessageStars");
 const JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
 const PENDING_MS = 8000;
-const OFFSET_PX = 72;
 const NS = "http://www.w3.org/2000/svg";
 const STAR_D = "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z";
 const MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
@@ -209,31 +208,8 @@ function navigatorJump(messageId: string): boolean {
     return typeof fn === "function" && (fn as (id: string) => boolean)(messageId) === true;
 }
 
-function findPane(el: HTMLElement): HTMLElement | null {
-    const skip = "[data-sidebar], [class*='pane-card']";
-    for (let node: HTMLElement | null = el.parentElement; node && node !== document.body; node = node.parentElement) {
-        if (node.closest(skip)) continue;
-        const oy = getComputedStyle(node).overflowY;
-        if (oy === "auto" || oy === "scroll") return node;
-    }
-    const scroller = document.querySelector<HTMLElement>("[data-testid='chat-transcript-scroller']");
-    if (scroller && scroller.contains(el)) return scroller;
-    return null;
-}
-
-function scrollResponse(el: HTMLElement): boolean {
-    const pane = findPane(el);
-    if (!pane) return false;
-    const delta = el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
-    const behavior: ScrollBehavior = Math.abs(delta) > pane.clientHeight ? "auto" : "smooth";
-    pane.scrollTo({ top: Math.max(0, pane.scrollTop + delta), behavior });
-    return true;
-}
-
 function jumpLocal(messageId: string): boolean {
-    if (navigatorJump(messageId)) return true;
-    const el = document.getElementById(`response-${messageId}`);
-    return el instanceof HTMLElement && scrollResponse(el);
+    return navigatorJump(messageId);
 }
 
 function clearPending() {
