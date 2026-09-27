@@ -963,9 +963,9 @@ async function ensureJump(item: NavItem, index: number) {
     let prevBehavior = "";
     let prevAnchor = "";
     let gestured = false;
-    let ungesture = () => {};
+    let ungesture: (() => void) | null = null;
     const armGesture = (pane: HTMLElement) => {
-        ungesture();
+        ungesture?.();
         const stop = () => { gestured = true; };
         pane.addEventListener("wheel", stop, { capture: true, passive: true });
         pane.addEventListener("pointerdown", stop, { capture: true, passive: true });
@@ -1068,7 +1068,7 @@ async function ensureJump(item: NavItem, index: number) {
             await frame();
         }
     } finally {
-        ungesture();
+        ungesture?.();
         if (gen === hydrateGen && held?.isConnected) {
             held.style.scrollBehavior = prevBehavior;
             held.style.overflowAnchor = prevAnchor;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.16
+// @version      20260927.17
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.16] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.17] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d7ae5be"}`
-    }, `(${"d7ae5be"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"485aaee"}`
+    }, `(${"485aaee"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18916,9 +18916,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     let prevBehavior = "";
     let prevAnchor = "";
     let gestured = false;
-    let ungesture = () => {};
+    let ungesture = null;
     const armGesture = (pane) => {
-      ungesture();
+      ungesture?.();
       const stop = () => {
         gestured = true;
       };
@@ -19036,7 +19036,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         await frame();
       }
     } finally {
-      ungesture();
+      ungesture?.();
       if (gen === hydrateGen && held?.isConnected) {
         held.style.scrollBehavior = prevBehavior;
         held.style.overflowAnchor = prevAnchor;
@@ -32645,7 +32645,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790535846000;
+  betterNavigator_default.updatedAt = 1790536377000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;
