@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.10
+// @version      20260927.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.10] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a20f745"}`
-    }, `(${"a20f745"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"eaebffe"}`
+    }, `(${"eaebffe"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18041,6 +18041,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var observedPane = null;
   var hydrateGen = 0;
   var olderAsked = "";
+  var prefetchTimer = 0;
+  var prefetching = false;
+  var jumpBusy = false;
+  var readyCid = "";
+  var readyAt = 0;
   var labelCache = new Map;
   function isVisible2(el) {
     const r = el.getBoundingClientRect();
@@ -18483,11 +18488,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const gw = gatewayOf(cid);
     if (!gw)
       return [];
-    const olderKey = `${cid}:${gw.history.nextBeforeId}`;
-    if (gw.history.hasMore && gw.defaultLeafId && olderKey !== olderAsked) {
-      olderAsked = olderKey;
-      MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
-    }
     const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length)
       return [];
@@ -18709,6 +18709,74 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return false;
     }
   }
+  function pageReady() {
+    const cid = currentCid4();
+    if (!cid || storeLive() === true) {
+      readyCid = "";
+      return false;
+    }
+    const pane = livePane();
+    if (!pane?.querySelector("[id^='response-']")) {
+      readyCid = "";
+      return false;
+    }
+    if (cid !== readyCid) {
+      readyCid = cid;
+      readyAt = performance.now();
+      return false;
+    }
+    return performance.now() - readyAt >= AIM_MS;
+  }
+  function clearPrefetch() {
+    if (prefetchTimer)
+      window.clearTimeout(prefetchTimer);
+    prefetchTimer = 0;
+    prefetching = false;
+    readyCid = "";
+    readyAt = 0;
+  }
+  function armPrefetch() {
+    if (!ac2 || prefetchTimer || prefetching)
+      return;
+    prefetchTimer = window.setTimeout(() => {
+      prefetchTimer = 0;
+      prefetchStep();
+    }, AIM_MS);
+  }
+  async function prefetchStep() {
+    if (!ac2 || prefetching)
+      return;
+    if (jumpBusy || !pageReady()) {
+      armPrefetch();
+      return;
+    }
+    const cid = currentCid4();
+    const gw = gatewayOf(cid);
+    if (!gw?.history.hasMore)
+      return;
+    const before = `${cid}:${gw.history.nextBeforeId ?? ""}`;
+    prefetching = true;
+    try {
+      if (requestOlder()) {
+        const until = performance.now() + 800;
+        while (performance.now() < until) {
+          if (!ac2 || currentCid4() !== cid || jumpBusy)
+            break;
+          const now = gatewayOf(cid);
+          const key = `${cid}:${now?.history.nextBeforeId ?? ""}`;
+          if (!now?.history.hasMore || key !== before)
+            break;
+          await frame();
+        }
+      }
+    } finally {
+      prefetching = false;
+    }
+    if (!ac2 || currentCid4() !== cid || jumpBusy)
+      return;
+    if (gatewayOf(cid)?.history.hasMore)
+      armPrefetch();
+  }
   function seekOlder(index) {
     let before = false;
     let any = false;
@@ -18760,6 +18828,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   async function ensureJump(item, index) {
     const gen = ++hydrateGen;
+    jumpBusy = true;
     lockIdx = index;
     lockUntil = performance.now() + ENSURE_MS;
     applyActive(index);
@@ -18851,10 +18920,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         await frame();
       }
     } finally {
+      jumpBusy = false;
       if (gen === hydrateGen && held?.isConnected) {
         held.style.scrollBehavior = prevBehavior;
         held.style.overflowAnchor = prevAnchor;
       }
+      if (ac2)
+        armPrefetch();
     }
   }
   function jump(item, index) {
@@ -19410,6 +19482,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       paintedKey = "";
       labelCache.clear();
       hydrateGen++;
+      olderAsked = "";
+      clearPrefetch();
       if (host2)
         unmount();
     }
@@ -19453,6 +19527,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     setActive(nav);
     syncNativeDash(nav);
     clampMenu();
+    armPrefetch();
   }
   var debouncedPaint = debounce(paint3, 160);
   function pageKey(s) {
@@ -19528,6 +19603,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     raf2 = 0;
     hydrateGen++;
     olderAsked = "";
+    clearPrefetch();
     labelCache.clear();
     unmount();
     clearFlash();
@@ -32383,7 +32459,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790530906000;
+  betterNavigator_default.updatedAt = 1790531026000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;
