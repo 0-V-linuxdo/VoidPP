@@ -71,11 +71,10 @@ const EDGE_PX = 8;
 const EDGE_TAIL = 80;
 const OFFSET_PX = 72;
 const LOCK_MS = 1000;
-const LOCK_FAST_MS = 280;
-const FAR_VIEWPORTS = 2.5;
+const ENSURE_MS = 10000;
+const SNAP_PX = 16;
 const DENSE_N = 16;
 const SLOT_CLASS = "void-bn-rail";
-const HYDRATE_MS = 2400;
 const HYDRATE_STEP = 80;
 const LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
 const LIVE_PHASE = new Set(["sending", "streaming"]);
@@ -692,28 +691,59 @@ function navIndexFromTick(tick: HTMLButtonElement, tickIndex: number): number {
     return Math.min(tickIndex, Math.max(0, lastNav.length - 1));
 }
 
-function isFar(el: HTMLElement): boolean {
-    const pane = chatPane();
-    const vh = pane?.clientHeight ?? window.innerHeight;
-    const top = pane?.getBoundingClientRect().top ?? 0;
-    return Math.abs(el.getBoundingClientRect().top - top) > vh * FAR_VIEWPORTS;
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => {
+        window.setTimeout(resolve, ms);
+    });
 }
 
-function scrollToItem(el: HTMLElement, behavior: ScrollBehavior) {
+function jumpPane(el?: HTMLElement | null): HTMLElement | null {
+    const tagged = document.querySelector<HTMLElement>("[data-testid='chat-transcript-scroller']");
+    if (tagged && !tagged.closest(PANE_SKIP) && (!el || tagged.contains(el))) return tagged;
+    return chatPane();
+}
+
+function misalign(el: HTMLElement, pane: HTMLElement): number {
+    return el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
+}
+
+function place(el: HTMLElement, behavior: ScrollBehavior) {
     el.style.scrollMarginTop = `${OFFSET_PX}px`;
-    const pane = chatPane();
-    if (pane && pane.contains(el)) {
-        const pr = pane.getBoundingClientRect();
-        const er = el.getBoundingClientRect();
-        pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - OFFSET_PX, behavior });
+    const pane = jumpPane(el);
+    if (pane?.contains(el)) {
+        pane.scrollTo({ top: Math.max(0, pane.scrollTop + misalign(el, pane)), behavior });
         return;
     }
     el.scrollIntoView({ behavior, block: "start" });
 }
 
-function nudgeToward(index: number) {
-    const pane = chatPane();
-    if (!pane) return;
+function farTarget(el: HTMLElement): boolean {
+    if (reduceMotion()) return true;
+    const pane = jumpPane(el);
+    const vh = pane?.clientHeight || window.innerHeight;
+    const origin = pane?.getBoundingClientRect().top ?? 0;
+    return Math.abs(el.getBoundingClientRect().top - origin) > vh;
+}
+
+function historyPending(): boolean {
+    return !!gatewayOf(currentCid())?.history.hasMore;
+}
+
+function requestOlder() {
+    const cid = currentCid();
+    const gw = gatewayOf(cid);
+    if (!gw?.history.hasMore || !gw.defaultLeafId) return;
+    const key = `${cid}:${gw.history.nextBeforeId ?? ""}`;
+    if (key === olderAsked) return;
+    olderAsked = key;
+    try {
+        MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
+    } catch (e) {
+        logger.debug("loadOlderHistory failed:", e);
+    }
+}
+
+function nudge(index: number, pane: HTMLElement) {
     const vh = Math.max(120, pane.clientHeight || window.innerHeight);
     let before = -1;
     let after = -1;
@@ -723,65 +753,110 @@ function nudgeToward(index: number) {
         else if (after < 0) after = i;
     }
     if (before < 0) {
-        pane.scrollTo({ top: Math.max(0, pane.scrollTop - vh * 0.8), behavior: "auto" });
+        pane.scrollTo({ top: Math.max(0, pane.scrollTop - vh * 0.85), behavior: "auto" });
         return;
     }
     if (after < 0) {
-        pane.scrollTo({ top: pane.scrollTop + vh * 0.8, behavior: "auto" });
+        pane.scrollTo({ top: pane.scrollTop + vh * 0.85, behavior: "auto" });
         return;
     }
     const el = mountedEl(lastNav[before]);
-    if (el) scrollToItem(el, "auto");
+    if (el) place(el, "auto");
 }
 
-async function hydrateJump(item: NavItem, index: number) {
+function edgeBlocked(pane: HTMLElement, index: number): boolean {
+    let before = false;
+    let after = false;
+    for (let i = 0; i < lastNav.length; i++) {
+        if (!mountedEl(lastNav[i])) continue;
+        if (i < index) before = true;
+        else if (i > index) after = true;
+    }
+    if (!before) return pane.scrollTop <= 1;
+    if (!after) return pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 2;
+    return false;
+}
+
+function finishJump(gen: number, el: HTMLElement) {
+    window.setTimeout(() => {
+        if (gen === hydrateGen) flash(el);
+    }, 180);
+    lockUntil = performance.now() + LOCK_MS;
+}
+
+async function ensureJump(item: NavItem, index: number) {
     const gen = ++hydrateGen;
     lockIdx = index;
-    lockUntil = performance.now() + HYDRATE_MS + LOCK_MS;
+    lockUntil = performance.now() + ENSURE_MS;
     applyActive(index);
-    const tick = item.role === "assistant" ? nativeTickFor(item, index) : undefined;
-    if (tick) tick.click();
-    const deadline = performance.now() + HYDRATE_MS;
-    let lastTop = -1;
+    const pane = jumpPane(mountedEl(item));
+    const prevAnchor = pane?.style.overflowAnchor ?? "";
+    if (pane) pane.style.overflowAnchor = "none";
+    const deadline = performance.now() + ENSURE_MS;
+    let clicked = false;
+    let issued = false;
+    let behavior: ScrollBehavior = "auto";
+    let lastDelta = Number.POSITIVE_INFINITY;
+    let idle = 0;
+    let snaps = 0;
+    let lastMark = "";
     let stuck = 0;
-    let tries = 0;
-    while (performance.now() < deadline) {
-        if (gen !== hydrateGen) return;
-        const el = mountedEl(lastNav[index] ?? item);
-        if (el) {
-            const instant = isFar(el) || reduceMotion();
-            scrollToItem(el, instant ? "auto" : "smooth");
-            window.setTimeout(() => { if (gen === hydrateGen) flash(el); }, 180);
-            lockUntil = performance.now() + (instant ? LOCK_FAST_MS : LOCK_MS);
-            return;
+    try {
+        while (performance.now() < deadline) {
+            if (gen !== hydrateGen) break;
+            const cur = lastNav[index] ?? item;
+            const el = mountedEl(cur);
+            const box = pane?.isConnected ? pane : jumpPane(el);
+            if (el && box?.contains(el)) {
+                const delta = Math.abs(misalign(el, box));
+                if (delta <= SNAP_PX) {
+                    finishJump(gen, el);
+                    return;
+                }
+                if (!issued) {
+                    behavior = farTarget(el) ? "auto" : "smooth";
+                    place(el, behavior);
+                    issued = true;
+                } else if (behavior === "auto" && snaps < 6) {
+                    place(el, "auto");
+                    snaps++;
+                } else if (idle >= 3 && snaps < 3) {
+                    behavior = "auto";
+                    place(el, "auto");
+                    snaps++;
+                    idle = 0;
+                } else if (idle >= 3) return;
+                idle = Math.abs(delta - lastDelta) < 2 ? idle + 1 : 0;
+                lastDelta = delta;
+            } else if (box) {
+                issued = false;
+                idle = 0;
+                snaps = 0;
+                if (!clicked) {
+                    clicked = true;
+                    const tick = cur.role === "assistant" ? nativeTickFor(cur, index) : undefined;
+                    if (tick) {
+                        tick.click();
+                        await sleep(HYDRATE_STEP);
+                        continue;
+                    }
+                }
+                requestOlder();
+                const mark = `${Math.round(box.scrollTop)}:${box.scrollHeight}`;
+                stuck = mark === lastMark ? stuck + 1 : 0;
+                lastMark = mark;
+                if (stuck >= 4 && edgeBlocked(box, index) && !historyPending()) break;
+                nudge(index, box);
+            } else break;
+            await sleep(HYDRATE_STEP);
         }
-        tries++;
-        if (!tick || tries > 4) {
-            const pane = chatPane();
-            const top = pane?.scrollTop ?? 0;
-            if (top === lastTop) stuck++;
-            else stuck = 0;
-            lastTop = top;
-            if (stuck >= 3 && top <= 1) break;
-            nudgeToward(index);
-        }
-        await new Promise(r => window.setTimeout(r, HYDRATE_STEP));
+    } finally {
+        if (gen === hydrateGen && pane?.isConnected) pane.style.overflowAnchor = prevAnchor;
     }
 }
 
 function jump(item: NavItem, index: number) {
-    const cur = lastNav[index] ?? item;
-    const el = mountedEl(cur);
-    if (!el) {
-        void hydrateJump(cur, index);
-        return;
-    }
-    const instant = isFar(el) || reduceMotion();
-    lockIdx = index;
-    lockUntil = performance.now() + (instant ? LOCK_FAST_MS : LOCK_MS);
-    applyActive(index);
-    scrollToItem(el, instant ? "auto" : "smooth");
-    window.setTimeout(() => flash(el), 180);
+    void ensureJump(lastNav[index] ?? item, index);
 }
 
 function jumpById(messageId: string): boolean {

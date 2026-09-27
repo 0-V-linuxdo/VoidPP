@@ -224,8 +224,9 @@ function findPane(el: HTMLElement): HTMLElement | null {
 function scrollResponse(el: HTMLElement): boolean {
     const pane = findPane(el);
     if (!pane) return false;
-    const top = pane.scrollTop + (el.getBoundingClientRect().top - pane.getBoundingClientRect().top) - OFFSET_PX;
-    pane.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    const delta = el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
+    const behavior: ScrollBehavior = Math.abs(delta) > pane.clientHeight ? "auto" : "smooth";
+    pane.scrollTo({ top: Math.max(0, pane.scrollTop + delta), behavior });
     return true;
 }
 

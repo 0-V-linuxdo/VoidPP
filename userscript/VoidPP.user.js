@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.4
+// @version      20260927.5
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.4] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.5] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b57dc8e"}`
-    }, `(${"b57dc8e"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"16a8e6b"}`
+    }, `(${"16a8e6b"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8833,8 +8833,9 @@ button .void-info-hint {
     const pane = findPane(el);
     if (!pane)
       return false;
-    const top = pane.scrollTop + (el.getBoundingClientRect().top - pane.getBoundingClientRect().top) - OFFSET_PX;
-    pane.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    const delta = el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
+    const behavior = Math.abs(delta) > pane.clientHeight ? "auto" : "smooth";
+    pane.scrollTo({ top: Math.max(0, pane.scrollTop + delta), behavior });
     return true;
   }
   function jumpLocal(messageId) {
@@ -18016,11 +18017,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var EDGE_TAIL = 80;
   var OFFSET_PX2 = 72;
   var LOCK_MS = 1000;
-  var LOCK_FAST_MS = 280;
-  var FAR_VIEWPORTS = 2.5;
+  var ENSURE_MS = 1e4;
+  var SNAP_PX = 16;
   var DENSE_N = 16;
   var SLOT_CLASS = "void-bn-rail";
-  var HYDRATE_MS = 2400;
   var HYDRATE_STEP = 80;
   var LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
   var LIVE_PHASE = new Set(["sending", "streaming"]);
@@ -18677,27 +18677,56 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return pool[tickIndex];
     return Math.min(tickIndex, Math.max(0, lastNav.length - 1));
   }
-  function isFar(el) {
-    const pane = chatPane2();
-    const vh = pane?.clientHeight ?? window.innerHeight;
-    const top = pane?.getBoundingClientRect().top ?? 0;
-    return Math.abs(el.getBoundingClientRect().top - top) > vh * FAR_VIEWPORTS;
+  function sleep3(ms) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
   }
-  function scrollToItem(el, behavior) {
+  function jumpPane(el) {
+    const tagged = document.querySelector("[data-testid='chat-transcript-scroller']");
+    if (tagged && !tagged.closest(PANE_SKIP2) && (!el || tagged.contains(el)))
+      return tagged;
+    return chatPane2();
+  }
+  function misalign(el, pane) {
+    return el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX2;
+  }
+  function place(el, behavior) {
     el.style.scrollMarginTop = `${OFFSET_PX2}px`;
-    const pane = chatPane2();
-    if (pane && pane.contains(el)) {
-      const pr = pane.getBoundingClientRect();
-      const er = el.getBoundingClientRect();
-      pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - OFFSET_PX2, behavior });
+    const pane = jumpPane(el);
+    if (pane?.contains(el)) {
+      pane.scrollTo({ top: Math.max(0, pane.scrollTop + misalign(el, pane)), behavior });
       return;
     }
     el.scrollIntoView({ behavior, block: "start" });
   }
-  function nudgeToward(index) {
-    const pane = chatPane2();
-    if (!pane)
+  function farTarget(el) {
+    if (reduceMotion())
+      return true;
+    const pane = jumpPane(el);
+    const vh = pane?.clientHeight || window.innerHeight;
+    const origin = pane?.getBoundingClientRect().top ?? 0;
+    return Math.abs(el.getBoundingClientRect().top - origin) > vh;
+  }
+  function historyPending() {
+    return !!gatewayOf(currentCid4())?.history.hasMore;
+  }
+  function requestOlder() {
+    const cid = currentCid4();
+    const gw = gatewayOf(cid);
+    if (!gw?.history.hasMore || !gw.defaultLeafId)
       return;
+    const key = `${cid}:${gw.history.nextBeforeId ?? ""}`;
+    if (key === olderAsked)
+      return;
+    olderAsked = key;
+    try {
+      MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
+    } catch (e) {
+      logger27.debug("loadOlderHistory failed:", e);
+    }
+  }
+  function nudge(index, pane) {
     const vh = Math.max(120, pane.clientHeight || window.innerHeight);
     let before = -1;
     let after = -1;
@@ -18710,72 +18739,119 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         after = i;
     }
     if (before < 0) {
-      pane.scrollTo({ top: Math.max(0, pane.scrollTop - vh * 0.8), behavior: "auto" });
+      pane.scrollTo({ top: Math.max(0, pane.scrollTop - vh * 0.85), behavior: "auto" });
       return;
     }
     if (after < 0) {
-      pane.scrollTo({ top: pane.scrollTop + vh * 0.8, behavior: "auto" });
+      pane.scrollTo({ top: pane.scrollTop + vh * 0.85, behavior: "auto" });
       return;
     }
     const el = mountedEl(lastNav[before]);
     if (el)
-      scrollToItem(el, "auto");
+      place(el, "auto");
   }
-  async function hydrateJump(item, index) {
+  function edgeBlocked(pane, index) {
+    let before = false;
+    let after = false;
+    for (let i = 0;i < lastNav.length; i++) {
+      if (!mountedEl(lastNav[i]))
+        continue;
+      if (i < index)
+        before = true;
+      else if (i > index)
+        after = true;
+    }
+    if (!before)
+      return pane.scrollTop <= 1;
+    if (!after)
+      return pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 2;
+    return false;
+  }
+  function finishJump(gen, el) {
+    window.setTimeout(() => {
+      if (gen === hydrateGen)
+        flash(el);
+    }, 180);
+    lockUntil = performance.now() + LOCK_MS;
+  }
+  async function ensureJump(item, index) {
     const gen = ++hydrateGen;
     lockIdx = index;
-    lockUntil = performance.now() + HYDRATE_MS + LOCK_MS;
+    lockUntil = performance.now() + ENSURE_MS;
     applyActive(index);
-    const tick = item.role === "assistant" ? nativeTickFor(item, index) : undefined;
-    if (tick)
-      tick.click();
-    const deadline = performance.now() + HYDRATE_MS;
-    let lastTop = -1;
+    const pane = jumpPane(mountedEl(item));
+    const prevAnchor = pane?.style.overflowAnchor ?? "";
+    if (pane)
+      pane.style.overflowAnchor = "none";
+    const deadline = performance.now() + ENSURE_MS;
+    let clicked = false;
+    let issued = false;
+    let behavior = "auto";
+    let lastDelta = Number.POSITIVE_INFINITY;
+    let idle = 0;
+    let snaps = 0;
+    let lastMark = "";
     let stuck = 0;
-    let tries = 0;
-    while (performance.now() < deadline) {
-      if (gen !== hydrateGen)
-        return;
-      const el = mountedEl(lastNav[index] ?? item);
-      if (el) {
-        const instant = isFar(el) || reduceMotion();
-        scrollToItem(el, instant ? "auto" : "smooth");
-        window.setTimeout(() => {
-          if (gen === hydrateGen)
-            flash(el);
-        }, 180);
-        lockUntil = performance.now() + (instant ? LOCK_FAST_MS : LOCK_MS);
-        return;
-      }
-      tries++;
-      if (!tick || tries > 4) {
-        const pane = chatPane2();
-        const top = pane?.scrollTop ?? 0;
-        if (top === lastTop)
-          stuck++;
-        else
-          stuck = 0;
-        lastTop = top;
-        if (stuck >= 3 && top <= 1)
+    try {
+      while (performance.now() < deadline) {
+        if (gen !== hydrateGen)
           break;
-        nudgeToward(index);
+        const cur = lastNav[index] ?? item;
+        const el = mountedEl(cur);
+        const box = pane?.isConnected ? pane : jumpPane(el);
+        if (el && box?.contains(el)) {
+          const delta = Math.abs(misalign(el, box));
+          if (delta <= SNAP_PX) {
+            finishJump(gen, el);
+            return;
+          }
+          if (!issued) {
+            behavior = farTarget(el) ? "auto" : "smooth";
+            place(el, behavior);
+            issued = true;
+          } else if (behavior === "auto" && snaps < 6) {
+            place(el, "auto");
+            snaps++;
+          } else if (idle >= 3 && snaps < 3) {
+            behavior = "auto";
+            place(el, "auto");
+            snaps++;
+            idle = 0;
+          } else if (idle >= 3)
+            return;
+          idle = Math.abs(delta - lastDelta) < 2 ? idle + 1 : 0;
+          lastDelta = delta;
+        } else if (box) {
+          issued = false;
+          idle = 0;
+          snaps = 0;
+          if (!clicked) {
+            clicked = true;
+            const tick = cur.role === "assistant" ? nativeTickFor(cur, index) : undefined;
+            if (tick) {
+              tick.click();
+              await sleep3(HYDRATE_STEP);
+              continue;
+            }
+          }
+          requestOlder();
+          const mark = `${Math.round(box.scrollTop)}:${box.scrollHeight}`;
+          stuck = mark === lastMark ? stuck + 1 : 0;
+          lastMark = mark;
+          if (stuck >= 4 && edgeBlocked(box, index) && !historyPending())
+            break;
+          nudge(index, box);
+        } else
+          break;
+        await sleep3(HYDRATE_STEP);
       }
-      await new Promise((r) => window.setTimeout(r, HYDRATE_STEP));
+    } finally {
+      if (gen === hydrateGen && pane?.isConnected)
+        pane.style.overflowAnchor = prevAnchor;
     }
   }
   function jump(item, index) {
-    const cur = lastNav[index] ?? item;
-    const el = mountedEl(cur);
-    if (!el) {
-      hydrateJump(cur, index);
-      return;
-    }
-    const instant = isFar(el) || reduceMotion();
-    lockIdx = index;
-    lockUntil = performance.now() + (instant ? LOCK_FAST_MS : LOCK_MS);
-    applyActive(index);
-    scrollToItem(el, instant ? "auto" : "smooth");
-    window.setTimeout(() => flash(el), 180);
+    ensureJump(lastNav[index] ?? item, index);
   }
   function jumpById(messageId) {
     const index = lastNav.findIndex((item) => item.id === messageId);
@@ -32292,7 +32368,7 @@ div:has(> #grok-bot-nav-button) {
   contextMenu_default.updatedAt = 1790444048000;
   chatBarButtons_default.updatedAt = 1790444048000;
   betterFiles_default.updatedAt = 1790444048000;
-  messageStars_default.updatedAt = 1790527746000;
+  messageStars_default.updatedAt = 1790528908000;
   usageDisplay_default.updatedAt = 1790444048000;
   betterQueue_default.updatedAt = 1790444048000;
   settingsFlyout_default.updatedAt = 1790444048000;
