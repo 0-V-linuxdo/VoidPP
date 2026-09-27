@@ -128,6 +128,7 @@ let flashTimer = 0;
 let flashing: HTMLElement | null = null;
 let flashId = "";
 let flashUntil = 0;
+let flashFallback: HTMLElement | null = null;
 let raf = 0;
 let activeIdx = 0;
 let activeSource: "native" | "list" = "list";
@@ -646,14 +647,16 @@ function clearFlash() {
     flashTimer = 0;
     flashUntil = 0;
     flashId = "";
+    flashFallback = null;
     flashing?.classList.remove("void-bn-flash");
     flashing = null;
 }
 
 function paintFlash() {
-    if (!flashId) return;
-    const el = document.getElementById(`response-${flashId}`);
-    if (!(el instanceof HTMLElement)) return;
+    const byId = flashId ? elForId(flashId) : null;
+    const live = byId ?? (flashFallback && document.body.contains(flashFallback) ? flashFallback : null);
+    if (!live) return;
+    const el = bubbleOf(live) ?? live;
     if (flashing !== el) {
         flashing?.classList.remove("void-bn-flash");
         flashing = el;
@@ -661,16 +664,22 @@ function paintFlash() {
     el.classList.add("void-bn-flash");
 }
 
-function armFlash(id: string) {
-    if (settings.store.jumpEffect !== "border" || !id) return;
-    if (flashId === id && performance.now() < flashUntil) return;
+function armFlash(id: string, fallback?: HTMLElement | null) {
+    if (settings.store.jumpEffect !== "border") return;
+    if (!id && !fallback) return;
+    if (id && flashId === id && performance.now() < flashUntil) {
+        if (fallback) flashFallback = fallback;
+        paintFlash();
+        return;
+    }
     flashing?.classList.remove("void-bn-flash");
     flashing = null;
     if (flashTimer) cancelAnimationFrame(flashTimer);
     flashId = id;
+    flashFallback = fallback ?? null;
     flashUntil = performance.now() + (reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
     const step = () => {
-        if (!flashId || performance.now() >= flashUntil) {
+        if ((!flashId && !flashFallback) || performance.now() >= flashUntil) {
             clearFlash();
             return;
         }
@@ -973,8 +982,9 @@ async function ensureJump(item: NavItem, index: number) {
             }
             if (el && box.contains(el)) {
                 edgeSince = 0;
-                if (cur.id && inPaneView(el, box)) armFlash(cur.id);
+                if (cur.id && inPaneView(el, box)) armFlash(cur.id, el);
                 if (await settleAim(el, box, gen)) {
+                    armFlash(cur.id ?? "", el);
                     finishJump();
                     return;
                 }

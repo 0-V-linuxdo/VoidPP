@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.13
+// @version      20260927.14
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.13] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ee911ba"}`
-    }, `(${"ee911ba"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4e31f88"}`
+    }, `(${"4e31f88"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18035,6 +18035,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var flashing = null;
   var flashId = "";
   var flashUntil = 0;
+  var flashFallback = null;
   var raf2 = 0;
   var activeIdx = 0;
   var activeSource = "list";
@@ -18600,34 +18601,42 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     flashTimer = 0;
     flashUntil = 0;
     flashId = "";
+    flashFallback = null;
     flashing?.classList.remove("void-bn-flash");
     flashing = null;
   }
   function paintFlash() {
-    if (!flashId)
+    const byId = flashId ? elForId(flashId) : null;
+    const live = byId ?? (flashFallback && document.body.contains(flashFallback) ? flashFallback : null);
+    if (!live)
       return;
-    const el = document.getElementById(`response-${flashId}`);
-    if (!(el instanceof HTMLElement))
-      return;
+    const el = bubbleOf(live) ?? live;
     if (flashing !== el) {
       flashing?.classList.remove("void-bn-flash");
       flashing = el;
     }
     el.classList.add("void-bn-flash");
   }
-  function armFlash(id) {
-    if (settings13.store.jumpEffect !== "border" || !id)
+  function armFlash(id, fallback) {
+    if (settings13.store.jumpEffect !== "border")
       return;
-    if (flashId === id && performance.now() < flashUntil)
+    if (!id && !fallback)
       return;
+    if (id && flashId === id && performance.now() < flashUntil) {
+      if (fallback)
+        flashFallback = fallback;
+      paintFlash();
+      return;
+    }
     flashing?.classList.remove("void-bn-flash");
     flashing = null;
     if (flashTimer)
       cancelAnimationFrame(flashTimer);
     flashId = id;
+    flashFallback = fallback ?? null;
     flashUntil = performance.now() + (reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
     const step = () => {
-      if (!flashId || performance.now() >= flashUntil) {
+      if (!flashId && !flashFallback || performance.now() >= flashUntil) {
         clearFlash();
         return;
       }
@@ -18925,8 +18934,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         if (el && box.contains(el)) {
           edgeSince = 0;
           if (cur.id && inPaneView(el, box))
-            armFlash(cur.id);
+            armFlash(cur.id, el);
           if (await settleAim(el, box, gen)) {
+            armFlash(cur.id ?? "", el);
             finishJump();
             return;
           }
@@ -32539,7 +32549,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790534450000;
+  betterNavigator_default.updatedAt = 1790534927000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;
