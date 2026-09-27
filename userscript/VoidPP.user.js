@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.22
+// @version      20260927.23
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.22] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.23] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,7 +7755,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260927.23] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b247fe1"}`
     }, `(${"b247fe1"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -25221,6 +25221,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     justify-content: center;
     margin: 0;
     padding: 0;
+    border-radius: 999px;
     color: hsl(var(--fg-secondary));
 }
 
@@ -25280,10 +25281,20 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     height: 10px;
 }
 
-.void-stars-bubble.void-stars-on,
-.void-stars-toggle.void-stars-here,
 .void-stars-toggle.void-stars-open {
     color: #ff7a17;
+}
+
+.void-stars-bubble.void-stars-on,
+.void-stars-toggle.void-stars-here {
+    color: #ff7a17;
+    background: rgb(255 122 23 / 14%);
+}
+
+.void-stars-bubble.void-stars-on svg,
+.void-stars-toggle.void-stars-here svg {
+    fill: currentcolor;
+    stroke-width: 0;
 }
 
 .void-stars-bubble:hover,
@@ -25292,6 +25303,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 .void-stars-toggle:focus-visible {
     background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
     color: hsl(var(--fg-primary));
+}
+
+.void-stars-bubble.void-stars-on:hover,
+.void-stars-bubble.void-stars-on:focus-visible,
+.void-stars-toggle.void-stars-here:hover,
+.void-stars-toggle.void-stars-here:focus-visible {
+    color: #ff7a17;
+    background: rgb(255 122 23 / 22%);
 }
 
 .void-stars-panel {
