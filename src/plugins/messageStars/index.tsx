@@ -383,26 +383,8 @@ function messageBar(shell: HTMLElement, bubble: HTMLElement): { row: HTMLElement
     return best ? { row: best.row, copy: best.copy } : null;
 }
 
-function hostBar(row: HTMLElement, bubble: HTMLElement, shell: HTMLElement): HTMLElement {
-    let node = row;
-    while (node.parentElement && node.parentElement !== shell && node.parentElement !== document.body) {
-        const parent = node.parentElement;
-        if (ownsBubble(parent, bubble)) break;
-        if (parent.querySelector("p, pre, h1, h2, h3, ul, ol, blockquote, table")) break;
-        let wider = false;
-        for (const child of parent.children) {
-            if (child === node || !(child instanceof HTMLElement) || child.classList.contains("void-stars-bubble")) continue;
-            if (child.matches("button, [role='button']") || child.querySelector("button, [role='button']")) wider = true;
-        }
-        if (!wider) break;
-        node = parent;
-    }
-    return node;
-}
-
 function placeBeside(row: HTMLElement, star: HTMLButtonElement): boolean {
     if (getComputedStyle(row).position === "static") row.classList.add("void-stars-bar");
-    star.style.position = "absolute";
     if (star.parentElement !== row) row.appendChild(star);
     const rowBox = row.getBoundingClientRect();
     let edge = -1;
@@ -421,7 +403,7 @@ function placeBeside(row: HTMLElement, star: HTMLButtonElement): boolean {
     }
     if (edge < 0) return false;
     const size = Math.max(16, Math.round(height));
-    star.style.left = `${Math.round(edge + 4)}px`;
+    star.style.left = `${Math.round(edge + 2)}px`;
     star.style.top = `${Math.round(top)}px`;
     star.style.width = `${size}px`;
     star.style.height = `${size}px`;
@@ -482,10 +464,9 @@ function paintBubbles() {
         const id = messageIdOf(msg);
         if (!cid || !id) continue;
         const found = messageBar(shellOf(msg), msg);
-        if (!found) continue;
-        const row = hostBar(found.row, msg, shellOf(msg));
-        if (seen.has(row)) continue;
-        seen.add(row);
+        if (!found || seen.has(found.row)) continue;
+        seen.add(found.row);
+        const { row } = found;
         let btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
         if (!btn) btn = makeBubble();
         if (!placeBeside(row, btn)) {
@@ -499,9 +480,6 @@ function paintBubbles() {
     for (const btn of document.querySelectorAll<HTMLButtonElement>(".void-stars-bubble")) {
         if (!keep.has(btn)) btn.remove();
     }
-    document.querySelectorAll(".void-stars-bar").forEach(node => {
-        if (!node.querySelector(":scope > .void-stars-bubble")) node.classList.remove("void-stars-bar");
-    });
 }
 
 function clearBubbles() {

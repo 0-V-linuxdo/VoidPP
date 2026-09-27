@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.2
+// @version      20260927.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.2] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f418a53"}`
-    }, `(${"f418a53"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"097c204"}`
+    }, `(${"097c204"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8972,31 +8972,9 @@ button .void-info-hint {
     }
     return best ? { row: best.row, copy: best.copy } : null;
   }
-  function hostBar(row, bubble, shell) {
-    let node = row;
-    while (node.parentElement && node.parentElement !== shell && node.parentElement !== document.body) {
-      const parent = node.parentElement;
-      if (ownsBubble(parent, bubble))
-        break;
-      if (parent.querySelector("p, pre, h1, h2, h3, ul, ol, blockquote, table"))
-        break;
-      let wider = false;
-      for (const child of parent.children) {
-        if (child === node || !(child instanceof HTMLElement) || child.classList.contains("void-stars-bubble"))
-          continue;
-        if (child.matches("button, [role='button']") || child.querySelector("button, [role='button']"))
-          wider = true;
-      }
-      if (!wider)
-        break;
-      node = parent;
-    }
-    return node;
-  }
   function placeBeside(row, star) {
     if (getComputedStyle(row).position === "static")
       row.classList.add("void-stars-bar");
-    star.style.position = "absolute";
     if (star.parentElement !== row)
       row.appendChild(star);
     const rowBox = row.getBoundingClientRect();
@@ -9019,7 +8997,7 @@ button .void-info-hint {
     if (edge < 0)
       return false;
     const size = Math.max(16, Math.round(height));
-    star.style.left = `${Math.round(edge + 4)}px`;
+    star.style.left = `${Math.round(edge + 2)}px`;
     star.style.top = `${Math.round(top)}px`;
     star.style.width = `${size}px`;
     star.style.height = `${size}px`;
@@ -9080,12 +9058,10 @@ button .void-info-hint {
       if (!cid || !id)
         continue;
       const found = messageBar(shellOf(msg), msg);
-      if (!found)
+      if (!found || seen.has(found.row))
         continue;
-      const row = hostBar(found.row, msg, shellOf(msg));
-      if (seen.has(row))
-        continue;
-      seen.add(row);
+      seen.add(found.row);
+      const { row } = found;
       let btn = row.querySelector(":scope > .void-stars-bubble");
       if (!btn)
         btn = makeBubble();
@@ -9101,10 +9077,6 @@ button .void-info-hint {
       if (!keep.has(btn))
         btn.remove();
     }
-    document.querySelectorAll(".void-stars-bar").forEach((node) => {
-      if (!node.querySelector(":scope > .void-stars-bubble"))
-        node.classList.remove("void-stars-bar");
-    });
   }
   function clearBubbles() {
     document.querySelectorAll(".void-stars-bubble").forEach((node) => node.remove());
@@ -32271,7 +32243,7 @@ div:has(> #grok-bot-nav-button) {
   contextMenu_default.updatedAt = 1790444048000;
   chatBarButtons_default.updatedAt = 1790444048000;
   betterFiles_default.updatedAt = 1790444048000;
-  messageStars_default.updatedAt = 1790527191000;
+  messageStars_default.updatedAt = 1790527641000;
   usageDisplay_default.updatedAt = 1790444048000;
   betterQueue_default.updatedAt = 1790444048000;
   settingsFlyout_default.updatedAt = 1790444048000;
