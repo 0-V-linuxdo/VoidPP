@@ -75,7 +75,7 @@ const ENSURE_MS = 10000;
 const SNAP_PX = 16;
 const AIM_MS = 300;
 const SETTLE_MS = 100;
-const HOP_SCREENS = 3;
+const TICK_WAIT_MS = 200;
 const DENSE_N = 16;
 const SLOT_CLASS = "void-bn-rail";
 const LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
@@ -778,6 +778,39 @@ function jumpEnd(pane: HTMLElement) {
     pane.scrollTop = Math.max(0, pane.scrollHeight - pane.clientHeight);
 }
 
+function predecessor(index: number, pane: HTMLElement): HTMLElement | null {
+    for (let i = index - 1; i >= 0; i--) {
+        const el = mountedEl(lastNav[i]);
+        if (el && pane.contains(el)) return el;
+    }
+    return null;
+}
+
+function tickForIndex(index: number): HTMLButtonElement | undefined {
+    const item = lastNav[index];
+    if (!item) return;
+    if (item.role === "assistant") return nativeTickFor(item, index);
+    let next = -1;
+    let prev = -1;
+    for (let i = 0; i < lastNav.length; i++) {
+        if (lastNav[i].role !== "assistant") continue;
+        if (i >= index) {
+            next = i;
+            break;
+        }
+        prev = i;
+    }
+    const j = next >= 0 ? next : prev;
+    if (j < 0) return;
+    return nativeTickFor(lastNav[j], j);
+}
+
+function parkAbove(el: HTMLElement, pane: HTMLElement) {
+    const { bottom } = el.getBoundingClientRect();
+    const { top: paneTop } = pane.getBoundingClientRect();
+    pane.scrollTop = Math.max(0, pane.scrollTop + bottom - paneTop - OFFSET_PX);
+}
+
 function nudge(pane: HTMLElement, dir: -1 | 1, screens: number) {
     const vh = Math.max(120, pane.clientHeight || window.innerHeight);
     const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
@@ -816,9 +849,8 @@ async function ensureJump(item: NavItem, index: number) {
     const deadline = performance.now() + ENSURE_MS;
     let clicked = false;
     let edgeSince = 0;
-    let tickLeft = 0;
-    let hop = HOP_SCREENS;
-    let blankHold = 0;
+    let waitTickUntil = 0;
+    let stuck = 0;
     let held: HTMLElement | null = null;
     let prevBehavior = "";
     let prevAnchor = "";
@@ -850,14 +882,6 @@ async function ensureJump(item: NavItem, index: number) {
             }
             const older = seekOlder(index);
             const now = performance.now();
-            if (!clicked) {
-                clicked = true;
-                const tick = cur.role === "assistant" ? nativeTickFor(cur, index) : undefined;
-                if (tick) {
-                    tick.click();
-                    tickLeft = 2;
-                }
-            }
             if (older) {
                 if (atRealEdge(box, true)) {
                     if (!edgeSince) edgeSince = now;
@@ -877,16 +901,19 @@ async function ensureJump(item: NavItem, index: number) {
                     edgeSince = 0;
                     jumpEdge(box);
                 }
-            } else if (tickLeft > 0) {
-                tickLeft -= 1;
+            } else if (!clicked) {
+                clicked = true;
+                const tick = tickForIndex(index);
+                if (tick) {
+                    tick.click();
+                    waitTickUntil = now + TICK_WAIT_MS;
+                }
+            } else if (now < waitTickUntil) {
                 edgeSince = 0;
             } else if (!firstResponseId(box)) {
                 nudge(box, -1, 1);
-                hop = 1;
-                blankHold = 2;
+                stuck = 0;
                 edgeSince = 0;
-            } else if (blankHold > 0) {
-                blankHold -= 1;
             } else if (index >= lastNav.length - 1) {
                 jumpEnd(box);
                 if (atRealEdge(box, false)) {
@@ -900,8 +927,18 @@ async function ensureJump(item: NavItem, index: number) {
                 if (now - edgeSince > AIM_MS) break;
             } else {
                 edgeSince = 0;
-                nudge(box, 1, hop);
-                if (hop < HOP_SCREENS) hop += 1;
+                const pred = predecessor(index, box);
+                const before = box.scrollTop;
+                if (pred) parkAbove(pred, box);
+                if (!pred || Math.abs(box.scrollTop - before) < 2) {
+                    stuck += 1;
+                    if (stuck >= 2) {
+                        nudge(box, 1, 1);
+                        stuck = 0;
+                    }
+                } else {
+                    stuck = 0;
+                }
             }
             await frame();
         }
