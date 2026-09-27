@@ -55,6 +55,18 @@
     margin: 0;
     padding: 0;
     color: hsl(var(--fg-secondary));
+}
+
+.void-stars-bubble.void-stars-rest {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.void-stars-bubble.void-stars-rest:focus-visible,
+[id^="response-"]:hover .void-stars-bubble.void-stars-rest,
+[id^="response-"]:focus-within .void-stars-bubble.void-stars-rest {
+    opacity: 1;
     pointer-events: auto;
 }
 

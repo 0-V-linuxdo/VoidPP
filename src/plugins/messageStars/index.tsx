@@ -383,6 +383,42 @@ function messageBar(shell: HTMLElement, bubble: HTMLElement): { row: HTMLElement
     return best ? { row: best.row, copy: best.copy } : null;
 }
 
+function isFadeClass(name: string): boolean {
+    return name === "transition-opacity" || /opacity-0|opacity-100|(?:^|:)invisible(?:$|:)|pointer-events-(?:none|auto)/.test(name);
+}
+
+function fadeTokens(from: HTMLElement, row: HTMLElement): string[] {
+    const out: string[] = [];
+    let node: HTMLElement | null = from;
+    while (node && node !== row) {
+        for (const name of node.classList) {
+            if (!isFadeClass(name) || out.includes(name)) continue;
+            out.push(name);
+        }
+        node = node.parentElement;
+    }
+    return out;
+}
+
+function applyFade(star: HTMLButtonElement, copy: HTMLElement, row: HTMLElement) {
+    const next = fadeTokens(copy, row);
+    const prev = star.dataset.fadeClass?.split(" ").filter(Boolean) ?? [];
+    for (const name of prev) {
+        if (!next.includes(name)) star.classList.remove(name);
+    }
+    for (const name of next) star.classList.add(name);
+    star.dataset.fadeClass = next.join(" ");
+    if (next.some(name => /opacity-0|invisible/.test(name))) {
+        star.classList.remove("void-stars-rest");
+        return;
+    }
+    const shell = row.closest<HTMLElement>("[id^='response-']");
+    const idle = !!shell && !shell.matches(":hover") && !shell.matches(":focus-within");
+    const style = getComputedStyle(copy);
+    const shown = idle && Number(style.opacity) > 0.9 && style.visibility !== "hidden";
+    star.classList.toggle("void-stars-rest", !shown);
+}
+
 function placeBeside(row: HTMLElement, star: HTMLButtonElement): boolean {
     if (getComputedStyle(row).position === "static") row.classList.add("void-stars-bar");
     if (star.parentElement !== row) row.appendChild(star);
@@ -466,13 +502,14 @@ function paintBubbles() {
         const found = messageBar(shellOf(msg), msg);
         if (!found || seen.has(found.row)) continue;
         seen.add(found.row);
-        const { row } = found;
+        const { row, copy } = found;
         let btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
         if (!btn) btn = makeBubble();
         if (!placeBeside(row, btn)) {
             btn.remove();
             continue;
         }
+        applyFade(btn, copy, row);
         const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
         syncBubble(btn, cid, id, role);
         keep.add(btn);

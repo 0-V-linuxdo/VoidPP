@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.3
+// @version      20260927.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.3] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"097c204"}`
-    }, `(${"097c204"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b57dc8e"}`
+    }, `(${"b57dc8e"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8241,6 +8241,18 @@ button .void-info-hint {
     margin: 0;
     padding: 0;
     color: hsl(var(--fg-secondary));
+}
+
+.void-stars-bubble.void-stars-rest {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.void-stars-bubble.void-stars-rest:focus-visible,
+[id^="response-"]:hover .void-stars-bubble.void-stars-rest,
+[id^="response-"]:focus-within .void-stars-bubble.void-stars-rest {
+    opacity: 1;
     pointer-events: auto;
 }
 
@@ -8972,6 +8984,42 @@ button .void-info-hint {
     }
     return best ? { row: best.row, copy: best.copy } : null;
   }
+  function isFadeClass(name) {
+    return name === "transition-opacity" || /opacity-0|opacity-100|(?:^|:)invisible(?:$|:)|pointer-events-(?:none|auto)/.test(name);
+  }
+  function fadeTokens(from, row) {
+    const out = [];
+    let node = from;
+    while (node && node !== row) {
+      for (const name of node.classList) {
+        if (!isFadeClass(name) || out.includes(name))
+          continue;
+        out.push(name);
+      }
+      node = node.parentElement;
+    }
+    return out;
+  }
+  function applyFade(star, copy, row) {
+    const next = fadeTokens(copy, row);
+    const prev = star.dataset.fadeClass?.split(" ").filter(Boolean) ?? [];
+    for (const name of prev) {
+      if (!next.includes(name))
+        star.classList.remove(name);
+    }
+    for (const name of next)
+      star.classList.add(name);
+    star.dataset.fadeClass = next.join(" ");
+    if (next.some((name) => /opacity-0|invisible/.test(name))) {
+      star.classList.remove("void-stars-rest");
+      return;
+    }
+    const shell = row.closest("[id^='response-']");
+    const idle = !!shell && !shell.matches(":hover") && !shell.matches(":focus-within");
+    const style = getComputedStyle(copy);
+    const shown = idle && Number(style.opacity) > 0.9 && style.visibility !== "hidden";
+    star.classList.toggle("void-stars-rest", !shown);
+  }
   function placeBeside(row, star) {
     if (getComputedStyle(row).position === "static")
       row.classList.add("void-stars-bar");
@@ -9061,7 +9109,7 @@ button .void-info-hint {
       if (!found || seen.has(found.row))
         continue;
       seen.add(found.row);
-      const { row } = found;
+      const { row, copy } = found;
       let btn = row.querySelector(":scope > .void-stars-bubble");
       if (!btn)
         btn = makeBubble();
@@ -9069,6 +9117,7 @@ button .void-info-hint {
         btn.remove();
         continue;
       }
+      applyFade(btn, copy, row);
       const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
       syncBubble(btn, cid, id, role);
       keep.add(btn);
@@ -32243,7 +32292,7 @@ div:has(> #grok-bot-nav-button) {
   contextMenu_default.updatedAt = 1790444048000;
   chatBarButtons_default.updatedAt = 1790444048000;
   betterFiles_default.updatedAt = 1790444048000;
-  messageStars_default.updatedAt = 1790527641000;
+  messageStars_default.updatedAt = 1790527746000;
   usageDisplay_default.updatedAt = 1790444048000;
   betterQueue_default.updatedAt = 1790444048000;
   settingsFlyout_default.updatedAt = 1790444048000;
