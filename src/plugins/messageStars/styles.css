@@ -81,11 +81,12 @@
     height: 1.75rem;
     padding: 0;
     border-radius: 999px;
-    color: #ff7a17;
+    color: hsl(var(--fg-tertiary));
     pointer-events: auto;
 }
 
 .void-stars-bubble.void-stars-on,
+.void-stars-toggle.void-stars-here,
 .void-stars-toggle.void-stars-open {
     color: #ff7a17;
 }

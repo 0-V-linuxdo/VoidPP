@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.14
+// @version      20260927.15
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.14] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.15] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4e31f88"}`
-    }, `(${"4e31f88"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"dfbbd7c"}`
+    }, `(${"dfbbd7c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8267,11 +8267,12 @@ button .void-info-hint {
     height: 1.75rem;
     padding: 0;
     border-radius: 999px;
-    color: #ff7a17;
+    color: hsl(var(--fg-tertiary));
     pointer-events: auto;
 }
 
 .void-stars-bubble.void-stars-on,
+.void-stars-toggle.void-stars-here,
 .void-stars-toggle.void-stars-open {
     color: #ff7a17;
 }
@@ -9237,6 +9238,9 @@ button .void-info-hint {
     }
     ensureToggle();
     placeToggle(box);
+    const cid = currentCid();
+    const here = !!cid && list.some((star) => star.conversationId === cid);
+    toggleBtn?.classList.toggle("void-stars-here", here);
     if (!listOpen) {
       closePanel();
       return;
@@ -19514,6 +19518,50 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     markAim(-1);
   }
+  async function scrollEdge(up) {
+    const pane = livePane();
+    if (!pane)
+      return;
+    const gen = ++hydrateGen;
+    const deadline = performance.now() + ENSURE_MS;
+    const prevBehavior = pane.style.scrollBehavior;
+    const prevAnchor = pane.style.overflowAnchor;
+    pane.style.scrollBehavior = "auto";
+    pane.style.overflowAnchor = "none";
+    try {
+      while (performance.now() < deadline) {
+        if (gen !== hydrateGen || !pane.isConnected)
+          return;
+        if (up)
+          jumpEdge(pane);
+        else
+          jumpEnd(pane);
+        if (up && historyPending() && atRealEdge(pane, true)) {
+          const height = pane.scrollHeight;
+          const head = firstResponseId(pane);
+          requestOlder();
+          await waitGrow(pane, height, head, gen);
+          if (gen !== hydrateGen)
+            return;
+          if (pane.scrollHeight !== height || firstResponseId(pane) !== head)
+            continue;
+          break;
+        }
+        const top = pane.scrollTop;
+        const height = pane.scrollHeight;
+        await frame();
+        if (gen !== hydrateGen || !pane.isConnected)
+          return;
+        if (pane.scrollTop === top && pane.scrollHeight === height)
+          break;
+      }
+    } finally {
+      if (gen === hydrateGen && pane.isConnected) {
+        pane.style.scrollBehavior = prevBehavior;
+        pane.style.overflowAnchor = prevAnchor;
+      }
+    }
+  }
   function onKeyDown4(e) {
     if (!lastNav.length || !host2?.isConnected)
       return;
@@ -19530,6 +19578,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
     if (!homeEnd && !arrow)
       return;
+    if (arrow && (e.metaKey || e.ctrlKey)) {
+      if (e.altKey)
+        return;
+      e.preventDefault();
+      scrollEdge(e.key === "ArrowUp");
+      return;
+    }
     if (homeEnd) {
       e.preventDefault();
       const idx = e.key === "Home" ? 0 : lastNav.length - 1;
@@ -32549,7 +32604,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790534927000;
+  betterNavigator_default.updatedAt = 1790535262000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;

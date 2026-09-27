@@ -1524,6 +1524,43 @@ function onPointerOut(e: Event) {
     markAim(-1);
 }
 
+async function scrollEdge(up: boolean) {
+    const pane = livePane();
+    if (!pane) return;
+    const gen = ++hydrateGen;
+    const deadline = performance.now() + ENSURE_MS;
+    const prevBehavior = pane.style.scrollBehavior;
+    const prevAnchor = pane.style.overflowAnchor;
+    pane.style.scrollBehavior = "auto";
+    pane.style.overflowAnchor = "none";
+    try {
+        while (performance.now() < deadline) {
+            if (gen !== hydrateGen || !pane.isConnected) return;
+            if (up) jumpEdge(pane);
+            else jumpEnd(pane);
+            if (up && historyPending() && atRealEdge(pane, true)) {
+                const height = pane.scrollHeight;
+                const head = firstResponseId(pane);
+                requestOlder();
+                await waitGrow(pane, height, head, gen);
+                if (gen !== hydrateGen) return;
+                if (pane.scrollHeight !== height || firstResponseId(pane) !== head) continue;
+                break;
+            }
+            const top = pane.scrollTop;
+            const height = pane.scrollHeight;
+            await frame();
+            if (gen !== hydrateGen || !pane.isConnected) return;
+            if (pane.scrollTop === top && pane.scrollHeight === height) break;
+        }
+    } finally {
+        if (gen === hydrateGen && pane.isConnected) {
+            pane.style.scrollBehavior = prevBehavior;
+            pane.style.overflowAnchor = prevAnchor;
+        }
+    }
+}
+
 function onKeyDown(e: KeyboardEvent) {
     if (!lastNav.length || !host?.isConnected) return;
     if (isTypingTarget(e.target) || isTypingTarget(document.activeElement)) return;
@@ -1537,6 +1574,12 @@ function onKeyDown(e: KeyboardEvent) {
     const homeEnd = e.key === "Home" || e.key === "End";
     const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
     if (!homeEnd && !arrow) return;
+    if (arrow && (e.metaKey || e.ctrlKey)) {
+        if (e.altKey) return;
+        e.preventDefault();
+        void scrollEdge(e.key === "ArrowUp");
+        return;
+    }
     if (homeEnd) {
         e.preventDefault();
         const idx = e.key === "Home" ? 0 : lastNav.length - 1;

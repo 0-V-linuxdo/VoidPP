@@ -630,6 +630,9 @@ function paintRail() {
     }
     ensureToggle();
     placeToggle(box);
+    const cid = currentCid();
+    const here = !!cid && list.some(star => star.conversationId === cid);
+    toggleBtn?.classList.toggle("void-stars-here", here);
     if (!listOpen) {
         closePanel();
         return;
