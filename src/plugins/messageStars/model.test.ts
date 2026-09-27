@@ -6,7 +6,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { clipSnippet, groupStars, type StarredMessage, starKey } from "./model";
+import { clipSnippet, conversationIdFromHref, groupStars, resolveConversationId, type StarredMessage, starKey, starsForConversation } from "./model";
 
 function star(partial: Partial<StarredMessage> & Pick<StarredMessage, "conversationId" | "messageId">): StarredMessage {
     return {
@@ -49,5 +49,46 @@ describe("message stars", () => {
         expect(groups[0].current).toBe(true);
         expect(groups[3].missing).toBe(true);
         expect(groups[1].missing).toBe(false);
+    });
+
+    test("header list is the current conversation only", () => {
+        const list = [
+            star({ conversationId: "current1", messageId: "m-current" }),
+            star({ conversationId: "otherchat", messageId: "m-other" }),
+        ];
+        expect(starsForConversation(list, "current1").map(item => item.messageId)).toEqual(["m-current"]);
+        expect(starsForConversation(list, "")).toEqual([]);
+        const groups = groupStars(starsForConversation(list, "current1"), "current1", ["m-current"], {}, null);
+        expect(groups.map(group => group.conversationId)).toEqual(["current1"]);
+    });
+
+    test("url conversation wins over a sticky page id", () => {
+        expect(conversationIdFromHref("https://grok.com/c/chat-bbb")).toBe("chat-bbb");
+        expect(conversationIdFromHref("https://grok.com/project/ws-123456?chat=chat-bbb")).toBe("chat-bbb");
+        expect(conversationIdFromHref("https://grok.com/project/ws-123456")).toBe("");
+        expect(resolveConversationId({
+            href: "https://grok.com/c/chat-bbb",
+            routeId: "chat-aaa",
+            routePage: "chat",
+            pageId: "chat-aaa",
+            optimisticId: "chat-aaa",
+        })).toBe("chat-bbb");
+        expect(resolveConversationId({
+            href: "https://grok.com/",
+            routePage: "main",
+            routeId: "chat-aaa",
+            pageId: "chat-aaa",
+        })).toBe("");
+        expect(resolveConversationId({
+            href: "https://grok.com/project/ws-123456",
+            routePage: "workspace",
+            routeId: "chat-aaa",
+            pageId: "chat-aaa",
+        })).toBe("");
+        expect(resolveConversationId({
+            href: "https://grok.com/",
+            routePage: "chat",
+            optimisticId: "chat-new1",
+        })).toBe("chat-new1");
     });
 });

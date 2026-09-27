@@ -11,14 +11,14 @@ import { StarIcon } from "@components/icons";
 import type { ChatPageStoreState } from "@grok-types/stores/ChatPageStore";
 import type { ConversationStoreState, GrokConversation } from "@grok-types/stores/ConversationStore";
 import type { MessageStoreState } from "@grok-types/stores/MessageStore";
-import type { GrokRoute } from "@grok-types/stores/RoutingStore";
+import type { GrokRoute, RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { ChatPageStore, ConversationStore, MessageStore, RoutingStore, SettingsStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import { debounce, pageWindow } from "@utils/misc";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 
-import { clipSnippet, groupStars, type StarGroup, type StarredMessage } from "./model";
+import { clipSnippet, groupStars, resolveConversationId, type StarGroup, type StarredMessage, starsForConversation } from "./model";
 import { dropStar, hasStar, putStar, reloadIfAccountChanged, stars, startStore, stopStore } from "./store";
 
 const logger = new Logger("MessageStars");
@@ -36,7 +36,7 @@ const NOT_COPY_RE = /\b(code|link|table|source)\b|代码|表格|链接|来源/i;
 const settings = definePluginSettings({
     showInSidebar: {
         type: OptionType.BOOLEAN,
-        description: "Show the starred list to the left of the chat More button.",
+        description: "Show this chat's starred list to the left of the chat More button.",
         default: true,
     },
 });
@@ -53,13 +53,31 @@ let pending: { cid: string; id: string; until: number } | null = null;
 let toldRail = false;
 
 function currentCid(): string {
+    let routeId = "";
+    let routePage = "";
+    try {
+        const route = RoutingStore.useRoutingStore.getState().route;
+        routeId = String(route?.conversationId ?? "");
+        routePage = String(route?.page ?? "");
+    } catch (e) {
+        logger.debug("route unavailable:", e);
+    }
+    let pageId = "";
+    let optimisticId = "";
     try {
         const page = ChatPageStore.useChatPageStore.getState();
-        return page.conversationId || page.optimisticConversationId || "";
+        pageId = page.conversationId || "";
+        optimisticId = page.optimisticConversationId || "";
     } catch (e) {
         logger.debug("chat page unavailable:", e);
-        return "";
     }
+    let href = "";
+    try {
+        href = location.href;
+    } catch (e) {
+        logger.debug("location unavailable:", e);
+    }
+    return resolveConversationId({ routeId, routePage, href, pageId, optimisticId });
 }
 
 function convOf(cid: string): GrokConversation | undefined {
@@ -555,7 +573,7 @@ function appendList(container: HTMLElement, groups: readonly StarGroup[]) {
     if (!groups.length) {
         const empty = document.createElement("div");
         empty.className = "void-stars-sub";
-        empty.textContent = "No starred messages";
+        empty.textContent = "No starred messages in this chat";
         body.appendChild(empty);
     }
     container.append(head, body);
@@ -739,13 +757,14 @@ function paintRail() {
         return;
     }
     const cid = currentCid();
-    const here = !!cid && list.some(star => star.conversationId === cid);
+    const mine = starsForConversation(list, cid);
+    const here = mine.length > 0;
     toggleBtn?.classList.toggle("void-stars-here", here);
     if (!listOpen) {
         closePanel();
         return;
     }
-    const groups = groupStars(list, currentCid(), leafIds(currentCid()), titlesFor(list), knownIds());
+    const groups = groupStars(mine, cid, leafIds(cid), titlesFor(mine), knownIds());
     const key = signature(groups);
     if (!panel || panelKey !== key) {
         panel?.remove();
@@ -790,6 +809,11 @@ function paintAll() {
     paintBubbles();
     paintRail();
     settlePending();
+}
+
+function routeSlice(state: RoutingStoreState): string {
+    const route = state.route;
+    return `${route?.page ?? ""}|${route?.conversationId ?? ""}`;
 }
 
 const schedule = debounce(paintAll, 80);
@@ -843,7 +867,7 @@ function stop() {
 export default definePlugin({
     name: "MessageStars",
     icon: StarIcon,
-    description: "Star any message from its hover toolbar. Starred ticks turn orange, and the list opens from a star to the left of the chat More button.",
+    description: "Star any message from its hover toolbar. Starred ticks turn orange, and this chat's list opens from a star to the left of the chat More button.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: false,
@@ -860,6 +884,7 @@ export default definePlugin({
     },
     zustand: {
         ChatPageStore: { selector: pageSlice, handler: schedule },
+        RoutingStore: { selector: routeSlice, handler: schedule },
         MessageStore: { selector: messageSlice, handler: schedule },
         ConversationStore: { selector: convSlice, handler: schedule },
     },

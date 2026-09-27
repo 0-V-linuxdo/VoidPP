@@ -79,3 +79,68 @@ export function groupStars(
     });
     return groups;
 }
+
+const CID_RE = /^[a-z0-9_-]{8,}$/i;
+
+export interface ConversationHint {
+    routeId?: string | null;
+    routePage?: string | null;
+    href?: string;
+    pageId?: string | null;
+    optimisticId?: string | null;
+}
+
+function cleanId(value: string | null | undefined): string {
+    const id = String(value ?? "").trim();
+    return CID_RE.test(id) ? id : "";
+}
+
+/** Conversation id from `/c/{id}`, `/chat/{id}`, or `?chat=`. Project ids are not conversations. */
+export function conversationIdFromHref(href: string): string {
+    let url: URL;
+    try {
+        url = new URL(href, "https://grok.com");
+    } catch {
+        return "";
+    }
+    const query = url.searchParams.get("chat")
+        ?? url.searchParams.get("conversationId")
+        ?? url.searchParams.get("conversation_id")
+        ?? "";
+    let decoded = query;
+    try {
+        decoded = decodeURIComponent(query);
+    } catch { /* keep raw */ }
+    const fromQuery = cleanId(decoded);
+    if (fromQuery) return fromQuery;
+    const parts = url.pathname.split("/").filter(Boolean);
+    if (parts.length >= 2 && (parts[0] === "c" || parts[0] === "chat")) {
+        let segment = parts[1];
+        try {
+            segment = decodeURIComponent(parts[1]);
+        } catch { /* keep raw */ }
+        return cleanId(segment);
+    }
+    return "";
+}
+
+/**
+ * The open chat. A conversation in the URL beats a sticky store.
+ * A location with no conversation id is empty, except an in-flight `chat`
+ * route whose URL has not been rewritten yet.
+ */
+export function resolveConversationId(hint: ConversationHint): string {
+    const fromUrl = hint.href ? conversationIdFromHref(hint.href) : "";
+    if (fromUrl) return fromUrl;
+    if (hint.href) {
+        if (hint.routePage === "chat") return cleanId(hint.routeId) || cleanId(hint.optimisticId);
+        return "";
+    }
+    return cleanId(hint.routeId) || cleanId(hint.pageId) || cleanId(hint.optimisticId);
+}
+
+/** Header list is this chat only. No cid means show nothing, not the whole library. */
+export function starsForConversation(list: readonly StarredMessage[], cid: string): StarredMessage[] {
+    if (!cid) return [];
+    return list.filter(star => star.conversationId === cid);
+}

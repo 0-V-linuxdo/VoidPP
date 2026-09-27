@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.19
+// @version      20260927.20
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.19] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.20] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,9 +7755,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.19] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"76e95d6"}`
-    }, `(${"76e95d6"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.20] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b247fe1"}`
+    }, `(${"b247fe1"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -25448,6 +25448,52 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     });
     return groups;
   }
+  var CID_RE = /^[a-z0-9_-]{8,}$/i;
+  function cleanId(value) {
+    const id = String(value ?? "").trim();
+    return CID_RE.test(id) ? id : "";
+  }
+  function conversationIdFromHref(href) {
+    let url;
+    try {
+      url = new URL(href, "https://grok.com");
+    } catch {
+      return "";
+    }
+    const query = url.searchParams.get("chat") ?? url.searchParams.get("conversationId") ?? url.searchParams.get("conversation_id") ?? "";
+    let decoded = query;
+    try {
+      decoded = decodeURIComponent(query);
+    } catch {}
+    const fromQuery = cleanId(decoded);
+    if (fromQuery)
+      return fromQuery;
+    const parts = url.pathname.split("/").filter(Boolean);
+    if (parts.length >= 2 && (parts[0] === "c" || parts[0] === "chat")) {
+      let segment = parts[1];
+      try {
+        segment = decodeURIComponent(parts[1]);
+      } catch {}
+      return cleanId(segment);
+    }
+    return "";
+  }
+  function resolveConversationId(hint) {
+    const fromUrl = hint.href ? conversationIdFromHref(hint.href) : "";
+    if (fromUrl)
+      return fromUrl;
+    if (hint.href) {
+      if (hint.routePage === "chat")
+        return cleanId(hint.routeId) || cleanId(hint.optimisticId);
+      return "";
+    }
+    return cleanId(hint.routeId) || cleanId(hint.pageId) || cleanId(hint.optimisticId);
+  }
+  function starsForConversation(list, cid) {
+    if (!cid)
+      return [];
+    return list.filter((star) => star.conversationId === cid);
+  }
 
   // src/plugins/messageStars/store.ts
   var logger38 = new Logger("MessageStars");
@@ -25632,7 +25678,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var settings23 = definePluginSettings({
     showInSidebar: {
       type: 3 /* BOOLEAN */,
-      description: "Show the starred list to the left of the chat More button.",
+      description: "Show this chat's starred list to the left of the chat More button.",
       default: true
     }
   });
@@ -25647,13 +25693,31 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var pending3 = null;
   var toldRail = false;
   function currentCid4() {
+    let routeId = "";
+    let routePage = "";
+    try {
+      const route = RoutingStore.useRoutingStore.getState().route;
+      routeId = String(route?.conversationId ?? "");
+      routePage = String(route?.page ?? "");
+    } catch (e) {
+      logger39.debug("route unavailable:", e);
+    }
+    let pageId = "";
+    let optimisticId = "";
     try {
       const page = ChatPageStore.useChatPageStore.getState();
-      return page.conversationId || page.optimisticConversationId || "";
+      pageId = page.conversationId || "";
+      optimisticId = page.optimisticConversationId || "";
     } catch (e) {
       logger39.debug("chat page unavailable:", e);
-      return "";
     }
+    let href = "";
+    try {
+      href = location.href;
+    } catch (e) {
+      logger39.debug("location unavailable:", e);
+    }
+    return resolveConversationId({ routeId, routePage, href, pageId, optimisticId });
   }
   function convOf2(cid) {
     try {
@@ -26151,7 +26215,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (!groups.length) {
       const empty = document.createElement("div");
       empty.className = "void-stars-sub";
-      empty.textContent = "No starred messages";
+      empty.textContent = "No starred messages in this chat";
       body.appendChild(empty);
     }
     container.append(head, body);
@@ -26346,13 +26410,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return;
     }
     const cid = currentCid4();
-    const here = !!cid && list.some((star) => star.conversationId === cid);
+    const mine = starsForConversation(list, cid);
+    const here = mine.length > 0;
     toggleBtn?.classList.toggle("void-stars-here", here);
     if (!listOpen) {
       closePanel();
       return;
     }
-    const groups = groupStars(list, currentCid4(), leafIds(currentCid4()), titlesFor2(list), knownIds());
+    const groups = groupStars(mine, cid, leafIds(cid), titlesFor2(mine), knownIds());
     const key = signature(groups);
     if (!panel || panelKey !== key) {
       panel?.remove();
@@ -26399,6 +26464,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     paintBubbles();
     paintRail();
     settlePending();
+  }
+  function routeSlice(state) {
+    const route = state.route;
+    return `${route?.page ?? ""}|${route?.conversationId ?? ""}`;
   }
   var schedule4 = debounce(paintAll, 80);
   function pageSlice(state) {
@@ -26447,7 +26516,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var messageStars_default = definePlugin({
     name: "MessageStars",
     icon: StarIcon,
-    description: "Star any message from its hover toolbar. Starred ticks turn orange, and the list opens from a star to the left of the chat More button.",
+    description: "Star any message from its hover toolbar. Starred ticks turn orange, and this chat's list opens from a star to the left of the chat More button.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: false,
@@ -26465,6 +26534,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     },
     zustand: {
       ChatPageStore: { selector: pageSlice, handler: schedule4 },
+      RoutingStore: { selector: routeSlice, handler: schedule4 },
       MessageStore: { selector: messageSlice, handler: schedule4 },
       ConversationStore: { selector: convSlice, handler: schedule4 }
     }
@@ -32853,7 +32923,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   exportChat_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
   inputHistory_default.updatedAt = 1790418846000;
-  messageStars_default.updatedAt = 1790535846000;
+  messageStars_default.updatedAt = 1790539833000;
   messageTimestamps_default.updatedAt = 1789881463000;
   noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1788037550000;
