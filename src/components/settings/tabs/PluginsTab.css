@@ -11,17 +11,21 @@
     flex: 1;
 }
 
-.void-plugins-header {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding-bottom: 1rem;
-    margin-bottom: -1rem;
-    background: hsl(var(--surface-base));
+:has(> .void-plugins-root) {
+    height: 100%;
 }
 
-.alpha-mask-y:has(.void-plugins-header) {
-    --alpha-mask-top: 0px !important;
+.void-plugins-root {
+    flex: 1;
+    min-height: 0;
+}
+
+.void-plugins-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin-inline: -1.25rem;
+    padding-inline: 1.25rem;
 }
 
 .void-plugins-tabs {

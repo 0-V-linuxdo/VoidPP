@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260928.1
+// @version      20260928.2
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260928.1] v1.0.0 — A modification for grok.com
+ * Void++ [20260928.2] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -5847,17 +5847,21 @@ button .void-info-hint {
     flex: 1;
 }
 
-.void-plugins-header {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding-bottom: 1rem;
-    margin-bottom: -1rem;
-    background: hsl(var(--surface-base));
+:has(> .void-plugins-root) {
+    height: 100%;
 }
 
-.alpha-mask-y:has(.void-plugins-header) {
-    --alpha-mask-top: 0px !important;
+.void-plugins-root {
+    flex: 1;
+    min-height: 0;
+}
+
+.void-plugins-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin-inline: -1.25rem;
+    padding-inline: 1.25rem;
 }
 
 .void-plugins-tabs {
@@ -6794,7 +6798,7 @@ button .void-info-hint {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "1rem",
-      className: "void-tab-root"
+      className: classes(cl11("root"), "void-tab-root")
     }, needsReload && !showReload && /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       className: cl11("reload-banner")
@@ -6806,10 +6810,6 @@ button .void-info-hint {
       size: "sm",
       onClick: () => location.reload()
     }, "Reload")), /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      gap: "1rem",
-      className: cl11("header")
-    }, /* @__PURE__ */ React.createElement(Flex, {
       className: cl11("tabs"),
       gap: "0.125rem",
       flexWrap: "wrap"
@@ -6826,7 +6826,11 @@ button .void-info-hint {
       filter,
       onFilterChange: setFilter,
       options: FILTER_OPTIONS
-    })), filteredUser.length > 0 && /* @__PURE__ */ React.createElement(Grid, {
+    }), /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "1rem",
+      className: classes(cl11("list"), "alpha-mask-y")
+    }, filteredUser.length > 0 && /* @__PURE__ */ React.createElement(Grid, {
       columns: "repeat(2, 1fr)"
     }, filteredUser.map((n) => /* @__PURE__ */ React.createElement(ErrorBoundary, {
       key: n,
@@ -6847,7 +6851,7 @@ button .void-info-hint {
     }))))), !hasResults && /* @__PURE__ */ React.createElement(Paragraph, {
       color: "secondary",
       className: "void-tab-empty"
-    }, emptyHint(search2, category)), dialogPlugin && /* @__PURE__ */ React.createElement(ErrorBoundary, {
+    }, emptyHint(search2, category))), dialogPlugin && /* @__PURE__ */ React.createElement(ErrorBoundary, {
       fallback: null
     }, /* @__PURE__ */ React.createElement(PluginDialog, {
       plugin: dialogPlugin,
@@ -7687,9 +7691,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260928.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5ceeca3"}`
-    }, `(${"5ceeca3"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260928.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e87fed0"}`
+    }, `(${"e87fed0"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {

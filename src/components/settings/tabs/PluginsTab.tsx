@@ -193,7 +193,7 @@ export default function PluginsTab() {
     }, []);
 
     return (
-        <Flex flexDirection="column" gap="1rem" className="void-tab-root">
+        <Flex flexDirection="column" gap="1rem" className={classes(cl("root"), "void-tab-root")}>
             {needsReload && !showReload && (
                 <Flex alignItems="center" className={cl("reload-banner")}>
                     <Text size="xs" className={cl("reload-text")}>
@@ -204,55 +204,55 @@ export default function PluginsTab() {
                     </Button>
                 </Flex>
             )}
-            <Flex flexDirection="column" gap="1rem" className={cl("header")}>
-                <Flex className={cl("tabs")} gap="0.125rem" flexWrap="wrap">
-                    {visibleTabs.map(t => (
-                        <Button
-                            key={t.id}
-                            variant="tertiary"
-                            size="sm"
-                            className={classes(cl("tab"), category === t.id && cl("tab-active"))}
-                            onClick={() => setCategory(t.id)}
-                        >
-                            {t.label}
-                        </Button>
-                    ))}
-                </Flex>
-                <SearchFilterBar<ListFilter>
-                    placeholder={`Search ${tabUser.length + tabRequired.length} plugins...`}
-                    search={search}
-                    onSearchChange={setSearch}
-                    filter={filter}
-                    onFilterChange={setFilter}
-                    options={FILTER_OPTIONS}
-                />
+            <Flex className={cl("tabs")} gap="0.125rem" flexWrap="wrap">
+                {visibleTabs.map(t => (
+                    <Button
+                        key={t.id}
+                        variant="tertiary"
+                        size="sm"
+                        className={classes(cl("tab"), category === t.id && cl("tab-active"))}
+                        onClick={() => setCategory(t.id)}
+                    >
+                        {t.label}
+                    </Button>
+                ))}
             </Flex>
-            {filteredUser.length > 0 && (
-                <Grid columns="repeat(2, 1fr)">
-                    {filteredUser.map(n => (
-                        <ErrorBoundary key={n} fallback={null}>
-                            <PluginCard name={n} onSettings={setDialogName} onReload={onReload} />
-                        </ErrorBoundary>
-                    ))}
-                </Grid>
-            )}
-            {filteredRequired.length > 0 && (
-                <>
-                    <Separator />
+            <SearchFilterBar<ListFilter>
+                placeholder={`Search ${tabUser.length + tabRequired.length} plugins...`}
+                search={search}
+                onSearchChange={setSearch}
+                filter={filter}
+                onFilterChange={setFilter}
+                options={FILTER_OPTIONS}
+            />
+            <Flex flexDirection="column" gap="1rem" className={classes(cl("list"), "alpha-mask-y")}>
+                {filteredUser.length > 0 && (
                     <Grid columns="repeat(2, 1fr)">
-                        {filteredRequired.map(n => (
+                        {filteredUser.map(n => (
                             <ErrorBoundary key={n} fallback={null}>
                                 <PluginCard name={n} onSettings={setDialogName} onReload={onReload} />
                             </ErrorBoundary>
                         ))}
                     </Grid>
-                </>
-            )}
-            {!hasResults && (
-                <Paragraph color="secondary" className="void-tab-empty">
-                    {emptyHint(search, category)}
-                </Paragraph>
-            )}
+                )}
+                {filteredRequired.length > 0 && (
+                    <>
+                        <Separator />
+                        <Grid columns="repeat(2, 1fr)">
+                            {filteredRequired.map(n => (
+                                <ErrorBoundary key={n} fallback={null}>
+                                    <PluginCard name={n} onSettings={setDialogName} onReload={onReload} />
+                                </ErrorBoundary>
+                            ))}
+                        </Grid>
+                    </>
+                )}
+                {!hasResults && (
+                    <Paragraph color="secondary" className="void-tab-empty">
+                        {emptyHint(search, category)}
+                    </Paragraph>
+                )}
+            </Flex>
             {dialogPlugin && (
                 <ErrorBoundary fallback={null}>
                     <PluginDialog plugin={dialogPlugin} onClose={() => setDialogName(null)} />
