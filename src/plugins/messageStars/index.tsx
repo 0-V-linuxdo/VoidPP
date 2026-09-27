@@ -33,8 +33,6 @@ const EDIT_RE = /^(edit|编辑)\b/i;
 const LIKE_RE = /^(like|good response|thumbs[- ]?up|upvote|喜欢|点赞)\b/i;
 const NOT_LIKE_RE = /dislike|bad response|thumbs[- ]?down|downvote|不喜欢|点踩|^踩\b/i;
 const NOT_COPY_RE = /\b(code|link|table|source)\b|代码|表格|链接|来源/i;
-const MORE_RE = /^(more|更多)(\b| )|more actions|更多操作|更多选项|more-actions/i;
-const PAGER_RE = /previous message|next message|navigate to previous|navigate to next|上一条|下一条/i;
 
 const settings = definePluginSettings({
     showInSidebar: {
@@ -385,50 +383,31 @@ function messageBar(shell: HTMLElement, bubble: HTMLElement): { row: HTMLElement
     return best ? { row: best.row, copy: best.copy } : null;
 }
 
-function isOverflow(el: HTMLElement): boolean {
-    if (el.closest("[data-testid*='more-action']")) return true;
-    return MORE_RE.test(controlLabel(el));
-}
-
-function isPager(el: HTMLElement): boolean {
-    if (PAGER_RE.test(controlLabel(el))) return true;
-    for (const btn of el.querySelectorAll<HTMLElement>("button, [role='button']")) {
-        if (btn.classList.contains("void-stars-bubble")) continue;
-        if (PAGER_RE.test(controlLabel(btn))) return true;
-    }
-    const text = (el.innerText || "").replaceAll(/\s+/g, "");
-    return /^\d+\/\d+$/.test(text);
-}
-
-function slotKind(slot: HTMLElement): "overflow" | "pager" | "primary" {
-    if (isOverflow(slot) || isPager(slot)) return isOverflow(slot) ? "overflow" : "pager";
-    for (const btn of slot.querySelectorAll<HTMLElement>("button, [role='button']")) {
-        if (btn.classList.contains("void-stars-bubble")) continue;
-        if (isOverflow(btn)) return "overflow";
-        if (isPager(btn)) return "pager";
-    }
-    return "primary";
-}
-
-function placeBeforeOverflow(row: HTMLElement, star: HTMLButtonElement): boolean {
-    let lastPrimary: HTMLElement | null = null;
+function placeBeside(row: HTMLElement, star: HTMLButtonElement): boolean {
+    if (getComputedStyle(row).position === "static") row.classList.add("void-stars-bar");
+    if (star.parentElement !== row) row.appendChild(star);
+    const rowBox = row.getBoundingClientRect();
+    let edge = -1;
+    let top = 0;
+    let height = 0;
     for (const child of row.children) {
-        if (!(child instanceof HTMLElement) || child.classList.contains("void-stars-bubble")) continue;
-        if (slotKind(child) === "primary") lastPrimary = child;
+        if (!(child instanceof HTMLElement) || child === star) continue;
+        const box = child.getBoundingClientRect();
+        if (box.width < 1 || box.height < 1) continue;
+        const right = box.right - rowBox.left - row.clientLeft;
+        if (right > edge) {
+            edge = right;
+            top = box.top - rowBox.top - row.clientTop;
+            height = box.height;
+        }
     }
-    if (!lastPrimary) return false;
-    if (star.parentElement === row && star.previousElementSibling === lastPrimary) return true;
-    lastPrimary.after(star);
-    return star.parentElement === row;
-}
-
-function adoptNative(star: HTMLButtonElement, copy: HTMLElement) {
-    const native = copy.className.replaceAll(/\bvoid-stars-\S+/g, "").trim();
-    if (!native || star.dataset.nativeClass === native) return;
-    const on = star.classList.contains("void-stars-on");
-    star.dataset.nativeClass = native;
-    star.className = `${native} void-stars-bubble`;
-    if (on) star.classList.add("void-stars-on");
+    if (edge < 0) return false;
+    const size = Math.max(16, Math.round(height));
+    star.style.left = `${Math.round(edge + 2)}px`;
+    star.style.top = `${Math.round(top)}px`;
+    star.style.width = `${size}px`;
+    star.style.height = `${size}px`;
+    return true;
 }
 
 function messageIdOf(msg: HTMLElement): string {
@@ -487,14 +466,13 @@ function paintBubbles() {
         const found = messageBar(shellOf(msg), msg);
         if (!found || seen.has(found.row)) continue;
         seen.add(found.row);
-        const { row, copy } = found;
+        const { row } = found;
         let btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
         if (!btn) btn = makeBubble();
-        if (!placeBeforeOverflow(row, btn)) {
-            if (!btn.isConnected) btn.remove();
+        if (!placeBeside(row, btn)) {
+            btn.remove();
             continue;
         }
-        adoptNative(btn, copy);
         const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
         syncBubble(btn, cid, id, role);
         keep.add(btn);
@@ -506,6 +484,7 @@ function paintBubbles() {
 
 function clearBubbles() {
     document.querySelectorAll(".void-stars-bubble").forEach(node => node.remove());
+    document.querySelectorAll(".void-stars-bar").forEach(node => node.classList.remove("void-stars-bar"));
     document.querySelectorAll(".void-stars-rel").forEach(node => node.classList.remove("void-stars-rel"));
 }
 

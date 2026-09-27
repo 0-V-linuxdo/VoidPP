@@ -40,13 +40,22 @@
     cursor: pointer;
 }
 
+.void-stars-bar {
+    position: relative;
+    overflow: visible;
+}
+
 .void-stars-bubble {
+    position: absolute;
+    z-index: 2;
     display: inline-flex;
     flex: none;
     align-items: center;
     justify-content: center;
+    margin: 0;
     padding: 0;
     color: hsl(var(--fg-secondary));
+    pointer-events: auto;
 }
 
 .void-stars-toggle {
