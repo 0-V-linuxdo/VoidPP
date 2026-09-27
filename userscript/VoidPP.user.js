@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.20
+// @version      20260927.21
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.20] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.21] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7755,7 +7755,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.20] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260927.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b247fe1"}`
     }, `(${"b247fe1"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -25262,6 +25262,24 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     align-self: center;
 }
 
+.void-stars-toggle.void-stars-docked::after {
+    content: "";
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    top: 100%;
+    height: 10px;
+}
+
+.void-stars-toggle.void-stars-docked.void-stars-open::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    bottom: 100%;
+    height: 10px;
+}
+
 .void-stars-bubble.void-stars-on,
 .void-stars-toggle.void-stars-here,
 .void-stars-toggle.void-stars-open {
@@ -25678,7 +25696,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var settings23 = definePluginSettings({
     showInSidebar: {
       type: 3 /* BOOLEAN */,
-      description: "Show this chat's starred list to the left of the chat More button.",
+      description: "Show this chat's starred list to the left of the chat More button. Hover the star to open it.",
       default: true
     }
   });
@@ -25688,7 +25706,78 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var panel = null;
   var toggleBtn = null;
   var listOpen = false;
+  var hoverOpen = false;
+  var hoverTimer = 0;
   var panelKey = "";
+  var HOVER_OPEN_MS = 120;
+  var HOVER_CLOSE_MS = 180;
+  function finePointer() {
+    try {
+      return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    } catch {
+      return false;
+    }
+  }
+  function listVisible() {
+    return listOpen || hoverOpen;
+  }
+  function clearHoverTimer() {
+    if (hoverTimer)
+      window.clearTimeout(hoverTimer);
+    hoverTimer = 0;
+  }
+  function overStarChrome(node) {
+    return node instanceof Node && !!(toggleBtn?.contains(node) || panel?.contains(node));
+  }
+  function hideList() {
+    listOpen = false;
+    hoverOpen = false;
+    clearHoverTimer();
+    closePanel();
+  }
+  function wantHoverOpen() {
+    if (!finePointer())
+      return;
+    clearHoverTimer();
+    hoverTimer = window.setTimeout(() => {
+      hoverTimer = 0;
+      hoverOpen = true;
+      schedule4();
+    }, HOVER_OPEN_MS);
+  }
+  function wantHoverClose() {
+    if (listOpen)
+      return;
+    clearHoverTimer();
+    hoverTimer = window.setTimeout(() => {
+      hoverTimer = 0;
+      hoverOpen = false;
+      closePanel();
+    }, HOVER_CLOSE_MS);
+  }
+  function onTogglePointerEnter() {
+    wantHoverOpen();
+  }
+  function onTogglePointerLeave(e) {
+    if (overStarChrome(e.relatedTarget))
+      return;
+    wantHoverClose();
+  }
+  function onPanelPointerEnter() {
+    if (!finePointer())
+      return;
+    clearHoverTimer();
+    hoverOpen = true;
+  }
+  function onPanelPointerLeave(e) {
+    if (overStarChrome(e.relatedTarget))
+      return;
+    wantHoverClose();
+  }
+  function bindPanelHover(el) {
+    el.addEventListener("pointerenter", onPanelPointerEnter);
+    el.addEventListener("pointerleave", onPanelPointerLeave);
+  }
   var pendingTimer2 = 0;
   var pending3 = null;
   var toldRail = false;
@@ -25850,22 +25939,20 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     putStar(capture(cid, messageId, hint), shouldPersist2(cid));
   }
   function onKeyDown5(e) {
-    if (e.key !== "Escape" || !listOpen)
+    if (e.key !== "Escape" || !listVisible())
       return;
     e.preventDefault();
-    listOpen = false;
-    closePanel();
+    hideList();
   }
   function onPointerDown5(e) {
-    if (!listOpen)
+    if (!listVisible())
       return;
     const { target } = e;
     if (!(target instanceof Node))
       return;
     if (panel?.contains(target) || toggleBtn?.contains(target))
       return;
-    listOpen = false;
-    closePanel();
+    hideList();
   }
   function navigatorJump(messageId) {
     const fn = pageWindow[JUMP_SYM2];
@@ -25920,8 +26007,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   }
   function openStar(star) {
-    listOpen = false;
-    closePanel();
+    hideList();
     if (star.conversationId !== currentCid4()) {
       navigate(star);
       armPending(star.conversationId, star.messageId);
@@ -26316,10 +26402,20 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     btn.addEventListener("pointerdown", (ev) => {
       ev.stopPropagation();
     });
+    btn.addEventListener("pointerenter", onTogglePointerEnter);
+    btn.addEventListener("pointerleave", onTogglePointerLeave);
+    btn.addEventListener("focusin", onTogglePointerEnter);
+    btn.addEventListener("focusout", (ev) => {
+      if (overStarChrome(ev.relatedTarget))
+        return;
+      wantHoverClose();
+    });
     btn.addEventListener("click", (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
       listOpen = !listOpen;
+      hoverOpen = listOpen;
+      clearHoverTimer();
       if (!listOpen)
         closePanel();
       schedule4();
@@ -26386,8 +26482,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
   function paintRail() {
     if (!settings23.store.showInSidebar) {
-      listOpen = false;
-      closePanel();
+      hideList();
       removeToggle();
       toldRail = false;
       return;
@@ -26404,8 +26499,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       toldRail = true;
       floatToggle(rail);
     } else {
-      listOpen = false;
-      closePanel();
+      hideList();
       removeToggle();
       return;
     }
@@ -26413,7 +26507,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const mine = starsForConversation(list, cid);
     const here = mine.length > 0;
     toggleBtn?.classList.toggle("void-stars-here", here);
-    if (!listOpen) {
+    if (!listVisible()) {
       closePanel();
       return;
     }
@@ -26424,6 +26518,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const next = document.createElement("div");
       next.className = "void-stars-panel";
       appendList(next, groups);
+      bindPanelHover(next);
       document.body.appendChild(next);
       panel = next;
       panelKey = key;
@@ -26501,6 +26596,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function stop2() {
     alive3 = false;
     listOpen = false;
+    hoverOpen = false;
+    clearHoverTimer();
     ac2?.abort();
     ac2 = null;
     mo?.disconnect();
@@ -26516,7 +26613,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var messageStars_default = definePlugin({
     name: "MessageStars",
     icon: StarIcon,
-    description: "Star any message from its hover toolbar. Starred ticks turn orange, and this chat's list opens from a star to the left of the chat More button.",
+    description: "Star any message from its hover toolbar. Starred ticks turn orange, and hovering the star left of the chat More button opens this chat's list.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: false,
@@ -26529,7 +26626,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     onSettingsChange() {
       panelKey = "";
       if (!settings23.store.showInSidebar)
-        listOpen = false;
+        hideList();
       schedule4();
     },
     zustand: {

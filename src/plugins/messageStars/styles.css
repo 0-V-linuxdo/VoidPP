@@ -95,6 +95,24 @@
     align-self: center;
 }
 
+.void-stars-toggle.void-stars-docked::after {
+    content: "";
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    top: 100%;
+    height: 10px;
+}
+
+.void-stars-toggle.void-stars-docked.void-stars-open::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    right: -4px;
+    bottom: 100%;
+    height: 10px;
+}
+
 .void-stars-bubble.void-stars-on,
 .void-stars-toggle.void-stars-here,
 .void-stars-toggle.void-stars-open {

@@ -36,7 +36,7 @@ const NOT_COPY_RE = /\b(code|link|table|source)\b|代码|表格|链接|来源/i;
 const settings = definePluginSettings({
     showInSidebar: {
         type: OptionType.BOOLEAN,
-        description: "Show this chat's starred list to the left of the chat More button.",
+        description: "Show this chat's starred list to the left of the chat More button. Hover the star to open it.",
         default: true,
     },
 });
@@ -47,10 +47,87 @@ let mo: MutationObserver | null = null;
 let panel: HTMLElement | null = null;
 let toggleBtn: HTMLButtonElement | null = null;
 let listOpen = false;
+let hoverOpen = false;
+let hoverTimer = 0;
 let panelKey = "";
 let pendingTimer = 0;
 let pending: { cid: string; id: string; until: number } | null = null;
 let toldRail = false;
+const HOVER_OPEN_MS = 120;
+const HOVER_CLOSE_MS = 180;
+
+function finePointer(): boolean {
+    try {
+        return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    } catch {
+        return false;
+    }
+}
+
+function listVisible(): boolean {
+    return listOpen || hoverOpen;
+}
+
+function clearHoverTimer() {
+    if (hoverTimer) window.clearTimeout(hoverTimer);
+    hoverTimer = 0;
+}
+
+function overStarChrome(node: EventTarget | null): boolean {
+    return node instanceof Node && !!(toggleBtn?.contains(node) || panel?.contains(node));
+}
+
+function hideList() {
+    listOpen = false;
+    hoverOpen = false;
+    clearHoverTimer();
+    closePanel();
+}
+
+function wantHoverOpen() {
+    if (!finePointer()) return;
+    clearHoverTimer();
+    hoverTimer = window.setTimeout(() => {
+        hoverTimer = 0;
+        hoverOpen = true;
+        schedule();
+    }, HOVER_OPEN_MS);
+}
+
+function wantHoverClose() {
+    if (listOpen) return;
+    clearHoverTimer();
+    hoverTimer = window.setTimeout(() => {
+        hoverTimer = 0;
+        hoverOpen = false;
+        closePanel();
+    }, HOVER_CLOSE_MS);
+}
+
+function onTogglePointerEnter() {
+    wantHoverOpen();
+}
+
+function onTogglePointerLeave(e: PointerEvent) {
+    if (overStarChrome(e.relatedTarget)) return;
+    wantHoverClose();
+}
+
+function onPanelPointerEnter() {
+    if (!finePointer()) return;
+    clearHoverTimer();
+    hoverOpen = true;
+}
+
+function onPanelPointerLeave(e: PointerEvent) {
+    if (overStarChrome(e.relatedTarget)) return;
+    wantHoverClose();
+}
+
+function bindPanelHover(el: HTMLElement) {
+    el.addEventListener("pointerenter", onPanelPointerEnter);
+    el.addEventListener("pointerleave", onPanelPointerLeave);
+}
 
 function currentCid(): string {
     let routeId = "";
@@ -207,19 +284,17 @@ function toggle(cid: string, messageId: string, hint?: Partial<StarredMessage>) 
 }
 
 function onKeyDown(e: KeyboardEvent) {
-    if (e.key !== "Escape" || !listOpen) return;
+    if (e.key !== "Escape" || !listVisible()) return;
     e.preventDefault();
-    listOpen = false;
-    closePanel();
+    hideList();
 }
 
 function onPointerDown(e: PointerEvent) {
-    if (!listOpen) return;
+    if (!listVisible()) return;
     const { target } = e;
     if (!(target instanceof Node)) return;
     if (panel?.contains(target) || toggleBtn?.contains(target)) return;
-    listOpen = false;
-    closePanel();
+    hideList();
 }
 
 function navigatorJump(messageId: string): boolean {
@@ -278,8 +353,7 @@ function navigate(star: StarredMessage) {
 }
 
 function openStar(star: StarredMessage) {
-    listOpen = false;
-    closePanel();
+    hideList();
     if (star.conversationId !== currentCid()) {
         navigate(star);
         armPending(star.conversationId, star.messageId);
@@ -668,10 +742,19 @@ function ensureToggle() {
     btn.addEventListener("pointerdown", ev => {
         ev.stopPropagation();
     });
+    btn.addEventListener("pointerenter", onTogglePointerEnter);
+    btn.addEventListener("pointerleave", onTogglePointerLeave);
+    btn.addEventListener("focusin", onTogglePointerEnter);
+    btn.addEventListener("focusout", ev => {
+        if (overStarChrome(ev.relatedTarget)) return;
+        wantHoverClose();
+    });
     btn.addEventListener("click", ev => {
         ev.preventDefault();
         ev.stopPropagation();
         listOpen = !listOpen;
+        hoverOpen = listOpen;
+        clearHoverTimer();
         if (!listOpen) closePanel();
         schedule();
     });
@@ -734,8 +817,7 @@ function placeOpenPanel(anchor: DOMRect, docked: boolean) {
 
 function paintRail() {
     if (!settings.store.showInSidebar) {
-        listOpen = false;
-        closePanel();
+        hideList();
         removeToggle();
         toldRail = false;
         return;
@@ -751,8 +833,7 @@ function paintRail() {
         toldRail = true;
         floatToggle(rail);
     } else {
-        listOpen = false;
-        closePanel();
+        hideList();
         removeToggle();
         return;
     }
@@ -760,7 +841,7 @@ function paintRail() {
     const mine = starsForConversation(list, cid);
     const here = mine.length > 0;
     toggleBtn?.classList.toggle("void-stars-here", here);
-    if (!listOpen) {
+    if (!listVisible()) {
         closePanel();
         return;
     }
@@ -771,6 +852,7 @@ function paintRail() {
         const next = document.createElement("div");
         next.className = "void-stars-panel";
         appendList(next, groups);
+        bindPanelHover(next);
         document.body.appendChild(next);
         panel = next;
         panelKey = key;
@@ -851,6 +933,8 @@ function start() {
 function stop() {
     alive = false;
     listOpen = false;
+    hoverOpen = false;
+    clearHoverTimer();
     ac?.abort();
     ac = null;
     mo?.disconnect();
@@ -867,7 +951,7 @@ function stop() {
 export default definePlugin({
     name: "MessageStars",
     icon: StarIcon,
-    description: "Star any message from its hover toolbar. Starred ticks turn orange, and this chat's list opens from a star to the left of the chat More button.",
+    description: "Star any message from its hover toolbar. Starred ticks turn orange, and hovering the star left of the chat More button opens this chat's list.",
     authors: [Devs.p],
     tags: ["chat", "ui"],
     enabledByDefault: false,
@@ -879,7 +963,7 @@ export default definePlugin({
     stop,
     onSettingsChange() {
         panelKey = "";
-        if (!settings.store.showInSidebar) listOpen = false;
+        if (!settings.store.showInSidebar) hideList();
         schedule();
     },
     zustand: {
