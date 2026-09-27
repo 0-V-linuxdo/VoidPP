@@ -206,7 +206,7 @@ export default definePlugin({
     icon: ScrollTextIcon,
     description: "Create instruction presets and assign them to conversations.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["chats"],
     settings,
 
     contextMenuItems: {

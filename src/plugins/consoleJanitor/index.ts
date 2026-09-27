@@ -15,6 +15,7 @@ export default definePlugin({
     icon: TerminalIcon,
     description: "Silences noisy warnings and info logs in the browser console.",
     authors: [Devs.Prism],
+    tags: ["developer"],
 
     patches: [
         { find: "x.ai/careers", replacement: { match: /console\.info\("[^"]{0,3000}"\)/, replace: "void 0" } },

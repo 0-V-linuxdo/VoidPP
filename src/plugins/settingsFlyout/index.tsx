@@ -214,7 +214,7 @@ export default definePlugin({
     icon: Settings2Icon,
     description: "Replace the avatar Settings item with a flyout of shortcuts to Void++ and Grok settings tabs.",
     authors: [Devs.p],
-    tags: ["ui", "settings"],
+    tags: ["navigation"],
     enabledByDefault: true,
     requiresRestart: true,
     settings,

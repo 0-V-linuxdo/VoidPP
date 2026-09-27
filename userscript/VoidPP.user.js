@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260928.3
+// @version      20260928.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260928.3] v1.0.0 — A modification for grok.com
+ * Void++ [20260928.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3822,7 +3822,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     icon: FrameIcon,
     description: "Theme the project pane and Imagine masonry scrollbars and optionally keep the right panel closed.",
     authors: [Devs.p],
-    tags: ["ui"],
+    tags: ["appearance"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
     settings: settings2,
@@ -6123,12 +6123,17 @@ button .void-info-hint {
     { id: "favorites", label: "Favorites" },
     { id: "recent", label: "Recent" },
     { id: "all", label: "All" },
-    { id: "chat", label: "Chat" },
-    { id: "ui", label: "UI" },
+    { id: "composer", label: "Composer" },
+    { id: "messages", label: "Messages" },
+    { id: "chats", label: "Chats" },
+    { id: "media", label: "Media" },
+    { id: "navigation", label: "Navigation" },
+    { id: "notifications", label: "Notifications" },
+    { id: "appearance", label: "Appearance" },
+    { id: "declutter", label: "Declutter" },
     { id: "privacy", label: "Privacy" },
-    { id: "other", label: "Other" }
+    { id: "developer", label: "Developer" }
   ];
-  var CATEGORY_TAGS = new Set(["chat", "ui", "privacy"]);
   var RECENT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   function isRecentlyUpdated(plugin) {
     return plugin.updatedAt != null && Date.now() - plugin.updatedAt < RECENT_TTL_MS;
@@ -6138,10 +6143,7 @@ button .void-info-hint {
       return true;
     if (category === "recent")
       return isRecentlyUpdated(plugin);
-    const tags = (plugin.tags ?? []).map((t) => t === "sidebar" ? "ui" : t);
-    if (category === "other")
-      return !plugin.required && !tags.some((t) => CATEGORY_TAGS.has(t));
-    return tags.includes(category);
+    return plugin.tags?.includes(category) ?? false;
   }
   function isVisibleSetting([, s]) {
     return s.type !== 7 /* CUSTOM */ && !s.hidden;
@@ -6745,8 +6747,7 @@ button .void-info-hint {
     const visibleTabs = useMemo(() => PLUGIN_CATEGORY_TABS.filter((t) => {
       if (t.id === "favorites" || t.id === "all" || t.id === "recent")
         return true;
-      const pool = t.id === "other" ? userPlugins : [...userPlugins, ...requiredPlugins];
-      return pool.some((n) => pluginMatchesCategory(plugins[n], t.id));
+      return [...userPlugins, ...requiredPlugins].some((n) => pluginMatchesCategory(plugins[n], t.id));
     }), [userPlugins, requiredPlugins]);
     const { tabUser, tabRequired } = useMemo(() => {
       if (category === "favorites") {
@@ -7501,6 +7502,7 @@ button .void-info-hint {
     icon: TestTubeIcon,
     description: "Unlock and toggle unreleased Grok features.",
     authors: [Devs.Prism],
+    tags: ["developer"],
     settings: settings3,
     startAt: "TurbopackReady" /* TurbopackReady */,
     _proxy: overrideProxy,
@@ -7643,7 +7645,7 @@ button .void-info-hint {
     icon: ListFilterIcon,
     description: "Choose which plugins appear in the avatar Void++ → Plugins menu.",
     authors: [Devs.p],
-    tags: ["ui", "settings"],
+    tags: ["navigation"],
     enabledByDefault: true,
     settings: settings4
   });
@@ -7696,9 +7698,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260928.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1e0eeb2"}`
-    }, `(${"1e0eeb2"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260928.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6714479"}`
+    }, `(${"6714479"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8135,7 +8137,7 @@ button .void-info-hint {
     icon: SparklesIcon,
     description: "Adds Grok's native twinkling starry background to the main page.",
     authors: [Devs.Prism],
-    tags: ["ui"],
+    tags: ["appearance"],
     settings: settings6,
     _StarryBg() {
       return /* @__PURE__ */ React.createElement(WrappedStarry, {
@@ -8159,7 +8161,7 @@ button .void-info-hint {
     icon: LightbulbIcon,
     description: "Hide the Build mode Ideas chips above the input.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["declutter"],
     enabledByDefault: true,
     patches: [
       {
@@ -8190,7 +8192,7 @@ button .void-info-hint {
     icon: UnfoldHorizontalIcon,
     description: "Adjustable chat width for big monitors.",
     authors: [Devs.Prism],
-    tags: ["chat", "ui"],
+    tags: ["appearance"],
     settings: settings7,
     start: applyWidth,
     onSettingsChange: applyWidth,
@@ -8215,7 +8217,7 @@ div:has(> #grok-bot-nav-button) {
     icon: BotOffIcon,
     description: "Hide the top-right Grok Bot promo button.",
     authors: [Devs.p],
-    tags: ["ui"],
+    tags: ["declutter"],
     enabledByDefault: true,
     start() {
       registerStyle(STYLE_NAME3, CSS2);
@@ -8493,7 +8495,7 @@ div:has(> #grok-bot-nav-button) {
     icon: BellIcon,
     description: "Notify when Grok finishes responding. Optional Imagine generation notify is off by default.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["chat"],
+    tags: ["notifications"],
     settings: settings8,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
@@ -8571,7 +8573,7 @@ div:has(> #grok-bot-nav-button) {
     icon: UserRoundXIcon,
     description: "Hide username and/or email in the Grok sidebar and account menu. Avatar stays clickable.",
     authors: [Devs.p],
-    tags: ["ui", "privacy"],
+    tags: ["privacy"],
     enabledByDefault: true,
     settings: settings9,
     patches: [
@@ -9344,7 +9346,7 @@ html.void-cms-picked .void-cms-ghost {
     icon: Minimize2Icon,
     description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["composer"],
     enabledByDefault: true,
     settings: settings10,
     managedStyle: "betterModeSelect",
@@ -10914,7 +10916,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     icon: CircleGaugeIcon,
     description: "Shows weekly SuperGrok or Grok Bot usage in the chat bar, with optional daily stats.",
     authors: [Devs.p],
-    tags: ["chat"],
+    tags: ["composer"],
     enabledByDefault: true,
     settings: settings11,
     start() {
@@ -11198,7 +11200,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     icon: Settings2Icon,
     description: "Replace the avatar Settings item with a flyout of shortcuts to Void++ and Grok settings tabs.",
     authors: [Devs.p],
-    tags: ["ui", "settings"],
+    tags: ["navigation"],
     enabledByDefault: true,
     requiresRestart: true,
     settings: settings12,
@@ -12182,7 +12184,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     icon: CircleCheckIcon,
     description: "Toast when another chat finishes, click to open it. Optional Imagine generation toast is off by default.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["notifications"],
     enabledByDefault: true,
     settings: settings13,
     startAt: "TurbopackReady" /* TurbopackReady */,
@@ -12274,7 +12276,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     icon: UserQuotesIcon,
     description: "Show a visible left bar on quoted lines in your own chat bubbles.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["messages"],
     enabledByDefault: true,
     settings: settings14,
     patches: [
@@ -12393,7 +12395,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     icon: PluginsIcon,
     description: "Move the sidebar Plugins button into the avatar menu.",
     authors: [Devs.p],
-    tags: ["ui"],
+    tags: ["navigation"],
     enabledByDefault: true,
     settings: settings15,
     _renderItem: () => createElement(WrappedPluginsItem),
@@ -12613,7 +12615,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     icon: FileDownIcon,
     description: "Export conversations in multiple formats from the right-click menu.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["chats"],
     contextMenuItems: {
       conversation: {
         label: "Export",
@@ -15181,7 +15183,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     icon: ListOrderedIcon,
     description: "Keep each queued message's mode, and restore unsent rows after a refresh.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["composer"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
     settings: settings16,
@@ -16074,7 +16076,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     icon: AppWindowIcon,
     description: "Show streaming, done, ready, and error states on the tab favicon.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["notifications"],
     enabledByDefault: true,
     settings: settings17,
     startAt: "TurbopackReady" /* TurbopackReady */,
@@ -16693,7 +16695,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: ImagesIcon,
     description: "Imagine polish: filter, sort, shortcuts on Favorites, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
     authors: [Devs.Prism],
-    tags: ["ui"],
+    tags: ["media"],
     settings: settings18,
     _hideDefault: () => settings18.store.hideDefaultPreviews,
     _NullGrid: () => null,
@@ -16803,6 +16805,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: TerminalIcon,
     description: "Silences noisy warnings and info logs in the browser console.",
     authors: [Devs.Prism],
+    tags: ["developer"],
     patches: [
       { find: "x.ai/careers", replacement: { match: /console\.info\("[^"]{0,3000}"\)/, replace: "void 0" } },
       { find: "useDrawerContext must be used within a Drawer.Root", all: true, replacement: warnNoop },
@@ -16889,7 +16892,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: FilesIcon,
     description: "Adds bulk delete to the Library page.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["ui"],
+    tags: ["media"],
     managedStyle: "betterFiles",
     start() {
       selection.clear();
@@ -16978,7 +16981,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: CopyIcon,
     description: "Clone conversations from the context-menu.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["chats"],
     contextMenuItems: {
       conversation: {
         label: "Clone",
@@ -17017,7 +17020,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: Link2OffIcon,
     description: "Hide share buttons: Share Project (in a project) and Create share link (top-right of chats).",
     authors: [Devs.p],
-    tags: ["ui", "privacy"],
+    tags: ["declutter", "privacy"],
     enabledByDefault: true,
     settings: settings19,
     start: apply4,
@@ -17784,7 +17787,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: LoaderCircleIcon,
     description: "Show Grok reply status on sidebar chats: spinner, blue dot, or error.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["notifications"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
     managedStyle: "chatListStatus",
@@ -17850,7 +17853,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: ChevronsDownUpIcon,
     description: "Automatically collapse code blocks in responses.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["messages"],
     _collapse: () => true,
     patches: [
       {
@@ -17933,7 +17936,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: LinkIcon,
     description: "Colorize links and detect bare domains in chat messages.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["messages"],
     settings: settings20,
     patches: [
       {
@@ -18016,7 +18019,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: TextCursorInputIcon,
     description: "Stop the Grok composer from destroying and recreating its editor when the extension list is rebuilt unchanged, which was resetting the caret and breaking IME composition.",
     authors: [Devs.p],
-    tags: ["chat"],
+    tags: ["composer"],
     enabledByDefault: true,
     _deps(extensions, mention) {
       const sig = Array.isArray(extensions) ? `${extensions.length}:${extensions.map((e) => e?.name ?? "?").join(",")}` : String(extensions);
@@ -19510,7 +19513,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: StarIcon,
     description: "Star any message from its hover toolbar. Starred ticks turn orange, and hovering the star left of the chat More button opens this chat's list.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["messages"],
     enabledByDefault: false,
     startAt: "DOMContentLoaded" /* DOMContentLoaded */,
     settings: settings21,
@@ -19641,7 +19644,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: RotateCcwIcon,
     description: "Automatically retry failed messages on moderation or network errors.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["messages"],
     settings: settings22,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
@@ -21068,7 +21071,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     icon: HistoryIcon,
     description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell. Esc restores your draft. Click the counter to browse history.",
     authors: [Devs.p],
-    tags: ["chat"],
+    tags: ["composer"],
     enabledByDefault: true,
     settings: settings23,
     managedStyle: "inputHistory",
@@ -21952,7 +21955,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     icon: UserRoundPenIcon,
     description: "Replace the sidebar avatar and display name. Empty fields keep the official values.",
     authors: [Devs.p],
-    tags: ["ui"],
+    tags: ["appearance"],
     enabledByDefault: false,
     settings: settings24,
     managedStyle: "customSidebarIdentity",
@@ -24939,7 +24942,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     icon: MessageSquareQuoteIcon,
     description: "Jump between a quote and its source, and keep the composer quote card when switching chats.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["messages", "composer"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
     settings: settings25,
@@ -25021,7 +25024,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     icon: Volume2Icon,
     description: "Add a download button to the TTS playback controls.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["media"],
     patches: [{
       find: 'tts-controls.stop.label","Stop"',
       all: true,
@@ -25589,7 +25592,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     icon: ScrollTextIcon,
     description: "Create instruction presets and assign them to conversations.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["chats"],
     settings: settings27,
     contextMenuItems: {
       conversation: {
@@ -25650,7 +25653,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     icon: MicOffIcon,
     description: "Hide the Dictation (voice input) button from the chat input bar, and optionally Dictation Refinement in Settings.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["declutter"],
     enabledByDefault: true,
     settings: settings28,
     patches: [
@@ -25677,7 +25680,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     icon: CatIcon,
     description: "Cat follows your mouse cursor.",
     authors: [Devs.adryd],
-    tags: ["ui"],
+    tags: ["appearance"],
     cleanupSelectors: ["#oneko"],
     start() {
       const s = ONEKO_SCRIPT.replace("ONEKO_GIF_URL", ONEKO_GIF);
@@ -26134,7 +26137,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     icon: PanelLeftIcon,
     description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["ui"],
+    tags: ["navigation"],
     enabledByDefault: true,
     settings: settings29,
     managedStyle: "betterSidebar",
@@ -27020,7 +27023,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     icon: ClockIcon,
     description: "Shows timestamps on chat messages.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["chat"],
+    tags: ["messages"],
     settings: settings30,
     start() {
       try {
@@ -29274,7 +29277,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     icon: ScrollTextIcon,
     description: "Upgrade Grok's message rail into a Notion-style outline of the whole chat, including messages that are not mounted yet. A reply that is still streaming stays listed as a dashed tick.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["navigation"],
     enabledByDefault: true,
     startAt: "DOMContentLoaded" /* DOMContentLoaded */,
     settings: settings31,
@@ -29905,7 +29908,7 @@ Neon rain in a quiet city`
     icon: MessageCircleIcon,
     description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
     authors: [Devs.p],
-    tags: ["chat"],
+    tags: ["appearance"],
     settings: settings32,
     _phrases() {
       if (isImaginePage3() || !replaceChatInput())
@@ -30078,7 +30081,7 @@ Neon rain in a quiet city`
     icon: BrushCleaningIcon,
     description: "Hides upgrade nags and upsell banners.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["ui"],
+    tags: ["declutter"],
     enabledByDefault: true,
     settings: settings33,
     start: applyImagineUpgrade,
@@ -32870,7 +32873,7 @@ html.void-rt-open [data-sidebar="gap"] {
     icon: LayoutGridIcon,
     description: "Switch recently opened conversations with Ctrl+` like Arc's tab switcher.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["navigation"],
     enabledByDefault: true,
     settings: settings34,
     managedStyle: "recentTopics",
@@ -33029,7 +33032,7 @@ html.void-rt-open [data-sidebar="gap"] {
     icon: BlendIcon,
     description: "Customizable chat input background opacity so content behind the bar cannot show through.",
     authors: [Devs.p],
-    tags: ["ui", "chat"],
+    tags: ["composer", "appearance"],
     enabledByDefault: true,
     settings: settings35,
     start: apply8,
@@ -33040,7 +33043,7 @@ html.void-rt-open [data-sidebar="gap"] {
   });
 
   // virtual:~plugins
-  settings_default.updatedAt = 1790439253000;
+  settings_default.updatedAt = 1790551906000;
   fixChrome_default.updatedAt = 1787789817000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
@@ -33053,7 +33056,7 @@ html.void-rt-open [data-sidebar="gap"] {
   noGrokBot_default.updatedAt = 1787789817000;
   responseNotification_default.updatedAt = 1790093417000;
   noSidebarIdentity_default.updatedAt = 1788577403000;
-  betterModeSelect_default.updatedAt = 1790161256000;
+  betterModeSelect_default.updatedAt = 1790551906000;
   usageDisplay_default.updatedAt = 1789172854000;
   settingsFlyout_default.updatedAt = 1788095208000;
   completeToast_default.updatedAt = 1790537787000;
@@ -33064,7 +33067,7 @@ html.void-rt-open [data-sidebar="gap"] {
   chatStateFavicons_default.updatedAt = 1789921507000;
   betterImagine_default.updatedAt = 1790093417000;
   consoleJanitor_default.updatedAt = 1787789817000;
-  experiments_default.updatedAt = 1788047438000;
+  experiments_default.updatedAt = 1790551906000;
   betterFiles_default.updatedAt = 1789246749000;
   cloneChats_default.updatedAt = 1787870966000;
   noShareLink_default.updatedAt = 1787789817000;
@@ -33089,7 +33092,7 @@ html.void-rt-open [data-sidebar="gap"] {
   betterCanvas_default.updatedAt = 1790360947000;
   customGreeting_default.updatedAt = 1790164294000;
   cleaner_default.updatedAt = 1790093417000;
-  pluginsFlyout_default.updatedAt = 1788051053000;
+  pluginsFlyout_default.updatedAt = 1790551906000;
   recentTopics_default.updatedAt = 1789881195000;
   composerOpacity_default.updatedAt = 1790097681000;
   var __plugins_default = { [settings_default.name]: settings_default, [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [starry_default.name]: starry_default, [noBuildStarters_default.name]: noBuildStarters_default, [widerChat_default.name]: widerChat_default, [noGrokBot_default.name]: noGrokBot_default, [responseNotification_default.name]: responseNotification_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [betterModeSelect_default.name]: betterModeSelect_default, [usageDisplay_default.name]: usageDisplay_default, [settingsFlyout_default.name]: settingsFlyout_default, [completeToast_default.name]: completeToast_default, [userQuotes_default.name]: userQuotes_default, [betterAvatarPlugins_default.name]: betterAvatarPlugins_default, [exportChat_default.name]: exportChat_default, [betterQueue_default.name]: betterQueue_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [betterImagine_default.name]: betterImagine_default, [consoleJanitor_default.name]: consoleJanitor_default, [experiments_default.name]: experiments_default, [betterFiles_default.name]: betterFiles_default, [cloneChats_default.name]: cloneChats_default, [noShareLink_default.name]: noShareLink_default, [chatListStatus_default.name]: chatListStatus_default, [autoCollapse_default.name]: autoCollapse_default, [betterLinks_default.name]: betterLinks_default, [stableComposer_default.name]: stableComposer_default, [messageStars_default.name]: messageStars_default, [autoRetry_default.name]: autoRetry_default, [inputHistory_default.name]: inputHistory_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [betterQuotes_default.name]: betterQuotes_default, [downloadTTS_default.name]: downloadTTS_default, [incognito_default.name]: incognito_default, [streamerMode_default.name]: streamerMode_default, [customInstructions_default.name]: customInstructions_default, [noDictation_default.name]: noDictation_default, [oneko_default.name]: oneko_default, [betterSidebar_default.name]: betterSidebar_default, [messageTimestamps_default.name]: messageTimestamps_default, [betterNavigator_default.name]: betterNavigator_default, [betterCanvas_default.name]: betterCanvas_default, [customGreeting_default.name]: customGreeting_default, [cleaner_default.name]: cleaner_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [composerOpacity_default.name]: composerOpacity_default };

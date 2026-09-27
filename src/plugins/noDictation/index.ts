@@ -43,7 +43,7 @@ export default definePlugin({
     icon: MicOffIcon,
     description: "Hide the Dictation (voice input) button from the chat input bar, and optionally Dictation Refinement in Settings.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["declutter"],
     enabledByDefault: true,
     settings,
 

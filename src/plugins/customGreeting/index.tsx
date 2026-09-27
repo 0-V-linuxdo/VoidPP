@@ -504,7 +504,7 @@ export default definePlugin({
     icon: MessageCircleIcon,
     description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
     authors: [Devs.p],
-    tags: ["chat"],
+    tags: ["appearance"],
     settings,
 
     _phrases() {

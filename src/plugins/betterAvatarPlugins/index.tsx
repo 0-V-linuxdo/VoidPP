@@ -117,7 +117,7 @@ export default definePlugin({
     icon: PluginsIcon,
     description: "Move the sidebar Plugins button into the avatar menu.",
     authors: [Devs.p],
-    tags: ["ui"],
+    tags: ["navigation"],
     enabledByDefault: true,
     settings,
 

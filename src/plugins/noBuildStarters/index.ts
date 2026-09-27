@@ -13,7 +13,7 @@ export default definePlugin({
     icon: LightbulbIcon,
     description: "Hide the Build mode Ideas chips above the input.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["declutter"],
     enabledByDefault: true,
 
     patches: [

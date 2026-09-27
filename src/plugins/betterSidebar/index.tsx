@@ -364,7 +364,7 @@ export default definePlugin({
     icon: PanelLeftIcon,
     description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["ui"],
+    tags: ["navigation"],
     enabledByDefault: true,
     settings,
     managedStyle: "betterSidebar",

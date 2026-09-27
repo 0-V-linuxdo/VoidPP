@@ -840,7 +840,7 @@ export default definePlugin({
     icon: CircleCheckIcon,
     description: "Toast when another chat finishes, click to open it. Optional Imagine generation toast is off by default.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["notifications"],
     enabledByDefault: true,
     settings,
     startAt: StartAt.TurbopackReady,

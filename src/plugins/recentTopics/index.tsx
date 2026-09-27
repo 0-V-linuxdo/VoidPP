@@ -2351,7 +2351,7 @@ export default definePlugin({
     icon: LayoutGridIcon,
     description: "Switch recently opened conversations with Ctrl+` like Arc's tab switcher.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["navigation"],
     enabledByDefault: true,
     settings,
     managedStyle: "recentTopics",

@@ -89,7 +89,7 @@ export default definePlugin({
     icon: LinkIcon,
     description: "Colorize links and detect bare domains in chat messages.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["messages"],
     settings,
 
     patches: [

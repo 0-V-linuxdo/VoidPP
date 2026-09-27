@@ -119,6 +119,7 @@ export default definePlugin({
     icon: TelescopeIcon,
     description: "Browse and copy Grok icon finder codes.",
     authors: [Devs.Prism],
+    tags: ["developer"],
     dev: true,
 
     startAt: StartAt.TurbopackReady,

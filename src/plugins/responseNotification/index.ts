@@ -283,7 +283,7 @@ export default definePlugin({
     icon: BellIcon,
     description: "Notify when Grok finishes responding. Optional Imagine generation notify is off by default.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["chat"],
+    tags: ["notifications"],
     settings,
     startAt: StartAt.TurbopackReady,
 

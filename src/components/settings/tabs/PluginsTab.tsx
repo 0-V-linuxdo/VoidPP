@@ -133,8 +133,7 @@ export default function PluginsTab() {
 
     const visibleTabs = useMemo(() => PLUGIN_CATEGORY_TABS.filter(t => {
         if (t.id === "favorites" || t.id === "all" || t.id === "recent") return true;
-        const pool = t.id === "other" ? userPlugins : [...userPlugins, ...requiredPlugins];
-        return pool.some(n => pluginMatchesCategory(plugins[n], t.id));
+        return [...userPlugins, ...requiredPlugins].some(n => pluginMatchesCategory(plugins[n], t.id));
     }), [userPlugins, requiredPlugins]);
 
     const { tabUser, tabRequired } = useMemo(() => {

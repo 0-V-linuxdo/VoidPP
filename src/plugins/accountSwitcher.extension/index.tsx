@@ -324,7 +324,7 @@ export default definePlugin({
     icon: UsersRoundIcon,
     description: "Easily switch between your accounts.",
     authors: [Devs.Prism],
-    tags: ["ui"],
+    tags: ["navigation"],
     settings,
 
     start() {

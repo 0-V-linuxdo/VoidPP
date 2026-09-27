@@ -607,7 +607,7 @@ export default definePlugin({
     icon: AppWindowIcon,
     description: "Show streaming, done, ready, and error states on the tab favicon.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["notifications"],
     enabledByDefault: true,
     settings,
     startAt: StartAt.TurbopackReady,

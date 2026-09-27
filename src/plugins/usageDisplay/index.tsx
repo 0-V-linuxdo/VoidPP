@@ -705,7 +705,7 @@ export default definePlugin({
     icon: CircleGaugeIcon,
     description: "Shows weekly SuperGrok or Grok Bot usage in the chat bar, with optional daily stats.",
     authors: [Devs.p],
-    tags: ["chat"],
+    tags: ["composer"],
     enabledByDefault: true,
     settings,
 

@@ -559,7 +559,7 @@ export default definePlugin({
     icon: ImagesIcon,
     description: "Imagine polish: filter, sort, shortcuts on Favorites, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
     authors: [Devs.Prism],
-    tags: ["ui"],
+    tags: ["media"],
     settings,
 
     _hideDefault: () => settings.store.hideDefaultPreviews,

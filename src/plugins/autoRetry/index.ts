@@ -131,7 +131,7 @@ export default definePlugin({
     icon: RotateCcwIcon,
     description: "Automatically retry failed messages on moderation or network errors.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["messages"],
     settings,
     startAt: StartAt.TurbopackReady,
 

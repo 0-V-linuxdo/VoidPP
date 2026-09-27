@@ -1805,7 +1805,7 @@ export default definePlugin({
     icon: ScrollTextIcon,
     description: "Upgrade Grok's message rail into a Notion-style outline of the whole chat, including messages that are not mounted yet. A reply that is still streaming stays listed as a dashed tick.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["navigation"],
     enabledByDefault: true,
     startAt: StartAt.DOMContentLoaded,
     settings,

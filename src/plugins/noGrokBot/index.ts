@@ -26,7 +26,7 @@ export default definePlugin({
     icon: BotOffIcon,
     description: "Hide the top-right Grok Bot promo button.",
     authors: [Devs.p],
-    tags: ["ui"],
+    tags: ["declutter"],
     enabledByDefault: true,
 
     start() {

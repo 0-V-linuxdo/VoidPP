@@ -41,7 +41,7 @@ export default definePlugin({
     icon: Link2OffIcon,
     description: "Hide share buttons: Share Project (in a project) and Create share link (top-right of chats).",
     authors: [Devs.p],
-    tags: ["ui", "privacy"],
+    tags: ["declutter", "privacy"],
     enabledByDefault: true,
     settings,
 

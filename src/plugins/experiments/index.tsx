@@ -263,6 +263,7 @@ export default definePlugin({
     icon: TestTubeIcon,
     description: "Unlock and toggle unreleased Grok features.",
     authors: [Devs.Prism],
+    tags: ["developer"],
     settings,
     startAt: StartAt.TurbopackReady,
 

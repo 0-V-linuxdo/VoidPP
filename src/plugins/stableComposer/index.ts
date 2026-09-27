@@ -21,7 +21,7 @@ export default definePlugin({
     icon: TextCursorInputIcon,
     description: "Stop the Grok composer from destroying and recreating its editor when the extension list is rebuilt unchanged, which was resetting the caret and breaking IME composition.",
     authors: [Devs.p],
-    tags: ["chat"],
+    tags: ["composer"],
     enabledByDefault: true,
 
     _deps(extensions: Extension[], mention: unknown): [unknown, unknown] {

@@ -60,7 +60,7 @@ export default definePlugin({
     icon: SparklesIcon,
     description: "Adds Grok's native twinkling starry background to the main page.",
     authors: [Devs.Prism],
-    tags: ["ui"],
+    tags: ["appearance"],
     settings,
 
     _StarryBg() {

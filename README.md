@@ -50,7 +50,7 @@ Published **Beta** is [`voidpp-beta`](https://github.com/0-V-linuxdo/VoidPP/tree
 | Feature | Default | What it does |
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/pin.svg?color=%238b949e" width="16" height="16" alt=""> Plugin pin | — | Pin plugin cards to the top of the current category. |
-| <img src="https://api.iconify.design/lucide/star.svg?color=%238b949e" width="16" height="16" alt=""> Plugin favorites | — | Star a plugin to collect it in the Favorites tab (the default Plugins view). Categories: Favorites, Recent (last 7 days), All, Chat, UI, Privacy, Other. |
+| <img src="https://api.iconify.design/lucide/star.svg?color=%238b949e" width="16" height="16" alt=""> Plugin favorites | — | Star a plugin to collect it in the Favorites tab (the default Plugins view). Categories: Favorites, Recent (last 7 days), All, Composer, Messages, Chats, Media, Navigation, Notifications, Appearance, Declutter, Privacy, Developer. |
 
 ### Fixed
 

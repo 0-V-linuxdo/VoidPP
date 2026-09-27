@@ -44,7 +44,7 @@ export default definePlugin({
     icon: UserQuotesIcon,
     description: "Show a visible left bar on quoted lines in your own chat bubbles.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["messages"],
     enabledByDefault: true,
     settings,
 

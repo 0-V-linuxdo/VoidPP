@@ -52,7 +52,7 @@ export default definePlugin({
     icon: UserRoundXIcon,
     description: "Hide username and/or email in the Grok sidebar and account menu. Avatar stays clickable.",
     authors: [Devs.p],
-    tags: ["ui", "privacy"],
+    tags: ["privacy"],
     enabledByDefault: true,
     settings,
 

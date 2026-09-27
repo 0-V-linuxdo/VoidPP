@@ -510,7 +510,7 @@ export default definePlugin({
     icon: FrameIcon,
     description: "Theme the project pane and Imagine masonry scrollbars and optionally keep the right panel closed.",
     authors: [Devs.p],
-    tags: ["ui"],
+    tags: ["appearance"],
     enabledByDefault: true,
     startAt: StartAt.TurbopackReady,
     settings,

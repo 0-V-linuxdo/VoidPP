@@ -619,7 +619,7 @@ export default definePlugin({
     icon: Minimize2Icon,
     description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["composer"],
     enabledByDefault: true,
     settings,
     managedStyle: "betterModeSelect",

@@ -50,7 +50,7 @@
 | 功能 | 默认 | 说明 |
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/pin.svg?color=%238b949e" width="16" height="16" alt=""> 插件置顶 | — | 把插件卡片钉在当前分类顶部。 |
-| <img src="https://api.iconify.design/lucide/star.svg?color=%238b949e" width="16" height="16" alt=""> 插件收藏 | — | 星标收藏插件；插件页默认进入 Favorites。分类：Favorites / Recent（近 7 天更新）/ All / Chat / UI / Privacy / Other。 |
+| <img src="https://api.iconify.design/lucide/star.svg?color=%238b949e" width="16" height="16" alt=""> 插件收藏 | — | 星标收藏插件；插件页默认进入 Favorites。分类：Favorites / Recent（近 7 天更新）/ All / Composer（输入框）/ Messages（消息）/ Chats（会话）/ Media（媒体）/ Navigation（导航）/ Notifications（通知）/ Appearance（外观）/ Declutter（精简）/ Privacy（隐私）/ Developer（开发）。 |
 
 ### 修复
 

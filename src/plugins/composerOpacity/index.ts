@@ -65,7 +65,7 @@ export default definePlugin({
     icon: BlendIcon,
     description: "Customizable chat input background opacity so content behind the bar cannot show through.",
     authors: [Devs.p],
-    tags: ["ui", "chat"],
+    tags: ["composer", "appearance"],
     enabledByDefault: true,
     settings,
 

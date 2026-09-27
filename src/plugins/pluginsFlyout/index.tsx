@@ -94,7 +94,7 @@ export default definePlugin({
     icon: ListFilterIcon,
     description: "Choose which plugins appear in the avatar Void++ → Plugins menu.",
     authors: [Devs.p],
-    tags: ["ui", "settings"],
+    tags: ["navigation"],
     enabledByDefault: true,
     settings,
 });
