@@ -204,27 +204,29 @@ export default function PluginsTab() {
                     </Button>
                 </Flex>
             )}
-            <Flex className={cl("tabs")} gap="0.125rem" flexWrap="wrap">
-                {visibleTabs.map(t => (
-                    <Button
-                        key={t.id}
-                        variant="tertiary"
-                        size="sm"
-                        className={classes(cl("tab"), category === t.id && cl("tab-active"))}
-                        onClick={() => setCategory(t.id)}
-                    >
-                        {t.label}
-                    </Button>
-                ))}
+            <Flex flexDirection="column" gap="1rem" className={cl("header")}>
+                <Flex className={cl("tabs")} gap="0.125rem" flexWrap="wrap">
+                    {visibleTabs.map(t => (
+                        <Button
+                            key={t.id}
+                            variant="tertiary"
+                            size="sm"
+                            className={classes(cl("tab"), category === t.id && cl("tab-active"))}
+                            onClick={() => setCategory(t.id)}
+                        >
+                            {t.label}
+                        </Button>
+                    ))}
+                </Flex>
+                <SearchFilterBar<ListFilter>
+                    placeholder={`Search ${tabUser.length + tabRequired.length} plugins...`}
+                    search={search}
+                    onSearchChange={setSearch}
+                    filter={filter}
+                    onFilterChange={setFilter}
+                    options={FILTER_OPTIONS}
+                />
             </Flex>
-            <SearchFilterBar<ListFilter>
-                placeholder={`Search ${tabUser.length + tabRequired.length} plugins...`}
-                search={search}
-                onSearchChange={setSearch}
-                filter={filter}
-                onFilterChange={setFilter}
-                options={FILTER_OPTIONS}
-            />
             {filteredUser.length > 0 && (
                 <Grid columns="repeat(2, 1fr)">
                     {filteredUser.map(n => (

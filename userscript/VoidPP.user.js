@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP
-// @version      20260923.8
+// @version      20260928.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Production
@@ -32,7 +32,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260923.8] v1.0.0 — A modification for grok.com
+ * Void++ [20260928.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -5610,6 +5610,19 @@ button .void-info-hint {
     flex: 1;
 }
 
+.void-plugins-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding-bottom: 1rem;
+    margin-bottom: -1rem;
+    background: hsl(var(--surface-base));
+}
+
+.alpha-mask-y:has(.void-plugins-header) {
+    --alpha-mask-top: 0px !important;
+}
+
 .void-plugins-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -6556,6 +6569,10 @@ button .void-info-hint {
       size: "sm",
       onClick: () => location.reload()
     }, "Reload")), /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      gap: "1rem",
+      className: cl11("header")
+    }, /* @__PURE__ */ React.createElement(Flex, {
       className: cl11("tabs"),
       gap: "0.125rem",
       flexWrap: "wrap"
@@ -6572,7 +6589,7 @@ button .void-info-hint {
       filter,
       onFilterChange: setFilter,
       options: FILTER_OPTIONS
-    }), filteredUser.length > 0 && /* @__PURE__ */ React.createElement(Grid, {
+    })), filteredUser.length > 0 && /* @__PURE__ */ React.createElement(Grid, {
       columns: "repeat(2, 1fr)"
     }, filteredUser.map((n) => /* @__PURE__ */ React.createElement(ErrorBoundary, {
       key: n,
@@ -7433,9 +7450,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260923.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"51879f1"}`
-    }, `(${"51879f1"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260928.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6a9815d"}`
+    }, `(${"6a9815d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -27991,7 +28008,7 @@ html.void-rt-open [data-sidebar="gap"] {
   downloadTTS_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
-  modeSync_default.updatedAt = 1790140416000;
+  modeSync_default.updatedAt = 1790153407000;
   customInstructions_default.updatedAt = 1789898438000;
   noDictation_default.updatedAt = 1788037550000;
   quoteJump_default.updatedAt = 1790105896000;
