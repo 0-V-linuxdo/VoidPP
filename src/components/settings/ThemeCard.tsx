@@ -7,7 +7,7 @@
 import "./ThemeCard.css";
 
 import { disableTheme, enableTheme, type ThemeData } from "@api/Themes";
-import { Switch } from "@components";
+import { SettingsSwitch } from "@components";
 import { CopyIcon, FolderIcon, GlobeIcon, PaletteIcon, PencilIcon, Trash2Icon } from "@components/icons";
 import { React } from "@turbopack/common/react";
 import { classNameFactory } from "@utils/css";
@@ -49,7 +49,7 @@ export default function ThemeCard({ theme, onRemove, onToggle, onEdit }: ThemeCa
                         : <IconButton icon={CopyIcon} label="Copy URL" onClick={() => { copyToClipboard(theme.url).catch(e => logger.error("Failed to copy URL:", e)); }} />
                     }
                     <IconButton icon={Trash2Icon} label="Remove" onClick={() => onRemove(theme.url)} />
-                    <Switch checked={theme.enabled} onCheckedChange={handleToggle} />
+                    <SettingsSwitch checked={theme.enabled} onCheckedChange={handleToggle} />
                 </>
             }
             footer={

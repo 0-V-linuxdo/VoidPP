@@ -8,7 +8,7 @@ import "./styles.css";
 
 import { isPluginEnabled, plugins } from "@api/PluginManager";
 import { definePluginSettings } from "@api/Settings";
-import { Flex, SettingsDescription, SettingsRow, SettingsTitle, Switch } from "@components";
+import { Flex, SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle } from "@components";
 import { ListFilterIcon, UnplugIcon } from "@components/icons";
 import { hasVisibleSettings } from "@components/settings/utils";
 import { React } from "@turbopack/common/react";
@@ -75,7 +75,7 @@ function MenuPluginsEditor() {
                     return (
                         <SettingsRow
                             key={name}
-                            action={<Switch checked={isShownInPluginMenu(name)} onCheckedChange={v => setShownInPluginMenu(name, v)} />}
+                            action={<SettingsSwitch checked={isShownInPluginMenu(name)} onCheckedChange={v => setShownInPluginMenu(name, v)} />}
                         >
                             <Flex alignItems="center" gap="0.5rem">
                                 <Icon className={cl("icon")} />

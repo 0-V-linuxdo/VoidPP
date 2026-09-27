@@ -7,7 +7,7 @@
 import "./styles.css";
 
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
-import { ButtonWithTooltip, ChatBarButton, Flex, SettingsDescription, SettingsTitle, Switch } from "@components";
+import { ButtonWithTooltip, ChatBarButton, Flex, SettingsDescription, SettingsSwitch, SettingsTitle } from "@components";
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { AutoModeIcon, BuildModeIcon, ChevronDownIcon, ChevronUpIcon, ConnectedAppsIcon, FastModeIcon, GripVerticalIcon, LightbulbIcon, Minimize2Icon } from "@components/icons";
 import type { ModesStoreState } from "@grok-types/stores/ModesStore";
@@ -565,7 +565,7 @@ function PinOrderEditor() {
                                 >
                                     <ChevronDownIcon size={14} />
                                 </ButtonWithTooltip>
-                                <Switch checked={!!cfg[m.pin]} onCheckedChange={on => setPinned(m.pin, on)} />
+                                <SettingsSwitch checked={!!cfg[m.pin]} onCheckedChange={on => setPinned(m.pin, on)} />
                             </Flex>
                         </div>
                     );

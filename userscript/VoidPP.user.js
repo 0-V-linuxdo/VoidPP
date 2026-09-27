@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260928.2
+// @version      20260928.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260928.2] v1.0.0 — A modification for grok.com
+ * Void++ [20260928.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4107,10 +4107,14 @@ ${root}::-webkit-scrollbar-thumb:hover {
       return null;
     return React.createElement("div", { className: classes(cl2("row"), className) }, React.createElement("div", { className: cl2("row-body") }, children), action ?? null);
   }
+  function FallbackSwitch(props) {
+    return React.createElement(Switch, { size: "sm", ...props });
+  }
   var fallbacks = {
     SettingsTitle: FallbackTitle,
     SettingsDescription: FallbackDescription,
-    SettingsRow: FallbackRow
+    SettingsRow: FallbackRow,
+    SettingsSwitch: FallbackSwitch
   };
   function setSettingsPrimitive(name, component) {
     captured[name] = component;
@@ -4118,6 +4122,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var SettingsTitle = (props) => React.createElement(captured.SettingsTitle ?? fallbacks.SettingsTitle, props);
   var SettingsDescription = (props) => React.createElement(captured.SettingsDescription ?? fallbacks.SettingsDescription, props);
   var SettingsRow = (props) => React.createElement(captured.SettingsRow ?? fallbacks.SettingsRow, props);
+  var SettingsSwitch = (props) => React.createElement(captured.SettingsSwitch ?? fallbacks.SettingsSwitch, props);
 
   // src/turbopack/common/components.ts
   function createModuleLazy(...filterProps) {
@@ -5743,7 +5748,7 @@ button .void-info-hint {
       gap: "1rem",
       className: classes(cl6("root"), "void-tab-root")
     }, /* @__PURE__ */ React.createElement(SettingsRow, {
-      action: /* @__PURE__ */ React.createElement(Switch, {
+      action: /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: enabled,
         onCheckedChange: handleToggle
       })
@@ -6211,7 +6216,7 @@ button .void-info-hint {
         label: "config",
         className: cl8("settings"),
         onClick: () => onSettings(name)
-      })), /* @__PURE__ */ React.createElement(TooltipContent, null, "config")), /* @__PURE__ */ React.createElement(Switch, {
+      })), /* @__PURE__ */ React.createElement(TooltipContent, null, "config")), /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: enabled,
         disabled: plugin.required,
         onCheckedChange: handleToggle
@@ -6369,7 +6374,7 @@ button .void-info-hint {
   var BooleanField = ({ id, setting, pluginName }) => {
     const [value, update] = usePluginSetting(pluginName, id, setting);
     return /* @__PURE__ */ React.createElement(SettingsRow, {
-      action: /* @__PURE__ */ React.createElement(Switch, {
+      action: /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: !!value,
         onCheckedChange: update
       })
@@ -6939,7 +6944,7 @@ button .void-info-hint {
         icon: Trash2Icon,
         label: "Remove",
         onClick: () => onRemove(theme.url)
-      }), /* @__PURE__ */ React.createElement(Switch, {
+      }), /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: theme.enabled,
         onCheckedChange: handleToggle
       })),
@@ -7380,7 +7385,7 @@ button .void-info-hint {
         setOverride(flagKey, value);
     }, [flagKey]);
     return /* @__PURE__ */ React.createElement(SettingsRow, {
-      action: /* @__PURE__ */ React.createElement(Switch, {
+      action: /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked,
         onCheckedChange: handleToggle
       })
@@ -7621,7 +7626,7 @@ button .void-info-hint {
       const Icon = plugins[name].icon ?? UnplugIcon;
       return /* @__PURE__ */ React.createElement(SettingsRow, {
         key: name,
-        action: /* @__PURE__ */ React.createElement(Switch, {
+        action: /* @__PURE__ */ React.createElement(SettingsSwitch, {
           checked: isShownInPluginMenu(name),
           onCheckedChange: (v) => setShownInPluginMenu(name, v)
         })
@@ -7691,9 +7696,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260928.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e87fed0"}`
-    }, `(${"e87fed0"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260928.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1e0eeb2"}`
+    }, `(${"1e0eeb2"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7852,6 +7857,13 @@ button .void-info-hint {
             replace: '$1$self._setPrimitive("SettingsRow",$2)'
           }
         ]
+      },
+      {
+        find: '"SettingsSwitch",0,',
+        replacement: {
+          match: /("SettingsSwitch",0,)(\i)/,
+          replace: '$1$self._setPrimitive("SettingsSwitch",$2)'
+        }
       }
     ]
   });
@@ -9284,7 +9296,7 @@ html.void-cms-picked .void-cms-ghost {
         onClick: () => setOrder(reorder(ids, i, i + 1))
       }, /* @__PURE__ */ React.createElement(ChevronDownIcon, {
         size: 14
-      })), /* @__PURE__ */ React.createElement(Switch, {
+      })), /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: !!cfg[m.pin],
         onCheckedChange: (on) => setPinned(m.pin, on)
       })));
@@ -33253,6 +33265,7 @@ html.void-rt-open [data-sidebar="gap"] {
     Skeleton: () => Skeleton,
     SidebarComponents: () => SidebarComponents,
     SettingsTitle: () => SettingsTitle,
+    SettingsSwitch: () => SettingsSwitch,
     SettingsStore: () => SettingsStore,
     SettingsRow: () => SettingsRow,
     SettingsDialogStore: () => SettingsDialogStore,

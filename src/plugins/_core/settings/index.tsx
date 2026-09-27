@@ -271,5 +271,12 @@ export default definePlugin({
                 },
             ],
         },
+        {
+            find: '"SettingsSwitch",0,',
+            replacement: {
+                match: /("SettingsSwitch",0,)(\i)/,
+                replace: '$1$self._setPrimitive("SettingsSwitch",$2)',
+            },
+        },
     ],
 });

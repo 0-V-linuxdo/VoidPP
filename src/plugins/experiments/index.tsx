@@ -8,7 +8,7 @@ import "./styles.css";
 
 import { showToast, ToastType } from "@api/Notifications";
 import { definePluginSettings } from "@api/Settings";
-import { Badge, Button, Card, Flex, Input, Paragraph, SectionHeader, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SettingsDescription, SettingsRow, SettingsTitle, Switch, Text } from "@components";
+import { Badge, Button, Card, Flex, Input, Paragraph, SectionHeader, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle, Text } from "@components";
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { TestTubeIcon } from "@components/icons";
 import type { FeatureStoreState } from "@grok-types";
@@ -154,7 +154,7 @@ function ExperimentRow({ flagKey, isNew }: { flagKey: string; isNew: boolean }) 
     );
 
     return (
-        <SettingsRow action={<Switch checked={checked} onCheckedChange={handleToggle} />}>
+        <SettingsRow action={<SettingsSwitch checked={checked} onCheckedChange={handleToggle} />}>
             <SettingsTitle>
                 {prettifyKey(flagKey)}
                 {isNew && <Badge variant="accent" className={cl("badge")}>New</Badge>}

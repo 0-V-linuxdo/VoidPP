@@ -29,7 +29,7 @@ import type { ComponentType } from "react";
 
 import { filters, findByProps, findByPropsLazy, findExportedComponent, waitFor } from "../turbopack";
 import { type AnyComponent, createElement, LazyComponent } from "./react";
-import { SettingsDescription, SettingsRow, SettingsTitle } from "./settingsPrimitives";
+import { SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle } from "./settingsPrimitives";
 
 export type * from "@grok-types";
 
@@ -125,7 +125,7 @@ export const SelectValue = selectLazy<SelectValueProps>("SelectValue");
 
 export const Separator = lazyExport<SeparatorProps>("Separator");
 
-export { SettingsDescription, SettingsRow, SettingsTitle };
+export { SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle };
 
 export const Skeleton = lazyExport<SkeletonProps>("Skeleton");
 export const Slider = lazyExport<SliderProps>("Slider");
