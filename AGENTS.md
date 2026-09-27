@@ -175,3 +175,9 @@ Regression table:
 - 26.29 official Jump only highlighted — a sentence low in a tall card stayed below the viewport because `ownScroll` skipped the comfort-band check
 - 26.30 two scrolls — official Jump then a comfort-band nudge, and `settleScroll` fired a second `scrollTo`
 - 26.31 long `smooth` on a far mounted row — the virtualizer cancelled the animation and the scroll stopped mid-way
+
+## CompleteToast
+
+Toast only when a chat finishes **off the page you are looking at**. A reply you already watched must not toast after you leave. `[20260927.1]` `maybeFinish` / `onStreamEnd` returned while `currentIds()` contained the cid and did not `markToasted`, then `finishClosed()` treated that same turn as new on the next `MessageStore` / `ResponseStore` tick.
+
+`settleWatching` writes every id for that turn (`responseId`, gateway `node.id`, `node.content.responseId`, `activeGeneration.assistantId` / `responseId`, and `streamedMessageId` while that cid is current) and adds the cid to `watched`. `finishClosed` must not show a `watched` cid. A new off-screen live (`queue.length > 0` counts as live; `GatewayActiveGeneration` has no `phase`) clears `watched` so a later background turn can still toast. Do not toast from `ChatPageStore` / `RoutingStore` — those subscriptions only dismiss. `isCurrentToast` is `currentIds()` or `streamedMessageId`, never sticky `lastMessageId`. Do not key `toasted` on cid alone when a response id exists. Do not change ResponseNotification, BetterQueue, BetterNavigator, ChatListStatus, or StreamEvents for this.

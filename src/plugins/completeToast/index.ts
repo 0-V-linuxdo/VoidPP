@@ -74,6 +74,7 @@ interface Toast {
 }
 
 const live = new Set<string>();
+const watched = new Set<string>();
 const toasted = new Set<string>();
 const toastedOrder: string[] = [];
 let started = false;
@@ -230,6 +231,7 @@ function gatewayOf(cid: string): GatewayConversation | undefined {
 
 function isLiveCid(cid: string): boolean {
     const gw = gatewayOf(cid);
+    if ((gw?.queue?.length ?? 0) > 0) return true;
     const phase = String((gw?.activeGeneration as { phase?: string } | null | undefined)?.phase ?? "").trim().toLowerCase();
     if (LIVE_PHASE.has(phase)) return true;
     const node = lastAssistantNode(gw);
@@ -446,7 +448,7 @@ function isCurrentToast(): boolean {
     if (!toast.rid) return false;
     try {
         const page = ChatPageStore.useChatPageStore.getState();
-        return page.streamedMessageId === toast.rid || page.lastMessageId === toast.rid;
+        return page.streamedMessageId === toast.rid;
     } catch {
         return false;
     }
@@ -636,6 +638,45 @@ function syncImagine(current: string, prev: string) {
     dismissIfCurrent();
 }
 
+function finishKeys(cid: string, responseId = ""): string[] {
+    const keys: string[] = [];
+    const add = (value: unknown) => {
+        if (typeof value === "string" && value && !keys.includes(value)) keys.push(value);
+    };
+    add(responseId);
+    const gw = gatewayOf(cid);
+    const node = lastAssistantNode(gw);
+    add(node?.id);
+    add(node?.content?.responseId);
+    const gen = gw?.activeGeneration;
+    add(gen?.assistantId);
+    add(gen?.responseId);
+    try {
+        add(lastAssistant(cid, ResponseStore.useResponseStore.getState().byConversationId)?.responseId);
+    } catch { /* store */ }
+    try {
+        const page = ChatPageStore.useChatPageStore.getState();
+        if (currentIds().includes(cid)) add(page.streamedMessageId);
+    } catch { /* store */ }
+    return keys;
+}
+
+function absorbFinish(cid: string, responseId = "") {
+    for (const key of finishKeys(cid, responseId)) markToasted(key);
+}
+
+function seenFinish(cid: string, responseId = ""): boolean {
+    const keys = finishKeys(cid, responseId);
+    if (keys.some(key => toasted.has(key))) return true;
+    return !responseId && !keys.length && toasted.has(cid);
+}
+
+function settleWatching(cid: string, responseId = "") {
+    watched.add(cid);
+    absorbFinish(cid, responseId);
+    if (!responseId && !finishKeys(cid, responseId).length) markToasted(cid);
+}
+
 function rememberRid(cid: string, rid: string): string {
     if (rid) return rid;
     const node = lastAssistantNode(gatewayOf(cid));
@@ -649,16 +690,25 @@ function rememberRid(cid: string, rid: string): string {
 
 function maybeFinish(cid: string, responseId = "") {
     if (!started || !isConvId(cid) || onBotPage()) return;
+    const rid = rememberRid(cid, responseId);
+    if (isBadFinish(cid, rid)) {
+        absorbFinish(cid, rid);
+        if (!rid) markToasted(cid);
+        if (currentIds().includes(cid)) watched.add(cid);
+        return;
+    }
     if (currentIds().includes(cid)) {
+        settleWatching(cid, rid);
         if (toast?.cid === cid) hide();
         return;
     }
-    const rid = rememberRid(cid, responseId);
-    if (isBadFinish(cid, rid)) return;
-    if (rid && toasted.has(rid)) return;
-    if (!rid && toasted.has(cid)) return;
-    if (rid) markToasted(rid);
-    else markToasted(cid);
+    if (watched.has(cid)) {
+        absorbFinish(cid, rid);
+        return;
+    }
+    if (seenFinish(cid, rid)) return;
+    absorbFinish(cid, rid);
+    if (!rid) markToasted(cid);
     show(cid, rid);
 }
 
@@ -687,7 +737,10 @@ function seedToasted() {
         const { byConversationId } = ResponseStore.useResponseStore.getState();
         for (const id of Object.keys(byConversationId ?? {})) {
             const last = lastAssistant(id, byConversationId);
-            if (last?.responseId && !isLiveResponse(last)) markToasted(last.responseId);
+            if (last?.responseId && !isLiveResponse(last)) {
+                markToasted(last.responseId);
+                watched.add(id);
+            }
         }
     } catch (e) {
         logger.debug("seed responses failed:", e);
@@ -697,6 +750,7 @@ function seedToasted() {
             if (isLiveCid(id)) continue;
             const node = lastAssistantNode(gw);
             if (node?.id) markToasted(node.id);
+            watched.add(id);
         }
     } catch (e) {
         logger.debug("seed gateway failed:", e);
@@ -720,7 +774,11 @@ function finishClosed() {
 function syncLive() {
     if (!started) return;
     const now = liveCids();
-    for (const id of now) live.add(id);
+    const open = new Set(currentIds());
+    for (const id of now) {
+        if (!open.has(id)) watched.delete(id);
+        live.add(id);
+    }
     for (const id of live) {
         if (now.has(id)) continue;
         live.delete(id);
@@ -739,6 +797,7 @@ function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
             return;
         }
         if (currentIds().includes(cid)) {
+            settleWatching(cid, responseId);
             if (toast?.cid === cid) hide();
             return;
         }
@@ -752,7 +811,7 @@ function messageKey(s: MessageStoreState): string {
     for (const [id, gw] of Object.entries(s.conversations ?? {})) {
         const gen = gw.activeGeneration as { phase?: string; assistantId?: string; responseId?: string | null } | null;
         const node = lastAssistantNode(gw);
-        bits.push(`${id}:${gen?.phase ?? ""}:${gen?.assistantId ?? gen?.responseId ?? ""}:${node?.status ?? ""}:${node?.id ?? ""}`);
+        bits.push(`${id}:${gw.queue?.length ?? 0}:${gen?.phase ?? ""}:${gen?.assistantId ?? gen?.responseId ?? ""}:${node?.status ?? ""}:${node?.id ?? ""}`);
     }
     return bits.join(",");
 }
@@ -792,6 +851,7 @@ export default definePlugin({
         migratePersist();
         started = true;
         live.clear();
+        watched.clear();
         toasted.clear();
         toastedOrder.length = 0;
         seedToasted();
@@ -804,6 +864,7 @@ export default definePlugin({
         retryTimer = undefined;
         hide();
         live.clear();
+        watched.clear();
         toasted.clear();
         toastedOrder.length = 0;
     },

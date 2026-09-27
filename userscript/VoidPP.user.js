@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.17
+// @version      20260927.18
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.17] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.18] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,7 +7736,7 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+    }, "[20260927.18] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
       href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"485aaee"}`
     }, `(${"485aaee"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
@@ -26418,6 +26418,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
   });
   var live = new Set;
+  var watched = new Set;
   var toasted = new Set;
   var toastedOrder = [];
   var started4 = false;
@@ -26581,6 +26582,8 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   }
   function isLiveCid(cid) {
     const gw = gatewayOf2(cid);
+    if ((gw?.queue?.length ?? 0) > 0)
+      return true;
     const phase = String(gw?.activeGeneration?.phase ?? "").trim().toLowerCase();
     if (LIVE_PHASE2.has(phase))
       return true;
@@ -26802,7 +26805,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return false;
     try {
       const page = ChatPageStore.useChatPageStore.getState();
-      return page.streamedMessageId === toast.rid || page.lastMessageId === toast.rid;
+      return page.streamedMessageId === toast.rid;
     } catch {
       return false;
     }
@@ -27004,6 +27007,46 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     }
     dismissIfCurrent();
   }
+  function finishKeys(cid, responseId = "") {
+    const keys = [];
+    const add = (value) => {
+      if (typeof value === "string" && value && !keys.includes(value))
+        keys.push(value);
+    };
+    add(responseId);
+    const gw = gatewayOf2(cid);
+    const node = lastAssistantNode(gw);
+    add(node?.id);
+    add(node?.content?.responseId);
+    const gen = gw?.activeGeneration;
+    add(gen?.assistantId);
+    add(gen?.responseId);
+    try {
+      add(lastAssistant2(cid, ResponseStore.useResponseStore.getState().byConversationId)?.responseId);
+    } catch {}
+    try {
+      const page = ChatPageStore.useChatPageStore.getState();
+      if (currentIds2().includes(cid))
+        add(page.streamedMessageId);
+    } catch {}
+    return keys;
+  }
+  function absorbFinish(cid, responseId = "") {
+    for (const key of finishKeys(cid, responseId))
+      markToasted(key);
+  }
+  function seenFinish(cid, responseId = "") {
+    const keys = finishKeys(cid, responseId);
+    if (keys.some((key) => toasted.has(key)))
+      return true;
+    return !responseId && !keys.length && toasted.has(cid);
+  }
+  function settleWatching(cid, responseId = "") {
+    watched.add(cid);
+    absorbFinish(cid, responseId);
+    if (!responseId && !finishKeys(cid, responseId).length)
+      markToasted(cid);
+  }
   function rememberRid(cid, rid) {
     if (rid)
       return rid;
@@ -27019,21 +27062,29 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   function maybeFinish(cid, responseId = "") {
     if (!started4 || !isConvId2(cid) || onBotPage2())
       return;
+    const rid = rememberRid(cid, responseId);
+    if (isBadFinish(cid, rid)) {
+      absorbFinish(cid, rid);
+      if (!rid)
+        markToasted(cid);
+      if (currentIds2().includes(cid))
+        watched.add(cid);
+      return;
+    }
     if (currentIds2().includes(cid)) {
+      settleWatching(cid, rid);
       if (toast?.cid === cid)
         hide();
       return;
     }
-    const rid = rememberRid(cid, responseId);
-    if (isBadFinish(cid, rid))
+    if (watched.has(cid)) {
+      absorbFinish(cid, rid);
       return;
-    if (rid && toasted.has(rid))
+    }
+    if (seenFinish(cid, rid))
       return;
-    if (!rid && toasted.has(cid))
-      return;
-    if (rid)
-      markToasted(rid);
-    else
+    absorbFinish(cid, rid);
+    if (!rid)
       markToasted(cid);
     show(cid, rid);
   }
@@ -27063,8 +27114,10 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       const { byConversationId } = ResponseStore.useResponseStore.getState();
       for (const id of Object.keys(byConversationId ?? {})) {
         const last = lastAssistant2(id, byConversationId);
-        if (last?.responseId && !isLiveResponse3(last))
+        if (last?.responseId && !isLiveResponse3(last)) {
           markToasted(last.responseId);
+          watched.add(id);
+        }
       }
     } catch (e) {
       logger37.debug("seed responses failed:", e);
@@ -27076,6 +27129,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         const node = lastAssistantNode(gw);
         if (node?.id)
           markToasted(node.id);
+        watched.add(id);
       }
     } catch (e) {
       logger37.debug("seed gateway failed:", e);
@@ -27100,8 +27154,12 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     if (!started4)
       return;
     const now = liveCids();
-    for (const id of now)
+    const open = new Set(currentIds2());
+    for (const id of now) {
+      if (!open.has(id))
+        watched.delete(id);
       live.add(id);
+    }
     for (const id of live) {
       if (now.has(id))
         continue;
@@ -27122,6 +27180,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
         return;
       }
       if (currentIds2().includes(cid)) {
+        settleWatching(cid, responseId);
         if (toast?.cid === cid)
           hide();
         return;
@@ -27135,7 +27194,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     for (const [id, gw] of Object.entries(s.conversations ?? {})) {
       const gen = gw.activeGeneration;
       const node = lastAssistantNode(gw);
-      bits.push(`${id}:${gen?.phase ?? ""}:${gen?.assistantId ?? gen?.responseId ?? ""}:${node?.status ?? ""}:${node?.id ?? ""}`);
+      bits.push(`${id}:${gw.queue?.length ?? 0}:${gen?.phase ?? ""}:${gen?.assistantId ?? gen?.responseId ?? ""}:${node?.status ?? ""}:${node?.id ?? ""}`);
     }
     return bits.join(",");
   }
@@ -27171,6 +27230,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       migratePersist();
       started4 = true;
       live.clear();
+      watched.clear();
       toasted.clear();
       toastedOrder.length = 0;
       seedToasted();
@@ -27183,6 +27243,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       retryTimer2 = undefined;
       hide();
       live.clear();
+      watched.clear();
       toasted.clear();
       toastedOrder.length = 0;
     },
