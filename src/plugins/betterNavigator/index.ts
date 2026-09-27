@@ -75,7 +75,6 @@ const ENSURE_MS = 10000;
 const SNAP_PX = 16;
 const AIM_MS = 300;
 const SETTLE_MS = 100;
-const TICK_WAIT_MS = 200;
 const DENSE_N = 16;
 const SLOT_CLASS = "void-bn-rail";
 const LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
@@ -778,14 +777,80 @@ function jumpEnd(pane: HTMLElement) {
     pane.scrollTop = Math.max(0, pane.scrollHeight - pane.clientHeight);
 }
 
-function predecessor(index: number, pane: HTMLElement): HTMLElement | null {
-    for (let i = index - 1; i >= 0; i--) {
+function passedTarget(index: number, pane: HTMLElement): boolean {
+    for (let i = index + 1; i < lastNav.length; i++) {
         const el = mountedEl(lastNav[i]);
-        if (el && pane.contains(el)) return el;
+        if (el && pane.contains(el)) return true;
     }
-    return null;
+    return false;
 }
 
+function estimateScroll(index: number, pane: HTMLElement): number | null {
+    const { top: paneTop } = pane.getBoundingClientRect();
+    let lo = -1;
+    let hi = -1;
+    let top = 0;
+    let span = 0;
+    for (let i = 0; i < index; i++) {
+        const el = mountedEl(lastNav[i]);
+        if (!el || !pane.contains(el)) continue;
+        const { top: rectTop, bottom: rectBottom } = el.getBoundingClientRect();
+        const start = pane.scrollTop + rectTop - paneTop;
+        if (lo < 0) {
+            lo = i;
+            top = start;
+        }
+        hi = i;
+        span = pane.scrollTop + rectBottom - paneTop - top;
+    }
+    if (lo < 0) return null;
+    const avg = Math.max(80, hi === lo ? span : span / (hi - lo));
+    const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
+    return Math.max(0, Math.min(max, top + (index - lo) * avg - OFFSET_PX));
+}
+
+interface DownHunt {
+    tickPhase: boolean;
+    tickTop: number;
+    tickStill: number;
+    sawMove: boolean;
+    guessed: boolean;
+    step: number;
+    anchor: number;
+    probe: number;
+    halve: boolean;
+}
+
+function advanceDown(pane: HTMLElement, index: number, hunt: DownHunt) {
+    if (!hunt.guessed) {
+        hunt.guessed = true;
+        const est = estimateScroll(index, pane);
+        hunt.anchor = pane.scrollTop;
+        if (est != null && est > pane.scrollTop + 24) {
+            pane.scrollTop = est;
+            hunt.probe = pane.scrollTop;
+            return;
+        }
+    }
+    if (passedTarget(index, pane) && hunt.anchor >= 0 && pane.scrollTop > hunt.anchor + 40) {
+        hunt.probe = pane.scrollTop;
+        pane.scrollTop = (hunt.anchor + hunt.probe) / 2;
+        hunt.step = 1;
+        return;
+    }
+    if (hunt.halve && hunt.anchor >= 0 && hunt.probe > hunt.anchor + 40) {
+        const mid = (hunt.anchor + hunt.probe) / 2;
+        pane.scrollTop = mid;
+        hunt.probe = mid;
+        hunt.halve = false;
+        hunt.step = 1;
+        return;
+    }
+    hunt.anchor = pane.scrollTop;
+    nudge(pane, 1, hunt.step);
+    hunt.probe = pane.scrollTop;
+    hunt.step = Math.min(16, hunt.step * 2);
+}
 function tickForIndex(index: number): HTMLButtonElement | undefined {
     const item = lastNav[index];
     if (!item) return;
@@ -803,12 +868,6 @@ function tickForIndex(index: number): HTMLButtonElement | undefined {
     const j = next >= 0 ? next : prev;
     if (j < 0) return;
     return nativeTickFor(lastNav[j], j);
-}
-
-function parkAbove(el: HTMLElement, pane: HTMLElement) {
-    const { bottom } = el.getBoundingClientRect();
-    const { top: paneTop } = pane.getBoundingClientRect();
-    pane.scrollTop = Math.max(0, pane.scrollTop + bottom - paneTop - OFFSET_PX);
 }
 
 function nudge(pane: HTMLElement, dir: -1 | 1, screens: number) {
@@ -849,8 +908,17 @@ async function ensureJump(item: NavItem, index: number) {
     const deadline = performance.now() + ENSURE_MS;
     let clicked = false;
     let edgeSince = 0;
-    let waitTickUntil = 0;
-    let stuck = 0;
+    const hunt: DownHunt = {
+        tickPhase: true,
+        tickTop: 0,
+        tickStill: 0,
+        sawMove: false,
+        guessed: false,
+        step: 1,
+        anchor: -1,
+        probe: -1,
+        halve: false,
+    };
     let held: HTMLElement | null = null;
     let prevBehavior = "";
     let prevAnchor = "";
@@ -903,16 +971,26 @@ async function ensureJump(item: NavItem, index: number) {
                 }
             } else if (!clicked) {
                 clicked = true;
+                hunt.tickTop = box.scrollTop;
                 const tick = tickForIndex(index);
-                if (tick) {
-                    tick.click();
-                    waitTickUntil = now + TICK_WAIT_MS;
+                if (tick) tick.click();
+                else hunt.tickPhase = false;
+            } else if (hunt.tickPhase) {
+                const top = box.scrollTop;
+                if (Math.abs(top - hunt.tickTop) >= 1) {
+                    hunt.tickTop = top;
+                    hunt.tickStill = 0;
+                    hunt.sawMove = true;
+                } else {
+                    hunt.tickStill += 1;
                 }
-            } else if (now < waitTickUntil) {
+                if ((hunt.sawMove && hunt.tickStill >= 2) || (!hunt.sawMove && hunt.tickStill >= 3)) hunt.tickPhase = false;
                 edgeSince = 0;
             } else if (!firstResponseId(box)) {
-                nudge(box, -1, 1);
-                stuck = 0;
+                if (hunt.anchor >= 0) box.scrollTop = hunt.anchor;
+                else nudge(box, -1, 1);
+                hunt.halve = hunt.probe > hunt.anchor + 40;
+                hunt.step = 1;
                 edgeSince = 0;
             } else if (index >= lastNav.length - 1) {
                 jumpEnd(box);
@@ -927,18 +1005,7 @@ async function ensureJump(item: NavItem, index: number) {
                 if (now - edgeSince > AIM_MS) break;
             } else {
                 edgeSince = 0;
-                const pred = predecessor(index, box);
-                const before = box.scrollTop;
-                if (pred) parkAbove(pred, box);
-                if (!pred || Math.abs(box.scrollTop - before) < 2) {
-                    stuck += 1;
-                    if (stuck >= 2) {
-                        nudge(box, 1, 1);
-                        stuck = 0;
-                    }
-                } else {
-                    stuck = 0;
-                }
+                advanceDown(box, index, hunt);
             }
             await frame();
         }

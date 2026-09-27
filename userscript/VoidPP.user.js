@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260927.11
+// @version      20260927.12
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260927.11] v1.0.0 — A modification for grok.com
+ * Void++ [20260927.12] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7736,9 +7736,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260927.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d0f4031"}`
-    }, `(${"d0f4031"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260927.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4bcc32e"}`
+    }, `(${"4bcc32e"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -17994,7 +17994,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var SNAP_PX = 16;
   var AIM_MS = 300;
   var SETTLE_MS3 = 100;
-  var TICK_WAIT_MS = 200;
   var DENSE_N = 16;
   var SLOT_CLASS = "void-bn-rail";
   var LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
@@ -18736,13 +18735,68 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function jumpEnd(pane) {
     pane.scrollTop = Math.max(0, pane.scrollHeight - pane.clientHeight);
   }
-  function predecessor(index, pane) {
-    for (let i = index - 1;i >= 0; i--) {
+  function passedTarget(index, pane) {
+    for (let i = index + 1;i < lastNav.length; i++) {
       const el = mountedEl(lastNav[i]);
       if (el && pane.contains(el))
-        return el;
+        return true;
     }
-    return null;
+    return false;
+  }
+  function estimateScroll(index, pane) {
+    const { top: paneTop } = pane.getBoundingClientRect();
+    let lo = -1;
+    let hi = -1;
+    let top = 0;
+    let span = 0;
+    for (let i = 0;i < index; i++) {
+      const el = mountedEl(lastNav[i]);
+      if (!el || !pane.contains(el))
+        continue;
+      const { top: rectTop, bottom: rectBottom } = el.getBoundingClientRect();
+      const start = pane.scrollTop + rectTop - paneTop;
+      if (lo < 0) {
+        lo = i;
+        top = start;
+      }
+      hi = i;
+      span = pane.scrollTop + rectBottom - paneTop - top;
+    }
+    if (lo < 0)
+      return null;
+    const avg = Math.max(80, hi === lo ? span : span / (hi - lo));
+    const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
+    return Math.max(0, Math.min(max, top + (index - lo) * avg - OFFSET_PX));
+  }
+  function advanceDown(pane, index, hunt) {
+    if (!hunt.guessed) {
+      hunt.guessed = true;
+      const est = estimateScroll(index, pane);
+      hunt.anchor = pane.scrollTop;
+      if (est != null && est > pane.scrollTop + 24) {
+        pane.scrollTop = est;
+        hunt.probe = pane.scrollTop;
+        return;
+      }
+    }
+    if (passedTarget(index, pane) && hunt.anchor >= 0 && pane.scrollTop > hunt.anchor + 40) {
+      hunt.probe = pane.scrollTop;
+      pane.scrollTop = (hunt.anchor + hunt.probe) / 2;
+      hunt.step = 1;
+      return;
+    }
+    if (hunt.halve && hunt.anchor >= 0 && hunt.probe > hunt.anchor + 40) {
+      const mid = (hunt.anchor + hunt.probe) / 2;
+      pane.scrollTop = mid;
+      hunt.probe = mid;
+      hunt.halve = false;
+      hunt.step = 1;
+      return;
+    }
+    hunt.anchor = pane.scrollTop;
+    nudge(pane, 1, hunt.step);
+    hunt.probe = pane.scrollTop;
+    hunt.step = Math.min(16, hunt.step * 2);
   }
   function tickForIndex(index) {
     const item = lastNav[index];
@@ -18765,11 +18819,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (j < 0)
       return;
     return nativeTickFor(lastNav[j], j);
-  }
-  function parkAbove(el, pane) {
-    const { bottom } = el.getBoundingClientRect();
-    const { top: paneTop } = pane.getBoundingClientRect();
-    pane.scrollTop = Math.max(0, pane.scrollTop + bottom - paneTop - OFFSET_PX);
   }
   function nudge(pane, dir, screens) {
     const vh = Math.max(120, pane.clientHeight || window.innerHeight);
@@ -18806,8 +18855,17 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const deadline = performance.now() + ENSURE_MS;
     let clicked = false;
     let edgeSince = 0;
-    let waitTickUntil = 0;
-    let stuck = 0;
+    const hunt = {
+      tickPhase: true,
+      tickTop: 0,
+      tickStill: 0,
+      sawMove: false,
+      guessed: false,
+      step: 1,
+      anchor: -1,
+      probe: -1,
+      halve: false
+    };
     let held = null;
     let prevBehavior = "";
     let prevAnchor = "";
@@ -18866,16 +18924,31 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           }
         } else if (!clicked) {
           clicked = true;
+          hunt.tickTop = box.scrollTop;
           const tick = tickForIndex(index);
-          if (tick) {
+          if (tick)
             tick.click();
-            waitTickUntil = now + TICK_WAIT_MS;
+          else
+            hunt.tickPhase = false;
+        } else if (hunt.tickPhase) {
+          const top = box.scrollTop;
+          if (Math.abs(top - hunt.tickTop) >= 1) {
+            hunt.tickTop = top;
+            hunt.tickStill = 0;
+            hunt.sawMove = true;
+          } else {
+            hunt.tickStill += 1;
           }
-        } else if (now < waitTickUntil) {
+          if (hunt.sawMove && hunt.tickStill >= 2 || !hunt.sawMove && hunt.tickStill >= 3)
+            hunt.tickPhase = false;
           edgeSince = 0;
         } else if (!firstResponseId(box)) {
-          nudge(box, -1, 1);
-          stuck = 0;
+          if (hunt.anchor >= 0)
+            box.scrollTop = hunt.anchor;
+          else
+            nudge(box, -1, 1);
+          hunt.halve = hunt.probe > hunt.anchor + 40;
+          hunt.step = 1;
           edgeSince = 0;
         } else if (index >= lastNav.length - 1) {
           jumpEnd(box);
@@ -18894,19 +18967,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
             break;
         } else {
           edgeSince = 0;
-          const pred = predecessor(index, box);
-          const before = box.scrollTop;
-          if (pred)
-            parkAbove(pred, box);
-          if (!pred || Math.abs(box.scrollTop - before) < 2) {
-            stuck += 1;
-            if (stuck >= 2) {
-              nudge(box, 1, 1);
-              stuck = 0;
-            }
-          } else {
-            stuck = 0;
-          }
+          advanceDown(box, index, hunt);
         }
         await frame();
       }
@@ -32443,7 +32504,7 @@ div:has(> #grok-bot-nav-button) {
   chatStateFavicons_default.updatedAt = 1790444048000;
   pluginsFlyout_default.updatedAt = 1790444048000;
   recentTopics_default.updatedAt = 1790444048000;
-  betterNavigator_default.updatedAt = 1790533475000;
+  betterNavigator_default.updatedAt = 1790533949000;
   responseNotification_default.updatedAt = 1790444048000;
   noSidebarIdentity_default.updatedAt = 1790444048000;
   betterModeSelect_default.updatedAt = 1790444048000;
