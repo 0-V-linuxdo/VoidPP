@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20260928.4
+// @version      20260928.5
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20260928.4] v1.0.0 — A modification for grok.com
+ * Void++ [20260928.5] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7698,9 +7698,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20260928.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6714479"}`
-    }, `(${"6714479"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20260928.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b9edb2a"}`
+    }, `(${"b9edb2a"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -25859,6 +25859,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
   var PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
   var PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
+  var botsCollapsed = null;
   var botsCollapseObserver = null;
   var botsCollapseTimer = null;
   var chatsExpandObserver = null;
@@ -25883,6 +25884,11 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       return true;
     expanded.click();
     return true;
+  }
+  function useBotsCollapsed() {
+    const state2 = useState(() => botsCollapsed ?? settings29.store.botsDefaultCollapsed);
+    [botsCollapsed] = state2;
+    return state2;
   }
   function stopBotsCollapse() {
     botsCollapseObserver?.disconnect();
@@ -26166,9 +26172,7 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     _defaultOpen() {
       return !settings29.store.defaultCollapsed;
     },
-    _botsDefaultCollapsed() {
-      return settings29.store.botsDefaultCollapsed;
-    },
+    _useBotsCollapsed: useBotsCollapsed,
     _chatsCollapsedInit() {
       resetChatsCollapsedStorage();
       return false;
@@ -26275,8 +26279,8 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
       {
         find: '"sidebar.section-title","Bots"',
         replacement: {
-          match: /\(0,(\i)\.useState\)\(!1\)(?=,\[.{0,30}\]=\(0,\1\.useState\)\(!1\),.{0,48}\.COLLAPSED_BOT_LIMIT)/,
-          replace: "(0,$1.useState)($self._botsDefaultCollapsed())"
+          match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\i=\(0,\i\.useRoutingStore\))/,
+          replace: "$self._useBotsCollapsed()"
         }
       },
       {

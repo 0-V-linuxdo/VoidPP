@@ -15,7 +15,7 @@ import { PanelLeftIcon, PlusIcon } from "@components/icons";
 import { Text } from "@components/Text";
 import { SidebarComponents } from "@turbopack/common/components";
 import { getPlanName } from "@turbopack/common/plan";
-import { createElement, Fragment, React, useRef } from "@turbopack/common/react";
+import { createElement, Fragment, React, useRef, useState } from "@turbopack/common/react";
 import { ChatPageStore, ConversationStore, RoutingStore, SessionStore, SubscriptionsStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classNameFactory, disableStyle, enableStyle } from "@utils/css";
@@ -81,6 +81,7 @@ const CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
 const PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
 const PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
 
+let botsCollapsed: boolean | null = null;
 let botsCollapseObserver: MutationObserver | null = null;
 let botsCollapseTimer: ReturnType<typeof setTimeout> | null = null;
 let chatsExpandObserver: MutationObserver | null = null;
@@ -102,6 +103,12 @@ function collapseBotsSection() {
     if (!expanded) return true;
     expanded.click();
     return true;
+}
+
+function useBotsCollapsed() {
+    const state = useState(() => botsCollapsed ?? settings.store.botsDefaultCollapsed);
+    [botsCollapsed] = state;
+    return state;
 }
 
 function stopBotsCollapse() {
@@ -394,9 +401,7 @@ export default definePlugin({
         return !settings.store.defaultCollapsed;
     },
 
-    _botsDefaultCollapsed() {
-        return settings.store.botsDefaultCollapsed;
-    },
+    _useBotsCollapsed: useBotsCollapsed,
 
     _chatsCollapsedInit() {
         resetChatsCollapsedStorage();
@@ -510,8 +515,8 @@ export default definePlugin({
         {
             find: "\"sidebar.section-title\",\"Bots\"",
             replacement: {
-                match: /\(0,(\i)\.useState\)\(!1\)(?=,\[.{0,30}\]=\(0,\1\.useState\)\(!1\),.{0,48}\.COLLAPSED_BOT_LIMIT)/,
-                replace: "(0,$1.useState)($self._botsDefaultCollapsed())",
+                match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\i=\(0,\i\.useRoutingStore\))/,
+                replace: "$self._useBotsCollapsed()",
             },
         },
         {
