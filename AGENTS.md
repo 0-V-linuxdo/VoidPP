@@ -81,6 +81,8 @@ Do not rename:
 
 `NoSidebarPlugins` was renamed to `BetterAvatarPlugins`. The settings bag, pin, star, known, and PluginsFlyout keys migrate 1:1. Do not fold this into BetterSidebar.
 
+The avatar Plugins row is a `DropdownMenuSub`, same chevron as Settings and Void++. Children are Connectors, Skills, and Bots (`connectors` / `skills` / `bots`). A click opens `PluginsSidebarDialog` on that tab. The dialog stores the tab in local `useState` (`localTabs: true`) and ignores the route, so `_applyTab` writes the pending id into that state during render. Do not `replace({page:"skills-and-connectors"})` for this menu — that leaves the dialog. Do not add Marketplaces; that tab is behind `ENABLE_GROK_WEB_PLUGIN_MARKETPLACE` and was not in the three-tab row.
+
 ## CustomGreeting
 
 Query-bar empty placeholder is Tiptap `p.is-editor-empty::before { content: attr(data-placeholder) }`. Official `float` + `height:0` plus editor `overflow-y:auto` lets a long phrase wrap and show a scrollbar. Empty editor must stay one line: `overflow-y:hidden` and `::before` `position:absolute; white-space:nowrap`.

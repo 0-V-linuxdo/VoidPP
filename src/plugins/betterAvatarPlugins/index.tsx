@@ -6,13 +6,19 @@
 
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
 import { ErrorBoundary } from "@components/ErrorBoundary";
-import { GrokConnectorsIcon, type IconProps } from "@components/icons";
-import { DropdownMenuItem } from "@turbopack/common/components";
+import { GrokConnectorsIcon, SparklesIcon, type IconProps } from "@components/icons";
+import {
+    DropdownMenuItem,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+} from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
 import { findByPropsLazy, findExportedComponent } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
+import type { ComponentType } from "react";
 
 const logger = new Logger("BetterAvatarPlugins");
 
@@ -97,31 +103,91 @@ function PluginsIcon(props: IconProps = {}) {
     return <Comp {...props} />;
 }
 
-function openPlugins() {
-    PluginsDialogStore.usePluginsDialogStore.getState().setOpen(true);
-}
-
-function PluginsItem() {
+function BotMenuIcon(props: IconProps = {}) {
     return (
-        <DropdownMenuItem onSelect={openPlugins}>
-            <PluginsIcon className="void-settings-menu-icon" />
-            Plugins
-        </DropdownMenuItem>
+        <svg
+            width={props.width ?? props.size ?? "1em"}
+            height={props.height ?? props.size ?? "1em"}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={props.strokeWidth ?? 2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={props.className}
+            aria-hidden="true"
+        >
+            <path d="M12 8V4H8" />
+            <rect width="16" height="12" x="4" y="8" rx="2" />
+            <path d="M2 14h2" />
+            <path d="M20 14h2" />
+            <path d="M15 13v2" />
+            <path d="M9 13v2" />
+        </svg>
     );
 }
 
-const WrappedPluginsItem = ErrorBoundary.wrap(PluginsItem);
+const PLUGIN_TABS: { id: string; name: string; exportName: string; fallback: ComponentType<IconProps> }[] = [
+    { id: "connectors", name: "Connectors", exportName: "ConnectorsIcon", fallback: GrokConnectorsIcon },
+    { id: "skills", name: "Skills", exportName: "SkillsIcon", fallback: SparklesIcon },
+    { id: "bots", name: "Bots", exportName: "CreateBotIcon", fallback: BotMenuIcon },
+];
+
+let pendingTab: string | null = null;
+
+function openPlugins(tab: string) {
+    pendingTab = tab;
+    PluginsDialogStore.usePluginsDialogStore.getState().setOpen(true);
+}
+
+function applyTab(local: boolean, state: string | null, setState: (tab: string) => void): string | null {
+    if (!local || !pendingTab) return null;
+    const next = pendingTab;
+    if (next !== state) setState(next);
+    else pendingTab = null;
+    return next;
+}
+
+function TabGlyph({ exportName, fallback: Fallback }: { exportName: string; fallback: ComponentType<IconProps> }) {
+    const Comp = findExportedComponent(exportName) ?? Fallback;
+    return <Comp className="void-settings-menu-icon" />;
+}
+
+function PluginsMenu() {
+    return (
+        <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+                <PluginsIcon className="void-settings-menu-icon" />
+                Plugins
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+                {PLUGIN_TABS.map(tab => (
+                    <DropdownMenuItem key={tab.id} onSelect={() => openPlugins(tab.id)}>
+                        <TabGlyph exportName={tab.exportName} fallback={tab.fallback} />
+                        {tab.name}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuSubContent>
+        </DropdownMenuSub>
+    );
+}
+
+const WrappedPluginsMenu = ErrorBoundary.wrap(PluginsMenu);
 
 export default definePlugin({
     name: "BetterAvatarPlugins",
     icon: PluginsIcon,
-    description: "Move the sidebar Plugins button into the avatar menu.",
+    description: "Move the sidebar Plugins button into the avatar menu and expand it into Connectors, Skills, and Bots.",
     authors: [Devs.p],
     tags: ["navigation"],
     enabledByDefault: true,
     settings,
 
-    _renderItem: () => createElement(WrappedPluginsItem),
+    _renderItem: () => createElement(WrappedPluginsMenu),
+
+    _applyTab(local: boolean, state: string | null, setState: (tab: string) => void) {
+        return applyTab(local, state, setState);
+    },
 
     patches: [
         {
@@ -144,6 +210,13 @@ export default definePlugin({
             replacement: {
                 match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,100}"user-dropdown\.help")/,
                 replace: "$self._renderItem(),",
+            },
+        },
+        {
+            find: "SkillsAndConnectorsPage:handleTabChange",
+            replacement: {
+                match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(null\),(\i)=(\i)\?\1:"skills-and-connectors"===(\i)\.page\?\6\.tab:null/,
+                replace: '[$1,$2]=(0,$3.useState)(null),$4=($self._applyTab($5,$1,$2)??($5?$1:"skills-and-connectors"===$6.page?$6.tab:null))',
             },
         },
     ],
