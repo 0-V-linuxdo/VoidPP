@@ -51,6 +51,23 @@ Before any push to `dev`, `voidpp-beta`, or `voidpp-stable`:
 5. After a `voidpp-beta` push, purge jsDelivr for the Beta file only:
    `curl -s https://purge.jsdelivr.net/gh/0-V-linuxdo/VoidPP@heads/voidpp-beta/userscript/VoidPP.user.js`
 6. After the push succeeds, reply with the GitHub raw link of that channel's userscript. Do not stop at the commit hash. `dev` is `https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js`. Beta and Stable use the raw URLs listed above.
+7. Then apply that update with Chrome DevTools and verify it on the Grok page in the user's Void++ tab group before saying the change is done. Do not ask the user to update or reload.
+
+## Apply the update
+
+The installed manager is Violentmonkey 2.49 (`jinjaccalgkegednnccohejagnlnfdag`, Chrome name 暴力猴). `chrome_devtools___list_extensions` is not implemented on this connector (`Tool list_extensions not found`). Read the list from `chrome://extensions`: `extensions-manager` shadow root → `extensions-item-list` shadow root → `extensions-item` (`#name`, `id`).
+
+Do not open the GitHub raw `.user.js` in a tab. That response sends `Content-Security-Policy: sandbox`, so the install intercept never runs and the tab only shows source. The extension's own fetch is not subject to that CSP.
+
+Open `chrome-extension://jinjaccalgkegednnccohejagnlnfdag/options/index.html` and evaluate there (extension page, so `chrome.runtime` exists):
+
+```js
+await chrome.runtime.sendMessage({ cmd: "CheckUpdate", data: {} })
+```
+
+Violentmonkey 2.49 `CheckUpdate` takes `{ ids?, force?, auto? }`. Omit `ids` to check every script. It writes a script only when `@version` is newer (`compareVersion`). Do not pass `force: true` — that re-downloads and re-saves every script that has an update URL, including ones that did not change. `{}` returns the number of scripts that actually updated. Void++ dev is the script whose `@namespace` is `https://github.com/0-V-linuxdo/VoidPP/dev`. If the count is 0, the installed `@version` is already equal or newer, or GitHub raw is still the old body — read the script back before reloading Grok.
+
+Hard-reload only the Grok tab inside the Void++ tab group (the chat the user is in). Do not reload a different `grok.com` tab. `GM_info` is not on the page world; the running build is `window.VoidPP.plugins`. For this plugins menu, after reload the submenu must be: Plugins = 1rem grid, Connectors = filled puzzle (`stroke="none"`, path starts `M12 12H19`), Skills = stroke circle/triangle/square, Bots = filled AiAgents mark (path contains `M8.99902`). Clicking Connectors, Skills, or Bots must set that pill's `aria-selected` to true. The Bots category row (All, Sales, …) is not those tabs.
 
 Do not write `userscript/Void.user.js`. The hop is gone. Old Tampermonkey installs that already ate `[20260911.8]` or `[20260911.9]` follow `@updateURL` to `VoidPP.user.js`. Anyone still on a pre-hop `@updateURL` must reinstall from the canonical file. `[20260925.2]` moves the Beta identity from `…/voidpp` to `…/voidpp-beta`. That is a new script; the old branch does not update it in place.
 
