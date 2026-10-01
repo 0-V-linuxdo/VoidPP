@@ -81,7 +81,9 @@ Do not rename:
 
 `NoSidebarPlugins` was renamed to `BetterAvatarPlugins`. The settings bag, pin, star, known, and PluginsFlyout keys migrate 1:1. Do not fold this into BetterSidebar.
 
-The avatar Plugins row is a `DropdownMenuSub`, same chevron as Settings and Void++. Children are Connectors, Skills, and Bots (`connectors` / `skills` / `bots`). A click opens `PluginsSidebarDialog` on that tab. The dialog stores the tab in local `useState` (`localTabs: true`) and ignores the route, so `_applyTab` writes the pending id into that state during render. Do not `replace({page:"skills-and-connectors"})` for this menu — that leaves the dialog. Do not add Marketplaces; that tab is behind `ENABLE_GROK_WEB_PLUGIN_MARKETPLACE` and was not in the three-tab row.
+The avatar Plugins row is a `DropdownMenuSub`, same chevron as Settings and Void++. Children are Connectors, Skills, and Bots (`connectors` / `skills` / `bots`). Menu glyphs are 1rem stroke icons (`void-settings-menu-icon`). Do not render Grok's `ConnectorsIcon`, `SkillsIcon`, or `CreateBotIcon` here: the first strokes a filled puzzle, the second is hardcoded to `1.5rem`, and the third is the create-bot face with a plus.
+
+A click opens `PluginsSidebarDialog` on that tab. The dialog stores the tab in local `useState` (`localTabs: true`) and ignores the route. `_peekTab` seeds that state; `_applyTab` returns the pending id during render so the pill does not fall through to the first tab. React Compiler memoizes `SkillsAndConnectorsPage` on `inDialog` / `localTabs`, so a later open while it stays mounted does not re-render — `syncTabDom` then clicks the matching pill in the first `[role=tablist]` (index 0/1/2, not the Bots category row). `_clearPending` runs from that pill's `localTabs` handler so an in-dialog click is not forced back. Do not `replace({page:"skills-and-connectors"})` for this menu — that leaves the dialog. Do not add Marketplaces; that tab is behind `ENABLE_GROK_WEB_PLUGIN_MARKETPLACE` and was not in the three-tab row.
 
 ## CustomGreeting
 

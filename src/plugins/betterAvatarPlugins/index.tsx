@@ -6,7 +6,7 @@
 
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
 import { ErrorBoundary } from "@components/ErrorBoundary";
-import { GrokConnectorsIcon, SparklesIcon, type IconProps } from "@components/icons";
+import { LayoutGridIcon, type IconProps } from "@components/icons";
 import {
     DropdownMenuItem,
     DropdownMenuSub,
@@ -14,11 +14,10 @@ import {
     DropdownMenuSubTrigger,
 } from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
-import { findByPropsLazy, findExportedComponent } from "@turbopack/turbopack";
+import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
-import type { ComponentType } from "react";
 
 const logger = new Logger("BetterAvatarPlugins");
 
@@ -98,59 +97,100 @@ if (pluginName?.set && pluginName.get) {
     });
 }
 
-function PluginsIcon(props: IconProps = {}) {
-    const Comp = findExportedComponent("ConnectorsIcon") ?? GrokConnectorsIcon;
-    return <Comp {...props} />;
-}
-
-function BotMenuIcon(props: IconProps = {}) {
+function menuSvg(className: string | undefined, ...children: React.ReactNode[]) {
     return (
         <svg
-            width={props.width ?? props.size ?? "1em"}
-            height={props.height ?? props.size ?? "1em"}
+            width="1rem"
+            height="1rem"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth={props.strokeWidth ?? 2}
+            strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={props.className}
+            className={className ?? "void-settings-menu-icon"}
             aria-hidden="true"
         >
-            <path d="M12 8V4H8" />
-            <rect width="16" height="12" x="4" y="8" rx="2" />
-            <path d="M2 14h2" />
-            <path d="M20 14h2" />
-            <path d="M15 13v2" />
-            <path d="M9 13v2" />
+            {children}
         </svg>
     );
 }
 
-const PLUGIN_TABS: { id: string; name: string; exportName: string; fallback: ComponentType<IconProps> }[] = [
-    { id: "connectors", name: "Connectors", exportName: "ConnectorsIcon", fallback: GrokConnectorsIcon },
-    { id: "skills", name: "Skills", exportName: "SkillsIcon", fallback: SparklesIcon },
-    { id: "bots", name: "Bots", exportName: "CreateBotIcon", fallback: BotMenuIcon },
+// Grok's ConnectorsIcon / SkillsIcon / CreateBotIcon ignore the menu box:
+// ConnectorsIcon strokes a filled puzzle, SkillsIcon is hardcoded to 1.5rem,
+// CreateBotIcon is the "new bot" face-plus. Draw the same metaphors at 1rem.
+function PluginsIcon(props: IconProps = {}) {
+    return <LayoutGridIcon width="1rem" height="1rem" className={props.className ?? "void-settings-menu-icon"} />;
+}
+
+function SkillsMenuIcon({ className }: IconProps = {}) {
+    return menuSvg(className,
+        <path d="M10 7C10 8.79493 8.54493 10.25 6.75 10.25C4.95507 10.25 3.5 8.79493 3.5 7C3.5 5.20507 4.95507 3.75 6.75 3.75C8.54493 3.75 10 5.20507 10 7Z" />,
+        <path d="M16.3732 4.34855C16.7528 3.65641 17.7472 3.65641 18.1268 4.34855L20.5514 8.7691C20.9169 9.43553 20.4347 10.25 19.6746 10.25H14.8254C14.0653 10.25 13.5831 9.43553 13.9486 8.7691L16.3732 4.34855Z" />,
+        <rect x="3.64844" y="13.75" width="6.2" height="6.2" rx="2" />,
+        <path d="M20.5 17C20.5 18.7949 19.0449 20.25 17.25 20.25C15.4551 20.25 14 18.7949 14 17C14 15.2051 15.4551 13.75 17.25 13.75C19.0449 13.75 20.5 15.2051 20.5 17Z" />,
+    );
+}
+
+function BotsMenuIcon({ className }: IconProps = {}) {
+    return menuSvg(className,
+        <path d="M14.1 3.5H9.9C7.65979 3.5 6.53969 3.5 5.68404 3.93597C4.93139 4.31947 4.31947 4.93139 3.93597 5.68404C3.5 6.53969 3.5 7.65979 3.5 9.9V14.1C3.5 16.3402 3.5 17.4603 3.93597 18.316C4.31947 19.0686 4.93139 19.6805 5.68404 20.064C6.53969 20.5 7.65979 20.5 9.9 20.5H14.1C16.3402 20.5 17.4603 20.5 18.316 20.064C19.0686 19.6805 19.6805 19.0686 20.064 18.316C20.5 17.4603 20.5 16.3402 20.5 14.1V9.9C20.5 7.65979 20.5 6.53969 20.064 5.68404C19.6805 4.93139 19.0686 4.31947 18.316 3.93597C17.4603 3.5 16.3402 3.5 14.1 3.5Z" />,
+        <path d="M9 10.5v2" />,
+        <path d="M15 10.5v2" />,
+    );
+}
+
+const PLUGIN_TABS: { id: string; name: string; icon: (props: IconProps) => React.ReactNode }[] = [
+    { id: "connectors", name: "Connectors", icon: PluginsIcon },
+    { id: "skills", name: "Skills", icon: SkillsMenuIcon },
+    { id: "bots", name: "Bots", icon: BotsMenuIcon },
 ];
 
+const TAB_INDEX: Record<string, number> = { connectors: 0, skills: 1, bots: 2 };
+
 let pendingTab: string | null = null;
+
+function peekTab() {
+    return pendingTab;
+}
+
+function clearPending(tab?: string) {
+    if (typeof tab === "string" && tab === pendingTab) return;
+    pendingTab = null;
+}
+
+function pluginsDialog() {
+    return [...document.querySelectorAll('[role="dialog"]')].find(dialog =>
+        dialog.getAttribute("data-state") === "open"
+        && [...dialog.querySelectorAll("h1, h2")].some(heading => heading.textContent?.trim() === "Plugins"),
+    );
+}
+
+function syncTabDom(tab: string, attempt = 0) {
+    if (pendingTab !== tab || attempt > 12) return;
+    const button = pluginsDialog()?.querySelector("[role=tablist]")?.querySelectorAll('[role="tab"]')[TAB_INDEX[tab] ?? -1];
+    if (!(button instanceof HTMLElement)) {
+        requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
+        return;
+    }
+    if (button.getAttribute("aria-selected") === "true") {
+        pendingTab = null;
+        return;
+    }
+    button.click();
+    requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
+}
 
 function openPlugins(tab: string) {
     pendingTab = tab;
     PluginsDialogStore.usePluginsDialogStore.getState().setOpen(true);
+    requestAnimationFrame(() => syncTabDom(tab));
 }
 
 function applyTab(local: boolean, state: string | null, setState: (tab: string) => void): string | null {
     if (!local || !pendingTab) return null;
-    const next = pendingTab;
-    if (next !== state) setState(next);
-    else pendingTab = null;
-    return next;
-}
-
-function TabGlyph({ exportName, fallback: Fallback }: { exportName: string; fallback: ComponentType<IconProps> }) {
-    const Comp = findExportedComponent(exportName) ?? Fallback;
-    return <Comp className="void-settings-menu-icon" />;
+    if (pendingTab !== state) setState(pendingTab);
+    return pendingTab;
 }
 
 function PluginsMenu() {
@@ -161,12 +201,15 @@ function PluginsMenu() {
                 Plugins
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
-                {PLUGIN_TABS.map(tab => (
-                    <DropdownMenuItem key={tab.id} onSelect={() => openPlugins(tab.id)}>
-                        <TabGlyph exportName={tab.exportName} fallback={tab.fallback} />
-                        {tab.name}
-                    </DropdownMenuItem>
-                ))}
+                {PLUGIN_TABS.map(tab => {
+                    const Icon = tab.icon;
+                    return (
+                        <DropdownMenuItem key={tab.id} onSelect={() => openPlugins(tab.id)}>
+                            <Icon className="void-settings-menu-icon" />
+                            {tab.name}
+                        </DropdownMenuItem>
+                    );
+                })}
             </DropdownMenuSubContent>
         </DropdownMenuSub>
     );
@@ -184,6 +227,10 @@ export default definePlugin({
     settings,
 
     _renderItem: () => createElement(WrappedPluginsMenu),
+
+    _peekTab: () => peekTab(),
+
+    _clearPending: (tab?: string) => clearPending(tab),
 
     _applyTab(local: boolean, state: string | null, setState: (tab: string) => void) {
         return applyTab(local, state, setState);
@@ -214,10 +261,16 @@ export default definePlugin({
         },
         {
             find: "SkillsAndConnectorsPage:handleTabChange",
-            replacement: {
-                match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(null\),(\i)=(\i)\?\1:"skills-and-connectors"===(\i)\.page\?\6\.tab:null/,
-                replace: '[$1,$2]=(0,$3.useState)(null),$4=($self._applyTab($5,$1,$2)??($5?$1:"skills-and-connectors"===$6.page?$6.tab:null))',
-            },
+            replacement: [
+                {
+                    match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(null\),(\i)=(\i)\?\1:"skills-and-connectors"===(\i)\.page\?\6\.tab:null/,
+                    replace: '[$1,$2]=(0,$3.useState)($self._peekTab()),$4=($self._applyTab($5,$1,$2)??($5?$1:"skills-and-connectors"===$6.page?$6.tab:null))',
+                },
+                {
+                    match: /(\i)\)return void (\i)\((\i)\);(\i)\.replace\(\{page:"skills-and-connectors",tab:\3\}\)\}/,
+                    replace: '$1)return ($self._clearPending($3),void $2($3));$4.replace({page:"skills-and-connectors",tab:$3})}',
+                },
+            ],
         },
     ],
 });
