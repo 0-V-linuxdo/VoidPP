@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261001.2
+// @version      20261001.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261001.2] v1.0.0 — A modification for grok.com
+ * Void++ [20261001.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -2552,6 +2552,7 @@ ${sourceUrl}`;
     height: props.height ?? props.size ?? "1em",
     viewBox,
     fill: "currentColor",
+    stroke: "none",
     className: props.className,
     "aria-hidden": "true"
   }, children);
@@ -3094,6 +3095,15 @@ ${sourceUrl}`;
     x: "3",
     y: "14",
     rx: "1"
+  }));
+  var GrokConnectorsIcon = (props = {}) => filledSvg(props, "0 0 24 24", /* @__PURE__ */ React.createElement("path", {
+    fillRule: "evenodd",
+    clipRule: "evenodd",
+    d: "M12 12H19V16C19 16.6836 19.0011 17.2566 18.9629 17.7236C18.9238 18.2023 18.8382 18.6571 18.6182 19.0889C18.2826 19.7474 17.7474 20.2826 17.0889 20.6182C16.6571 20.8382 16.2023 20.9238 15.7236 20.9629C15.2566 21.0011 14.6836 21 14 21H8C7.31644 21 6.74342 21.0011 6.27637 20.9629C5.79772 20.9238 5.34294 20.8382 4.91114 20.6182C4.25262 20.2826 3.71739 19.7474 3.38184 19.0889C3.16183 18.6571 3.07623 18.2023 3.03711 17.7236C2.99895 17.2566 3 16.6836 3 16V10C3 9.31644 2.99895 8.74342 3.03711 8.27637C3.07623 7.79772 3.16182 7.34294 3.38184 6.91114C3.71739 6.25262 4.25262 5.71739 4.91114 5.38184C5.34294 5.16182 5.79772 5.07623 6.27637 5.03711C6.74342 4.99895 7.31644 5 8 5H12V12ZM5 16C5 16.7165 5.00032 17.1938 5.03028 17.5605C5.05924 17.9151 5.11072 18.0777 5.16309 18.1807C5.3069 18.4629 5.5371 18.6931 5.81934 18.8369C5.92228 18.8893 6.0849 18.9408 6.43946 18.9697C6.80616 18.9997 7.28347 19 8 19H10V14H5V16ZM12 19H14C14.7165 19 15.1938 18.9997 15.5605 18.9697C15.9151 18.9408 16.0777 18.8893 16.1807 18.8369C16.4629 18.6931 16.6931 18.4629 16.8369 18.1807C16.8893 18.0777 16.9408 17.9151 16.9697 17.5605C16.9997 17.1938 17 16.7165 17 16V14H12V19ZM8 7C7.28347 7 6.80616 7.00032 6.43946 7.03028C6.0849 7.05924 5.92228 7.11072 5.81934 7.16309C5.5371 7.3069 5.3069 7.5371 5.16309 7.81934C5.11072 7.92228 5.05924 8.0849 5.03028 8.43946C5.00032 8.80616 5 9.28347 5 10V12H10V7H8Z"
+  }), /* @__PURE__ */ React.createElement("path", {
+    fillRule: "evenodd",
+    clipRule: "evenodd",
+    d: "M17 2C17.6836 2 18.2566 1.99895 18.7236 2.03711C19.2023 2.07623 19.6571 2.16183 20.0889 2.38184C20.7474 2.71739 21.2826 3.25262 21.6182 3.91114C21.8382 4.34294 21.9238 4.79772 21.9629 5.27637C22.0011 5.74342 22 6.31644 22 7V10H14V2H17ZM16 8H20V7C20 6.28347 19.9997 5.80616 19.9697 5.43946C19.9408 5.0849 19.8893 4.92228 19.8369 4.81934C19.6931 4.5371 19.4629 4.3069 19.1807 4.16309C19.0777 4.11072 18.9151 4.05924 18.5605 4.03028C18.1938 4.00032 17.7165 4 17 4H16V8Z"
   }));
   var ConnectedAppsIcon = (props = {}) => svg(props, /* @__PURE__ */ React.createElement("rect", {
     x: "4",
@@ -7755,9 +7765,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261001.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"19e0377"}`
-    }, `(${"19e0377"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261001.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9b7f4c6"}`
+    }, `(${"9b7f4c6"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -28529,14 +28539,14 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       }
     });
   }
-  function menuSvg(className, ...children) {
+  function menuSvg(className, filled, ...children) {
     return /* @__PURE__ */ React.createElement("svg", {
       width: "1rem",
       height: "1rem",
       viewBox: "0 0 24 24",
-      fill: "none",
-      stroke: "currentColor",
-      strokeWidth: 2,
+      fill: filled ? "currentColor" : "none",
+      stroke: filled ? "none" : "currentColor",
+      strokeWidth: filled ? undefined : 2,
       strokeLinecap: "round",
       strokeLinejoin: "round",
       className: className ?? "void-settings-menu-icon",
@@ -28550,8 +28560,15 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       className: props.className ?? "void-settings-menu-icon"
     });
   }
+  function ConnectorsMenuIcon({ className } = {}) {
+    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
+      width: "1rem",
+      height: "1rem",
+      className: className ?? "void-settings-menu-icon"
+    });
+  }
   function SkillsMenuIcon({ className } = {}) {
-    return menuSvg(className, /* @__PURE__ */ React.createElement("path", {
+    return menuSvg(className, false, /* @__PURE__ */ React.createElement("path", {
       d: "M10 7C10 8.79493 8.54493 10.25 6.75 10.25C4.95507 10.25 3.5 8.79493 3.5 7C3.5 5.20507 4.95507 3.75 6.75 3.75C8.54493 3.75 10 5.20507 10 7Z"
     }), /* @__PURE__ */ React.createElement("path", {
       d: "M16.3732 4.34855C16.7528 3.65641 17.7472 3.65641 18.1268 4.34855L20.5514 8.7691C20.9169 9.43553 20.4347 10.25 19.6746 10.25H14.8254C14.0653 10.25 13.5831 9.43553 13.9486 8.7691L16.3732 4.34855Z"
@@ -28566,23 +28583,32 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }));
   }
   function BotsMenuIcon({ className } = {}) {
-    return menuSvg(className, /* @__PURE__ */ React.createElement("path", {
-      d: "M14.1 3.5H9.9C7.65979 3.5 6.53969 3.5 5.68404 3.93597C4.93139 4.31947 4.31947 4.93139 3.93597 5.68404C3.5 6.53969 3.5 7.65979 3.5 9.9V14.1C3.5 16.3402 3.5 17.4603 3.93597 18.316C4.31947 19.0686 4.93139 19.6805 5.68404 20.064C6.53969 20.5 7.65979 20.5 9.9 20.5H14.1C16.3402 20.5 17.4603 20.5 18.316 20.064C19.0686 19.6805 19.6805 19.0686 20.064 18.316C20.5 17.4603 20.5 16.3402 20.5 14.1V9.9C20.5 7.65979 20.5 6.53969 20.064 5.68404C19.6805 4.93139 19.0686 4.31947 18.316 3.93597C17.4603 3.5 16.3402 3.5 14.1 3.5Z"
+    return menuSvg(className, true, /* @__PURE__ */ React.createElement("path", {
+      d: "M15 13H13V9H15V13Z"
     }), /* @__PURE__ */ React.createElement("path", {
-      d: "M9 10.5v2"
+      d: "M19 13H17V9H19V13Z"
     }), /* @__PURE__ */ React.createElement("path", {
-      d: "M15 10.5v2"
+      fillRule: "evenodd",
+      clipRule: "evenodd",
+      d: "M15 4C19.4183 4 23 7.58172 23 12C23 16.4183 19.4183 20 15 20C10.5817 20 7 16.4183 7 12C7 7.58172 10.5817 4 15 4ZM15 6C11.6863 6 9 8.68629 9 12C9 15.3137 11.6863 18 15 18C18.3137 18 21 15.3137 21 12C21 8.68629 18.3137 6 15 6Z"
+    }), /* @__PURE__ */ React.createElement("path", {
+      d: "M8.99902 4C8.08913 4.68362 7.3005 5.51941 6.66895 6.46875C4.51293 7.37847 3 9.5129 3 12C3 14.487 4.51312 16.6205 6.66895 17.5303C7.30047 18.4797 8.08911 19.3153 8.99902 19.999C4.58119 19.9985 1 16.418 1 12C1 7.58205 4.58119 4.00053 8.99902 4Z"
     }));
   }
   var PLUGIN_TABS = [
-    { id: "connectors", name: "Connectors", icon: PluginsIcon },
+    { id: "connectors", name: "Connectors", icon: ConnectorsMenuIcon },
     { id: "skills", name: "Skills", icon: SkillsMenuIcon },
     { id: "bots", name: "Bots", icon: BotsMenuIcon }
   ];
-  var TAB_INDEX = { connectors: 0, skills: 1, bots: 2 };
   var pendingTab = null;
+  var latchedTab = "";
   function peekTab() {
     return pendingTab;
+  }
+  function shellKey(local) {
+    if (pendingTab)
+      latchedTab = pendingTab;
+    return `${local ? 1 : 0}:${latchedTab}`;
   }
   function clearPending2(tab) {
     if (typeof tab === "string" && tab === pendingTab)
@@ -28592,11 +28618,29 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   function pluginsDialog() {
     return [...document.querySelectorAll('[role="dialog"]')].find((dialog) => dialog.getAttribute("data-state") === "open" && [...dialog.querySelectorAll("h1, h2")].some((heading) => heading.textContent?.trim() === "Plugins"));
   }
+  function pillButton(tab) {
+    const name = PLUGIN_TABS.find((item) => item.id === tab)?.name;
+    if (!name)
+      return null;
+    const lists = pluginsDialog()?.querySelectorAll("[role=tablist]");
+    if (!lists)
+      return null;
+    for (const list of lists) {
+      const tabs = [...list.querySelectorAll('[role="tab"]')];
+      const labels = tabs.map((button) => button.textContent?.trim());
+      if (!labels.includes("Connectors") || !labels.includes("Skills") || !labels.includes("Bots"))
+        continue;
+      const button = tabs.find((item) => item.textContent?.trim() === name);
+      if (button instanceof HTMLElement)
+        return button;
+    }
+    return null;
+  }
   function syncTabDom(tab, attempt = 0) {
     if (pendingTab !== tab || attempt > 12)
       return;
-    const button = pluginsDialog()?.querySelector("[role=tablist]")?.querySelectorAll('[role="tab"]')[TAB_INDEX[tab] ?? -1];
-    if (!(button instanceof HTMLElement)) {
+    const button = pillButton(tab);
+    if (!button) {
       requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
       return;
     }
@@ -28609,6 +28653,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   }
   function openPlugins(tab) {
     pendingTab = tab;
+    latchedTab = tab;
     PluginsDialogStore.usePluginsDialogStore.getState().setOpen(true);
     requestAnimationFrame(() => syncTabDom(tab));
   }
@@ -28643,6 +28688,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     settings: settings29,
     _renderItem: () => createElement(WrappedPluginsMenu),
     _peekTab: () => peekTab(),
+    _shellKey: (local) => shellKey(local),
     _clearPending: (tab) => clearPending2(tab),
     _applyTab(local, state, setState) {
       return applyTab(local, state, setState);
@@ -28680,6 +28726,10 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           {
             match: /(\i)\)return void (\i)\((\i)\);(\i)\.replace\(\{page:"skills-and-connectors",tab:\3\}\)\}/,
             replace: '$1)return ($self._clearPending($3),void $2($3));$4.replace({page:"skills-and-connectors",tab:$3})}'
+          },
+          {
+            match: /(\i)\[0\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\((\i),\{inDialog:!0,localTabs:\2\}\),\1\[0\]=\2,\1\[1\]=\3\):\3=\1\[1\]/,
+            replace: "$1[0]!==$self._shellKey($2)?($3=(0,$4.jsx)($5,{inDialog:!0,localTabs:$2,key:$self._shellKey($2)}),$1[0]=$self._shellKey($2),$1[1]=$3):$3=$1[1]"
           }
         ]
       }
@@ -33183,7 +33233,7 @@ div:has(> #grok-bot-nav-button) {
   betterImagine_default.updatedAt = 1790093417000;
   cleaner_default.updatedAt = 1790093417000;
   widerChat_default.updatedAt = 1787870966000;
-  betterAvatarPlugins_default.updatedAt = 1790875375000;
+  betterAvatarPlugins_default.updatedAt = 1790878502000;
   oneko_default.updatedAt = 1787870966000;
   customGreeting_default.updatedAt = 1790164294000;
   stableComposer_default.updatedAt = 1789125421000;

@@ -37,6 +37,7 @@ const filledSvg = (props: IconProps, viewBox: string, ...children: React.ReactNo
         height={props.height ?? props.size ?? "1em"}
         viewBox={viewBox}
         fill="currentColor"
+        stroke="none"
         className={props.className}
         aria-hidden="true"
     >
