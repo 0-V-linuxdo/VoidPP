@@ -18,6 +18,7 @@ import { Logger } from "@utils/Logger";
 import { debounce, pageWindow } from "@utils/misc";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 
+import { pickHeaderMore } from "./anchor";
 import { clipSnippet, groupStars, resolveConversationId, type StarGroup, type StarredMessage, starsForConversation } from "./model";
 import { dropStar, hasStar, putStar, reloadIfAccountChanged, stars, startStore, stopStore } from "./store";
 
@@ -673,47 +674,40 @@ function headerSkipped(el: HTMLElement): boolean {
     return box.width < 16 || box.height < 16 || box.width > 64 || box.height > 64;
 }
 
-function isShareButton(el: HTMLElement): boolean {
-    const label = controlLabel(el).toLowerCase();
-    return label === "create share link" || label === "share project";
-}
-
 function isRightPanelToggle(el: HTMLElement): boolean {
     return /\bright panel\b/i.test(controlLabel(el));
 }
 
 function headerMore(): HTMLElement | null {
-    let panel: HTMLElement | null = null;
-    let panelBox: DOMRect | null = null;
-    const buttons: HTMLElement[] = [];
-    for (const el of document.querySelectorAll<HTMLElement>("button")) {
-        if (headerSkipped(el)) continue;
-        const box = el.getBoundingClientRect();
-        if (isRightPanelToggle(el)) {
-            if (!panelBox || box.top < panelBox.top) {
-                panel = el;
-                panelBox = box;
-            }
-            continue;
-        }
-        buttons.push(el);
+    const nodes = [...document.querySelectorAll<HTMLElement>("button")];
+    let panelNode: HTMLElement | null = null;
+    let panelTop = Infinity;
+    for (const el of nodes) {
+        if (headerSkipped(el) || !isRightPanelToggle(el)) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top > 160 || top >= panelTop) continue;
+        panelNode = el;
+        panelTop = top;
     }
-    if (!panel || !panelBox || panelBox.top > 160) return null;
-    const mid = (panelBox.top + panelBox.bottom) / 2;
-    let best: HTMLElement | null = null;
-    let bestRight = -Infinity;
-    for (const el of buttons) {
-        if (isShareButton(el)) continue;
+    const host = panelNode?.parentElement ?? null;
+    const previewHost = !!host && [...host.children].some(node =>
+        node instanceof HTMLElement && /^(expand|preview|files)$/i.test(controlLabel(node)),
+    );
+    const index = pickHeaderMore(nodes.map(el => {
         const box = el.getBoundingClientRect();
-        if (Math.abs((box.top + box.bottom) / 2 - mid) > 14) continue;
-        const gap = panelBox.left - box.right;
-        if (gap < -4 || gap > 48) continue;
-        if (box.right > bestRight) {
-            best = el;
-            bestRight = box.right;
-        }
-    }
-    return best;
+        return {
+            label: controlLabel(el),
+            top: box.top,
+            bottom: box.bottom,
+            left: box.left,
+            right: box.right,
+            width: box.width,
+            height: box.height,
+            skipped: headerSkipped(el),
+            previewCluster: previewHost && el.parentElement === host,
+        };
+    }));
+    return index >= 0 ? nodes[index] ?? null : null;
 }
 
 function railBox(): DOMRect | null {
