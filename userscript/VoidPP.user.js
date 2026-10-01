@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261001.3
+// @version      20261001.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261001.3] v1.0.0 — A modification for grok.com
+ * Void++ [20261001.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7765,9 +7765,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261001.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9b7f4c6"}`
-    }, `(${"9b7f4c6"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261001.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"87c068e"}`
+    }, `(${"87c068e"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -28554,7 +28554,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }, children);
   }
   function PluginsIcon(props = {}) {
-    return /* @__PURE__ */ React.createElement(LayoutGridIcon, {
+    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
       width: "1rem",
       height: "1rem",
       className: props.className ?? "void-settings-menu-icon"
@@ -33233,7 +33233,7 @@ div:has(> #grok-bot-nav-button) {
   betterImagine_default.updatedAt = 1790093417000;
   cleaner_default.updatedAt = 1790093417000;
   widerChat_default.updatedAt = 1787870966000;
-  betterAvatarPlugins_default.updatedAt = 1790878502000;
+  betterAvatarPlugins_default.updatedAt = 1790879906000;
   oneko_default.updatedAt = 1787870966000;
   customGreeting_default.updatedAt = 1790164294000;
   stableComposer_default.updatedAt = 1789125421000;

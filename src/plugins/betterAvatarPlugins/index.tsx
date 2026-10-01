@@ -6,7 +6,7 @@
 
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
 import { ErrorBoundary } from "@components/ErrorBoundary";
-import { GrokConnectorsIcon, LayoutGridIcon, type IconProps } from "@components/icons";
+import { GrokConnectorsIcon, type IconProps } from "@components/icons";
 import {
     DropdownMenuItem,
     DropdownMenuSub,
@@ -117,7 +117,7 @@ function menuSvg(className: string | undefined, filled: boolean, ...children: Re
 }
 
 function PluginsIcon(props: IconProps = {}) {
-    return <LayoutGridIcon width="1rem" height="1rem" className={props.className ?? "void-settings-menu-icon"} />;
+    return <GrokConnectorsIcon width="1rem" height="1rem" className={props.className ?? "void-settings-menu-icon"} />;
 }
 
 function ConnectorsMenuIcon({ className }: IconProps = {}) {
