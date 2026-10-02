@@ -19,22 +19,26 @@ import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
 
-const logger = new Logger("BetterAvatarPlugins");
+const logger = new Logger("AvatarPluginsFlyout");
 
 const PluginsDialogStore = findByPropsLazy("usePluginsDialogStore");
 
 const settings = definePluginSettings({});
 
-const OLD_NAME = "NoSidebarPlugins";
-const NEW_NAME = "BetterAvatarPlugins";
+const NEW_NAME = "AvatarPluginsFlyout";
+const OLD_NAMES = ["BetterAvatarPlugins", "NoSidebarPlugins"];
+
+function isOldName(item: unknown): item is string {
+    return typeof item === "string" && OLD_NAMES.includes(item);
+}
 
 function renameList(list: unknown): string[] | undefined {
-    if (!Array.isArray(list) || !list.includes(OLD_NAME)) return undefined;
+    if (!Array.isArray(list) || !list.some(isOldName)) return undefined;
     const seen = new Set<string>();
     const next: string[] = [];
     for (const item of list) {
         if (typeof item !== "string") continue;
-        const name = item === OLD_NAME ? NEW_NAME : item;
+        const name = isOldName(item) ? NEW_NAME : item;
         if (seen.has(name)) continue;
         seen.add(name);
         next.push(name);
@@ -44,7 +48,6 @@ function renameList(list: unknown): string[] | undefined {
 
 function migrateLegacy() {
     const bag = PlainSettings.plugins;
-    const old = bag[OLD_NAME];
     const meta = bag.Settings;
     const menu = bag.PluginsFlyout?.menuPlugins;
     const known = meta?.knownPlugins;
@@ -52,36 +55,46 @@ function migrateLegacy() {
     const starred = renameList(meta?.starredPlugins);
     const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu as Record<string, unknown> : undefined;
     const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known as Record<string, unknown> : undefined;
-    const menuHas = !!menuRec && OLD_NAME in menuRec;
-    const knownHas = !!knownRec && OLD_NAME in knownRec;
-    if (!old && !menuHas && !knownHas && !pinned && !starred) return;
+    let moved = false;
 
-    if (old) {
-        const target = bag[NEW_NAME] ??= {};
-        const keys = Object.keys(target);
-        const stub = keys.length === 0 || (keys.length === 1 && keys[0] === "enabled");
-        for (const key of Object.keys(old)) {
-            if (stub || !(key in target)) target[key] = old[key];
+    for (const oldName of OLD_NAMES) {
+        const old = bag[oldName];
+        if (old && typeof old === "object") {
+            const target = bag[NEW_NAME] ??= {};
+            const keys = Object.keys(target);
+            const stub = keys.length === 0 || (keys.length === 1 && keys[0] === "enabled");
+            for (const key of Object.keys(old)) {
+                if (stub || !(key in target)) target[key] = old[key];
+            }
+            delete bag[oldName];
+            moved = true;
         }
-        delete bag[OLD_NAME];
+        if (knownRec && oldName in knownRec) {
+            if (!(NEW_NAME in knownRec)) knownRec[NEW_NAME] = knownRec[oldName];
+            delete knownRec[oldName];
+            moved = true;
+        }
+        if (menuRec && oldName in menuRec) {
+            if (!(NEW_NAME in menuRec)) menuRec[NEW_NAME] = menuRec[oldName];
+            delete menuRec[oldName];
+            moved = true;
+        }
     }
 
     if (meta) {
-        if (pinned) meta.pinnedPlugins = pinned;
-        if (starred) meta.starredPlugins = starred;
-        if (knownHas && knownRec) {
-            if (!(NEW_NAME in knownRec)) knownRec[NEW_NAME] = knownRec[OLD_NAME];
-            delete knownRec[OLD_NAME];
+        if (pinned) {
+            meta.pinnedPlugins = pinned;
+            moved = true;
+        }
+        if (starred) {
+            meta.starredPlugins = starred;
+            moved = true;
         }
     }
 
-    if (menuHas && menuRec) {
-        if (!(NEW_NAME in menuRec)) menuRec[NEW_NAME] = menuRec[OLD_NAME];
-        delete menuRec[OLD_NAME];
-    }
-
+    if (!moved) return;
     SettingsStore.markAsChanged();
-    logger.info("Migrated NoSidebarPlugins into BetterAvatarPlugins");
+    logger.info("Migrated NoSidebarPlugins and BetterAvatarPlugins into AvatarPluginsFlyout");
 }
 
 const pluginName = Object.getOwnPropertyDescriptor(settings, "pluginName");
@@ -117,7 +130,7 @@ function menuSvg(className: string | undefined, filled: boolean, ...children: Re
 }
 
 function PluginsIcon(props: IconProps = {}) {
-    return <GrokConnectorsIcon width="1rem" height="1rem" className={props.className ?? "void-settings-menu-icon"} />;
+    return <GrokConnectorsIcon {...props} />;
 }
 
 function ConnectorsMenuIcon({ className }: IconProps = {}) {
@@ -240,7 +253,7 @@ function PluginsMenu() {
 const WrappedPluginsMenu = ErrorBoundary.wrap(PluginsMenu);
 
 export default definePlugin({
-    name: "BetterAvatarPlugins",
+    name: NEW_NAME,
     icon: PluginsIcon,
     description: "Move the sidebar Plugins button into the avatar menu and expand it into Connectors, Skills, and Bots.",
     authors: [Devs.p],

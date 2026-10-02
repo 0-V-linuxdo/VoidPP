@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261002.1
+// @version      20261002.2
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261002.1] v1.0.0 — A modification for grok.com
+ * Void++ [20261002.2] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7784,9 +7784,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261002.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"c3a3b1f"}`
-    }, `(${"c3a3b1f"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261002.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"14f3fe0"}`
+    }, `(${"14f3fe0"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8240,21 +8240,24 @@ button .void-info-hint {
     }
   });
 
-  // src/plugins/betterAvatarPlugins/index.tsx
-  var logger18 = new Logger("BetterAvatarPlugins");
+  // src/plugins/avatarPluginsFlyout/index.tsx
+  var logger18 = new Logger("AvatarPluginsFlyout");
   var PluginsDialogStore = findByPropsLazy("usePluginsDialogStore");
   var settings7 = definePluginSettings({});
-  var OLD_NAME = "NoSidebarPlugins";
-  var NEW_NAME = "BetterAvatarPlugins";
+  var NEW_NAME = "AvatarPluginsFlyout";
+  var OLD_NAMES = ["BetterAvatarPlugins", "NoSidebarPlugins"];
+  function isOldName(item) {
+    return typeof item === "string" && OLD_NAMES.includes(item);
+  }
   function renameList(list) {
-    if (!Array.isArray(list) || !list.includes(OLD_NAME))
+    if (!Array.isArray(list) || !list.some(isOldName))
       return;
     const seen = new Set;
     const next = [];
     for (const item of list) {
       if (typeof item !== "string")
         continue;
-      const name = item === OLD_NAME ? NEW_NAME : item;
+      const name = isOldName(item) ? NEW_NAME : item;
       if (seen.has(name))
         continue;
       seen.add(name);
@@ -8264,7 +8267,6 @@ button .void-info-hint {
   }
   function migrateLegacy2() {
     const bag = PlainSettings.plugins;
-    const old = bag[OLD_NAME];
     const meta = bag.Settings;
     const menu = bag.PluginsFlyout?.menuPlugins;
     const known = meta?.knownPlugins;
@@ -8272,38 +8274,47 @@ button .void-info-hint {
     const starred = renameList(meta?.starredPlugins);
     const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu : undefined;
     const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
-    const menuHas = !!menuRec && OLD_NAME in menuRec;
-    const knownHas = !!knownRec && OLD_NAME in knownRec;
-    if (!old && !menuHas && !knownHas && !pinned && !starred)
-      return;
-    if (old) {
-      const target = bag[NEW_NAME] ??= {};
-      const keys = Object.keys(target);
-      const stub = keys.length === 0 || keys.length === 1 && keys[0] === "enabled";
-      for (const key of Object.keys(old)) {
-        if (stub || !(key in target))
-          target[key] = old[key];
+    let moved = false;
+    for (const oldName of OLD_NAMES) {
+      const old = bag[oldName];
+      if (old && typeof old === "object") {
+        const target = bag[NEW_NAME] ??= {};
+        const keys = Object.keys(target);
+        const stub = keys.length === 0 || keys.length === 1 && keys[0] === "enabled";
+        for (const key of Object.keys(old)) {
+          if (stub || !(key in target))
+            target[key] = old[key];
+        }
+        delete bag[oldName];
+        moved = true;
       }
-      delete bag[OLD_NAME];
+      if (knownRec && oldName in knownRec) {
+        if (!(NEW_NAME in knownRec))
+          knownRec[NEW_NAME] = knownRec[oldName];
+        delete knownRec[oldName];
+        moved = true;
+      }
+      if (menuRec && oldName in menuRec) {
+        if (!(NEW_NAME in menuRec))
+          menuRec[NEW_NAME] = menuRec[oldName];
+        delete menuRec[oldName];
+        moved = true;
+      }
     }
     if (meta) {
-      if (pinned)
+      if (pinned) {
         meta.pinnedPlugins = pinned;
-      if (starred)
+        moved = true;
+      }
+      if (starred) {
         meta.starredPlugins = starred;
-      if (knownHas && knownRec) {
-        if (!(NEW_NAME in knownRec))
-          knownRec[NEW_NAME] = knownRec[OLD_NAME];
-        delete knownRec[OLD_NAME];
+        moved = true;
       }
     }
-    if (menuHas && menuRec) {
-      if (!(NEW_NAME in menuRec))
-        menuRec[NEW_NAME] = menuRec[OLD_NAME];
-      delete menuRec[OLD_NAME];
-    }
+    if (!moved)
+      return;
     SettingsStore3.markAsChanged();
-    logger18.info("Migrated NoSidebarPlugins into BetterAvatarPlugins");
+    logger18.info("Migrated NoSidebarPlugins and BetterAvatarPlugins into AvatarPluginsFlyout");
   }
   var pluginName = Object.getOwnPropertyDescriptor(settings7, "pluginName");
   if (pluginName?.set && pluginName.get) {
@@ -8334,9 +8345,7 @@ button .void-info-hint {
   }
   function PluginsIcon(props = {}) {
     return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
-      width: "1rem",
-      height: "1rem",
-      className: props.className ?? "void-settings-menu-icon"
+      ...props
     });
   }
   function ConnectorsMenuIcon({ className } = {}) {
@@ -8457,8 +8466,8 @@ button .void-info-hint {
     })));
   }
   var WrappedPluginsMenu = ErrorBoundary.wrap(PluginsMenu);
-  var betterAvatarPlugins_default = definePlugin({
-    name: "BetterAvatarPlugins",
+  var avatarPluginsFlyout_default = definePlugin({
+    name: NEW_NAME,
     icon: PluginsIcon,
     description: "Move the sidebar Plugins button into the avatar menu and expand it into Connectors, Skills, and Bots.",
     authors: [Devs.p],
@@ -9705,17 +9714,17 @@ html.void-cms-picked .void-cms-ghost {
       hidden: true
     }
   });
-  var OLD_NAME2 = "CompactModeSelect";
+  var OLD_NAME = "CompactModeSelect";
   var NEW_NAME2 = "BetterModeSelect";
   function renameList2(list) {
-    if (!Array.isArray(list) || !list.includes(OLD_NAME2))
+    if (!Array.isArray(list) || !list.includes(OLD_NAME))
       return;
     const seen = new Set;
     const next = [];
     for (const item of list) {
       if (typeof item !== "string")
         continue;
-      const name = item === OLD_NAME2 ? NEW_NAME2 : item;
+      const name = item === OLD_NAME ? NEW_NAME2 : item;
       if (seen.has(name))
         continue;
       seen.add(name);
@@ -9725,7 +9734,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   function migrateLegacy3() {
     const bag = PlainSettings.plugins;
-    const old = bag[OLD_NAME2];
+    const old = bag[OLD_NAME];
     const meta = bag.Settings;
     const menu = bag.PluginsFlyout?.menuPlugins;
     const known = meta?.knownPlugins;
@@ -9733,8 +9742,8 @@ html.void-cms-picked .void-cms-ghost {
     const starred = renameList2(meta?.starredPlugins);
     const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu : undefined;
     const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
-    const menuHas = !!menuRec && OLD_NAME2 in menuRec;
-    const knownHas = !!knownRec && OLD_NAME2 in knownRec;
+    const menuHas = !!menuRec && OLD_NAME in menuRec;
+    const knownHas = !!knownRec && OLD_NAME in knownRec;
     if (!old && !menuHas && !knownHas && !pinned && !starred)
       return;
     if (old) {
@@ -9745,7 +9754,7 @@ html.void-cms-picked .void-cms-ghost {
         if (stub || !(key in target))
           target[key] = old[key];
       }
-      delete bag[OLD_NAME2];
+      delete bag[OLD_NAME];
     }
     if (meta) {
       if (pinned)
@@ -9754,14 +9763,14 @@ html.void-cms-picked .void-cms-ghost {
         meta.starredPlugins = starred;
       if (knownHas && knownRec) {
         if (!(NEW_NAME2 in knownRec))
-          knownRec[NEW_NAME2] = knownRec[OLD_NAME2];
-        delete knownRec[OLD_NAME2];
+          knownRec[NEW_NAME2] = knownRec[OLD_NAME];
+        delete knownRec[OLD_NAME];
       }
     }
     if (menuHas && menuRec) {
       if (!(NEW_NAME2 in menuRec))
-        menuRec[NEW_NAME2] = menuRec[OLD_NAME2];
-      delete menuRec[OLD_NAME2];
+        menuRec[NEW_NAME2] = menuRec[OLD_NAME];
+      delete menuRec[OLD_NAME];
     }
     SettingsStore3.markAsChanged();
     logger21.info("Migrated CompactModeSelect into BetterModeSelect");
@@ -21841,17 +21850,17 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       component: () => null
     }
   }).withPrivateSettings();
-  var OLD_NAME3 = "Placeholder";
+  var OLD_NAME2 = "Placeholder";
   var NEW_NAME3 = "CustomGreeting";
   function renameList3(list) {
-    if (!Array.isArray(list) || !list.includes(OLD_NAME3))
+    if (!Array.isArray(list) || !list.includes(OLD_NAME2))
       return;
     const seen = new Set;
     const next = [];
     for (const item of list) {
       if (typeof item !== "string")
         continue;
-      const name = item === OLD_NAME3 ? NEW_NAME3 : item;
+      const name = item === OLD_NAME2 ? NEW_NAME3 : item;
       if (seen.has(name))
         continue;
       seen.add(name);
@@ -21861,7 +21870,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function migrateLegacy6() {
     const bag = PlainSettings.plugins;
-    const old = bag[OLD_NAME3];
+    const old = bag[OLD_NAME2];
     const meta = bag.Settings;
     const menu = bag.PluginsFlyout?.menuPlugins;
     const known = meta?.knownPlugins;
@@ -21869,8 +21878,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const starred = renameList3(meta?.starredPlugins);
     const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu : undefined;
     const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
-    const menuHas = !!menuRec && OLD_NAME3 in menuRec;
-    const knownHas = !!knownRec && OLD_NAME3 in knownRec;
+    const menuHas = !!menuRec && OLD_NAME2 in menuRec;
+    const knownHas = !!knownRec && OLD_NAME2 in knownRec;
     if (!old && !menuHas && !knownHas && !pinned && !starred)
       return;
     if (old) {
@@ -21881,7 +21890,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         if (stub || !(key in target))
           target[key] = old[key];
       }
-      delete bag[OLD_NAME3];
+      delete bag[OLD_NAME2];
     }
     if (meta) {
       if (pinned)
@@ -21890,14 +21899,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         meta.starredPlugins = starred;
       if (knownHas && knownRec) {
         if (!(NEW_NAME3 in knownRec))
-          knownRec[NEW_NAME3] = knownRec[OLD_NAME3];
-        delete knownRec[OLD_NAME3];
+          knownRec[NEW_NAME3] = knownRec[OLD_NAME2];
+        delete knownRec[OLD_NAME2];
       }
     }
     if (menuHas && menuRec) {
       if (!(NEW_NAME3 in menuRec))
-        menuRec[NEW_NAME3] = menuRec[OLD_NAME3];
-      delete menuRec[OLD_NAME3];
+        menuRec[NEW_NAME3] = menuRec[OLD_NAME2];
+      delete menuRec[OLD_NAME2];
     }
     SettingsStore3.markAsChanged();
     logger34.info("Migrated Placeholder into CustomGreeting");
@@ -33249,7 +33258,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   contextMenu_default.updatedAt = 1781702684000;
   autoCollapse_default.updatedAt = 1787789817000;
   autoRetry_default.updatedAt = 1789906500000;
-  betterAvatarPlugins_default.updatedAt = 1790880626000;
+  avatarPluginsFlyout_default.updatedAt = 0;
   betterCanvas_default.updatedAt = 1790360947000;
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1790093417000;
@@ -33278,7 +33287,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   messageTimestamps_default.updatedAt = 1789881463000;
   noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1788037550000;
-  noGrokBot_default.updatedAt = 1787789817000;
+  noGrokBot_default.updatedAt = 1790943206000;
   noShareLink_default.updatedAt = 1787789817000;
   noSidebarIdentity_default.updatedAt = 1788577403000;
   oneko_default.updatedAt = 1787870966000;
@@ -33292,7 +33301,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   usageDisplay_default.updatedAt = 1789172854000;
   userQuotes_default.updatedAt = 1790169322000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterAvatarPlugins_default.name]: betterAvatarPlugins_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;

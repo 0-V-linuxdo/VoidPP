@@ -94,9 +94,11 @@ Do not rename:
 - AccountSwitcher crypto key `VoidCryptoRootHKDF`
 - `@name Void++`. `@namespace` is the channel URL above, not the repo root.
 
-## BetterAvatarPlugins
+## AvatarPluginsFlyout
 
-`NoSidebarPlugins` was renamed to `BetterAvatarPlugins`. The settings bag, pin, star, known, and PluginsFlyout keys migrate 1:1. Do not fold this into BetterSidebar.
+`NoSidebarPlugins` was renamed to `BetterAvatarPlugins`, then to `AvatarPluginsFlyout`. The settings bag, pin, star, known, and PluginsFlyout keys migrate 1:1. Do not fold this into BetterSidebar or PluginsFlyout.
+
+The plugin-card glyph is `GrokConnectorsIcon` with the `size` PluginCard passes and no class. Do not default `void-settings-menu-icon` on that icon: the class sets `margin-inline-end: 0.5rem` for avatar-menu rows and shifts the 14px glyph 4px left inside the 24px tile. Apply `void-settings-menu-icon` only on the menu row.
 
 The avatar Plugins row is a `DropdownMenuSub`, same chevron as Settings and Void++. Children are Connectors, Skills, and Bots (`connectors` / `skills` / `bots`). The parent glyph is the same filled puzzle as Connectors (`GrokConnectorsIcon`, `stroke="none"` — do not pass it through Grok's `Icon`, which strokes filled paths). Do not use the 1rem grid for Plugins. Children use Grok's own marks at 1rem: Connectors is that same puzzle, Skills is the stroke circle/triangle/square, Bots is the filled `AiAgentsIcon` (circle face plus crescent — not `CreateBotIcon`, not a rounded-square face).
 
