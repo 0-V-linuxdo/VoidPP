@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261001.5
+// @version      20261002.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261001.5] v1.0.0 — A modification for grok.com
+ * Void++ [20261002.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7784,9 +7784,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261001.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"30dea55"}`
-    }, `(${"30dea55"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261002.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"c3a3b1f"}`
+    }, `(${"c3a3b1f"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -27746,10 +27746,24 @@ div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
   var STYLE_NAME5 = "noGrokBot";
   var CSS2 = `
 #grok-bot-nav-button,
-div:has(> #grok-bot-nav-button) {
-    display: none !important;
-}
-#promo-portal [aria-label*="Grok Bot"] {
+div:has(> #grok-bot-nav-button),
+#promo-portal [aria-label*="Grok Bot"],
+a[href*="grok_bot_upsell"],
+a[href*="utm_medium=nav-button"][href*="x.ai/bot"],
+a[aria-label="Open Grok Bot"],
+a[aria-label="Download Grok Bot"],
+button[aria-label="Open Grok Bot"],
+button[aria-label="Download Grok Bot"],
+button[aria-label^="Get Grok Bot"],
+[class*="@container/nav"] a:has(.grok-bot-eye),
+[class*="@container/nav"] button:has(.grok-bot-eye),
+span:has(> a[href*="grok_bot_upsell"]),
+span:has(> a[aria-label="Open Grok Bot"]),
+span:has(> a[aria-label="Download Grok Bot"]),
+span:has(> button[aria-label="Open Grok Bot"]),
+span:has(> button[aria-label="Download Grok Bot"]),
+span:has(> button[aria-label^="Get Grok Bot"]),
+span:has(> [aria-label*="Grok Bot"]) {
     display: none !important;
 }
 `;
@@ -33260,7 +33274,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   exportChat_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
   inputHistory_default.updatedAt = 1790418846000;
-  messageStars_default.updatedAt = 1790546926000;
+  messageStars_default.updatedAt = 1790882351000;
   messageTimestamps_default.updatedAt = 1789881463000;
   noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1788037550000;
