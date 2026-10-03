@@ -13,7 +13,7 @@ import { AutoModeIcon, BuildModeIcon, ChevronDownIcon, ChevronUpIcon, ConnectedA
 import type { ModesStoreState } from "@grok-types/stores/ModesStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React } from "@turbopack/common/react";
-import { ModesStore, RoutingStore, SettingsStore as GrokSettings } from "@turbopack/common/stores";
+import { ChatPageStore, MessageStore, ModesStore, RoutingStore, SettingsStore as GrokSettings } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -266,13 +266,28 @@ function inIncognito(): boolean {
     }
 }
 
-function withoutIncognitoBuild(ids: ModeId[]): ModeId[] {
-    if (!inIncognito()) return ids;
+function privateBuild(): boolean {
+    if (inIncognito()) return true;
+    try {
+        const route = RoutingStore.useRoutingStore.getState().route;
+        if (route?.temporary) return true;
+        const chat = ChatPageStore.useChatPageStore.getState();
+        const cid = String(route?.conversationId || chat.conversationId || chat.optimisticConversationId || "");
+        if (!cid) return false;
+        const conv = MessageStore.useMessageStore.getState().conversations[cid] as { temporary?: boolean } | undefined;
+        return conv?.temporary === true;
+    } catch {
+        return false;
+    }
+}
+
+function withoutIncognitoBuild(ids: ModeId[], hide = privateBuild()): ModeId[] {
+    if (!hide) return ids;
     return ids.filter(id => id !== "build");
 }
 
-function withIncognitoAuto(ids: ModeId[]): ModeId[] {
-    if (!inIncognito() || ids.includes("auto")) return ids;
+function withIncognitoAuto(ids: ModeId[], hide = privateBuild()): ModeId[] {
+    if (!hide || ids.includes("auto")) return ids;
     let selected = "";
     try {
         selected = String(ModesStore.useModesStore.getState().selectedModeId || "");
@@ -290,9 +305,10 @@ function pinnedIds(): ModeId[] {
 
 let incognitoObs: MutationObserver | null = null;
 let offIncognitoWatch: (() => void) | null = null;
+let offRouteWatch: (() => void) | null = null;
 
 function hideBuildMenuItems() {
-    const hide = inIncognito();
+    const hide = privateBuild();
     document.documentElement.toggleAttribute("data-void-cms-incognito", hide);
     for (const el of document.querySelectorAll<HTMLElement>(ITEM_SEL)) {
         if (!matchItem(el, "build")) continue;
@@ -302,7 +318,7 @@ function hideBuildMenuItems() {
 
 function watchIncognitoMenu() {
     hideBuildMenuItems();
-    if (!inIncognito()) {
+    if (!privateBuild()) {
         incognitoObs?.disconnect();
         incognitoObs = null;
         return;
@@ -705,8 +721,14 @@ function PinnedModes() {
     const selectedModeId = ModesStore.useModesStore((s: ModesStoreState) => s.selectedModeId);
     const catalog = ModesStore.useModesStore((s: ModesStoreState) => s.modes);
     const incognito = GrokSettings.useSettingsStore(s => s.isIncognito);
+    const routeTemporary = RoutingStore.useRoutingStore(s => !!s.route.temporary);
+    const routeCid = RoutingStore.useRoutingStore(s => s.route.conversationId ?? "");
+    const chatCid = ChatPageStore.useChatPageStore(s => s.conversationId || s.optimisticConversationId || "");
+    const cid = String(routeCid || chatCid || "");
+    const convTemporary = MessageStore.useMessageStore(s => !!(cid && (s.conversations[cid] as { temporary?: boolean } | undefined)?.temporary));
+    const hideBuild = !!(incognito || routeTemporary || convTemporary);
     const knownCatalog = catalog.filter(c => KNOWN_IDS.has(c.id));
-    const items = withIncognitoAuto(pinnedIdsFrom(cfg.pinOrder, cfg, catalog).filter(id => !(incognito && id === "build"))).map(id => MODE_BY_ID[id]);
+    const items = withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, catalog), hideBuild), hideBuild).map(id => MODE_BY_ID[id]);
     if (page === "bot" || !items.length) return null;
 
     const { showLabels } = cfg;
@@ -754,6 +776,7 @@ export default definePlugin({
         watchIncognitoMenu();
         try {
             offIncognitoWatch = GrokSettings.useSettingsStore.subscribe(() => watchIncognitoMenu());
+            offRouteWatch = RoutingStore.useRoutingStore.subscribe(() => watchIncognitoMenu());
         } catch (e) {
             logger.debug("incognito watch failed", e);
         }
@@ -763,6 +786,8 @@ export default definePlugin({
         unbindModelHotkey();
         offIncognitoWatch?.();
         offIncognitoWatch = null;
+        offRouteWatch?.();
+        offRouteWatch = null;
         incognitoObs?.disconnect();
         incognitoObs = null;
         document.documentElement.removeAttribute("data-void-cms-incognito");

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.13
+// @version      20261003.15
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.13] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.15] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -8906,9 +8906,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2118477"}`
-    }, `(${"2118477"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f5565b3"}`
+    }, `(${"f5565b3"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10708,13 +10708,30 @@ html.void-cms-picked .void-cms-ghost {
       return false;
     }
   }
-  function withoutIncognitoBuild(ids) {
-    if (!inIncognito())
+  function privateBuild() {
+    if (inIncognito())
+      return true;
+    try {
+      const route = RoutingStore.useRoutingStore.getState().route;
+      if (route?.temporary)
+        return true;
+      const chat = ChatPageStore.useChatPageStore.getState();
+      const cid = String(route?.conversationId || chat.conversationId || chat.optimisticConversationId || "");
+      if (!cid)
+        return false;
+      const conv = MessageStore.useMessageStore.getState().conversations[cid];
+      return conv?.temporary === true;
+    } catch {
+      return false;
+    }
+  }
+  function withoutIncognitoBuild(ids, hide = privateBuild()) {
+    if (!hide)
       return ids;
     return ids.filter((id) => id !== "build");
   }
-  function withIncognitoAuto(ids) {
-    if (!inIncognito() || ids.includes("auto"))
+  function withIncognitoAuto(ids, hide = privateBuild()) {
+    if (!hide || ids.includes("auto"))
       return ids;
     let selected = "";
     try {
@@ -10732,8 +10749,9 @@ html.void-cms-picked .void-cms-ghost {
   }
   var incognitoObs = null;
   var offIncognitoWatch = null;
+  var offRouteWatch = null;
   function hideBuildMenuItems() {
-    const hide = inIncognito();
+    const hide = privateBuild();
     document.documentElement.toggleAttribute("data-void-cms-incognito", hide);
     for (const el of document.querySelectorAll(ITEM_SEL)) {
       if (!matchItem(el, "build"))
@@ -10743,7 +10761,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   function watchIncognitoMenu() {
     hideBuildMenuItems();
-    if (!inIncognito()) {
+    if (!privateBuild()) {
       incognitoObs?.disconnect();
       incognitoObs = null;
       return;
@@ -11138,8 +11156,14 @@ html.void-cms-picked .void-cms-ghost {
     const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
     const catalog = ModesStore.useModesStore((s) => s.modes);
     const incognito = SettingsStore.useSettingsStore((s) => s.isIncognito);
+    const routeTemporary = RoutingStore.useRoutingStore((s) => !!s.route.temporary);
+    const routeCid = RoutingStore.useRoutingStore((s) => s.route.conversationId ?? "");
+    const chatCid = ChatPageStore.useChatPageStore((s) => s.conversationId || s.optimisticConversationId || "");
+    const cid = String(routeCid || chatCid || "");
+    const convTemporary = MessageStore.useMessageStore((s) => !!(cid && s.conversations[cid]?.temporary));
+    const hideBuild = !!(incognito || routeTemporary || convTemporary);
     const knownCatalog = catalog.filter((c) => KNOWN_IDS.has(c.id));
-    const items = withIncognitoAuto(pinnedIdsFrom(cfg.pinOrder, cfg, catalog).filter((id) => !(incognito && id === "build"))).map((id) => MODE_BY_ID[id]);
+    const items = withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, catalog), hideBuild), hideBuild).map((id) => MODE_BY_ID[id]);
     if (page === "bot" || !items.length)
       return null;
     const { showLabels } = cfg;
@@ -11186,6 +11210,7 @@ html.void-cms-picked .void-cms-ghost {
       watchIncognitoMenu();
       try {
         offIncognitoWatch = SettingsStore.useSettingsStore.subscribe(() => watchIncognitoMenu());
+        offRouteWatch = RoutingStore.useRoutingStore.subscribe(() => watchIncognitoMenu());
       } catch (e) {
         logger22.debug("incognito watch failed", e);
       }
@@ -11194,6 +11219,8 @@ html.void-cms-picked .void-cms-ghost {
       unbindModelHotkey();
       offIncognitoWatch?.();
       offIncognitoWatch = null;
+      offRouteWatch?.();
+      offRouteWatch = null;
       incognitoObs?.disconnect();
       incognitoObs = null;
       document.documentElement.removeAttribute("data-void-cms-incognito");
@@ -14354,6 +14381,37 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     onPersistPage();
   }
 
+  // src/plugins/betterQueue/modeSend.ts
+  function modeSlug(s) {
+    return s.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
+  }
+  function gatewaySendMode(input) {
+    const selected = modeSlug(input.selected);
+    const model = modeSlug(input.modelMode);
+    if (input.incognito)
+      return selected === "build" ? "auto" : selected;
+    if (selected === "build")
+      return "build";
+    const inflight = modeSlug(input.inflight);
+    if (inflight === "build")
+      return "build";
+    const last = input.lastModel === undefined ? undefined : modeSlug(input.lastModel);
+    const adjusted = modeSlug(input.adjusted);
+    const userChanged = !!adjusted && adjusted !== (last ?? "");
+    if (userChanged)
+      return selected || adjusted;
+    if (!input.conversationId)
+      return selected || model;
+    if (last !== undefined)
+      return last === "build" ? "build" : selected || model;
+    if (input.buildTurn || input.markedBuild)
+      return "build";
+    return selected || model;
+  }
+  function keepBuildPreference(privateChat, substituted, settled, stored) {
+    return privateChat && substituted && settled === "auto" && stored === "build";
+  }
+
   // src/plugins/betterQueue/settings.ts
   var settings13 = definePluginSettings({
     showQueueMode: {
@@ -14471,11 +14529,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return false;
     }
   }
-  function modeSlug(s) {
+  function modeSlug2(s) {
     return s.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
   }
   function apiModelMode(s) {
-    const slug = modeSlug(s);
+    const slug = modeSlug2(s);
     if (!slug)
       return "";
     return `MODEL_MODE_${slug.replaceAll("-", "_").toUpperCase()}`;
@@ -14486,7 +14544,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return apiModelMode(raw);
     if ((existing == null || existing === "") && live.modelMode.startsWith("MODEL_MODE_"))
       return apiModelMode(raw);
-    return modeSlug(raw);
+    return modeSlug2(raw);
   }
   function stringId(value) {
     return typeof value === "string" && value.trim() ? value : "";
@@ -14608,7 +14666,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function applyIntent(next) {
     if (!next.modeId || applying || onImaginePage())
       return;
-    const slug = modeSlug(next.modeId);
+    const slug = modeSlug2(next.modeId);
     if (!slug)
       return;
     applying = true;
@@ -14616,16 +14674,16 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const modes = ModesStore.useModesStore.getState();
       const cid = currentCid3();
       const adjusted = cid ? sessionAdjusted(cid) : slug;
-      if (modeSlug(String(modes.selectedModeId || "")) !== slug || adjusted !== slug) {
+      if (modeSlug2(String(modes.selectedModeId || "")) !== slug || adjusted !== slug) {
         modes.setSelectedModeId(slug, { source: "user" });
       }
-      const settled = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || "")) || slug;
+      const settled = modeSlug2(String(ModesStore.useModesStore.getState().selectedModeId || "")) || slug;
       const chat = ChatPageStore.useChatPageStore.getState();
-      const stored = modeSlug(String(chat.modelMode || ""));
-      const keepBuild = inIncognito2() && settled === "auto" && stored === "build";
+      const stored = modeSlug2(String(chat.modelMode || ""));
+      const keepBuild = keepBuildPreference(privateBuild2(), hidBuild, settled, stored);
       if (stored !== settled && !keepBuild)
         chat.setModelMode(settled);
-      if (settled !== slug && modeSlug(intent.modeId) === slug)
+      if (settled !== slug && modeSlug2(intent.modeId) === slug)
         setIntent(captureIntent(settled, snapshot()));
     } catch (e) {
       logger25.debug("apply failed", e);
@@ -14657,7 +14715,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       applyIntent(pickerIntent());
   }
   function captureIntent(modeId, cur) {
-    const keep = modeSlug(cur.modelMode) === modeSlug(modeId);
+    const keep = modeSlug2(cur.modelMode) === modeSlug2(modeId);
     return {
       modeId,
       modelMode: keep ? cur.modelMode : modeId,
@@ -14667,6 +14725,21 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function rememberMode(modeId) {
     if (!modeId)
       return;
+    if (privateBuild2() && modeSlug2(modeId) === "build") {
+      hidBuild = true;
+      userPicking = false;
+      awaitingMenu = false;
+      applying = true;
+      try {
+        ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+      } catch (e) {
+        logger25.debug("incognito build hide failed", e);
+      } finally {
+        applying = false;
+      }
+      return;
+    }
+    hidBuild = false;
     setIntent(captureIntent(modeId, snapshot()));
     userPicking = false;
     awaitingMenu = false;
@@ -14680,7 +14753,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     setIntent(captureIntent(next.modeId, next));
     userPicking = false;
     awaitingMenu = false;
-    syncModelMode(modeSlug(intent.modeId));
+    syncModelMode(modeSlug2(intent.modeId));
     logger25.info("intent", intent.modeId);
   }
   function syncModelMode(slug) {
@@ -14688,7 +14761,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     try {
       const chat = ChatPageStore.useChatPageStore.getState();
-      if (modeSlug(String(chat.modelMode || "")) === slug)
+      const stored = modeSlug2(String(chat.modelMode || ""));
+      if (stored === slug)
+        return;
+      if (keepBuildPreference(privateBuild2(), hidBuild, slug, stored))
         return;
       applying = true;
       try {
@@ -14705,6 +14781,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var pickerSource = "";
   var hidBuild = false;
   var offIncognito = null;
+  var offPrivateRoute = null;
   function inIncognito2() {
     try {
       return SettingsStore.useSettingsStore.getState().isIncognito === true;
@@ -14712,28 +14789,69 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return false;
     }
   }
+  function privateBuild2() {
+    if (inIncognito2())
+      return true;
+    try {
+      const route = RoutingStore.useRoutingStore.getState().route;
+      if (route?.temporary)
+        return true;
+      const cid = String(route?.conversationId || currentCid3() || "");
+      if (cid && conversation(cid)?.temporary)
+        return true;
+    } catch {
+      return false;
+    }
+    return false;
+  }
   function alignIncognitoBuild() {
     if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage())
       return;
     let selected = "";
     let model = "";
     try {
-      selected = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || ""));
-      model = modeSlug(String(ChatPageStore.useChatPageStore.getState().modelMode || ""));
+      selected = modeSlug2(String(ModesStore.useModesStore.getState().selectedModeId || ""));
+      model = modeSlug2(String(ChatPageStore.useChatPageStore.getState().modelMode || ""));
     } catch {
       return;
     }
-    if (inIncognito2()) {
-      if (selected !== "build")
+    if (privateBuild2()) {
+      if (selected === "build") {
+        hidBuild = true;
+        applying = true;
+        try {
+          ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+        } catch (e) {
+          logger25.debug("incognito build hide failed", e);
+        } finally {
+          applying = false;
+        }
         return;
-      hidBuild = true;
-      applying = true;
-      try {
-        ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
-      } catch (e) {
-        logger25.debug("incognito build hide failed", e);
-      } finally {
-        applying = false;
+      }
+      if (selected === "auto" && model === "build") {
+        hidBuild = true;
+        return;
+      }
+      if (model === "build" && selected) {
+        let fallback = "";
+        try {
+          fallback = modeSlug2(String(ModesStore.useModesStore.getState().defaultModeId || ""));
+        } catch {
+          fallback = "";
+        }
+        const cid = currentCid3();
+        const adjusted = cid ? modeSlug2(sessionAdjusted(cid)) : "";
+        if (selected === fallback && (!adjusted || adjusted === "build")) {
+          hidBuild = true;
+          applying = true;
+          try {
+            ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+          } catch (e) {
+            logger25.debug("incognito build hide failed", e);
+          } finally {
+            applying = false;
+          }
+        }
       }
       return;
     }
@@ -14758,7 +14876,25 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (typeof orig !== "function" || orig.voidPicker)
         return;
       const wrapped = function(id, opts) {
-        pickerSource = opts?.source || "";
+        const requested = modeSlug2(id);
+        const source = opts?.source || "";
+        let prev = "";
+        try {
+          prev = modeSlug2(String(store.getState().selectedModeId || ""));
+        } catch {
+          prev = "";
+        }
+        if (privateBuild2() && requested === "build") {
+          hidBuild = true;
+          pickerSource = "sync";
+          return orig.call(this, "auto", { source: "sync" });
+        }
+        if (privateBuild2() && prev === "build" && requested !== "auto" && source !== "user" && source !== "sync") {
+          hidBuild = true;
+          pickerSource = "sync";
+          return orig.call(this, "auto", { source: "sync" });
+        }
+        pickerSource = source;
         return orig.call(this, id, opts);
       };
       wrapped.voidPicker = true;
@@ -14767,24 +14903,64 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       logger25.debug("picker hook failed", e);
     }
   }
+  function markedBuild(cid) {
+    if (!cid)
+      return false;
+    try {
+      return localStorage.getItem(`preview-pane-build:${cid}`) === "1";
+    } catch {
+      return false;
+    }
+  }
+  function liveSendMode() {
+    const selected = (() => {
+      try {
+        return String(ModesStore.useModesStore.getState().selectedModeId || "");
+      } catch {
+        return "";
+      }
+    })();
+    const modelMode = (() => {
+      try {
+        return String(ChatPageStore.useChatPageStore.getState().modelMode || "");
+      } catch {
+        return "";
+      }
+    })();
+    const cid = currentCid3();
+    const conv = cid ? conversation(cid) : undefined;
+    return gatewaySendMode({
+      selected,
+      modelMode,
+      incognito: privateBuild2(),
+      conversationId: cid,
+      adjusted: cid ? sessionAdjusted(cid) : "",
+      lastModel: conv && conv.lastModel !== undefined && conv.lastModel !== null ? String(conv.lastModel) : undefined,
+      inflight: String(conv?.activeGeneration?.sentModeId || ""),
+      buildTurn: !!conv?.buildTurnSent,
+      markedBuild: markedBuild(cid)
+    });
+  }
   function followModelMode() {
     hookSelectedMode();
     if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage())
       return;
-    let slug = "";
-    try {
-      slug = modeSlug(String(ChatPageStore.useChatPageStore.getState().modelMode || ""));
-    } catch {
+    alignIncognitoBuild();
+    if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage())
       return;
-    }
+    const slug = liveSendMode();
     if (!MODE_IDS.has(slug))
       return;
-    if (inIncognito2() && slug === "build") {
-      slug = "auto";
-      hidBuild = true;
+    let storedModel = "";
+    try {
+      storedModel = modeSlug2(String(ChatPageStore.useChatPageStore.getState().modelMode || ""));
+    } catch {
+      storedModel = "";
     }
+    if (privateBuild2() && slug === "auto" && storedModel === "build")
+      hidBuild = true;
     const modes = ModesStore.useModesStore.getState();
-    const selected = modeSlug(String(modes.selectedModeId || ""));
+    const selected = modeSlug2(String(modes.selectedModeId || ""));
     if (selected !== slug) {
       applying = true;
       try {
@@ -14795,11 +14971,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         applying = false;
       }
     }
-    if (modeSlug(intent.modeId) === slug && modeSlug(intent.modelMode) === slug)
+    syncModelMode(slug);
+    if (modeSlug2(intent.modeId) === slug && modeSlug2(intent.modelMode) === slug)
       return;
     const snap = snapshot();
     setIntent(captureIntent(snap.modeId || slug, snap));
-    logger25.info("intent", intent.modeId, "from model", slug);
+    logger25.info("intent", intent.modeId, "from send", slug);
   }
   var alignTimer = null;
   var alignN = 0;
@@ -14810,7 +14987,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     alignN = 0;
     const tick = () => {
       alignTimer = null;
-      if (currentCid3() || onImaginePage())
+      if (onImaginePage())
         return;
       followModelMode();
       if (alignN++ < 12)
@@ -14821,13 +14998,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function watchNewChat() {
     if (alignOff.length)
       return;
-    const kick = () => {
-      if (!currentCid3())
-        followModelMode();
-    };
+    const kick = () => followModelMode();
     try {
       alignOff.push(ChatPageStore.useChatPageStore.subscribe(kick));
       alignOff.push(ModesStore.useModesStore.subscribe(kick));
+      alignOff.push(MessageStore.useMessageStore.subscribe(kick));
     } catch (e) {
       logger25.debug("align subscribe failed", e);
     }
@@ -14837,10 +15012,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     if (!loadPending())
       return;
+    const send = liveSendMode();
+    if (send && modeSlug2(intent.modeId) !== send)
+      return;
     const cur = snapshot();
-    const slug = modeSlug(intent.modeId);
+    const slug = modeSlug2(intent.modeId);
     const cid = currentCid3();
-    if (modeSlug(cur.modeId) === slug && (!cid || sessionAdjusted(cid) === slug) && (!intent.modelMode || modeSlug(cur.modelMode) === slug) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
+    if (modeSlug2(cur.modeId) === slug && (!cid || sessionAdjusted(cid) === slug) && (!intent.modelMode || modeSlug2(cur.modelMode) === slug) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
       return;
     logger25.info("hydrate fought", cur.modeId, "->", intent.modeId);
     applyIntent(intent);
@@ -14873,10 +15051,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (!intent.modeId)
       setIntent(snapshot());
-    if (!settings13.store.stickyOnNavigate || !intent.modeId)
+    if (!settings13.store.stickyOnNavigate || !intent.modeId) {
+      followModelMode();
       return;
+    }
     setRestoreFlag(true);
     applyIntent(intent);
+    followModelMode();
     syncRestoreFlag();
   }
   function isChatSend(rec) {
@@ -14888,7 +15069,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const rec = raw;
     if (!isChatSend(rec))
       return false;
-    const slug = modeSlug(live.modeId);
+    const slug = modeSlug2(live.modeId);
     if (!slug)
       return false;
     const before = rec.modeId;
@@ -15086,7 +15267,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const next = flushing.get(cid);
     if (!next || busy.has(cid))
       return;
-    const slug = modeSlug(next.item.modeId);
+    const slug = modeSlug2(next.item.modeId);
     if (sentModel.get(cid) === slug && ackedModel.get(cid) === slug)
       flushTurn(cid);
   }
@@ -15124,7 +15305,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (type === "response.persisted")
       busy.delete(cid);
     else if (SESSION_IN.has(String(type)))
-      ackedModel.set(cid, modeSlug(String(event.session?.model ?? "")));
+      ackedModel.set(cid, modeSlug2(String(event.session?.model ?? "")));
     else
       return;
     if (flushing.has(cid))
@@ -15132,10 +15313,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function onGwOutgoing(cid, event) {
     if (SESSION_OUT.has(String(event.type)))
-      sentModel.set(cid, modeSlug(String(event.session?.model ?? "")));
+      sentModel.set(cid, modeSlug2(String(event.session?.model ?? "")));
   }
   function writeMode(rec, live) {
-    const slug = modeSlug(live.modeId);
+    const slug = modeSlug2(live.modeId);
     if (!slug)
       return;
     for (const key of GW_MODE_KEYS) {
@@ -15350,7 +15531,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           patchSendArgs(args, queued);
           return orig.apply(this, args);
         }
-        if (!currentCid3())
+        if (!sendOverride)
           followModelMode();
       }
       const live = liveIntent2();
@@ -15581,13 +15762,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const seen = new Set;
     const out = [];
     for (const id of ids) {
-      if (!id || seen.has(id))
+      if (!id || seen.has(id) || privateBuild2() && modeSlug2(id) === "build")
         continue;
       seen.add(id);
       out.push({ id, label: labels.get(id) || id });
     }
     for (const m of CATALOG) {
-      if (seen.has(m.id))
+      if (seen.has(m.id) || privateBuild2() && m.id === "build")
         continue;
       seen.add(m.id);
       out.push({ id: m.id, label: labels.get(m.id) || m.label });
@@ -15628,18 +15809,18 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function menuCurrent(chip, id) {
     const raw = chip.dataset.mode || itemIntent.get(id)?.modeId || intent.modeId || liveIntent2().modeId;
     return {
-      slug: modeSlug(raw),
+      slug: modeSlug2(raw),
       label: (chip.getAttribute("aria-label") || chip.title || "").trim().toLowerCase()
     };
   }
   function choiceMatches(choice, cur) {
     const label = choice.label.trim().toLowerCase();
-    if (cur.slug && modeSlug(choice.id) === cur.slug)
+    if (cur.slug && modeSlug2(choice.id) === cur.slug)
       return true;
     if (cur.label && label === cur.label)
       return true;
     const hit = CATALOG.find((m) => m.id === cur.slug || m.label.toLowerCase() === cur.label);
-    return !!hit && (modeSlug(choice.id) === hit.id || label === hit.label.toLowerCase());
+    return !!hit && (modeSlug2(choice.id) === hit.id || label === hit.label.toLowerCase());
   }
   function openMenu(chip, id) {
     closeMenu();
@@ -15803,13 +15984,16 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     for (const el of document.querySelectorAll(`.${CHIP}`))
       el.remove();
   }
+  function shownQueueMode(id) {
+    return privateBuild2() && modeSlug2(id) === "build" ? "auto" : id;
+  }
   function mountChip(row, id) {
     if (!itemIntent.has(id)) {
       const saved = pendingEnqueue?.intent?.modeId ? pendingEnqueue.intent : intent.modeId ? intent : undefined;
       if (saved?.modeId)
         itemIntent.set(id, { ...saved });
     }
-    const modeId = itemIntent.get(id)?.modeId || intent.modeId || liveIntent2().modeId;
+    const modeId = shownQueueMode(itemIntent.get(id)?.modeId || intent.modeId || liveIntent2().modeId);
     let chip = row.querySelector(`.${CHIP}`);
     if (!chip) {
       chip = document.createElement("button");
@@ -15950,7 +16134,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     if (!id)
       return;
-    if (inIncognito2() && modeSlug(id) === "build") {
+    if (privateBuild2() && modeSlug2(id) === "build") {
       hidBuild = true;
       userPicking = false;
       awaitingMenu = false;
@@ -15965,11 +16149,15 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     }
     if (source === "user" || userPicking || awaitingMenu) {
+      const picked = modeSlug2(id);
+      const explicitOther = source === "user" && picked !== "auto";
+      const explicitAuto = source === "user" && picked === "auto" && (userPicking || awaitingMenu);
+      if (explicitOther || explicitAuto)
+        hidBuild = false;
       rememberSnapshot();
       return;
     }
-    if (!currentCid3())
-      followModelMode();
+    followModelMode();
   }
   function onChatPage() {
     wrapSendFns();
@@ -15984,7 +16172,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     if (loadPending())
       fightHydrate();
-    if (!currentCid3() && !userPicking && !awaitingMenu)
+    if (!userPicking && !awaitingMenu)
       followModelMode();
     alignIncognitoBuild();
   }
@@ -16029,15 +16217,23 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     try {
       offIncognito?.();
-      offIncognito = SettingsStore.useSettingsStore.subscribe(() => alignIncognitoBuild());
+      offIncognito = SettingsStore.useSettingsStore.subscribe(() => {
+        alignIncognitoBuild();
+        schedulePaint();
+      });
+      offPrivateRoute?.();
+      offPrivateRoute = RoutingStore.useRoutingStore.subscribe(() => {
+        alignIncognitoBuild();
+        schedulePaint();
+      });
     } catch (e) {
       logger25.debug("incognito subscribe failed", e);
     }
-    if (!currentCid3())
+    if (!onImaginePage())
       followModelMode();
     alignIncognitoBuild();
     watchNewChat();
-    if (!currentCid3())
+    if (!onImaginePage())
       scheduleAlign();
   }
   function stopMode() {
@@ -16046,6 +16242,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     modeStarted = false;
     offIncognito?.();
     offIncognito = null;
+    offPrivateRoute?.();
+    offPrivateRoute = null;
     hidBuild = false;
     if (alignTimer)
       clearTimeout(alignTimer);
@@ -33827,7 +34025,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterLinks_default.updatedAt = 1787870966000;
   betterModeSelect_default.updatedAt = 1791051657000;
   betterNavigator_default.updatedAt = 1790536418000;
-  betterQueue_default.updatedAt = 1791051657000;
+  betterQueue_default.updatedAt = 1791052899000;
   betterQuotes_default.updatedAt = 1790446202000;
   betterSidebar_default.updatedAt = 1791052393000;
   chatListStatus_default.updatedAt = 1791037203000;
