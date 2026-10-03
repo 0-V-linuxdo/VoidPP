@@ -45,7 +45,7 @@ const { channel, environment } = resolveChannel(gitBranch());
 const FORK_URL = "https://github.com/0-V-linuxdo/VoidPP";
 const NAMESPACE = `${FORK_URL}/${channel}`;
 const SCRIPT_CDN = `https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/${channel}`;
-const VERSION_DATE = "20261003.9";
+const VERSION_DATE = "20261003.10";
 const displayVersion = `[${VERSION_DATE}] v${pkg.version}`;
 const scriptVersion = VERSION_DATE;
 
@@ -132,7 +132,7 @@ function pluginUpdatedAt(dir: string): number {
 
 function scanPluginDir(baseDir: string, imports: string[], exports: string[], mutations: string[], counter: { i: number; stamped: number }, isExt: boolean) {
     if (!existsSync(baseDir)) return;
-    const entries = readdirSync(baseDir, { withFileTypes: true });
+    const entries = readdirSync(baseDir, { withFileTypes: true }).toSorted((a, b) => a.name.localeCompare(b.name));
 
     for (const entry of entries) {
         if (!entry.isDirectory() || entry.name.startsWith("_") || entry.name.startsWith(".")) continue;

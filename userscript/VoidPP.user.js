@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.9
+// @version      20261003.10
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.9] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.10] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7790,9 +7790,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"45a8efb"}`
-    }, `(${"45a8efb"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a64590c"}`
+    }, `(${"a64590c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -13755,7 +13755,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     sendOverride = null;
     if (!currentCid3())
-      rememberSnapshot();
+      followModelMode();
     else
       applyIntent(pickerIntent());
   }
@@ -13804,6 +13804,53 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       logger24.debug("model sync failed", e);
     }
   }
+  var MODE_IDS = new Set(CATALOG.map((m) => m.id));
+  var pickerSource = "";
+  function hookSelectedMode() {
+    try {
+      const store = ModesStore.useModesStore;
+      const orig = store.getState().setSelectedModeId;
+      if (typeof orig !== "function" || orig.voidPicker)
+        return;
+      const wrapped = function(id, opts) {
+        pickerSource = opts?.source || "";
+        return orig.call(this, id, opts);
+      };
+      wrapped.voidPicker = true;
+      store.setState({ setSelectedModeId: wrapped });
+    } catch (e) {
+      logger24.debug("picker hook failed", e);
+    }
+  }
+  function followModelMode() {
+    if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage())
+      return;
+    let slug = "";
+    try {
+      slug = modeSlug(String(ChatPageStore.useChatPageStore.getState().modelMode || ""));
+    } catch {
+      return;
+    }
+    if (!MODE_IDS.has(slug))
+      return;
+    const modes = ModesStore.useModesStore.getState();
+    const selected = modeSlug(String(modes.selectedModeId || ""));
+    if (selected !== slug) {
+      applying = true;
+      try {
+        modes.setSelectedModeId(slug, { source: "sync" });
+      } catch (e) {
+        logger24.debug("picker sync failed", e);
+      } finally {
+        applying = false;
+      }
+    }
+    if (modeSlug(intent.modeId) === slug && modeSlug(intent.modelMode) === slug)
+      return;
+    const snap = snapshot();
+    setIntent(captureIntent(snap.modeId || slug, snap));
+    logger24.info("intent", intent.modeId, "from model", slug);
+  }
   function fightHydrate() {
     if (sendOverride || !settings12.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
       return;
@@ -13838,7 +13885,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (onImaginePage())
       return;
     if (!currentCid3()) {
-      rememberSnapshot();
+      followModelMode();
       setRestoreFlag(false);
       return;
     }
@@ -13865,11 +13912,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const before = rec.modeId;
     const beforeMode = rec.modelMode;
     const beforeModel = rec.model;
+    const beforeOverride = rec.modelIdOverride;
     rec.modeId = slug;
     rec.modelMode = coerceModelMode(rec.modelMode, live);
     if ("model" in rec)
       rec.model = slug;
-    return rec.modeId !== before || rec.modelMode !== beforeMode || "model" in rec && rec.model !== beforeModel;
+    if ("message" in rec || "modelIdOverride" in rec)
+      rec.modelIdOverride = slug;
+    return rec.modeId !== before || rec.modelMode !== beforeMode || "model" in rec && rec.model !== beforeModel || rec.modelIdOverride !== beforeOverride;
   }
   function patchSendArgs(args, live) {
     const first = args[0];
@@ -14318,6 +14368,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           patchSendArgs(args, queued);
           return orig.apply(this, args);
         }
+        if (!currentCid3())
+          followModelMode();
       }
       const live = liveIntent2();
       if (live.modeId) {
@@ -14910,12 +14962,18 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       userPicking = true;
   }
   function onPicker(id) {
+    const source = pickerSource;
+    pickerSource = "";
     if (applying || sendOverride)
       return;
     if (!id)
       return;
-    if (userPicking || awaitingMenu || !currentCid3())
+    if (source === "user" || userPicking || awaitingMenu) {
       rememberSnapshot();
+      return;
+    }
+    if (!currentCid3())
+      followModelMode();
   }
   function onChatPage() {
     wrapSendFns();
@@ -14929,6 +14987,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     if (loadPending())
       fightHydrate();
+    if (!currentCid3() && !userPicking && !awaitingMenu)
+      followModelMode();
   }
   function onStreamEnd3({ responseId }) {
     wrapSendFns();
@@ -14965,11 +15025,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       wrapSendFns();
       hookFetch();
       hookXhr();
+      hookSelectedMode();
     } catch (e) {
       logger24.warn("Failed to hook send path", e);
     }
     if (!currentCid3())
-      rememberSnapshot();
+      followModelMode();
   }
   function stopMode() {
     if (!modeStarted)
@@ -33443,7 +33504,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1790093417000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1791044537000;
+  betterModeSelect_default.updatedAt = 1791045955000;
   betterNavigator_default.updatedAt = 1790536418000;
   betterQueue_default.updatedAt = 1791040492000;
   betterQuotes_default.updatedAt = 1790446202000;

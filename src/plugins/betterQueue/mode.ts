@@ -334,7 +334,7 @@ function releaseOverride() {
     overrideCid = "";
     if (!sendOverride) return;
     sendOverride = null;
-    if (!currentCid()) rememberSnapshot();
+    if (!currentCid()) followModelMode();
     else applyIntent(pickerIntent());
 }
 
@@ -383,6 +383,52 @@ function syncModelMode(slug: string) {
     }
 }
 
+const MODE_IDS = new Set<string>(CATALOG.map(m => m.id));
+let pickerSource = "";
+
+function hookSelectedMode() {
+    try {
+        const store = ModesStore.useModesStore;
+        const orig = store.getState().setSelectedModeId;
+        if (typeof orig !== "function" || (orig as { voidPicker?: boolean }).voidPicker) return;
+        const wrapped = function (this: unknown, id: string, opts?: { source?: string }) {
+            pickerSource = opts?.source || "";
+            return orig.call(this, id, opts);
+        };
+        (wrapped as { voidPicker?: boolean }).voidPicker = true;
+        store.setState({ setSelectedModeId: wrapped } as Partial<ModesStoreState>);
+    } catch (e) {
+        logger.debug("picker hook failed", e);
+    }
+}
+
+function followModelMode() {
+    if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage()) return;
+    let slug = "";
+    try {
+        slug = modeSlug(String(ChatPageStore.useChatPageStore.getState().modelMode || ""));
+    } catch {
+        return;
+    }
+    if (!MODE_IDS.has(slug)) return;
+    const modes = ModesStore.useModesStore.getState();
+    const selected = modeSlug(String(modes.selectedModeId || ""));
+    if (selected !== slug) {
+        applying = true;
+        try {
+            modes.setSelectedModeId(slug, { source: "sync" });
+        } catch (e) {
+            logger.debug("picker sync failed", e);
+        } finally {
+            applying = false;
+        }
+    }
+    if (modeSlug(intent.modeId) === slug && modeSlug(intent.modelMode) === slug) return;
+    const snap = snapshot();
+    setIntent(captureIntent(snap.modeId || slug, snap));
+    logger.info("intent", intent.modeId, "from model", slug);
+}
+
 function fightHydrate() {
     if (sendOverride || !settings.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId) return;
     if (!loadPending()) return;
@@ -420,7 +466,7 @@ function onNavigate() {
     schedulePaint();
     if (onImaginePage()) return;
     if (!currentCid()) {
-        rememberSnapshot();
+        followModelMode();
         setRestoreFlag(false);
         return;
     }
@@ -444,10 +490,12 @@ function patchPayload(raw: unknown, live: Intent): boolean {
     const before = rec.modeId;
     const beforeMode = rec.modelMode;
     const beforeModel = rec.model;
+    const beforeOverride = rec.modelIdOverride;
     rec.modeId = slug;
     rec.modelMode = coerceModelMode(rec.modelMode, live);
     if ("model" in rec) rec.model = slug;
-    return rec.modeId !== before || rec.modelMode !== beforeMode || ("model" in rec && rec.model !== beforeModel);
+    if ("message" in rec || "modelIdOverride" in rec) rec.modelIdOverride = slug;
+    return rec.modeId !== before || rec.modelMode !== beforeMode || ("model" in rec && rec.model !== beforeModel) || rec.modelIdOverride !== beforeOverride;
 }
 
 function patchSendArgs(args: unknown[], live: Intent) {
@@ -849,6 +897,7 @@ function makeSendWrapper(orig: SendFn): SendFn {
                 patchSendArgs(args, queued);
                 return orig.apply(this, args);
             }
+            if (!currentCid()) followModelMode();
         }
         const live = liveIntent();
         if (live.modeId) {
@@ -1411,9 +1460,15 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function onPicker(id: string) {
+    const source = pickerSource;
+    pickerSource = "";
     if (applying || sendOverride) return;
     if (!id) return;
-    if (userPicking || awaitingMenu || !currentCid()) rememberSnapshot();
+    if (source === "user" || userPicking || awaitingMenu) {
+        rememberSnapshot();
+        return;
+    }
+    if (!currentCid()) followModelMode();
 }
 
 function onChatPage() {
@@ -1426,6 +1481,7 @@ function onChatPage() {
     }
     if (sendOverride || applying) return;
     if (loadPending()) fightHydrate();
+    if (!currentCid() && !userPicking && !awaitingMenu) followModelMode();
 }
 
 function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
@@ -1465,10 +1521,11 @@ export function startMode() {
         wrapSendFns();
         hookFetch();
         hookXhr();
+        hookSelectedMode();
     } catch (e) {
         logger.warn("Failed to hook send path", e);
     }
-    if (!currentCid()) rememberSnapshot();
+    if (!currentCid()) followModelMode();
 }
 
 export function stopMode() {
