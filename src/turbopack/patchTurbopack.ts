@@ -604,11 +604,15 @@ function adoptTurbopack(tp: TurbopackPushable, drain?: () => void): void {
     }
 }
 
+let turbopackPatched = false;
+
 export function patchTurbopack(): void {
+    if (turbopackPatched) return;
     const existingTp = pageWindow.TURBOPACK;
 
     if (existingTp && !Array.isArray(existingTp) && typeof existingTp.push === "function") {
         adoptTurbopack(existingTp);
+        turbopackPatched = true;
         return;
     }
 
@@ -657,4 +661,5 @@ export function patchTurbopack(): void {
             return origPush(...patched);
         };
     }
+    turbopackPatched = true;
 }

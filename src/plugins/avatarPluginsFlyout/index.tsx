@@ -250,6 +250,56 @@ function PluginsMenu() {
     );
 }
 
+const PLUGIN_LABELS = new Set(["Plugins", "Skills and Connectors"]);
+const PLUGINS_HIDE_ATTR = "data-void-plugins-hide";
+
+let pluginsHideObserver: MutationObserver | null = null;
+let pluginsHideRaf = 0;
+
+function pluginControlLabel(el: HTMLElement): string {
+    const text = (el.innerText || "").replaceAll(/\s+/g, " ").trim();
+    if (text) return text;
+    return (el.getAttribute("aria-label") || "").trim();
+}
+
+function hideSidebarPlugins() {
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar) return;
+    for (const el of sidebar.querySelectorAll<HTMLElement>("a, button")) {
+        if (el.closest("[role=menu], [role=menuitem], [data-radix-popper-content-wrapper]")) continue;
+        if (!PLUGIN_LABELS.has(pluginControlLabel(el))) continue;
+        const row = el.closest<HTMLElement>("[data-sidebar=menu-item]") ?? el;
+        row.setAttribute(PLUGINS_HIDE_ATTR, "1");
+        row.style.setProperty("display", "none", "important");
+    }
+}
+
+function scheduleSidebarPluginsHide() {
+    if (pluginsHideRaf) return;
+    pluginsHideRaf = requestAnimationFrame(() => {
+        pluginsHideRaf = 0;
+        hideSidebarPlugins();
+    });
+}
+
+export function armSidebarPluginsHide() {
+    hideSidebarPlugins();
+    if (pluginsHideObserver) return;
+    pluginsHideObserver = new MutationObserver(scheduleSidebarPluginsHide);
+    pluginsHideObserver.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+export function stopSidebarPluginsHide() {
+    pluginsHideObserver?.disconnect();
+    pluginsHideObserver = null;
+    if (pluginsHideRaf) cancelAnimationFrame(pluginsHideRaf);
+    pluginsHideRaf = 0;
+    for (const el of document.querySelectorAll<HTMLElement>(`[${PLUGINS_HIDE_ATTR}]`)) {
+        el.style.removeProperty("display");
+        el.removeAttribute(PLUGINS_HIDE_ATTR);
+    }
+}
+
 const WrappedPluginsMenu = ErrorBoundary.wrap(PluginsMenu);
 
 export default definePlugin({
@@ -271,6 +321,14 @@ export default definePlugin({
 
     _applyTab(local: boolean, state: string | null, setState: (tab: string) => void) {
         return applyTab(local, state, setState);
+    },
+
+    start() {
+        armSidebarPluginsHide();
+    },
+
+    stop() {
+        stopSidebarPluginsHide();
     },
 
     patches: [

@@ -36,6 +36,22 @@ export const Settings = SettingsStore.store;
 
 export const pluginPath = (name: string, key?: string) => key ? `plugins.${name}.${key}` : `plugins.${name}`;
 
+export function primeSettingsSync(): void {
+    if (typeof GM_getValue !== "function") return;
+    let value: unknown;
+    try {
+        value = GM_getValue(STORAGE_KEY, null);
+    } catch (e) {
+        logger.warn("Failed to read GM storage synchronously:", e);
+        return;
+    }
+    if (value != null && typeof (value as { then?: unknown }).then === "function") return;
+    const parsed = parseStoredSettings(value);
+    if (!settingsBagHasPlugins(parsed)) return;
+    Object.assign(settings, parsed);
+    mergeDefaults(settings, DefaultSettings);
+}
+
 async function readGmValue(key: string): Promise<unknown> {
     if (typeof GM_getValue !== "function") return null;
     try {

@@ -23,5 +23,6 @@ if (isGrokPreviewFrame()) {
         configurable: true,
     });
 
+    VoidPP.armRuntime();
     VoidPP.initSettings().then(() => VoidPP.init()).catch(e => console.error("[Void++] Fatal init error:", e));
 }

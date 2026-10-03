@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.11
+// @version      20261003.12
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.11] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.12] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -1203,10 +1203,14 @@ ${sourceUrl}`;
       logger3.error("Failed to wrap existing factories:", e);
     }
   }
+  var turbopackPatched = false;
   function patchTurbopack() {
+    if (turbopackPatched)
+      return;
     const existingTp = pageWindow.TURBOPACK;
     if (existingTp && !Array.isArray(existingTp) && typeof existingTp.push === "function") {
       adoptTurbopack(existingTp);
+      turbopackPatched = true;
       return;
     }
     const queuedChunks = [];
@@ -1250,6 +1254,7 @@ ${sourceUrl}`;
         return origPush(...patched);
       };
     }
+    turbopackPatched = true;
   }
 
   // src/turbopack/turbopack.ts
@@ -2328,6 +2333,24 @@ ${sourceUrl}`;
   var PlainSettings = settings;
   var Settings = SettingsStore3.store;
   var pluginPath = (name, key) => key ? `plugins.${name}.${key}` : `plugins.${name}`;
+  function primeSettingsSync() {
+    if (typeof GM_getValue !== "function")
+      return;
+    let value;
+    try {
+      value = GM_getValue(STORAGE_KEY, null);
+    } catch (e) {
+      logger8.warn("Failed to read GM storage synchronously:", e);
+      return;
+    }
+    if (value != null && typeof value.then === "function")
+      return;
+    const parsed = parseStoredSettings(value);
+    if (!settingsBagHasPlugins(parsed))
+      return;
+    Object.assign(settings, parsed);
+    mergeDefaults(settings, DefaultSettings);
+  }
   async function readGmValue(key) {
     if (typeof GM_getValue !== "function")
       return null;
@@ -3903,6 +3926,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     addLocalTheme: () => addLocalTheme,
     addPatch: () => addPatch,
     addTheme: () => addTheme,
+    armRuntime: () => armRuntime,
     clamp: () => clamp,
     classNameFactory: () => classNameFactory,
     classes: () => classes,
@@ -5112,21 +5136,34 @@ ${root}::-webkit-scrollbar-thumb:hover {
         markAsEnabledDependency(dep);
     }
     for (const [name, plugin] of Object.entries(plugins)) {
-      const enabled = isPluginEnabled(name);
-      if (enabled)
+      if (isPluginEnabled(name))
         ensureMethodsBound(plugin);
-      if (plugin.patches) {
-        try {
-          for (const patch of plugin.patches) {
-            if (enabled)
-              addPatch(patch, name);
-            else if (false)
-              ;
-          }
-        } catch (e) {
-          logger12.error(`Failed to register patches for ${name}`, e);
-        }
+      registerPluginPatches(name, plugin, isPluginEnabled(name));
+    }
+  }
+  var patchedPluginNames = new Set;
+  function registerPluginPatches(name, plugin, enabled) {
+    if (!plugin.patches || patchedPluginNames.has(name))
+      return;
+    if (!enabled && true)
+      return;
+    try {
+      for (const patch of plugin.patches) {
+        if (enabled)
+          addPatch(patch, name);
+        else
+          addPatch({ ...patch, validateOnly: true }, name);
       }
+      patchedPluginNames.add(name);
+    } catch (e) {
+      logger12.error(`Failed to register patches for ${name}`, e);
+    }
+  }
+  function registerEnabledPatches() {
+    for (const [name, plugin] of Object.entries(plugins)) {
+      if (isPluginEnabled(name))
+        ensureMethodsBound(plugin);
+      registerPluginPatches(name, plugin, isPluginEnabled(name));
     }
   }
   var RETRY_TIMEOUT_MS = 15000;
@@ -5200,6 +5237,1085 @@ ${root}::-webkit-scrollbar-thumb:hover {
       mod.useMessageStore.subscribe(onGatewayChange);
     });
   }
+
+  // src/plugins/avatarPluginsFlyout/index.tsx
+  var logger13 = new Logger("AvatarPluginsFlyout");
+  var PluginsDialogStore = findByPropsLazy("usePluginsDialogStore");
+  var settings3 = definePluginSettings({});
+  var NEW_NAME = "AvatarPluginsFlyout";
+  var OLD_NAMES = ["BetterAvatarPlugins", "NoSidebarPlugins"];
+  function isOldName(item) {
+    return typeof item === "string" && OLD_NAMES.includes(item);
+  }
+  function renameList(list) {
+    if (!Array.isArray(list) || !list.some(isOldName))
+      return;
+    const seen = new Set;
+    const next = [];
+    for (const item of list) {
+      if (typeof item !== "string")
+        continue;
+      const name = isOldName(item) ? NEW_NAME : item;
+      if (seen.has(name))
+        continue;
+      seen.add(name);
+      next.push(name);
+    }
+    return next;
+  }
+  function migrateLegacy2() {
+    const bag = PlainSettings.plugins;
+    const meta = bag.Settings;
+    const menu = bag.PluginsFlyout?.menuPlugins;
+    const known = meta?.knownPlugins;
+    const pinned = renameList(meta?.pinnedPlugins);
+    const starred = renameList(meta?.starredPlugins);
+    const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu : undefined;
+    const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
+    let moved = false;
+    for (const oldName of OLD_NAMES) {
+      const old = bag[oldName];
+      if (old && typeof old === "object") {
+        const target = bag[NEW_NAME] ??= {};
+        const keys = Object.keys(target);
+        const stub = keys.length === 0 || keys.length === 1 && keys[0] === "enabled";
+        for (const key of Object.keys(old)) {
+          if (stub || !(key in target))
+            target[key] = old[key];
+        }
+        delete bag[oldName];
+        moved = true;
+      }
+      if (knownRec && oldName in knownRec) {
+        if (!(NEW_NAME in knownRec))
+          knownRec[NEW_NAME] = knownRec[oldName];
+        delete knownRec[oldName];
+        moved = true;
+      }
+      if (menuRec && oldName in menuRec) {
+        if (!(NEW_NAME in menuRec))
+          menuRec[NEW_NAME] = menuRec[oldName];
+        delete menuRec[oldName];
+        moved = true;
+      }
+    }
+    if (meta) {
+      if (pinned) {
+        meta.pinnedPlugins = pinned;
+        moved = true;
+      }
+      if (starred) {
+        meta.starredPlugins = starred;
+        moved = true;
+      }
+    }
+    if (!moved)
+      return;
+    SettingsStore3.markAsChanged();
+    logger13.info("Migrated NoSidebarPlugins and BetterAvatarPlugins into AvatarPluginsFlyout");
+  }
+  var pluginName = Object.getOwnPropertyDescriptor(settings3, "pluginName");
+  if (pluginName?.set && pluginName.get) {
+    Object.defineProperty(settings3, "pluginName", {
+      configurable: true,
+      enumerable: true,
+      get: pluginName.get,
+      set(name) {
+        if (name === NEW_NAME)
+          migrateLegacy2();
+        pluginName.set.call(settings3, name);
+      }
+    });
+  }
+  function menuSvg(className, filled, ...children) {
+    return /* @__PURE__ */ React.createElement("svg", {
+      width: "1rem",
+      height: "1rem",
+      viewBox: "0 0 24 24",
+      fill: filled ? "currentColor" : "none",
+      stroke: filled ? "none" : "currentColor",
+      strokeWidth: filled ? undefined : 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      className: className ?? "void-settings-menu-icon",
+      "aria-hidden": "true"
+    }, children);
+  }
+  function PluginsIcon(props = {}) {
+    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
+      ...props
+    });
+  }
+  function ConnectorsMenuIcon({ className } = {}) {
+    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
+      width: "1rem",
+      height: "1rem",
+      className: className ?? "void-settings-menu-icon"
+    });
+  }
+  function SkillsMenuIcon({ className } = {}) {
+    return menuSvg(className, false, /* @__PURE__ */ React.createElement("path", {
+      d: "M10 7C10 8.79493 8.54493 10.25 6.75 10.25C4.95507 10.25 3.5 8.79493 3.5 7C3.5 5.20507 4.95507 3.75 6.75 3.75C8.54493 3.75 10 5.20507 10 7Z"
+    }), /* @__PURE__ */ React.createElement("path", {
+      d: "M16.3732 4.34855C16.7528 3.65641 17.7472 3.65641 18.1268 4.34855L20.5514 8.7691C20.9169 9.43553 20.4347 10.25 19.6746 10.25H14.8254C14.0653 10.25 13.5831 9.43553 13.9486 8.7691L16.3732 4.34855Z"
+    }), /* @__PURE__ */ React.createElement("rect", {
+      x: "3.64844",
+      y: "13.75",
+      width: "6.2",
+      height: "6.2",
+      rx: "2"
+    }), /* @__PURE__ */ React.createElement("path", {
+      d: "M20.5 17C20.5 18.7949 19.0449 20.25 17.25 20.25C15.4551 20.25 14 18.7949 14 17C14 15.2051 15.4551 13.75 17.25 13.75C19.0449 13.75 20.5 15.2051 20.5 17Z"
+    }));
+  }
+  function BotsMenuIcon({ className } = {}) {
+    return menuSvg(className, true, /* @__PURE__ */ React.createElement("path", {
+      d: "M15 13H13V9H15V13Z"
+    }), /* @__PURE__ */ React.createElement("path", {
+      d: "M19 13H17V9H19V13Z"
+    }), /* @__PURE__ */ React.createElement("path", {
+      fillRule: "evenodd",
+      clipRule: "evenodd",
+      d: "M15 4C19.4183 4 23 7.58172 23 12C23 16.4183 19.4183 20 15 20C10.5817 20 7 16.4183 7 12C7 7.58172 10.5817 4 15 4ZM15 6C11.6863 6 9 8.68629 9 12C9 15.3137 11.6863 18 15 18C18.3137 18 21 15.3137 21 12C21 8.68629 18.3137 6 15 6Z"
+    }), /* @__PURE__ */ React.createElement("path", {
+      d: "M8.99902 4C8.08913 4.68362 7.3005 5.51941 6.66895 6.46875C4.51293 7.37847 3 9.5129 3 12C3 14.487 4.51312 16.6205 6.66895 17.5303C7.30047 18.4797 8.08911 19.3153 8.99902 19.999C4.58119 19.9985 1 16.418 1 12C1 7.58205 4.58119 4.00053 8.99902 4Z"
+    }));
+  }
+  var PLUGIN_TABS = [
+    { id: "connectors", name: "Connectors", icon: ConnectorsMenuIcon },
+    { id: "skills", name: "Skills", icon: SkillsMenuIcon },
+    { id: "bots", name: "Bots", icon: BotsMenuIcon }
+  ];
+  var pendingTab = null;
+  var latchedTab = "";
+  function peekTab() {
+    return pendingTab;
+  }
+  function shellKey(local) {
+    if (pendingTab)
+      latchedTab = pendingTab;
+    return `${local ? 1 : 0}:${latchedTab}`;
+  }
+  function clearPending(tab) {
+    if (typeof tab === "string" && tab === pendingTab)
+      return;
+    pendingTab = null;
+  }
+  function pluginsDialog() {
+    return [...document.querySelectorAll('[role="dialog"]')].find((dialog) => dialog.getAttribute("data-state") === "open" && [...dialog.querySelectorAll("h1, h2")].some((heading) => heading.textContent?.trim() === "Plugins"));
+  }
+  function pillButton(tab) {
+    const name = PLUGIN_TABS.find((item) => item.id === tab)?.name;
+    if (!name)
+      return null;
+    const lists = pluginsDialog()?.querySelectorAll("[role=tablist]");
+    if (!lists)
+      return null;
+    for (const list of lists) {
+      const tabs = [...list.querySelectorAll('[role="tab"]')];
+      const labels = tabs.map((button) => button.textContent?.trim());
+      if (!labels.includes("Connectors") || !labels.includes("Skills") || !labels.includes("Bots"))
+        continue;
+      const button = tabs.find((item) => item.textContent?.trim() === name);
+      if (button instanceof HTMLElement)
+        return button;
+    }
+    return null;
+  }
+  function syncTabDom(tab, attempt = 0) {
+    if (pendingTab !== tab || attempt > 12)
+      return;
+    const button = pillButton(tab);
+    if (!button) {
+      requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
+      return;
+    }
+    if (button.getAttribute("aria-selected") === "true") {
+      pendingTab = null;
+      return;
+    }
+    button.click();
+    requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
+  }
+  function openPlugins(tab) {
+    pendingTab = tab;
+    latchedTab = tab;
+    PluginsDialogStore.usePluginsDialogStore.getState().setOpen(true);
+    requestAnimationFrame(() => syncTabDom(tab));
+  }
+  function applyTab(local, state, setState) {
+    if (!local || !pendingTab)
+      return null;
+    if (pendingTab !== state)
+      setState(pendingTab);
+    return pendingTab;
+  }
+  function PluginsMenu() {
+    return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(PluginsIcon, {
+      className: "void-settings-menu-icon"
+    }), "Plugins"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, null, PLUGIN_TABS.map((tab) => {
+      const Icon = tab.icon;
+      return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+        key: tab.id,
+        onSelect: () => openPlugins(tab.id)
+      }, /* @__PURE__ */ React.createElement(Icon, {
+        className: "void-settings-menu-icon"
+      }), tab.name);
+    })));
+  }
+  var PLUGIN_LABELS = new Set(["Plugins", "Skills and Connectors"]);
+  var PLUGINS_HIDE_ATTR = "data-void-plugins-hide";
+  var pluginsHideObserver = null;
+  var pluginsHideRaf = 0;
+  function pluginControlLabel(el) {
+    const text = (el.innerText || "").replaceAll(/\s+/g, " ").trim();
+    if (text)
+      return text;
+    return (el.getAttribute("aria-label") || "").trim();
+  }
+  function hideSidebarPlugins() {
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar)
+      return;
+    for (const el of sidebar.querySelectorAll("a, button")) {
+      if (el.closest("[role=menu], [role=menuitem], [data-radix-popper-content-wrapper]"))
+        continue;
+      if (!PLUGIN_LABELS.has(pluginControlLabel(el)))
+        continue;
+      const row = el.closest("[data-sidebar=menu-item]") ?? el;
+      row.setAttribute(PLUGINS_HIDE_ATTR, "1");
+      row.style.setProperty("display", "none", "important");
+    }
+  }
+  function scheduleSidebarPluginsHide() {
+    if (pluginsHideRaf)
+      return;
+    pluginsHideRaf = requestAnimationFrame(() => {
+      pluginsHideRaf = 0;
+      hideSidebarPlugins();
+    });
+  }
+  function armSidebarPluginsHide() {
+    hideSidebarPlugins();
+    if (pluginsHideObserver)
+      return;
+    pluginsHideObserver = new MutationObserver(scheduleSidebarPluginsHide);
+    pluginsHideObserver.observe(document.documentElement, { childList: true, subtree: true });
+  }
+  function stopSidebarPluginsHide() {
+    pluginsHideObserver?.disconnect();
+    pluginsHideObserver = null;
+    if (pluginsHideRaf)
+      cancelAnimationFrame(pluginsHideRaf);
+    pluginsHideRaf = 0;
+    for (const el of document.querySelectorAll(`[${PLUGINS_HIDE_ATTR}]`)) {
+      el.style.removeProperty("display");
+      el.removeAttribute(PLUGINS_HIDE_ATTR);
+    }
+  }
+  var WrappedPluginsMenu = ErrorBoundary.wrap(PluginsMenu);
+  var avatarPluginsFlyout_default = definePlugin({
+    name: NEW_NAME,
+    icon: PluginsIcon,
+    description: "Move the sidebar Plugins button into the avatar menu and expand it into Connectors, Skills, and Bots.",
+    authors: [Devs.p],
+    tags: ["navigation"],
+    enabledByDefault: true,
+    settings: settings3,
+    _renderItem: () => createElement(WrappedPluginsMenu),
+    _peekTab: () => peekTab(),
+    _shellKey: (local) => shellKey(local),
+    _clearPending: (tab) => clearPending(tab),
+    _applyTab(local, state, setState) {
+      return applyTab(local, state, setState);
+    },
+    start() {
+      armSidebarPluginsHide();
+    },
+    stop() {
+      stopSidebarPluginsHide();
+    },
+    patches: [
+      {
+        find: "usePluginsDialogStore.getState().setOpen(!0)",
+        replacement: {
+          match: /(\(0,\i\.jsx\)\(\i\.AppSidebarItem,\{icon:.{0,80}?onClick:\(\)=>\{"skills-and-connectors")/,
+          replace: "false&&$1"
+        }
+      },
+      {
+        find: 'WD_REFRESH&&{id:"skills-and-connectors"',
+        replacement: {
+          match: /WD_REFRESH&&\{id:"skills-and-connectors"/,
+          replace: 'WD_REFRESH&&!1&&{id:"skills-and-connectors"'
+        }
+      },
+      {
+        find: "avatar_menu_click",
+        all: true,
+        replacement: {
+          match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,100}"user-dropdown\.help")/,
+          replace: "$self._renderItem(),"
+        }
+      },
+      {
+        find: "SkillsAndConnectorsPage:handleTabChange",
+        replacement: [
+          {
+            match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(null\),(\i)=(\i)\?\1:"skills-and-connectors"===(\i)\.page\?\6\.tab:null/,
+            replace: '[$1,$2]=(0,$3.useState)($self._peekTab()),$4=($self._applyTab($5,$1,$2)??($5?$1:"skills-and-connectors"===$6.page?$6.tab:null))'
+          },
+          {
+            match: /(\i)\)return void (\i)\((\i)\);(\i)\.replace\(\{page:"skills-and-connectors",tab:\3\}\)\}/,
+            replace: '$1)return ($self._clearPending($3),void $2($3));$4.replace({page:"skills-and-connectors",tab:$3})}'
+          },
+          {
+            match: /(\i)\[0\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\((\i),\{inDialog:!0,localTabs:\2\}\),\1\[0\]=\2,\1\[1\]=\3\):\3=\1\[1\]/,
+            replace: "$1[0]!==$self._shellKey($2)?($3=(0,$4.jsx)($5,{inDialog:!0,localTabs:$2,key:$self._shellKey($2)}),$1[0]=$self._shellKey($2),$1[1]=$3):$3=$1[1]"
+          }
+        ]
+      }
+    ]
+  });
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/headerHover.css
+  registerStyle("headerHover", `/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/* stylelint-disable no-descending-specificity */
+
+@media (width >= 48rem) {
+    [data-sidebar="sidebar"] [data-void-bots-plus],
+    [data-sidebar="sidebar"] .void-bots-plus,
+    [data-sidebar="sidebar"] button[aria-label="New bot"],
+    [data-sidebar="sidebar"] [data-void-chats-plus],
+    [data-sidebar="sidebar"] .void-chats-plus,
+    [data-sidebar="sidebar"] button[aria-label="Add project"],
+    [data-sidebar="sidebar"] button[aria-label="All projects"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+        opacity: 0 !important;
+        transition: opacity 0.15s ease;
+    }
+
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-bots-plus],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-bots-plus,
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="New bot"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-chats-plus],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-chats-plus,
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="Add project"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="All projects"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]):is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    [data-sidebar="sidebar"] :has(> :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus)):is(:hover, :focus-within) > :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus),
+    [data-sidebar="sidebar"] [data-void-bots-plus]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] .void-bots-plus:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="New bot"]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] [data-void-chats-plus]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] .void-chats-plus:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="Add project"]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]) {
+        opacity: 1 !important;
+    }
+}
+
+@media (width >= 48rem) and (prefers-reduced-motion: reduce) {
+    [data-sidebar="sidebar"] [data-void-bots-plus],
+    [data-sidebar="sidebar"] .void-bots-plus,
+    [data-sidebar="sidebar"] button[aria-label="New bot"],
+    [data-sidebar="sidebar"] [data-void-chats-plus],
+    [data-sidebar="sidebar"] .void-chats-plus,
+    [data-sidebar="sidebar"] button[aria-label="Add project"],
+    [data-sidebar="sidebar"] button[aria-label="All projects"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+        transition: none;
+    }
+}
+`);
+
+  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/styles.css
+  registerStyle("betterSidebar", `.group.peer [data-sidebar="sidebar"] + div,
+.group.peer [data-sidebar="content"] > .grow {
+    cursor: default !important;
+}
+
+.group.peer [data-sidebar="sidebar"] + div::after {
+    background-color: transparent !important;
+}
+
+.void-sidebar-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    min-width: 0;
+    flex: 1;
+}
+
+.void-sidebar-card:hover {
+    background-color: hsl(var(--surface-l2));
+}
+
+.void-sidebar-card button[data-state] {
+    pointer-events: none;
+    background-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.void-sidebar-info {
+    min-width: 0;
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .void-sidebar-card { transition: none; }
+}
+
+.void-sidebar-name,
+.void-sidebar-plan {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* stylelint-disable-next-line selector-class-pattern */
+.group\\/sidebar-menu-item:hover .void-sel-wrap {
+    display: inline-flex;
+}
+`);
+
+  // src/turbopack/common/plan.ts
+  var PLAN_NAMES = {
+    SUBSCRIPTION_TIER_X_BASIC: "X Basic",
+    SUBSCRIPTION_TIER_X_PREMIUM: "X Premium",
+    SUBSCRIPTION_TIER_X_PREMIUM_PLUS: "X Premium+",
+    SUBSCRIPTION_TIER_SUPER_GROK_LITE: "SuperGrok Lite",
+    SUBSCRIPTION_TIER_GROK_PRO: "SuperGrok",
+    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "SuperGrok Pro"
+  };
+  var X_SUB_NAMES = {
+    PremiumPlus: "SuperGrok",
+    Premium: "X Premium",
+    Basic: "X Basic"
+  };
+  function getPlanName(bestSubscription, xSubscriptionType) {
+    return (bestSubscription ? PLAN_NAMES[bestSubscription] : undefined) ?? (xSubscriptionType ? X_SUB_NAMES[xSubscriptionType] : undefined) ?? "Free";
+  }
+
+  // src/plugins/betterSidebar/index.tsx
+  var logger14 = new Logger("BetterSidebar");
+  var cl5 = classNameFactory("void-sidebar-");
+  var settings4 = definePluginSettings({
+    clickToToggle: {
+      type: 3 /* BOOLEAN */,
+      description: "Click anywhere on the sidebar to toggle it.",
+      default: false
+    },
+    defaultCollapsed: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the sidebar collapsed on page load.",
+      default: false
+    },
+    botsDefaultCollapsed: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the Bots section collapsed on page load.",
+      default: true
+    },
+    chatsDefaultExpanded: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the Chats section expanded on page load.",
+      default: false
+    },
+    projectsDefaultCollapsed: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the Projects section collapsed on page load.",
+      default: false
+    },
+    batchSelect: {
+      type: 3 /* BOOLEAN */,
+      description: "Show checkboxes on conversations for bulk selection and deletion.",
+      default: true
+    },
+    titleRowHover: {
+      type: 3 /* BOOLEAN */,
+      description: "Show Bots, Chats, and Projects header actions only when hovering that section, like the expand chevron.",
+      default: true
+    },
+    chatsPlus: {
+      type: 3 /* BOOLEAN */,
+      description: "Show a plus on the Chats header that starts a new chat.",
+      default: true
+    }
+  });
+  migrateSettingsToPlugin("BetterSidebar", "SidebarHeaderHover", "titleRowHover", "chatsPlus");
+  migrateSettingsToPlugin("BetterSidebar", "BotsPlusHover", "titleRowHover", "chatsPlus");
+  var BTN_CLASS = "void-chats-plus flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary hover:bg-button-ghost-hover hover:text-primary focus:outline-none focus-visible:bg-button-ghost-hover";
+  var BOTS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-bots-plus], .void-bots-plus)";
+  var CHATS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-chats-plus], .void-chats-plus)";
+  var CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
+  var PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
+  var PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
+  var botsCollapsed = null;
+  var botsCollapseObserver = null;
+  var botsCollapseTimer = null;
+  var chatsExpandObserver = null;
+  var chatsExpandTimer = null;
+  var projectsCollapseObserver = null;
+  var projectsCollapseTimer = null;
+  function releaseRosterGate() {
+    try {
+      const gates = findByProps("useBotsSectionSettled", "useBotsSectionEnabled");
+      for (const name of ["useBotsSectionSettled", "useBotsSectionEnabled"]) {
+        const fn = gates?.[name];
+        if (typeof fn !== "function" || fn.voidRoster)
+          continue;
+        const wrapped = function() {
+          return true;
+        };
+        wrapped.voidRoster = true;
+        gates[name] = wrapped;
+      }
+      const paintMod = findByProps("shouldPaintBotsSidebar");
+      const paint = paintMod?.shouldPaintBotsSidebar;
+      if (typeof paint === "function" && !paint.voidRoster) {
+        const wrapped = function() {
+          return true;
+        };
+        wrapped.voidRoster = true;
+        paintMod.shouldPaintBotsSidebar = wrapped;
+      }
+      const bots = findByProps("useBotsStore")?.useBotsStore;
+      const state = bots?.getState?.();
+      if (bots && state && !state.rosterLoaded && !(state.agents?.length > 0)) {
+        bots.setState({ rosterLoaded: true });
+        bots.setState({ rosterLoaded: false });
+      }
+    } catch (e) {
+      logger14.warn("Roster gate", e);
+    }
+  }
+  function applyHeaderHover() {
+    if (settings4.store.titleRowHover)
+      enableStyle("headerHover");
+    else
+      disableStyle("headerHover");
+  }
+  var botsUserOverride = false;
+  var botsClickAttempts = 0;
+  var lastBotsClick = 0;
+  var botsCollapseDeadline = null;
+  var botsCollapseRaf = 0;
+  function scheduleBotsCollapse() {
+    if (botsCollapseRaf)
+      return;
+    botsCollapseRaf = requestAnimationFrame(() => {
+      botsCollapseRaf = 0;
+      collapseBotsSection();
+    });
+  }
+  function wantBotsCollapsed() {
+    try {
+      return settings4.store.botsDefaultCollapsed !== false;
+    } catch {
+      return true;
+    }
+  }
+  function botsHeader() {
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar)
+      return null;
+    return [...sidebar.querySelectorAll("button[aria-expanded]")].find((btn) => (btn.innerText || "").replaceAll(/\s+/g, " ").trim() === "Bots") ?? null;
+  }
+  function onBotsPointerDown(event) {
+    if (!event.isTrusted)
+      return;
+    const header = botsHeader();
+    const target = event.target;
+    if (!header || !(target instanceof Node) || !header.contains(target))
+      return;
+    botsUserOverride = true;
+    stopBotsCollapse();
+  }
+  function collapseBotsSection() {
+    if (botsUserOverride || !wantBotsCollapsed())
+      return true;
+    const header = botsHeader();
+    if (!header)
+      return false;
+    if (header.getAttribute("aria-expanded") !== "true")
+      return false;
+    if (botsClickAttempts >= 8)
+      return false;
+    const now = Date.now();
+    if (now - lastBotsClick < 350)
+      return false;
+    botsClickAttempts++;
+    lastBotsClick = now;
+    header.click();
+    return false;
+  }
+  function useBotsCollapsed() {
+    const state = useState(() => typeof botsCollapsed === "boolean" ? botsCollapsed : wantBotsCollapsed());
+    if (typeof state[0] === "boolean")
+      botsCollapsed = state[0];
+    return state;
+  }
+  function stopBotsCollapse() {
+    botsCollapseObserver?.disconnect();
+    botsCollapseObserver = null;
+    document.removeEventListener("pointerdown", onBotsPointerDown, true);
+    if (botsCollapseTimer != null) {
+      clearInterval(botsCollapseTimer);
+      botsCollapseTimer = null;
+    }
+    if (botsCollapseDeadline != null) {
+      clearTimeout(botsCollapseDeadline);
+      botsCollapseDeadline = null;
+    }
+    if (botsCollapseRaf) {
+      cancelAnimationFrame(botsCollapseRaf);
+      botsCollapseRaf = 0;
+    }
+  }
+  function startBotsCollapse() {
+    stopBotsCollapse();
+    if (botsUserOverride || !wantBotsCollapsed())
+      return;
+    botsClickAttempts = 0;
+    lastBotsClick = 0;
+    document.addEventListener("pointerdown", onBotsPointerDown, true);
+    collapseBotsSection();
+    botsCollapseObserver = new MutationObserver(scheduleBotsCollapse);
+    botsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
+    botsCollapseTimer = setInterval(collapseBotsSection, 400);
+    botsCollapseDeadline = setTimeout(stopBotsCollapse, 12000);
+  }
+  function armBotsCollapse() {
+    startBotsCollapse();
+  }
+  function stopBotsCollapseGuard() {
+    stopBotsCollapse();
+  }
+  function resetChatsCollapsedStorage() {
+    if (!settings4.store.chatsDefaultExpanded)
+      return;
+    try {
+      localStorage.removeItem(CHATS_COLLAPSED_KEY);
+    } catch {}
+  }
+  function chatsGroup() {
+    const plus = document.querySelector(CHATS_PLUS_SEL);
+    if (plus)
+      return plus.closest("[data-sidebar=group]");
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar)
+      return null;
+    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
+      const label = (btn.getAttribute("aria-label") ?? "").trim();
+      if (label === "Chats" || label === "History")
+        return btn.closest("[data-sidebar=group]");
+    }
+    const bots = document.querySelector(BOTS_PLUS_SEL)?.closest("[data-sidebar=group]");
+    const next = bots?.nextElementSibling;
+    return next?.matches("[data-sidebar=group]") ? next : null;
+  }
+  function expandChatsSection() {
+    const group = chatsGroup();
+    if (!group)
+      return false;
+    const collapsed = group.querySelector("button[aria-expanded=false]");
+    if (!collapsed)
+      return true;
+    collapsed.click();
+    return true;
+  }
+  function stopChatsExpand() {
+    chatsExpandObserver?.disconnect();
+    chatsExpandObserver = null;
+    if (chatsExpandTimer != null) {
+      clearTimeout(chatsExpandTimer);
+      chatsExpandTimer = null;
+    }
+  }
+  function startChatsExpand() {
+    stopChatsExpand();
+    if (!settings4.store.chatsDefaultExpanded)
+      return;
+    resetChatsCollapsedStorage();
+    let done = false;
+    const tick = () => {
+      if (done)
+        return;
+      if (expandChatsSection()) {
+        done = true;
+        stopChatsExpand();
+      }
+    };
+    tick();
+    if (done)
+      return;
+    chatsExpandObserver = new MutationObserver(tick);
+    chatsExpandObserver.observe(document.documentElement, { childList: true, subtree: true });
+    chatsExpandTimer = setTimeout(() => {
+      done = true;
+      stopChatsExpand();
+    }, 1e4);
+  }
+  function resetProjectsCollapsedStorage() {
+    if (!settings4.store.projectsDefaultCollapsed)
+      return;
+    try {
+      localStorage.setItem(PROJECTS_COLLAPSED_KEY, "true");
+    } catch {}
+  }
+  function projectsGroup() {
+    const action = document.querySelector(PROJECTS_ACTION_SEL);
+    if (action)
+      return action.closest("[data-sidebar=group]");
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar)
+      return null;
+    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
+      const label = (btn.getAttribute("aria-label") ?? "").trim();
+      if (label === "Projects")
+        return btn.closest("[data-sidebar=group]");
+    }
+    return null;
+  }
+  function collapseProjectsSection() {
+    const group = projectsGroup();
+    if (!group)
+      return false;
+    const expanded = group.querySelector("button[aria-expanded=true]");
+    if (!expanded)
+      return true;
+    expanded.click();
+    return true;
+  }
+  function stopProjectsCollapse() {
+    projectsCollapseObserver?.disconnect();
+    projectsCollapseObserver = null;
+    if (projectsCollapseTimer != null) {
+      clearTimeout(projectsCollapseTimer);
+      projectsCollapseTimer = null;
+    }
+  }
+  function startProjectsCollapse() {
+    stopProjectsCollapse();
+    if (!settings4.store.projectsDefaultCollapsed)
+      return;
+    resetProjectsCollapsedStorage();
+    let done = false;
+    const tick = () => {
+      if (done)
+        return;
+      if (collapseProjectsSection()) {
+        done = true;
+        stopProjectsCollapse();
+      }
+    };
+    tick();
+    if (done)
+      return;
+    projectsCollapseObserver = new MutationObserver(tick);
+    projectsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
+    projectsCollapseTimer = setTimeout(() => {
+      done = true;
+      stopProjectsCollapse();
+    }, 1e4);
+  }
+  function newChat(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const native = document.querySelector('[data-testid="new-chat"]');
+    if (native) {
+      native.click();
+      return;
+    }
+    const { route, push } = RoutingStore.useRoutingStore.getState();
+    const teamId = route.teamId ?? null;
+    const { workspaceId } = route;
+    if (workspaceId) {
+      push({ page: "workspace", workspaceId, tab: "conversations", teamId });
+      const chat = ChatPageStore.useChatPageStore.getState();
+      chat.setProjectId(workspaceId);
+      chat.setConversationId(undefined);
+      return;
+    }
+    ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
+    push({ page: "main", teamId });
+  }
+  var ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
+    if (!settings4.use(["chatsPlus"]).chatsPlus)
+      return null;
+    return /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      className: BTN_CLASS,
+      "aria-label": "New chat",
+      "data-void-chats-plus": "",
+      onClick: newChat
+    }, /* @__PURE__ */ React.createElement(PlusIcon, {
+      size: 14
+    }));
+  }, null);
+  function UserCard({ AvatarMenu }) {
+    const { open } = SidebarComponents.useSidebar();
+    const { user } = SessionStore.useSession();
+    const bestSubscription = SubscriptionsStore.useSubscriptionsStore((s) => s.bestSubscription);
+    const cardRef = useRef(null);
+    if (!open || !user)
+      return /* @__PURE__ */ React.createElement(AvatarMenu, null);
+    const forward = (e, type) => {
+      if (!e.isTrusted)
+        return;
+      cardRef.current?.querySelector("button[data-state]")?.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, button: 0, pointerId: 1, pointerType: "mouse" }));
+    };
+    return /* @__PURE__ */ React.createElement("div", {
+      ref: cardRef,
+      className: cl5("card"),
+      onPointerDown: (e) => forward(e, "pointerdown"),
+      onPointerUp: (e) => forward(e, "pointerup")
+    }, /* @__PURE__ */ React.createElement(AvatarMenu, null), /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      justifyContent: "center",
+      gap: "0",
+      className: cl5("info")
+    }, /* @__PURE__ */ React.createElement(Text2, {
+      as: "span",
+      size: "sm",
+      weight: "medium",
+      className: cl5("name")
+    }, user.givenName ?? user.email?.split("@")[0] ?? "User"), /* @__PURE__ */ React.createElement(Text2, {
+      as: "span",
+      size: "xs",
+      color: "secondary",
+      className: cl5("plan")
+    }, getPlanName(bestSubscription, user.xSubscriptionType))));
+  }
+  var selection = createSelectionStore();
+  var CONVERSATION_PAGE = "chat";
+  var isConversationRoute = (route) => route?.page === CONVERSATION_PAGE;
+  async function deleteConversations(ids) {
+    const currentConvId = ChatPageStore.useChatPageStore.getState().conversationId;
+    if (currentConvId && ids.includes(currentConvId)) {
+      ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
+    }
+    const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
+    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger14.error("Failed to delete", id, e))));
+  }
+  function SelectCheckbox({ id, route }) {
+    const enabled = settings4.use(["batchSelect"]).batchSelect;
+    if (!enabled || !id || !isConversationRoute(route))
+      return null;
+    return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
+      selection,
+      id
+    });
+  }
+  var WrappedCheckbox = ErrorBoundary.wrap(SelectCheckbox, null);
+  var betterSidebar_default = definePlugin({
+    name: "BetterSidebar",
+    icon: PanelLeftIcon,
+    description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
+    authors: [Devs.Prism, Devs.p],
+    tags: ["navigation"],
+    enabledByDefault: true,
+    settings: settings4,
+    managedStyle: "betterSidebar",
+    _ChatsPlus: () => createElement(ChatsPlus),
+    _UserCard: ErrorBoundary.wrap(UserCard),
+    _renderActionBar: ErrorBoundary.wrap(() => /* @__PURE__ */ React.createElement(SelectionActionBar, {
+      selection,
+      noun: "conversation",
+      title: "Delete conversations",
+      onDelete: deleteConversations
+    }), null),
+    _wrapCheckbox(item, id, route) {
+      return createElement(Fragment, null, createElement(WrappedCheckbox, { id, route }), item);
+    },
+    _wrapSidebarClick(onClick, id, route) {
+      return (e) => {
+        if (id && settings4.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          e.stopPropagation();
+          selection.toggle(id);
+          return;
+        }
+        onClick?.(e);
+      };
+    },
+    _defaultOpen() {
+      return !settings4.store.defaultCollapsed;
+    },
+    _useBotsCollapsed: useBotsCollapsed,
+    _chatsCollapsedInit() {
+      resetChatsCollapsedStorage();
+      return false;
+    },
+    _projectsCollapsedInit() {
+      resetProjectsCollapsedStorage();
+      return true;
+    },
+    _projectsAutoExpand() {
+      return !settings4.store.projectsDefaultCollapsed;
+    },
+    _onSidebarClick() {
+      if (!settings4.store.clickToToggle)
+        return;
+      return (e) => {
+        const target = e.target;
+        if (target.closest("button,a,input,[role=button],[data-sidebar=trigger],[data-sidebar=footer]"))
+          return;
+        e.currentTarget.closest("[data-state]")?.querySelector("[data-sidebar=trigger]")?.click();
+      };
+    },
+    start() {
+      selection.clear();
+      applyHeaderHover();
+      releaseRosterGate();
+      resetChatsCollapsedStorage();
+      resetProjectsCollapsedStorage();
+      startBotsCollapse();
+      startChatsExpand();
+      startProjectsCollapse();
+    },
+    onSettingsChange: applyHeaderHover,
+    stop() {
+      selection.clear();
+      disableStyle("headerHover");
+      stopBotsCollapse();
+      stopChatsExpand();
+      stopProjectsCollapse();
+    },
+    patches: [
+      {
+        find: "AvatarDropdownMenu,{expanded:",
+        replacement: {
+          match: /\(0,(\i)\.jsx\)\((\i)\.AvatarDropdownMenu,\{/,
+          replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.AvatarDropdownMenu,"
+        }
+      },
+      {
+        find: "useSidebar must be used within a SidebarProvider",
+        all: true,
+        group: true,
+        replacement: [
+          {
+            match: /\{defaultOpen:(\i),open:/,
+            replace: "{defaultOpen:$1=$self._defaultOpen(),open:"
+          },
+          {
+            match: /data-sidebar":"sidebar",className:/,
+            replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),className:'
+          }
+        ]
+      },
+      {
+        find: '"Editing actions","Editing actions"',
+        all: true,
+        group: true,
+        replacement: [
+          {
+            match: /=(\(0,\i\.jsx\)\(\i,\{title:\i,editing:\i,[^}]{0,80}?validationErrorMessage:\i[^}]{0,40}?\}\))/,
+            replace: "=$self._wrapCheckbox($1,arguments[0].id,arguments[0].route)"
+          },
+          {
+            match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
+            replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4"
+          }
+        ]
+      },
+      {
+        find: '"sidebar-expand","Expand"',
+        replacement: {
+          match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
+          replace: "$self._renderActionBar(),$&"
+        }
+      },
+      {
+        find: '"sidebar.new-bot-btn.aria-label","New bot"',
+        replacement: [
+          {
+            match: /(\i)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover"\)/,
+            replace: '$1("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover")'
+          },
+          {
+            match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
+            replace: '$&,"data-void-bots-plus":""'
+          }
+        ]
+      },
+      {
+        find: '"sidebar-chats","Chats"',
+        replacement: {
+          match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
+          replace: "$1,action:$self._ChatsPlus()"
+        }
+      },
+      {
+        find: '"sidebar.section-title","Bots"',
+        replacement: {
+          match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,\i\.useLocalStorage\)\("sidebar-bots-unassigned-collapsed")/,
+          replace: "$self._useBotsCollapsed()"
+        }
+      },
+      {
+        find: "sidebar-history-collapsed",
+        replacement: {
+          match: /useLocalStorage\)\("sidebar-history-collapsed",!1,!1\)/,
+          replace: 'useLocalStorage)("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)'
+        }
+      },
+      {
+        find: "sidebar-projects-collapsed",
+        group: true,
+        replacement: [
+          {
+            match: /useLocalStorage\)\("sidebar-projects-collapsed",!1,!1\)/,
+            replace: 'useLocalStorage)("sidebar-projects-collapsed",$self._projectsCollapsedInit(),!1)'
+          },
+          {
+            match: /!(\i)\.current&&(\i)&&\((\i)\.length>0\|\|(\i)\.length>0\)&&\(\1\.current=!0,(\i)\(!1\)\)/,
+            replace: "!$1.current&&$2&&($3.length>0||$4.length>0)&&($1.current=!0,$self._projectsAutoExpand()&&$5(!1))"
+          }
+        ]
+      },
+      {
+        find: "enterDistance:8,collapsed:",
+        replacement: {
+          match: /\i\?\(0,(\i)\.jsx\)\((\i),\{enterDistance:8,collapsed:(\i),onToggleCollapsed:(\i),activeProjectId:(\i),expandedProjectIds:(\i),onToggleProjectExpanded:(\i)\}\):null/,
+          replace: "(0,$1.jsx)($2,{enterDistance:8,collapsed:$3,onToggleCollapsed:$4,activeProjectId:$5,expandedProjectIds:$6,onToggleProjectExpanded:$7})"
+        }
+      },
+      {
+        find: "useBotsSectionEnabled)();return",
+        replacement: {
+          match: /useBotsSectionEnabled\)\(\);return\(\(0,(\i)\.useBotsBootstrap\)\((\i)\),\2\)\?/,
+          replace: "useBotsSectionEnabled)();return((0,$1.useBotsBootstrap)($2),!0)?"
+        }
+      },
+      {
+        find: "shouldPaintBotsSidebar)({hasBots:",
+        replacement: {
+          match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
+          replace: ""
+        }
+      },
+      {
+        find: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+        replacement: {
+          match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+          replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null"
+        }
+      }
+    ]
+  });
 
   // src/plugins/_core/fixChrome.chrome/index.ts
   var fixChrome_default = definePlugin({
@@ -5366,7 +6482,7 @@ button .void-info-hint {
 `);
 
   // src/api/Themes.ts
-  var logger13 = new Logger("Themes", "#c6a0f6");
+  var logger15 = new Logger("Themes", "#c6a0f6");
   function themeStyleId(url) {
     let hash = 0;
     for (let i = 0;i < url.length; i++) {
@@ -5456,7 +6572,7 @@ button .void-info-hint {
     };
     registerDisabledStyle(themeStyleId(url), css);
     setThemes([...getThemes(), theme]);
-    logger13.info(`Added theme "${theme.name}" from ${url}`);
+    logger15.info(`Added theme "${theme.name}" from ${url}`);
     return theme;
   }
   function addLocalTheme(name, css) {
@@ -5477,7 +6593,7 @@ button .void-info-hint {
     };
     registerDisabledStyle(themeStyleId(id), css);
     setThemes([...getThemes(), theme]);
-    logger13.info(`Added local theme "${theme.name}"`);
+    logger15.info(`Added local theme "${theme.name}"`);
     return theme;
   }
   function updateLocalTheme(url, data) {
@@ -5524,14 +6640,14 @@ button .void-info-hint {
     try {
       const resp = await fetchExternal(url);
       if (!resp.ok) {
-        logger13.warn(`Failed to fetch theme CSS (${resp.status}):`, url);
+        logger15.warn(`Failed to fetch theme CSS (${resp.status}):`, url);
         return;
       }
       if (!isThemeStillActive(url))
         return;
       css = await resp.text();
     } catch (e) {
-      logger13.warn("Failed to fetch theme CSS:", url, e);
+      logger15.warn("Failed to fetch theme CSS:", url, e);
       return;
     }
     if (!isThemeStillActive(url))
@@ -5563,7 +6679,7 @@ button .void-info-hint {
     }));
     for (const [i, result] of results.entries()) {
       if (result.status === "rejected") {
-        logger13.warn(`Failed to load theme "${remote[i].name}":`, result.reason);
+        logger15.warn(`Failed to load theme "${remote[i].name}":`, result.reason);
       }
     }
   }
@@ -5670,10 +6786,10 @@ button .void-info-hint {
 `);
 
   // src/components/settings/CssEditor.tsx
-  var cl5 = classNameFactory("void-css-");
+  var cl6 = classNameFactory("void-css-");
   var TOKEN = /\/\*[\s\S]*?\*\/|@[\w-]+|"[^"]*"|'[^']*'|#[\da-fA-F]{3,8}|[\d.]+(?:px|em|rem|%|vh|vw|s|ms|deg|fr|ch)?|[\w-]+|[{}:;,()!]/g;
   function span(cls, text) {
-    return `<span class="${cl5(cls)}">${escapeHtml(text)}</span>`;
+    return `<span class="${cl6(cls)}">${escapeHtml(text)}</span>`;
   }
   function highlightCss(css) {
     let inBlock = 0;
@@ -5783,13 +6899,13 @@ button .void-info-hint {
       });
     }, [onChange]);
     return /* @__PURE__ */ React.createElement("div", {
-      className: classes(cl5("wrap"), className)
+      className: classes(cl6("wrap"), className)
     }, /* @__PURE__ */ React.createElement("pre", {
       ref: highlightRef,
-      className: cl5("highlight"),
+      className: cl6("highlight"),
       "aria-hidden": "true"
     }), /* @__PURE__ */ React.createElement("textarea", {
-      className: cl5("input"),
+      className: cl6("input"),
       value,
       placeholder,
       onChange: (e) => onChange(e.target.value),
@@ -5803,7 +6919,7 @@ button .void-info-hint {
   }
 
   // src/components/settings/tabs/CustomCSSTab.tsx
-  var cl6 = classNameFactory("void-css-");
+  var cl7 = classNameFactory("void-css-");
   var STYLE_ID = "void-custom-css";
   function setCustomCSSEnabled(enabled) {
     updateSettingsPluginData({ customCSSEnabled: enabled });
@@ -5838,7 +6954,7 @@ button .void-info-hint {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "1rem",
-      className: classes(cl6("root"), "void-tab-root")
+      className: classes(cl7("root"), "void-tab-root")
     }, /* @__PURE__ */ React.createElement(SettingsRow, {
       action: /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: enabled,
@@ -6143,34 +7259,34 @@ button .void-info-hint {
 `);
 
   // src/components/settings/BaseCard.tsx
-  var cl7 = classNameFactory("void-card-");
+  var cl8 = classNameFactory("void-card-");
   function BaseCard({ className, name, nameClassName, icon, badges, description, controls, footer }) {
     return /* @__PURE__ */ React.createElement(Card, {
-      className: classes(cl7("root"), className)
+      className: classes(cl8("root"), className)
     }, /* @__PURE__ */ React.createElement("div", {
-      className: cl7("body")
+      className: cl8("body")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       justifyContent: "space-between",
       gap: "0.5rem"
     }, /* @__PURE__ */ React.createElement("div", {
-      className: classes(cl7("name"), nameClassName)
+      className: classes(cl8("name"), nameClassName)
     }, icon != null && /* @__PURE__ */ React.createElement("span", {
-      className: cl7("icon")
+      className: cl8("icon")
     }, icon), /* @__PURE__ */ React.createElement(Tooltip, null, /* @__PURE__ */ React.createElement(TooltipTrigger, {
       asChild: true
     }, /* @__PURE__ */ React.createElement("span", {
-      className: cl7("title")
+      className: cl8("title")
     }, name)), /* @__PURE__ */ React.createElement(TooltipContent, null, name)), badges), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.375rem",
-      className: cl7("controls")
+      className: cl8("controls")
     }, controls)), description && /* @__PURE__ */ React.createElement("div", {
-      className: cl7("desc")
+      className: cl8("desc")
     }, description)), /* @__PURE__ */ React.createElement("div", {
-      className: cl7("separator")
+      className: cl8("separator")
     }), /* @__PURE__ */ React.createElement("div", {
-      className: cl7("footer")
+      className: cl8("footer")
     }, footer));
   }
 
@@ -6245,7 +7361,7 @@ button .void-info-hint {
   }
 
   // src/components/settings/PluginCard.tsx
-  var cl8 = classNameFactory("void-plugin-card-");
+  var cl9 = classNameFactory("void-plugin-card-");
   function PluginCard({ name, onSettings, onReload }) {
     const plugin = plugins[name];
     const { icon: Icon } = plugin;
@@ -6271,7 +7387,7 @@ button .void-info-hint {
       dispatch("pluginStar");
     };
     return /* @__PURE__ */ React.createElement(BaseCard, {
-      className: classes(plugin.required && cl8("required"), crashed && cl8("crashed")),
+      className: classes(plugin.required && cl9("required"), crashed && cl9("crashed")),
       name,
       icon: Icon ? /* @__PURE__ */ React.createElement(Icon, {
         size: 14
@@ -6281,14 +7397,14 @@ button .void-info-hint {
       badges: /* @__PURE__ */ React.createElement(React.Fragment, null, crashed && /* @__PURE__ */ React.createElement(TooltipIcon, {
         icon: TriangleAlert,
         tooltip: "This plugin failed to start",
-        className: cl8("crashed-icon")
+        className: cl9("crashed-icon")
       }), plugin.required && /* @__PURE__ */ React.createElement(TooltipIcon, {
         icon: CircleAlertIcon,
         tooltip: "This plugin is required for Void++ to work",
-        className: cl8("required-icon")
+        className: cl9("required-icon")
       }), /* @__PURE__ */ React.createElement(PluginBadges, {
         plugin,
-        className: cl8("badge")
+        className: cl9("badge")
       }), isNewPlugin(name) && /* @__PURE__ */ React.createElement(Badge, {
         variant: "accent"
       }, "New")),
@@ -6296,19 +7412,19 @@ button .void-info-hint {
       controls: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(IconButton, {
         icon: starred ? StarFilledIcon : StarIcon,
         label: starred ? "Remove from favorites" : "Add to favorites",
-        className: classes(cl8("star"), starred && cl8("star-active")),
+        className: classes(cl9("star"), starred && cl9("star-active")),
         onClick: handleStar
       }), !plugin.required && /* @__PURE__ */ React.createElement(IconButton, {
         icon: pinned ? PinFilledIcon : PinIcon,
         label: pinned ? "Unpin from top" : "Pin to top",
-        className: classes(cl8("pin"), pinned && cl8("pin-active")),
+        className: classes(cl9("pin"), pinned && cl9("pin-active")),
         onClick: handlePin
       }), hasVisibleSettings(plugin) && /* @__PURE__ */ React.createElement(Tooltip, null, /* @__PURE__ */ React.createElement(TooltipTrigger, {
         asChild: true
       }, /* @__PURE__ */ React.createElement(IconButton, {
         icon: Settings2Icon,
         label: "config",
-        className: cl8("settings"),
+        className: cl9("settings"),
         onClick: () => onSettings(name)
       })), /* @__PURE__ */ React.createElement(TooltipContent, null, "config")), /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: enabled,
@@ -6431,7 +7547,7 @@ button .void-info-hint {
 `);
 
   // src/components/settings/SettingField.tsx
-  var cl9 = classNameFactory("void-setting-");
+  var cl10 = classNameFactory("void-setting-");
   function usePluginSetting(pluginName, id, setting) {
     const resolve = () => (Settings.plugins[pluginName] ?? {})[id] ?? resolveDefault(setting);
     const [value, setValue] = useState(resolve);
@@ -6486,7 +7602,7 @@ button .void-info-hint {
         value: String(value ?? ""),
         onValueChange: (v) => update(valueMap.get(v) ?? v)
       }, /* @__PURE__ */ React.createElement(SelectTrigger, null, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, {
-        className: cl9("select-content")
+        className: cl10("select-content")
       }, options.map((o) => /* @__PURE__ */ React.createElement(SelectItem, {
         key: String(o.value),
         value: String(o.value)
@@ -6506,17 +7622,17 @@ button .void-info-hint {
       setting
     }, /* @__PURE__ */ React.createElement(Flex, {
       gap: "0.75rem",
-      className: cl9("slider-row")
+      className: cl10("slider-row")
     }, /* @__PURE__ */ React.createElement("div", {
-      className: cl9("slider-wrap")
+      className: cl10("slider-wrap")
     }, /* @__PURE__ */ React.createElement("div", {
-      className: cl9("slider-rail"),
+      className: cl10("slider-rail"),
       "aria-hidden": "true"
     }, /* @__PURE__ */ React.createElement("div", {
-      className: cl9("slider-fill"),
+      className: cl10("slider-fill"),
       style: { width: `${pct}%` }
     }), /* @__PURE__ */ React.createElement("div", {
-      className: cl9("slider-thumb"),
+      className: cl10("slider-thumb"),
       style: { left: `${pct}%` }
     })), /* @__PURE__ */ React.createElement("input", {
       type: "range",
@@ -6529,14 +7645,14 @@ button .void-info-hint {
         if (!Number.isNaN(v))
           update(v);
       },
-      className: cl9("slider"),
+      className: cl10("slider"),
       "aria-valuemin": min,
       "aria-valuemax": max,
       "aria-valuenow": n
     })), /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       color: "secondary",
-      className: cl9("slider-value")
+      className: cl10("slider-value")
     }, n)));
   };
   var ComponentField = ({ setting, pluginName }) => {
@@ -6560,7 +7676,7 @@ button .void-info-hint {
         if (!isNaN(n))
           update(n);
       },
-      className: cl9("number-input")
+      className: cl10("number-input")
     }));
   };
   var BigIntField = ({ id, setting, pluginName }) => {
@@ -6580,7 +7696,7 @@ button .void-info-hint {
           update(BigInt(raw));
         } catch {}
       },
-      className: cl9("number-input")
+      className: cl10("number-input")
     }));
   };
   var StringField = ({ id, setting, pluginName }) => {
@@ -6593,7 +7709,7 @@ button .void-info-hint {
       value: String(value ?? ""),
       onChange: (e) => update(e.target.value),
       placeholder: setting.placeholder,
-      className: cl9("string-input")
+      className: cl10("string-input")
     }));
   };
   var FIELD_MAP = {
@@ -6667,7 +7783,7 @@ button .void-info-hint {
   }
 
   // src/components/settings/tabs/PluginDialog.tsx
-  var cl10 = classNameFactory("void-plugin-dialog-");
+  var cl11 = classNameFactory("void-plugin-dialog-");
   function PluginDialog({ plugin, onClose }) {
     const entries = useMemo(() => Object.entries(plugin.settings?.def ?? {}).filter(isVisibleSetting), [plugin.settings?.def]);
     const [resetOpen, setResetOpen] = useState(false);
@@ -6687,18 +7803,18 @@ button .void-info-hint {
       label: "Authors"
     }, /* @__PURE__ */ React.createElement(Paragraph, null, plugin.authors.join(", "))), /* @__PURE__ */ React.createElement(DialogField, {
       label: "Settings",
-      className: cl10("settings")
+      className: cl11("settings")
     }, entries.length ? /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.75rem",
-      className: cl10("settings-list")
+      className: cl11("settings-list")
     }, entries.map(([key, setting]) => /* @__PURE__ */ React.createElement(SettingField, {
       key,
       id: key,
       setting,
       pluginName: plugin.name
     }))) : /* @__PURE__ */ React.createElement(Paragraph, null, "No configurable settings.")), !!entries.length && /* @__PURE__ */ React.createElement(DialogFooter, {
-      className: cl10("footer")
+      className: cl11("footer")
     }, /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
       size: "sm",
@@ -6737,7 +7853,7 @@ button .void-info-hint {
   }
 
   // src/components/settings/tabs/PluginsTab.tsx
-  var cl11 = classNameFactory("void-plugins-");
+  var cl12 = classNameFactory("void-plugins-");
   var FILTER_OPTIONS = [
     { value: "all", label: "All" },
     { value: "enabled", label: "Enabled" },
@@ -6896,26 +8012,26 @@ button .void-info-hint {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "1rem",
-      className: classes(cl11("root"), "void-tab-root")
+      className: classes(cl12("root"), "void-tab-root")
     }, needsReload && !showReload && /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
-      className: cl11("reload-banner")
+      className: cl12("reload-banner")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
-      className: cl11("reload-text")
+      className: cl12("reload-text")
     }, "Reload the page to apply plugin changes."), /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       onClick: () => location.reload()
     }, "Reload")), /* @__PURE__ */ React.createElement(Flex, {
-      className: cl11("tabs"),
+      className: cl12("tabs"),
       gap: "0.125rem",
       flexWrap: "wrap"
     }, visibleTabs.map((t) => /* @__PURE__ */ React.createElement(Button, {
       key: t.id,
       variant: "tertiary",
       size: "sm",
-      className: classes(cl11("tab"), category === t.id && cl11("tab-active")),
+      className: classes(cl12("tab"), category === t.id && cl12("tab-active")),
       onClick: () => setCategory(t.id)
     }, t.label))), /* @__PURE__ */ React.createElement(SearchFilterBar, {
       placeholder: `Search ${tabUser.length + tabRequired.length} plugins...`,
@@ -6927,7 +8043,7 @@ button .void-info-hint {
     }), /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "1rem",
-      className: classes(cl11("list"), "alpha-mask-y")
+      className: classes(cl12("list"), "alpha-mask-y")
     }, filteredUser.length > 0 && /* @__PURE__ */ React.createElement(Grid, {
       columns: "repeat(2, 1fr)"
     }, filteredUser.map((n) => /* @__PURE__ */ React.createElement(ErrorBoundary, {
@@ -7005,20 +8121,20 @@ button .void-info-hint {
 `);
 
   // src/components/settings/ThemeCard.tsx
-  var logger14 = new Logger("ThemeCard");
-  var cl12 = classNameFactory("void-theme-card-");
+  var logger16 = new Logger("ThemeCard");
+  var cl13 = classNameFactory("void-theme-card-");
   function ThemeCard({ theme, onRemove, onToggle, onEdit }) {
     const handleToggle = () => {
       if (theme.enabled)
         disableTheme(theme.url);
       else
-        enableTheme(theme.url).catch((e) => logger14.error("Failed to enable theme:", e));
+        enableTheme(theme.url).catch((e) => logger16.error("Failed to enable theme:", e));
       onToggle();
     };
     const SourceIcon = theme.local ? FolderIcon : GlobeIcon;
     return /* @__PURE__ */ React.createElement(BaseCard, {
       name: theme.name ?? theme.url,
-      nameClassName: cl12("name"),
+      nameClassName: cl13("name"),
       icon: /* @__PURE__ */ React.createElement(PaletteIcon, {
         size: 14
       }),
@@ -7031,7 +8147,7 @@ button .void-info-hint {
         icon: CopyIcon,
         label: "Copy URL",
         onClick: () => {
-          copyToClipboard(theme.url).catch((e) => logger14.error("Failed to copy URL:", e));
+          copyToClipboard(theme.url).catch((e) => logger16.error("Failed to copy URL:", e));
         }
       }), /* @__PURE__ */ React.createElement(IconButton, {
         icon: Trash2Icon,
@@ -7043,7 +8159,7 @@ button .void-info-hint {
       })),
       footer: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SourceIcon, {
         size: 12,
-        className: cl12("footer-icon")
+        className: cl13("footer-icon")
       }), /* @__PURE__ */ React.createElement("div", {
         className: "void-card-author"
       }, theme.author ?? " "))
@@ -7051,7 +8167,7 @@ button .void-info-hint {
   }
 
   // src/components/settings/tabs/ThemesTab.tsx
-  var cl13 = classNameFactory("void-themes-");
+  var cl14 = classNameFactory("void-themes-");
   var FILTER_OPTIONS2 = [
     { value: "all", label: "All" },
     { value: "enabled", label: "Enabled" },
@@ -7101,9 +8217,9 @@ button .void-info-hint {
       }
     })), error && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
-      className: cl13("add-error")
+      className: cl14("add-error")
     }, error), /* @__PURE__ */ React.createElement(DialogActions, {
-      className: cl13("local-footer"),
+      className: cl14("local-footer"),
       onCancel: onClose,
       confirmLabel: loading ? "Importing..." : "Import",
       onConfirm: handleImport,
@@ -7142,17 +8258,17 @@ button .void-info-hint {
       onChange: (e) => setName(e.target.value)
     })), /* @__PURE__ */ React.createElement(DialogField, {
       label: "CSS",
-      className: cl13("local-css-field")
+      className: cl14("local-css-field")
     }, /* @__PURE__ */ React.createElement(CssEditor, {
-      className: cl13("local-editor"),
+      className: cl14("local-editor"),
       value: css,
       onChange: setCss,
       placeholder: "Paste your CSS here..."
     })), error && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
-      className: cl13("add-error")
+      className: cl14("add-error")
     }, error), /* @__PURE__ */ React.createElement(DialogActions, {
-      className: cl13("local-footer"),
+      className: cl14("local-footer"),
       onCancel: onClose,
       confirmLabel: theme ? "Save" : "Create",
       onConfirm: handleSave,
@@ -7335,10 +8451,10 @@ button .void-info-hint {
     [4 /* WARNING */]: "warning",
     [5 /* LOADING */]: "loading"
   };
-  var logger15 = new Logger("Notifications");
+  var logger17 = new Logger("Notifications");
   function showToast(message, type = 0 /* MESSAGE */, options) {
     if (!Toaster.toast) {
-      logger15.warn("showToast called before Toaster initialized, discarding:", message);
+      logger17.warn("showToast called before Toaster initialized, discarding:", message);
       return -1;
     }
     const { toast } = Toaster;
@@ -7350,9 +8466,9 @@ button .void-info-hint {
   }
 
   // src/plugins/experiments/index.tsx
-  var cl14 = classNameFactory("void-experiments-");
+  var cl15 = classNameFactory("void-experiments-");
   var NEW_FLAG_TTL = 24 * 60 * 60 * 1000;
-  var settings3 = definePluginSettings({
+  var settings5 = definePluginSettings({
     toastNotifications: {
       type: 3 /* BOOLEAN */,
       description: "Show a toast when experiment flags change.",
@@ -7384,16 +8500,16 @@ button .void-info-hint {
       return;
     const message = parts.join(`
 `);
-    if (settings3.store.toastNotifications)
+    if (settings5.store.toastNotifications)
       showToast(message, 3 /* INFO */);
-    if (settings3.store.browserNotifications)
+    if (settings5.store.browserNotifications)
       sendBrowserNotification("Grok Experiments", message);
   }
   function syncKnownFlags(config) {
     const booleanKeys = getBooleanKeys(config);
     if (!booleanKeys.length)
       return;
-    const existing = settings3.plain.knownFlags;
+    const existing = settings5.plain.knownFlags;
     const firstRun = existing == null;
     const known = { ...existing };
     const now = Date.now();
@@ -7425,13 +8541,13 @@ button .void-info-hint {
     }
     lastConfigSnapshot = Object.fromEntries(booleanKeys.map((k) => [k, !!config[k]]));
     if (changed) {
-      settings3.store.knownFlags = { ...known };
+      settings5.store.knownFlags = { ...known };
     }
     if (!firstRun)
       notifyChanges(newFlags, removedFlags, flipped);
   }
   function isNewFlag(key) {
-    const seen = settings3.plain.knownFlags?.[key];
+    const seen = settings5.plain.knownFlags?.[key];
     if (seen == null)
       return false;
     return Date.now() - seen < NEW_FLAG_TTL;
@@ -7484,13 +8600,13 @@ button .void-info-hint {
       })
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, prettifyKey(flagKey), isNew && /* @__PURE__ */ React.createElement(Badge, {
       variant: "accent",
-      className: cl14("badge")
+      className: cl15("badge")
     }, "New"), decodedKey && /* @__PURE__ */ React.createElement(Badge, {
-      className: cl14("badge")
+      className: cl15("badge")
     }, "Encrypted"), isOverridden && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       as: "span",
-      className: cl14("modified")
+      className: cl15("modified")
     }, "(modified)")), /* @__PURE__ */ React.createElement(SettingsDescription, null, decodedKey ?? flagKey));
   }
   function ExperimentsTab() {
@@ -7527,36 +8643,36 @@ button .void-info-hint {
     }, /* @__PURE__ */ React.createElement(SectionHeader, {
       title: "Experiments",
       description: "Toggle unreleased Grok features. These are experimental and may break. New flags are marked when they appear.",
-      className: cl14("section")
+      className: cl15("section")
     }), /* @__PURE__ */ React.createElement(Card, {
       variant: "ghost",
-      className: cl14("warning")
+      className: cl15("warning")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       justifyContent: "space-between",
       gap: "0.75rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
-      className: cl14("warning-text")
+      className: cl15("warning-text")
     }, "Only enable flags you understand. Changing the wrong setting can break Grok or cause unexpected behavior."), overrideCount > 0 && /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
       size: "sm",
-      className: cl14("clear-btn"),
+      className: cl15("clear-btn"),
       onClick: () => FeatureStore.useFeatureStore.getState().clearAllOverrides()
     }, "Clear ", pluralize(overrideCount, "override")))), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.5rem",
-      className: cl14("section")
+      className: cl15("section")
     }, /* @__PURE__ */ React.createElement(Input, {
       placeholder: `Search ${prefiltered.length} flags...`,
       value: search,
       onChange: (e) => setSearch(e.target.value),
-      className: cl14("search-input")
+      className: cl15("search-input")
     }), /* @__PURE__ */ React.createElement(Select, {
       value: filter,
       onValueChange: (v) => setFilter(v)
     }, /* @__PURE__ */ React.createElement(SelectTrigger, {
-      className: cl14("filter-select")
+      className: cl15("filter-select")
     }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, /* @__PURE__ */ React.createElement(SelectItem, {
       value: "all"
     }, "All"), /* @__PURE__ */ React.createElement(SelectItem, {
@@ -7577,7 +8693,7 @@ button .void-info-hint {
       isNew: isNewFlag(key)
     }))), !filtered.length && /* @__PURE__ */ React.createElement(Paragraph, {
       color: "muted",
-      className: cl14("empty")
+      className: cl15("empty")
     }, search ? `No flags matching "${search}"` : `No ${filter} flags`));
   }
   var Tab = ErrorBoundary.wrap(ExperimentsTab);
@@ -7595,11 +8711,11 @@ button .void-info-hint {
     description: "Unlock and toggle unreleased Grok features.",
     authors: [Devs.Prism],
     tags: ["developer"],
-    settings: settings3,
+    settings: settings5,
     startAt: "TurbopackReady" /* TurbopackReady */,
     _proxy: overrideProxy,
     start() {
-      if (settings3.store.browserNotifications && Notification.permission === "default")
+      if (settings5.store.browserNotifications && Notification.permission === "default")
         Notification.requestPermission().catch(() => {});
       const state = FeatureStore.useFeatureStore.getState();
       if (state.status === "ready")
@@ -7670,8 +8786,8 @@ button .void-info-hint {
 
   // src/plugins/pluginsFlyout/index.tsx
   var PLUGIN_NAME = "PluginsFlyout";
-  var cl15 = classNameFactory("void-pf-");
-  var settings4 = definePluginSettings({
+  var cl16 = classNameFactory("void-pf-");
+  var settings6 = definePluginSettings({
     menuPlugins: {
       type: 6 /* COMPONENT */,
       description: "Plugins shown under Void++ → Plugins.",
@@ -7683,7 +8799,7 @@ button .void-info-hint {
     return Object.keys(plugins).filter((n) => !plugins[n].hidden).toSorted((a, b) => a.localeCompare(b));
   }
   function menuPluginMap() {
-    const raw = settings4.store.menuPlugins;
+    const raw = settings6.store.menuPlugins;
     return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   }
   function isShownInPluginMenu(name) {
@@ -7693,7 +8809,7 @@ button .void-info-hint {
     return hasVisibleSettings(plugins[name]);
   }
   function setShownInPluginMenu(name, shown) {
-    settings4.store.menuPlugins = { ...menuPluginMap(), [name]: shown };
+    settings6.store.menuPlugins = { ...menuPluginMap(), [name]: shown };
   }
   function getVisibleMenuPlugins() {
     const names = listedPlugins();
@@ -7702,20 +8818,20 @@ button .void-info-hint {
     return names.filter(isShownInPluginMenu);
   }
   function usePluginMenu() {
-    settings4.use(["menuPlugins"]);
+    settings6.use(["menuPlugins"]);
     return getVisibleMenuPlugins();
   }
   function MenuPluginsEditor() {
-    settings4.use(["menuPlugins"]);
+    settings6.use(["menuPlugins"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl15("root")
+      className: cl16("root")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Plugin menu"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Choose which plugins appear under Void++ → Plugins.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl15("list")
+      className: cl16("list")
     }, listedPlugins().map((name) => {
       const Icon = plugins[name].icon ?? UnplugIcon;
       return /* @__PURE__ */ React.createElement(SettingsRow, {
@@ -7728,7 +8844,7 @@ button .void-info-hint {
         alignItems: "center",
         gap: "0.5rem"
       }, /* @__PURE__ */ React.createElement(Icon, {
-        className: cl15("icon")
+        className: cl16("icon")
       }), /* @__PURE__ */ React.createElement(SettingsTitle, null, name)));
     })));
   }
@@ -7739,13 +8855,13 @@ button .void-info-hint {
     authors: [Devs.p],
     tags: ["navigation"],
     enabledByDefault: true,
-    settings: settings4
+    settings: settings6
   });
 
   // src/plugins/_core/settings/index.tsx
-  var logger16 = new Logger("Settings");
-  var cl16 = classNameFactory("void-settings-");
-  var settings5 = definePluginSettings({
+  var logger18 = new Logger("Settings");
+  var cl17 = classNameFactory("void-settings-");
+  var settings7 = definePluginSettings({
     showVoidPPMenu: {
       type: 3 /* BOOLEAN */,
       description: "Show the Void++ sub-menu in the avatar dropdown.",
@@ -7771,7 +8887,7 @@ button .void-info-hint {
       href,
       target: "_blank",
       rel: "noreferrer",
-      className: cl16("version-link")
+      className: cl17("version-link")
     }, /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
@@ -7781,7 +8897,7 @@ button .void-info-hint {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0",
-      className: cl16("version")
+      className: cl17("version")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
@@ -7790,9 +8906,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e4efd44"}`
-    }, `(${"e4efd44"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"bac415d"}`
+    }, `(${"bac415d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -7805,7 +8921,7 @@ button .void-info-hint {
   }
   function TabLabel({ text, description }) {
     return /* @__PURE__ */ React.createElement("span", {
-      className: cl16("tab-label")
+      className: cl17("tab-label")
     }, text, /* @__PURE__ */ React.createElement(InfoHint, null, description));
   }
   function openSettingsTab(tab) {
@@ -7820,23 +8936,23 @@ button .void-info-hint {
   function VoidPPMenu() {
     const forceUpdate = useForceUpdater();
     useEventSubscription("pluginToggle", forceUpdate);
-    const { showVoidPPMenu } = settings5.use(["showVoidPPMenu"]);
+    const { showVoidPPMenu } = settings7.use(["showVoidPPMenu"]);
     const menuPlugins = usePluginMenu();
     if (!showVoidPPMenu)
       return null;
     return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(VoidPPIcon, {
-      className: cl16("menu-icon")
+      className: cl17("menu-icon")
     }), "Void++"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, null, menuPlugins.length > 0 && /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(UnplugIcon, {
-      className: cl16("menu-icon")
+      className: cl17("menu-icon")
     }), "Plugins"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, {
-      className: cl16("plugin-menu")
+      className: cl17("plugin-menu")
     }, menuPlugins.map((name) => {
       const Icon = plugins[name].icon ?? UnplugIcon;
       return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
         key: name,
         onSelect: () => openPluginSettings(name)
       }, /* @__PURE__ */ React.createElement(Icon, {
-        className: cl16("menu-icon")
+        className: cl17("menu-icon")
       }), name);
     }))), getVisibleTabs().filter((t) => t.id !== PLUGINS_TAB_ID).map((t) => {
       const Icon = t.icon;
@@ -7844,7 +8960,7 @@ button .void-info-hint {
         key: t.id,
         onSelect: () => openSettingsTab(t.id)
       }, /* @__PURE__ */ React.createElement(Icon, {
-        className: cl16("menu-icon")
+        className: cl17("menu-icon")
       }), t.name);
     })));
   }
@@ -7855,7 +8971,7 @@ button .void-info-hint {
     description: "Adds Void++ settings UI.",
     authors: [Devs.Prism, Devs.p],
     required: true,
-    settings: settings5,
+    settings: settings7,
     _renderVoidPPMenu: () => createElement(WrappedVoidPPMenu),
     _setPrimitive(name, component) {
       setSettingsPrimitive(name, component);
@@ -7896,9 +9012,9 @@ button .void-info-hint {
         else
           document.addEventListener("DOMContentLoaded", loadSavedCSS, { once: true });
       } catch (e) {
-        logger16.error("Failed to load saved CSS:", e);
+        logger18.error("Failed to load saved CSS:", e);
       }
-      loadSavedThemes().catch((e) => logger16.error("Failed to load saved themes:", e));
+      loadSavedThemes().catch((e) => logger18.error("Failed to load saved themes:", e));
     },
     patches: [
       {
@@ -8122,10 +9238,10 @@ button .void-info-hint {
   });
 
   // src/plugins/autoRetry/index.ts
-  var logger17 = new Logger("AutoRetry");
+  var logger19 = new Logger("AutoRetry");
   var CONTENT_MODERATED = "grok:content-moderated";
   var USER_INTERRUPT = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
-  var settings6 = definePluginSettings({
+  var settings8 = definePluginSettings({
     retryModeration: {
       type: 3 /* BOOLEAN */,
       description: "Retry content moderation errors.",
@@ -8149,7 +9265,7 @@ button .void-info-hint {
   });
   var retryCounts = new Map;
   var pendingTimer = null;
-  function clearPending() {
+  function clearPending2() {
     if (pendingTimer != null) {
       clearTimeout(pendingTimer);
       pendingTimer = null;
@@ -8178,22 +9294,22 @@ button .void-info-hint {
     if (isUserInterrupt(response))
       return false;
     if (isModeration(response))
-      return settings6.store.retryModeration;
-    return settings6.store.retryNetwork;
+      return settings8.store.retryModeration;
+    return settings8.store.retryNetwork;
   }
   function retry(responseId, conversationId, response) {
     const count = (retryCounts.get(conversationId) ?? 0) + 1;
-    const max = settings6.store.maxRetries;
+    const max = settings8.store.maxRetries;
     if (count > max) {
       showToast("Max retries reached.", 2 /* ERROR */);
       retryCounts.delete(conversationId);
       return;
     }
     retryCounts.set(conversationId, count);
-    const delaySec = settings6.store.delay;
+    const delaySec = settings8.store.delay;
     showToast(`Retrying... (${count}/${max})`, 0 /* MESSAGE */);
-    logger17.info(`Retry ${count}/${max} for ${conversationId} in ${delaySec}s`);
-    clearPending();
+    logger19.info(`Retry ${count}/${max} for ${conversationId} in ${delaySec}s`);
+    clearPending2();
     pendingTimer = setTimeout(() => {
       pendingTimer = null;
       const state = ChatPageStore.useChatPageStore.getState();
@@ -8231,303 +9347,19 @@ button .void-info-hint {
     description: "Automatically retry failed messages on moderation or network errors.",
     authors: [Devs.Prism],
     tags: ["messages"],
-    settings: settings6,
+    settings: settings8,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
       retryCounts.clear();
-      clearPending();
+      clearPending2();
     },
     stop() {
-      clearPending();
+      clearPending2();
       retryCounts.clear();
     },
     events: {
       streamEnd: onStreamEnd
     }
-  });
-
-  // src/plugins/avatarPluginsFlyout/index.tsx
-  var logger18 = new Logger("AvatarPluginsFlyout");
-  var PluginsDialogStore = findByPropsLazy("usePluginsDialogStore");
-  var settings7 = definePluginSettings({});
-  var NEW_NAME = "AvatarPluginsFlyout";
-  var OLD_NAMES = ["BetterAvatarPlugins", "NoSidebarPlugins"];
-  function isOldName(item) {
-    return typeof item === "string" && OLD_NAMES.includes(item);
-  }
-  function renameList(list) {
-    if (!Array.isArray(list) || !list.some(isOldName))
-      return;
-    const seen = new Set;
-    const next = [];
-    for (const item of list) {
-      if (typeof item !== "string")
-        continue;
-      const name = isOldName(item) ? NEW_NAME : item;
-      if (seen.has(name))
-        continue;
-      seen.add(name);
-      next.push(name);
-    }
-    return next;
-  }
-  function migrateLegacy2() {
-    const bag = PlainSettings.plugins;
-    const meta = bag.Settings;
-    const menu = bag.PluginsFlyout?.menuPlugins;
-    const known = meta?.knownPlugins;
-    const pinned = renameList(meta?.pinnedPlugins);
-    const starred = renameList(meta?.starredPlugins);
-    const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu : undefined;
-    const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
-    let moved = false;
-    for (const oldName of OLD_NAMES) {
-      const old = bag[oldName];
-      if (old && typeof old === "object") {
-        const target = bag[NEW_NAME] ??= {};
-        const keys = Object.keys(target);
-        const stub = keys.length === 0 || keys.length === 1 && keys[0] === "enabled";
-        for (const key of Object.keys(old)) {
-          if (stub || !(key in target))
-            target[key] = old[key];
-        }
-        delete bag[oldName];
-        moved = true;
-      }
-      if (knownRec && oldName in knownRec) {
-        if (!(NEW_NAME in knownRec))
-          knownRec[NEW_NAME] = knownRec[oldName];
-        delete knownRec[oldName];
-        moved = true;
-      }
-      if (menuRec && oldName in menuRec) {
-        if (!(NEW_NAME in menuRec))
-          menuRec[NEW_NAME] = menuRec[oldName];
-        delete menuRec[oldName];
-        moved = true;
-      }
-    }
-    if (meta) {
-      if (pinned) {
-        meta.pinnedPlugins = pinned;
-        moved = true;
-      }
-      if (starred) {
-        meta.starredPlugins = starred;
-        moved = true;
-      }
-    }
-    if (!moved)
-      return;
-    SettingsStore3.markAsChanged();
-    logger18.info("Migrated NoSidebarPlugins and BetterAvatarPlugins into AvatarPluginsFlyout");
-  }
-  var pluginName = Object.getOwnPropertyDescriptor(settings7, "pluginName");
-  if (pluginName?.set && pluginName.get) {
-    Object.defineProperty(settings7, "pluginName", {
-      configurable: true,
-      enumerable: true,
-      get: pluginName.get,
-      set(name) {
-        if (name === NEW_NAME)
-          migrateLegacy2();
-        pluginName.set.call(settings7, name);
-      }
-    });
-  }
-  function menuSvg(className, filled, ...children) {
-    return /* @__PURE__ */ React.createElement("svg", {
-      width: "1rem",
-      height: "1rem",
-      viewBox: "0 0 24 24",
-      fill: filled ? "currentColor" : "none",
-      stroke: filled ? "none" : "currentColor",
-      strokeWidth: filled ? undefined : 2,
-      strokeLinecap: "round",
-      strokeLinejoin: "round",
-      className: className ?? "void-settings-menu-icon",
-      "aria-hidden": "true"
-    }, children);
-  }
-  function PluginsIcon(props = {}) {
-    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
-      ...props
-    });
-  }
-  function ConnectorsMenuIcon({ className } = {}) {
-    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
-      width: "1rem",
-      height: "1rem",
-      className: className ?? "void-settings-menu-icon"
-    });
-  }
-  function SkillsMenuIcon({ className } = {}) {
-    return menuSvg(className, false, /* @__PURE__ */ React.createElement("path", {
-      d: "M10 7C10 8.79493 8.54493 10.25 6.75 10.25C4.95507 10.25 3.5 8.79493 3.5 7C3.5 5.20507 4.95507 3.75 6.75 3.75C8.54493 3.75 10 5.20507 10 7Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M16.3732 4.34855C16.7528 3.65641 17.7472 3.65641 18.1268 4.34855L20.5514 8.7691C20.9169 9.43553 20.4347 10.25 19.6746 10.25H14.8254C14.0653 10.25 13.5831 9.43553 13.9486 8.7691L16.3732 4.34855Z"
-    }), /* @__PURE__ */ React.createElement("rect", {
-      x: "3.64844",
-      y: "13.75",
-      width: "6.2",
-      height: "6.2",
-      rx: "2"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M20.5 17C20.5 18.7949 19.0449 20.25 17.25 20.25C15.4551 20.25 14 18.7949 14 17C14 15.2051 15.4551 13.75 17.25 13.75C19.0449 13.75 20.5 15.2051 20.5 17Z"
-    }));
-  }
-  function BotsMenuIcon({ className } = {}) {
-    return menuSvg(className, true, /* @__PURE__ */ React.createElement("path", {
-      d: "M15 13H13V9H15V13Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M19 13H17V9H19V13Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      fillRule: "evenodd",
-      clipRule: "evenodd",
-      d: "M15 4C19.4183 4 23 7.58172 23 12C23 16.4183 19.4183 20 15 20C10.5817 20 7 16.4183 7 12C7 7.58172 10.5817 4 15 4ZM15 6C11.6863 6 9 8.68629 9 12C9 15.3137 11.6863 18 15 18C18.3137 18 21 15.3137 21 12C21 8.68629 18.3137 6 15 6Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M8.99902 4C8.08913 4.68362 7.3005 5.51941 6.66895 6.46875C4.51293 7.37847 3 9.5129 3 12C3 14.487 4.51312 16.6205 6.66895 17.5303C7.30047 18.4797 8.08911 19.3153 8.99902 19.999C4.58119 19.9985 1 16.418 1 12C1 7.58205 4.58119 4.00053 8.99902 4Z"
-    }));
-  }
-  var PLUGIN_TABS = [
-    { id: "connectors", name: "Connectors", icon: ConnectorsMenuIcon },
-    { id: "skills", name: "Skills", icon: SkillsMenuIcon },
-    { id: "bots", name: "Bots", icon: BotsMenuIcon }
-  ];
-  var pendingTab = null;
-  var latchedTab = "";
-  function peekTab() {
-    return pendingTab;
-  }
-  function shellKey(local) {
-    if (pendingTab)
-      latchedTab = pendingTab;
-    return `${local ? 1 : 0}:${latchedTab}`;
-  }
-  function clearPending2(tab) {
-    if (typeof tab === "string" && tab === pendingTab)
-      return;
-    pendingTab = null;
-  }
-  function pluginsDialog() {
-    return [...document.querySelectorAll('[role="dialog"]')].find((dialog) => dialog.getAttribute("data-state") === "open" && [...dialog.querySelectorAll("h1, h2")].some((heading) => heading.textContent?.trim() === "Plugins"));
-  }
-  function pillButton(tab) {
-    const name = PLUGIN_TABS.find((item) => item.id === tab)?.name;
-    if (!name)
-      return null;
-    const lists = pluginsDialog()?.querySelectorAll("[role=tablist]");
-    if (!lists)
-      return null;
-    for (const list of lists) {
-      const tabs = [...list.querySelectorAll('[role="tab"]')];
-      const labels = tabs.map((button) => button.textContent?.trim());
-      if (!labels.includes("Connectors") || !labels.includes("Skills") || !labels.includes("Bots"))
-        continue;
-      const button = tabs.find((item) => item.textContent?.trim() === name);
-      if (button instanceof HTMLElement)
-        return button;
-    }
-    return null;
-  }
-  function syncTabDom(tab, attempt = 0) {
-    if (pendingTab !== tab || attempt > 12)
-      return;
-    const button = pillButton(tab);
-    if (!button) {
-      requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
-      return;
-    }
-    if (button.getAttribute("aria-selected") === "true") {
-      pendingTab = null;
-      return;
-    }
-    button.click();
-    requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
-  }
-  function openPlugins(tab) {
-    pendingTab = tab;
-    latchedTab = tab;
-    PluginsDialogStore.usePluginsDialogStore.getState().setOpen(true);
-    requestAnimationFrame(() => syncTabDom(tab));
-  }
-  function applyTab(local, state, setState) {
-    if (!local || !pendingTab)
-      return null;
-    if (pendingTab !== state)
-      setState(pendingTab);
-    return pendingTab;
-  }
-  function PluginsMenu() {
-    return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(PluginsIcon, {
-      className: "void-settings-menu-icon"
-    }), "Plugins"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, null, PLUGIN_TABS.map((tab) => {
-      const Icon = tab.icon;
-      return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
-        key: tab.id,
-        onSelect: () => openPlugins(tab.id)
-      }, /* @__PURE__ */ React.createElement(Icon, {
-        className: "void-settings-menu-icon"
-      }), tab.name);
-    })));
-  }
-  var WrappedPluginsMenu = ErrorBoundary.wrap(PluginsMenu);
-  var avatarPluginsFlyout_default = definePlugin({
-    name: NEW_NAME,
-    icon: PluginsIcon,
-    description: "Move the sidebar Plugins button into the avatar menu and expand it into Connectors, Skills, and Bots.",
-    authors: [Devs.p],
-    tags: ["navigation"],
-    enabledByDefault: true,
-    settings: settings7,
-    _renderItem: () => createElement(WrappedPluginsMenu),
-    _peekTab: () => peekTab(),
-    _shellKey: (local) => shellKey(local),
-    _clearPending: (tab) => clearPending2(tab),
-    _applyTab(local, state, setState) {
-      return applyTab(local, state, setState);
-    },
-    patches: [
-      {
-        find: "usePluginsDialogStore.getState().setOpen(!0)",
-        replacement: {
-          match: /(\(0,\i\.jsx\)\(\i\.AppSidebarItem,\{icon:.{0,80}?onClick:\(\)=>\{"skills-and-connectors")/,
-          replace: "false&&$1"
-        }
-      },
-      {
-        find: 'WD_REFRESH&&{id:"skills-and-connectors"',
-        replacement: {
-          match: /WD_REFRESH&&\{id:"skills-and-connectors"/,
-          replace: 'WD_REFRESH&&!1&&{id:"skills-and-connectors"'
-        }
-      },
-      {
-        find: "avatar_menu_click",
-        all: true,
-        replacement: {
-          match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,100}"user-dropdown\.help")/,
-          replace: "$self._renderItem(),"
-        }
-      },
-      {
-        find: "SkillsAndConnectorsPage:handleTabChange",
-        replacement: [
-          {
-            match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(null\),(\i)=(\i)\?\1:"skills-and-connectors"===(\i)\.page\?\6\.tab:null/,
-            replace: '[$1,$2]=(0,$3.useState)($self._peekTab()),$4=($self._applyTab($5,$1,$2)??($5?$1:"skills-and-connectors"===$6.page?$6.tab:null))'
-          },
-          {
-            match: /(\i)\)return void (\i)\((\i)\);(\i)\.replace\(\{page:"skills-and-connectors",tab:\3\}\)\}/,
-            replace: '$1)return ($self._clearPending($3),void $2($3));$4.replace({page:"skills-and-connectors",tab:$3})}'
-          },
-          {
-            match: /(\i)\[0\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\((\i),\{inDialog:!0,localTabs:\2\}\),\1\[0\]=\2,\1\[1\]=\3\):\3=\1\[1\]/,
-            replace: "$1[0]!==$self._shellKey($2)?($3=(0,$4.jsx)($5,{inDialog:!0,localTabs:$2,key:$self._shellKey($2)}),$1[0]=$self._shellKey($2),$1[1]=$3):$3=$1[1]"
-          }
-        ]
-      }
-    ]
   });
 
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterFiles/styles.css
@@ -8553,9 +9385,9 @@ button .void-info-hint {
 `);
 
   // src/plugins/betterFiles/index.tsx
-  var logger19 = new Logger("BetterFiles");
+  var logger20 = new Logger("BetterFiles");
   var LibraryAssets = findByPropsLazy("deleteLibraryAsset", "useLibraryAssets");
-  var selection = createSelectionStore();
+  var selection2 = createSelectionStore();
   var assetsById = new Map;
   function fileId(item) {
     if (item?.kind !== "file")
@@ -8568,7 +9400,7 @@ button .void-info-hint {
       return null;
     assetsById.set(id, item.asset);
     return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
-      selection,
+      selection: selection2,
       id
     });
   }
@@ -8579,7 +9411,7 @@ button .void-info-hint {
       try {
         await deleteLibraryAsset(asset);
       } catch (e) {
-        logger19.error("Failed to delete asset", id, e);
+        logger20.error("Failed to delete asset", id, e);
       }
       assetsById.delete(id);
     }
@@ -8590,12 +9422,12 @@ button .void-info-hint {
       if (id && item.asset && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         e.stopPropagation();
-        if (selection.has(id)) {
-          selection.toggle(id);
+        if (selection2.has(id)) {
+          selection2.toggle(id);
           assetsById.delete(id);
         } else {
           assetsById.set(id, item.asset);
-          selection.toggle(id);
+          selection2.toggle(id);
         }
         return;
       }
@@ -8610,16 +9442,16 @@ button .void-info-hint {
     tags: ["media"],
     managedStyle: "betterFiles",
     start() {
-      selection.clear();
+      selection2.clear();
       assetsById.clear();
     },
     stop() {
-      selection.clear();
+      selection2.clear();
       assetsById.clear();
     },
     _renderFileCheckbox: ErrorBoundary.wrap(FileCheckbox, null),
     _renderFileActionBar: ErrorBoundary.wrap(() => /* @__PURE__ */ React.createElement(SelectionActionBar, {
-      selection,
+      selection: selection2,
       noun: "file",
       title: "Delete files",
       onDelete: deleteAssets
@@ -8692,9 +9524,9 @@ button .void-info-hint {
 `);
 
   // src/plugins/betterImagine/index.tsx
-  var logger20 = new Logger("BetterImagine");
-  var cl17 = classNameFactory("void-imagine-");
-  var settings8 = definePluginSettings({
+  var logger21 = new Logger("BetterImagine");
+  var cl18 = classNameFactory("void-imagine-");
+  var settings9 = definePluginSettings({
     hideDefaultPreviews: {
       type: 3 /* BOOLEAN */,
       description: "Hide the community image grid and templates on the Imagine home page.",
@@ -8742,7 +9574,7 @@ button .void-info-hint {
     }
   });
   function buildFilename(post, isVideo) {
-    if (!settings8.store.smartFilenames || !post)
+    if (!settings9.store.smartFilenames || !post)
       return null;
     const prompt = (post.prompt ?? post.originalPrompt ?? "").trim();
     const slug = sanitizeFilename(prompt.slice(0, 60), "").slice(0, 60);
@@ -8805,7 +9637,7 @@ button .void-info-hint {
   var randomSeed = Date.now();
   var filterStore = createExternalStore();
   function persist() {
-    if (!settings8.store.persistFilters)
+    if (!settings9.store.persistFilters)
       return;
     try {
       sessionStorage.setItem(STORAGE_KEY2, JSON.stringify({ filter: currentFilter, search: currentSearch, date: currentDate, sort: currentSort }));
@@ -8884,7 +9716,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var cacheList = null;
   var cacheResult = [];
   function filterItems(items) {
-    const { hideModerated } = settings8.store;
+    const { hideModerated } = settings9.store;
     const key = `${items.length}|${currentFilter}|${currentSearch}|${currentDate}|${currentSort}|${hideModerated ? 1 : 0}|${randomSeed}`;
     if (cacheList === items && cacheKey === key)
       return cacheResult;
@@ -8944,7 +9776,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           return;
         video.pause();
         video.currentTime = 0;
-      }).catch((e) => logger20.warn("Failed to pause video:", e));
+      }).catch((e) => logger21.warn("Failed to pause video:", e));
     } else {
       video.pause();
       video.currentTime = 0;
@@ -8953,7 +9785,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var onMouseEnter = (e) => {
     const video = e.currentTarget.querySelector("video");
     if (video)
-      pending.set(video, video.play().catch((e) => logger20.error("Failed to play video", e)));
+      pending.set(video, video.play().catch((e) => logger21.error("Failed to play video", e)));
   };
   var onMouseLeave = (e) => {
     const video = e.currentTarget.querySelector("video");
@@ -8996,7 +9828,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
 `));
       Toaster.toast.success(`Copied ${pluralize(lines.length, label)} to clipboard.`);
     } catch (e) {
-      logger20.error(`Failed to copy ${label}s`, e);
+      logger21.error(`Failed to copy ${label}s`, e);
       Toaster.toast.error(`Failed to copy ${label}s.`);
     }
   }
@@ -9041,7 +9873,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           await state.upscaleVideo(id, video.id);
           upscaled++;
         } catch (e) {
-          logger20.error("Failed to upscale video:", id, video.id, e);
+          logger21.error("Failed to upscale video:", id, video.id, e);
         }
       }
     }
@@ -9068,7 +9900,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       value: currentDate,
       onValueChange: (v) => setDate(v)
     }, /* @__PURE__ */ React.createElement(SelectTrigger, {
-      className: cl17("date-select")
+      className: cl18("date-select")
     }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, Object.keys(DATE_LABELS).map((d) => /* @__PURE__ */ React.createElement(SelectItem, {
       key: d,
       value: d
@@ -9076,7 +9908,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       value: currentSort,
       onValueChange: (v) => setSort(v)
     }, /* @__PURE__ */ React.createElement(SelectTrigger, {
-      className: sortActive ? cl17("sort-select", "sort-active") : cl17("sort-select")
+      className: sortActive ? cl18("sort-select", "sort-active") : cl18("sort-select")
     }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, SORT_KEYS.map((s) => /* @__PURE__ */ React.createElement(SelectItem, {
       key: s,
       value: s
@@ -9088,19 +9920,19 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         setSearchInput(e.target.value);
         setSearch(e.target.value);
       },
-      className: cl17("search")
+      className: cl18("search")
     }), ["image", "video"].map((f) => /* @__PURE__ */ React.createElement(Button, {
       key: f,
       variant: currentFilter === f ? "primary" : "tertiary",
       size: "sm",
       shape: "pill",
-      className: currentFilter !== f ? cl17("chip") : undefined,
+      className: currentFilter !== f ? cl18("chip") : undefined,
       onClick: () => setFilter(currentFilter === f ? "all" : f)
     }, f === "image" ? "Images" : "Videos")), showClear && /* @__PURE__ */ React.createElement(Button, {
       variant: "tertiary",
       size: "sm",
       shape: "pill",
-      className: cl17("chip"),
+      className: cl18("chip"),
       onClick: resetFilters
     }, "Clear"));
   }
@@ -9202,7 +10034,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   }
   function onVisibilityChange() {
-    if (!settings8.store.pauseWhenHidden)
+    if (!settings9.store.pauseWhenHidden)
       return;
     if (document.visibilityState !== "hidden")
       return;
@@ -9218,13 +10050,13 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     description: "Imagine polish: filter, sort, shortcuts on Favorites, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
     authors: [Devs.Prism],
     tags: ["media"],
-    settings: settings8,
-    _hideDefault: () => settings8.store.hideDefaultPreviews,
+    settings: settings9,
+    _hideDefault: () => settings9.store.hideDefaultPreviews,
     _NullGrid: () => null,
-    _autoPlay: () => !settings8.store.noAutoplay,
-    _bypassPaywall: () => settings8.store.bypassPaywall,
-    _ctrlClickSelect: () => settings8.store.ctrlClickSelect,
-    _hoverProps: () => settings8.store.playOnHover ? { onMouseEnter, onMouseLeave } : {},
+    _autoPlay: () => !settings9.store.noAutoplay,
+    _bypassPaywall: () => settings9.store.bypassPaywall,
+    _ctrlClickSelect: () => settings9.store.ctrlClickSelect,
+    _hoverProps: () => settings9.store.playOnHover ? { onMouseEnter, onMouseLeave } : {},
     _useFilteredFavorites: useFilteredFavorites,
     _renderFilterButtons: ErrorBoundary.wrap(FilterButtons, null),
     _renderUpscaleItem: ErrorBoundary.wrap(UpscaleItem, null),
@@ -9329,31 +10161,31 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     return /^#[0-9a-fA-F]{6}$/.test(c);
   }
   function getColor(key, fallback) {
-    const val = settings9.store[key];
+    const val = settings10.store[key];
     return val && isValidHex(val) ? val : fallback;
   }
   function applyColors() {
     const link = getColor("linkColor", DEFAULT_LINK);
     let css = `.void-colored-link{color:${link}!important;text-decoration-color:${link}!important}`;
-    if (settings9.store.enableVisitedColor) {
+    if (settings10.store.enableVisitedColor) {
       const visited = getColor("visitedColor", DEFAULT_VISITED);
       css += `.void-colored-link:visited{color:${visited}!important;text-decoration-color:${visited}!important}`;
     }
     registerStyle(STYLE_NAME2, css);
   }
   function ColorRow({ settingKey, title, description, fallback }) {
-    settings9.use([settingKey]);
+    settings10.use([settingKey]);
     return /* @__PURE__ */ React.createElement(ColorSettingRow, {
       value: getColor(settingKey, fallback),
       onChange: (v) => {
-        settings9.store[settingKey] = v;
+        settings10.store[settingKey] = v;
         applyColors();
       },
       title,
       description
     });
   }
-  var settings9 = definePluginSettings({
+  var settings10 = definePluginSettings({
     linkifyDomains: {
       type: 3 /* BOOLEAN */,
       description: "Detect bare domains in messages and make them clickable.",
@@ -9390,7 +10222,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     description: "Colorize links and detect bare domains in chat messages.",
     authors: [Devs.Prism],
     tags: ["messages"],
-    settings: settings9,
+    settings: settings10,
     patches: [
       {
         find: "chat-markdown:a:link",
@@ -9409,7 +10241,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       }
     ],
     _remarkLinkify() {
-      const { store } = settings9;
+      const { store } = settings10;
       return (tree) => {
         try {
           if (!store.linkifyDomains)
@@ -9453,8 +10285,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       };
     },
     start() {
-      settings9.store.linkColor ??= DEFAULT_LINK;
-      settings9.store.visitedColor ??= DEFAULT_VISITED;
+      settings10.store.linkColor ??= DEFAULT_LINK;
+      settings10.store.visitedColor ??= DEFAULT_VISITED;
       applyColors();
       enableStyle(STYLE_NAME2);
     },
@@ -9640,8 +10472,8 @@ html.void-cms-picked .void-cms-ghost {
 `);
 
   // src/plugins/betterModeSelect/index.tsx
-  var logger21 = new Logger("BetterModeSelect");
-  var cl18 = classNameFactory("void-cms-");
+  var logger22 = new Logger("BetterModeSelect");
+  var cl19 = classNameFactory("void-cms-");
   var MODES = [
     { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
     { id: "fast", pin: "pinFast", label: "Fast", Icon: FastModeIcon },
@@ -9668,7 +10500,7 @@ html.void-cms-picked .void-cms-ghost {
   var PICK_MS = 900;
   var POINTER = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
   var GHOST_STYLE = { opacity: "0", visibility: "hidden" };
-  var settings10 = definePluginSettings({
+  var settings11 = definePluginSettings({
     pinList: {
       type: 6 /* COMPONENT */,
       description: "Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.",
@@ -9780,18 +10612,18 @@ html.void-cms-picked .void-cms-ghost {
       delete menuRec[OLD_NAME];
     }
     SettingsStore3.markAsChanged();
-    logger21.info("Migrated CompactModeSelect into BetterModeSelect");
+    logger22.info("Migrated CompactModeSelect into BetterModeSelect");
   }
-  var pluginName2 = Object.getOwnPropertyDescriptor(settings10, "pluginName");
+  var pluginName2 = Object.getOwnPropertyDescriptor(settings11, "pluginName");
   if (pluginName2?.set && pluginName2.get) {
-    Object.defineProperty(settings10, "pluginName", {
+    Object.defineProperty(settings11, "pluginName", {
       configurable: true,
       enumerable: true,
       get: pluginName2.get,
       set(name) {
         if (name === NEW_NAME2)
           migrateLegacy3();
-        pluginName2.set.call(settings10, name);
+        pluginName2.set.call(settings11, name);
       }
     });
   }
@@ -9804,7 +10636,7 @@ html.void-cms-picked .void-cms-ghost {
   var cloakWatch = null;
   function uncloak() {
     for (const host of ghosts) {
-      host.classList.remove(cl18("ghost"));
+      host.classList.remove(cl19("ghost"));
       host.style.removeProperty("opacity");
       host.style.removeProperty("visibility");
       host.style.removeProperty("pointer-events");
@@ -9854,10 +10686,10 @@ html.void-cms-picked .void-cms-ghost {
     return next;
   }
   function setOrder(ids) {
-    settings10.store.pinOrder = ids.join(",");
+    settings11.store.pinOrder = ids.join(",");
   }
   function setPinned(pin, on) {
-    settings10.store[pin] = on;
+    settings11.store[pin] = on;
   }
   function pinnedIdsFrom(pinOrder, pins, catalog) {
     const known = catalog.filter((c) => KNOWN_IDS.has(c.id));
@@ -9895,7 +10727,7 @@ html.void-cms-picked .void-cms-ghost {
     return ["auto", ...ids];
   }
   function pinnedIds() {
-    const cfg = settings10.store;
+    const cfg = settings11.store;
     return withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, ModesStore.useModesStore.getState().modes ?? [])));
   }
   var incognitoObs = null;
@@ -9906,7 +10738,7 @@ html.void-cms-picked .void-cms-ghost {
     for (const el of document.querySelectorAll(ITEM_SEL)) {
       if (!matchItem(el, "build"))
         continue;
-      el.classList.toggle(cl18("incognito-hide"), hide);
+      el.classList.toggle(cl19("incognito-hide"), hide);
     }
   }
   function watchIncognitoMenu() {
@@ -9961,7 +10793,7 @@ html.void-cms-picked .void-cms-ghost {
     const host = ghostHost(menu.root);
     if (ghosts.has(host))
       return;
-    host.classList.add(cl18("ghost"));
+    host.classList.add(cl19("ghost"));
     host.style.setProperty("opacity", GHOST_STYLE.opacity, "important");
     host.style.setProperty("visibility", GHOST_STYLE.visibility, "important");
     ghosts.add(host);
@@ -10146,7 +10978,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger21.warn("Failed to harvest mode icons:", e);
+      logger22.warn("Failed to harvest mode icons:", e);
     } finally {
       setPicking(false);
       harvesting = false;
@@ -10162,21 +10994,21 @@ html.void-cms-picked .void-cms-ghost {
       if (!menu) {
         const trigger = nativeTrigger();
         if (!trigger) {
-          logger21.warn("Native mode selector not found");
+          logger22.warn("Native mode selector not found");
           return;
         }
         clickEl(trigger);
         menu = await waitForMenu();
       }
       if (!menu) {
-        logger21.warn("Native mode item not found:", id);
+        logger22.warn("Native mode item not found:", id);
         return;
       }
       cloak(menu);
       stashGlyphs(menu.items);
       const item = menu.items.find((el) => matchItem(el, id));
       if (!item) {
-        logger21.warn("Native mode item not found:", id);
+        logger22.warn("Native mode item not found:", id);
         const trigger = nativeTrigger();
         if (modeMenu() && trigger)
           clickEl(trigger);
@@ -10188,7 +11020,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger21.warn("Failed to select mode:", e);
+      logger22.warn("Failed to select mode:", e);
     } finally {
       setPicking(false);
     }
@@ -10208,7 +11040,7 @@ html.void-cms-picked .void-cms-ghost {
   function PinGlyph({ id, Icon, label, showLabels }) {
     const html = useNativeGlyph(id);
     const glyph = html ? /* @__PURE__ */ React.createElement("span", {
-      className: cl18("glyph"),
+      className: cl19("glyph"),
       dangerouslySetInnerHTML: { __html: html }
     }) : /* @__PURE__ */ React.createElement(Icon, {
       size: 18
@@ -10216,7 +11048,7 @@ html.void-cms-picked .void-cms-ghost {
     if (!showLabels)
       return glyph;
     return /* @__PURE__ */ React.createElement(React.Fragment, null, glyph, /* @__PURE__ */ React.createElement("span", {
-      className: cl18("label")
+      className: cl19("label")
     }, label));
   }
   function preventDragOver(e) {
@@ -10224,7 +11056,7 @@ html.void-cms-picked .void-cms-ghost {
     e.dataTransfer.dropEffect = "move";
   }
   function PinOrderEditor() {
-    const cfg = settings10.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
+    const cfg = settings11.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
     const ids = parseOrder(cfg.pinOrder);
     const [dragId, setDragId] = React.useState(null);
     const onDragStart = (id) => (e) => {
@@ -10241,27 +11073,27 @@ html.void-cms-picked .void-cms-ghost {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl18("order")
+      className: cl19("order")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl18("order-list"),
+      className: cl19("order-list"),
       role: "list"
     }, ids.map((id, i) => {
       const m = MODE_BY_ID[id];
       return /* @__PURE__ */ React.createElement("div", {
         key: m.id,
         role: "listitem",
-        className: classes(cl18("order-row"), dragId === m.id && cl18("dragging")),
+        className: classes(cl19("order-row"), dragId === m.id && cl19("dragging")),
         onDragOver: preventDragOver,
         onDrop: onDrop(m.id)
       }, /* @__PURE__ */ React.createElement(Flex, {
         alignItems: "center",
         gap: "0.5rem",
-        className: cl18("order-main")
+        className: cl19("order-main")
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl18("grip"),
+        className: cl19("grip"),
         draggable: true,
         onDragStart: onDragStart(m.id),
         onDragEnd: () => setDragId(null),
@@ -10270,7 +11102,7 @@ html.void-cms-picked .void-cms-ghost {
         size: 16
       })), /* @__PURE__ */ React.createElement(m.Icon, {
         size: 16,
-        className: cl18("order-icon")
+        className: cl19("order-icon")
       }), /* @__PURE__ */ React.createElement(SettingsTitle, null, m.label)), /* @__PURE__ */ React.createElement(Flex, {
         alignItems: "center",
         gap: "0.25rem"
@@ -10301,7 +11133,7 @@ html.void-cms-picked .void-cms-ghost {
     })));
   }
   function PinnedModes() {
-    const cfg = settings10.use([...SETTING_KEYS]);
+    const cfg = settings11.use([...SETTING_KEYS]);
     const page = RoutingStore.useRoutingStore((s) => s.route.page);
     const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
     const catalog = ModesStore.useModesStore((s) => s.modes);
@@ -10319,10 +11151,10 @@ html.void-cms-picked .void-cms-ghost {
       selectMode(id);
     };
     return /* @__PURE__ */ React.createElement("div", {
-      className: classes(cl18("pins"), hideNative && cl18("hide-native"))
+      className: classes(cl19("pins"), hideNative && cl19("hide-native"))
     }, items.map((m) => /* @__PURE__ */ React.createElement("span", {
       key: m.id,
-      className: cl18("pin-host"),
+      className: cl19("pin-host"),
       "data-void-mode-id": m.id
     }, /* @__PURE__ */ React.createElement(ChatBarButton, {
       size: "sm",
@@ -10334,7 +11166,7 @@ html.void-cms-picked .void-cms-ghost {
       }),
       tooltip: m.label,
       onClick: onPin(m.id),
-      className: classes(cl18("pin"), selectedModeId === m.id && cl18("on"), showLabels && cl18("labeled"), "hover:bg-button-ghost-hover"),
+      className: classes(cl19("pin"), selectedModeId === m.id && cl19("on"), showLabels && cl19("labeled"), "hover:bg-button-ghost-hover"),
       "aria-label": m.label
     }))));
   }
@@ -10345,7 +11177,7 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
-    settings: settings10,
+    settings: settings11,
     managedStyle: "betterModeSelect",
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
@@ -10355,7 +11187,7 @@ html.void-cms-picked .void-cms-ghost {
       try {
         offIncognitoWatch = SettingsStore.useSettingsStore.subscribe(() => watchIncognitoMenu());
       } catch (e) {
-        logger21.debug("incognito watch failed", e);
+        logger22.debug("incognito watch failed", e);
       }
     },
     stop() {
@@ -10365,8 +11197,8 @@ html.void-cms-picked .void-cms-ghost {
       incognitoObs?.disconnect();
       incognitoObs = null;
       document.documentElement.removeAttribute("data-void-cms-incognito");
-      for (const el of document.querySelectorAll(`.${cl18("incognito-hide")}`))
-        el.classList.remove(cl18("incognito-hide"));
+      for (const el of document.querySelectorAll(`.${cl19("incognito-hide")}`))
+        el.classList.remove(cl19("incognito-hide"));
       setPicking(false);
       harvested.clear();
       harvestListeners.clear();
@@ -10695,8 +11527,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/betterNavigator/index.ts
-  var logger22 = new Logger("BetterNavigator");
-  var cl19 = classNameFactory("void-bn-");
+  var logger23 = new Logger("BetterNavigator");
+  var cl20 = classNameFactory("void-bn-");
   var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
   var ASST_SEL = "[data-testid='assistant-message']";
   var TICK_SEL = "button[aria-label^='Go to response ']";
@@ -10770,7 +11602,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
   var LIVE_PHASE = new Set(["sending", "streaming"]);
   var JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
-  var settings11 = definePluginSettings({
+  var settings12 = definePluginSettings({
     showAssistant: {
       type: 3 /* BOOLEAN */,
       description: "List assistant replies in the navigator, not only your messages.",
@@ -11033,7 +11865,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return false;
     } catch (e) {
-      logger22.debug("stream stores unavailable:", e);
+      logger23.debug("stream stores unavailable:", e);
       return null;
     }
   }
@@ -11065,7 +11897,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const page = ChatPageStore.useChatPageStore.getState();
       return page.conversationId || page.optimisticConversationId || "";
     } catch (e) {
-      logger22.debug("chat page unavailable:", e);
+      logger23.debug("chat page unavailable:", e);
       return "";
     }
   }
@@ -11075,7 +11907,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid];
     } catch (e) {
-      logger22.debug("message store unavailable:", e);
+      logger23.debug("message store unavailable:", e);
       return;
     }
   }
@@ -11199,7 +12031,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       return MessageStore.nodeToResponse?.(cid, node) ?? node.content;
     } catch (e) {
-      logger22.debug("nodeToResponse failed:", e);
+      logger23.debug("nodeToResponse failed:", e);
       return node.content;
     }
   }
@@ -11213,7 +12045,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function collectDom() {
     const root = chatPane() ?? document;
-    const showAsst = settings11.store.showAssistant;
+    const showAsst = settings12.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const out = [];
     for (const el of root.querySelectorAll(MSG_SEL)) {
@@ -11234,7 +12066,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (node.role !== "user" && node.role !== "assistant")
       return null;
     const role = node.role;
-    if (!settings11.store.showAssistant && role === "assistant")
+    if (!settings12.store.showAssistant && role === "assistant")
       return null;
     const rec = contentOf(cid, node);
     if (rec?.isControl)
@@ -11266,7 +12098,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length)
       return [];
-    const showAsst = settings11.store.showAssistant;
+    const showAsst = settings12.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const liveId = showAsst ? liveAssistantId(gw, path) : "";
     const out = [];
@@ -11389,7 +12221,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     el.classList.add("void-bn-flash");
   }
   function armFlash(id, fallback) {
-    if (settings11.store.jumpEffect !== "border")
+    if (settings12.store.jumpEffect !== "border")
       return;
     if (!id && !fallback)
       return;
@@ -11523,7 +12355,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
       return true;
     } catch (e) {
-      logger22.debug("loadOlderHistory failed:", e);
+      logger23.debug("loadOlderHistory failed:", e);
       return false;
     }
   }
@@ -11914,7 +12746,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return best;
   }
   function nativeCurrentIndex() {
-    if (!settings11.store.showAssistant)
+    if (!settings12.store.showAssistant)
       return null;
     const ticks = nativeTicks();
     if (!ticks.length)
@@ -12143,7 +12975,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function syncNativeDash(nav) {
     clearNativeDash();
-    if (!settings11.store.showAssistant)
+    if (!settings12.store.showAssistant)
       return;
     let liveI = -1;
     for (let i = nav.length - 1;i >= 0; i--) {
@@ -12169,7 +13001,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function menuEl(nav) {
     const menu = document.createElement("div");
-    menu.className = cl19("menu");
+    menu.className = cl20("menu");
     menu.addEventListener("pointerenter", () => {
       overMenu = true;
       markAim(-1);
@@ -12179,23 +13011,23 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       markAim(-1);
     });
     const meta = document.createElement("div");
-    meta.className = cl19("meta");
+    meta.className = cl20("meta");
     meta.textContent = metaLabel(0);
     const ul = document.createElement("ul");
-    ul.className = cl19("list");
+    ul.className = cl20("list");
     nav.forEach((item, i) => {
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = cl19("item");
+      btn.className = cl20("item");
       btn.dataset.voidBnI = String(i);
       if (item.id)
         btn.dataset.responseId = item.id;
       const emoji = document.createElement("span");
-      emoji.className = cl19("emoji");
+      emoji.className = cl20("emoji");
       emoji.textContent = item.role === "user" ? "❓" : "\uD83E\uDD16";
       const label = document.createElement("span");
-      label.className = cl19("label");
+      label.className = cl20("label");
       label.textContent = item.text;
       btn.append(emoji, label);
       btn.addEventListener("click", (e) => {
@@ -12211,11 +13043,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function tickRail(nav) {
     const wrap = document.createElement("div");
-    wrap.className = cl19("ticks", { dense: nav.length > DENSE_N });
+    wrap.className = cl20("ticks", { dense: nav.length > DENSE_N });
     nav.forEach((item, i) => {
       const tick = document.createElement("button");
       tick.type = "button";
-      tick.className = cl19("tick", item.role === "user" ? "tick-user" : "tick-asst", { "tick-live": item.live });
+      tick.className = cl20("tick", item.role === "user" ? "tick-user" : "tick-asst", { "tick-live": item.live });
       tick.dataset.voidBnI = String(i);
       if (item.id)
         tick.dataset.responseId = item.id;
@@ -12258,7 +13090,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     document.documentElement.classList.remove("void-bn-fullticks");
   }
   function syncHideTip() {
-    document.documentElement.classList.toggle(HIDE_CLASS, !!settings11.store.hideNativeHover);
+    document.documentElement.classList.toggle(HIDE_CLASS, !!settings12.store.hideNativeHover);
   }
   function setOpen(on) {
     host?.classList.toggle("void-bn-open", on);
@@ -12465,7 +13297,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     unmount();
     document.documentElement.classList.add("void-bn-fullticks");
     const box = document.createElement("div");
-    box.className = cl19("host", "self");
+    box.className = cl20("host", "self");
     const frame = chatColumn();
     if (!frame)
       return;
@@ -12511,7 +13343,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
       return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.map((n) => `${n.id}:${n.status}`).join(",")}`;
     } catch (e) {
-      logger22.debug("message key failed:", e);
+      logger23.debug("message key failed:", e);
       return "";
     }
   }
@@ -12572,7 +13404,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["navigation"],
     enabledByDefault: true,
     startAt: "DOMContentLoaded" /* DOMContentLoaded */,
-    settings: settings11,
+    settings: settings12,
     managedStyle: "betterNavigator",
     cleanupSelectors: [".void-bn-host"],
     start,
@@ -12852,7 +13684,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/persist.ts
-  var logger23 = new Logger("QueuePersist");
+  var logger24 = new Logger("QueuePersist");
   var ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
   var DB_KEY = "queue-persist:v1";
   var LOCAL_ACCOUNT = "local";
@@ -12964,7 +13796,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (intent.activeModelId && prevActive !== intent.activeModelId)
         chat.setActiveModelId(intent.activeModelId);
     } catch (e) {
-      logger23.debug("intent apply failed", e);
+      logger24.debug("intent apply failed", e);
     }
     try {
       if (intent?.modeId)
@@ -12980,7 +13812,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         if (chat && prevActive && String(chat.activeModelId || "") !== prevActive)
           chat.setActiveModelId(prevActive);
       } catch (e) {
-        logger23.debug("intent restore failed", e);
+        logger24.debug("intent restore failed", e);
       }
     }
   }
@@ -13177,7 +14009,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       await idbSet(DB_KEY, doc);
     } catch (e) {
-      logger23.debug("persist failed", e);
+      logger24.debug("persist failed", e);
     }
   }
   async function load() {
@@ -13188,7 +14020,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       else
         doc = emptyDoc();
     } catch (e) {
-      logger23.debug("load failed", e);
+      logger24.debug("load failed", e);
       doc = emptyDoc();
     }
     bucketsToMemory(accountId());
@@ -13244,7 +14076,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           });
         });
       } catch (e) {
-        logger23.debug("replay failed", e);
+        logger24.debug("replay failed", e);
       } finally {
         suppress = false;
       }
@@ -13311,7 +14143,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         decided.add(cid);
       }
     } catch (e) {
-      logger23.debug("restore failed", e);
+      logger24.debug("restore failed", e);
       retry = true;
     } finally {
       replaying = false;
@@ -13523,7 +14355,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/settings.ts
-  var settings12 = definePluginSettings({
+  var settings13 = definePluginSettings({
     showQueueMode: {
       type: 3 /* BOOLEAN */,
       description: "Show a mode chip on each queued message.",
@@ -13542,7 +14374,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   });
 
   // src/plugins/betterQueue/mode.ts
-  var logger24 = new Logger("ModeSync");
+  var logger25 = new Logger("ModeSync");
   var CHAT_POST = /\/rest\/app-chat\/conversations/;
   var STOP_URL = /stop|abort|cancel/i;
   var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
@@ -13753,7 +14585,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function syncRestoreFlag() {
-    if (!settings12.store.stickyOnNavigate) {
+    if (!settings13.store.stickyOnNavigate) {
       setRestoreFlag(false);
       return;
     }
@@ -13796,7 +14628,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (settled !== slug && modeSlug(intent.modeId) === slug)
         setIntent(captureIntent(settled, snapshot()));
     } catch (e) {
-      logger24.debug("apply failed", e);
+      logger25.debug("apply failed", e);
     } finally {
       applying = false;
     }
@@ -13839,7 +14671,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     userPicking = false;
     awaitingMenu = false;
     applyIntent(intent);
-    logger24.info("intent", intent.modeId);
+    logger25.info("intent", intent.modeId);
   }
   function rememberSnapshot() {
     const next = snapshot();
@@ -13849,7 +14681,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     userPicking = false;
     awaitingMenu = false;
     syncModelMode(modeSlug(intent.modeId));
-    logger24.info("intent", intent.modeId);
+    logger25.info("intent", intent.modeId);
   }
   function syncModelMode(slug) {
     if (!slug || applying)
@@ -13866,7 +14698,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     } catch (e) {
       applying = false;
-      logger24.debug("model sync failed", e);
+      logger25.debug("model sync failed", e);
     }
   }
   var MODE_IDS = new Set(CATALOG.map((m) => m.id));
@@ -13899,7 +14731,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
       } catch (e) {
-        logger24.debug("incognito build hide failed", e);
+        logger25.debug("incognito build hide failed", e);
       } finally {
         applying = false;
       }
@@ -13914,7 +14746,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       ModesStore.useModesStore.getState().setSelectedModeId("build", { source: "sync" });
     } catch (e) {
-      logger24.debug("incognito build restore failed", e);
+      logger25.debug("incognito build restore failed", e);
     } finally {
       applying = false;
     }
@@ -13932,7 +14764,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       wrapped.voidPicker = true;
       store.setState({ setSelectedModeId: wrapped });
     } catch (e) {
-      logger24.debug("picker hook failed", e);
+      logger25.debug("picker hook failed", e);
     }
   }
   function followModelMode() {
@@ -13957,7 +14789,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         modes.setSelectedModeId(slug, { source: "sync" });
       } catch (e) {
-        logger24.debug("picker sync failed", e);
+        logger25.debug("picker sync failed", e);
       } finally {
         applying = false;
       }
@@ -13966,10 +14798,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     const snap = snapshot();
     setIntent(captureIntent(snap.modeId || slug, snap));
-    logger24.info("intent", intent.modeId, "from model", slug);
+    logger25.info("intent", intent.modeId, "from model", slug);
   }
   function fightHydrate() {
-    if (sendOverride || !settings12.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
+    if (sendOverride || !settings13.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
       return;
     if (!loadPending())
       return;
@@ -13978,7 +14810,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const cid = currentCid3();
     if (modeSlug(cur.modeId) === slug && (!cid || sessionAdjusted(cid) === slug) && (!intent.modelMode || modeSlug(cur.modelMode) === slug) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
       return;
-    logger24.info("hydrate fought", cur.modeId, "->", intent.modeId);
+    logger25.info("hydrate fought", cur.modeId, "->", intent.modeId);
     applyIntent(intent);
   }
   function navKey() {
@@ -14008,7 +14840,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (!intent.modeId)
       setIntent(snapshot());
-    if (!settings12.store.stickyOnNavigate || !intent.modeId)
+    if (!settings13.store.stickyOnNavigate || !intent.modeId)
       return;
     setRestoreFlag(true);
     applyIntent(intent);
@@ -14166,7 +14998,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (diverting) {
         mapGetOrCreate(held, cid, () => []).push({ id, args: diverting, intent: { ...saved } });
         diverting = null;
-        logger24.info("held", id, "for", saved.modeId);
+        logger25.info("held", id, "for", saved.modeId);
         return true;
       }
       return false;
@@ -14246,7 +15078,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
     state.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued.item), parentId });
     forgetItem(turn.id);
-    logger24.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
+    logger25.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
   }
   function onGwEvent(cid, event) {
     const { type } = event;
@@ -14453,7 +15285,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       wrappedGwSend = wrapped;
       mgr.send = wrapped;
     } catch (e) {
-      logger24.debug("gateway wrap failed", e);
+      logger25.debug("gateway wrap failed", e);
     }
   }
   function unwrapGatewaySend() {
@@ -14464,7 +15296,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (gwHost && origGwSend && gwHost.send === wrappedGwSend)
         gwHost.send = origGwSend;
     } catch (e) {
-      logger24.debug("gateway unwrap failed", e);
+      logger25.debug("gateway unwrap failed", e);
     }
     origGwSend = null;
     wrappedGwSend = null;
@@ -14595,7 +15427,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!next || next === text)
       return null;
     applyIntent(live);
-    logger24.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
+    logger25.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
     return next;
   }
   function patchFetchArgs(input, init) {
@@ -14642,7 +15474,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           return origFetch.call(pageWindow, i, n);
         }
       } catch (e) {
-        logger24.debug("fetch patch failed", e);
+        logger25.debug("fetch patch failed", e);
       }
       return origFetch.call(pageWindow, input, init);
     };
@@ -14663,7 +15495,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         xhrMeta.set(this, `${String(method).toUpperCase()} ${requestUrl(url)}`);
       } catch (e) {
-        logger24.debug("xhr open failed", e);
+        logger25.debug("xhr open failed", e);
       }
       return origXhrOpen.call(this, method, url, ...rest);
     };
@@ -14757,7 +15589,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (turn)
         turn.intent = next;
     }
-    logger24.info("queue item", id, "->", next.modeId);
+    logger25.info("queue item", id, "->", next.modeId);
     schedulePaint();
   }
   function menuCurrent(chip, id) {
@@ -14975,7 +15807,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function paint2() {
     paintRaf = 0;
-    if (!settings12.store.showQueueMode || onImaginePage()) {
+    if (!settings13.store.showQueueMode || onImaginePage()) {
       unpaint();
       return;
     }
@@ -15093,7 +15925,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
       } catch (e) {
-        logger24.debug("incognito build hide failed", e);
+        logger25.debug("incognito build hide failed", e);
       } finally {
         applying = false;
       }
@@ -15160,13 +15992,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       hookXhr();
       hookSelectedMode();
     } catch (e) {
-      logger24.warn("Failed to hook send path", e);
+      logger25.warn("Failed to hook send path", e);
     }
     try {
       offIncognito?.();
       offIncognito = SettingsStore.useSettingsStore.subscribe(() => alignIncognitoBuild());
     } catch (e) {
-      logger24.debug("incognito subscribe failed", e);
+      logger25.debug("incognito subscribe failed", e);
     }
     if (!currentCid3())
       followModelMode();
@@ -15263,7 +16095,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/index.ts
-  var logger25 = new Logger("BetterQueue");
+  var logger26 = new Logger("BetterQueue");
   function dropName(list) {
     if (!Array.isArray(list))
       return;
@@ -15304,23 +16136,23 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     }
     SettingsStore3.markAsChanged();
-    logger25.info("Migrated ModeSync / QueuePersist into BetterQueue");
+    logger26.info("Migrated ModeSync / QueuePersist into BetterQueue");
   }
-  var pluginName3 = Object.getOwnPropertyDescriptor(settings12, "pluginName");
+  var pluginName3 = Object.getOwnPropertyDescriptor(settings13, "pluginName");
   if (pluginName3?.set && pluginName3.get) {
-    Object.defineProperty(settings12, "pluginName", {
+    Object.defineProperty(settings13, "pluginName", {
       configurable: true,
       enumerable: true,
       get: pluginName3.get,
       set(name) {
         if (name === "BetterQueue")
           migrateLegacy4();
-        pluginName3.set.call(settings12, name);
+        pluginName3.set.call(settings13, name);
       }
     });
   }
   function applyPersist() {
-    if (settings12.store.persistAcrossRefresh)
+    if (settings13.store.persistAcrossRefresh)
       startPersist();
     else
       stopPersist();
@@ -15333,7 +16165,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["composer"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
-    settings: settings12,
+    settings: settings13,
     managedStyle: "betterQueue",
     cleanupSelectors: [".void-ms-qchip", ".void-ms-qmenu"],
     start() {
@@ -15857,8 +16689,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/jump.ts
-  var logger26 = new Logger("QuoteJump");
-  var cl20 = classNameFactory("void-qj-");
+  var logger27 = new Logger("QuoteJump");
+  var cl21 = classNameFactory("void-qj-");
   var HL = "void-qj";
   var EDITOR = ".tiptap, [contenteditable='true']";
   var MSG2 = "[data-testid='user-message'], [data-testid='assistant-message']";
@@ -16638,7 +17470,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (flashTimer2)
       window.clearTimeout(flashTimer2);
     flashTimer2 = 0;
-    flashing2?.classList.remove(cl20("hit"));
+    flashing2?.classList.remove(cl21("hit"));
     flashing2 = null;
     const { highlights } = CSS;
     highlights?.delete(HL);
@@ -16652,7 +17484,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       highlights.set(HL, new HighlightCtor(...list));
     } else if (list.length || flashHost || !el.closest("[id^='response-']")) {
       flashing2 = el;
-      el.classList.add(cl20("hit"));
+      el.classList.add(cl21("hit"));
     }
     flashTimer2 = window.setTimeout(clearHighlight, FLASH_MS2);
   }
@@ -16798,11 +17630,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
     } catch (e) {
-      logger26.debug("loadResponses failed", e);
+      logger27.debug("loadResponses failed", e);
       try {
         await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
       } catch (err) {
-        logger26.debug("loadMoreResponses failed", err);
+        logger27.debug("loadMoreResponses failed", err);
       }
     }
     try {
@@ -16811,7 +17643,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
       }
     } catch (e) {
-      logger26.debug("loadOlderHistory failed", e);
+      logger27.debug("loadOlderHistory failed", e);
     }
   }
   function resolveNeedle(origin) {
@@ -16980,7 +17812,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (mine !== gen || !el) {
       if (!el)
-        logger26.debug("no source message");
+        logger27.debug("no source message");
       return;
     }
     await land(el, needle, mine, pinned);
@@ -17023,7 +17855,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         }
       }
     } catch (e) {
-      logger26.debug("message nodes failed", e);
+      logger27.debug("message nodes failed", e);
     }
     try {
       const store = ResponseStore.useResponseStore.getState();
@@ -17071,10 +17903,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function closeMenu2() {
     openSrc = "";
     menuCites = [];
-    document.querySelector(`.${cl20("menu")}`)?.remove();
+    document.querySelector(`.${cl21("menu")}`)?.remove();
   }
   function placeMenu(anchor) {
-    const menu = document.querySelector(`.${cl20("menu")}`);
+    const menu = document.querySelector(`.${cl21("menu")}`);
     if (!menu)
       return;
     const r = anchor.getBoundingClientRect();
@@ -17087,11 +17919,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     openSrc = anchor.dataset.voidQjSrc || "";
     menuCites = cites;
     const menu = document.createElement("div");
-    menu.className = cl20("menu");
+    menu.className = cl21("menu");
     cites.forEach((cite, i) => {
       const item = document.createElement("button");
       item.type = "button";
-      item.className = cl20("item");
+      item.className = cl21("item");
       item.dataset.voidQjI = String(i);
       const where = cite.live ? "Composer" : "Quote";
       item.textContent = `${where}: ${norm2(cite.quoted).slice(0, 72)}`;
@@ -17102,7 +17934,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function clearBadges() {
     closeMenu2();
-    for (const n of document.querySelectorAll(`.${cl20("back")}`))
+    for (const n of document.querySelectorAll(`.${cl21("back")}`))
       n.remove();
     for (const n of document.querySelectorAll("[data-void-qj-preview]"))
       n.removeAttribute("data-void-qj-preview");
@@ -17124,9 +17956,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return svg;
   }
   function ensureGlyph(btn) {
-    if (!btn.querySelector(`.${cl20("mark")}`)) {
+    if (!btn.querySelector(`.${cl21("mark")}`)) {
       const mark = document.createElement("span");
-      mark.className = cl20("mark");
+      mark.className = cl21("mark");
       mark.setAttribute("aria-hidden", "true");
       mark.append(quoteSvg());
       btn.prepend(mark);
@@ -17137,7 +17969,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function paintCount(btn, n) {
-    const cur = btn.querySelector(`.${cl20("count")}`);
+    const cur = btn.querySelector(`.${cl21("count")}`);
     if (n <= 1) {
       cur?.remove();
       return;
@@ -17146,7 +17978,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     let el = cur;
     if (!el) {
       el = document.createElement("span");
-      el.className = cl20("count");
+      el.className = cl21("count");
       el.setAttribute("aria-hidden", "true");
       btn.append(el);
     }
@@ -17207,11 +18039,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (box.width < 40 || box.bottom < 24 || box.top > window.innerHeight - 8)
         continue;
       seen.add(source);
-      let btn = document.querySelector(`.${cl20("back")}[data-void-qj-src="${source}"]`);
+      let btn = document.querySelector(`.${cl21("back")}[data-void-qj-src="${source}"]`);
       if (!btn) {
         btn = document.createElement("button");
         btn.type = "button";
-        btn.className = cl20("back");
+        btn.className = cl21("back");
         btn.dataset.voidQjSrc = source;
         document.body.append(btn);
       }
@@ -17225,7 +18057,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (openSrc === source)
         placeMenu(btn);
     }
-    for (const n of document.querySelectorAll(`.${cl20("back")}`)) {
+    for (const n of document.querySelectorAll(`.${cl21("back")}`)) {
       const id = n.dataset.voidQjSrc || "";
       if (seen.has(id))
         continue;
@@ -17281,7 +18113,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const root = host();
     const card = root?.querySelector(JUMP_BTN) ?? el;
     if (!card) {
-      logger26.debug("no citing message", cite.id);
+      logger27.debug("no citing message", cite.id);
       return;
     }
     openAncestors(card, cite.quoted);
@@ -17299,7 +18131,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }, mine, cite.id);
   }
   function onBackClick(t) {
-    const badge = t.closest(`.${cl20("back")}`);
+    const badge = t.closest(`.${cl21("back")}`);
     if (badge instanceof HTMLElement) {
       const src = badge.dataset.voidQjSrc || "";
       const cites = citesBySource().get(src) ?? [];
@@ -17313,14 +18145,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return true;
     }
-    const item = t.closest(`.${cl20("item")}`);
+    const item = t.closest(`.${cl21("item")}`);
     if (item instanceof HTMLElement) {
       const cite = menuCites[Number(item.dataset.voidQjI)];
       closeMenu2();
       jumpToCite(cite);
       return true;
     }
-    if (!t.closest(`.${cl20("menu")}`))
+    if (!t.closest(`.${cl21("menu")}`))
       closeMenu2();
     return false;
   }
@@ -17331,7 +18163,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const t = eventEl(e.target);
       if (!t)
         return;
-      if (t.closest(`.${cl20("back")}, .${cl20("menu")}`)) {
+      if (t.closest(`.${cl21("back")}, .${cl21("menu")}`)) {
         e.preventDefault();
         e.stopPropagation();
         onBackClick(t);
@@ -17348,7 +18180,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       e.stopPropagation();
       jump2(origin);
     } catch (err) {
-      logger26.debug("click", err);
+      logger27.debug("click", err);
     }
   }
   function startJump() {
@@ -17381,8 +18213,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/sticky.ts
-  var logger27 = new Logger("QuoteSticky");
-  var cl21 = classNameFactory("void-qs-");
+  var logger28 = new Logger("QuoteSticky");
+  var cl22 = classNameFactory("void-qs-");
   var KEEP2 = 40;
   var RESTORE_GAP_MS = 80;
   var COLLAPSE_PX = 80;
@@ -17623,7 +18455,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         applying2 = false;
       }
     } catch (e) {
-      logger27.debug("clear failed", e);
+      logger28.debug("clear failed", e);
     }
   }
   function applyQuote(key, text, popup) {
@@ -17637,7 +18469,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(popup))
         chat.setQuotePopupData(popup);
     } catch (e) {
-      logger27.debug("apply failed", e);
+      logger28.debug("apply failed", e);
     } finally {
       applying2 = false;
     }
@@ -17650,7 +18482,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!clip)
       return false;
     for (const n of bar.querySelectorAll("div, span, button")) {
-      if (!(n instanceof HTMLElement) || n.closest(`.${cl21("chip")}`))
+      if (!(n instanceof HTMLElement) || n.closest(`.${cl22("chip")}`))
         continue;
       if (n.closest(".tiptap, [contenteditable='true']"))
         continue;
@@ -17667,7 +18499,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return false;
   }
   function removeFallback() {
-    for (const n of document.querySelectorAll(`.${cl21("chip")}`))
+    for (const n of document.querySelectorAll(`.${cl22("chip")}`))
       n.remove();
   }
   function onFallbackDismiss(e) {
@@ -17676,17 +18508,17 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function makeChip() {
     const el = document.createElement("div");
-    el.className = cl21("chip");
+    el.className = cl22("chip");
     el.dataset.voidQs = "";
     const mark = document.createElement("span");
-    mark.className = cl21("mark");
+    mark.className = cl22("mark");
     mark.setAttribute("aria-hidden", "true");
     mountQuoteMark(mark);
     const text = document.createElement("span");
-    text.className = cl21("text");
+    text.className = cl22("text");
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = cl21("x");
+    btn.className = cl22("x");
     btn.setAttribute("aria-label", "Remove quote");
     btn.innerHTML = X_SVG;
     btn.addEventListener("pointerdown", onFallbackDismiss);
@@ -17719,7 +18551,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       removeFallback();
       return;
     }
-    let el = document.querySelector(`.${cl21("chip")}`);
+    let el = document.querySelector(`.${cl22("chip")}`);
     if (el instanceof HTMLElement && el.dataset.voidQsKey !== key) {
       el.remove();
       el = null;
@@ -17730,7 +18562,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       document.body.append(el);
     }
     el.dataset.voidQsKey = key;
-    const label = el.querySelector(`.${cl21("text")}`);
+    const label = el.querySelector(`.${cl22("text")}`);
     const shown = snap.text.replaceAll(/\s+/g, " ").trim();
     if (label && label.textContent !== shown)
       label.textContent = shown;
@@ -17759,11 +18591,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
         lastRestoreAt = now;
         applyQuote(key, snap.text, popupFor(snap));
-        logger27.info("restored", key);
+        logger28.info("restored", key);
       }
       paintFallback(key, snap);
     } catch (e) {
-      logger27.debug("restore failed", e);
+      logger28.debug("restore failed", e);
       paintFallback(key, snap);
     }
   }
@@ -17807,7 +18639,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
         chat.setQuotePopupData(null);
     } catch (e) {
-      logger27.debug("dismiss failed", e);
+      logger28.debug("dismiss failed", e);
     } finally {
       applying2 = false;
     }
@@ -17899,10 +18731,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return btn instanceof HTMLElement ? btn : null;
   }
   function isQuoteDismiss(el) {
-    if (el.closest(`.${cl21("x")}`))
+    if (el.closest(`.${cl22("x")}`))
       return true;
     const btn = barButton(el);
-    if (!btn || btn.closest(`.${cl21("chip")}`))
+    if (!btn || btn.closest(`.${cl22("chip")}`))
       return false;
     const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
     if (KEEP.test(label))
@@ -17952,12 +18784,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         applying2 = false;
       }
     } catch (e) {
-      logger27.debug("consume clear failed", e);
+      logger28.debug("consume clear failed", e);
     }
   }
   function isComposerSend(el) {
     const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
-    if (!(btn instanceof HTMLElement) || btn.closest(`.${cl21("chip")}`))
+    if (!(btn instanceof HTMLElement) || btn.closest(`.${cl22("chip")}`))
       return false;
     const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
     if (DISMISS.test(label) || /attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i.test(label))
@@ -18267,8 +19099,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/index.ts
-  var logger28 = new Logger("BetterQuotes");
-  var settings13 = definePluginSettings({
+  var logger29 = new Logger("BetterQuotes");
+  var settings14 = definePluginSettings({
     jumpToPassage: {
       type: 3 /* BOOLEAN */,
       description: "Click a quote chip to jump to the passage, or the badge on that passage to jump back to the quotes.",
@@ -18316,27 +19148,27 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     }
     SettingsStore3.markAsChanged();
-    logger28.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
+    logger29.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
   }
-  var pluginName4 = Object.getOwnPropertyDescriptor(settings13, "pluginName");
+  var pluginName4 = Object.getOwnPropertyDescriptor(settings14, "pluginName");
   if (pluginName4?.set && pluginName4.get) {
-    Object.defineProperty(settings13, "pluginName", {
+    Object.defineProperty(settings14, "pluginName", {
       configurable: true,
       enumerable: true,
       get: pluginName4.get,
       set(name) {
         if (name === "BetterQuotes")
           migrateLegacy5();
-        pluginName4.set.call(settings13, name);
+        pluginName4.set.call(settings14, name);
       }
     });
   }
   function apply2() {
-    if (settings13.store.jumpToPassage)
+    if (settings14.store.jumpToPassage)
       startJump();
     else
       stopJump();
-    if (settings13.store.persistAcrossChats)
+    if (settings14.store.persistAcrossChats)
       startSticky();
     else
       stopSticky();
@@ -18349,7 +19181,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["messages", "composer"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
-    settings: settings13,
+    settings: settings14,
     managedStyle: "betterQuotes",
     cleanupSelectors: [".void-qs-chip", ".void-qj-back", ".void-qj-menu", "[data-void-bq-icon]"],
     start() {
@@ -18376,703 +19208,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         handler: onNav
       }
     }
-  });
-
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/headerHover.css
-  registerStyle("headerHover", `/*
- * Void++, a modification for grok.com
- * Copyright (c) 2026 Void++ Contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-/* stylelint-disable no-descending-specificity */
-
-@media (width >= 48rem) {
-    [data-sidebar="sidebar"] [data-void-bots-plus],
-    [data-sidebar="sidebar"] .void-bots-plus,
-    [data-sidebar="sidebar"] button[aria-label="New bot"],
-    [data-sidebar="sidebar"] [data-void-chats-plus],
-    [data-sidebar="sidebar"] .void-chats-plus,
-    [data-sidebar="sidebar"] button[aria-label="Add project"],
-    [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
-        opacity: 0 !important;
-        transition: opacity 0.15s ease;
-    }
-
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-bots-plus],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-bots-plus,
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="New bot"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-chats-plus],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-chats-plus,
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="Add project"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]):is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
-    [data-sidebar="sidebar"] :has(> :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus)):is(:hover, :focus-within) > :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus),
-    [data-sidebar="sidebar"] [data-void-bots-plus]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] .void-bots-plus:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="New bot"]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] [data-void-chats-plus]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] .void-chats-plus:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="Add project"]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]) {
-        opacity: 1 !important;
-    }
-}
-
-@media (width >= 48rem) and (prefers-reduced-motion: reduce) {
-    [data-sidebar="sidebar"] [data-void-bots-plus],
-    [data-sidebar="sidebar"] .void-bots-plus,
-    [data-sidebar="sidebar"] button[aria-label="New bot"],
-    [data-sidebar="sidebar"] [data-void-chats-plus],
-    [data-sidebar="sidebar"] .void-chats-plus,
-    [data-sidebar="sidebar"] button[aria-label="Add project"],
-    [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
-        transition: none;
-    }
-}
-`);
-
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/styles.css
-  registerStyle("betterSidebar", `.group.peer [data-sidebar="sidebar"] + div,
-.group.peer [data-sidebar="content"] > .grow {
-    cursor: default !important;
-}
-
-.group.peer [data-sidebar="sidebar"] + div::after {
-    background-color: transparent !important;
-}
-
-.void-sidebar-card {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.375rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-    min-width: 0;
-    flex: 1;
-}
-
-.void-sidebar-card:hover {
-    background-color: hsl(var(--surface-l2));
-}
-
-.void-sidebar-card button[data-state] {
-    pointer-events: none;
-    background-color: transparent !important;
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-.void-sidebar-info {
-    min-width: 0;
-    overflow: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .void-sidebar-card { transition: none; }
-}
-
-.void-sidebar-name,
-.void-sidebar-plan {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    user-select: none;
-}
-
-/* stylelint-disable-next-line selector-class-pattern */
-.group\\/sidebar-menu-item:hover .void-sel-wrap {
-    display: inline-flex;
-}
-`);
-
-  // src/turbopack/common/plan.ts
-  var PLAN_NAMES = {
-    SUBSCRIPTION_TIER_X_BASIC: "X Basic",
-    SUBSCRIPTION_TIER_X_PREMIUM: "X Premium",
-    SUBSCRIPTION_TIER_X_PREMIUM_PLUS: "X Premium+",
-    SUBSCRIPTION_TIER_SUPER_GROK_LITE: "SuperGrok Lite",
-    SUBSCRIPTION_TIER_GROK_PRO: "SuperGrok",
-    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "SuperGrok Pro"
-  };
-  var X_SUB_NAMES = {
-    PremiumPlus: "SuperGrok",
-    Premium: "X Premium",
-    Basic: "X Basic"
-  };
-  function getPlanName(bestSubscription, xSubscriptionType) {
-    return (bestSubscription ? PLAN_NAMES[bestSubscription] : undefined) ?? (xSubscriptionType ? X_SUB_NAMES[xSubscriptionType] : undefined) ?? "Free";
-  }
-
-  // src/plugins/betterSidebar/index.tsx
-  var logger29 = new Logger("BetterSidebar");
-  var cl22 = classNameFactory("void-sidebar-");
-  var settings14 = definePluginSettings({
-    clickToToggle: {
-      type: 3 /* BOOLEAN */,
-      description: "Click anywhere on the sidebar to toggle it.",
-      default: false
-    },
-    defaultCollapsed: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the sidebar collapsed on page load.",
-      default: false
-    },
-    botsDefaultCollapsed: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the Bots section collapsed on page load.",
-      default: true
-    },
-    chatsDefaultExpanded: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the Chats section expanded on page load.",
-      default: false
-    },
-    projectsDefaultCollapsed: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the Projects section collapsed on page load.",
-      default: false
-    },
-    batchSelect: {
-      type: 3 /* BOOLEAN */,
-      description: "Show checkboxes on conversations for bulk selection and deletion.",
-      default: true
-    },
-    titleRowHover: {
-      type: 3 /* BOOLEAN */,
-      description: "Show Bots, Chats, and Projects header actions only when hovering that section, like the expand chevron.",
-      default: true
-    },
-    chatsPlus: {
-      type: 3 /* BOOLEAN */,
-      description: "Show a plus on the Chats header that starts a new chat.",
-      default: true
-    }
-  });
-  migrateSettingsToPlugin("BetterSidebar", "SidebarHeaderHover", "titleRowHover", "chatsPlus");
-  migrateSettingsToPlugin("BetterSidebar", "BotsPlusHover", "titleRowHover", "chatsPlus");
-  var BTN_CLASS = "void-chats-plus flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary hover:bg-button-ghost-hover hover:text-primary focus:outline-none focus-visible:bg-button-ghost-hover";
-  var BOTS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-bots-plus], .void-bots-plus)";
-  var CHATS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-chats-plus], .void-chats-plus)";
-  var CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
-  var PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
-  var PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
-  var botsCollapsed = null;
-  var botsCollapseObserver = null;
-  var botsCollapseTimer = null;
-  var chatsExpandObserver = null;
-  var chatsExpandTimer = null;
-  var projectsCollapseObserver = null;
-  var projectsCollapseTimer = null;
-  function releaseRosterGate() {
-    try {
-      const gates = findByProps("useBotsSectionSettled", "useBotsSectionEnabled");
-      for (const name of ["useBotsSectionSettled", "useBotsSectionEnabled"]) {
-        const fn = gates?.[name];
-        if (typeof fn !== "function" || fn.voidRoster)
-          continue;
-        const wrapped = function() {
-          return true;
-        };
-        wrapped.voidRoster = true;
-        gates[name] = wrapped;
-      }
-      const paintMod = findByProps("shouldPaintBotsSidebar");
-      const paint = paintMod?.shouldPaintBotsSidebar;
-      if (typeof paint === "function" && !paint.voidRoster) {
-        const wrapped = function() {
-          return true;
-        };
-        wrapped.voidRoster = true;
-        paintMod.shouldPaintBotsSidebar = wrapped;
-      }
-      const bots = findByProps("useBotsStore")?.useBotsStore;
-      const state = bots?.getState?.();
-      if (bots && state && !state.rosterLoaded && !(state.agents?.length > 0)) {
-        bots.setState({ rosterLoaded: true });
-        bots.setState({ rosterLoaded: false });
-      }
-    } catch (e) {
-      logger29.warn("Roster gate", e);
-    }
-  }
-  function applyHeaderHover() {
-    if (settings14.store.titleRowHover)
-      enableStyle("headerHover");
-    else
-      disableStyle("headerHover");
-  }
-  function collapseBotsSection() {
-    const plus = document.querySelector(BOTS_PLUS_SEL);
-    if (!plus)
-      return false;
-    const group = plus.closest("[data-sidebar=group]");
-    if (!group)
-      return false;
-    const header = [...group.querySelectorAll("button")].find((b) => (b.innerText || "").trim() === "Bots");
-    if (!header)
-      return false;
-    if (header.getAttribute("aria-expanded") !== "true")
-      return true;
-    if (header.dataset.voidBotsCollapse === "1")
-      return false;
-    header.dataset.voidBotsCollapse = "1";
-    header.click();
-    return false;
-  }
-  function useBotsCollapsed() {
-    const state = useState(() => botsCollapsed ?? settings14.store.botsDefaultCollapsed);
-    [botsCollapsed] = state;
-    return state;
-  }
-  function stopBotsCollapse() {
-    botsCollapseObserver?.disconnect();
-    botsCollapseObserver = null;
-    if (botsCollapseTimer != null) {
-      clearTimeout(botsCollapseTimer);
-      botsCollapseTimer = null;
-    }
-  }
-  function startBotsCollapse() {
-    stopBotsCollapse();
-    if (!settings14.store.botsDefaultCollapsed)
-      return;
-    let done = false;
-    const tick = () => {
-      if (done)
-        return;
-      if (collapseBotsSection()) {
-        done = true;
-        stopBotsCollapse();
-      }
-    };
-    tick();
-    if (done)
-      return;
-    botsCollapseObserver = new MutationObserver(tick);
-    botsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
-    botsCollapseTimer = setTimeout(() => {
-      done = true;
-      stopBotsCollapse();
-    }, 1e4);
-  }
-  function resetChatsCollapsedStorage() {
-    if (!settings14.store.chatsDefaultExpanded)
-      return;
-    try {
-      localStorage.removeItem(CHATS_COLLAPSED_KEY);
-    } catch {}
-  }
-  function chatsGroup() {
-    const plus = document.querySelector(CHATS_PLUS_SEL);
-    if (plus)
-      return plus.closest("[data-sidebar=group]");
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!sidebar)
-      return null;
-    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
-      const label = (btn.getAttribute("aria-label") ?? "").trim();
-      if (label === "Chats" || label === "History")
-        return btn.closest("[data-sidebar=group]");
-    }
-    const bots = document.querySelector(BOTS_PLUS_SEL)?.closest("[data-sidebar=group]");
-    const next = bots?.nextElementSibling;
-    return next?.matches("[data-sidebar=group]") ? next : null;
-  }
-  function expandChatsSection() {
-    const group = chatsGroup();
-    if (!group)
-      return false;
-    const collapsed = group.querySelector("button[aria-expanded=false]");
-    if (!collapsed)
-      return true;
-    collapsed.click();
-    return true;
-  }
-  function stopChatsExpand() {
-    chatsExpandObserver?.disconnect();
-    chatsExpandObserver = null;
-    if (chatsExpandTimer != null) {
-      clearTimeout(chatsExpandTimer);
-      chatsExpandTimer = null;
-    }
-  }
-  function startChatsExpand() {
-    stopChatsExpand();
-    if (!settings14.store.chatsDefaultExpanded)
-      return;
-    resetChatsCollapsedStorage();
-    let done = false;
-    const tick = () => {
-      if (done)
-        return;
-      if (expandChatsSection()) {
-        done = true;
-        stopChatsExpand();
-      }
-    };
-    tick();
-    if (done)
-      return;
-    chatsExpandObserver = new MutationObserver(tick);
-    chatsExpandObserver.observe(document.documentElement, { childList: true, subtree: true });
-    chatsExpandTimer = setTimeout(() => {
-      done = true;
-      stopChatsExpand();
-    }, 1e4);
-  }
-  function resetProjectsCollapsedStorage() {
-    if (!settings14.store.projectsDefaultCollapsed)
-      return;
-    try {
-      localStorage.setItem(PROJECTS_COLLAPSED_KEY, "true");
-    } catch {}
-  }
-  function projectsGroup() {
-    const action = document.querySelector(PROJECTS_ACTION_SEL);
-    if (action)
-      return action.closest("[data-sidebar=group]");
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!sidebar)
-      return null;
-    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
-      const label = (btn.getAttribute("aria-label") ?? "").trim();
-      if (label === "Projects")
-        return btn.closest("[data-sidebar=group]");
-    }
-    return null;
-  }
-  function collapseProjectsSection() {
-    const group = projectsGroup();
-    if (!group)
-      return false;
-    const expanded = group.querySelector("button[aria-expanded=true]");
-    if (!expanded)
-      return true;
-    expanded.click();
-    return true;
-  }
-  function stopProjectsCollapse() {
-    projectsCollapseObserver?.disconnect();
-    projectsCollapseObserver = null;
-    if (projectsCollapseTimer != null) {
-      clearTimeout(projectsCollapseTimer);
-      projectsCollapseTimer = null;
-    }
-  }
-  function startProjectsCollapse() {
-    stopProjectsCollapse();
-    if (!settings14.store.projectsDefaultCollapsed)
-      return;
-    resetProjectsCollapsedStorage();
-    let done = false;
-    const tick = () => {
-      if (done)
-        return;
-      if (collapseProjectsSection()) {
-        done = true;
-        stopProjectsCollapse();
-      }
-    };
-    tick();
-    if (done)
-      return;
-    projectsCollapseObserver = new MutationObserver(tick);
-    projectsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
-    projectsCollapseTimer = setTimeout(() => {
-      done = true;
-      stopProjectsCollapse();
-    }, 1e4);
-  }
-  function newChat(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    const native = document.querySelector('[data-testid="new-chat"]');
-    if (native) {
-      native.click();
-      return;
-    }
-    const { route, push } = RoutingStore.useRoutingStore.getState();
-    const teamId = route.teamId ?? null;
-    const { workspaceId } = route;
-    if (workspaceId) {
-      push({ page: "workspace", workspaceId, tab: "conversations", teamId });
-      const chat = ChatPageStore.useChatPageStore.getState();
-      chat.setProjectId(workspaceId);
-      chat.setConversationId(undefined);
-      return;
-    }
-    ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
-    push({ page: "main", teamId });
-  }
-  var ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
-    if (!settings14.use(["chatsPlus"]).chatsPlus)
-      return null;
-    return /* @__PURE__ */ React.createElement("button", {
-      type: "button",
-      className: BTN_CLASS,
-      "aria-label": "New chat",
-      "data-void-chats-plus": "",
-      onClick: newChat
-    }, /* @__PURE__ */ React.createElement(PlusIcon, {
-      size: 14
-    }));
-  }, null);
-  function UserCard({ AvatarMenu }) {
-    const { open } = SidebarComponents.useSidebar();
-    const { user } = SessionStore.useSession();
-    const bestSubscription = SubscriptionsStore.useSubscriptionsStore((s) => s.bestSubscription);
-    const cardRef = useRef(null);
-    if (!open || !user)
-      return /* @__PURE__ */ React.createElement(AvatarMenu, null);
-    const forward = (e, type) => {
-      if (!e.isTrusted)
-        return;
-      cardRef.current?.querySelector("button[data-state]")?.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, button: 0, pointerId: 1, pointerType: "mouse" }));
-    };
-    return /* @__PURE__ */ React.createElement("div", {
-      ref: cardRef,
-      className: cl22("card"),
-      onPointerDown: (e) => forward(e, "pointerdown"),
-      onPointerUp: (e) => forward(e, "pointerup")
-    }, /* @__PURE__ */ React.createElement(AvatarMenu, null), /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      justifyContent: "center",
-      gap: "0",
-      className: cl22("info")
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      as: "span",
-      size: "sm",
-      weight: "medium",
-      className: cl22("name")
-    }, user.givenName ?? user.email?.split("@")[0] ?? "User"), /* @__PURE__ */ React.createElement(Text2, {
-      as: "span",
-      size: "xs",
-      color: "secondary",
-      className: cl22("plan")
-    }, getPlanName(bestSubscription, user.xSubscriptionType))));
-  }
-  var selection2 = createSelectionStore();
-  var CONVERSATION_PAGE = "chat";
-  var isConversationRoute = (route) => route?.page === CONVERSATION_PAGE;
-  async function deleteConversations(ids) {
-    const currentConvId = ChatPageStore.useChatPageStore.getState().conversationId;
-    if (currentConvId && ids.includes(currentConvId)) {
-      ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
-    }
-    const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
-    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger29.error("Failed to delete", id, e))));
-  }
-  function SelectCheckbox({ id, route }) {
-    const enabled = settings14.use(["batchSelect"]).batchSelect;
-    if (!enabled || !id || !isConversationRoute(route))
-      return null;
-    return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
-      selection: selection2,
-      id
-    });
-  }
-  var WrappedCheckbox = ErrorBoundary.wrap(SelectCheckbox, null);
-  var betterSidebar_default = definePlugin({
-    name: "BetterSidebar",
-    icon: PanelLeftIcon,
-    description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
-    authors: [Devs.Prism, Devs.p],
-    tags: ["navigation"],
-    enabledByDefault: true,
-    settings: settings14,
-    managedStyle: "betterSidebar",
-    _ChatsPlus: () => createElement(ChatsPlus),
-    _UserCard: ErrorBoundary.wrap(UserCard),
-    _renderActionBar: ErrorBoundary.wrap(() => /* @__PURE__ */ React.createElement(SelectionActionBar, {
-      selection: selection2,
-      noun: "conversation",
-      title: "Delete conversations",
-      onDelete: deleteConversations
-    }), null),
-    _wrapCheckbox(item, id, route) {
-      return createElement(Fragment, null, createElement(WrappedCheckbox, { id, route }), item);
-    },
-    _wrapSidebarClick(onClick, id, route) {
-      return (e) => {
-        if (id && settings14.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
-          e.preventDefault();
-          e.stopPropagation();
-          selection2.toggle(id);
-          return;
-        }
-        onClick?.(e);
-      };
-    },
-    _defaultOpen() {
-      return !settings14.store.defaultCollapsed;
-    },
-    _useBotsCollapsed: useBotsCollapsed,
-    _chatsCollapsedInit() {
-      resetChatsCollapsedStorage();
-      return false;
-    },
-    _projectsCollapsedInit() {
-      resetProjectsCollapsedStorage();
-      return true;
-    },
-    _projectsAutoExpand() {
-      return !settings14.store.projectsDefaultCollapsed;
-    },
-    _onSidebarClick() {
-      if (!settings14.store.clickToToggle)
-        return;
-      return (e) => {
-        const target = e.target;
-        if (target.closest("button,a,input,[role=button],[data-sidebar=trigger],[data-sidebar=footer]"))
-          return;
-        e.currentTarget.closest("[data-state]")?.querySelector("[data-sidebar=trigger]")?.click();
-      };
-    },
-    start() {
-      selection2.clear();
-      applyHeaderHover();
-      releaseRosterGate();
-      resetChatsCollapsedStorage();
-      resetProjectsCollapsedStorage();
-      startBotsCollapse();
-      startChatsExpand();
-      startProjectsCollapse();
-    },
-    onSettingsChange: applyHeaderHover,
-    stop() {
-      selection2.clear();
-      disableStyle("headerHover");
-      stopBotsCollapse();
-      stopChatsExpand();
-      stopProjectsCollapse();
-    },
-    patches: [
-      {
-        find: "AvatarDropdownMenu,{expanded:",
-        replacement: {
-          match: /\(0,(\i)\.jsx\)\((\i)\.AvatarDropdownMenu,\{/,
-          replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.AvatarDropdownMenu,"
-        }
-      },
-      {
-        find: "useSidebar must be used within a SidebarProvider",
-        all: true,
-        group: true,
-        replacement: [
-          {
-            match: /\{defaultOpen:(\i),open:/,
-            replace: "{defaultOpen:$1=$self._defaultOpen(),open:"
-          },
-          {
-            match: /data-sidebar":"sidebar",className:/,
-            replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),className:'
-          }
-        ]
-      },
-      {
-        find: '"Editing actions","Editing actions"',
-        all: true,
-        group: true,
-        replacement: [
-          {
-            match: /=(\(0,\i\.jsx\)\(\i,\{title:\i,editing:\i,[^}]{0,80}?validationErrorMessage:\i[^}]{0,40}?\}\))/,
-            replace: "=$self._wrapCheckbox($1,arguments[0].id,arguments[0].route)"
-          },
-          {
-            match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
-            replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4"
-          }
-        ]
-      },
-      {
-        find: '"sidebar-expand","Expand"',
-        replacement: {
-          match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
-          replace: "$self._renderActionBar(),$&"
-        }
-      },
-      {
-        find: '"sidebar.new-bot-btn.aria-label","New bot"',
-        replacement: [
-          {
-            match: /(\i)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover"\)/,
-            replace: '$1("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover")'
-          },
-          {
-            match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
-            replace: '$&,"data-void-bots-plus":""'
-          }
-        ]
-      },
-      {
-        find: '"sidebar-chats","Chats"',
-        replacement: {
-          match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-          replace: "$1,action:$self._ChatsPlus()"
-        }
-      },
-      {
-        find: '"sidebar.section-title","Bots"',
-        replacement: {
-          match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,\i\.useLocalStorage\)\("sidebar-bots-unassigned-collapsed")/,
-          replace: "$self._useBotsCollapsed()"
-        }
-      },
-      {
-        find: "sidebar-history-collapsed",
-        replacement: {
-          match: /useLocalStorage\)\("sidebar-history-collapsed",!1,!1\)/,
-          replace: 'useLocalStorage)("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)'
-        }
-      },
-      {
-        find: "sidebar-projects-collapsed",
-        group: true,
-        replacement: [
-          {
-            match: /useLocalStorage\)\("sidebar-projects-collapsed",!1,!1\)/,
-            replace: 'useLocalStorage)("sidebar-projects-collapsed",$self._projectsCollapsedInit(),!1)'
-          },
-          {
-            match: /!(\i)\.current&&(\i)&&\((\i)\.length>0\|\|(\i)\.length>0\)&&\(\1\.current=!0,(\i)\(!1\)\)/,
-            replace: "!$1.current&&$2&&($3.length>0||$4.length>0)&&($1.current=!0,$self._projectsAutoExpand()&&$5(!1))"
-          }
-        ]
-      },
-      {
-        find: "enterDistance:8,collapsed:",
-        replacement: {
-          match: /\i\?\(0,(\i)\.jsx\)\((\i),\{enterDistance:8,collapsed:(\i),onToggleCollapsed:(\i),activeProjectId:(\i),expandedProjectIds:(\i),onToggleProjectExpanded:(\i)\}\):null/,
-          replace: "(0,$1.jsx)($2,{enterDistance:8,collapsed:$3,onToggleCollapsed:$4,activeProjectId:$5,expandedProjectIds:$6,onToggleProjectExpanded:$7})"
-        }
-      },
-      {
-        find: "useBotsSectionEnabled)();return",
-        replacement: {
-          match: /useBotsSectionEnabled\)\(\);return\(\(0,(\i)\.useBotsBootstrap\)\((\i)\),\2\)\?/,
-          replace: "useBotsSectionEnabled)();return((0,$1.useBotsBootstrap)($2),!0)?"
-        }
-      },
-      {
-        find: "shouldPaintBotsSidebar)({hasBots:",
-        replacement: {
-          match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
-          replace: ""
-        }
-      },
-      {
-        find: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
-        replacement: {
-          match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
-          replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null"
-        }
-      }
-    ]
   });
 
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/chatListStatus/styles.css
@@ -33647,9 +33782,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1790093417000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1791045955000;
+  betterModeSelect_default.updatedAt = 1791051657000;
   betterNavigator_default.updatedAt = 1790536418000;
-  betterQueue_default.updatedAt = 1791047990000;
+  betterQueue_default.updatedAt = 1791051657000;
   betterQuotes_default.updatedAt = 1790446202000;
   betterSidebar_default.updatedAt = 1791042784000;
   chatListStatus_default.updatedAt = 1791037203000;
@@ -33997,15 +34132,41 @@ button:has(.void-ud-trigger > .void-ud-label) {
     const fallbackTimer = setTimeout(fire, FALLBACK_MS);
   }
   var _initialized = false;
+  var _armed = false;
+  function syncEarlyGuards() {
+    if (isPluginEnabled("BetterSidebar"))
+      armBotsCollapse();
+    else
+      stopBotsCollapseGuard();
+    if (isPluginEnabled("AvatarPluginsFlyout"))
+      armSidebarPluginsHide();
+    else
+      stopSidebarPluginsHide();
+  }
+  function armRuntime() {
+    if (_armed)
+      return;
+    _armed = true;
+    safely("primeSettingsSync", primeSettingsSync);
+    for (const plugin of Object.values(__plugins_default)) {
+      safely("registerPlugin", () => registerPlugin(plugin));
+    }
+    safely("registerEnabledPatches", registerEnabledPatches);
+    safely("patchTurbopack", patchTurbopack);
+    safely("syncEarlyGuards", syncEarlyGuards);
+  }
   function init() {
     if (_initialized)
       return;
     _initialized = true;
+    armRuntime();
     for (const plugin of Object.values(__plugins_default)) {
-      safely("registerPlugin", () => registerPlugin(plugin));
+      if (plugin.settings)
+        plugin.settings.pluginName = plugin.name;
     }
     safely("initPluginManager", initPluginManager);
-    safely("patchTurbopack", patchTurbopack);
+    safely("registerEnabledPatches", registerEnabledPatches);
+    safely("syncEarlyGuards", syncEarlyGuards);
     safely("startAllPlugins(Init)", () => startAllPlugins("Init" /* Init */));
     const fireDomContent = () => safely("startAllPlugins(DOMContentLoaded)", () => startAllPlugins("DOMContentLoaded" /* DOMContentLoaded */));
     if (document.readyState === "loading")
@@ -34029,6 +34190,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       writable: false,
       configurable: true
     });
+    armRuntime();
     initSettings().then(() => init()).catch((e) => console.error("[Void++] Fatal init error:", e));
   }
 })();

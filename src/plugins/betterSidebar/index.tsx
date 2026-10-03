@@ -84,7 +84,7 @@ const PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add p
 
 let botsCollapsed: boolean | null = null;
 let botsCollapseObserver: MutationObserver | null = null;
-let botsCollapseTimer: ReturnType<typeof setTimeout> | null = null;
+let botsCollapseTimer: ReturnType<typeof setInterval> | null = null;
 let chatsExpandObserver: MutationObserver | null = null;
 let chatsExpandTimer: ReturnType<typeof setTimeout> | null = null;
 let projectsCollapseObserver: MutationObserver | null = null;
@@ -131,57 +131,104 @@ function applyHeaderHover() {
     else disableStyle("headerHover");
 }
 
+let botsUserOverride = false;
+let botsClickAttempts = 0;
+let lastBotsClick = 0;
+let botsCollapseDeadline: ReturnType<typeof setTimeout> | null = null;
+let botsCollapseRaf = 0;
+
+function scheduleBotsCollapse() {
+    if (botsCollapseRaf) return;
+    botsCollapseRaf = requestAnimationFrame(() => {
+        botsCollapseRaf = 0;
+        collapseBotsSection();
+    });
+}
+
+function wantBotsCollapsed(): boolean {
+    try {
+        return settings.store.botsDefaultCollapsed !== false;
+    } catch {
+        return true;
+    }
+}
+
+function botsHeader(): HTMLElement | null {
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar) return null;
+    return [...sidebar.querySelectorAll<HTMLElement>("button[aria-expanded]")].find(btn =>
+        (btn.innerText || "").replaceAll(/\s+/g, " ").trim() === "Bots",
+    ) ?? null;
+}
+
+function onBotsPointerDown(event: PointerEvent) {
+    if (!event.isTrusted) return;
+    const header = botsHeader();
+    const target = event.target;
+    if (!header || !(target instanceof Node) || !header.contains(target)) return;
+    botsUserOverride = true;
+    stopBotsCollapse();
+}
+
 function collapseBotsSection() {
-    const plus = document.querySelector<HTMLElement>(BOTS_PLUS_SEL);
-    if (!plus) return false;
-    const group = plus.closest("[data-sidebar=group]");
-    if (!group) return false;
-    const header = [...group.querySelectorAll<HTMLElement>("button")].find(b => (b.innerText || "").trim() === "Bots");
+    if (botsUserOverride || !wantBotsCollapsed()) return true;
+    const header = botsHeader();
     if (!header) return false;
-    if (header.getAttribute("aria-expanded") !== "true") return true;
-    if (header.dataset.voidBotsCollapse === "1") return false;
-    header.dataset.voidBotsCollapse = "1";
+    if (header.getAttribute("aria-expanded") !== "true") return false;
+    if (botsClickAttempts >= 8) return false;
+    const now = Date.now();
+    if (now - lastBotsClick < 350) return false;
+    botsClickAttempts++;
+    lastBotsClick = now;
     header.click();
     return false;
 }
 
 function useBotsCollapsed() {
-    const state = useState(() => botsCollapsed ?? settings.store.botsDefaultCollapsed);
-    [botsCollapsed] = state;
+    const state = useState(() => (typeof botsCollapsed === "boolean" ? botsCollapsed : wantBotsCollapsed()));
+    if (typeof state[0] === "boolean") botsCollapsed = state[0];
     return state;
 }
 
 function stopBotsCollapse() {
     botsCollapseObserver?.disconnect();
     botsCollapseObserver = null;
+    document.removeEventListener("pointerdown", onBotsPointerDown, true);
     if (botsCollapseTimer != null) {
-        clearTimeout(botsCollapseTimer);
+        clearInterval(botsCollapseTimer);
         botsCollapseTimer = null;
+    }
+    if (botsCollapseDeadline != null) {
+        clearTimeout(botsCollapseDeadline);
+        botsCollapseDeadline = null;
+    }
+    if (botsCollapseRaf) {
+        cancelAnimationFrame(botsCollapseRaf);
+        botsCollapseRaf = 0;
     }
 }
 
 function startBotsCollapse() {
     stopBotsCollapse();
-    if (!settings.store.botsDefaultCollapsed) return;
+    if (botsUserOverride || !wantBotsCollapsed()) return;
 
-    let done = false;
-    const tick = () => {
-        if (done) return;
-        if (collapseBotsSection()) {
-            done = true;
-            stopBotsCollapse();
-        }
-    };
+    botsClickAttempts = 0;
+    lastBotsClick = 0;
+    document.addEventListener("pointerdown", onBotsPointerDown, true);
+    collapseBotsSection();
 
-    tick();
-    if (done) return;
-
-    botsCollapseObserver = new MutationObserver(tick);
+    botsCollapseObserver = new MutationObserver(scheduleBotsCollapse);
     botsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
-    botsCollapseTimer = setTimeout(() => {
-        done = true;
-        stopBotsCollapse();
-    }, 10_000);
+    botsCollapseTimer = setInterval(collapseBotsSection, 400);
+    botsCollapseDeadline = setTimeout(stopBotsCollapse, 12_000);
+}
+
+export function armBotsCollapse() {
+    startBotsCollapse();
+}
+
+export function stopBotsCollapseGuard() {
+    stopBotsCollapse();
 }
 
 function resetChatsCollapsedStorage() {
