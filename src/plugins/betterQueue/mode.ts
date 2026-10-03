@@ -11,7 +11,7 @@ import type { GatewayConversation, GatewayQueueItem, GatewayTurnArgs, MessageSto
 import type { ModesStoreState } from "@grok-types/stores/ModesStore";
 import type { ResponseStoreState } from "@grok-types/stores/ResponseStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
-import { ChatPageStore, MessageStore, ModesStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
+import { ChatPageStore, MessageStore, ModesStore, ResponseStore, RoutingStore, SettingsStore } from "@turbopack/common/stores";
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Logger } from "@utils/Logger";
 import { mapGetOrCreate, pageWindow } from "@utils/misc";
@@ -310,7 +310,9 @@ function applyIntent(next: Intent) {
         }
         const settled = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || "")) || slug;
         const chat = ChatPageStore.useChatPageStore.getState();
-        if (modeSlug(String(chat.modelMode || "")) !== settled) chat.setModelMode(settled as ModelMode);
+        const stored = modeSlug(String(chat.modelMode || ""));
+        const keepBuild = inIncognito() && settled === "auto" && stored === "build";
+        if (stored !== settled && !keepBuild) chat.setModelMode(settled as ModelMode);
         if (settled !== slug && modeSlug(intent.modeId) === slug) setIntent(captureIntent(settled, snapshot()));
     } catch (e) {
         logger.debug("apply failed", e);
@@ -385,6 +387,52 @@ function syncModelMode(slug: string) {
 
 const MODE_IDS = new Set<string>(CATALOG.map(m => m.id));
 let pickerSource = "";
+let hidBuild = false;
+let offIncognito: (() => void) | null = null;
+
+function inIncognito(): boolean {
+    try {
+        return SettingsStore.useSettingsStore.getState().isIncognito === true;
+    } catch {
+        return false;
+    }
+}
+
+function alignIncognitoBuild() {
+    if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage()) return;
+    let selected = "";
+    let model = "";
+    try {
+        selected = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || ""));
+        model = modeSlug(String(ChatPageStore.useChatPageStore.getState().modelMode || ""));
+    } catch {
+        return;
+    }
+    if (inIncognito()) {
+        if (selected !== "build") return;
+        hidBuild = true;
+        applying = true;
+        try {
+            ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+        } catch (e) {
+            logger.debug("incognito build hide failed", e);
+        } finally {
+            applying = false;
+        }
+        return;
+    }
+    if (!hidBuild) return;
+    hidBuild = false;
+    if (selected !== "auto" || model !== "build") return;
+    applying = true;
+    try {
+        ModesStore.useModesStore.getState().setSelectedModeId("build", { source: "sync" });
+    } catch (e) {
+        logger.debug("incognito build restore failed", e);
+    } finally {
+        applying = false;
+    }
+}
 
 function hookSelectedMode() {
     try {
@@ -411,6 +459,10 @@ function followModelMode() {
         return;
     }
     if (!MODE_IDS.has(slug)) return;
+    if (inIncognito() && slug === "build") {
+        slug = "auto";
+        hidBuild = true;
+    }
     const modes = ModesStore.useModesStore.getState();
     const selected = modeSlug(String(modes.selectedModeId || ""));
     if (selected !== slug) {
@@ -1464,6 +1516,20 @@ function onPicker(id: string) {
     pickerSource = "";
     if (applying || sendOverride) return;
     if (!id) return;
+    if (inIncognito() && modeSlug(id) === "build") {
+        hidBuild = true;
+        userPicking = false;
+        awaitingMenu = false;
+        applying = true;
+        try {
+            ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+        } catch (e) {
+            logger.debug("incognito build hide failed", e);
+        } finally {
+            applying = false;
+        }
+        return;
+    }
     if (source === "user" || userPicking || awaitingMenu) {
         rememberSnapshot();
         return;
@@ -1477,11 +1543,13 @@ function onChatPage() {
     if (key !== lastNavKey) {
         lastNavKey = key;
         onNavigate();
+        alignIncognitoBuild();
         return;
     }
     if (sendOverride || applying) return;
     if (loadPending()) fightHydrate();
     if (!currentCid() && !userPicking && !awaitingMenu) followModelMode();
+    alignIncognitoBuild();
 }
 
 function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
@@ -1525,12 +1593,22 @@ export function startMode() {
     } catch (e) {
         logger.warn("Failed to hook send path", e);
     }
+    try {
+        offIncognito?.();
+        offIncognito = SettingsStore.useSettingsStore.subscribe(() => alignIncognitoBuild());
+    } catch (e) {
+        logger.debug("incognito subscribe failed", e);
+    }
     if (!currentCid()) followModelMode();
+    alignIncognitoBuild();
 }
 
 export function stopMode() {
     if (!modeStarted) return;
     modeStarted = false;
+    offIncognito?.();
+    offIncognito = null;
+    hidBuild = false;
     abort?.abort();
     abort = null;
     if (loadTail) {

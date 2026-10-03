@@ -13,7 +13,7 @@ import { AutoModeIcon, BuildModeIcon, ChevronDownIcon, ChevronUpIcon, ConnectedA
 import type { ModesStoreState } from "@grok-types/stores/ModesStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React } from "@turbopack/common/react";
-import { ModesStore, RoutingStore } from "@turbopack/common/stores";
+import { ModesStore, RoutingStore, SettingsStore as GrokSettings } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -258,9 +258,58 @@ function pinnedIdsFrom(pinOrder: unknown, pins: Partial<Record<PinKey, boolean>>
     });
 }
 
+function inIncognito(): boolean {
+    try {
+        return GrokSettings.useSettingsStore.getState().isIncognito === true;
+    } catch {
+        return false;
+    }
+}
+
+function withoutIncognitoBuild(ids: ModeId[]): ModeId[] {
+    if (!inIncognito()) return ids;
+    return ids.filter(id => id !== "build");
+}
+
+function withIncognitoAuto(ids: ModeId[]): ModeId[] {
+    if (!inIncognito() || ids.includes("auto")) return ids;
+    let selected = "";
+    try {
+        selected = String(ModesStore.useModesStore.getState().selectedModeId || "");
+    } catch {
+        return ids;
+    }
+    if (selected !== "auto" && selected !== "build") return ids;
+    return ["auto", ...ids];
+}
+
 function pinnedIds(): ModeId[] {
     const cfg = settings.store;
-    return pinnedIdsFrom(cfg.pinOrder, cfg, ModesStore.useModesStore.getState().modes ?? []);
+    return withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, ModesStore.useModesStore.getState().modes ?? [])));
+}
+
+let incognitoObs: MutationObserver | null = null;
+let offIncognitoWatch: (() => void) | null = null;
+
+function hideBuildMenuItems() {
+    const hide = inIncognito();
+    document.documentElement.toggleAttribute("data-void-cms-incognito", hide);
+    for (const el of document.querySelectorAll<HTMLElement>(ITEM_SEL)) {
+        if (!matchItem(el, "build")) continue;
+        el.classList.toggle(cl("incognito-hide"), hide);
+    }
+}
+
+function watchIncognitoMenu() {
+    hideBuildMenuItems();
+    if (!inIncognito()) {
+        incognitoObs?.disconnect();
+        incognitoObs = null;
+        return;
+    }
+    if (incognitoObs) return;
+    incognitoObs = new MutationObserver(() => hideBuildMenuItems());
+    incognitoObs.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 function nextPinnedId(current: string): ModeId | undefined {
@@ -655,8 +704,9 @@ function PinnedModes() {
     const page = RoutingStore.useRoutingStore((s: RoutingStoreState) => s.route.page);
     const selectedModeId = ModesStore.useModesStore((s: ModesStoreState) => s.selectedModeId);
     const catalog = ModesStore.useModesStore((s: ModesStoreState) => s.modes);
+    const incognito = GrokSettings.useSettingsStore(s => s.isIncognito);
     const knownCatalog = catalog.filter(c => KNOWN_IDS.has(c.id));
-    const items = pinnedIdsFrom(cfg.pinOrder, cfg, catalog).map(id => MODE_BY_ID[id]);
+    const items = withIncognitoAuto(pinnedIdsFrom(cfg.pinOrder, cfg, catalog).filter(id => !(incognito && id === "build"))).map(id => MODE_BY_ID[id]);
     if (page === "bot" || !items.length) return null;
 
     const { showLabels } = cfg;
@@ -701,10 +751,22 @@ export default definePlugin({
     start() {
         void ModesStore.useModesStore.getState().ensureLoaded();
         bindModelHotkey();
+        watchIncognitoMenu();
+        try {
+            offIncognitoWatch = GrokSettings.useSettingsStore.subscribe(() => watchIncognitoMenu());
+        } catch (e) {
+            logger.debug("incognito watch failed", e);
+        }
     },
 
     stop() {
         unbindModelHotkey();
+        offIncognitoWatch?.();
+        offIncognitoWatch = null;
+        incognitoObs?.disconnect();
+        incognitoObs = null;
+        document.documentElement.removeAttribute("data-void-cms-incognito");
+        for (const el of document.querySelectorAll(`.${cl("incognito-hide")}`)) el.classList.remove(cl("incognito-hide"));
         setPicking(false);
         harvested.clear();
         harvestListeners.clear();

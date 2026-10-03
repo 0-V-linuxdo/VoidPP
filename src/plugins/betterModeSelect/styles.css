@@ -8,8 +8,9 @@
     display: contents;
 }
 
-.void-cms-pin-host {
-    display: contents;
+html[data-void-cms-incognito] [data-void-mode-id="build"],
+.void-cms-incognito-hide {
+    display: none !important;
 }
 
 .void-cms-pin {

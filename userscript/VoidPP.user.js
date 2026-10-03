@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.10
+// @version      20261003.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.10] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7790,9 +7790,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a64590c"}`
-    }, `(${"a64590c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e4efd44"}`
+    }, `(${"e4efd44"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9474,8 +9474,9 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     display: contents;
 }
 
-.void-cms-pin-host {
-    display: contents;
+html[data-void-cms-incognito] [data-void-mode-id="build"],
+.void-cms-incognito-hide {
+    display: none !important;
 }
 
 .void-cms-pin {
@@ -9868,9 +9869,57 @@ html.void-cms-picked .void-cms-ghost {
       return known.some((c) => c.id === id);
     });
   }
+  function inIncognito() {
+    try {
+      return SettingsStore.useSettingsStore.getState().isIncognito === true;
+    } catch {
+      return false;
+    }
+  }
+  function withoutIncognitoBuild(ids) {
+    if (!inIncognito())
+      return ids;
+    return ids.filter((id) => id !== "build");
+  }
+  function withIncognitoAuto(ids) {
+    if (!inIncognito() || ids.includes("auto"))
+      return ids;
+    let selected = "";
+    try {
+      selected = String(ModesStore.useModesStore.getState().selectedModeId || "");
+    } catch {
+      return ids;
+    }
+    if (selected !== "auto" && selected !== "build")
+      return ids;
+    return ["auto", ...ids];
+  }
   function pinnedIds() {
     const cfg = settings10.store;
-    return pinnedIdsFrom(cfg.pinOrder, cfg, ModesStore.useModesStore.getState().modes ?? []);
+    return withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, ModesStore.useModesStore.getState().modes ?? [])));
+  }
+  var incognitoObs = null;
+  var offIncognitoWatch = null;
+  function hideBuildMenuItems() {
+    const hide = inIncognito();
+    document.documentElement.toggleAttribute("data-void-cms-incognito", hide);
+    for (const el of document.querySelectorAll(ITEM_SEL)) {
+      if (!matchItem(el, "build"))
+        continue;
+      el.classList.toggle(cl18("incognito-hide"), hide);
+    }
+  }
+  function watchIncognitoMenu() {
+    hideBuildMenuItems();
+    if (!inIncognito()) {
+      incognitoObs?.disconnect();
+      incognitoObs = null;
+      return;
+    }
+    if (incognitoObs)
+      return;
+    incognitoObs = new MutationObserver(() => hideBuildMenuItems());
+    incognitoObs.observe(document.documentElement, { childList: true, subtree: true });
   }
   function nextPinnedId(current) {
     const ids = pinnedIds();
@@ -10256,8 +10305,9 @@ html.void-cms-picked .void-cms-ghost {
     const page = RoutingStore.useRoutingStore((s) => s.route.page);
     const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
     const catalog = ModesStore.useModesStore((s) => s.modes);
+    const incognito = SettingsStore.useSettingsStore((s) => s.isIncognito);
     const knownCatalog = catalog.filter((c) => KNOWN_IDS.has(c.id));
-    const items = pinnedIdsFrom(cfg.pinOrder, cfg, catalog).map((id) => MODE_BY_ID[id]);
+    const items = withIncognitoAuto(pinnedIdsFrom(cfg.pinOrder, cfg, catalog).filter((id) => !(incognito && id === "build"))).map((id) => MODE_BY_ID[id]);
     if (page === "bot" || !items.length)
       return null;
     const { showLabels } = cfg;
@@ -10301,9 +10351,22 @@ html.void-cms-picked .void-cms-ghost {
     start() {
       ModesStore.useModesStore.getState().ensureLoaded();
       bindModelHotkey();
+      watchIncognitoMenu();
+      try {
+        offIncognitoWatch = SettingsStore.useSettingsStore.subscribe(() => watchIncognitoMenu());
+      } catch (e) {
+        logger21.debug("incognito watch failed", e);
+      }
     },
     stop() {
       unbindModelHotkey();
+      offIncognitoWatch?.();
+      offIncognitoWatch = null;
+      incognitoObs?.disconnect();
+      incognitoObs = null;
+      document.documentElement.removeAttribute("data-void-cms-incognito");
+      for (const el of document.querySelectorAll(`.${cl18("incognito-hide")}`))
+        el.classList.remove(cl18("incognito-hide"));
       setPicking(false);
       harvested.clear();
       harvestListeners.clear();
@@ -13726,7 +13789,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       const settled = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || "")) || slug;
       const chat = ChatPageStore.useChatPageStore.getState();
-      if (modeSlug(String(chat.modelMode || "")) !== settled)
+      const stored = modeSlug(String(chat.modelMode || ""));
+      const keepBuild = inIncognito2() && settled === "auto" && stored === "build";
+      if (stored !== settled && !keepBuild)
         chat.setModelMode(settled);
       if (settled !== slug && modeSlug(intent.modeId) === slug)
         setIntent(captureIntent(settled, snapshot()));
@@ -13806,6 +13871,54 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   var MODE_IDS = new Set(CATALOG.map((m) => m.id));
   var pickerSource = "";
+  var hidBuild = false;
+  var offIncognito = null;
+  function inIncognito2() {
+    try {
+      return SettingsStore.useSettingsStore.getState().isIncognito === true;
+    } catch {
+      return false;
+    }
+  }
+  function alignIncognitoBuild() {
+    if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage())
+      return;
+    let selected = "";
+    let model = "";
+    try {
+      selected = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || ""));
+      model = modeSlug(String(ChatPageStore.useChatPageStore.getState().modelMode || ""));
+    } catch {
+      return;
+    }
+    if (inIncognito2()) {
+      if (selected !== "build")
+        return;
+      hidBuild = true;
+      applying = true;
+      try {
+        ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+      } catch (e) {
+        logger24.debug("incognito build hide failed", e);
+      } finally {
+        applying = false;
+      }
+      return;
+    }
+    if (!hidBuild)
+      return;
+    hidBuild = false;
+    if (selected !== "auto" || model !== "build")
+      return;
+    applying = true;
+    try {
+      ModesStore.useModesStore.getState().setSelectedModeId("build", { source: "sync" });
+    } catch (e) {
+      logger24.debug("incognito build restore failed", e);
+    } finally {
+      applying = false;
+    }
+  }
   function hookSelectedMode() {
     try {
       const store = ModesStore.useModesStore;
@@ -13833,6 +13946,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (!MODE_IDS.has(slug))
       return;
+    if (inIncognito2() && slug === "build") {
+      slug = "auto";
+      hidBuild = true;
+    }
     const modes = ModesStore.useModesStore.getState();
     const selected = modeSlug(String(modes.selectedModeId || ""));
     if (selected !== slug) {
@@ -14968,6 +15085,20 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     if (!id)
       return;
+    if (inIncognito2() && modeSlug(id) === "build") {
+      hidBuild = true;
+      userPicking = false;
+      awaitingMenu = false;
+      applying = true;
+      try {
+        ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+      } catch (e) {
+        logger24.debug("incognito build hide failed", e);
+      } finally {
+        applying = false;
+      }
+      return;
+    }
     if (source === "user" || userPicking || awaitingMenu) {
       rememberSnapshot();
       return;
@@ -14981,6 +15112,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (key !== lastNavKey2) {
       lastNavKey2 = key;
       onNavigate();
+      alignIncognitoBuild();
       return;
     }
     if (sendOverride || applying)
@@ -14989,6 +15121,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       fightHydrate();
     if (!currentCid3() && !userPicking && !awaitingMenu)
       followModelMode();
+    alignIncognitoBuild();
   }
   function onStreamEnd3({ responseId }) {
     wrapSendFns();
@@ -15029,13 +15162,23 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     } catch (e) {
       logger24.warn("Failed to hook send path", e);
     }
+    try {
+      offIncognito?.();
+      offIncognito = SettingsStore.useSettingsStore.subscribe(() => alignIncognitoBuild());
+    } catch (e) {
+      logger24.debug("incognito subscribe failed", e);
+    }
     if (!currentCid3())
       followModelMode();
+    alignIncognitoBuild();
   }
   function stopMode() {
     if (!modeStarted)
       return;
     modeStarted = false;
+    offIncognito?.();
+    offIncognito = null;
+    hidBuild = false;
     abort?.abort();
     abort = null;
     if (loadTail) {
@@ -33506,7 +33649,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterLinks_default.updatedAt = 1787870966000;
   betterModeSelect_default.updatedAt = 1791045955000;
   betterNavigator_default.updatedAt = 1790536418000;
-  betterQueue_default.updatedAt = 1791040492000;
+  betterQueue_default.updatedAt = 1791047990000;
   betterQuotes_default.updatedAt = 1790446202000;
   betterSidebar_default.updatedAt = 1791042784000;
   chatListStatus_default.updatedAt = 1791037203000;
