@@ -592,5 +592,12 @@ export default definePlugin({
                 replace: "useBotsSectionEnabled)();return((0,$1.useBotsBootstrap)($2),!0)?",
             },
         },
+        {
+            find: "shouldPaintBotsSidebar)({hasBots:",
+            replacement: {
+                match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
+                replace: "",
+            },
+        },
     ],
 });
