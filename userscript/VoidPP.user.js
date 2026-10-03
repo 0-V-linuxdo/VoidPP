@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.3
+// @version      20261003.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.3] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7790,9 +7790,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8def373"}`
-    }, `(${"8def373"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4db9755"}`
+    }, `(${"4db9755"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -13675,7 +13675,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!sendOverride)
       return;
     sendOverride = null;
-    applyIntent(pickerIntent());
+    if (!currentCid3())
+      rememberSnapshot();
+    else
+      applyIntent(pickerIntent());
   }
   function captureIntent(modeId, cur) {
     const keep = modeSlug(cur.modelMode) === modeSlug(modeId);
@@ -13701,7 +13704,26 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     setIntent(captureIntent(next.modeId, next));
     userPicking = false;
     awaitingMenu = false;
+    syncModelMode(modeSlug(intent.modeId));
     logger24.info("intent", intent.modeId);
+  }
+  function syncModelMode(slug) {
+    if (!slug || applying)
+      return;
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      if (modeSlug(String(chat.modelMode || "")) === slug)
+        return;
+      applying = true;
+      try {
+        chat.setModelMode(slug);
+      } finally {
+        applying = false;
+      }
+    } catch (e) {
+      applying = false;
+      logger24.debug("model sync failed", e);
+    }
   }
   function fightHydrate() {
     if (sendOverride || !settings12.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
@@ -13732,10 +13754,17 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function onNavigate() {
     wrapSendFns();
-    if (!intent.modeId)
-      setIntent(snapshot());
     closeMenu();
     schedulePaint();
+    if (onImaginePage())
+      return;
+    if (!currentCid3()) {
+      rememberSnapshot();
+      setRestoreFlag(false);
+      return;
+    }
+    if (!intent.modeId)
+      setIntent(snapshot());
     if (!settings12.store.stickyOnNavigate || !intent.modeId)
       return;
     setRestoreFlag(true);
@@ -14806,7 +14835,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     if (!id)
       return;
-    if (userPicking || awaitingMenu)
+    if (userPicking || awaitingMenu || !currentCid3())
       rememberSnapshot();
   }
   function onChatPage() {
@@ -14860,8 +14889,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     } catch (e) {
       logger24.warn("Failed to hook send path", e);
     }
-    if (intent.modeId)
-      applyIntent(intent);
+    if (!currentCid3())
+      rememberSnapshot();
   }
   function stopMode() {
     if (!modeStarted)
@@ -33320,7 +33349,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1790536418000;
   betterQueue_default.updatedAt = 1790246920000;
   betterQuotes_default.updatedAt = 1790446202000;
-  betterSidebar_default.updatedAt = 1791039582000;
+  betterSidebar_default.updatedAt = 1791040302000;
   chatListStatus_default.updatedAt = 1791037203000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1790093417000;

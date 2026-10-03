@@ -334,7 +334,8 @@ function releaseOverride() {
     overrideCid = "";
     if (!sendOverride) return;
     sendOverride = null;
-    applyIntent(pickerIntent());
+    if (!currentCid()) rememberSnapshot();
+    else applyIntent(pickerIntent());
 }
 
 function captureIntent(modeId: string, cur: Intent): Intent {
@@ -361,7 +362,25 @@ function rememberSnapshot() {
     setIntent(captureIntent(next.modeId, next));
     userPicking = false;
     awaitingMenu = false;
+    syncModelMode(modeSlug(intent.modeId));
     logger.info("intent", intent.modeId);
+}
+
+function syncModelMode(slug: string) {
+    if (!slug || applying) return;
+    try {
+        const chat = ChatPageStore.useChatPageStore.getState();
+        if (modeSlug(String(chat.modelMode || "")) === slug) return;
+        applying = true;
+        try {
+            chat.setModelMode(slug as ModelMode);
+        } finally {
+            applying = false;
+        }
+    } catch (e) {
+        applying = false;
+        logger.debug("model sync failed", e);
+    }
 }
 
 function fightHydrate() {
@@ -397,9 +416,15 @@ function navKey(): string {
 
 function onNavigate() {
     wrapSendFns();
-    if (!intent.modeId) setIntent(snapshot());
     closeMenu();
     schedulePaint();
+    if (onImaginePage()) return;
+    if (!currentCid()) {
+        rememberSnapshot();
+        setRestoreFlag(false);
+        return;
+    }
+    if (!intent.modeId) setIntent(snapshot());
     if (!settings.store.stickyOnNavigate || !intent.modeId) return;
     setRestoreFlag(true);
     applyIntent(intent);
@@ -1388,7 +1413,7 @@ function onKeyDown(e: KeyboardEvent) {
 function onPicker(id: string) {
     if (applying || sendOverride) return;
     if (!id) return;
-    if (userPicking || awaitingMenu) rememberSnapshot();
+    if (userPicking || awaitingMenu || !currentCid()) rememberSnapshot();
 }
 
 function onChatPage() {
@@ -1443,7 +1468,7 @@ export function startMode() {
     } catch (e) {
         logger.warn("Failed to hook send path", e);
     }
-    if (intent.modeId) applyIntent(intent);
+    if (!currentCid()) rememberSnapshot();
 }
 
 export function stopMode() {
