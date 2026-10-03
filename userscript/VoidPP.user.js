@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261002.2
+// @version      20261003.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261002.2] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7784,9 +7784,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261002.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"14f3fe0"}`
-    }, `(${"14f3fe0"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"12f3378"}`
+    }, `(${"12f3378"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18740,10 +18740,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 [data-void-cls-nest] > .void-cls {
     position: absolute;
     top: 50%;
-    left: 0.25rem;
+    left: calc(0.375rem + 1.5rem / 2);
     z-index: 1;
     margin: 0;
-    transform: translateY(-50%);
+    transform: translate(-50%, -50%);
 }
 
 .void-cls[data-kind="streaming"] svg {
@@ -33258,7 +33258,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   contextMenu_default.updatedAt = 1781702684000;
   autoCollapse_default.updatedAt = 1787789817000;
   autoRetry_default.updatedAt = 1789906500000;
-  avatarPluginsFlyout_default.updatedAt = 0;
+  avatarPluginsFlyout_default.updatedAt = 1790944668000;
   betterCanvas_default.updatedAt = 1790360947000;
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1790093417000;
