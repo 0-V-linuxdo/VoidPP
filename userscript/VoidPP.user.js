@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.7
+// @version      20261003.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.7] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7790,9 +7790,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d58d7a7"}`
-    }, `(${"d58d7a7"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5d63984"}`
+    }, `(${"5d63984"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9670,7 +9670,7 @@ html.void-cms-picked .void-cms-ghost {
   var settings10 = definePluginSettings({
     pinList: {
       type: 6 /* COMPONENT */,
-      description: "Toggle pins and drag to set chip order.",
+      description: "Toggle pins and drag to set chip order. Ctrl+M cycles the selected model.",
       component: PinOrderEditor
     },
     hideNativeTrigger: {
@@ -9799,6 +9799,7 @@ html.void-cms-picked .void-cms-ghost {
   var harvested = new Map;
   var harvestListeners = new Set;
   var ghosts = new Set;
+  var hotkeyAbort = null;
   var cloakWatch = null;
   function uncloak() {
     for (const host of ghosts) {
@@ -9951,6 +9952,53 @@ html.void-cms-picked .void-cms-ghost {
   }
   function nativeTrigger() {
     return document.querySelector(TRIGGER_SEL);
+  }
+  function modelTrigger() {
+    const byId = document.getElementById("model-select-trigger");
+    if (byId instanceof HTMLButtonElement)
+      return byId;
+    return nativeTrigger();
+  }
+  function isModelHotkey(e) {
+    if (e.repeat || e.isComposing || e.keyCode === 229)
+      return false;
+    if (!e.ctrlKey || e.metaKey || e.altKey || e.shiftKey)
+      return false;
+    return e.code === "KeyM" || e.key === "m" || e.key === "M";
+  }
+  function typingOutsideComposer(target) {
+    if (!(target instanceof Element) || target.closest(".query-bar"))
+      return false;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)
+      return true;
+    return target instanceof HTMLElement && target.isContentEditable;
+  }
+  function closeModelMenu() {
+    const btn = modelTrigger();
+    if (!btn)
+      return;
+    if (btn.getAttribute("data-state") !== "open" && btn.getAttribute("aria-expanded") !== "true")
+      return;
+    clickEl(btn);
+  }
+  function onModelHotkey(e) {
+    if (!isModelHotkey(e) || picking || typingOutsideComposer(e.target) || !modelTrigger())
+      return;
+    const next = ModesStore.useModesStore.getState().cycleSelectedMode?.();
+    if (!next?.id)
+      return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    closeModelMenu();
+  }
+  function bindModelHotkey() {
+    hotkeyAbort?.abort();
+    hotkeyAbort = new AbortController;
+    document.addEventListener("keydown", onModelHotkey, { capture: true, signal: hotkeyAbort.signal });
+  }
+  function unbindModelHotkey() {
+    hotkeyAbort?.abort();
+    hotkeyAbort = null;
   }
   function clickEl(el) {
     el.dispatchEvent(new PointerEvent("pointerdown", POINTER));
@@ -10119,7 +10167,7 @@ html.void-cms-picked .void-cms-ghost {
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
-    }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order.")), /* @__PURE__ */ React.createElement("div", {
+    }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order. Ctrl+M cycles the selected model.")), /* @__PURE__ */ React.createElement("div", {
       className: cl18("order-list"),
       role: "list"
     }, ids.map((id, i) => {
@@ -10214,7 +10262,7 @@ html.void-cms-picked .void-cms-ghost {
   var betterModeSelect_default = definePlugin({
     name: "BetterModeSelect",
     icon: Minimize2Icon,
-    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu.",
+    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu. Ctrl+M cycles the selected model (same order as Cmd/Ctrl+Shift+M).",
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
@@ -10223,8 +10271,10 @@ html.void-cms-picked .void-cms-ghost {
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
       ModesStore.useModesStore.getState().ensureLoaded();
+      bindModelHotkey();
     },
     stop() {
+      unbindModelHotkey();
       setPicking(false);
       harvested.clear();
       harvestListeners.clear();
@@ -33368,7 +33418,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1790536418000;
   betterQueue_default.updatedAt = 1791040492000;
   betterQuotes_default.updatedAt = 1790446202000;
-  betterSidebar_default.updatedAt = 1791041552000;
+  betterSidebar_default.updatedAt = 1791042784000;
   chatListStatus_default.updatedAt = 1791037203000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1790093417000;

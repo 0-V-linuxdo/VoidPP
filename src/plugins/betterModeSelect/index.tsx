@@ -58,7 +58,7 @@ const GHOST_STYLE = { opacity: "0", visibility: "hidden" } as const;
 const settings = definePluginSettings({
     pinList: {
         type: OptionType.COMPONENT,
-        description: "Toggle pins and drag to set chip order.",
+        description: "Toggle pins and drag to set chip order. Ctrl+M cycles the selected model.",
         component: PinOrderEditor,
     },
     hideNativeTrigger: {
@@ -186,6 +186,7 @@ let harvesting = false;
 const harvested = new Map<string, string>();
 const harvestListeners = new Set<() => void>();
 const ghosts = new Set<HTMLElement>();
+let hotkeyAbort: AbortController | null = null;
 let cloakWatch: MutationObserver | null = null;
 
 function uncloak() {
@@ -344,6 +345,51 @@ function waitForGone() {
 
 function nativeTrigger() {
     return document.querySelector<HTMLButtonElement>(TRIGGER_SEL);
+}
+
+function modelTrigger() {
+    const byId = document.getElementById("model-select-trigger");
+    if (byId instanceof HTMLButtonElement) return byId;
+    return nativeTrigger();
+}
+
+function isModelHotkey(e: KeyboardEvent) {
+    if (e.repeat || e.isComposing || e.keyCode === 229) return false;
+    if (!e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return false;
+    return e.code === "KeyM" || e.key === "m" || e.key === "M";
+}
+
+function typingOutsideComposer(target: EventTarget | null) {
+    if (!(target instanceof Element) || target.closest(".query-bar")) return false;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
+    return target instanceof HTMLElement && target.isContentEditable;
+}
+
+function closeModelMenu() {
+    const btn = modelTrigger();
+    if (!btn) return;
+    if (btn.getAttribute("data-state") !== "open" && btn.getAttribute("aria-expanded") !== "true") return;
+    clickEl(btn);
+}
+
+function onModelHotkey(e: KeyboardEvent) {
+    if (!isModelHotkey(e) || picking || typingOutsideComposer(e.target) || !modelTrigger()) return;
+    const next = ModesStore.useModesStore.getState().cycleSelectedMode?.();
+    if (!next?.id) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    closeModelMenu();
+}
+
+function bindModelHotkey() {
+    hotkeyAbort?.abort();
+    hotkeyAbort = new AbortController();
+    document.addEventListener("keydown", onModelHotkey, { capture: true, signal: hotkeyAbort.signal });
+}
+
+function unbindModelHotkey() {
+    hotkeyAbort?.abort();
+    hotkeyAbort = null;
 }
 
 function clickEl(el: HTMLElement) {
@@ -516,7 +562,7 @@ function PinOrderEditor() {
         <Flex flexDirection="column" gap="0.5rem" className={cl("order")}>
             <Flex flexDirection="column" gap="0">
                 <SettingsTitle>Pinned modes</SettingsTitle>
-                <SettingsDescription>Toggle pins and drag to set chip order.</SettingsDescription>
+                <SettingsDescription>Toggle pins and drag to set chip order. Ctrl+M cycles the selected model.</SettingsDescription>
             </Flex>
             <div className={cl("order-list")} role="list">
                 {ids.map((id, i) => {
@@ -617,7 +663,7 @@ function PinnedModes() {
 export default definePlugin({
     name: "BetterModeSelect",
     icon: Minimize2Icon,
-    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu.",
+    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu. Ctrl+M cycles the selected model (same order as Cmd/Ctrl+Shift+M).",
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
@@ -627,9 +673,11 @@ export default definePlugin({
 
     start() {
         void ModesStore.useModesStore.getState().ensureLoaded();
+        bindModelHotkey();
     },
 
     stop() {
+        unbindModelHotkey();
         setPicking(false);
         harvested.clear();
         harvestListeners.clear();
