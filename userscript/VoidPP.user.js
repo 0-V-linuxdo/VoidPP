@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.8
+// @version      20261003.9
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.8] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.9] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7790,9 +7790,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5d63984"}`
-    }, `(${"5d63984"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"45a8efb"}`
+    }, `(${"45a8efb"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9670,7 +9670,7 @@ html.void-cms-picked .void-cms-ghost {
   var settings10 = definePluginSettings({
     pinList: {
       type: 6 /* COMPONENT */,
-      description: "Toggle pins and drag to set chip order. Ctrl+M cycles the selected model.",
+      description: "Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.",
       component: PinOrderEditor
     },
     hideNativeTrigger: {
@@ -9858,6 +9858,27 @@ html.void-cms-picked .void-cms-ghost {
   function setPinned(pin, on) {
     settings10.store[pin] = on;
   }
+  function pinnedIdsFrom(pinOrder, pins, catalog) {
+    const known = catalog.filter((c) => KNOWN_IDS.has(c.id));
+    return parseOrder(pinOrder).filter((id) => {
+      if (!pins[PIN_BY_ID[id]])
+        return false;
+      if (id === "build" || !known.length)
+        return true;
+      return known.some((c) => c.id === id);
+    });
+  }
+  function pinnedIds() {
+    const cfg = settings10.store;
+    return pinnedIdsFrom(cfg.pinOrder, cfg, ModesStore.useModesStore.getState().modes ?? []);
+  }
+  function nextPinnedId(current) {
+    const ids = pinnedIds();
+    if (ids.length < 2)
+      return;
+    const next = ids[(ids.indexOf(current) + 1) % ids.length];
+    return next && next !== current ? next : undefined;
+  }
   function itemText(el) {
     return `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`.replaceAll(/\s+/g, " ").trim().toLowerCase();
   }
@@ -9981,14 +10002,22 @@ html.void-cms-picked .void-cms-ghost {
       return;
     clickEl(btn);
   }
+  function composerReady() {
+    const page = RoutingStore.useRoutingStore.getState().route?.page;
+    if (page === "bot" || typeof page === "string" && page.startsWith("imagine"))
+      return false;
+    return !!modelTrigger();
+  }
   function onModelHotkey(e) {
-    if (!isModelHotkey(e) || picking || typingOutsideComposer(e.target) || !modelTrigger())
+    if (!isModelHotkey(e) || picking || typingOutsideComposer(e.target) || !composerReady())
       return;
-    const next = ModesStore.useModesStore.getState().cycleSelectedMode?.();
-    if (!next?.id)
+    const current = String(ModesStore.useModesStore.getState().selectedModeId || "");
+    const next = nextPinnedId(current);
+    if (!next)
       return;
     e.preventDefault();
     e.stopImmediatePropagation();
+    ModesStore.useModesStore.getState().setSelectedModeId(next, { source: "user" });
     closeModelMenu();
   }
   function bindModelHotkey() {
@@ -10167,7 +10196,7 @@ html.void-cms-picked .void-cms-ghost {
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
-    }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order. Ctrl+M cycles the selected model.")), /* @__PURE__ */ React.createElement("div", {
+    }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.")), /* @__PURE__ */ React.createElement("div", {
       className: cl18("order-list"),
       role: "list"
     }, ids.map((id, i) => {
@@ -10228,7 +10257,7 @@ html.void-cms-picked .void-cms-ghost {
     const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
     const catalog = ModesStore.useModesStore((s) => s.modes);
     const knownCatalog = catalog.filter((c) => KNOWN_IDS.has(c.id));
-    const items = parseOrder(cfg.pinOrder).map((id) => MODE_BY_ID[id]).filter((m) => cfg[m.pin] && (m.id === "build" || !knownCatalog.length || knownCatalog.some((c) => c.id === m.id)));
+    const items = pinnedIdsFrom(cfg.pinOrder, cfg, catalog).map((id) => MODE_BY_ID[id]);
     if (page === "bot" || !items.length)
       return null;
     const { showLabels } = cfg;
@@ -10262,7 +10291,7 @@ html.void-cms-picked .void-cms-ghost {
   var betterModeSelect_default = definePlugin({
     name: "BetterModeSelect",
     icon: Minimize2Icon,
-    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu. Ctrl+M cycles the selected model (same order as Cmd/Ctrl+Shift+M).",
+    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu. Ctrl+M cycles only those pinned models.",
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
@@ -33414,7 +33443,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1790093417000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1790551906000;
+  betterModeSelect_default.updatedAt = 1791044537000;
   betterNavigator_default.updatedAt = 1790536418000;
   betterQueue_default.updatedAt = 1791040492000;
   betterQuotes_default.updatedAt = 1790446202000;

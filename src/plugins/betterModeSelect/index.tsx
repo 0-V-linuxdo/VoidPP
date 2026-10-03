@@ -58,7 +58,7 @@ const GHOST_STYLE = { opacity: "0", visibility: "hidden" } as const;
 const settings = definePluginSettings({
     pinList: {
         type: OptionType.COMPONENT,
-        description: "Toggle pins and drag to set chip order. Ctrl+M cycles the selected model.",
+        description: "Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.",
         component: PinOrderEditor,
     },
     hideNativeTrigger: {
@@ -249,6 +249,27 @@ function setPinned(pin: PinKey, on: boolean) {
     settings.store[pin] = on;
 }
 
+function pinnedIdsFrom(pinOrder: unknown, pins: Partial<Record<PinKey, boolean>>, catalog: { id: string }[]): ModeId[] {
+    const known = catalog.filter(c => KNOWN_IDS.has(c.id));
+    return parseOrder(pinOrder).filter(id => {
+        if (!pins[PIN_BY_ID[id]]) return false;
+        if (id === "build" || !known.length) return true;
+        return known.some(c => c.id === id);
+    });
+}
+
+function pinnedIds(): ModeId[] {
+    const cfg = settings.store;
+    return pinnedIdsFrom(cfg.pinOrder, cfg, ModesStore.useModesStore.getState().modes ?? []);
+}
+
+function nextPinnedId(current: string): ModeId | undefined {
+    const ids = pinnedIds();
+    if (ids.length < 2) return;
+    const next = ids[(ids.indexOf(current as ModeId) + 1) % ids.length];
+    return next && next !== current ? next : undefined;
+}
+
 function itemText(el: Element) {
     return `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`.replaceAll(/\s+/g, " ").trim().toLowerCase();
 }
@@ -372,12 +393,20 @@ function closeModelMenu() {
     clickEl(btn);
 }
 
+function composerReady() {
+    const page = RoutingStore.useRoutingStore.getState().route?.page;
+    if (page === "bot" || (typeof page === "string" && page.startsWith("imagine"))) return false;
+    return !!modelTrigger();
+}
+
 function onModelHotkey(e: KeyboardEvent) {
-    if (!isModelHotkey(e) || picking || typingOutsideComposer(e.target) || !modelTrigger()) return;
-    const next = ModesStore.useModesStore.getState().cycleSelectedMode?.();
-    if (!next?.id) return;
+    if (!isModelHotkey(e) || picking || typingOutsideComposer(e.target) || !composerReady()) return;
+    const current = String(ModesStore.useModesStore.getState().selectedModeId || "");
+    const next = nextPinnedId(current);
+    if (!next) return;
     e.preventDefault();
     e.stopImmediatePropagation();
+    ModesStore.useModesStore.getState().setSelectedModeId(next, { source: "user" });
     closeModelMenu();
 }
 
@@ -562,7 +591,7 @@ function PinOrderEditor() {
         <Flex flexDirection="column" gap="0.5rem" className={cl("order")}>
             <Flex flexDirection="column" gap="0">
                 <SettingsTitle>Pinned modes</SettingsTitle>
-                <SettingsDescription>Toggle pins and drag to set chip order. Ctrl+M cycles the selected model.</SettingsDescription>
+                <SettingsDescription>Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.</SettingsDescription>
             </Flex>
             <div className={cl("order-list")} role="list">
                 {ids.map((id, i) => {
@@ -627,9 +656,7 @@ function PinnedModes() {
     const selectedModeId = ModesStore.useModesStore((s: ModesStoreState) => s.selectedModeId);
     const catalog = ModesStore.useModesStore((s: ModesStoreState) => s.modes);
     const knownCatalog = catalog.filter(c => KNOWN_IDS.has(c.id));
-    const items = parseOrder(cfg.pinOrder)
-        .map(id => MODE_BY_ID[id])
-        .filter(m => cfg[m.pin] && (m.id === "build" || !knownCatalog.length || knownCatalog.some(c => c.id === m.id)));
+    const items = pinnedIdsFrom(cfg.pinOrder, cfg, catalog).map(id => MODE_BY_ID[id]);
     if (page === "bot" || !items.length) return null;
 
     const { showLabels } = cfg;
@@ -663,7 +690,7 @@ function PinnedModes() {
 export default definePlugin({
     name: "BetterModeSelect",
     icon: Minimize2Icon,
-    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu. Ctrl+M cycles the selected model (same order as Cmd/Ctrl+Shift+M).",
+    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu. Ctrl+M cycles only those pinned models.",
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
