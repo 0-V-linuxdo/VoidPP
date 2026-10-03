@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.12
+// @version      20261003.13
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.12] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.13] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -8906,9 +8906,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"bac415d"}`
-    }, `(${"bac415d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2118477"}`
+    }, `(${"2118477"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14768,6 +14768,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function followModelMode() {
+    hookSelectedMode();
     if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage())
       return;
     let slug = "";
@@ -14799,6 +14800,37 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const snap = snapshot();
     setIntent(captureIntent(snap.modeId || slug, snap));
     logger25.info("intent", intent.modeId, "from model", slug);
+  }
+  var alignTimer = null;
+  var alignN = 0;
+  var alignOff = [];
+  function scheduleAlign() {
+    if (alignTimer)
+      clearTimeout(alignTimer);
+    alignN = 0;
+    const tick = () => {
+      alignTimer = null;
+      if (currentCid3() || onImaginePage())
+        return;
+      followModelMode();
+      if (alignN++ < 12)
+        alignTimer = setTimeout(tick, alignN < 4 ? 50 : 200);
+    };
+    tick();
+  }
+  function watchNewChat() {
+    if (alignOff.length)
+      return;
+    const kick = () => {
+      if (!currentCid3())
+        followModelMode();
+    };
+    try {
+      alignOff.push(ChatPageStore.useChatPageStore.subscribe(kick));
+      alignOff.push(ModesStore.useModesStore.subscribe(kick));
+    } catch (e) {
+      logger25.debug("align subscribe failed", e);
+    }
   }
   function fightHydrate() {
     if (sendOverride || !settings13.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
@@ -14835,6 +14867,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     if (!currentCid3()) {
       followModelMode();
+      scheduleAlign();
       setRestoreFlag(false);
       return;
     }
@@ -16003,6 +16036,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!currentCid3())
       followModelMode();
     alignIncognitoBuild();
+    watchNewChat();
+    if (!currentCid3())
+      scheduleAlign();
   }
   function stopMode() {
     if (!modeStarted)
@@ -16011,6 +16047,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     offIncognito?.();
     offIncognito = null;
     hidBuild = false;
+    if (alignTimer)
+      clearTimeout(alignTimer);
+    alignTimer = null;
+    alignN = 0;
+    for (const off of alignOff)
+      off();
+    alignOff.length = 0;
     abort?.abort();
     abort = null;
     if (loadTail) {
@@ -33777,7 +33820,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   contextMenu_default.updatedAt = 1781702684000;
   autoCollapse_default.updatedAt = 1787789817000;
   autoRetry_default.updatedAt = 1789906500000;
-  avatarPluginsFlyout_default.updatedAt = 1790944668000;
+  avatarPluginsFlyout_default.updatedAt = 1791052393000;
   betterCanvas_default.updatedAt = 1790360947000;
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1790093417000;
@@ -33786,7 +33829,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1790536418000;
   betterQueue_default.updatedAt = 1791051657000;
   betterQuotes_default.updatedAt = 1790446202000;
-  betterSidebar_default.updatedAt = 1791042784000;
+  betterSidebar_default.updatedAt = 1791052393000;
   chatListStatus_default.updatedAt = 1791037203000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1790093417000;

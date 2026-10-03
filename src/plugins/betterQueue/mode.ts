@@ -451,6 +451,7 @@ function hookSelectedMode() {
 }
 
 function followModelMode() {
+    hookSelectedMode();
     if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage()) return;
     let slug = "";
     try {
@@ -479,6 +480,35 @@ function followModelMode() {
     const snap = snapshot();
     setIntent(captureIntent(snap.modeId || slug, snap));
     logger.info("intent", intent.modeId, "from model", slug);
+}
+
+let alignTimer: ReturnType<typeof setTimeout> | null = null;
+let alignN = 0;
+const alignOff: Array<() => void> = [];
+
+function scheduleAlign() {
+    if (alignTimer) clearTimeout(alignTimer);
+    alignN = 0;
+    const tick = () => {
+        alignTimer = null;
+        if (currentCid() || onImaginePage()) return;
+        followModelMode();
+        if (alignN++ < 12) alignTimer = setTimeout(tick, alignN < 4 ? 50 : 200);
+    };
+    tick();
+}
+
+function watchNewChat() {
+    if (alignOff.length) return;
+    const kick = () => {
+        if (!currentCid()) followModelMode();
+    };
+    try {
+        alignOff.push(ChatPageStore.useChatPageStore.subscribe(kick));
+        alignOff.push(ModesStore.useModesStore.subscribe(kick));
+    } catch (e) {
+        logger.debug("align subscribe failed", e);
+    }
 }
 
 function fightHydrate() {
@@ -519,6 +549,7 @@ function onNavigate() {
     if (onImaginePage()) return;
     if (!currentCid()) {
         followModelMode();
+        scheduleAlign();
         setRestoreFlag(false);
         return;
     }
@@ -1601,6 +1632,8 @@ export function startMode() {
     }
     if (!currentCid()) followModelMode();
     alignIncognitoBuild();
+    watchNewChat();
+    if (!currentCid()) scheduleAlign();
 }
 
 export function stopMode() {
@@ -1609,6 +1642,11 @@ export function stopMode() {
     offIncognito?.();
     offIncognito = null;
     hidBuild = false;
+    if (alignTimer) clearTimeout(alignTimer);
+    alignTimer = null;
+    alignN = 0;
+    for (const off of alignOff) off();
+    alignOff.length = 0;
     abort?.abort();
     abort = null;
     if (loadTail) {
