@@ -136,10 +136,13 @@ function collapseBotsSection() {
     if (!plus) return false;
     const group = plus.closest("[data-sidebar=group]");
     if (!group) return false;
-    const expanded = group.querySelector<HTMLElement>("button[aria-expanded=true]");
-    if (!expanded) return true;
-    expanded.click();
-    return true;
+    const header = [...group.querySelectorAll<HTMLElement>("button")].find(b => (b.innerText || "").trim() === "Bots");
+    if (!header) return false;
+    if (header.getAttribute("aria-expanded") !== "true") return true;
+    if (header.dataset.voidBotsCollapse === "1") return false;
+    header.dataset.voidBotsCollapse = "1";
+    header.click();
+    return false;
 }
 
 function useBotsCollapsed() {
@@ -553,7 +556,7 @@ export default definePlugin({
         {
             find: "\"sidebar.section-title\",\"Bots\"",
             replacement: {
-                match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\i=\(0,\i\.useRoutingStore\))/,
+                match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,\i\.useLocalStorage\)\("sidebar-bots-unassigned-collapsed")/,
                 replace: "$self._useBotsCollapsed()",
             },
         },

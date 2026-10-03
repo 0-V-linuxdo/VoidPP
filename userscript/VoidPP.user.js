@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.6
+// @version      20261003.7
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.6] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7790,9 +7790,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4a9d40a"}`
-    }, `(${"4a9d40a"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d58d7a7"}`
+    }, `(${"d58d7a7"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18330,11 +18330,16 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const group = plus.closest("[data-sidebar=group]");
     if (!group)
       return false;
-    const expanded = group.querySelector("button[aria-expanded=true]");
-    if (!expanded)
+    const header = [...group.querySelectorAll("button")].find((b) => (b.innerText || "").trim() === "Bots");
+    if (!header)
+      return false;
+    if (header.getAttribute("aria-expanded") !== "true")
       return true;
-    expanded.click();
-    return true;
+    if (header.dataset.voidBotsCollapse === "1")
+      return false;
+    header.dataset.voidBotsCollapse = "1";
+    header.click();
+    return false;
   }
   function useBotsCollapsed() {
     const state = useState(() => botsCollapsed ?? settings14.store.botsDefaultCollapsed);
@@ -18731,7 +18736,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       {
         find: '"sidebar.section-title","Bots"',
         replacement: {
-          match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\i=\(0,\i\.useRoutingStore\))/,
+          match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,\i\.useLocalStorage\)\("sidebar-bots-unassigned-collapsed")/,
           replace: "$self._useBotsCollapsed()"
         }
       },
@@ -33363,7 +33368,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1790536418000;
   betterQueue_default.updatedAt = 1791040492000;
   betterQuotes_default.updatedAt = 1790446202000;
-  betterSidebar_default.updatedAt = 1791040631000;
+  betterSidebar_default.updatedAt = 1791041552000;
   chatListStatus_default.updatedAt = 1791037203000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1790093417000;
