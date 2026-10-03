@@ -91,24 +91,20 @@ let projectsCollapseObserver: MutationObserver | null = null;
 let projectsCollapseTimer: ReturnType<typeof setTimeout> | null = null;
 
 function releaseRosterGate() {
-    // Grok hides Projects until the bot roster settles, and the Bots header
-    // until shouldPaintBotsSidebar. A hard refresh leaves both null while
-    // Chats is already mounted. Lift the gates on the live exports, then
-    // poke the store so the sidebar re-renders before the roster returns.
+    // Grok hides Projects until the bot roster settles, the Bots header until
+    // shouldPaintBotsSidebar, and the whole Bots group until
+    // useBotsSectionEnabled (feature flag ready AND a session user). A hard
+    // refresh mounts Chats first and leaves the other two null. Lift the
+    // gates on the live exports, then poke the store so the sidebar
+    // re-renders before the flag and the roster return.
     try {
         const gates = findByProps("useBotsSectionSettled", "useBotsSectionEnabled");
-        const settled = gates?.useBotsSectionSettled;
-        if (typeof settled === "function" && !(settled as { voidRoster?: boolean }).voidRoster) {
-            const wrapped = function (this: unknown) {
-                try {
-                    if (!gates.useBotsSectionEnabled()) return settled.apply(this, arguments);
-                } catch (e) {
-                    logger.warn("Bots section flag", e);
-                }
-                return true;
-            };
+        for (const name of ["useBotsSectionSettled", "useBotsSectionEnabled"] as const) {
+            const fn = gates?.[name];
+            if (typeof fn !== "function" || (fn as { voidRoster?: boolean }).voidRoster) continue;
+            const wrapped = function () { return true; };
             (wrapped as { voidRoster?: boolean }).voidRoster = true;
-            gates.useBotsSectionSettled = wrapped;
+            gates[name] = wrapped;
         }
 
         const paintMod = findByProps("shouldPaintBotsSidebar");
@@ -590,10 +586,10 @@ export default definePlugin({
             },
         },
         {
-            find: "shouldPaintBotsSidebar)({hasBots:",
+            find: "useBotsSectionEnabled)();return",
             replacement: {
-                match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
-                replace: "",
+                match: /useBotsSectionEnabled\)\(\);return\(\(0,(\i)\.useBotsBootstrap\)\((\i)\),\2\)\?/,
+                replace: "useBotsSectionEnabled)();return((0,$1.useBotsBootstrap)($2),!0)?",
             },
         },
     ],

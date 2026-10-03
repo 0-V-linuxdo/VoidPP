@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.2
+// @version      20261003.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.2] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7790,9 +7790,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"55aa981"}`
-    }, `(${"55aa981"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8def373"}`
+    }, `(${"8def373"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18259,19 +18259,15 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function releaseRosterGate() {
     try {
       const gates = findByProps("useBotsSectionSettled", "useBotsSectionEnabled");
-      const settled = gates?.useBotsSectionSettled;
-      if (typeof settled === "function" && !settled.voidRoster) {
+      for (const name of ["useBotsSectionSettled", "useBotsSectionEnabled"]) {
+        const fn = gates?.[name];
+        if (typeof fn !== "function" || fn.voidRoster)
+          continue;
         const wrapped = function() {
-          try {
-            if (!gates.useBotsSectionEnabled())
-              return settled.apply(this, arguments);
-          } catch (e) {
-            logger29.warn("Bots section flag", e);
-          }
           return true;
         };
         wrapped.voidRoster = true;
-        gates.useBotsSectionSettled = wrapped;
+        gates[name] = wrapped;
       }
       const paintMod = findByProps("shouldPaintBotsSidebar");
       const paint = paintMod?.shouldPaintBotsSidebar;
@@ -18739,10 +18735,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         }
       },
       {
-        find: "shouldPaintBotsSidebar)({hasBots:",
+        find: "useBotsSectionEnabled)();return",
         replacement: {
-          match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
-          replace: ""
+          match: /useBotsSectionEnabled\)\(\);return\(\(0,(\i)\.useBotsBootstrap\)\((\i)\),\2\)\?/,
+          replace: "useBotsSectionEnabled)();return((0,$1.useBotsBootstrap)($2),!0)?"
         }
       }
     ]
@@ -33324,7 +33320,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1790536418000;
   betterQueue_default.updatedAt = 1790246920000;
   betterQuotes_default.updatedAt = 1790446202000;
-  betterSidebar_default.updatedAt = 1790553602000;
+  betterSidebar_default.updatedAt = 1791039582000;
   chatListStatus_default.updatedAt = 1791037203000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1790093417000;
