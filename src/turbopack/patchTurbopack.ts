@@ -613,7 +613,14 @@ export function patchTurbopack(): void {
     }
 
     const queuedChunks: any[][] = [];
-    if (Array.isArray(existingTp)) queuedChunks.push(...(existingTp as any[][]));
+    if (Array.isArray(existingTp)) {
+        // The runtime installs this array itself, without calling push. Patch
+        // in place or the first evaluation of every early module stays original.
+        for (let i = 0; i < existingTp.length; i++) {
+            if (Array.isArray(existingTp[i])) existingTp[i] = patchChunkEntry(existingTp[i]);
+        }
+        queuedChunks.push(...(existingTp as any[][]));
+    }
 
     let currentTurbopack: TurbopackPushable | any[] = existingTp ?? [];
 
@@ -645,8 +652,9 @@ export function patchTurbopack(): void {
     if (Array.isArray(currentTurbopack)) {
         const origPush = currentTurbopack.push.bind(currentTurbopack);
         (currentTurbopack as any[]).push = (...args: any[]) => {
-            queuedChunks.push(...(args as any[][]));
-            return origPush(...args);
+            const patched = args.map(entry => Array.isArray(entry) ? patchChunkEntry(entry) : entry);
+            queuedChunks.push(...(patched as any[][]));
+            return origPush(...patched);
         };
     }
 }

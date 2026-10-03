@@ -17,6 +17,7 @@ import { SidebarComponents } from "@turbopack/common/components";
 import { getPlanName } from "@turbopack/common/plan";
 import { createElement, Fragment, React, useRef, useState } from "@turbopack/common/react";
 import { ChatPageStore, ConversationStore, RoutingStore, SessionStore, SubscriptionsStore } from "@turbopack/common/stores";
+import { findByProps } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classNameFactory, disableStyle, enableStyle } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -88,6 +89,46 @@ let chatsExpandObserver: MutationObserver | null = null;
 let chatsExpandTimer: ReturnType<typeof setTimeout> | null = null;
 let projectsCollapseObserver: MutationObserver | null = null;
 let projectsCollapseTimer: ReturnType<typeof setTimeout> | null = null;
+
+function releaseRosterGate() {
+    // Grok hides Projects until the bot roster settles, and the Bots header
+    // until shouldPaintBotsSidebar. A hard refresh leaves both null while
+    // Chats is already mounted. Lift the gates on the live exports, then
+    // poke the store so the sidebar re-renders before the roster returns.
+    try {
+        const gates = findByProps("useBotsSectionSettled", "useBotsSectionEnabled");
+        const settled = gates?.useBotsSectionSettled;
+        if (typeof settled === "function" && !(settled as { voidRoster?: boolean }).voidRoster) {
+            const wrapped = function (this: unknown) {
+                try {
+                    if (!gates.useBotsSectionEnabled()) return settled.apply(this, arguments);
+                } catch (e) {
+                    logger.warn("Bots section flag", e);
+                }
+                return true;
+            };
+            (wrapped as { voidRoster?: boolean }).voidRoster = true;
+            gates.useBotsSectionSettled = wrapped;
+        }
+
+        const paintMod = findByProps("shouldPaintBotsSidebar");
+        const paint = paintMod?.shouldPaintBotsSidebar;
+        if (typeof paint === "function" && !(paint as { voidRoster?: boolean }).voidRoster) {
+            const wrapped = function () { return true; };
+            (wrapped as { voidRoster?: boolean }).voidRoster = true;
+            paintMod.shouldPaintBotsSidebar = wrapped;
+        }
+
+        const bots = findByProps("useBotsStore")?.useBotsStore;
+        const state = bots?.getState?.();
+        if (bots && state && !state.rosterLoaded && !(state.agents?.length > 0)) {
+            bots.setState({ rosterLoaded: true });
+            bots.setState({ rosterLoaded: false });
+        }
+    } catch (e) {
+        logger.warn("Roster gate", e);
+    }
+}
 
 function applyHeaderHover() {
     if (settings.store.titleRowHover) enableStyle("headerHover");
@@ -430,6 +471,7 @@ export default definePlugin({
     start() {
         selection.clear();
         applyHeaderHover();
+        releaseRosterGate();
         resetChatsCollapsedStorage();
         resetProjectsCollapsedStorage();
         startBotsCollapse();
@@ -539,6 +581,20 @@ export default definePlugin({
                     replace: "!$1.current&&$2&&($3.length>0||$4.length>0)&&($1.current=!0,$self._projectsAutoExpand()&&$5(!1))",
                 },
             ],
+        },
+        {
+            find: "enterDistance:8,collapsed:",
+            replacement: {
+                match: /\i\?\(0,(\i)\.jsx\)\((\i),\{enterDistance:8,collapsed:(\i),onToggleCollapsed:(\i),activeProjectId:(\i),expandedProjectIds:(\i),onToggleProjectExpanded:(\i)\}\):null/,
+                replace: "(0,$1.jsx)($2,{enterDistance:8,collapsed:$3,onToggleCollapsed:$4,activeProjectId:$5,expandedProjectIds:$6,onToggleProjectExpanded:$7})",
+            },
+        },
+        {
+            find: "shouldPaintBotsSidebar)({hasBots:",
+            replacement: {
+                match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
+                replace: "",
+            },
         },
     ],
 });
