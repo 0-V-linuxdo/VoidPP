@@ -6,7 +6,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { gatewaySendMode, keepBuildPreference, type SendModeInput } from "./modeSend";
+import { gatewaySendMode, keepBuildPreference, sessionNeedsUpdate, type SendModeInput } from "./modeSend";
 
 function input(partial: Partial<SendModeInput>): SendModeInput {
     return {
@@ -72,5 +72,22 @@ describe("gatewaySendMode", () => {
         expect(keepBuildPreference(true, false, "auto", "build")).toBe(false);
         expect(keepBuildPreference(true, true, "heavy", "build")).toBe(false);
         expect(keepBuildPreference(false, true, "auto", "build")).toBe(false);
+    });
+});
+
+describe("sessionNeedsUpdate", () => {
+    test("a known ack that is not the chip must update before send", () => {
+        expect(sessionNeedsUpdate("build", "heavy", true)).toBe(true);
+        expect(sessionNeedsUpdate("expert", "fast", true)).toBe(true);
+    });
+
+    test("a matching ack, a missing session, or an unknown ack does not wait", () => {
+        expect(sessionNeedsUpdate("heavy", "heavy", true)).toBe(false);
+        expect(sessionNeedsUpdate("MODEL_MODE_BUILD", "build", true)).toBe(false);
+        expect(sessionNeedsUpdate("MODEL_MODE_BUILD", "heavy", true)).toBe(true);
+        expect(sessionNeedsUpdate("build", "heavy", false)).toBe(false);
+        expect(sessionNeedsUpdate(undefined, "heavy", true)).toBe(false);
+        expect(sessionNeedsUpdate("", "heavy", true)).toBe(false);
+        expect(sessionNeedsUpdate("heavy", "", true)).toBe(false);
     });
 });

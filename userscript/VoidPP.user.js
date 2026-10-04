@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.15
+// @version      20261003.16
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.15] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.16] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -8906,9 +8906,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f5565b3"}`
-    }, `(${"f5565b3"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"bea356e"}`
+    }, `(${"bea356e"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14411,6 +14411,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function keepBuildPreference(privateChat, substituted, settled, stored) {
     return privateChat && substituted && settled === "auto" && stored === "build";
   }
+  function sessionNeedsUpdate(acked, chip, hasSession) {
+    const want = modeSlug(chip);
+    const have = modeSlug(acked ?? "");
+    if (!hasSession || !want || !have)
+      return false;
+    return have !== want;
+  }
 
   // src/plugins/betterQueue/settings.ts
   var settings13 = definePluginSettings({
@@ -14449,6 +14456,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var RESTORE_ATTR = "data-void-mode-sync-restore";
   var LOAD_TAIL_MS = 400;
   var FLUSH_MS = 4000;
+  var ACK_MS = 2500;
   var OVERRIDE_MS = 6000;
   var STASH_MS = 2000;
   var CHAT_WRAP = ["sendResponse", "establishNewConversation"];
@@ -14487,6 +14495,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var flushing = new Map;
   var sentModel = new Map;
   var ackedModel = new Map;
+  var sessionWaiters = new Map;
   var busy = new Set;
   var itemIntent = new Map;
   var itemBody = new Map;
@@ -15294,6 +15303,109 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     forgetItem(turn.id);
     logger25.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
   }
+  function visibleChip() {
+    try {
+      const selected = modeSlug2(String(ModesStore.useModesStore.getState().selectedModeId || ""));
+      if (privateBuild2() && selected === "build")
+        return "auto";
+      return selected;
+    } catch {
+      return "";
+    }
+  }
+  function needsSessionAlign(cid, slug) {
+    if (!cid || !slug)
+      return false;
+    let has = false;
+    try {
+      has = Gateway.gatewayConnectionManager?.hasSession?.(cid) === true;
+    } catch {
+      return false;
+    }
+    return sessionNeedsUpdate(ackedModel.get(cid), slug, has);
+  }
+  function noteSessionAck(cid, model) {
+    const slug = modeSlug2(model);
+    ackedModel.set(cid, slug);
+    const list = sessionWaiters.get(cid);
+    if (!list?.length)
+      return;
+    const keep = [];
+    for (const waiter of list) {
+      if (slug && waiter.slug === slug) {
+        clearTimeout(waiter.timer);
+        waiter.done(true);
+      } else
+        keep.push(waiter);
+    }
+    if (keep.length)
+      sessionWaiters.set(cid, keep);
+    else
+      sessionWaiters.delete(cid);
+  }
+  function waitSessionAck(cid, slug) {
+    if (modeSlug2(ackedModel.get(cid) ?? "") === slug)
+      return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const waiter = {
+        slug,
+        done: resolve,
+        timer: setTimeout(() => {
+          const list = sessionWaiters.get(cid);
+          if (list) {
+            const next = list.filter((w) => w !== waiter);
+            if (next.length)
+              sessionWaiters.set(cid, next);
+            else
+              sessionWaiters.delete(cid);
+          }
+          resolve(false);
+        }, ACK_MS)
+      };
+      const list = sessionWaiters.get(cid);
+      if (list)
+        list.push(waiter);
+      else
+        sessionWaiters.set(cid, [waiter]);
+    });
+  }
+  function clearSessionWaiters() {
+    for (const list of sessionWaiters.values()) {
+      for (const waiter of list) {
+        clearTimeout(waiter.timer);
+        waiter.done(false);
+      }
+    }
+    sessionWaiters.clear();
+  }
+  function alignSessionToChip(cid, slug) {
+    if (!needsSessionAlign(cid, slug))
+      return Promise.resolve();
+    const pending = waitSessionAck(cid, slug);
+    let selected = "";
+    let adjusted = "";
+    try {
+      selected = modeSlug2(String(ModesStore.useModesStore.getState().selectedModeId || ""));
+      adjusted = modeSlug2(sessionAdjusted(cid));
+    } catch {}
+    if (selected !== slug || adjusted !== slug) {
+      try {
+        ModesStore.useModesStore.getState().setSelectedModeId(slug, { source: "user" });
+      } catch (e) {
+        logger25.debug("session align failed", e);
+      }
+    }
+    logger25.info("session align", cid, ackedModel.get(cid) ?? "?", "->", slug);
+    return pending.then((ok) => {
+      if (!ok)
+        logger25.info("session ack timeout", cid, "want", slug, "acked", ackedModel.get(cid) ?? "?");
+    });
+  }
+  function sendAfterSession(cid, slug, go) {
+    if (!needsSessionAlign(cid, slug))
+      return go();
+    return alignSessionToChip(cid, slug).then(go);
+  }
   function onGwEvent(cid, event) {
     const { type } = event;
     if (type === "response.created") {
@@ -15305,7 +15417,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (type === "response.persisted")
       busy.delete(cid);
     else if (SESSION_IN.has(String(type)))
-      ackedModel.set(cid, modeSlug2(String(event.session?.model ?? "")));
+      noteSessionAck(cid, String(event.session?.model ?? ""));
     else
       return;
     if (flushing.has(cid))
@@ -15489,6 +15601,20 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         }
         if (!GW_TYPES.has(type))
           return orig.apply(mgr, args);
+        if (type === "response.create") {
+          if (sendOverride?.modeId) {
+            patchGwEvent(event, sendOverride);
+            return orig.apply(mgr, args);
+          }
+          const slug = visibleChip();
+          const cidStr = typeof cid === "string" ? cid : "";
+          const live = slug ? captureIntent(slug, snapshot()) : liveIntent2();
+          return sendAfterSession(cidStr, slug, () => {
+            if (live.modeId)
+              patchGwEvent(event, live);
+            return orig.apply(mgr, args);
+          });
+        }
         const live = liveIntent2();
         if (live.modeId) {
           applyIntent(live);
@@ -15521,25 +15647,26 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (onImaginePage())
         return orig.apply(this, args);
       const [first] = args;
-      if (!sendOverride) {
-        const id = qid2(first);
-        const text = isTurnArgs(first) ? first.text : "";
-        const cid = isTurnArgs(first) ? first.convId : currentCid3();
-        const queued = queuedIntent(cid, text, id);
-        if (queued?.modeId) {
-          armOverride(queued, cid);
-          patchSendArgs(args, queued);
-          return orig.apply(this, args);
-        }
-        if (!sendOverride)
-          followModelMode();
+      if (sendOverride?.modeId) {
+        patchSendArgs(args, sendOverride);
+        return orig.apply(this, args);
       }
-      const live = liveIntent2();
-      if (live.modeId) {
-        applyIntent(live);
-        patchSendArgs(args, live);
+      const id = qid2(first);
+      const text = isTurnArgs(first) ? first.text : "";
+      const cid = isTurnArgs(first) ? first.convId : currentCid3();
+      const queued = queuedIntent(cid, text, id);
+      if (queued?.modeId) {
+        armOverride(queued, cid);
+        patchSendArgs(args, queued);
+        return orig.apply(this, args);
       }
-      return orig.apply(this, args);
+      const slug = visibleChip();
+      const live = slug ? captureIntent(slug, snapshot()) : liveIntent2();
+      return sendAfterSession(cid, slug, () => {
+        if (live.modeId)
+          patchSendArgs(args, live);
+        return orig.apply(this, args);
+      });
     };
   }
   function makeQueueWrapper(orig) {
@@ -16275,6 +16402,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     for (const f of flushing.values())
       clearTimeout(f.timer);
     flushing.clear();
+    clearSessionWaiters();
     sentModel.clear();
     ackedModel.clear();
     busy.clear();
@@ -34023,9 +34151,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1790093417000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1791051657000;
+  betterModeSelect_default.updatedAt = 1791055227000;
   betterNavigator_default.updatedAt = 1790536418000;
-  betterQueue_default.updatedAt = 1791052899000;
+  betterQueue_default.updatedAt = 1791055227000;
   betterQuotes_default.updatedAt = 1790446202000;
   betterSidebar_default.updatedAt = 1791052393000;
   chatListStatus_default.updatedAt = 1791037203000;

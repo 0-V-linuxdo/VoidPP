@@ -17,7 +17,7 @@ import { Logger } from "@utils/Logger";
 import { mapGetOrCreate, pageWindow } from "@utils/misc";
 
 import { afterEnqueue, noteEnqueue } from "./persist";
-import { gatewaySendMode, keepBuildPreference } from "./modeSend";
+import { gatewaySendMode, keepBuildPreference, sessionNeedsUpdate } from "./modeSend";
 import { settings } from "./settings";
 
 const logger = new Logger("ModeSync");
@@ -38,6 +38,7 @@ const QITEM = "data-void-qitem";
 const RESTORE_ATTR = "data-void-mode-sync-restore";
 const LOAD_TAIL_MS = 400;
 const FLUSH_MS = 4000;
+const ACK_MS = 2500;
 const OVERRIDE_MS = 6000;
 const STASH_MS = 2000;
 const CHAT_WRAP = ["sendResponse", "establishNewConversation"] as const;
@@ -83,6 +84,7 @@ interface GatewayManager {
     send: SendFn;
     on: (fn: GwListener) => () => void;
     onOutgoing: (fn: GwListener) => () => void;
+    hasSession?: (cid: string) => boolean;
 }
 
 const Gateway: { gatewayConnectionManager?: GatewayManager } = findByPropsLazy("gatewayConnectionManager");
@@ -112,6 +114,8 @@ const held = new Map<string, HeldTurn[]>();
 const flushing = new Map<string, PendingFlush>();
 const sentModel = new Map<string, string>();
 const ackedModel = new Map<string, string>();
+interface SessionWaiter { slug: string; done: (ok: boolean) => void; timer: ReturnType<typeof setTimeout>; }
+const sessionWaiters = new Map<string, SessionWaiter[]>();
 const busy = new Set<string>();
 const itemIntent = new Map<string, Intent>();
 const itemBody = new Map<string, string>();
@@ -896,6 +900,103 @@ function flushTurn(cid: string) {
     logger.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
 }
 
+function visibleChip(): string {
+    try {
+        const selected = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || ""));
+        if (privateBuild() && selected === "build") return "auto";
+        return selected;
+    } catch {
+        return "";
+    }
+}
+
+function needsSessionAlign(cid: string, slug: string): boolean {
+    if (!cid || !slug) return false;
+    let has = false;
+    try {
+        has = Gateway.gatewayConnectionManager?.hasSession?.(cid) === true;
+    } catch {
+        return false;
+    }
+    return sessionNeedsUpdate(ackedModel.get(cid), slug, has);
+}
+
+function noteSessionAck(cid: string, model: string) {
+    const slug = modeSlug(model);
+    ackedModel.set(cid, slug);
+    const list = sessionWaiters.get(cid);
+    if (!list?.length) return;
+    const keep: SessionWaiter[] = [];
+    for (const waiter of list) {
+        if (slug && waiter.slug === slug) {
+            clearTimeout(waiter.timer);
+            waiter.done(true);
+        } else keep.push(waiter);
+    }
+    if (keep.length) sessionWaiters.set(cid, keep);
+    else sessionWaiters.delete(cid);
+}
+
+function waitSessionAck(cid: string, slug: string): Promise<boolean> {
+    if (modeSlug(ackedModel.get(cid) ?? "") === slug) return Promise.resolve(true);
+    return new Promise(resolve => {
+        const waiter: SessionWaiter = {
+            slug,
+            done: resolve,
+            timer: setTimeout(() => {
+                const list = sessionWaiters.get(cid);
+                if (list) {
+                    const next = list.filter(w => w !== waiter);
+                    if (next.length) sessionWaiters.set(cid, next);
+                    else sessionWaiters.delete(cid);
+                }
+                resolve(false);
+            }, ACK_MS),
+        };
+        const list = sessionWaiters.get(cid);
+        if (list) list.push(waiter);
+        else sessionWaiters.set(cid, [waiter]);
+    });
+}
+
+function clearSessionWaiters() {
+    for (const list of sessionWaiters.values()) {
+        for (const waiter of list) {
+            clearTimeout(waiter.timer);
+            waiter.done(false);
+        }
+    }
+    sessionWaiters.clear();
+}
+
+/** Record a user pick only when the open session is a different model, then wait for Grok's own `session.update` ack. */
+function alignSessionToChip(cid: string, slug: string): Promise<void> {
+    if (!needsSessionAlign(cid, slug)) return Promise.resolve();
+    const pending = waitSessionAck(cid, slug);
+    let selected = "";
+    let adjusted = "";
+    try {
+        selected = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || ""));
+        adjusted = modeSlug(sessionAdjusted(cid));
+    } catch { /* store not ready */ }
+    if (selected !== slug || adjusted !== slug) {
+        try {
+            ModesStore.useModesStore.getState().setSelectedModeId(slug, { source: "user" });
+        } catch (e) {
+            logger.debug("session align failed", e);
+        }
+    }
+    logger.info("session align", cid, ackedModel.get(cid) ?? "?", "->", slug);
+    return pending.then(ok => {
+        if (!ok) logger.info("session ack timeout", cid, "want", slug, "acked", ackedModel.get(cid) ?? "?");
+    });
+}
+
+function sendAfterSession(cid: string, slug: string, go: () => unknown): unknown {
+    if (!needsSessionAlign(cid, slug)) return go();
+    return alignSessionToChip(cid, slug).then(go);
+}
+
 function onGwEvent(cid: string, event: GwEvent) {
     const { type } = event;
     if (type === "response.created") {
@@ -904,7 +1005,7 @@ function onGwEvent(cid: string, event: GwEvent) {
         return;
     }
     if (type === "response.persisted") busy.delete(cid);
-    else if (SESSION_IN.has(String(type))) ackedModel.set(cid, modeSlug(String(event.session?.model ?? "")));
+    else if (SESSION_IN.has(String(type))) noteSessionAck(cid, String(event.session?.model ?? ""));
     else return;
     if (flushing.has(cid)) queueMicrotask(() => tryFlush(cid));
 }
@@ -1065,6 +1166,19 @@ function wrapGatewaySend() {
                 return orig.apply(mgr, args);
             }
             if (!GW_TYPES.has(type)) return orig.apply(mgr, args);
+            if (type === "response.create") {
+                if (sendOverride?.modeId) {
+                    patchGwEvent(event, sendOverride);
+                    return orig.apply(mgr, args);
+                }
+                const slug = visibleChip();
+                const cidStr = typeof cid === "string" ? cid : "";
+                const live = slug ? captureIntent(slug, snapshot()) : liveIntent();
+                return sendAfterSession(cidStr, slug, () => {
+                    if (live.modeId) patchGwEvent(event, live);
+                    return orig.apply(mgr, args);
+                });
+            }
             const live = liveIntent();
             if (live.modeId) {
                 applyIntent(live);
@@ -1096,24 +1210,25 @@ function makeSendWrapper(orig: SendFn): SendFn {
     return function voidModeSyncSend(this: unknown, ...args: unknown[]) {
         if (onImaginePage()) return orig.apply(this, args);
         const [first] = args;
-        if (!sendOverride) {
-            const id = qid(first);
-            const text = isTurnArgs(first) ? first.text : "";
-            const cid = isTurnArgs(first) ? first.convId : currentCid();
-            const queued = queuedIntent(cid, text, id);
-            if (queued?.modeId) {
-                armOverride(queued, cid);
-                patchSendArgs(args, queued);
-                return orig.apply(this, args);
-            }
-            if (!sendOverride) followModelMode();
+        if (sendOverride?.modeId) {
+            patchSendArgs(args, sendOverride);
+            return orig.apply(this, args);
         }
-        const live = liveIntent();
-        if (live.modeId) {
-            applyIntent(live);
-            patchSendArgs(args, live);
+        const id = qid(first);
+        const text = isTurnArgs(first) ? first.text : "";
+        const cid = isTurnArgs(first) ? first.convId : currentCid();
+        const queued = queuedIntent(cid, text, id);
+        if (queued?.modeId) {
+            armOverride(queued, cid);
+            patchSendArgs(args, queued);
+            return orig.apply(this, args);
         }
-        return orig.apply(this, args);
+        const slug = visibleChip();
+        const live = slug ? captureIntent(slug, snapshot()) : liveIntent();
+        return sendAfterSession(cid, slug, () => {
+            if (live.modeId) patchSendArgs(args, live);
+            return orig.apply(this, args);
+        });
     };
 }
 
@@ -1812,6 +1927,7 @@ export function stopMode() {
     unwrapSendFns();
     for (const f of flushing.values()) clearTimeout(f.timer);
     flushing.clear();
+    clearSessionWaiters();
     sentModel.clear();
     ackedModel.clear();
     busy.clear();

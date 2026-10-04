@@ -45,3 +45,14 @@ export function gatewaySendMode(input: SendModeInput): string {
 export function keepBuildPreference(privateChat: boolean, substituted: boolean, settled: string, stored: string): boolean {
     return privateChat && substituted && settled === "auto" && stored === "build";
 }
+
+/**
+ * A live session whose acked model is known and is not the chip.
+ * Unknown ack (no `session.created` / `session.updated` yet) does not block the send.
+ */
+export function sessionNeedsUpdate(acked: string | undefined, chip: string, hasSession: boolean): boolean {
+    const want = modeSlug(chip);
+    const have = modeSlug(acked ?? "");
+    if (!hasSession || !want || !have) return false;
+    return have !== want;
+}
