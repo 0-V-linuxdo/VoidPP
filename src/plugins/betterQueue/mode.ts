@@ -992,9 +992,60 @@ function alignSessionToChip(cid: string, slug: string): Promise<void> {
     });
 }
 
-function sendAfterSession(cid: string, slug: string, go: () => unknown): unknown {
-    if (!needsSessionAlign(cid, slug)) return go();
-    return alignSessionToChip(cid, slug).then(go);
+const socketHooked = new WeakSet<WebSocket>();
+let origWsSend: typeof WebSocket.prototype.send | null = null;
+
+function readGwFrame(text: string): { cid: string; type: string; model: string } | null {
+    try {
+        const parsed = JSON.parse(text) as { session_id?: unknown; event?: { type?: unknown; session?: { model?: unknown } }; type?: unknown; session?: { model?: unknown } };
+        const event = parsed.event && typeof parsed.event === "object" ? parsed.event : parsed;
+        const type = String(event.type || "");
+        if (!type) return null;
+        return {
+            cid: String(parsed.session_id || ""),
+            type,
+            model: String(event.session?.model || ""),
+        };
+    } catch {
+        return null;
+    }
+}
+
+function hookSocket() {
+    if (origWsSend) return;
+    const orig = WebSocket.prototype.send;
+    origWsSend = orig;
+    WebSocket.prototype.send = function voidModeSyncSocket(this: WebSocket, data: string | ArrayBufferLike | Blob | ArrayBufferView) {
+        if (!socketHooked.has(this)) {
+            socketHooked.add(this);
+            this.addEventListener("message", (ev) => {
+                if (typeof ev.data !== "string") return;
+                const frame = readGwFrame(ev.data);
+                if (!frame || !frame.cid || !SESSION_IN.has(frame.type)) return;
+                noteSessionAck(frame.cid, frame.model);
+            });
+        }
+        if (typeof data === "string" && !onImaginePage()) {
+            const frame = readGwFrame(data);
+            if (frame?.type === "response.create") {
+                const cid = frame.cid || currentCid();
+                const slug = visibleChip();
+                if (needsSessionAlign(cid, slug)) {
+                    alignSessionToChip(cid, slug).then(() => {
+                        try { orig.call(this, data); } catch (e) { logger.debug("held send failed", e); }
+                    });
+                    return;
+                }
+            }
+        }
+        return orig.call(this, data);
+    };
+}
+
+function unhookSocket() {
+    if (!origWsSend) return;
+    WebSocket.prototype.send = origWsSend;
+    origWsSend = null;
 }
 
 function onGwEvent(cid: string, event: GwEvent) {
@@ -1166,22 +1217,11 @@ function wrapGatewaySend() {
                 return orig.apply(mgr, args);
             }
             if (!GW_TYPES.has(type)) return orig.apply(mgr, args);
-            if (type === "response.create") {
-                if (sendOverride?.modeId) {
-                    patchGwEvent(event, sendOverride);
-                    return orig.apply(mgr, args);
-                }
-                const slug = visibleChip();
-                const cidStr = typeof cid === "string" ? cid : "";
-                const live = slug ? captureIntent(slug, snapshot()) : liveIntent();
-                return sendAfterSession(cidStr, slug, () => {
-                    if (live.modeId) patchGwEvent(event, live);
-                    return orig.apply(mgr, args);
-                });
-            }
-            const live = liveIntent();
+            const live = type === "response.create"
+                ? (sendOverride?.modeId ? sendOverride : (visibleChip() ? captureIntent(visibleChip(), snapshot()) : liveIntent()))
+                : liveIntent();
             if (live.modeId) {
-                applyIntent(live);
+                if (type !== "response.create") applyIntent(live);
                 patchGwEvent(event, live);
             }
             return orig.apply(mgr, args);
@@ -1225,10 +1265,8 @@ function makeSendWrapper(orig: SendFn): SendFn {
         }
         const slug = visibleChip();
         const live = slug ? captureIntent(slug, snapshot()) : liveIntent();
-        return sendAfterSession(cid, slug, () => {
-            if (live.modeId) patchSendArgs(args, live);
-            return orig.apply(this, args);
-        });
+        if (live.modeId) patchSendArgs(args, live);
+        return orig.apply(this, args);
     };
 }
 
@@ -1869,6 +1907,7 @@ export function startMode() {
         wrapSendFns();
         hookFetch();
         hookXhr();
+        hookSocket();
         hookSelectedMode();
     } catch (e) {
         logger.warn("Failed to hook send path", e);
@@ -1924,6 +1963,7 @@ export function stopMode() {
     setRestoreFlag(false);
     unhookFetch();
     unhookXhr();
+    unhookSocket();
     unwrapSendFns();
     for (const f of flushing.values()) clearTimeout(f.timer);
     flushing.clear();

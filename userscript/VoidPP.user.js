@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.16
+// @version      20261003.17
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.16] v1.0.0 — A modification for grok.com
+ * Void++ [20261003.17] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -8906,9 +8906,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"bea356e"}`
-    }, `(${"bea356e"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261003.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8a9a297"}`
+    }, `(${"8a9a297"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -15401,10 +15401,66 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         logger25.info("session ack timeout", cid, "want", slug, "acked", ackedModel.get(cid) ?? "?");
     });
   }
-  function sendAfterSession(cid, slug, go) {
-    if (!needsSessionAlign(cid, slug))
-      return go();
-    return alignSessionToChip(cid, slug).then(go);
+  var socketHooked = new WeakSet;
+  var origWsSend = null;
+  function readGwFrame(text) {
+    try {
+      const parsed = JSON.parse(text);
+      const event = parsed.event && typeof parsed.event === "object" ? parsed.event : parsed;
+      const type = String(event.type || "");
+      if (!type)
+        return null;
+      return {
+        cid: String(parsed.session_id || ""),
+        type,
+        model: String(event.session?.model || "")
+      };
+    } catch {
+      return null;
+    }
+  }
+  function hookSocket() {
+    if (origWsSend)
+      return;
+    const orig = WebSocket.prototype.send;
+    origWsSend = orig;
+    WebSocket.prototype.send = function voidModeSyncSocket(data) {
+      if (!socketHooked.has(this)) {
+        socketHooked.add(this);
+        this.addEventListener("message", (ev) => {
+          if (typeof ev.data !== "string")
+            return;
+          const frame = readGwFrame(ev.data);
+          if (!frame || !frame.cid || !SESSION_IN.has(frame.type))
+            return;
+          noteSessionAck(frame.cid, frame.model);
+        });
+      }
+      if (typeof data === "string" && !onImaginePage()) {
+        const frame = readGwFrame(data);
+        if (frame?.type === "response.create") {
+          const cid = frame.cid || currentCid3();
+          const slug = visibleChip();
+          if (needsSessionAlign(cid, slug)) {
+            alignSessionToChip(cid, slug).then(() => {
+              try {
+                orig.call(this, data);
+              } catch (e) {
+                logger25.debug("held send failed", e);
+              }
+            });
+            return;
+          }
+        }
+      }
+      return orig.call(this, data);
+    };
+  }
+  function unhookSocket() {
+    if (!origWsSend)
+      return;
+    WebSocket.prototype.send = origWsSend;
+    origWsSend = null;
   }
   function onGwEvent(cid, event) {
     const { type } = event;
@@ -15601,23 +15657,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         }
         if (!GW_TYPES.has(type))
           return orig.apply(mgr, args);
-        if (type === "response.create") {
-          if (sendOverride?.modeId) {
-            patchGwEvent(event, sendOverride);
-            return orig.apply(mgr, args);
-          }
-          const slug = visibleChip();
-          const cidStr = typeof cid === "string" ? cid : "";
-          const live = slug ? captureIntent(slug, snapshot()) : liveIntent2();
-          return sendAfterSession(cidStr, slug, () => {
-            if (live.modeId)
-              patchGwEvent(event, live);
-            return orig.apply(mgr, args);
-          });
-        }
-        const live = liveIntent2();
+        const live = type === "response.create" ? sendOverride?.modeId ? sendOverride : visibleChip() ? captureIntent(visibleChip(), snapshot()) : liveIntent2() : liveIntent2();
         if (live.modeId) {
-          applyIntent(live);
+          if (type !== "response.create")
+            applyIntent(live);
           patchGwEvent(event, live);
         }
         return orig.apply(mgr, args);
@@ -15662,11 +15705,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       const slug = visibleChip();
       const live = slug ? captureIntent(slug, snapshot()) : liveIntent2();
-      return sendAfterSession(cid, slug, () => {
-        if (live.modeId)
-          patchSendArgs(args, live);
-        return orig.apply(this, args);
-      });
+      if (live.modeId)
+        patchSendArgs(args, live);
+      return orig.apply(this, args);
     };
   }
   function makeQueueWrapper(orig) {
@@ -16338,6 +16379,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       wrapSendFns();
       hookFetch();
       hookXhr();
+      hookSocket();
       hookSelectedMode();
     } catch (e) {
       logger25.warn("Failed to hook send path", e);
@@ -16398,6 +16440,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     setRestoreFlag(false);
     unhookFetch();
     unhookXhr();
+    unhookSocket();
     unwrapSendFns();
     for (const f of flushing.values())
       clearTimeout(f.timer);
@@ -34153,7 +34196,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterLinks_default.updatedAt = 1787870966000;
   betterModeSelect_default.updatedAt = 1791055227000;
   betterNavigator_default.updatedAt = 1790536418000;
-  betterQueue_default.updatedAt = 1791055227000;
+  betterQueue_default.updatedAt = 1791079239000;
   betterQuotes_default.updatedAt = 1790446202000;
   betterSidebar_default.updatedAt = 1791052393000;
   chatListStatus_default.updatedAt = 1791037203000;
