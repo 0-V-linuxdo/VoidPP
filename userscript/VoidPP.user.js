@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261003.17
+// @version      20261004.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261003.17] v1.0.0 — A modification for grok.com
+ * Void++ [20261004.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -8906,9 +8906,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261003.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8a9a297"}`
-    }, `(${"8a9a297"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261004.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d466297"}`
+    }, `(${"d466297"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -14413,10 +14413,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function sessionNeedsUpdate(acked, chip, hasSession) {
     const want = modeSlug(chip);
-    const have = modeSlug(acked ?? "");
-    if (!hasSession || !want || !have)
+    if (!want)
       return false;
-    return have !== want;
+    const have = modeSlug(acked ?? "");
+    if (have === want)
+      return false;
+    return true;
   }
 
   // src/plugins/betterQueue/settings.ts
@@ -15313,20 +15315,26 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return "";
     }
   }
+  function sendSlug() {
+    const raw = modeSlug2(sendOverride?.modeId || "") || visibleChip();
+    if (privateBuild2() && raw === "build")
+      return "auto";
+    return raw;
+  }
   function needsSessionAlign(cid, slug) {
-    if (!cid || !slug)
+    if (!slug)
       return false;
-    let has = false;
-    try {
-      has = Gateway.gatewayConnectionManager?.hasSession?.(cid) === true;
-    } catch {
-      return false;
-    }
-    return sessionNeedsUpdate(ackedModel.get(cid), slug, has);
+    return sessionNeedsUpdate(cid ? ackedModel.get(cid) : undefined, slug, true);
   }
   function noteSessionAck(cid, model) {
     const slug = modeSlug2(model);
-    ackedModel.set(cid, slug);
+    if (cid && slug)
+      ackedModel.set(cid, slug);
+    settleWaiters(cid, slug);
+    if (cid)
+      settleWaiters("*", slug);
+  }
+  function settleWaiters(cid, slug) {
     const list = sessionWaiters.get(cid);
     if (!list?.length)
       return;
@@ -15344,32 +15352,34 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       sessionWaiters.delete(cid);
   }
   function waitSessionAck(cid, slug) {
-    if (modeSlug2(ackedModel.get(cid) ?? "") === slug)
+    const key = cid || "*";
+    if (modeSlug2(ackedModel.get(key) ?? "") === slug || key !== "*" && modeSlug2(ackedModel.get("*") ?? "") === slug)
       return Promise.resolve(true);
     return new Promise((resolve) => {
       const waiter = {
         slug,
         done: resolve,
         timer: setTimeout(() => {
-          const list = sessionWaiters.get(cid);
+          const list = sessionWaiters.get(key);
           if (list) {
             const next = list.filter((w) => w !== waiter);
             if (next.length)
-              sessionWaiters.set(cid, next);
+              sessionWaiters.set(key, next);
             else
-              sessionWaiters.delete(cid);
+              sessionWaiters.delete(key);
           }
           resolve(false);
         }, ACK_MS)
       };
-      const list = sessionWaiters.get(cid);
+      const list = sessionWaiters.get(key);
       if (list)
         list.push(waiter);
       else
-        sessionWaiters.set(cid, [waiter]);
+        sessionWaiters.set(key, [waiter]);
     });
   }
   function clearSessionWaiters() {
+    alignGen++;
     for (const list of sessionWaiters.values()) {
       for (const waiter of list) {
         clearTimeout(waiter.timer);
@@ -15378,28 +15388,73 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     sessionWaiters.clear();
   }
-  function alignSessionToChip(cid, slug) {
-    if (!needsSessionAlign(cid, slug))
-      return Promise.resolve();
-    const pending = waitSessionAck(cid, slug);
-    let selected = "";
-    let adjusted = "";
-    try {
-      selected = modeSlug2(String(ModesStore.useModesStore.getState().selectedModeId || ""));
-      adjusted = modeSlug2(sessionAdjusted(cid));
-    } catch {}
-    if (selected !== slug || adjusted !== slug) {
-      try {
-        ModesStore.useModesStore.getState().setSelectedModeId(slug, { source: "user" });
-      } catch (e) {
-        logger25.debug("session align failed", e);
-      }
+  function updateInFlight(cid, slug) {
+    if (sentModel.get(cid) === slug)
+      return true;
+    if (!cid || cid === "*") {
+      for (const model of sentModel.values())
+        if (model === slug)
+          return true;
     }
-    logger25.info("session align", cid, ackedModel.get(cid) ?? "?", "->", slug);
-    return pending.then((ok) => {
-      if (!ok)
-        logger25.info("session ack timeout", cid, "want", slug, "acked", ackedModel.get(cid) ?? "?");
-    });
+    return false;
+  }
+  function pokeSession(cid, slug, pass) {
+    let modes;
+    try {
+      modes = ModesStore.useModesStore.getState();
+    } catch {
+      return;
+    }
+    const selected = modeSlug2(String(modes.selectedModeId || ""));
+    const adjusted = cid ? modeSlug2(sessionAdjusted(cid)) : "";
+    try {
+      if (pass <= 0 || slug === "build" || privateBuild2() && slug === "auto") {
+        if (pass <= 0 && (selected !== slug || cid && adjusted !== slug)) {
+          modes.setSelectedModeId(slug, { source: "user" });
+          return;
+        }
+        if (cid)
+          modes.forgetSessionModeStamp?.(cid);
+        modes.setSelectedModeId(slug, { source: "user" });
+        return;
+      }
+      const other = slug === "fast" ? "expert" : "fast";
+      modes.setSelectedModeId(other, { source: "user" });
+      modes.setSelectedModeId(slug, { source: "user" });
+    } catch (e) {
+      logger25.debug("session align failed", e);
+    }
+  }
+  var MAX_NUDGE = 2;
+  var MAX_PENDING = 3;
+  var alignGen = 0;
+  function alignSessionToChip(cid, slug) {
+    const key = cid || "*";
+    if (!needsSessionAlign(key === "*" ? "" : key, slug))
+      return Promise.resolve(true);
+    const gen = alignGen;
+    pokeSession(cid, slug, 0);
+    logger25.info("session align", key, ackedModel.get(key) ?? "?", "->", slug);
+    const arm = (pass, pending) => {
+      if (gen !== alignGen)
+        return Promise.resolve(false);
+      return waitSessionAck(key, slug).then((ok) => {
+        if (gen !== alignGen)
+          return false;
+        if (ok || modeSlug2(ackedModel.get(key) ?? "") === slug)
+          return true;
+        if (updateInFlight(key, slug) && pending < MAX_PENDING) {
+          logger25.info("session update pending", key, slug);
+          return arm(pass, pending + 1);
+        }
+        if (pass + 1 >= MAX_NUDGE)
+          return false;
+        pokeSession(cid, slug, pass + 1);
+        logger25.info("session align retry", key, slug);
+        return arm(pass + 1, 0);
+      });
+    };
+    return arm(0, 0);
   }
   var socketHooked = new WeakSet;
   var origWsSend = null;
@@ -15440,9 +15495,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         const frame = readGwFrame(data);
         if (frame?.type === "response.create") {
           const cid = frame.cid || currentCid3();
-          const slug = visibleChip();
+          const slug = sendSlug();
           if (needsSessionAlign(cid, slug)) {
-            alignSessionToChip(cid, slug).then(() => {
+            alignSessionToChip(cid, slug).then((ok) => {
+              if (!ok) {
+                logger25.info("session align cancelled", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
+                return;
+              }
               try {
                 orig.call(this, data);
               } catch (e) {
@@ -34196,7 +34255,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterLinks_default.updatedAt = 1787870966000;
   betterModeSelect_default.updatedAt = 1791055227000;
   betterNavigator_default.updatedAt = 1790536418000;
-  betterQueue_default.updatedAt = 1791079239000;
+  betterQueue_default.updatedAt = 1791080154000;
   betterQuotes_default.updatedAt = 1790446202000;
   betterSidebar_default.updatedAt = 1791052393000;
   chatListStatus_default.updatedAt = 1791037203000;

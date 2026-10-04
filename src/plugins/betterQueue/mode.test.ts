@@ -81,13 +81,18 @@ describe("sessionNeedsUpdate", () => {
         expect(sessionNeedsUpdate("expert", "fast", true)).toBe(true);
     });
 
-    test("a matching ack, a missing session, or an unknown ack does not wait", () => {
+    test("a matching ack does not wait, even if the session flag is late", () => {
         expect(sessionNeedsUpdate("heavy", "heavy", true)).toBe(false);
+        expect(sessionNeedsUpdate("heavy", "heavy", false)).toBe(false);
         expect(sessionNeedsUpdate("MODEL_MODE_BUILD", "build", true)).toBe(false);
         expect(sessionNeedsUpdate("MODEL_MODE_BUILD", "heavy", true)).toBe(true);
-        expect(sessionNeedsUpdate("build", "heavy", false)).toBe(false);
-        expect(sessionNeedsUpdate(undefined, "heavy", true)).toBe(false);
-        expect(sessionNeedsUpdate("", "heavy", true)).toBe(false);
+    });
+
+    test("an unknown ack or a session that is not up yet blocks the send", () => {
+        expect(sessionNeedsUpdate(undefined, "heavy", true)).toBe(true);
+        expect(sessionNeedsUpdate("", "heavy", true)).toBe(true);
+        expect(sessionNeedsUpdate(undefined, "heavy", false)).toBe(true);
+        expect(sessionNeedsUpdate("build", "heavy", false)).toBe(true);
         expect(sessionNeedsUpdate("heavy", "", true)).toBe(false);
     });
 });

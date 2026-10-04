@@ -910,20 +910,26 @@ function visibleChip(): string {
     }
 }
 
+/** Queue flushes keep the enqueue-time model. A live send uses the chip. Incognito Build stays Auto. */
+function sendSlug(): string {
+    const raw = modeSlug(sendOverride?.modeId || "") || visibleChip();
+    if (privateBuild() && raw === "build") return "auto";
+    return raw;
+}
+
 function needsSessionAlign(cid: string, slug: string): boolean {
-    if (!cid || !slug) return false;
-    let has = false;
-    try {
-        has = Gateway.gatewayConnectionManager?.hasSession?.(cid) === true;
-    } catch {
-        return false;
-    }
-    return sessionNeedsUpdate(ackedModel.get(cid), slug, has);
+    if (!slug) return false;
+    return sessionNeedsUpdate(cid ? ackedModel.get(cid) : undefined, slug, true);
 }
 
 function noteSessionAck(cid: string, model: string) {
     const slug = modeSlug(model);
-    ackedModel.set(cid, slug);
+    if (cid && slug) ackedModel.set(cid, slug);
+    settleWaiters(cid, slug);
+    if (cid) settleWaiters("*", slug);
+}
+
+function settleWaiters(cid: string, slug: string) {
     const list = sessionWaiters.get(cid);
     if (!list?.length) return;
     const keep: SessionWaiter[] = [];
@@ -938,28 +944,30 @@ function noteSessionAck(cid: string, model: string) {
 }
 
 function waitSessionAck(cid: string, slug: string): Promise<boolean> {
-    if (modeSlug(ackedModel.get(cid) ?? "") === slug) return Promise.resolve(true);
+    const key = cid || "*";
+    if (modeSlug(ackedModel.get(key) ?? "") === slug || (key !== "*" && modeSlug(ackedModel.get("*") ?? "") === slug)) return Promise.resolve(true);
     return new Promise(resolve => {
         const waiter: SessionWaiter = {
             slug,
             done: resolve,
             timer: setTimeout(() => {
-                const list = sessionWaiters.get(cid);
+                const list = sessionWaiters.get(key);
                 if (list) {
                     const next = list.filter(w => w !== waiter);
-                    if (next.length) sessionWaiters.set(cid, next);
-                    else sessionWaiters.delete(cid);
+                    if (next.length) sessionWaiters.set(key, next);
+                    else sessionWaiters.delete(key);
                 }
                 resolve(false);
             }, ACK_MS),
         };
-        const list = sessionWaiters.get(cid);
+        const list = sessionWaiters.get(key);
         if (list) list.push(waiter);
-        else sessionWaiters.set(cid, [waiter]);
+        else sessionWaiters.set(key, [waiter]);
     });
 }
 
 function clearSessionWaiters() {
+    alignGen++;
     for (const list of sessionWaiters.values()) {
         for (const waiter of list) {
             clearTimeout(waiter.timer);
@@ -969,27 +977,72 @@ function clearSessionWaiters() {
     sessionWaiters.clear();
 }
 
-/** Record a user pick only when the open session is a different model, then wait for Grok's own `session.update` ack. */
-function alignSessionToChip(cid: string, slug: string): Promise<void> {
-    if (!needsSessionAlign(cid, slug)) return Promise.resolve();
-    const pending = waitSessionAck(cid, slug);
-    let selected = "";
-    let adjusted = "";
-    try {
-        selected = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || ""));
-        adjusted = modeSlug(sessionAdjusted(cid));
-    } catch { /* store not ready */ }
-    if (selected !== slug || adjusted !== slug) {
-        try {
-            ModesStore.useModesStore.getState().setSelectedModeId(slug, { source: "user" });
-        } catch (e) {
-            logger.debug("session align failed", e);
-        }
+function updateInFlight(cid: string, slug: string): boolean {
+    if (sentModel.get(cid) === slug) return true;
+    if (!cid || cid === "*") {
+        for (const model of sentModel.values()) if (model === slug) return true;
     }
-    logger.info("session align", cid, ackedModel.get(cid) ?? "?", "->", slug);
-    return pending.then(ok => {
-        if (!ok) logger.info("session ack timeout", cid, "want", slug, "acked", ackedModel.get(cid) ?? "?");
-    });
+    return false;
+}
+
+/** Ask Grok's own lease for a full session.update. Never write a partial `{ model }` frame. */
+function pokeSession(cid: string, slug: string, pass: number) {
+    let modes: ModesStoreState & { forgetSessionModeStamp?: (id: string) => void };
+    try {
+        modes = ModesStore.useModesStore.getState() as typeof modes;
+    } catch {
+        return;
+    }
+    const selected = modeSlug(String(modes.selectedModeId || ""));
+    const adjusted = cid ? modeSlug(sessionAdjusted(cid)) : "";
+    try {
+        if (pass <= 0 || slug === "build" || (privateBuild() && slug === "auto")) {
+            if (pass <= 0 && (selected !== slug || (cid && adjusted !== slug))) {
+                modes.setSelectedModeId(slug, { source: "user" });
+                return;
+            }
+            if (cid) modes.forgetSessionModeStamp?.(cid);
+            modes.setSelectedModeId(slug, { source: "user" });
+            return;
+        }
+        const other = slug === "fast" ? "expert" : "fast";
+        modes.setSelectedModeId(other, { source: "user" });
+        modes.setSelectedModeId(slug, { source: "user" });
+    } catch (e) {
+        logger.debug("session align failed", e);
+    }
+}
+
+const MAX_NUDGE = 2;
+const MAX_PENDING = 3;
+let alignGen = 0;
+
+/**
+ * Wait until `session.created` / `session.updated` names this slug.
+ * A pending lease update keeps waiting. Two nudges with no ack cancel the send.
+ */
+function alignSessionToChip(cid: string, slug: string): Promise<boolean> {
+    const key = cid || "*";
+    if (!needsSessionAlign(key === "*" ? "" : key, slug)) return Promise.resolve(true);
+    const gen = alignGen;
+    pokeSession(cid, slug, 0);
+    logger.info("session align", key, ackedModel.get(key) ?? "?", "->", slug);
+    const arm = (pass: number, pending: number): Promise<boolean> => {
+        if (gen !== alignGen) return Promise.resolve(false);
+        return waitSessionAck(key, slug).then(ok => {
+            if (gen !== alignGen) return false;
+            if (ok || modeSlug(ackedModel.get(key) ?? "") === slug) return true;
+            if (updateInFlight(key, slug) && pending < MAX_PENDING) {
+                logger.info("session update pending", key, slug);
+                return arm(pass, pending + 1);
+            }
+            if (pass + 1 >= MAX_NUDGE) return false;
+            pokeSession(cid, slug, pass + 1);
+            logger.info("session align retry", key, slug);
+            return arm(pass + 1, 0);
+        });
+    };
+    return arm(0, 0);
 }
 
 const socketHooked = new WeakSet<WebSocket>();
@@ -1029,9 +1082,13 @@ function hookSocket() {
             const frame = readGwFrame(data);
             if (frame?.type === "response.create") {
                 const cid = frame.cid || currentCid();
-                const slug = visibleChip();
+                const slug = sendSlug();
                 if (needsSessionAlign(cid, slug)) {
-                    alignSessionToChip(cid, slug).then(() => {
+                    alignSessionToChip(cid, slug).then(ok => {
+                        if (!ok) {
+                            logger.info("session align cancelled", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
+                            return;
+                        }
                         try { orig.call(this, data); } catch (e) { logger.debug("held send failed", e); }
                     });
                     return;

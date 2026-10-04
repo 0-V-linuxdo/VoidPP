@@ -47,12 +47,16 @@ export function keepBuildPreference(privateChat: boolean, substituted: boolean, 
 }
 
 /**
- * A live session whose acked model is known and is not the chip.
- * Unknown ack (no `session.created` / `session.updated` yet) does not block the send.
+ * Hold `response.create` until the acked session model is this chip.
+ * An unknown ack (just refreshed, or `session.created` not seen yet) blocks.
+ * `hasSession` is not a pass: a missing flag must not release the old model.
+ * A chip that already matches the ack does not wait.
  */
 export function sessionNeedsUpdate(acked: string | undefined, chip: string, hasSession: boolean): boolean {
     const want = modeSlug(chip);
+    if (!want) return false;
     const have = modeSlug(acked ?? "");
-    if (!hasSession || !want || !have) return false;
-    return have !== want;
+    if (have === want) return false;
+    void hasSession;
+    return true;
 }
