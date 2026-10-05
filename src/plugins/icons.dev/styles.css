@@ -17,12 +17,12 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 0.5rem;
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
     height: auto;
 }
 
 .void-icons-item:hover {
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
     background: transparent !important;
 }
 

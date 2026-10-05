@@ -7,7 +7,7 @@
 .void-info-hint {
     display: inline-flex;
     align-items: center;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
     cursor: default;
     flex-shrink: 0;
 }

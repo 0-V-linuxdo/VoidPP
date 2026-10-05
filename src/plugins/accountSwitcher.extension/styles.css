@@ -19,14 +19,14 @@
     width: 1rem;
     height: 1rem;
     margin-inline-end: 0.5rem;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
     flex-shrink: 0;
 }
 
 .void-as-icon-check {
     width: 0.875rem;
     height: 0.875rem;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
     flex-shrink: 0;
 }
 
@@ -55,7 +55,7 @@
 }
 
 .void-as-row-active .void-as-row {
-    background: hsl(var(--surface-l2));
+    background: var(--surface-l2);
 }
 
 .void-as-avatar {
@@ -70,8 +70,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: hsl(var(--surface-l2));
-    color: hsl(var(--fg-primary));
+    background: var(--surface-l2);
+    color: var(--fg-primary);
     font-size: 0.75rem;
     font-weight: 600;
     line-height: 1;
@@ -102,7 +102,7 @@
 }
 
 .void-as-row-delete:hover {
-    color: hsl(var(--fg-danger));
+    color: var(--fg-danger);
 }
 
 .void-as-row-wrap:hover .void-as-row-delete,

@@ -28,7 +28,7 @@ const settings = definePluginSettings({
 
 function apply() {
     const rules = [
-        `${SEL}{margin:0!important;border-inline-start-color:hsl(var(--fg-secondary))!important;border-inline-start-width:0.25rem!important;border-inline-start-style:solid!important;padding-inline-start:0.75rem!important}`,
+        `${SEL}{margin:0!important;border-inline-start-color:var(--fg-secondary)!important;border-inline-start-width:0.25rem!important;border-inline-start-style:solid!important;padding-inline-start:0.75rem!important}`,
         `${SEL}>*{margin-block:0!important}`,
     ];
     if (!settings.store.italic) rules.push(`${SEL}{font-style:inherit!important}`);

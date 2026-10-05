@@ -2,9 +2,9 @@
     contain: content;
     padding: 1rem;
     border-radius: 0.5rem;
-    background: hsl(var(--fg-danger) / 12%);
-    border: 1px solid hsl(var(--fg-danger) / 40%);
-    color: hsl(var(--fg-danger));
+    background: hsl(from var(--fg-danger) h s l / 12%);
+    border: 1px solid hsl(from var(--fg-danger) h s l / 40%);
+    color: var(--fg-danger);
 }
 
 .void-error-card-header {

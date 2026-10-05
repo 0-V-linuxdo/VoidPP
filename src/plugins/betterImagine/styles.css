@@ -5,11 +5,11 @@
  */
 
 .void-imagine-chip {
-    background: hsl(var(--surface-l1));
+    background: var(--surface-l1);
 }
 
 .void-imagine-chip:hover {
-    background: hsl(var(--surface-l2));
+    background: var(--surface-l2);
 }
 
 .void-imagine-search {
@@ -23,12 +23,12 @@
     flex-shrink: 0;
     border-radius: 9999px;
     font-size: 0.875rem;
-    background: hsl(var(--surface-l1));
-    color: hsl(var(--fg-secondary));
+    background: var(--surface-l1);
+    color: var(--fg-secondary);
     border: none;
 }
 
 .void-imagine-sort-active {
-    color: hsl(var(--fg-primary));
-    background: hsl(var(--surface-l2));
+    color: var(--fg-primary);
+    background: var(--surface-l2);
 }

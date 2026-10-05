@@ -10,29 +10,29 @@
 .void-notice-icon {
     flex-shrink: 0;
     display: flex;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
 }
 
 .void-notice-icon-info {
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
 }
 
 .void-notice-icon-success {
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
 }
 
 .void-notice-icon-warning {
-    color: hsl(var(--fg-warning));
+    color: var(--fg-warning);
 }
 
 .void-notice-icon-error {
-    color: hsl(var(--fg-danger));
+    color: var(--fg-danger);
 }
 
 .void-notice-message {
     flex: 1;
     min-width: 0;
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
 }
 
 .void-notice-close {
@@ -42,7 +42,7 @@
     justify-content: center;
     padding: 0.25rem;
     cursor: pointer;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
     background: none;
     border: none;
     opacity: 0.6;

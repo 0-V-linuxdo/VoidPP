@@ -71,7 +71,7 @@
     height: 1px;
     width: 0.375rem;
     border-radius: 9999px;
-    background: hsl(var(--fg-tertiary)/50%);
+    background: hsl(from var(--fg-tertiary) h s l / 50%);
     transition: width 0.15s ease, background-color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 
@@ -81,7 +81,7 @@
 
 .void-bn-tick.void-bn-current::after {
     width: 1rem;
-    background: hsl(var(--fg-primary));
+    background: var(--fg-primary);
     opacity: 1;
 }
 
@@ -89,12 +89,12 @@
     height: 0;
     background: none;
     border-radius: 0;
-    border-top: 1px dashed hsl(var(--fg-tertiary)/50%);
+    border-top: 1px dashed hsl(from var(--fg-tertiary) h s l / 50%);
 }
 
 .void-bn-tick-live.void-bn-current::after {
     background: none;
-    border-top-color: hsl(var(--fg-primary));
+    border-top-color: var(--fg-primary);
 }
 
 button.void-bn-native-live {
@@ -111,7 +111,7 @@ button.void-bn-native-live::before {
     left: 50%;
     top: 50%;
     width: 0.75rem;
-    border-top: 1px dashed hsl(var(--fg-tertiary)/70%);
+    border-top: 1px dashed hsl(from var(--fg-tertiary) h s l / 70%);
     transform: translate(-50%, -50%);
     pointer-events: none;
 }
@@ -119,7 +119,7 @@ button.void-bn-native-live::before {
 button.void-bn-native-dim > * {
     width: 0.375rem !important;
     max-width: 0.375rem !important;
-    background: hsl(var(--fg-tertiary)/50%) !important;
+    background: hsl(from var(--fg-tertiary) h s l / 50%) !important;
 }
 
 button.void-bn-native-edge {
@@ -137,7 +137,7 @@ button.void-bn-native-edge::before {
     top: 50%;
     width: 1rem;
     height: 1px;
-    background: hsl(var(--fg-primary));
+    background: var(--fg-primary);
     transform: translate(-50%, -50%);
     pointer-events: none;
 }
@@ -154,7 +154,7 @@ button.void-bn-native-edge::before {
 .void-bn-native-dash::before {
     content: "";
     width: 0.75rem;
-    border-top: 1px dashed hsl(var(--fg-tertiary)/70%);
+    border-top: 1px dashed hsl(from var(--fg-tertiary) h s l / 70%);
 }
 
 .void-bn-menu {
@@ -168,10 +168,10 @@ button.void-bn-native-edge::before {
     max-height: none;
     overflow: auto;
     padding: 0.375rem;
-    border: 1px solid hsl(var(--border-l1));
+    border: 1px solid var(--border-l1);
     border-radius: 1.25rem;
-    background: hsl(var(--surface-l1));
-    color: hsl(var(--fg-primary));
+    background: var(--surface-l1);
+    color: var(--fg-primary);
     opacity: 0;
     visibility: hidden;
     transform: translate(0.5rem, -50%);
@@ -197,7 +197,7 @@ button.void-bn-native-edge::before {
 
 .void-bn-meta {
     padding: 0.25rem 0.625rem 0.375rem;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
     font-size: 0.75rem;
     line-height: 1.4;
     letter-spacing: -0.2px;
@@ -222,7 +222,7 @@ button.void-bn-native-edge::before {
     border: 1px solid transparent;
     border-radius: 0.75rem;
     background: transparent;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
     font: inherit;
     font-size: 0.875rem;
     line-height: 1.4;
@@ -235,21 +235,21 @@ button.void-bn-native-edge::before {
 .void-bn-item:focus-visible,
 .void-bn-item.void-bn-aim {
     background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
 }
 
 .void-bn-item.void-bn-active {
     background: transparent;
-    color: hsl(var(--fg-primary));
-    border-color: hsl(var(--border-l1));
+    color: var(--fg-primary);
+    border-color: var(--border-l1);
 }
 
 .void-bn-item.void-bn-active:hover,
 .void-bn-item.void-bn-active:focus-visible,
 .void-bn-item.void-bn-active.void-bn-aim {
     background: var(--button-ghost-hover, rgb(255 255 255 / 8%));
-    color: hsl(var(--fg-primary));
-    border-color: hsl(var(--border-l1));
+    color: var(--fg-primary);
+    border-color: var(--border-l1);
 }
 
 .void-bn-emoji {
@@ -266,7 +266,7 @@ button.void-bn-native-edge::before {
 }
 
 .void-bn-flash {
-    outline: 2px solid hsl(var(--fg-primary));
+    outline: 2px solid var(--fg-primary);
     outline-offset: 4px;
     border-radius: 0.75rem;
 }

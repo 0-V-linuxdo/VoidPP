@@ -14,7 +14,7 @@
 }
 
 .void-sel-checkbox {
-    border-color: hsl(var(--border-l2)) !important;
+    border-color: var(--border-l2) !important;
 }
 
 .void-sel-action-bar {
@@ -27,7 +27,7 @@
 .void-sel-count {
     font-size: 0.75rem;
     font-weight: 600;
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
 }
 
 .void-sel-buttons {

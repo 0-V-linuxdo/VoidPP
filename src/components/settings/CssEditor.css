@@ -1,16 +1,16 @@
 .void-css-wrap {
     flex: 1;
     min-height: 0;
-    border: 1px solid hsl(var(--border-l2));
+    border: 1px solid var(--border-l2);
     border-radius: 0.75rem;
-    background: hsl(var(--surface-l2));
+    background: var(--surface-l2);
     overflow: auto;
     display: grid;
 }
 
 .void-css-wrap:focus-within {
-    border-color: hsl(var(--fg-primary));
-    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
+    border-color: var(--fg-primary);
+    box-shadow: inset 0 0 0 1px var(--fg-primary);
 }
 
 .void-css-highlight,
@@ -31,17 +31,17 @@
 
 .void-css-input::placeholder {
     font-family: inherit;
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
 }
 
 .void-css-highlight {
     pointer-events: none;
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
 }
 
 .void-css-input {
     color: transparent;
-    caret-color: hsl(var(--fg-primary));
+    caret-color: var(--fg-primary);
     background: transparent;
     border: none;
     outline: none;
@@ -70,7 +70,7 @@
 }
 
 .void-css-com {
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
     font-style: italic;
 }
 
@@ -79,9 +79,9 @@
 }
 
 .void-css-brace {
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
 }
 
 .void-css-punct {
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
 }

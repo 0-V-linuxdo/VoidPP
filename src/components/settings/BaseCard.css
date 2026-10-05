@@ -10,8 +10,8 @@
     display: flex;
     flex-direction: column;
     border-radius: 0.5rem;
-    border: 1px solid hsl(var(--border-l1));
-    background: hsl(var(--surface-l1));
+    border: 1px solid var(--border-l1);
+    background: var(--surface-l1);
     min-height: 7.5rem;
     min-width: 0;
     overflow: hidden;
@@ -50,7 +50,7 @@
 
 .void-card-desc {
     font-size: 0.8125rem;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
     line-height: 1.5;
     margin-top: 0.25rem;
     display: -webkit-box;
@@ -62,7 +62,7 @@
 
 .void-card-separator {
     height: 1px;
-    background: hsl(var(--border-l1));
+    background: var(--border-l1);
 }
 
 .void-card-footer {
@@ -74,7 +74,7 @@
 
 .void-card-author {
     font-size: 0.7rem;
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -89,8 +89,8 @@
     width: 1.5rem;
     height: 1.5rem;
     border-radius: 0.5rem;
-    color: hsl(var(--fg-primary));
-    background: hsl(var(--fg-primary) / 0.10);
+    color: var(--fg-primary);
+    background: hsl(from var(--fg-primary) h s l / 0.10);
     line-height: 0;
 }
 

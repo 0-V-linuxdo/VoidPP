@@ -4,13 +4,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
     flex-shrink: 0;
     line-height: 0;
 }
 
 .void-plugin-card-crashed-icon {
-    color: hsl(var(--fg-danger));
+    color: var(--fg-danger);
 }
 
 .void-plugin-card-required {
@@ -19,7 +19,7 @@
 
 .void-plugin-card-crashed {
     opacity: 0.5;
-    border-color: hsl(var(--fg-danger) / 45%);
+    border-color: hsl(from var(--fg-danger) h s l / 45%);
 }
 
 .void-plugin-card-crashed-icon svg {
@@ -28,21 +28,21 @@
 }
 
 .void-plugin-card-pin {
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
 }
 
 .void-plugin-card-pin-active {
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
 }
 
 .void-plugin-card-star {
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
 }
 
 .void-plugin-card-star-active {
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
 }
 
 .void-plugin-card-settings {
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
 }

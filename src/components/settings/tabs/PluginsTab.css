@@ -1,9 +1,9 @@
 .void-plugins-reload-banner {
     padding: 0.625rem 0.75rem;
     border-radius: 0.5rem;
-    background: hsl(var(--fg-warning) / 12%);
-    border: 1px solid hsl(var(--fg-warning) / 40%);
-    color: hsl(var(--fg-warning));
+    background: hsl(from var(--fg-warning) h s l / 12%);
+    border: 1px solid hsl(from var(--fg-warning) h s l / 40%);
+    color: var(--fg-warning);
 }
 
 .void-plugins-reload-text {
@@ -32,16 +32,16 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.125rem;
-    border-bottom: 1px solid hsl(var(--border-l1));
+    border-bottom: 1px solid var(--border-l1);
 }
 
 .void-plugins-tab {
     position: relative;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
 }
 
 .void-plugins-tab-active {
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
 }
 
 .void-plugins-tab-active::after {
@@ -51,5 +51,5 @@
     bottom: -1px;
     height: 2px;
     border-radius: 1px;
-    background: hsl(var(--fg-primary));
+    background: var(--fg-primary);
 }

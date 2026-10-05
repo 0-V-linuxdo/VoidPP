@@ -127,7 +127,7 @@ html.void-cms-picked .void-cms-ghost {
 }
 
 .void-cms-order-row:hover {
-    background: hsl(var(--fg-primary) / 6%);
+    background: hsl(from var(--fg-primary) h s l / 6%);
 }
 
 .void-cms-order-row.void-cms-dragging {
@@ -144,7 +144,7 @@ html.void-cms-picked .void-cms-ghost {
     place-items: center;
     width: 1.25rem;
     height: 1.25rem;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
     cursor: grab;
 }
 
@@ -154,7 +154,7 @@ html.void-cms-picked .void-cms-ghost {
 
 .void-cms-order-icon {
     flex-shrink: 0;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
 }
 
 @media (width >= 48rem) {

@@ -4,16 +4,16 @@
 
 .void-experiments-modified {
     margin-left: 0.375rem;
-    color: hsl(var(--fg-warning));
+    color: var(--fg-warning);
 }
 
 .void-experiments-warning {
     margin: 0 1.25rem;
     padding: 0.625rem 0.75rem;
     border-radius: 0.5rem;
-    background: hsl(var(--fg-warning) / 12%);
-    border-color: hsl(var(--fg-warning) / 40%);
-    color: hsl(var(--fg-warning));
+    background: hsl(from var(--fg-warning) h s l / 12%);
+    border-color: hsl(from var(--fg-warning) h s l / 40%);
+    color: var(--fg-warning);
 }
 
 .void-experiments-warning-text {
@@ -23,8 +23,8 @@
 
 .void-experiments-clear-btn {
     flex-shrink: 0;
-    border-color: hsl(var(--fg-warning) / 40%);
-    color: hsl(var(--fg-warning));
+    border-color: hsl(from var(--fg-warning) h s l / 40%);
+    color: var(--fg-warning);
 }
 
 .void-experiments-search-input {

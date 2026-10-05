@@ -49,7 +49,7 @@ function apply() {
         + `${BACKDROP}{display:none!important}`
         + `${SHELL}{`
         + "pointer-events:auto!important;"
-        + `background-color:hsl(var(--surface-l1)/${alpha})!important;`
+        + `background-color:hsl(from var(--surface-l1) h s l / ${alpha})!important;`
         + "background-image:none!important;"
         + `border-radius:${RADIUS}!important;`
         + "overflow:hidden!important;"

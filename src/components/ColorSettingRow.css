@@ -7,7 +7,7 @@
 .void-color-picker-input {
     width: 2rem;
     height: 2rem;
-    border: 1px solid hsl(var(--border-l2));
+    border: 1px solid var(--border-l2);
     border-radius: 0.5rem;
     cursor: pointer;
     padding: 0.125rem;

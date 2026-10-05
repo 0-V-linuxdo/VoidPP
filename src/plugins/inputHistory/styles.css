@@ -6,10 +6,10 @@
     align-items: center;
     gap: 0.125rem;
     padding: 0.25rem 0.5rem;
-    border: 1px solid hsl(var(--border-l2));
+    border: 1px solid var(--border-l2);
     border-radius: 0.5rem;
-    background: hsl(var(--surface-l2));
-    color: hsl(var(--fg-secondary));
+    background: var(--surface-l2);
+    color: var(--fg-secondary);
     font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
@@ -48,12 +48,12 @@
 
 .void-ih-hud-count:hover,
 .void-ih-hud-x:hover {
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
 }
 
 .void-ih-hud-count:focus-visible,
 .void-ih-hud-x:focus-visible {
-    outline: 1px solid hsl(var(--fg-primary));
+    outline: 1px solid var(--fg-primary);
     outline-offset: 1px;
 }
 
@@ -79,14 +79,14 @@
     margin: 0;
     flex: 1;
     min-width: 0;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
 
 .void-ih-empty {
     margin: 0;
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
 }
 
 .void-ih-list {
@@ -98,7 +98,7 @@
     overflow: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border-l2) / 80%) transparent;
+    scrollbar-color: hsl(from var(--border-l2) h s l / 80%) transparent;
 }
 
 .void-ih-list-picker {
@@ -117,14 +117,14 @@
 }
 
 .void-ih-item:hover {
-    background: hsl(var(--surface-l2));
-    border-color: hsl(var(--border-l2) / 45%);
+    background: var(--surface-l2);
+    border-color: hsl(from var(--border-l2) h s l / 45%);
 }
 
 .void-ih-item-on {
     align-items: start;
-    background: hsl(var(--surface-l2));
-    border-color: hsl(var(--border-l2) / 60%);
+    background: var(--surface-l2);
+    border-color: hsl(from var(--border-l2) h s l / 60%);
 }
 
 .void-ih-list-picker .void-ih-item {
@@ -135,7 +135,7 @@
 
 .void-ih-index {
     min-width: 0;
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
     font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.45;
@@ -148,11 +148,11 @@
 }
 
 .void-ih-item-live {
-    border-color: hsl(var(--fg-primary) / 45%);
+    border-color: hsl(from var(--fg-primary) h s l / 45%);
 }
 
 .void-ih-item-live .void-ih-index {
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
 }
 
 .void-ih-item-on .void-ih-index {
@@ -167,14 +167,14 @@
 .void-ih-main:focus-visible {
     outline: none;
     border-radius: 0.25rem;
-    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
+    box-shadow: inset 0 0 0 1px var(--fg-primary);
 }
 
 .void-ih-body {
     display: block;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
     font-size: 0.8125rem;
     line-height: 1.45;
 }
