@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261004.1
+// @version      20261005.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261004.1] v1.0.0 — A modification for grok.com
+ * Void++ [20261005.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -8875,6 +8875,22 @@ button .void-info-hint {
     { id: "voidpp_css_tab", name: "Quick CSS", icon: BracesIcon, component: CustomCSSTab2 },
     { id: "voidpp_experiments_tab", name: "Experiments", icon: TestTubeIcon, component: Tab, plugin: "Experiments" }
   ];
+  var navIcons = new Map;
+  function grokNavIcon(Icon) {
+    let wrapped = navIcons.get(Icon);
+    if (wrapped)
+      return wrapped;
+    wrapped = function GrokNavIcon({ size, width, height, ...rest }) {
+      const dim = width ?? height ?? (typeof size === "number" ? `${0.25 * size}rem` : size) ?? "1rem";
+      return /* @__PURE__ */ React.createElement(Icon, {
+        ...rest,
+        width: dim,
+        height: dim
+      });
+    };
+    navIcons.set(Icon, wrapped);
+    return wrapped;
+  }
   function getVisibleTabs() {
     return allTabs.filter((t) => !t.plugin || isPluginEnabled(t.plugin));
   }
@@ -8906,9 +8922,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261004.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d466297"}`
-    }, `(${"d466297"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261005.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"304c5c5"}`
+    }, `(${"304c5c5"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -8981,7 +8997,7 @@ button .void-info-hint {
       return getVisibleTabs().map((t) => ({
         id: t.id,
         group: "voidpp",
-        icon: t.icon,
+        icon: grokNavIcon(t.icon),
         i18nKey: t.name,
         defaultLabel: t.name,
         description: t.description,
@@ -34255,7 +34271,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterLinks_default.updatedAt = 1787870966000;
   betterModeSelect_default.updatedAt = 1791055227000;
   betterNavigator_default.updatedAt = 1790536418000;
-  betterQueue_default.updatedAt = 1791080154000;
+  betterQueue_default.updatedAt = 1791115400000;
   betterQuotes_default.updatedAt = 1790446202000;
   betterSidebar_default.updatedAt = 1791052393000;
   chatListStatus_default.updatedAt = 1791037203000;
