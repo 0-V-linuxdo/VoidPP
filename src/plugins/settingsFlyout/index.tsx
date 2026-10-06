@@ -229,7 +229,7 @@ export default definePlugin({
         {
             find: '"user-dropdown.settings","Settings"',
             replacement: {
-                match: /\jsx{\i\.DropdownMenuItem}\{onSelect:(\i),children:\[\jsx{\i\.CogIcon}\{[^}]{0,80}\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
+                match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{onSelect:(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
                 replace: "$self._renderSettingsMenu($1)",
             },
         },

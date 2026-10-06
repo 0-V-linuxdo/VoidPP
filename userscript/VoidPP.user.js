@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261005.2
+// @version      20261006.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261005.2] v1.0.0 — A modification for grok.com
+ * Void++ [20261006.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -5554,7 +5554,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
         find: "avatar_menu_click",
         all: true,
         replacement: {
-          match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,100}"user-dropdown\.help")/,
+          match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,240}"user-dropdown\.help")/,
           replace: "$self._renderItem(),"
         }
       },
@@ -8922,9 +8922,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261005.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"3d3e397"}`
-    }, `(${"3d3e397"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261006.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"10ebdf5"}`
+    }, `(${"10ebdf5"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9037,7 +9037,7 @@ button .void-info-hint {
         find: "avatar_menu_click",
         all: true,
         replacement: {
-          match: /\(0,(\i)\.jsxs\)\((\i)\.DropdownMenuSub,\{children:\[\(0,\1\.jsxs\)\(\2\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,100}"user-dropdown\.help"/,
+          match: /\(0,(\i)\.jsxs\)\((\i)\.DropdownMenuSub,\{children:\[\(0,\1\.jsxs\)\(\2\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,240}"user-dropdown\.help"/,
           replace: "$self._renderVoidPPMenu(),$&"
         }
       },
@@ -9226,7 +9226,7 @@ button .void-info-hint {
         find: '"user-dropdown.upgrade","Upgrade plan"',
         all: true,
         replacement: {
-          match: /(\jsx{\i\.DropdownMenuItem}\{)(?=[^}]{0,60}SignOutIcon)/,
+          match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=onSelect:\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
           replace: '$self.renderItems("user"),$1'
         }
       }
@@ -21483,8 +21483,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         find: '"user-dropdown.upgrade","Upgrade plan"',
         all: true,
         replacement: {
-          match: /,(\i)(?=\?null:.{0,160}"user-dropdown\.upgrade")/,
-          replace: ",$self.settings.store.hideUpgradePlan||$1"
+          match: /(\i(?:\|\|\i){3}\|\|null!==\i&&"pending"!==\i)\?null:(?=\jsx{\i\.DropdownMenuItem}\{.{0,260}"user-dropdown\.upgrade","Upgrade plan")/,
+          replace: "($self.settings.store.hideUpgradePlan||($1))?null:"
         }
       },
       {
@@ -32354,7 +32354,7 @@ html.void-rt-open [data-sidebar="gap"] {
       {
         find: '"user-dropdown.settings","Settings"',
         replacement: {
-          match: /\jsx{\i\.DropdownMenuItem}\{onSelect:(\i),children:\[\jsx{\i\.CogIcon}\{[^}]{0,80}\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
+          match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{onSelect:(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
           replace: "$self._renderSettingsMenu($1)"
         }
       }
@@ -34259,7 +34259,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1790551025000;
-  settings_default.updatedAt = 1791220417000;
+  settings_default.updatedAt = 1791226275000;
   chatBarButtons_default.updatedAt = 1790551025000;
   contextMenu_default.updatedAt = 1790551025000;
   autoCollapse_default.updatedAt = 1790551025000;
@@ -34267,29 +34267,29 @@ button:has(.void-ud-trigger > .void-ud-label) {
   avatarPluginsFlyout_default.updatedAt = 1791052393000;
   betterCanvas_default.updatedAt = 1790551025000;
   betterFiles_default.updatedAt = 1790551025000;
-  betterImagine_default.updatedAt = 1790551025000;
+  betterImagine_default.updatedAt = 1791226275000;
   betterLinks_default.updatedAt = 1790551025000;
-  betterModeSelect_default.updatedAt = 1791055227000;
-  betterNavigator_default.updatedAt = 1790551025000;
-  betterQueue_default.updatedAt = 1791115400000;
-  betterQuotes_default.updatedAt = 1790551025000;
-  betterSidebar_default.updatedAt = 1791052393000;
+  betterModeSelect_default.updatedAt = 1791226275000;
+  betterNavigator_default.updatedAt = 1791226275000;
+  betterQueue_default.updatedAt = 1791226275000;
+  betterQuotes_default.updatedAt = 1791226275000;
+  betterSidebar_default.updatedAt = 1791226275000;
   chatListStatus_default.updatedAt = 1791037203000;
   chatStateFavicons_default.updatedAt = 1790551025000;
   cleaner_default.updatedAt = 1790551025000;
   cloneChats_default.updatedAt = 1790551025000;
-  completeToast_default.updatedAt = 1790551025000;
-  composerOpacity_default.updatedAt = 1790551025000;
+  completeToast_default.updatedAt = 1791226275000;
+  composerOpacity_default.updatedAt = 1791226275000;
   consoleJanitor_default.updatedAt = 1790551025000;
-  customGreeting_default.updatedAt = 1790551025000;
-  customInstructions_default.updatedAt = 1790551025000;
-  customSidebarIdentity_default.updatedAt = 1790551025000;
+  customGreeting_default.updatedAt = 1791226275000;
+  customInstructions_default.updatedAt = 1791226275000;
+  customSidebarIdentity_default.updatedAt = 1791226275000;
   downloadTTS_default.updatedAt = 1790551025000;
-  experiments_default.updatedAt = 1790551906000;
+  experiments_default.updatedAt = 1791226275000;
   exportChat_default.updatedAt = 1790551025000;
   incognito_default.updatedAt = 1790551025000;
-  inputHistory_default.updatedAt = 1790551025000;
-  messageStars_default.updatedAt = 1790882351000;
+  inputHistory_default.updatedAt = 1791226275000;
+  messageStars_default.updatedAt = 1791226275000;
   messageTimestamps_default.updatedAt = 1790551025000;
   noBuildStarters_default.updatedAt = 1790551025000;
   noDictation_default.updatedAt = 1790551025000;
@@ -34297,15 +34297,15 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noShareLink_default.updatedAt = 1790551025000;
   noSidebarIdentity_default.updatedAt = 1790551025000;
   oneko_default.updatedAt = 1790551025000;
-  pluginsFlyout_default.updatedAt = 1790551906000;
-  recentTopics_default.updatedAt = 1790551025000;
+  pluginsFlyout_default.updatedAt = 1791226275000;
+  recentTopics_default.updatedAt = 1791226275000;
   responseNotification_default.updatedAt = 1790551025000;
-  settingsFlyout_default.updatedAt = 1790551025000;
+  settingsFlyout_default.updatedAt = 1791226275000;
   stableComposer_default.updatedAt = 1790551025000;
   starry_default.updatedAt = 1790551025000;
   streamerMode_default.updatedAt = 1790551025000;
-  usageDisplay_default.updatedAt = 1790551025000;
-  userQuotes_default.updatedAt = 1790551025000;
+  usageDisplay_default.updatedAt = 1791226275000;
+  userQuotes_default.updatedAt = 1791226275000;
   widerChat_default.updatedAt = 1790551025000;
   var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
