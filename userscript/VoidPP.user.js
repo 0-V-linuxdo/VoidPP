@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261006.1
+// @version      20261006.2
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261006.1] v1.0.0 — A modification for grok.com
+ * Void++ [20261006.2] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -8922,9 +8922,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261006.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"10ebdf5"}`
-    }, `(${"10ebdf5"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261006.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"7d9d52f"}`
+    }, `(${"7d9d52f"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -32353,6 +32353,7 @@ html.void-rt-open [data-sidebar="gap"] {
     patches: [
       {
         find: '"user-dropdown.settings","Settings"',
+        all: true,
         replacement: {
           match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{onSelect:(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
           replace: "$self._renderSettingsMenu($1)"
@@ -34259,12 +34260,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1790551025000;
-  settings_default.updatedAt = 1791226275000;
+  settings_default.updatedAt = 1791312608000;
   chatBarButtons_default.updatedAt = 1790551025000;
-  contextMenu_default.updatedAt = 1790551025000;
+  contextMenu_default.updatedAt = 1791312608000;
   autoCollapse_default.updatedAt = 1790551025000;
   autoRetry_default.updatedAt = 1790551025000;
-  avatarPluginsFlyout_default.updatedAt = 1791052393000;
+  avatarPluginsFlyout_default.updatedAt = 1791312608000;
   betterCanvas_default.updatedAt = 1790551025000;
   betterFiles_default.updatedAt = 1790551025000;
   betterImagine_default.updatedAt = 1791226275000;
@@ -34276,7 +34277,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterSidebar_default.updatedAt = 1791226275000;
   chatListStatus_default.updatedAt = 1791037203000;
   chatStateFavicons_default.updatedAt = 1790551025000;
-  cleaner_default.updatedAt = 1790551025000;
+  cleaner_default.updatedAt = 1791312608000;
   cloneChats_default.updatedAt = 1790551025000;
   completeToast_default.updatedAt = 1791226275000;
   composerOpacity_default.updatedAt = 1791226275000;
@@ -34300,7 +34301,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   pluginsFlyout_default.updatedAt = 1791226275000;
   recentTopics_default.updatedAt = 1791226275000;
   responseNotification_default.updatedAt = 1790551025000;
-  settingsFlyout_default.updatedAt = 1791226275000;
+  settingsFlyout_default.updatedAt = 1791312608000;
   stableComposer_default.updatedAt = 1790551025000;
   starry_default.updatedAt = 1790551025000;
   streamerMode_default.updatedAt = 1790551025000;
