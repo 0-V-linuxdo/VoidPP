@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261007.2
+// @version      20261007.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261007.2] v1.0.0 — A modification for grok.com
+ * Void++ [20261007.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -8922,9 +8922,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261007.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1722633"}`
-    }, `(${"1722633"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261007.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"7fdec11"}`
+    }, `(${"7fdec11"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -28717,7 +28717,10 @@ button[aria-label^="Dictation ("]:not([role="dialog"] *),
 div:has(> button[aria-label="Dictation"]):not([role="dialog"] *),
 div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *),
 div:has(> span > button[aria-label="Dictation"]):not([role="dialog"] *),
-div:has(> span > button[aria-label^="Dictation ("]):not([role="dialog"] *) {
+div:has(> span > button[aria-label^="Dictation ("]):not([role="dialog"] *),
+.h-10.w-10:has(button[aria-label="Dictation"]):not([role="dialog"] *),
+.h-10.w-10:has(button[aria-label^="Dictation ("]):not([role="dialog"] *),
+div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0):not([role="dialog"] *) {
     display: none !important;
 }
 `;
@@ -34296,7 +34299,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   messageStars_default.updatedAt = 1791226275000;
   messageTimestamps_default.updatedAt = 1789881463000;
   noBuildStarters_default.updatedAt = 1789894247000;
-  noDictation_default.updatedAt = 1791394128000;
+  noDictation_default.updatedAt = 1791394188000;
   noGrokBot_default.updatedAt = 1790943206000;
   noShareLink_default.updatedAt = 1787789817000;
   noSidebarIdentity_default.updatedAt = 1788577403000;
