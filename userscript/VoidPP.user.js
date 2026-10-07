@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261006.2
+// @version      20261007.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261006.2] v1.0.0 — A modification for grok.com
+ * Void++ [20261007.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -8922,9 +8922,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261006.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"7d9d52f"}`
-    }, `(${"7d9d52f"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261007.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2f2fa0b"}`
+    }, `(${"2f2fa0b"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -23359,8 +23359,9 @@ Neon rain in a quiet city`
       },
       {
         find: '"HeroHeading",0,',
+        all: true,
         replacement: {
-          match: /("h1",\{className:\i),children:/,
+          match: /("h1",\{className:(?:"[^"]*"|\i)),children:/,
           replace: '$1,"data-void-ph-hero":"",children:'
         }
       }
@@ -34301,7 +34302,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   pluginsFlyout_default.updatedAt = 1791226275000;
   recentTopics_default.updatedAt = 1791226275000;
   responseNotification_default.updatedAt = 1790551025000;
-  settingsFlyout_default.updatedAt = 1791312608000;
+  settingsFlyout_default.updatedAt = 1791314580000;
   stableComposer_default.updatedAt = 1790551025000;
   starry_default.updatedAt = 1790551025000;
   streamerMode_default.updatedAt = 1790551025000;

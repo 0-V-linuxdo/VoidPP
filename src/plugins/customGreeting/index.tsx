@@ -605,8 +605,9 @@ export default definePlugin({
         },
         {
             find: '"HeroHeading",0,',
+            all: true,
             replacement: {
-                match: /("h1",\{className:\i),children:/,
+                match: /("h1",\{className:(?:"[^"]*"|\i)),children:/,
                 replace: '$1,"data-void-ph-hero":"",children:',
             },
         },
