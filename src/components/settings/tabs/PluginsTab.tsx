@@ -133,8 +133,7 @@ export default function PluginsTab() {
 
     const visibleTabs = useMemo(() => PLUGIN_CATEGORY_TABS.filter(t => {
         if (t.id === "favorites" || t.id === "all" || t.id === "recent") return true;
-        const pool = t.id === "other" ? userPlugins : [...userPlugins, ...requiredPlugins];
-        return pool.some(n => pluginMatchesCategory(plugins[n], t.id));
+        return [...userPlugins, ...requiredPlugins].some(n => pluginMatchesCategory(plugins[n], t.id));
     }), [userPlugins, requiredPlugins]);
 
     const { tabUser, tabRequired } = useMemo(() => {
@@ -193,7 +192,7 @@ export default function PluginsTab() {
     }, []);
 
     return (
-        <Flex flexDirection="column" gap="1rem" className="void-tab-root">
+        <Flex flexDirection="column" gap="1rem" className={classes(cl("root"), "void-tab-root")}>
             {needsReload && !showReload && (
                 <Flex alignItems="center" className={cl("reload-banner")}>
                     <Text size="xs" className={cl("reload-text")}>
@@ -225,32 +224,34 @@ export default function PluginsTab() {
                 onFilterChange={setFilter}
                 options={FILTER_OPTIONS}
             />
-            {filteredUser.length > 0 && (
-                <Grid columns="repeat(2, 1fr)">
-                    {filteredUser.map(n => (
-                        <ErrorBoundary key={n} fallback={null}>
-                            <PluginCard name={n} onSettings={setDialogName} onReload={onReload} />
-                        </ErrorBoundary>
-                    ))}
-                </Grid>
-            )}
-            {filteredRequired.length > 0 && (
-                <>
-                    <Separator />
+            <Flex flexDirection="column" gap="1rem" className={classes(cl("list"), "alpha-mask-y")}>
+                {filteredUser.length > 0 && (
                     <Grid columns="repeat(2, 1fr)">
-                        {filteredRequired.map(n => (
+                        {filteredUser.map(n => (
                             <ErrorBoundary key={n} fallback={null}>
                                 <PluginCard name={n} onSettings={setDialogName} onReload={onReload} />
                             </ErrorBoundary>
                         ))}
                     </Grid>
-                </>
-            )}
-            {!hasResults && (
-                <Paragraph color="secondary" className="void-tab-empty">
-                    {emptyHint(search, category)}
-                </Paragraph>
-            )}
+                )}
+                {filteredRequired.length > 0 && (
+                    <>
+                        <Separator />
+                        <Grid columns="repeat(2, 1fr)">
+                            {filteredRequired.map(n => (
+                                <ErrorBoundary key={n} fallback={null}>
+                                    <PluginCard name={n} onSettings={setDialogName} onReload={onReload} />
+                                </ErrorBoundary>
+                            ))}
+                        </Grid>
+                    </>
+                )}
+                {!hasResults && (
+                    <Paragraph color="secondary" className="void-tab-empty">
+                        {emptyHint(search, category)}
+                    </Paragraph>
+                )}
+            </Flex>
             {dialogPlugin && (
                 <ErrorBoundary fallback={null}>
                     <PluginDialog plugin={dialogPlugin} onClose={() => setDialogName(null)} />

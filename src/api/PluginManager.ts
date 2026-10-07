@@ -374,20 +374,31 @@ export function initPluginManager() {
     }
 
     for (const [name, plugin] of Object.entries(plugins)) {
-        const enabled = isPluginEnabled(name);
+        if (isPluginEnabled(name)) ensureMethodsBound(plugin);
+        registerPluginPatches(name, plugin, isPluginEnabled(name));
+    }
+}
 
-        if (enabled) ensureMethodsBound(plugin);
+const patchedPluginNames = new Set<string>();
 
-        if (plugin.patches) {
-            try {
-                for (const patch of plugin.patches) {
-                    if (enabled) addPatch(patch, name);
-                    else if (IS_DEV) addPatch({ ...patch, validateOnly: true }, name);
-                }
-            } catch (e) {
-                logger.error(`Failed to register patches for ${name}`, e);
-            }
+function registerPluginPatches(name: string, plugin: Plugin, enabled: boolean) {
+    if (!plugin.patches || patchedPluginNames.has(name)) return;
+    if (!enabled && !IS_DEV) return;
+    try {
+        for (const patch of plugin.patches) {
+            if (enabled) addPatch(patch, name);
+            else addPatch({ ...patch, validateOnly: true }, name);
         }
+        patchedPluginNames.add(name);
+    } catch (e) {
+        logger.error(`Failed to register patches for ${name}`, e);
+    }
+}
+
+export function registerEnabledPatches() {
+    for (const [name, plugin] of Object.entries(plugins)) {
+        if (isPluginEnabled(name)) ensureMethodsBound(plugin);
+        registerPluginPatches(name, plugin, isPluginEnabled(name));
     }
 }
 

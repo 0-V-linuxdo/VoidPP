@@ -14,9 +14,9 @@
     display: flex;
     gap: 0.25rem;
     padding: 0.25rem;
-    border: 1px solid hsl(var(--border-l2));
+    border: 1px solid var(--border-l2);
     border-radius: 0.75rem;
-    background: hsl(var(--surface-l2));
+    background: var(--surface-l2);
 }
 
 .void-ph-tab {
@@ -24,7 +24,7 @@
     appearance: none;
     border: 0;
     background: transparent;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
     font: inherit;
     font-size: 0.875rem;
     font-weight: 500;
@@ -35,14 +35,14 @@
 }
 
 .void-ph-tab-active {
-    background: hsl(var(--surface-l1));
-    color: hsl(var(--fg-primary));
-    box-shadow: inset 0 0 0 1px hsl(var(--border-l2));
+    background: var(--surface-l1);
+    color: var(--fg-primary);
+    box-shadow: inset 0 0 0 1px var(--border-l2);
 }
 
 .void-ph-tab:focus-visible {
     outline: none;
-    box-shadow: inset 0 0 0 2px hsl(var(--fg-primary));
+    box-shadow: inset 0 0 0 2px var(--fg-primary);
 }
 
 .void-ph-hint-pop {
@@ -51,14 +51,14 @@
 }
 
 .void-ph-textarea-wrap {
-    border: 1px solid hsl(var(--border-l2));
+    border: 1px solid var(--border-l2);
     border-radius: 0.75rem;
-    background: hsl(var(--surface-l2));
+    background: var(--surface-l2);
 }
 
 .void-ph-textarea-wrap:focus-within {
-    border-color: hsl(var(--fg-primary));
-    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
+    border-color: var(--fg-primary);
+    box-shadow: inset 0 0 0 1px var(--fg-primary);
 }
 
 .void-ph-textarea {
@@ -68,7 +68,7 @@
     background: transparent;
     border: none;
     border-radius: 0.75rem;
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
     font-size: 0.875rem;
     resize: vertical;
 }
@@ -106,5 +106,5 @@
     overflow: hidden;
     white-space: nowrap;
     pointer-events: none;
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
 }

@@ -437,7 +437,7 @@ export default definePlugin({
     icon: ClockIcon,
     description: "Shows timestamps on chat messages.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["chat"],
+    tags: ["messages"],
     settings,
 
     start() {

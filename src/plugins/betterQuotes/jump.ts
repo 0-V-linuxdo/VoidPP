@@ -32,7 +32,6 @@ const QUOTE_PATHS = [
 ];
 const WAIT_MS = 50;
 const WAIT_N = 24;
-const ALIGNED_PX = 8;
 const CLUSTER_GAP = 240;
 
 let abort: AbortController | null = null;
@@ -275,6 +274,8 @@ function paneOf(el: HTMLElement): HTMLElement | null {
 
 function messageEls(): HTMLElement[] {
     const root = chatPane() ?? document.querySelector("main") ?? document.body;
+    const hosts = [...root.querySelectorAll<HTMLElement>("[id^='response-']")];
+    if (hosts.length) return hosts;
     return [...root.querySelectorAll<HTMLElement>(MSG)];
 }
 
@@ -665,7 +666,7 @@ function blockRanges(root: HTMLElement, needle: string, allowThink: boolean): Ra
     const lines = paintLines(needle).map(flex).filter(line => line.length >= 4);
     if (want.length < 4 && !lines.length) return [];
     const ranges: Range[] = [];
-    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote")) {
+    for (const el of root.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, span")) {
         if (!(el instanceof HTMLElement)) continue;
         if (el.closest("button, svg, [role='toolbar'], td, th")) continue;
         if (el.querySelector("p, li")) continue;
@@ -681,9 +682,54 @@ function blockRanges(root: HTMLElement, needle: string, allowThink: boolean): Ra
     return ranges;
 }
 
+function clipRanges(root: HTMLElement, needle: string): Range[] {
+    const wants = paintLines(needle).filter(line => line.length >= 4);
+    const whole = prefixOf(needle);
+    if (whole.length >= 4 && !wants.includes(whole)) wants.unshift(whole);
+    if (!wants.length) return [];
+    const nodes: { node: Text; start: number }[] = [];
+    let blob = "";
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let cur: Node | null;
+    while ((cur = walker.nextNode())) {
+        const raw = cur.nodeValue || "";
+        if (!raw) continue;
+        const el = cur.parentElement;
+        if (!el || hiddenHost(el, true) || el.closest("td, th")) continue;
+        nodes.push({ node: cur as Text, start: blob.length });
+        blob += raw;
+    }
+    const locate = (at: number) => {
+        let hit: { node: Text; start: number } | null = null;
+        for (const part of nodes) {
+            if (part.start > at) break;
+            hit = part;
+        }
+        return hit;
+    };
+    const ranges: Range[] = [];
+    for (const want of wants) {
+        const at = blob.indexOf(want);
+        if (at < 0) continue;
+        const end = at + want.length - 1;
+        const a = locate(at);
+        const b = locate(end);
+        if (!a || !b) continue;
+        try {
+            const range = document.createRange();
+            range.setStart(a.node, at - a.start);
+            range.setEnd(b.node, end - b.start + 1);
+            if (!range.collapsed) ranges.push(range);
+        } catch { /* detached */ }
+    }
+    return ranges;
+}
+
 function findRanges(root: HTMLElement, needle: string): Range[] {
     const lines = paintLines(needle);
     if (!lines.length) return [];
+    const clips = clipRanges(root, needle);
+    if (clips.length) return clips;
     for (const allowThink of [false, true]) {
         const blocks = blockRanges(root, needle, allowThink);
         if (blocks.length) return blocks;
@@ -753,26 +799,80 @@ function clearHighlight() {
     highlights?.delete(HL);
 }
 
-function highlightRange(range: Range | readonly Range[] | null, el: HTMLElement) {
+function highlightRange(range: Range | readonly Range[] | null, el: HTMLElement, flashHost = false) {
     clearHighlight();
     const list = (Array.isArray(range) ? range : range ? [range] : []).filter(item => !item.collapsed);
     const HighlightCtor = (window as unknown as { Highlight?: new (...ranges: Range[]) => unknown }).Highlight;
     const { highlights } = (CSS as { highlights?: { set(k: string, v: unknown): void } });
     if (list.length && highlights && HighlightCtor) {
         highlights.set(HL, new HighlightCtor(...list));
-    } else if (list.length || !el.closest("[id^='response-']")) {
+    } else if (list.length || flashHost || !el.closest("[id^='response-']")) {
         flashing = el;
         el.classList.add(cl("hit"));
     }
     flashTimer = window.setTimeout(clearHighlight, FLASH_MS);
 }
 
-function visibleMidY(pane: HTMLElement | null): number {
-    const top = pane?.getBoundingClientRect().top ?? 0;
+function viewMid(pane: HTMLElement): { mid: number; top: number; room: number } {
+    const rect = pane.getBoundingClientRect();
     const bar = document.querySelector(QUERY);
     const barTop = bar instanceof HTMLElement ? bar.getBoundingClientRect().top : 0;
-    const bottom = barTop > top ? barTop : (pane?.getBoundingClientRect().bottom ?? window.innerHeight);
-    return (top + bottom) / 2;
+    const floor = barTop > rect.top + 80 ? barTop : rect.bottom;
+    return { mid: (rect.top + floor) / 2, top: rect.top, room: Math.max(0, floor - rect.top) };
+}
+
+function centerDelta(box: DOMRect, pane: HTMLElement): number {
+    const view = viewMid(pane);
+    if (box.height >= view.room - 16) return box.top - (view.top + Math.min(72, view.room / 6));
+    const delta = box.top + box.height / 2 - view.mid;
+    return Math.abs(delta) < 24 ? 0 : delta;
+}
+
+function aimDelta(range: Range | null, el: HTMLElement): { pane: HTMLElement; delta: number; room: number } | null {
+    if (!el.isConnected) return null;
+    const box = aimBox(range, el);
+    if (!box) return null;
+    const pane = scrollPane(el);
+    if (!pane) return null;
+    return { pane, delta: centerDelta(box, pane), room: viewMid(pane).room || pane.clientHeight || 1 };
+}
+
+async function settleCenter(
+    read: () => { range: Range | null; el: HTMLElement } | null,
+    mine: number,
+    pin = "",
+) {
+    const measure = () => {
+        const shot = read();
+        if (!shot) return null;
+        let el = shot.el;
+        if (!el.isConnected && pin) {
+            const fresh = messageById(pin);
+            if (fresh?.isConnected) el = fresh;
+        }
+        return el.isConnected ? aimDelta(shot.range, el) : null;
+    };
+    const first = measure();
+    if (!first || Math.abs(first.delta) < 1) return;
+    const near = Math.abs(first.delta) <= first.room * 1.2;
+    first.pane.scrollTo({ top: first.pane.scrollTop + first.delta, behavior: near ? "smooth" : "auto" });
+    if (near) return;
+    await afterLayout();
+    if (mine !== gen) return;
+    if (pin && !messageById(pin)) await revealSource(pin, null, mine);
+    if (mine !== gen) return;
+    const again = measure();
+    if (!again || Math.abs(again.delta) < 1) return;
+    const fix = Math.abs(again.delta) <= again.room * 1.2;
+    again.pane.scrollTo({ top: again.pane.scrollTop + again.delta, behavior: fix ? "smooth" : "auto" });
+}
+
+function aimBox(range: Range | null, el: HTMLElement): DOMRect | null {
+    const line = range && lineBox(range);
+    if (line && line.height > 0) return line;
+    const box = el.getBoundingClientRect();
+    if (box.height < 1) return null;
+    return new DOMRect(box.x, box.y, box.width, Math.min(96, box.height));
 }
 
 function lineBox(range: Range | null): DOMRect | null {
@@ -834,18 +934,6 @@ function scrollPane(el: HTMLElement): HTMLElement | null {
     return pane && pane.contains(el) ? pane : null;
 }
 
-function scrollLineToScreenCenter(range: Range | null, el: HTMLElement) {
-    if (!document.body.contains(el)) return;
-    const box = (range && lineBox(range)) || el.getBoundingClientRect();
-    if (!box || box.height < 1) return;
-    const pane = scrollPane(el);
-    if (!pane) return;
-    const mid = visibleMidY(pane);
-    const delta = box.top + box.height / 2 - mid;
-    if (Math.abs(delta) < ALIGNED_PX) return;
-    pane.scrollTo({ top: pane.scrollTop + delta, behavior: "smooth" });
-}
-
 function afterLayout(): Promise<void> {
     return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 }
@@ -878,16 +966,18 @@ function resolveNeedle(origin: HTMLElement | null): { needle: string; hard: stri
         const child = hostUuid(jump);
         const fiber = sourceFromFiber(jump);
         const row = sourceOfRow(child ? storeById(child) : undefined);
-        const needle = row.quoted || fiber.quoted || prefixOf(jump.textContent || "");
+        const shown = prefixOf(jump.textContent || "");
+        const needle = (shown.length >= 8 ? shown : "") || row.quoted || fiber.quoted || shown;
         return { needle, hard: fiber.hard || row.hard, parent: fiber.parent || row.parent };
     }
     const live = quotedText();
     if (origin) {
+        const shown = prefixOf(origin.textContent || "");
         const msg = origin.closest<HTMLElement>(MSG) ?? hostOf(origin);
         const id = msg ? propsId(msg) || hostUuid(msg) || idsFrom(msg)[0] : "";
         const from = hostQuote(id, msg);
-        const text = from.quoted || live || prefixOf(origin.textContent || "");
-        return { needle: text, hard: from.hard, parent: from.parent };
+        const needle = (shown.length >= 8 ? shown : "") || from.quoted || shown;
+        return { needle, hard: from.hard, parent: from.parent };
     }
     return { needle: live, hard: "", parent: "" };
 }
@@ -977,52 +1067,37 @@ async function revealSource(id: string, skip: HTMLElement | null, mine: number):
     return liveSource(id, skip);
 }
 
-function settleScroll(pane: HTMLElement, range: Range | null, el: HTMLElement, mine: number): Promise<void> {
-    return new Promise(resolve => {
-        let done = false;
-        const finish = () => {
-            if (done) return;
-            done = true;
-            pane.removeEventListener("scrollend", finish);
-            if (mine !== gen || !el.isConnected) {
-                resolve();
-                return;
-            }
-            const box = (range && lineBox(range)) || el.getBoundingClientRect();
-            if (!box || box.height < 1) {
-                resolve();
-                return;
-            }
-            const delta = box.top + box.height / 2 - visibleMidY(pane);
-            if (Math.abs(delta) >= ALIGNED_PX) pane.scrollTo({ top: pane.scrollTop + delta, behavior: "auto" });
-            resolve();
-        };
-        pane.addEventListener("scrollend", finish, { once: true });
-        window.setTimeout(finish, 700);
-    });
-}
-
-async function land(el: HTMLElement, needle: string, mine: number) {
+async function land(el: HTMLElement, needle: string, mine: number, pin = "") {
     openAncestors(el, needle);
     await afterLayout();
-    if (mine !== gen || !el.isConnected) return;
-    const ranges = findRanges(el, needle);
-    const anchor = scrollAnchor(ranges);
-    const hit = hitOf(anchor) ?? el;
-    const pane = scrollPane(hit);
-    scrollLineToScreenCenter(anchor, hit);
-    highlightRange(ranges, hit);
-    if (pane) await settleScroll(pane, anchor, hit, mine);
+    if (mine !== gen) return;
+    if (!el.isConnected && pin) {
+        const fresh = messageById(pin);
+        if (fresh?.isConnected) el = fresh;
+    }
+    if (!el.isConnected) return;
+    await settleCenter(() => {
+        if (!el.isConnected && pin) {
+            const fresh = messageById(pin);
+            if (fresh?.isConnected) el = fresh;
+        }
+        if (!el.isConnected) return null;
+        const ranges = clipRanges(el, needle);
+        highlightRange(ranges, el, false);
+        const anchor = scrollAnchor(ranges);
+        const painted = anchor ? hitOf(anchor) : null;
+        const target = painted?.isConnected ? painted : el;
+        return { range: anchor, el: target };
+    }, mine, pin);
 }
 
 async function jump(origin: HTMLElement | null) {
     const mine = ++gen;
-    const { needle, hard, parent } = resolveNeedle(origin);
+    const { needle, hard } = resolveNeedle(origin);
     const skip = hostOf(origin);
-    const skipId = hostUuid(skip);
     if (!prefixOf(needle) && !hard) return;
-    const fits = (el: HTMLElement | null) => !!el && (!prefixOf(needle) || blobScore(el, needle) > 0);
     let el: HTMLElement | null = null;
+    let pinned = "";
     if (hard) {
         el = liveSource(hard, skip);
         if (!el) {
@@ -1030,31 +1105,15 @@ async function jump(origin: HTMLElement | null) {
             if (mine !== gen) return;
             el = await revealSource(hard, skip, mine);
         }
-        if (!fits(el)) el = null;
+        if (el) pinned = hard;
+    } else if (prefixOf(needle)) {
+        el = pickMessage([], needle, skip);
     }
-    if (!el && parent && parent !== hard) {
-        const mounted = liveSource(parent, skip);
-        if (fits(mounted)) el = mounted;
-    }
-    if (!el && prefixOf(needle)) {
-        const stored = passageId(needle, skipId, parent);
-        if (stored) {
-            await hydrate(stored.cid || conversationId());
-            if (mine !== gen) return;
-            const found = await revealSource(stored.id, skip, mine);
-            if (fits(found)) el = found;
-        }
-    }
-    if (!el && prefixOf(needle)) {
-        const picked = pickMessage([], needle, skip);
-        if (fits(picked)) el = picked;
-    }
-    if (mine !== gen) return;
-    if (!el) {
-        logger.debug("no source message");
+    if (mine !== gen || !el) {
+        if (!el) logger.debug("no source message");
         return;
     }
-    await land(el, needle, mine);
+    await land(el, needle, mine, pinned);
 }
 
 function quoteSource(rec: Record<string, unknown>, fallbackParent = ""): { source: string; quoted: string } {
@@ -1341,11 +1400,14 @@ async function jumpToCite(cite: Cite | undefined) {
     openAncestors(card, cite.quoted);
     await afterLayout();
     if (mine !== gen || !card.isConnected) return;
-    const ranges = findRanges(card, cite.quoted);
-    const anchor = scrollAnchor(ranges);
-    const hit = hitOf(anchor) ?? card;
-    scrollLineToScreenCenter(anchor, hit);
-    highlightRange(ranges, hit);
+    await settleCenter(() => {
+        if (!card.isConnected) return null;
+        const ranges = findRanges(card, cite.quoted);
+        const anchor = scrollAnchor(ranges);
+        const hit = hitOf(anchor) ?? card;
+        highlightRange(ranges, hit);
+        return { range: anchor, el: hit.isConnected ? hit : card };
+    }, mine, cite.id);
 }
 
 function onBackClick(t: Element): boolean {
@@ -1390,13 +1452,6 @@ function onClick(e: MouseEvent) {
         const sent = sentQuote(t);
         const origin = sent ?? chip;
         if (!origin) return;
-        if (officialJumpButton(origin)) {
-            const { needle, hard, parent } = resolveNeedle(origin);
-            const host = hostOf(origin);
-            const mounted = parent ? liveSource(parent, host) : null;
-            const parentOk = !!mounted && blobScore(mounted, needle) > 0;
-            if (!hard && !parentOk && !pickMessage([], needle, host)) return;
-        }
         e.preventDefault();
         e.stopPropagation();
         void jump(origin);

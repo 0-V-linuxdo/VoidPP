@@ -74,7 +74,7 @@ export default definePlugin({
     icon: FilesIcon,
     description: "Adds bulk delete to the Library page.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["ui"],
+    tags: ["media"],
     managedStyle: "betterFiles",
 
     start() {

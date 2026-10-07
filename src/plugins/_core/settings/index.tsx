@@ -10,7 +10,7 @@ import { isPluginEnabled, plugins } from "@api/PluginManager";
 import { definePluginSettings, migratePluginSetting } from "@api/Settings";
 import { loadSavedThemes } from "@api/Themes";
 import { ErrorBoundary, Flex, InfoHint, Text } from "@components";
-import { BracesIcon, PaletteIcon, SettingsIcon, TestTubeIcon, UnplugIcon, VoidPPIcon } from "@components/icons";
+import { BracesIcon, PaletteIcon, SettingsIcon, TestTubeIcon, UnplugIcon, VoidPPIcon, type IconProps } from "@components/icons";
 import { CustomCSSTab, loadSavedCSS, PluginsTab, setPendingPluginDialog, ThemesTab } from "@components/settings/tabs";
 import { Tab as ExperimentsTab } from "@plugins/experiments";
 import { usePluginMenu } from "@plugins/pluginsFlyout";
@@ -59,6 +59,20 @@ export const allTabs: SettingsTab[] = [
     { id: "voidpp_css_tab", name: "Quick CSS", icon: BracesIcon, component: CustomCSSTab },
     { id: "voidpp_experiments_tab", name: "Experiments", icon: TestTubeIcon, component: ExperimentsTab, plugin: "Experiments" },
 ];
+
+const navIcons = new Map<ComponentType<any>, ComponentType<IconProps>>();
+
+/** Grok's icon `size` is a 0.25rem step (`size={4}` → 1rem), not a pixel length. */
+function grokNavIcon(Icon: ComponentType<any>) {
+    let wrapped = navIcons.get(Icon);
+    if (wrapped) return wrapped;
+    wrapped = function GrokNavIcon({ size, width, height, ...rest }: IconProps) {
+        const dim = width ?? height ?? (typeof size === "number" ? `${0.25 * size}rem` : size) ?? "1rem";
+        return <Icon {...rest} width={dim} height={dim} />;
+    };
+    navIcons.set(Icon, wrapped);
+    return wrapped;
+}
 
 export function getVisibleTabs() {
     return allTabs.filter(t => !t.plugin || isPluginEnabled(t.plugin));
@@ -188,7 +202,7 @@ export default definePlugin({
         return getVisibleTabs().map(t => ({
             id: t.id,
             group: "voidpp",
-            icon: t.icon,
+            icon: grokNavIcon(t.icon),
             i18nKey: t.name,
             defaultLabel: t.name,
             description: t.description,
@@ -224,7 +238,7 @@ export default definePlugin({
             find: "avatar_menu_click",
             all: true,
             replacement: {
-                match: /\(0,(\i)\.jsxs\)\((\i)\.DropdownMenuSub,\{children:\[\(0,\1\.jsxs\)\(\2\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,100}"user-dropdown\.help"/,
+                match: /\(0,(\i)\.jsxs\)\((\i)\.DropdownMenuSub,\{children:\[\(0,\1\.jsxs\)\(\2\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,240}"user-dropdown\.help"/,
                 replace: "$self._renderVoidPPMenu(),$&",
             },
         },
@@ -270,6 +284,13 @@ export default definePlugin({
                     replace: '$1$self._setPrimitive("SettingsRow",$2)',
                 },
             ],
+        },
+        {
+            find: '"SettingsSwitch",0,',
+            replacement: {
+                match: /("SettingsSwitch",0,)(\i)/,
+                replace: '$1$self._setPrimitive("SettingsSwitch",$2)',
+            },
         },
     ],
 });

@@ -4,25 +4,30 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { OptionType, type Plugin, type PluginSettingDef } from "@utils/types";
+import { OptionType, type Plugin, type PluginSettingDef, type PluginTag } from "@utils/types";
 
 export type InputChangeEvent = { target: { value: string } };
 
 export type ListFilter = "all" | "enabled" | "disabled";
 
-export type PluginCategory = "favorites" | "recent" | "all" | "chat" | "ui" | "privacy" | "other";
+export type PluginCategory = "favorites" | "recent" | "all" | PluginTag;
 
 export const PLUGIN_CATEGORY_TABS: readonly { id: PluginCategory; label: string }[] = [
     { id: "favorites", label: "Favorites" },
     { id: "recent", label: "Recent" },
     { id: "all", label: "All" },
-    { id: "chat", label: "Chat" },
-    { id: "ui", label: "UI" },
+    { id: "composer", label: "Composer" },
+    { id: "messages", label: "Messages" },
+    { id: "chats", label: "Chats" },
+    { id: "media", label: "Media" },
+    { id: "navigation", label: "Navigation" },
+    { id: "notifications", label: "Notifications" },
+    { id: "appearance", label: "Appearance" },
+    { id: "declutter", label: "Declutter" },
     { id: "privacy", label: "Privacy" },
-    { id: "other", label: "Other" },
+    { id: "developer", label: "Developer" },
 ];
 
-const CATEGORY_TAGS = new Set(["chat", "ui", "privacy"]);
 const RECENT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function isRecentlyUpdated(plugin: Plugin): boolean {
@@ -32,9 +37,7 @@ export function isRecentlyUpdated(plugin: Plugin): boolean {
 export function pluginMatchesCategory(plugin: Plugin, category: PluginCategory): boolean {
     if (category === "all" || category === "favorites") return true;
     if (category === "recent") return isRecentlyUpdated(plugin);
-    const tags = (plugin.tags ?? []).map(t => t === "sidebar" ? "ui" : t);
-    if (category === "other") return !plugin.required && !tags.some(t => CATEGORY_TAGS.has(t));
-    return tags.includes(category);
+    return plugin.tags?.includes(category) ?? false;
 }
 
 export function isVisibleSetting([, s]: [string, PluginSettingDef]): boolean {

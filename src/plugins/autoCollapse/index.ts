@@ -13,7 +13,7 @@ export default definePlugin({
     icon: ChevronsDownUpIcon,
     description: "Automatically collapse code blocks in responses.",
     authors: [Devs.Prism],
-    tags: ["chat"],
+    tags: ["messages"],
 
     _collapse: () => true,
 

@@ -1189,7 +1189,7 @@ export default definePlugin({
     icon: HistoryIcon,
     description: "Recall previous chat prompts with Arrow Up and Arrow Down, like a shell. Esc restores your draft. Click the counter to browse history.",
     authors: [Devs.p],
-    tags: ["chat"],
+    tags: ["composer"],
     enabledByDefault: true,
     settings,
     managedStyle: "inputHistory",

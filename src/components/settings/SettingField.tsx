@@ -8,7 +8,7 @@ import "./SettingField.css";
 
 import { dispatch } from "@api/Events";
 import { mergePluginSettings, pluginPath, resolveDefault, Settings, SettingsStore } from "@api/Settings";
-import { Flex, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SettingsDescription, SettingsRow, SettingsTitle, Switch, Text } from "@components";
+import { Flex, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle, Text } from "@components";
 import { React, useCallback, useEffect, useMemo, useState } from "@turbopack/common/react";
 import { classNameFactory } from "@utils/css";
 import { humanizeKey } from "@utils/text";
@@ -71,7 +71,7 @@ function LabeledField({ id, setting, children }: { id: string; setting: Partial<
 const BooleanField: Field<PluginSettingBooleanDef & PluginSettingCommon> = ({ id, setting, pluginName }) => {
     const [value, update] = usePluginSetting(pluginName, id, setting);
     return (
-        <SettingsRow action={<Switch checked={!!value} onCheckedChange={update} />}>
+        <SettingsRow action={<SettingsSwitch checked={!!value} onCheckedChange={update} />}>
             <SettingLabel id={id} setting={setting} />
         </SettingsRow>
     );

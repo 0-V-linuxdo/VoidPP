@@ -6,5 +6,5 @@
 
 .void-theme-card-footer-icon {
     flex-shrink: 0;
-    color: hsl(var(--fg-tertiary));
+    color: var(--fg-tertiary);
 }

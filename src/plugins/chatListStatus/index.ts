@@ -662,7 +662,7 @@ export default definePlugin({
     icon: LoaderCircleIcon,
     description: "Show Grok reply status on sidebar chats: spinner, blue dot, or error.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["notifications"],
     enabledByDefault: true,
     startAt: StartAt.TurbopackReady,
     managedStyle: "chatListStatus",

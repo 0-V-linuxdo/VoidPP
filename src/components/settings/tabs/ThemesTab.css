@@ -1,5 +1,5 @@
 .void-themes-add-error {
-    color: hsl(var(--fg-danger));
+    color: var(--fg-danger);
 }
 
 .void-themes-local-css-field {

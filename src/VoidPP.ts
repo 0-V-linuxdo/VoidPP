@@ -5,7 +5,8 @@
  */
 
 import { checkBuildFingerprint } from "@api/BuildHealth";
-import { initPluginManager, registerPlugin, retryFailedPlugins, startAllPlugins } from "@api/PluginManager";
+import { initPluginManager, isPluginEnabled, registerEnabledPatches, registerPlugin, retryFailedPlugins, startAllPlugins } from "@api/PluginManager";
+import { primeSettingsSync } from "@api/Settings";
 import { initStreamEvents } from "@api/StreamEvents";
 import { reportOrphanedPatches } from "@turbopack/patchReport";
 import { _resolveReady, blacklistBadModules, getModuleCache, patches, patchTurbopack, rescanRuntimeModules } from "@turbopack/patchTurbopack";
@@ -14,6 +15,8 @@ import { Logger } from "@utils/Logger";
 import { onlyOnce } from "@utils/misc";
 import { type Plugin, StartAt } from "@utils/types";
 
+import { armSidebarPluginsHide, stopSidebarPluginsHide } from "./plugins/avatarPluginsFlyout";
+import { armBotsCollapse, stopBotsCollapseGuard } from "./plugins/betterSidebar";
 import Plugins from "~plugins";
 
 export { addChatBarButton, removeChatBarButton } from "@api/ChatBarButtons";
@@ -83,17 +86,46 @@ function waitForModulesStable() {
 }
 
 let _initialized = false;
+let _armed = false;
 
-export function init() {
-    if (_initialized) return;
-    _initialized = true;
+function syncEarlyGuards() {
+    if (isPluginEnabled("BetterSidebar")) armBotsCollapse();
+    else stopBotsCollapseGuard();
+    if (isPluginEnabled("AvatarPluginsFlyout")) armSidebarPluginsHide();
+    else stopSidebarPluginsHide();
+}
+
+export function armRuntime() {
+    if (_armed) return;
+    _armed = true;
+
+    // Settings live in GM, which is usually sync. Read them before yielding so a
+    // hard refresh cannot evaluate the sidebar while patches are still waiting
+    // on IndexedDB.
+    safely("primeSettingsSync", primeSettingsSync);
 
     for (const plugin of Object.values(Plugins)) {
         safely("registerPlugin", () => registerPlugin(plugin as Plugin));
     }
 
-    safely("initPluginManager", initPluginManager);
+    safely("registerEnabledPatches", registerEnabledPatches);
     safely("patchTurbopack", patchTurbopack);
+    safely("syncEarlyGuards", syncEarlyGuards);
+}
+
+export function init() {
+    if (_initialized) return;
+    _initialized = true;
+
+    armRuntime();
+
+    for (const plugin of Object.values(Plugins)) {
+        if (plugin.settings) plugin.settings.pluginName = plugin.name;
+    }
+
+    safely("initPluginManager", initPluginManager);
+    safely("registerEnabledPatches", registerEnabledPatches);
+    safely("syncEarlyGuards", syncEarlyGuards);
     safely("startAllPlugins(Init)", () => startAllPlugins(StartAt.Init));
 
     const fireDomContent = () => safely("startAllPlugins(DOMContentLoaded)", () => startAllPlugins(StartAt.DOMContentLoaded));

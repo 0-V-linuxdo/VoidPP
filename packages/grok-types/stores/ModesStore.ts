@@ -26,6 +26,8 @@ export interface ModesStoreState {
     ensureLoaded: () => Promise<void>;
     /** Set the selected mode by ID. */
     setSelectedModeId: (id: string, opts?: { source?: "user" | "sync" }) => void;
+    /** Cycle every available primary mode. Native model-select hotkey (Cmd/Ctrl+Shift+M). */
+    cycleSelectedMode?: () => Mode | undefined;
     /** Internal: Reconcile the selected mode ID against available modes. */
     _reconcileSelectedModeId: () => void;
 }

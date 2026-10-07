@@ -17,7 +17,7 @@ export default definePlugin({
     icon: CatIcon,
     description: "Cat follows your mouse cursor.",
     authors: [Devs.adryd],
-    tags: ["ui"],
+    tags: ["appearance"],
     cleanupSelectors: ["#oneko"],
 
     start() {

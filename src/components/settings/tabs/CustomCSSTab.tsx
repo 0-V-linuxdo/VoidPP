@@ -7,7 +7,7 @@
 import "./CustomCSSTab.css";
 
 import { getSettingsPluginData, updateSettingsPluginData } from "@api/Settings";
-import { Flex, SettingsDescription, SettingsRow, SettingsTitle, Switch } from "@components";
+import { Flex, SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle } from "@components";
 import { React, useCallback, useState } from "@turbopack/common/react";
 import { classes, classNameFactory, disableStyle, enableStyle, registerStyle } from "@utils/css";
 
@@ -51,7 +51,7 @@ export default function CustomCSSTab() {
 
     return (
         <Flex flexDirection="column" gap="1rem" className={classes(cl("root"), "void-tab-root")}>
-            <SettingsRow action={<Switch checked={enabled} onCheckedChange={handleToggle} />}>
+            <SettingsRow action={<SettingsSwitch checked={enabled} onCheckedChange={handleToggle} />}>
                 <Flex flexDirection="column" gap="0">
                     <SettingsTitle>Enable Quick CSS</SettingsTitle>
                     <SettingsDescription>

@@ -14,6 +14,8 @@ export default function definePlugin<P extends PluginDef>(p: P & Record<Property
 
 export type ReplaceFn = (match: string, ...groups: string[]) => string;
 
+export type PluginTag = "composer" | "messages" | "chats" | "media" | "navigation" | "notifications" | "appearance" | "declutter" | "privacy" | "developer";
+
 export type PluginSettingValue = string | number | bigint | boolean | undefined;
 
 export interface PatchReplacement {
@@ -63,7 +65,7 @@ export interface PluginDef {
     startAt?: StartAt;
     settings?: DefinedSettings;
     managedStyle?: string;
-    tags?: string[];
+    tags?: PluginTag[];
     updatedAt?: number;
     zustand?: Partial<Record<keyof typeof Stores, ZustandSubscription>>;
     chatBarButton?: import("@api/ChatBarButtons").ChatBarButtonDef;

@@ -652,7 +652,7 @@ export default definePlugin({
     icon: UserRoundPenIcon,
     description: "Replace the sidebar avatar and display name. Empty fields keep the official values.",
     authors: [Devs.p],
-    tags: ["ui"],
+    tags: ["appearance"],
     enabledByDefault: false,
     settings,
     managedStyle: "customSidebarIdentity",

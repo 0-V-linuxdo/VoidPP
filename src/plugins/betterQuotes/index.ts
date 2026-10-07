@@ -93,7 +93,7 @@ export default definePlugin({
     icon: MessageSquareQuoteIcon,
     description: "Jump between a quote and its source, and keep the composer quote card when switching chats.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["messages", "composer"],
     enabledByDefault: true,
     startAt: StartAt.TurbopackReady,
     settings,

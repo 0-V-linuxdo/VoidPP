@@ -15,8 +15,9 @@ import { PanelLeftIcon, PlusIcon } from "@components/icons";
 import { Text } from "@components/Text";
 import { SidebarComponents } from "@turbopack/common/components";
 import { getPlanName } from "@turbopack/common/plan";
-import { createElement, Fragment, React, useRef } from "@turbopack/common/react";
+import { createElement, Fragment, React, useRef, useState } from "@turbopack/common/react";
 import { ChatPageStore, ConversationStore, RoutingStore, SessionStore, SubscriptionsStore } from "@turbopack/common/stores";
+import { findByProps } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classNameFactory, disableStyle, enableStyle } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -81,60 +82,153 @@ const CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
 const PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
 const PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
 
+let botsCollapsed: boolean | null = null;
 let botsCollapseObserver: MutationObserver | null = null;
-let botsCollapseTimer: ReturnType<typeof setTimeout> | null = null;
+let botsCollapseTimer: ReturnType<typeof setInterval> | null = null;
 let chatsExpandObserver: MutationObserver | null = null;
 let chatsExpandTimer: ReturnType<typeof setTimeout> | null = null;
 let projectsCollapseObserver: MutationObserver | null = null;
 let projectsCollapseTimer: ReturnType<typeof setTimeout> | null = null;
+
+function releaseRosterGate() {
+    // Grok hides Projects until the bot roster settles, the Bots header until
+    // shouldPaintBotsSidebar, and the whole Bots group until
+    // useBotsSectionEnabled (feature flag ready AND a session user). A hard
+    // refresh mounts Chats first and leaves the other two null. Lift the
+    // gates on the live exports, then poke the store so the sidebar
+    // re-renders before the flag and the roster return.
+    try {
+        const gates = findByProps("useBotsSectionSettled", "useBotsSectionEnabled");
+        for (const name of ["useBotsSectionSettled", "useBotsSectionEnabled"] as const) {
+            const fn = gates?.[name];
+            if (typeof fn !== "function" || (fn as { voidRoster?: boolean }).voidRoster) continue;
+            const wrapped = function () { return true; };
+            (wrapped as { voidRoster?: boolean }).voidRoster = true;
+            gates[name] = wrapped;
+        }
+
+        const paintMod = findByProps("shouldPaintBotsSidebar");
+        const paint = paintMod?.shouldPaintBotsSidebar;
+        if (typeof paint === "function" && !(paint as { voidRoster?: boolean }).voidRoster) {
+            const wrapped = function () { return true; };
+            (wrapped as { voidRoster?: boolean }).voidRoster = true;
+            paintMod.shouldPaintBotsSidebar = wrapped;
+        }
+
+        const bots = findByProps("useBotsStore")?.useBotsStore;
+        const state = bots?.getState?.();
+        if (bots && state && !state.rosterLoaded && !(state.agents?.length > 0)) {
+            bots.setState({ rosterLoaded: true });
+            bots.setState({ rosterLoaded: false });
+        }
+    } catch (e) {
+        logger.warn("Roster gate", e);
+    }
+}
 
 function applyHeaderHover() {
     if (settings.store.titleRowHover) enableStyle("headerHover");
     else disableStyle("headerHover");
 }
 
+let botsUserOverride = false;
+let botsClickAttempts = 0;
+let lastBotsClick = 0;
+let botsCollapseDeadline: ReturnType<typeof setTimeout> | null = null;
+let botsCollapseRaf = 0;
+
+function scheduleBotsCollapse() {
+    if (botsCollapseRaf) return;
+    botsCollapseRaf = requestAnimationFrame(() => {
+        botsCollapseRaf = 0;
+        collapseBotsSection();
+    });
+}
+
+function wantBotsCollapsed(): boolean {
+    try {
+        return settings.store.botsDefaultCollapsed !== false;
+    } catch {
+        return true;
+    }
+}
+
+function botsHeader(): HTMLElement | null {
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar) return null;
+    return [...sidebar.querySelectorAll<HTMLElement>("button[aria-expanded]")].find(btn =>
+        (btn.innerText || "").replaceAll(/\s+/g, " ").trim() === "Bots",
+    ) ?? null;
+}
+
+function onBotsPointerDown(event: PointerEvent) {
+    if (!event.isTrusted) return;
+    const header = botsHeader();
+    const target = event.target;
+    if (!header || !(target instanceof Node) || !header.contains(target)) return;
+    botsUserOverride = true;
+    stopBotsCollapse();
+}
+
 function collapseBotsSection() {
-    const plus = document.querySelector<HTMLElement>(BOTS_PLUS_SEL);
-    if (!plus) return false;
-    const group = plus.closest("[data-sidebar=group]");
-    if (!group) return false;
-    const expanded = group.querySelector<HTMLElement>("button[aria-expanded=true]");
-    if (!expanded) return true;
-    expanded.click();
-    return true;
+    if (botsUserOverride || !wantBotsCollapsed()) return true;
+    const header = botsHeader();
+    if (!header) return false;
+    if (header.getAttribute("aria-expanded") !== "true") return false;
+    if (botsClickAttempts >= 8) return false;
+    const now = Date.now();
+    if (now - lastBotsClick < 350) return false;
+    botsClickAttempts++;
+    lastBotsClick = now;
+    header.click();
+    return false;
+}
+
+function useBotsCollapsed() {
+    const state = useState(() => (typeof botsCollapsed === "boolean" ? botsCollapsed : wantBotsCollapsed()));
+    if (typeof state[0] === "boolean") botsCollapsed = state[0];
+    return state;
 }
 
 function stopBotsCollapse() {
     botsCollapseObserver?.disconnect();
     botsCollapseObserver = null;
+    document.removeEventListener("pointerdown", onBotsPointerDown, true);
     if (botsCollapseTimer != null) {
-        clearTimeout(botsCollapseTimer);
+        clearInterval(botsCollapseTimer);
         botsCollapseTimer = null;
+    }
+    if (botsCollapseDeadline != null) {
+        clearTimeout(botsCollapseDeadline);
+        botsCollapseDeadline = null;
+    }
+    if (botsCollapseRaf) {
+        cancelAnimationFrame(botsCollapseRaf);
+        botsCollapseRaf = 0;
     }
 }
 
 function startBotsCollapse() {
     stopBotsCollapse();
-    if (!settings.store.botsDefaultCollapsed) return;
+    if (botsUserOverride || !wantBotsCollapsed()) return;
 
-    let done = false;
-    const tick = () => {
-        if (done) return;
-        if (collapseBotsSection()) {
-            done = true;
-            stopBotsCollapse();
-        }
-    };
+    botsClickAttempts = 0;
+    lastBotsClick = 0;
+    document.addEventListener("pointerdown", onBotsPointerDown, true);
+    collapseBotsSection();
 
-    tick();
-    if (done) return;
-
-    botsCollapseObserver = new MutationObserver(tick);
+    botsCollapseObserver = new MutationObserver(scheduleBotsCollapse);
     botsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
-    botsCollapseTimer = setTimeout(() => {
-        done = true;
-        stopBotsCollapse();
-    }, 10_000);
+    botsCollapseTimer = setInterval(collapseBotsSection, 400);
+    botsCollapseDeadline = setTimeout(stopBotsCollapse, 12_000);
+}
+
+export function armBotsCollapse() {
+    startBotsCollapse();
+}
+
+export function stopBotsCollapseGuard() {
+    stopBotsCollapse();
 }
 
 function resetChatsCollapsedStorage() {
@@ -364,7 +458,7 @@ export default definePlugin({
     icon: PanelLeftIcon,
     description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["ui"],
+    tags: ["navigation"],
     enabledByDefault: true,
     settings,
     managedStyle: "betterSidebar",
@@ -394,9 +488,7 @@ export default definePlugin({
         return !settings.store.defaultCollapsed;
     },
 
-    _botsDefaultCollapsed() {
-        return settings.store.botsDefaultCollapsed;
-    },
+    _useBotsCollapsed: useBotsCollapsed,
 
     _chatsCollapsedInit() {
         resetChatsCollapsedStorage();
@@ -425,6 +517,7 @@ export default definePlugin({
     start() {
         selection.clear();
         applyHeaderHover();
+        releaseRosterGate();
         resetChatsCollapsedStorage();
         resetProjectsCollapsedStorage();
         startBotsCollapse();
@@ -510,8 +603,8 @@ export default definePlugin({
         {
             find: "\"sidebar.section-title\",\"Bots\"",
             replacement: {
-                match: /\(0,(\i)\.useState\)\(!1\)(?=,\[.{0,30}\]=\(0,\1\.useState\)\(!1\),.{0,48}\.COLLAPSED_BOT_LIMIT)/,
-                replace: "(0,$1.useState)($self._botsDefaultCollapsed())",
+                match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,\i\.useLocalStorage\)\("sidebar-bots-unassigned-collapsed")/,
+                replace: "$self._useBotsCollapsed()",
             },
         },
         {
@@ -534,6 +627,34 @@ export default definePlugin({
                     replace: "!$1.current&&$2&&($3.length>0||$4.length>0)&&($1.current=!0,$self._projectsAutoExpand()&&$5(!1))",
                 },
             ],
+        },
+        {
+            find: "enterDistance:8,collapsed:",
+            replacement: {
+                match: /\i\?\(0,(\i)\.jsx\)\((\i),\{enterDistance:8,collapsed:(\i),onToggleCollapsed:(\i),activeProjectId:(\i),expandedProjectIds:(\i),onToggleProjectExpanded:(\i)\}\):null/,
+                replace: "(0,$1.jsx)($2,{enterDistance:8,collapsed:$3,onToggleCollapsed:$4,activeProjectId:$5,expandedProjectIds:$6,onToggleProjectExpanded:$7})",
+            },
+        },
+        {
+            find: "useBotsSectionEnabled)();return",
+            replacement: {
+                match: /useBotsSectionEnabled\)\(\);return\(\(0,(\i)\.useBotsBootstrap\)\((\i)\),\2\)\?/,
+                replace: "useBotsSectionEnabled)();return((0,$1.useBotsBootstrap)($2),!0)?",
+            },
+        },
+        {
+            find: "shouldPaintBotsSidebar)({hasBots:",
+            replacement: {
+                match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
+                replace: "",
+            },
+        },
+        {
+            find: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+            replacement: {
+                match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+                replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null",
+            },
         },
     ],
 });

@@ -15,7 +15,7 @@ import { ChatPageStore, MessageStore, ResponseStore } from "@turbopack/common/st
 import { Devs } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
-import { debounce } from "@utils/misc";
+import { debounce, pageWindow } from "@utils/misc";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 
 const logger = new Logger("BetterNavigator");
@@ -71,14 +71,15 @@ const EDGE_PX = 8;
 const EDGE_TAIL = 80;
 const OFFSET_PX = 72;
 const LOCK_MS = 1000;
-const LOCK_FAST_MS = 280;
-const FAR_VIEWPORTS = 2.5;
+const ENSURE_MS = 10000;
+const SNAP_PX = 16;
+const AIM_MS = 300;
+const SETTLE_MS = 100;
 const DENSE_N = 16;
 const SLOT_CLASS = "void-bn-rail";
-const HYDRATE_MS = 2400;
-const HYDRATE_STEP = 80;
 const LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
 const LIVE_PHASE = new Set(["sending", "streaming"]);
+const JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
 
 const settings = definePluginSettings({
     showAssistant: {
@@ -125,6 +126,9 @@ let lastPath = "";
 let lastNav: NavItem[] = [];
 let flashTimer = 0;
 let flashing: HTMLElement | null = null;
+let flashId = "";
+let flashUntil = 0;
+let flashFallback: HTMLElement | null = null;
 let raf = 0;
 let activeIdx = 0;
 let activeSource: "native" | "list" = "list";
@@ -639,18 +643,58 @@ function metaLabel(index: number): string {
 }
 
 function clearFlash() {
-    if (flashTimer) window.clearTimeout(flashTimer);
+    if (flashTimer) cancelAnimationFrame(flashTimer);
     flashTimer = 0;
+    flashUntil = 0;
+    flashId = "";
+    flashFallback = null;
     flashing?.classList.remove("void-bn-flash");
     flashing = null;
 }
 
-function flash(el: HTMLElement) {
-    clearFlash();
-    if (settings.store.jumpEffect !== "border") return;
-    flashing = el;
+function paintFlash() {
+    const byId = flashId ? elForId(flashId) : null;
+    const live = byId ?? (flashFallback && document.body.contains(flashFallback) ? flashFallback : null);
+    if (!live) return;
+    const el = bubbleOf(live) ?? live;
+    if (flashing !== el) {
+        flashing?.classList.remove("void-bn-flash");
+        flashing = el;
+    }
     el.classList.add("void-bn-flash");
-    flashTimer = window.setTimeout(clearFlash, reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
+}
+
+function armFlash(id: string, fallback?: HTMLElement | null) {
+    if (settings.store.jumpEffect !== "border") return;
+    if (!id && !fallback) return;
+    if (id && flashId === id && performance.now() < flashUntil) {
+        if (fallback) flashFallback = fallback;
+        paintFlash();
+        return;
+    }
+    flashing?.classList.remove("void-bn-flash");
+    flashing = null;
+    if (flashTimer) cancelAnimationFrame(flashTimer);
+    flashId = id;
+    flashFallback = fallback ?? null;
+    flashUntil = performance.now() + (reduceMotion() ? FLASH_REDUCED_MS : FLASH_MS);
+    const step = () => {
+        if ((!flashId && !flashFallback) || performance.now() >= flashUntil) {
+            clearFlash();
+            return;
+        }
+        paintFlash();
+        flashTimer = requestAnimationFrame(step);
+    };
+    paintFlash();
+    flashTimer = requestAnimationFrame(step);
+}
+
+function inPaneView(el: HTMLElement, pane: HTMLElement): boolean {
+    if (!pane.contains(el)) return false;
+    const { top, bottom } = el.getBoundingClientRect();
+    const { top: paneTop, bottom: paneBottom } = pane.getBoundingClientRect();
+    return bottom > paneTop + 8 && top < paneBottom - 8;
 }
 
 function mountedAssistantIndexes(): number[] {
@@ -691,96 +735,365 @@ function navIndexFromTick(tick: HTMLButtonElement, tickIndex: number): number {
     return Math.min(tickIndex, Math.max(0, lastNav.length - 1));
 }
 
-function isFar(el: HTMLElement): boolean {
-    const pane = chatPane();
-    const vh = pane?.clientHeight ?? window.innerHeight;
-    const top = pane?.getBoundingClientRect().top ?? 0;
-    return Math.abs(el.getBoundingClientRect().top - top) > vh * FAR_VIEWPORTS;
+function frame(): Promise<void> {
+    return new Promise(resolve => {
+        requestAnimationFrame(() => resolve());
+    });
 }
 
-function scrollToItem(el: HTMLElement, behavior: ScrollBehavior) {
+function livePane(el?: HTMLElement | null): HTMLElement | null {
+    const tagged = document.querySelector<HTMLElement>("[data-testid='chat-transcript-scroller']");
+    const taggedOk = !!tagged && !tagged.closest(PANE_SKIP) && tagged.scrollHeight > tagged.clientHeight + 2;
+    if (taggedOk && tagged && (!el || tagged.contains(el))) return tagged;
+    return chatPane();
+}
+
+function aim(el: HTMLElement, pane: HTMLElement) {
     el.style.scrollMarginTop = `${OFFSET_PX}px`;
-    const pane = chatPane();
-    if (pane && pane.contains(el)) {
-        const pr = pane.getBoundingClientRect();
-        const er = el.getBoundingClientRect();
-        pane.scrollTo({ top: pane.scrollTop + (er.top - pr.top) - OFFSET_PX, behavior });
+    if (!pane.contains(el)) {
+        el.scrollIntoView({ behavior: "auto", block: "start" });
         return;
     }
-    el.scrollIntoView({ behavior, block: "start" });
+    const top = pane.scrollTop + el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
+    pane.scrollTop = Math.max(0, top);
 }
 
-function nudgeToward(index: number) {
-    const pane = chatPane();
-    if (!pane) return;
-    const vh = Math.max(120, pane.clientHeight || window.innerHeight);
-    let before = -1;
-    let after = -1;
+function landed(el: HTMLElement, pane: HTMLElement): boolean {
+    if (!pane.contains(el)) return false;
+    const delta = el.getBoundingClientRect().top - pane.getBoundingClientRect().top - OFFSET_PX;
+    return Math.abs(delta) <= SNAP_PX;
+}
+
+async function settleAim(el: HTMLElement, pane: HTMLElement, gen: number): Promise<boolean> {
+    const until = performance.now() + SETTLE_MS;
+    while (performance.now() < until) {
+        if (gen !== hydrateGen || !pane.isConnected || !pane.contains(el)) return false;
+        if (landed(el, pane)) return true;
+        aim(el, pane);
+        await frame();
+    }
+    return pane.isConnected && pane.contains(el) && landed(el, pane);
+}
+
+function historyPending(): boolean {
+    return !!gatewayOf(currentCid())?.history.hasMore;
+}
+
+function requestOlder(): boolean {
+    const cid = currentCid();
+    const gw = gatewayOf(cid);
+    if (!gw?.history.hasMore || !gw.defaultLeafId) return false;
+    const key = `${cid}:${gw.history.nextBeforeId ?? ""}`;
+    if (key === olderAsked) return false;
+    olderAsked = key;
+    try {
+        MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
+        return true;
+    } catch (e) {
+        logger.debug("loadOlderHistory failed:", e);
+        return false;
+    }
+}
+
+function seekOlder(index: number): boolean {
+    let before = false;
+    let any = false;
     for (let i = 0; i < lastNav.length; i++) {
         if (!mountedEl(lastNav[i])) continue;
-        if (i < index) before = i;
-        else if (after < 0) after = i;
+        any = true;
+        if (i < index) before = true;
     }
-    if (before < 0) {
-        pane.scrollTo({ top: Math.max(0, pane.scrollTop - vh * 0.8), behavior: "auto" });
-        return;
-    }
-    if (after < 0) {
-        pane.scrollTo({ top: pane.scrollTop + vh * 0.8, behavior: "auto" });
-        return;
-    }
-    const el = mountedEl(lastNav[before]);
-    if (el) scrollToItem(el, "auto");
+    if (!any) return index * 2 < lastNav.length;
+    return !before;
 }
 
-async function hydrateJump(item: NavItem, index: number) {
-    const gen = ++hydrateGen;
-    lockIdx = index;
-    lockUntil = performance.now() + HYDRATE_MS + LOCK_MS;
-    applyActive(index);
-    const tick = item.role === "assistant" ? nativeTickFor(item, index) : undefined;
-    if (tick) tick.click();
-    const deadline = performance.now() + HYDRATE_MS;
-    let lastTop = -1;
-    let stuck = 0;
-    let tries = 0;
-    while (performance.now() < deadline) {
-        if (gen !== hydrateGen) return;
-        const el = mountedEl(lastNav[index] ?? item);
-        if (el) {
-            const instant = isFar(el) || reduceMotion();
-            scrollToItem(el, instant ? "auto" : "smooth");
-            window.setTimeout(() => { if (gen === hydrateGen) flash(el); }, 180);
-            lockUntil = performance.now() + (instant ? LOCK_FAST_MS : LOCK_MS);
+function atRealEdge(pane: HTMLElement, older: boolean): boolean {
+    if (older) return pane.scrollTop <= 1;
+    return pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 2;
+}
+
+function jumpEdge(pane: HTMLElement) {
+    pane.scrollTop = 0;
+}
+
+function jumpEnd(pane: HTMLElement) {
+    pane.scrollTop = Math.max(0, pane.scrollHeight - pane.clientHeight);
+}
+
+function passedTarget(index: number, pane: HTMLElement): boolean {
+    for (let i = index + 1; i < lastNav.length; i++) {
+        const el = mountedEl(lastNav[i]);
+        if (el && pane.contains(el)) return true;
+    }
+    return false;
+}
+
+function estimateScroll(index: number, pane: HTMLElement): number | null {
+    const { top: paneTop } = pane.getBoundingClientRect();
+    let lo = -1;
+    let hi = -1;
+    let top = 0;
+    let span = 0;
+    for (let i = 0; i < index; i++) {
+        const el = mountedEl(lastNav[i]);
+        if (!el || !pane.contains(el)) continue;
+        const { top: rectTop, bottom: rectBottom } = el.getBoundingClientRect();
+        const start = pane.scrollTop + rectTop - paneTop;
+        if (lo < 0) {
+            lo = i;
+            top = start;
+        }
+        hi = i;
+        span = pane.scrollTop + rectBottom - paneTop - top;
+    }
+    if (lo < 0) return null;
+    const avg = Math.max(80, hi === lo ? span : span / (hi - lo));
+    const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
+    return Math.max(0, Math.min(max, top + (index - lo) * avg - OFFSET_PX));
+}
+
+interface DownHunt {
+    tickPhase: boolean;
+    tickTop: number;
+    tickStill: number;
+    sawMove: boolean;
+    guessed: boolean;
+    step: number;
+    anchor: number;
+    probe: number;
+    halve: boolean;
+}
+
+function advanceDown(pane: HTMLElement, index: number, hunt: DownHunt) {
+    if (!hunt.guessed) {
+        hunt.guessed = true;
+        const est = estimateScroll(index, pane);
+        hunt.anchor = pane.scrollTop;
+        if (est != null && est > pane.scrollTop + 24) {
+            pane.scrollTop = est;
+            hunt.probe = pane.scrollTop;
             return;
         }
-        tries++;
-        if (!tick || tries > 4) {
-            const pane = chatPane();
-            const top = pane?.scrollTop ?? 0;
-            if (top === lastTop) stuck++;
-            else stuck = 0;
-            lastTop = top;
-            if (stuck >= 3 && top <= 1) break;
-            nudgeToward(index);
+    }
+    if (passedTarget(index, pane) && hunt.anchor >= 0 && pane.scrollTop > hunt.anchor + 40) {
+        hunt.probe = pane.scrollTop;
+        pane.scrollTop = (hunt.anchor + hunt.probe) / 2;
+        hunt.step = 1;
+        return;
+    }
+    if (hunt.halve && hunt.anchor >= 0 && hunt.probe > hunt.anchor + 40) {
+        const mid = (hunt.anchor + hunt.probe) / 2;
+        pane.scrollTop = mid;
+        hunt.probe = mid;
+        hunt.halve = false;
+        hunt.step = 1;
+        return;
+    }
+    hunt.anchor = pane.scrollTop;
+    nudge(pane, 1, hunt.step);
+    hunt.probe = pane.scrollTop;
+    hunt.step = Math.min(16, hunt.step * 2);
+}
+function tickForIndex(index: number): HTMLButtonElement | undefined {
+    const item = lastNav[index];
+    if (!item) return;
+    if (item.role === "assistant") return nativeTickFor(item, index);
+    let next = -1;
+    let prev = -1;
+    for (let i = 0; i < lastNav.length; i++) {
+        if (lastNav[i].role !== "assistant") continue;
+        if (i >= index) {
+            next = i;
+            break;
         }
-        await new Promise(r => window.setTimeout(r, HYDRATE_STEP));
+        prev = i;
+    }
+    const j = next >= 0 ? next : prev;
+    if (j < 0) return;
+    return nativeTickFor(lastNav[j], j);
+}
+
+function nudge(pane: HTMLElement, dir: -1 | 1, screens: number) {
+    const vh = Math.max(120, pane.clientHeight || window.innerHeight);
+    const max = Math.max(0, pane.scrollHeight - pane.clientHeight);
+    pane.scrollTop = Math.max(0, Math.min(max, pane.scrollTop + dir * vh * screens));
+}
+
+function firstResponseId(pane: HTMLElement): string {
+    return pane.querySelector("[id^='response-']")?.id ?? "";
+}
+
+function targetEl(item: NavItem): HTMLElement | null {
+    const found = mountedEl(item) ?? (item.id ? document.getElementById(`response-${item.id}`) : null);
+    return found instanceof HTMLElement ? found : null;
+}
+
+async function waitGrow(pane: HTMLElement, height: number, head: string, gen: number) {
+    const until = performance.now() + AIM_MS;
+    while (performance.now() < until) {
+        if (gen !== hydrateGen || !pane.isConnected || pane.scrollHeight !== height || firstResponseId(pane) !== head) return;
+        await frame();
+    }
+}
+
+function finishJump() {
+    lockUntil = performance.now() + LOCK_MS;
+}
+
+async function ensureJump(item: NavItem, index: number) {
+    const gen = ++hydrateGen;
+    lockIdx = index;
+    lockUntil = performance.now() + LOCK_MS;
+    applyActive(index);
+    const deadline = performance.now() + ENSURE_MS;
+    let clicked = false;
+    let edgeSince = 0;
+    const hunt: DownHunt = {
+        tickPhase: true,
+        tickTop: 0,
+        tickStill: 0,
+        sawMove: false,
+        guessed: false,
+        step: 1,
+        anchor: -1,
+        probe: -1,
+        halve: false,
+    };
+    let held: HTMLElement | null = null;
+    let prevBehavior = "";
+    let prevAnchor = "";
+    let gestured = false;
+    let ungesture: (() => void) | null = null;
+    const armGesture = (pane: HTMLElement) => {
+        ungesture?.();
+        const stop = () => { gestured = true; };
+        pane.addEventListener("wheel", stop, { capture: true, passive: true });
+        pane.addEventListener("pointerdown", stop, { capture: true, passive: true });
+        pane.addEventListener("touchstart", stop, { capture: true, passive: true });
+        ungesture = () => {
+            pane.removeEventListener("wheel", stop, true);
+            pane.removeEventListener("pointerdown", stop, true);
+            pane.removeEventListener("touchstart", stop, true);
+        };
+    };
+    try {
+        while (performance.now() < deadline) {
+            if (gen !== hydrateGen || gestured) break;
+            const cur = lastNav[index] ?? item;
+            const el = targetEl(cur);
+            const box = livePane(el);
+            if (!box) break;
+            if (held !== box) {
+                if (held?.isConnected) {
+                    held.style.scrollBehavior = prevBehavior;
+                    held.style.overflowAnchor = prevAnchor;
+                }
+                prevBehavior = box.style.scrollBehavior;
+                prevAnchor = box.style.overflowAnchor;
+                box.style.scrollBehavior = "auto";
+                box.style.overflowAnchor = "none";
+                held = box;
+                armGesture(box);
+            }
+            if (el && box.contains(el)) {
+                edgeSince = 0;
+                if (cur.id && inPaneView(el, box)) armFlash(cur.id, el);
+                if (await settleAim(el, box, gen)) {
+                    armFlash(cur.id ?? "", el);
+                    finishJump();
+                    return;
+                }
+                continue;
+            }
+            const older = seekOlder(index);
+            const now = performance.now();
+            if (older) {
+                if (atRealEdge(box, true)) {
+                    if (!edgeSince) edgeSince = now;
+                    if (requestOlder()) {
+                        const height = box.scrollHeight;
+                        const head = firstResponseId(box);
+                        await waitGrow(box, height, head, gen);
+                        if (gen !== hydrateGen) break;
+                        const fresh = targetEl(lastNav[index] ?? item);
+                        if (fresh && box.contains(fresh)) aim(fresh, box);
+                        else if (box.isConnected) box.scrollTop = 0;
+                        edgeSince = 0;
+                    } else if (!historyPending() && now - edgeSince > AIM_MS) {
+                        break;
+                    }
+                } else {
+                    edgeSince = 0;
+                    jumpEdge(box);
+                }
+            } else if (!clicked) {
+                clicked = true;
+                hunt.tickTop = box.scrollTop;
+                const tick = tickForIndex(index);
+                if (tick) tick.click();
+                else hunt.tickPhase = false;
+            } else if (hunt.tickPhase) {
+                const top = box.scrollTop;
+                if (Math.abs(top - hunt.tickTop) >= 1) {
+                    hunt.tickTop = top;
+                    hunt.tickStill = 0;
+                    hunt.sawMove = true;
+                } else {
+                    hunt.tickStill += 1;
+                }
+                if ((hunt.sawMove && hunt.tickStill >= 2) || (!hunt.sawMove && hunt.tickStill >= 3)) hunt.tickPhase = false;
+                edgeSince = 0;
+            } else if (!firstResponseId(box)) {
+                if (hunt.anchor >= 0) box.scrollTop = hunt.anchor;
+                else nudge(box, -1, 1);
+                hunt.halve = hunt.probe > hunt.anchor + 40;
+                hunt.step = 1;
+                edgeSince = 0;
+            } else if (index >= lastNav.length - 1) {
+                if (atRealEdge(box, false)) {
+                    finishJump();
+                    break;
+                }
+                jumpEnd(box);
+            } else if (atRealEdge(box, false)) {
+                if (!edgeSince) edgeSince = now;
+                if (now - edgeSince > AIM_MS || gestured) {
+                    finishJump();
+                    break;
+                }
+            } else {
+                edgeSince = 0;
+                advanceDown(box, index, hunt);
+            }
+            await frame();
+        }
+    } finally {
+        ungesture?.();
+        if (gen === hydrateGen && held?.isConnected) {
+            held.style.scrollBehavior = prevBehavior;
+            held.style.overflowAnchor = prevAnchor;
+        }
     }
 }
 
 function jump(item: NavItem, index: number) {
-    const cur = lastNav[index] ?? item;
-    const el = mountedEl(cur);
-    if (!el) {
-        void hydrateJump(cur, index);
-        return;
-    }
-    const instant = isFar(el) || reduceMotion();
-    lockIdx = index;
-    lockUntil = performance.now() + (instant ? LOCK_FAST_MS : LOCK_MS);
-    applyActive(index);
-    scrollToItem(el, instant ? "auto" : "smooth");
-    window.setTimeout(() => flash(el), 180);
+    void ensureJump(lastNav[index] ?? item, index);
+}
+
+function jumpById(messageId: string): boolean {
+    const index = lastNav.findIndex(item => item.id === messageId);
+    if (index < 0) return false;
+    jump(lastNav[index], index);
+    return true;
+}
+
+function publishJump() {
+    (pageWindow as unknown as Record<symbol, unknown>)[JUMP_SYM] = jumpById;
+}
+
+function unpublishJump() {
+    const host = pageWindow as unknown as Record<symbol, unknown>;
+    if (host[JUMP_SYM] === jumpById) delete host[JUMP_SYM];
 }
 
 function stepItem(dir: -1 | 1): boolean {
@@ -1120,6 +1433,7 @@ function menuEl(nav: NavItem[]): HTMLElement {
         btn.type = "button";
         btn.className = cl("item");
         btn.dataset.voidBnI = String(i);
+        if (item.id) btn.dataset.responseId = item.id;
         const emoji = document.createElement("span");
         emoji.className = cl("emoji");
         emoji.textContent = item.role === "user" ? "❓" : "🤖";
@@ -1147,6 +1461,7 @@ function tickRail(nav: NavItem[]): HTMLElement {
         tick.type = "button";
         tick.className = cl("tick", item.role === "user" ? "tick-user" : "tick-asst", { "tick-live": item.live });
         tick.dataset.voidBnI = String(i);
+        if (item.id) tick.dataset.responseId = item.id;
         tick.setAttribute("aria-label", `Go to message ${i + 1} of ${nav.length}`);
         tick.addEventListener("click", e => {
             e.preventDefault();
@@ -1226,6 +1541,66 @@ function onPointerOut(e: Event) {
     markAim(-1);
 }
 
+async function scrollEdge(up: boolean) {
+    const pane = livePane();
+    if (!pane) return;
+    const gen = ++hydrateGen;
+    const deadline = performance.now() + ENSURE_MS;
+    const prevBehavior = pane.style.scrollBehavior;
+    const prevAnchor = pane.style.overflowAnchor;
+    pane.style.scrollBehavior = "auto";
+    pane.style.overflowAnchor = "none";
+    let gestured = false;
+    let parked = 0;
+    const stop = () => { gestured = true; };
+    pane.addEventListener("wheel", stop, { capture: true, passive: true });
+    pane.addEventListener("pointerdown", stop, { capture: true, passive: true });
+    pane.addEventListener("touchstart", stop, { capture: true, passive: true });
+    try {
+        while (performance.now() < deadline) {
+            if (gen !== hydrateGen || gestured || !pane.isConnected) return;
+            if (up) {
+                if (historyPending() && atRealEdge(pane, true)) {
+                    parked = 0;
+                    const height = pane.scrollHeight;
+                    const head = firstResponseId(pane);
+                    requestOlder();
+                    await waitGrow(pane, height, head, gen);
+                    if (gen !== hydrateGen || gestured) return;
+                    if (pane.scrollHeight !== height || firstResponseId(pane) !== head) continue;
+                    break;
+                }
+                if (atRealEdge(pane, true)) {
+                    parked += 1;
+                    if (parked >= 2) break;
+                } else {
+                    parked = 0;
+                    jumpEdge(pane);
+                }
+            } else if (atRealEdge(pane, false)) {
+                parked += 1;
+                if (parked >= 2) break;
+            } else {
+                parked = 0;
+                jumpEnd(pane);
+            }
+            const top = pane.scrollTop;
+            const height = pane.scrollHeight;
+            await frame();
+            if (gen !== hydrateGen || gestured || !pane.isConnected) return;
+            if (up && !atRealEdge(pane, true) && pane.scrollTop === top && pane.scrollHeight === height) break;
+        }
+    } finally {
+        pane.removeEventListener("wheel", stop, true);
+        pane.removeEventListener("pointerdown", stop, true);
+        pane.removeEventListener("touchstart", stop, true);
+        if (gen === hydrateGen && pane.isConnected) {
+            pane.style.scrollBehavior = prevBehavior;
+            pane.style.overflowAnchor = prevAnchor;
+        }
+    }
+}
+
 function onKeyDown(e: KeyboardEvent) {
     if (!lastNav.length || !host?.isConnected) return;
     if (isTypingTarget(e.target) || isTypingTarget(document.activeElement)) return;
@@ -1239,6 +1614,12 @@ function onKeyDown(e: KeyboardEvent) {
     const homeEnd = e.key === "Home" || e.key === "End";
     const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
     if (!homeEnd && !arrow) return;
+    if (arrow && (e.metaKey || e.ctrlKey)) {
+        if (e.altKey) return;
+        e.preventDefault();
+        void scrollEdge(e.key === "ArrowUp");
+        return;
+    }
     if (homeEnd) {
         e.preventDefault();
         const idx = e.key === "Home" ? 0 : lastNav.length - 1;
@@ -1378,6 +1759,7 @@ function start() {
     ac = new AbortController();
     const { signal } = ac;
     lastPath = chatPath();
+    publishJump();
     syncHideTip();
     paint();
     bindWatchers();
@@ -1394,6 +1776,7 @@ function start() {
 }
 
 function stop() {
+    unpublishJump();
     ac?.abort();
     ac = null;
     paneMo?.disconnect();
@@ -1422,7 +1805,7 @@ export default definePlugin({
     icon: ScrollTextIcon,
     description: "Upgrade Grok's message rail into a Notion-style outline of the whole chat, including messages that are not mounted yet. A reply that is still streaming stays listed as a dashed tick.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["navigation"],
     enabledByDefault: true,
     startAt: StartAt.DOMContentLoaded,
     settings,

@@ -17,7 +17,13 @@ const BUTTON_CSS = `
 button[aria-label="Dictation"]:not([role="dialog"] *),
 button[aria-label^="Dictation ("]:not([role="dialog"] *),
 div:has(> button[aria-label="Dictation"]):not([role="dialog"] *),
-div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
+div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *),
+div:has(> span > button[aria-label="Dictation"]):not([role="dialog"] *),
+div:has(> span > button[aria-label^="Dictation ("]):not([role="dialog"] *),
+.h-10.w-10:has(button[aria-label="Dictation"]):not([role="dialog"] *),
+.h-10.w-10:has(button[aria-label^="Dictation ("]):not([role="dialog"] *),
+div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-label="Dictation"]):not([role="dialog"] *),
+div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     display: none !important;
 }
 `;
@@ -43,7 +49,7 @@ export default definePlugin({
     icon: MicOffIcon,
     description: "Hide the Dictation (voice input) button from the chat input bar, and optionally Dictation Refinement in Settings.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["declutter"],
     enabledByDefault: true,
     settings,
 

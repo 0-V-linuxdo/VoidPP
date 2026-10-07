@@ -214,7 +214,7 @@ export default definePlugin({
     icon: Settings2Icon,
     description: "Replace the avatar Settings item with a flyout of shortcuts to Void++ and Grok settings tabs.",
     authors: [Devs.p],
-    tags: ["ui", "settings"],
+    tags: ["navigation"],
     enabledByDefault: true,
     requiresRestart: true,
     settings,
@@ -228,8 +228,9 @@ export default definePlugin({
     patches: [
         {
             find: '"user-dropdown.settings","Settings"',
+            all: true,
             replacement: {
-                match: /\jsx{\i\.DropdownMenuItem}\{onSelect:(\i),children:\[\jsx{\i\.CogIcon}\{[^}]{0,80}\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
+                match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{onSelect:(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
                 replace: "$self._renderSettingsMenu($1)",
             },
         },

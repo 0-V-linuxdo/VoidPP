@@ -355,7 +355,7 @@ function paintHero(advance: boolean) {
         + `${HERO_SEL}>*{display:none!important}`
         + `${HERO_SEL}::before{content:"${content}";display:block!important;`
         + "font-size:1.5rem!important;line-height:1.35!important;font-weight:600!important;"
-        + "letter-spacing:-0.48px!important;color:hsl(var(--fg-primary))!important;"
+        + "letter-spacing:-0.48px!important;color:var(--fg-primary)!important;"
         + "white-space:pre-wrap!important;text-align:center!important;width:100%!important;margin:0 auto!important}"
         + (clickable ? `${HERO_SEL}{cursor:pointer!important;user-select:none!important}` : ""),
     );
@@ -504,7 +504,7 @@ export default definePlugin({
     icon: MessageCircleIcon,
     description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
     authors: [Devs.p],
-    tags: ["chat"],
+    tags: ["appearance"],
     settings,
 
     _phrases() {
@@ -605,8 +605,9 @@ export default definePlugin({
         },
         {
             find: '"HeroHeading",0,',
+            all: true,
             replacement: {
-                match: /("h1",\{className:\i),children:/,
+                match: /("h1",\{className:(?:"[^"]*"|\i)),children:/,
                 replace: '$1,"data-void-ph-hero":"",children:',
             },
         },

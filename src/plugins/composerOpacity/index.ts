@@ -49,7 +49,7 @@ function apply() {
         + `${BACKDROP}{display:none!important}`
         + `${SHELL}{`
         + "pointer-events:auto!important;"
-        + `background-color:hsl(var(--surface-l1)/${alpha})!important;`
+        + `background-color:hsl(from var(--surface-l1) h s l / ${alpha})!important;`
         + "background-image:none!important;"
         + `border-radius:${RADIUS}!important;`
         + "overflow:hidden!important;"
@@ -65,7 +65,7 @@ export default definePlugin({
     icon: BlendIcon,
     description: "Customizable chat input background opacity so content behind the bar cannot show through.",
     authors: [Devs.p],
-    tags: ["ui", "chat"],
+    tags: ["composer", "appearance"],
     enabledByDefault: true,
     settings,
 

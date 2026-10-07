@@ -11,12 +11,13 @@ import type { GatewayConversation, GatewayQueueItem, GatewayTurnArgs, MessageSto
 import type { ModesStoreState } from "@grok-types/stores/ModesStore";
 import type { ResponseStoreState } from "@grok-types/stores/ResponseStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
-import { ChatPageStore, MessageStore, ModesStore, ResponseStore, RoutingStore } from "@turbopack/common/stores";
+import { ChatPageStore, MessageStore, ModesStore, ResponseStore, RoutingStore, SettingsStore } from "@turbopack/common/stores";
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Logger } from "@utils/Logger";
 import { mapGetOrCreate, pageWindow } from "@utils/misc";
 
 import { afterEnqueue, noteEnqueue } from "./persist";
+import { gatewaySendMode, keepBuildPreference, sessionNeedsUpdate } from "./modeSend";
 import { settings } from "./settings";
 
 const logger = new Logger("ModeSync");
@@ -37,6 +38,7 @@ const QITEM = "data-void-qitem";
 const RESTORE_ATTR = "data-void-mode-sync-restore";
 const LOAD_TAIL_MS = 400;
 const FLUSH_MS = 4000;
+const ACK_MS = 2500;
 const OVERRIDE_MS = 6000;
 const STASH_MS = 2000;
 const CHAT_WRAP = ["sendResponse", "establishNewConversation"] as const;
@@ -82,6 +84,7 @@ interface GatewayManager {
     send: SendFn;
     on: (fn: GwListener) => () => void;
     onOutgoing: (fn: GwListener) => () => void;
+    hasSession?: (cid: string) => boolean;
 }
 
 const Gateway: { gatewayConnectionManager?: GatewayManager } = findByPropsLazy("gatewayConnectionManager");
@@ -111,6 +114,8 @@ const held = new Map<string, HeldTurn[]>();
 const flushing = new Map<string, PendingFlush>();
 const sentModel = new Map<string, string>();
 const ackedModel = new Map<string, string>();
+interface SessionWaiter { slug: string; done: (ok: boolean) => void; timer: ReturnType<typeof setTimeout>; }
+const sessionWaiters = new Map<string, SessionWaiter[]>();
 const busy = new Set<string>();
 const itemIntent = new Map<string, Intent>();
 const itemBody = new Map<string, string>();
@@ -310,7 +315,9 @@ function applyIntent(next: Intent) {
         }
         const settled = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || "")) || slug;
         const chat = ChatPageStore.useChatPageStore.getState();
-        if (modeSlug(String(chat.modelMode || "")) !== settled) chat.setModelMode(settled as ModelMode);
+        const stored = modeSlug(String(chat.modelMode || ""));
+        const keepBuild = keepBuildPreference(privateBuild(), hidBuild, settled, stored);
+        if (stored !== settled && !keepBuild) chat.setModelMode(settled as ModelMode);
         if (settled !== slug && modeSlug(intent.modeId) === slug) setIntent(captureIntent(settled, snapshot()));
     } catch (e) {
         logger.debug("apply failed", e);
@@ -334,7 +341,8 @@ function releaseOverride() {
     overrideCid = "";
     if (!sendOverride) return;
     sendOverride = null;
-    applyIntent(pickerIntent());
+    if (!currentCid()) followModelMode();
+    else applyIntent(pickerIntent());
 }
 
 function captureIntent(modeId: string, cur: Intent): Intent {
@@ -348,6 +356,21 @@ function captureIntent(modeId: string, cur: Intent): Intent {
 
 function rememberMode(modeId: string) {
     if (!modeId) return;
+    if (privateBuild() && modeSlug(modeId) === "build") {
+        hidBuild = true;
+        userPicking = false;
+        awaitingMenu = false;
+        applying = true;
+        try {
+            ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+        } catch (e) {
+            logger.debug("incognito build hide failed", e);
+        } finally {
+            applying = false;
+        }
+        return;
+    }
+    hidBuild = false;
     setIntent(captureIntent(modeId, snapshot()));
     userPicking = false;
     awaitingMenu = false;
@@ -361,12 +384,262 @@ function rememberSnapshot() {
     setIntent(captureIntent(next.modeId, next));
     userPicking = false;
     awaitingMenu = false;
+    syncModelMode(modeSlug(intent.modeId));
     logger.info("intent", intent.modeId);
+}
+
+function syncModelMode(slug: string) {
+    if (!slug || applying) return;
+    try {
+        const chat = ChatPageStore.useChatPageStore.getState();
+        const stored = modeSlug(String(chat.modelMode || ""));
+        if (stored === slug) return;
+        if (keepBuildPreference(privateBuild(), hidBuild, slug, stored)) return;
+        applying = true;
+        try {
+            chat.setModelMode(slug as ModelMode);
+        } finally {
+            applying = false;
+        }
+    } catch (e) {
+        applying = false;
+        logger.debug("model sync failed", e);
+    }
+}
+
+const MODE_IDS = new Set<string>(CATALOG.map(m => m.id));
+let pickerSource = "";
+let hidBuild = false;
+let offIncognito: (() => void) | null = null;
+let offPrivateRoute: (() => void) | null = null;
+
+function inIncognito(): boolean {
+    try {
+        return SettingsStore.useSettingsStore.getState().isIncognito === true;
+    } catch {
+        return false;
+    }
+}
+
+function privateBuild(): boolean {
+    if (inIncognito()) return true;
+    try {
+        const route = RoutingStore.useRoutingStore.getState().route;
+        if (route?.temporary) return true;
+        const cid = String(route?.conversationId || currentCid() || "");
+        if (cid && (conversation(cid) as { temporary?: boolean } | undefined)?.temporary) return true;
+    } catch {
+        return false;
+    }
+    return false;
+}
+
+function alignIncognitoBuild() {
+    if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage()) return;
+    let selected = "";
+    let model = "";
+    try {
+        selected = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || ""));
+        model = modeSlug(String(ChatPageStore.useChatPageStore.getState().modelMode || ""));
+    } catch {
+        return;
+    }
+    if (privateBuild()) {
+        if (selected === "build") {
+            hidBuild = true;
+            applying = true;
+            try {
+                ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+            } catch (e) {
+                logger.debug("incognito build hide failed", e);
+            } finally {
+                applying = false;
+            }
+            return;
+        }
+        if (selected === "auto" && model === "build") {
+            hidBuild = true;
+            return;
+        }
+        if (model === "build" && selected) {
+            let fallback = "";
+            try {
+                fallback = modeSlug(String(ModesStore.useModesStore.getState().defaultModeId || ""));
+            } catch {
+                fallback = "";
+            }
+            const cid = currentCid();
+            const adjusted = cid ? modeSlug(sessionAdjusted(cid)) : "";
+            if (selected === fallback && (!adjusted || adjusted === "build")) {
+                hidBuild = true;
+                applying = true;
+                try {
+                    ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+                } catch (e) {
+                    logger.debug("incognito build hide failed", e);
+                } finally {
+                    applying = false;
+                }
+            }
+        }
+        return;
+    }
+    if (!hidBuild) return;
+    hidBuild = false;
+    if (selected !== "auto" || model !== "build") return;
+    applying = true;
+    try {
+        ModesStore.useModesStore.getState().setSelectedModeId("build", { source: "sync" });
+    } catch (e) {
+        logger.debug("incognito build restore failed", e);
+    } finally {
+        applying = false;
+    }
+}
+
+function hookSelectedMode() {
+    try {
+        const store = ModesStore.useModesStore;
+        const orig = store.getState().setSelectedModeId;
+        if (typeof orig !== "function" || (orig as { voidPicker?: boolean }).voidPicker) return;
+        const wrapped = function (this: unknown, id: string, opts?: { source?: string }) {
+            const requested = modeSlug(id);
+            const source = opts?.source || "";
+            let prev = "";
+            try {
+                prev = modeSlug(String(store.getState().selectedModeId || ""));
+            } catch {
+                prev = "";
+            }
+            if (privateBuild() && requested === "build") {
+                hidBuild = true;
+                pickerSource = "sync";
+                return orig.call(this, "auto", { source: "sync" });
+            }
+            if (privateBuild() && prev === "build" && requested !== "auto" && source !== "user" && source !== "sync") {
+                hidBuild = true;
+                pickerSource = "sync";
+                return orig.call(this, "auto", { source: "sync" });
+            }
+            pickerSource = source;
+            return orig.call(this, id, opts);
+        };
+        (wrapped as { voidPicker?: boolean }).voidPicker = true;
+        store.setState({ setSelectedModeId: wrapped } as Partial<ModesStoreState>);
+    } catch (e) {
+        logger.debug("picker hook failed", e);
+    }
+}
+
+function markedBuild(cid: string): boolean {
+    if (!cid) return false;
+    try {
+        return localStorage.getItem(`preview-pane-build:${cid}`) === "1";
+    } catch {
+        return false;
+    }
+}
+
+function liveSendMode(): string {
+    const selected = (() => {
+        try {
+            return String(ModesStore.useModesStore.getState().selectedModeId || "");
+        } catch {
+            return "";
+        }
+    })();
+    const modelMode = (() => {
+        try {
+            return String(ChatPageStore.useChatPageStore.getState().modelMode || "");
+        } catch {
+            return "";
+        }
+    })();
+    const cid = currentCid();
+    const conv = cid ? conversation(cid) as {
+        lastModel?: unknown;
+        activeGeneration?: { sentModeId?: unknown };
+        buildTurnSent?: unknown;
+    } | undefined : undefined;
+    return gatewaySendMode({
+        selected,
+        modelMode,
+        incognito: privateBuild(),
+        conversationId: cid,
+        adjusted: cid ? sessionAdjusted(cid) : "",
+        lastModel: conv && conv.lastModel !== undefined && conv.lastModel !== null ? String(conv.lastModel) : undefined,
+        inflight: String(conv?.activeGeneration?.sentModeId || ""),
+        buildTurn: !!conv?.buildTurnSent,
+        markedBuild: markedBuild(cid),
+    });
+}
+
+function followModelMode() {
+    hookSelectedMode();
+    if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage()) return;
+    alignIncognitoBuild();
+    if (applying || sendOverride || userPicking || awaitingMenu || onImaginePage()) return;
+    const slug = liveSendMode();
+    if (!MODE_IDS.has(slug)) return;
+    let storedModel = "";
+    try {
+        storedModel = modeSlug(String(ChatPageStore.useChatPageStore.getState().modelMode || ""));
+    } catch {
+        storedModel = "";
+    }
+    if (privateBuild() && slug === "auto" && storedModel === "build") hidBuild = true;
+    const modes = ModesStore.useModesStore.getState();
+    const selected = modeSlug(String(modes.selectedModeId || ""));
+    if (selected !== slug) {
+        applying = true;
+        try {
+            modes.setSelectedModeId(slug, { source: "sync" });
+        } catch (e) {
+            logger.debug("picker sync failed", e);
+        } finally {
+            applying = false;
+        }
+    }
+    syncModelMode(slug);
+    if (modeSlug(intent.modeId) === slug && modeSlug(intent.modelMode) === slug) return;
+    const snap = snapshot();
+    setIntent(captureIntent(snap.modeId || slug, snap));
+    logger.info("intent", intent.modeId, "from send", slug);
+}
+
+let alignTimer: ReturnType<typeof setTimeout> | null = null;
+let alignN = 0;
+const alignOff: Array<() => void> = [];
+
+function scheduleAlign() {
+    if (alignTimer) clearTimeout(alignTimer);
+    alignN = 0;
+    const tick = () => {
+        alignTimer = null;
+        if (onImaginePage()) return;
+        followModelMode();
+        if (alignN++ < 12) alignTimer = setTimeout(tick, alignN < 4 ? 50 : 200);
+    };
+    tick();
+}
+
+function watchNewChat() {
+    if (alignOff.length) return;
+    const kick = () => followModelMode();
+    try {
+        alignOff.push(ChatPageStore.useChatPageStore.subscribe(kick));
+        alignOff.push(ModesStore.useModesStore.subscribe(kick));
+        alignOff.push(MessageStore.useMessageStore.subscribe(kick));
+    } catch (e) {
+        logger.debug("align subscribe failed", e);
+    }
 }
 
 function fightHydrate() {
     if (sendOverride || !settings.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId) return;
     if (!loadPending()) return;
+    const send = liveSendMode();
+    if (send && modeSlug(intent.modeId) !== send) return;
     const cur = snapshot();
     const slug = modeSlug(intent.modeId);
     const cid = currentCid();
@@ -397,12 +670,23 @@ function navKey(): string {
 
 function onNavigate() {
     wrapSendFns();
-    if (!intent.modeId) setIntent(snapshot());
     closeMenu();
     schedulePaint();
-    if (!settings.store.stickyOnNavigate || !intent.modeId) return;
+    if (onImaginePage()) return;
+    if (!currentCid()) {
+        followModelMode();
+        scheduleAlign();
+        setRestoreFlag(false);
+        return;
+    }
+    if (!intent.modeId) setIntent(snapshot());
+    if (!settings.store.stickyOnNavigate || !intent.modeId) {
+        followModelMode();
+        return;
+    }
     setRestoreFlag(true);
     applyIntent(intent);
+    followModelMode();
     syncRestoreFlag();
 }
 
@@ -419,10 +703,12 @@ function patchPayload(raw: unknown, live: Intent): boolean {
     const before = rec.modeId;
     const beforeMode = rec.modelMode;
     const beforeModel = rec.model;
+    const beforeOverride = rec.modelIdOverride;
     rec.modeId = slug;
     rec.modelMode = coerceModelMode(rec.modelMode, live);
     if ("model" in rec) rec.model = slug;
-    return rec.modeId !== before || rec.modelMode !== beforeMode || ("model" in rec && rec.model !== beforeModel);
+    if ("message" in rec || "modelIdOverride" in rec) rec.modelIdOverride = slug;
+    return rec.modeId !== before || rec.modelMode !== beforeMode || ("model" in rec && rec.model !== beforeModel) || rec.modelIdOverride !== beforeOverride;
 }
 
 function patchSendArgs(args: unknown[], live: Intent) {
@@ -614,6 +900,211 @@ function flushTurn(cid: string) {
     logger.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
 }
 
+function visibleChip(): string {
+    try {
+        const selected = modeSlug(String(ModesStore.useModesStore.getState().selectedModeId || ""));
+        if (privateBuild() && selected === "build") return "auto";
+        return selected;
+    } catch {
+        return "";
+    }
+}
+
+/** Queue flushes keep the enqueue-time model. A live send uses the chip. Incognito Build stays Auto. */
+function sendSlug(): string {
+    const raw = modeSlug(sendOverride?.modeId || "") || visibleChip();
+    if (privateBuild() && raw === "build") return "auto";
+    return raw;
+}
+
+function needsSessionAlign(cid: string, slug: string): boolean {
+    if (!slug) return false;
+    return sessionNeedsUpdate(cid ? ackedModel.get(cid) : undefined, slug, true);
+}
+
+function noteSessionAck(cid: string, model: string) {
+    const slug = modeSlug(model);
+    if (cid && slug) ackedModel.set(cid, slug);
+    settleWaiters(cid, slug);
+    if (cid) settleWaiters("*", slug);
+}
+
+function settleWaiters(cid: string, slug: string) {
+    const list = sessionWaiters.get(cid);
+    if (!list?.length) return;
+    const keep: SessionWaiter[] = [];
+    for (const waiter of list) {
+        if (slug && waiter.slug === slug) {
+            clearTimeout(waiter.timer);
+            waiter.done(true);
+        } else keep.push(waiter);
+    }
+    if (keep.length) sessionWaiters.set(cid, keep);
+    else sessionWaiters.delete(cid);
+}
+
+function waitSessionAck(cid: string, slug: string): Promise<boolean> {
+    const key = cid || "*";
+    if (modeSlug(ackedModel.get(key) ?? "") === slug || (key !== "*" && modeSlug(ackedModel.get("*") ?? "") === slug)) return Promise.resolve(true);
+    return new Promise(resolve => {
+        const waiter: SessionWaiter = {
+            slug,
+            done: resolve,
+            timer: setTimeout(() => {
+                const list = sessionWaiters.get(key);
+                if (list) {
+                    const next = list.filter(w => w !== waiter);
+                    if (next.length) sessionWaiters.set(key, next);
+                    else sessionWaiters.delete(key);
+                }
+                resolve(false);
+            }, ACK_MS),
+        };
+        const list = sessionWaiters.get(key);
+        if (list) list.push(waiter);
+        else sessionWaiters.set(key, [waiter]);
+    });
+}
+
+function clearSessionWaiters() {
+    alignGen++;
+    for (const list of sessionWaiters.values()) {
+        for (const waiter of list) {
+            clearTimeout(waiter.timer);
+            waiter.done(false);
+        }
+    }
+    sessionWaiters.clear();
+}
+
+function updateInFlight(cid: string, slug: string): boolean {
+    if (sentModel.get(cid) === slug) return true;
+    if (!cid || cid === "*") {
+        for (const model of sentModel.values()) if (model === slug) return true;
+    }
+    return false;
+}
+
+/** Ask Grok's own lease for a full session.update. Never write a partial `{ model }` frame. */
+function pokeSession(cid: string, slug: string, pass: number) {
+    let modes: ModesStoreState & { forgetSessionModeStamp?: (id: string) => void };
+    try {
+        modes = ModesStore.useModesStore.getState() as typeof modes;
+    } catch {
+        return;
+    }
+    const selected = modeSlug(String(modes.selectedModeId || ""));
+    const adjusted = cid ? modeSlug(sessionAdjusted(cid)) : "";
+    try {
+        if (pass <= 0 || slug === "build" || (privateBuild() && slug === "auto")) {
+            if (pass <= 0 && (selected !== slug || (cid && adjusted !== slug))) {
+                modes.setSelectedModeId(slug, { source: "user" });
+                return;
+            }
+            if (cid) modes.forgetSessionModeStamp?.(cid);
+            modes.setSelectedModeId(slug, { source: "user" });
+            return;
+        }
+        const other = slug === "fast" ? "expert" : "fast";
+        modes.setSelectedModeId(other, { source: "user" });
+        modes.setSelectedModeId(slug, { source: "user" });
+    } catch (e) {
+        logger.debug("session align failed", e);
+    }
+}
+
+const MAX_NUDGE = 2;
+const MAX_PENDING = 3;
+let alignGen = 0;
+
+/**
+ * Wait until `session.created` / `session.updated` names this slug.
+ * A pending lease update keeps waiting. Two nudges with no ack cancel the send.
+ */
+function alignSessionToChip(cid: string, slug: string): Promise<boolean> {
+    const key = cid || "*";
+    if (!needsSessionAlign(key === "*" ? "" : key, slug)) return Promise.resolve(true);
+    const gen = alignGen;
+    pokeSession(cid, slug, 0);
+    logger.info("session align", key, ackedModel.get(key) ?? "?", "->", slug);
+    const arm = (pass: number, pending: number): Promise<boolean> => {
+        if (gen !== alignGen) return Promise.resolve(false);
+        return waitSessionAck(key, slug).then(ok => {
+            if (gen !== alignGen) return false;
+            if (ok || modeSlug(ackedModel.get(key) ?? "") === slug) return true;
+            if (updateInFlight(key, slug) && pending < MAX_PENDING) {
+                logger.info("session update pending", key, slug);
+                return arm(pass, pending + 1);
+            }
+            if (pass + 1 >= MAX_NUDGE) return false;
+            pokeSession(cid, slug, pass + 1);
+            logger.info("session align retry", key, slug);
+            return arm(pass + 1, 0);
+        });
+    };
+    return arm(0, 0);
+}
+
+const socketHooked = new WeakSet<WebSocket>();
+let origWsSend: typeof WebSocket.prototype.send | null = null;
+
+function readGwFrame(text: string): { cid: string; type: string; model: string } | null {
+    try {
+        const parsed = JSON.parse(text) as { session_id?: unknown; event?: { type?: unknown; session?: { model?: unknown } }; type?: unknown; session?: { model?: unknown } };
+        const event = parsed.event && typeof parsed.event === "object" ? parsed.event : parsed;
+        const type = String(event.type || "");
+        if (!type) return null;
+        return {
+            cid: String(parsed.session_id || ""),
+            type,
+            model: String(event.session?.model || ""),
+        };
+    } catch {
+        return null;
+    }
+}
+
+function hookSocket() {
+    if (origWsSend) return;
+    const orig = WebSocket.prototype.send;
+    origWsSend = orig;
+    WebSocket.prototype.send = function voidModeSyncSocket(this: WebSocket, data: string | ArrayBufferLike | Blob | ArrayBufferView) {
+        if (!socketHooked.has(this)) {
+            socketHooked.add(this);
+            this.addEventListener("message", (ev) => {
+                if (typeof ev.data !== "string") return;
+                const frame = readGwFrame(ev.data);
+                if (!frame || !frame.cid || !SESSION_IN.has(frame.type)) return;
+                noteSessionAck(frame.cid, frame.model);
+            });
+        }
+        if (typeof data === "string" && !onImaginePage()) {
+            const frame = readGwFrame(data);
+            if (frame?.type === "response.create") {
+                const cid = frame.cid || currentCid();
+                const slug = sendSlug();
+                if (needsSessionAlign(cid, slug)) {
+                    alignSessionToChip(cid, slug).then(ok => {
+                        if (!ok) {
+                            logger.info("session align cancelled", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
+                            return;
+                        }
+                        try { orig.call(this, data); } catch (e) { logger.debug("held send failed", e); }
+                    });
+                    return;
+                }
+            }
+        }
+        return orig.call(this, data);
+    };
+}
+
+function unhookSocket() {
+    if (!origWsSend) return;
+    WebSocket.prototype.send = origWsSend;
+    origWsSend = null;
+}
+
 function onGwEvent(cid: string, event: GwEvent) {
     const { type } = event;
     if (type === "response.created") {
@@ -622,7 +1113,7 @@ function onGwEvent(cid: string, event: GwEvent) {
         return;
     }
     if (type === "response.persisted") busy.delete(cid);
-    else if (SESSION_IN.has(String(type))) ackedModel.set(cid, modeSlug(String(event.session?.model ?? "")));
+    else if (SESSION_IN.has(String(type))) noteSessionAck(cid, String(event.session?.model ?? ""));
     else return;
     if (flushing.has(cid)) queueMicrotask(() => tryFlush(cid));
 }
@@ -783,9 +1274,11 @@ function wrapGatewaySend() {
                 return orig.apply(mgr, args);
             }
             if (!GW_TYPES.has(type)) return orig.apply(mgr, args);
-            const live = liveIntent();
+            const live = type === "response.create"
+                ? (sendOverride?.modeId ? sendOverride : (visibleChip() ? captureIntent(visibleChip(), snapshot()) : liveIntent()))
+                : liveIntent();
             if (live.modeId) {
-                applyIntent(live);
+                if (type !== "response.create") applyIntent(live);
                 patchGwEvent(event, live);
             }
             return orig.apply(mgr, args);
@@ -814,22 +1307,22 @@ function makeSendWrapper(orig: SendFn): SendFn {
     return function voidModeSyncSend(this: unknown, ...args: unknown[]) {
         if (onImaginePage()) return orig.apply(this, args);
         const [first] = args;
-        if (!sendOverride) {
-            const id = qid(first);
-            const text = isTurnArgs(first) ? first.text : "";
-            const cid = isTurnArgs(first) ? first.convId : currentCid();
-            const queued = queuedIntent(cid, text, id);
-            if (queued?.modeId) {
-                armOverride(queued, cid);
-                patchSendArgs(args, queued);
-                return orig.apply(this, args);
-            }
+        if (sendOverride?.modeId) {
+            patchSendArgs(args, sendOverride);
+            return orig.apply(this, args);
         }
-        const live = liveIntent();
-        if (live.modeId) {
-            applyIntent(live);
-            patchSendArgs(args, live);
+        const id = qid(first);
+        const text = isTurnArgs(first) ? first.text : "";
+        const cid = isTurnArgs(first) ? first.convId : currentCid();
+        const queued = queuedIntent(cid, text, id);
+        if (queued?.modeId) {
+            armOverride(queued, cid);
+            patchSendArgs(args, queued);
+            return orig.apply(this, args);
         }
+        const slug = visibleChip();
+        const live = slug ? captureIntent(slug, snapshot()) : liveIntent();
+        if (live.modeId) patchSendArgs(args, live);
         return orig.apply(this, args);
     };
 }
@@ -1047,12 +1540,12 @@ function modeChoices(): { id: string; label: string }[] {
     const seen = new Set<string>();
     const out: { id: string; label: string }[] = [];
     for (const id of ids) {
-        if (!id || seen.has(id)) continue;
+        if (!id || seen.has(id) || (privateBuild() && modeSlug(id) === "build")) continue;
         seen.add(id);
         out.push({ id, label: labels.get(id) || id });
     }
     for (const m of CATALOG) {
-        if (seen.has(m.id)) continue;
+        if (seen.has(m.id) || (privateBuild() && m.id === "build")) continue;
         seen.add(m.id);
         out.push({ id: m.id, label: labels.get(m.id) || m.label });
     }
@@ -1261,12 +1754,16 @@ function unpaint() {
     for (const el of document.querySelectorAll(`.${CHIP}`)) el.remove();
 }
 
+function shownQueueMode(id: string): string {
+    return privateBuild() && modeSlug(id) === "build" ? "auto" : id;
+}
+
 function mountChip(row: HTMLElement, id: string) {
     if (!itemIntent.has(id)) {
         const saved = pendingEnqueue?.intent?.modeId ? pendingEnqueue.intent : (intent.modeId ? intent : undefined);
         if (saved?.modeId) itemIntent.set(id, { ...saved });
     }
-    const modeId = itemIntent.get(id)?.modeId || intent.modeId || liveIntent().modeId;
+    const modeId = shownQueueMode(itemIntent.get(id)?.modeId || intent.modeId || liveIntent().modeId);
     let chip = row.querySelector<HTMLButtonElement>(`.${CHIP}`);
     if (!chip) {
         chip = document.createElement("button");
@@ -1386,9 +1883,33 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 function onPicker(id: string) {
+    const source = pickerSource;
+    pickerSource = "";
     if (applying || sendOverride) return;
     if (!id) return;
-    if (userPicking || awaitingMenu) rememberSnapshot();
+    if (privateBuild() && modeSlug(id) === "build") {
+        hidBuild = true;
+        userPicking = false;
+        awaitingMenu = false;
+        applying = true;
+        try {
+            ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
+        } catch (e) {
+            logger.debug("incognito build hide failed", e);
+        } finally {
+            applying = false;
+        }
+        return;
+    }
+    if (source === "user" || userPicking || awaitingMenu) {
+        const picked = modeSlug(id);
+        const explicitOther = source === "user" && picked !== "auto";
+        const explicitAuto = source === "user" && picked === "auto" && (userPicking || awaitingMenu);
+        if (explicitOther || explicitAuto) hidBuild = false;
+        rememberSnapshot();
+        return;
+    }
+    followModelMode();
 }
 
 function onChatPage() {
@@ -1397,10 +1918,13 @@ function onChatPage() {
     if (key !== lastNavKey) {
         lastNavKey = key;
         onNavigate();
+        alignIncognitoBuild();
         return;
     }
     if (sendOverride || applying) return;
     if (loadPending()) fightHydrate();
+    if (!userPicking && !awaitingMenu) followModelMode();
+    alignIncognitoBuild();
 }
 
 function onStreamEnd({ responseId }: VoidPPEventMap["streamEnd"]) {
@@ -1440,15 +1964,44 @@ export function startMode() {
         wrapSendFns();
         hookFetch();
         hookXhr();
+        hookSocket();
+        hookSelectedMode();
     } catch (e) {
         logger.warn("Failed to hook send path", e);
     }
-    if (intent.modeId) applyIntent(intent);
+    try {
+        offIncognito?.();
+        offIncognito = SettingsStore.useSettingsStore.subscribe(() => {
+            alignIncognitoBuild();
+            schedulePaint();
+        });
+        offPrivateRoute?.();
+        offPrivateRoute = RoutingStore.useRoutingStore.subscribe(() => {
+            alignIncognitoBuild();
+            schedulePaint();
+        });
+    } catch (e) {
+        logger.debug("incognito subscribe failed", e);
+    }
+    if (!onImaginePage()) followModelMode();
+    alignIncognitoBuild();
+    watchNewChat();
+    if (!onImaginePage()) scheduleAlign();
 }
 
 export function stopMode() {
     if (!modeStarted) return;
     modeStarted = false;
+    offIncognito?.();
+    offIncognito = null;
+    offPrivateRoute?.();
+    offPrivateRoute = null;
+    hidBuild = false;
+    if (alignTimer) clearTimeout(alignTimer);
+    alignTimer = null;
+    alignN = 0;
+    for (const off of alignOff) off();
+    alignOff.length = 0;
     abort?.abort();
     abort = null;
     if (loadTail) {
@@ -1467,9 +2020,11 @@ export function stopMode() {
     setRestoreFlag(false);
     unhookFetch();
     unhookXhr();
+    unhookSocket();
     unwrapSendFns();
     for (const f of flushing.values()) clearTimeout(f.timer);
     flushing.clear();
+    clearSessionWaiters();
     sentModel.clear();
     ackedModel.clear();
     busy.clear();

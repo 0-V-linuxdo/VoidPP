@@ -110,7 +110,7 @@ export default definePlugin({
     icon: ListOrderedIcon,
     description: "Keep each queued message's mode, and restore unsent rows after a refresh.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["composer"],
     enabledByDefault: true,
     startAt: StartAt.TurbopackReady,
     settings,

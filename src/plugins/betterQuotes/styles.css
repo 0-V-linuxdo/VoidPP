@@ -1,18 +1,18 @@
 .void-qj-hit {
     border-radius: 0.25rem;
-    outline: 2px solid hsl(var(--fg-primary));
+    outline: 2px solid var(--fg-primary);
     outline-offset: 2px;
-    background: hsl(var(--fg-primary) / 12%);
+    background: hsl(from var(--fg-primary) h s l / 12%);
 }
 
 ::highlight(void-qj) {
-    background-color: hsl(var(--fg-primary) / 18%);
+    background-color: hsl(from var(--fg-primary) h s l / 18%);
 }
 
 @media (prefers-reduced-motion: reduce) {
     .void-qj-hit {
         outline: none;
-        background: hsl(var(--button-ghost-hover));
+        background: var(--button-ghost-hover);
     }
 }
 
@@ -28,8 +28,8 @@
     margin: 0;
     padding: 0.25rem 0.25rem 0.25rem 0.5rem;
     border-radius: 0.75rem;
-    background: hsl(var(--surface-base, 0 0% 8%));
-    color: hsl(var(--fg-secondary));
+    background: var(--surface-base, hsl(0 0% 8%));
+    color: var(--fg-secondary);
     cursor: pointer;
     pointer-events: auto;
 }
@@ -74,13 +74,13 @@
 }
 
 .void-qs-x:is(:hover, :focus-visible) {
-    background: hsl(var(--button-ghost-hover));
-    color: hsl(var(--fg-primary));
+    background: var(--button-ghost-hover);
+    color: var(--fg-primary);
 }
 
 .void-qs-x:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 1px hsl(var(--fg-accent));
+    box-shadow: 0 0 0 1px var(--fg-accent);
 }
 
 .void-qs-x svg {
@@ -104,20 +104,20 @@
     padding: 0;
     border: 0;
     border-radius: 999px;
-    background: hsl(var(--surface-l2));
-    color: hsl(var(--fg-secondary));
+    background: var(--surface-l2);
+    color: var(--fg-secondary);
     cursor: pointer;
-    box-shadow: inset 0 0 0 1px hsl(var(--fg-secondary));
+    box-shadow: inset 0 0 0 1px var(--fg-secondary);
 }
 
 .void-qj-back:is(:hover, :focus-visible) {
-    background: hsl(var(--button-ghost-hover));
-    color: hsl(var(--fg-primary));
+    background: var(--button-ghost-hover);
+    color: var(--fg-primary);
 }
 
 .void-qj-back:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 1px hsl(var(--fg-accent));
+    box-shadow: 0 0 0 1px var(--fg-accent);
 }
 
 .void-qj-mark,
@@ -136,8 +136,8 @@
     height: 0.75rem;
     padding: 0 0.125rem;
     border-radius: 999px;
-    background: hsl(var(--fg-primary));
-    color: hsl(var(--surface-l1));
+    background: var(--fg-primary);
+    color: var(--surface-l1);
     font-size: 0.5625rem;
     font-weight: 650;
     line-height: 0.75rem;
@@ -155,10 +155,10 @@
     max-width: 16rem;
     padding: 0.25rem;
     border-radius: 0.75rem;
-    background: hsl(var(--surface-l2));
-    color: hsl(var(--fg-primary));
+    background: var(--surface-l2);
+    color: var(--fg-primary);
     box-shadow:
-        inset 0 0 0 1px hsl(var(--border-l2)),
+        inset 0 0 0 1px var(--border-l2),
         0 0.5rem 1.25rem rgb(0 0 0 / 24%);
 }
 
@@ -179,6 +179,6 @@
 }
 
 .void-qj-item:is(:hover, :focus-visible) {
-    background: hsl(var(--button-ghost-hover));
-    color: hsl(var(--fg-primary));
+    background: var(--button-ghost-hover);
+    color: var(--fg-primary);
 }

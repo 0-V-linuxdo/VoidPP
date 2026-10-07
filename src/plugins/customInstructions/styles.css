@@ -19,9 +19,9 @@
     border-radius: 1rem;
     padding: 0.625rem 0.75rem;
     height: 3.25rem;
-    color: hsl(var(--fg-primary));
-    background: hsl(var(--surface-l1));
-    box-shadow: inset 0 0 0 1px hsl(var(--border-l1));
+    color: var(--fg-primary);
+    background: var(--surface-l1);
+    box-shadow: inset 0 0 0 1px var(--border-l1);
     cursor: pointer;
 }
 
@@ -32,7 +32,7 @@
 .void-ci-card-add {
     justify-content: center;
     box-shadow: none;
-    border: 1px dashed hsl(var(--border-l1));
+    border: 1px dashed var(--border-l1);
 }
 
 .void-ci-avatar {
@@ -73,12 +73,12 @@
 
 .void-ci-card:focus-visible {
     outline: none;
-    box-shadow: inset 0 0 0 2px hsl(var(--fg-primary));
+    box-shadow: inset 0 0 0 2px var(--fg-primary);
 }
 
 .void-ci-card-add:focus-visible {
     box-shadow: none;
-    border-color: hsl(var(--fg-primary));
+    border-color: var(--fg-primary);
 }
 
 .void-ci-editor {
@@ -91,7 +91,7 @@
     padding-inline: 0.75rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
 }
 
 .void-ci-input {
@@ -99,23 +99,23 @@
 }
 
 .void-ci-textarea-wrap {
-    border: 1px solid hsl(var(--border-l2));
+    border: 1px solid var(--border-l2);
     border-radius: 0.75rem;
-    background: hsl(var(--surface-l2));
+    background: var(--surface-l2);
 }
 
 .void-ci-textarea-wrap:focus-within {
-    border-color: hsl(var(--fg-primary));
-    box-shadow: inset 0 0 0 1px hsl(var(--fg-primary));
+    border-color: var(--fg-primary);
+    box-shadow: inset 0 0 0 1px var(--fg-primary);
 }
 
 .void-ci-textarea-wrap-error {
-    border-color: hsl(var(--fg-danger));
+    border-color: var(--fg-danger);
 }
 
 .void-ci-textarea-wrap-error:focus-within {
-    border-color: hsl(var(--fg-danger));
-    box-shadow: inset 0 0 0 1px hsl(var(--fg-danger));
+    border-color: var(--fg-danger);
+    box-shadow: inset 0 0 0 1px var(--fg-danger);
 }
 
 .void-ci-textarea {
@@ -125,7 +125,7 @@
     background: transparent;
     border: none;
     border-radius: 0.75rem;
-    color: hsl(var(--fg-primary));
+    color: var(--fg-primary);
     font-size: 0.875rem;
     resize: vertical;
 }
@@ -144,7 +144,7 @@
 }
 
 .void-ci-error-text {
-    color: hsl(var(--fg-danger));
+    color: var(--fg-danger);
 }
 
 .void-ci-trigger {

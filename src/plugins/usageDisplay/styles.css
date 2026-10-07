@@ -56,11 +56,11 @@ button:has(.void-ud-trigger > .void-ud-label) {
 }
 
 .void-ud-ring-warning {
-    color: hsl(var(--fg-warning));
+    color: var(--fg-warning);
 }
 
 .void-ud-ring-danger {
-    color: hsl(var(--fg-danger));
+    color: var(--fg-danger);
 }
 
 .void-ud-panel {
@@ -106,7 +106,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
 .void-ud-bar:hover,
 .void-ud-bar-on {
-    background: hsl(var(--surface-l2));
+    background: var(--surface-l2);
 }
 
 .void-ud-bar-track {
@@ -122,15 +122,15 @@ button:has(.void-ud-trigger > .void-ud-label) {
     width: 1.1rem;
     min-height: 2px;
     border-radius: 4px 4px 0 0;
-    background: hsl(var(--fg-primary) / 45%);
+    background: hsl(from var(--fg-primary) h s l / 45%);
 }
 
 .void-ud-bar-on .void-ud-bar-fill {
-    background: hsl(var(--fg-primary));
+    background: var(--fg-primary);
 }
 
 .void-ud-bar-empty .void-ud-bar-fill {
-    background: hsl(var(--border-l1));
+    background: var(--border-l1);
 }
 
 .void-ud-bar-value {
@@ -192,7 +192,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
 .void-ud-formula-label,
 .void-ud-formula-op {
-    color: hsl(var(--fg-secondary));
+    color: var(--fg-secondary);
 }
 
 .void-ud-formula-value {

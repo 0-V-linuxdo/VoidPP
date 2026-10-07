@@ -9,7 +9,7 @@ import "./PluginCard.css";
 import { dispatch } from "@api/Events";
 import { isNewPlugin, isPluginEnabled, plugins, togglePlugin } from "@api/PluginManager";
 import { isPluginPinned, isPluginStarred, togglePluginPinned, togglePluginStarred } from "@api/Settings";
-import { Badge, Switch, Tooltip, TooltipContent, TooltipTrigger } from "@components";
+import { Badge, SettingsSwitch, Tooltip, TooltipContent, TooltipTrigger } from "@components";
 import { CircleAlertIcon, PinFilledIcon, PinIcon, Settings2Icon, StarFilledIcon, StarIcon, TriangleAlert, UnplugIcon } from "@components/icons";
 import { React } from "@turbopack/common/react";
 import { classes, classNameFactory } from "@utils/css";
@@ -98,7 +98,7 @@ export default function PluginCard({ name, onSettings, onReload }: PluginCardPro
                             <TooltipContent>config</TooltipContent>
                         </Tooltip>
                     )}
-                    <Switch checked={enabled} disabled={plugin.required} onCheckedChange={handleToggle} />
+                    <SettingsSwitch checked={enabled} disabled={plugin.required} onCheckedChange={handleToggle} />
                 </>
             }
             footer={<div className="void-card-author">{plugin.authors?.join(", ") || "\u00A0"}</div>}

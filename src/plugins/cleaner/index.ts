@@ -75,7 +75,7 @@ export default definePlugin({
     icon: BrushCleaningIcon,
     description: "Hides upgrade nags and upsell banners.",
     authors: [Devs.Prism, Devs.p],
-    tags: ["ui"],
+    tags: ["declutter"],
     enabledByDefault: true,
     settings,
 
@@ -90,8 +90,8 @@ export default definePlugin({
             find: '"user-dropdown.upgrade","Upgrade plan"',
             all: true,
             replacement: {
-                match: /,(\i)(?=\?null:.{0,160}"user-dropdown\.upgrade")/,
-                replace: ",$self.settings.store.hideUpgradePlan||$1",
+                match: /(\i(?:\|\|\i){3}\|\|null!==\i&&"pending"!==\i)\?null:(?=\jsx{\i\.DropdownMenuItem}\{.{0,260}"user-dropdown\.upgrade","Upgrade plan")/,
+                replace: "($self.settings.store.hideUpgradePlan||($1))?null:",
             },
         },
         {

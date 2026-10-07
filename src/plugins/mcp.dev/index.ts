@@ -258,6 +258,7 @@ export default definePlugin({
     icon: CableIcon,
     description: "Connects AI coding agents to Grok via a local bridge for live inspection.",
     authors: [Devs.Prism],
+    tags: ["developer"],
     dev: true,
     required: true,
     settings,

@@ -33,13 +33,14 @@
 | <img src="https://api.iconify.design/lucide/message-circle.svg?color=%238b949e" width="16" height="16" alt=""> CustomGreeting | 关 | 替换非 Project 首页问候语。项目外默认不换输入框（`heroOnlyOutsideProject`，默认开）。Project 聊天仍用第一句。问候语轮播：进入首页 / 定时 / 点击标题（`mode`、`order`、`intervalSec`）。可选 `imaginePhrases` 用于 Imagine 输入框。 |
 | <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | 开 | 工程栏和 Imagine masonry 滚动条跟随主题（`themedScrollbar`，默认开）。可选在自动打开和恢复时关闭右侧栏（`hideRightPanel`，默认关）。手动展开保持打开。 |
 | <img src="https://api.iconify.design/lucide/scroll-text.svg?color=%238b949e" width="16" height="16" alt=""> BetterNavigator | 开 | 把原生消息导航升级成 Notion 式目录。悬停 tick 可看到当前分支的全部消息，含尚未挂载的历史；正在输出的回答以虚线保留，悬停目录相对轨道垂直居中。一轮对话和右侧栏打开时钉在聊天列上。输入框外 ↑/↓ 按目录逐条跳转（`showAssistant`、`hideNativeHover`、`jumpEffect`）。 |
+| <img src="https://api.iconify.design/lucide/star.svg?color=%238b949e" width="16" height="16" alt=""> MessageStars | 关 | 在消息悬停工具条上收藏任意一条（用户和助手都有）。收藏的 tick 变橙色。悬停顶栏 More（三点）左边的星标打开当前会话列表（`showInSidebar`）。 |
 | <img src="https://api.iconify.design/lucide/blend.svg?color=%238b949e" width="16" height="16" alt=""> ComposerOpacity | 开 | 调节输入栏背景透明度和模糊。 |
 | <img src="https://api.iconify.design/lucide/layout-grid.svg?color=%238b949e" width="16" height="16" alt=""> RecentTopics | 开 | Ctrl+` 切换最近会话（玻璃卡片、项目名、上轮问答预览）。 |
-| <img src="https://api.iconify.design/lucide/minimize-2.svg?color=%238b949e" width="16" height="16" alt=""> BetterModeSelect | 开 | 把 1–N 个聊天模式钉成常驻芯片，点一下直接切换，不必打开菜单。 |
+| <img src="https://api.iconify.design/lucide/minimize-2.svg?color=%238b949e" width="16" height="16" alt=""> BetterModeSelect | 开 | 把 1–N 个聊天模式钉成常驻芯片，点一下直接切换，不必打开菜单。Ctrl+M 只在这些已固定的模型之间循环切换。 |
 | <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | 开 | 队列每条记住入队时的模型（`showQueueMode`）。切会话保持 picker（`stickyOnNavigate`）。刷新后把未发送的排队消息灌回（`persistAcrossRefresh`）。 |
 | <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 6H8'/%3E%3Cpath d='M21 12H8'/%3E%3Cpath d='M3 6v6'/%3E%3Cpath d='M21 18H3'/%3E%3C/svg%3E" width="16" height="16" alt=""> UserQuotes | 开 | 自己气泡里的引用行画出可见左竖条，避免 `>` 被 markdown 吃掉后看起来像消失。 |
 | <img src="https://api.iconify.design/lucide/message-square-quote.svg?color=%238b949e" width="16" height="16" alt=""> BetterQuotes | 开 | 点输入框引用芯片，或已发送消息上的「Jump to quoted message」，滚到被引原文（`jumpToPassage`）。切会话再回来时保留引用条（`persistAcrossChats`）。 |
-| <img src="https://api.iconify.design/lucide/blocks.svg?color=%238b949e" width="16" height="16" alt=""> BetterAvatarPlugins | 开 | 把侧栏 Plugins 按钮挪到头像折叠菜单（Void++ / Help 旁边）。 |
+| <img src="https://api.iconify.design/lucide/blocks.svg?color=%238b949e" width="16" height="16" alt=""> AvatarPluginsFlyout | 开 | 把头像菜单里的 Plugins 收成和 Settings、Void++ 一样的展开项，子项是 Connectors、Skills、Bots。 |
 | <img src="https://api.iconify.design/lucide/lightbulb.svg?color=%238b949e" width="16" height="16" alt=""> NoBuildStarters | 开 | 隐藏 Build 模式输入框上方的 Ideas 胶囊栏。 |
 | <img src="https://api.iconify.design/lucide/circle-check.svg?color=%238b949e" width="16" height="16" alt=""> CompleteToast | 开 | 后台会话完成后弹出 toast，点击打开。可选 `keepUntilDismissed`：一直留到点 X 或打开该会话。可选 `imagineGeneration`（默认关）在离开 Imagine 时提示生成完成。 |
 | <img src="https://api.iconify.design/lucide/panel-left.svg?color=%238b949e" width="16" height="16" alt=""> BetterSidebar | 开 | 侧栏增强：分组标题按钮仅在悬停该分组时显示，Chats 标题增加 New chat 加号，Bots/Projects 分区默认折叠，Chats 分区默认展开（`titleRowHover`、`chatsPlus`、`botsDefaultCollapsed`、`chatsDefaultExpanded`、`projectsDefaultCollapsed`）。 |
@@ -49,7 +50,7 @@
 | 功能 | 默认 | 说明 |
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/pin.svg?color=%238b949e" width="16" height="16" alt=""> 插件置顶 | — | 把插件卡片钉在当前分类顶部。 |
-| <img src="https://api.iconify.design/lucide/star.svg?color=%238b949e" width="16" height="16" alt=""> 插件收藏 | — | 星标收藏插件；插件页默认进入 Favorites。分类：Favorites / Recent（近 7 天更新）/ All / Chat / UI / Privacy / Other。 |
+| <img src="https://api.iconify.design/lucide/star.svg?color=%238b949e" width="16" height="16" alt=""> 插件收藏 | — | 星标收藏插件；插件页默认进入 Favorites。分类：Favorites / Recent（近 7 天更新）/ All / Composer（输入框）/ Messages（消息）/ Chats（会话）/ Media（媒体）/ Navigation（导航）/ Notifications（通知）/ Appearance（外观）/ Declutter（精简）/ Privacy（隐私）/ Developer（开发）。 |
 
 ### 修复
 

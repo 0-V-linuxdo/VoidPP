@@ -7,13 +7,13 @@
 import "./styles.css";
 
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
-import { ButtonWithTooltip, ChatBarButton, Flex, SettingsDescription, SettingsTitle, Switch } from "@components";
+import { ButtonWithTooltip, ChatBarButton, Flex, SettingsDescription, SettingsSwitch, SettingsTitle } from "@components";
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { AutoModeIcon, BuildModeIcon, ChevronDownIcon, ChevronUpIcon, ConnectedAppsIcon, FastModeIcon, GripVerticalIcon, LightbulbIcon, Minimize2Icon } from "@components/icons";
 import type { ModesStoreState } from "@grok-types/stores/ModesStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React } from "@turbopack/common/react";
-import { ModesStore, RoutingStore } from "@turbopack/common/stores";
+import { ChatPageStore, MessageStore, ModesStore, RoutingStore, SettingsStore as GrokSettings } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -58,7 +58,7 @@ const GHOST_STYLE = { opacity: "0", visibility: "hidden" } as const;
 const settings = definePluginSettings({
     pinList: {
         type: OptionType.COMPONENT,
-        description: "Toggle pins and drag to set chip order.",
+        description: "Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.",
         component: PinOrderEditor,
     },
     hideNativeTrigger: {
@@ -186,6 +186,7 @@ let harvesting = false;
 const harvested = new Map<string, string>();
 const harvestListeners = new Set<() => void>();
 const ghosts = new Set<HTMLElement>();
+let hotkeyAbort: AbortController | null = null;
 let cloakWatch: MutationObserver | null = null;
 
 function uncloak() {
@@ -246,6 +247,92 @@ function setOrder(ids: ModeId[]) {
 
 function setPinned(pin: PinKey, on: boolean) {
     settings.store[pin] = on;
+}
+
+function pinnedIdsFrom(pinOrder: unknown, pins: Partial<Record<PinKey, boolean>>, catalog: { id: string }[]): ModeId[] {
+    const known = catalog.filter(c => KNOWN_IDS.has(c.id));
+    return parseOrder(pinOrder).filter(id => {
+        if (!pins[PIN_BY_ID[id]]) return false;
+        if (id === "build" || !known.length) return true;
+        return known.some(c => c.id === id);
+    });
+}
+
+function inIncognito(): boolean {
+    try {
+        return GrokSettings.useSettingsStore.getState().isIncognito === true;
+    } catch {
+        return false;
+    }
+}
+
+function privateBuild(): boolean {
+    if (inIncognito()) return true;
+    try {
+        const route = RoutingStore.useRoutingStore.getState().route;
+        if (route?.temporary) return true;
+        const chat = ChatPageStore.useChatPageStore.getState();
+        const cid = String(route?.conversationId || chat.conversationId || chat.optimisticConversationId || "");
+        if (!cid) return false;
+        const conv = MessageStore.useMessageStore.getState().conversations[cid] as { temporary?: boolean } | undefined;
+        return conv?.temporary === true;
+    } catch {
+        return false;
+    }
+}
+
+function withoutIncognitoBuild(ids: ModeId[], hide = privateBuild()): ModeId[] {
+    if (!hide) return ids;
+    return ids.filter(id => id !== "build");
+}
+
+function withIncognitoAuto(ids: ModeId[], hide = privateBuild()): ModeId[] {
+    if (!hide || ids.includes("auto")) return ids;
+    let selected = "";
+    try {
+        selected = String(ModesStore.useModesStore.getState().selectedModeId || "");
+    } catch {
+        return ids;
+    }
+    if (selected !== "auto" && selected !== "build") return ids;
+    return ["auto", ...ids];
+}
+
+function pinnedIds(): ModeId[] {
+    const cfg = settings.store;
+    return withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, ModesStore.useModesStore.getState().modes ?? [])));
+}
+
+let incognitoObs: MutationObserver | null = null;
+let offIncognitoWatch: (() => void) | null = null;
+let offRouteWatch: (() => void) | null = null;
+
+function hideBuildMenuItems() {
+    const hide = privateBuild();
+    document.documentElement.toggleAttribute("data-void-cms-incognito", hide);
+    for (const el of document.querySelectorAll<HTMLElement>(ITEM_SEL)) {
+        if (!matchItem(el, "build")) continue;
+        el.classList.toggle(cl("incognito-hide"), hide);
+    }
+}
+
+function watchIncognitoMenu() {
+    hideBuildMenuItems();
+    if (!privateBuild()) {
+        incognitoObs?.disconnect();
+        incognitoObs = null;
+        return;
+    }
+    if (incognitoObs) return;
+    incognitoObs = new MutationObserver(() => hideBuildMenuItems());
+    incognitoObs.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+function nextPinnedId(current: string): ModeId | undefined {
+    const ids = pinnedIds();
+    if (ids.length < 2) return;
+    const next = ids[(ids.indexOf(current as ModeId) + 1) % ids.length];
+    return next && next !== current ? next : undefined;
 }
 
 function itemText(el: Element) {
@@ -344,6 +431,59 @@ function waitForGone() {
 
 function nativeTrigger() {
     return document.querySelector<HTMLButtonElement>(TRIGGER_SEL);
+}
+
+function modelTrigger() {
+    const byId = document.getElementById("model-select-trigger");
+    if (byId instanceof HTMLButtonElement) return byId;
+    return nativeTrigger();
+}
+
+function isModelHotkey(e: KeyboardEvent) {
+    if (e.repeat || e.isComposing || e.keyCode === 229) return false;
+    if (!e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return false;
+    return e.code === "KeyM" || e.key === "m" || e.key === "M";
+}
+
+function typingOutsideComposer(target: EventTarget | null) {
+    if (!(target instanceof Element) || target.closest(".query-bar")) return false;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
+    return target instanceof HTMLElement && target.isContentEditable;
+}
+
+function closeModelMenu() {
+    const btn = modelTrigger();
+    if (!btn) return;
+    if (btn.getAttribute("data-state") !== "open" && btn.getAttribute("aria-expanded") !== "true") return;
+    clickEl(btn);
+}
+
+function composerReady() {
+    const page = RoutingStore.useRoutingStore.getState().route?.page;
+    if (page === "bot" || (typeof page === "string" && page.startsWith("imagine"))) return false;
+    return !!modelTrigger();
+}
+
+function onModelHotkey(e: KeyboardEvent) {
+    if (!isModelHotkey(e) || picking || typingOutsideComposer(e.target) || !composerReady()) return;
+    const current = String(ModesStore.useModesStore.getState().selectedModeId || "");
+    const next = nextPinnedId(current);
+    if (!next) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    ModesStore.useModesStore.getState().setSelectedModeId(next, { source: "user" });
+    closeModelMenu();
+}
+
+function bindModelHotkey() {
+    hotkeyAbort?.abort();
+    hotkeyAbort = new AbortController();
+    document.addEventListener("keydown", onModelHotkey, { capture: true, signal: hotkeyAbort.signal });
+}
+
+function unbindModelHotkey() {
+    hotkeyAbort?.abort();
+    hotkeyAbort = null;
 }
 
 function clickEl(el: HTMLElement) {
@@ -516,7 +656,7 @@ function PinOrderEditor() {
         <Flex flexDirection="column" gap="0.5rem" className={cl("order")}>
             <Flex flexDirection="column" gap="0">
                 <SettingsTitle>Pinned modes</SettingsTitle>
-                <SettingsDescription>Toggle pins and drag to set chip order.</SettingsDescription>
+                <SettingsDescription>Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.</SettingsDescription>
             </Flex>
             <div className={cl("order-list")} role="list">
                 {ids.map((id, i) => {
@@ -565,7 +705,7 @@ function PinOrderEditor() {
                                 >
                                     <ChevronDownIcon size={14} />
                                 </ButtonWithTooltip>
-                                <Switch checked={!!cfg[m.pin]} onCheckedChange={on => setPinned(m.pin, on)} />
+                                <SettingsSwitch checked={!!cfg[m.pin]} onCheckedChange={on => setPinned(m.pin, on)} />
                             </Flex>
                         </div>
                     );
@@ -580,10 +720,15 @@ function PinnedModes() {
     const page = RoutingStore.useRoutingStore((s: RoutingStoreState) => s.route.page);
     const selectedModeId = ModesStore.useModesStore((s: ModesStoreState) => s.selectedModeId);
     const catalog = ModesStore.useModesStore((s: ModesStoreState) => s.modes);
+    const incognito = GrokSettings.useSettingsStore(s => s.isIncognito);
+    const routeTemporary = RoutingStore.useRoutingStore(s => !!s.route.temporary);
+    const routeCid = RoutingStore.useRoutingStore(s => s.route.conversationId ?? "");
+    const chatCid = ChatPageStore.useChatPageStore(s => s.conversationId || s.optimisticConversationId || "");
+    const cid = String(routeCid || chatCid || "");
+    const convTemporary = MessageStore.useMessageStore(s => !!(cid && (s.conversations[cid] as { temporary?: boolean } | undefined)?.temporary));
+    const hideBuild = !!(incognito || routeTemporary || convTemporary);
     const knownCatalog = catalog.filter(c => KNOWN_IDS.has(c.id));
-    const items = parseOrder(cfg.pinOrder)
-        .map(id => MODE_BY_ID[id])
-        .filter(m => cfg[m.pin] && (m.id === "build" || !knownCatalog.length || knownCatalog.some(c => c.id === m.id)));
+    const items = withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, catalog), hideBuild), hideBuild).map(id => MODE_BY_ID[id]);
     if (page === "bot" || !items.length) return null;
 
     const { showLabels } = cfg;
@@ -617,9 +762,9 @@ function PinnedModes() {
 export default definePlugin({
     name: "BetterModeSelect",
     icon: Minimize2Icon,
-    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu.",
+    description: "Pin 1–N chat modes as always-visible chips. Click a chip to switch without opening the menu. Ctrl+M cycles only those pinned models.",
     authors: [Devs.p],
-    tags: ["chat", "ui"],
+    tags: ["composer"],
     enabledByDefault: true,
     settings,
     managedStyle: "betterModeSelect",
@@ -627,9 +772,26 @@ export default definePlugin({
 
     start() {
         void ModesStore.useModesStore.getState().ensureLoaded();
+        bindModelHotkey();
+        watchIncognitoMenu();
+        try {
+            offIncognitoWatch = GrokSettings.useSettingsStore.subscribe(() => watchIncognitoMenu());
+            offRouteWatch = RoutingStore.useRoutingStore.subscribe(() => watchIncognitoMenu());
+        } catch (e) {
+            logger.debug("incognito watch failed", e);
+        }
     },
 
     stop() {
+        unbindModelHotkey();
+        offIncognitoWatch?.();
+        offIncognitoWatch = null;
+        offRouteWatch?.();
+        offRouteWatch = null;
+        incognitoObs?.disconnect();
+        incognitoObs = null;
+        document.documentElement.removeAttribute("data-void-cms-incognito");
+        for (const el of document.querySelectorAll(`.${cl("incognito-hide")}`)) el.classList.remove(cl("incognito-hide"));
         setPicking(false);
         harvested.clear();
         harvestListeners.clear();
