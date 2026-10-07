@@ -20,6 +20,8 @@ import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 import type { DragEvent, MouseEvent } from "react";
 
+import { keepHarvestedGlyph } from "./glyphs";
+
 const logger = new Logger("BetterModeSelect");
 const cl = classNameFactory("void-cms-");
 
@@ -522,7 +524,9 @@ function stashGlyphs(items: HTMLElement[]) {
         if (!mode || harvested.has(mode.id)) continue;
         const svg = item.querySelector("svg");
         if (!(svg instanceof SVGSVGElement)) continue;
-        harvested.set(mode.id, normalizeSvg(svg));
+        const markup = normalizeSvg(svg);
+        if (!keepHarvestedGlyph(mode.id, markup)) continue;
+        harvested.set(mode.id, markup);
         added = true;
     }
     if (added) notifyHarvest();
