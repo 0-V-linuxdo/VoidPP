@@ -22,7 +22,8 @@ div:has(> span > button[aria-label="Dictation"]):not([role="dialog"] *),
 div:has(> span > button[aria-label^="Dictation ("]):not([role="dialog"] *),
 .h-10.w-10:has(button[aria-label="Dictation"]):not([role="dialog"] *),
 .h-10.w-10:has(button[aria-label^="Dictation ("]):not([role="dialog"] *),
-div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0):not([role="dialog"] *) {
+div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-label="Dictation"]):not([role="dialog"] *),
+div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     display: none !important;
 }
 `;
