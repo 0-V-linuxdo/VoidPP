@@ -17,7 +17,9 @@ const BUTTON_CSS = `
 button[aria-label="Dictation"]:not([role="dialog"] *),
 button[aria-label^="Dictation ("]:not([role="dialog"] *),
 div:has(> button[aria-label="Dictation"]):not([role="dialog"] *),
-div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *) {
+div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *),
+div:has(> span > button[aria-label="Dictation"]):not([role="dialog"] *),
+div:has(> span > button[aria-label^="Dictation ("]):not([role="dialog"] *) {
     display: none !important;
 }
 `;
