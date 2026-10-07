@@ -11,7 +11,11 @@ const HEAVY = "heavy";
 // is the three-square elbow kept as ConnectedAppsIcon.
 const CONNECTORS_MARKS = ["M12 12H19V16", "17.7236"];
 
+export function isConnectorsGlyph(markup: string) {
+    return CONNECTORS_MARKS.some(mark => markup.includes(mark));
+}
+
 export function keepHarvestedGlyph(modeId: string, markup: string) {
     if (modeId !== HEAVY) return true;
-    return !CONNECTORS_MARKS.some(mark => markup.includes(mark));
+    return !isConnectorsGlyph(markup);
 }

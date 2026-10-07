@@ -803,6 +803,10 @@ export default definePlugin({
 
     renderPinned: ErrorBoundary.wrap(PinnedModes),
 
+    HeavyGlyph({ size }: { size?: number | string }) {
+        return <ConnectedAppsIcon size={size ?? 18} />;
+    },
+
     patches: [
         {
             find: "data-query-bar-mode-select",
@@ -818,6 +822,13 @@ export default definePlugin({
                     replace: "$&$self.renderPinned(),",
                 },
             ],
+        },
+        {
+            find: "connected_apps:",
+            replacement: {
+                match: /connected_apps:(\i)=>\(0,(\i)\.jsx\)\(\i\.ConnectorsIcon,\{size:\1\/4\}\)/,
+                replace: "connected_apps:$1=>(0,$2.jsx)($self.HeavyGlyph,{size:$1})",
+            },
         },
     ],
 });
