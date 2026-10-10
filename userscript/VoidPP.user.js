@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp-beta
-// @version      20261007.4
+// @version      20261010.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Beta
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261007.4] v1.0.0 — A modification for grok.com
+ * Void++ [20261010.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -54,6 +54,318 @@
         set: __exportSetter.bind(all, name)
       });
   };
+
+  // src/turbopack/common/stores.ts
+  var exports_stores = {};
+  __export(exports_stores, {
+    ChatPageStore: () => ChatPageStore,
+    ConversationStore: () => ConversationStore,
+    FeatureStore: () => FeatureStore,
+    FilesPageStore: () => FilesPageStore,
+    MediaStore: () => MediaStore,
+    MessageStore: () => MessageStore,
+    ModesStore: () => ModesStore,
+    ResponseStore: () => ResponseStore,
+    RoutingStore: () => RoutingStore,
+    SessionStore: () => SessionStore,
+    SettingsDialogStore: () => SettingsDialogStore,
+    SettingsStore: () => SettingsStore,
+    SubscriptionsStore: () => SubscriptionsStore,
+    TextToSpeechStore: () => TextToSpeechStore
+  });
+
+  // src/VoidPP.ts
+  var exports_VoidPP = {};
+  __export(exports_VoidPP, {
+    ChunkPathRegex: () => ChunkPathRegex,
+    DefaultChunkLoadRegex: () => DefaultChunkLoadRegex,
+    Devs: () => Devs,
+    ErrorBoundary: () => ErrorBoundary,
+    Logger: () => Logger,
+    NoticeType: () => NoticeType,
+    OptionType: () => OptionType,
+    PlainSettings: () => PlainSettings,
+    Settings: () => Settings,
+    SettingsStore: () => SettingsStore3,
+    StartAt: () => StartAt,
+    ToastType: () => ToastType,
+    addChatBarButton: () => addChatBarButton,
+    addContextMenuItem: () => addContextMenuItem,
+    addLocalTheme: () => addLocalTheme,
+    addPatch: () => addPatch,
+    addTheme: () => addTheme,
+    armRuntime: () => armRuntime,
+    clamp: () => clamp,
+    classNameFactory: () => classNameFactory,
+    classes: () => classes,
+    closeAllModals: () => closeAllModals,
+    closeModal: () => closeModal,
+    closeNotice: () => closeNotice,
+    common: () => exports_common,
+    copyToClipboard: () => copyToClipboard,
+    createExternalStore: () => createExternalStore,
+    debounce: () => debounce,
+    definePlugin: () => definePlugin,
+    definePluginSettings: () => definePluginSettings,
+    disableStyle: () => disableStyle,
+    disableTheme: () => disableTheme,
+    dismissToast: () => dismissToast,
+    dispatch: () => dispatch,
+    enableStyle: () => enableStyle,
+    enableTheme: () => enableTheme,
+    errorMessage: () => errorMessage,
+    escapeHtml: () => escapeHtml,
+    escapeRegExp: () => escapeRegExp,
+    extractAndLoadChunks: () => extractAndLoadChunks,
+    extractAndLoadChunksLazy: () => extractAndLoadChunksLazy,
+    fetchExternal: () => fetchExternal,
+    filters: () => filters,
+    find: () => find,
+    findAll: () => findAll,
+    findBulk: () => findBulk,
+    findByCode: () => findByCode,
+    findByCodeLazy: () => findByCodeLazy,
+    findByDisplayName: () => findByDisplayName,
+    findByDisplayNameLazy: () => findByDisplayNameLazy,
+    findByEventName: () => findByEventName,
+    findByEventNameLazy: () => findByEventNameLazy,
+    findByProps: () => findByProps,
+    findByPropsLazy: () => findByPropsLazy,
+    findComponentByCode: () => findComponentByCode,
+    findComponentByCodeLazy: () => findComponentByCodeLazy,
+    findCssClasses: () => findCssClasses,
+    findCssClassesLazy: () => findCssClassesLazy,
+    findExportedComponent: () => findExportedComponent,
+    findExportedComponentLazy: () => findExportedComponentLazy,
+    findLazy: () => findLazy,
+    findModuleFactory: () => findModuleFactory,
+    findModuleId: () => findModuleId,
+    findStore: () => findStore,
+    findStoreLazy: () => findStoreLazy,
+    fnSourceCache: () => fnSourceCache,
+    formatCountdown: () => formatCountdown,
+    formatDuration: () => formatDuration,
+    getAllStores: () => getAllStores,
+    getFiber: () => getFiber,
+    getFnSource: () => getFnSource,
+    getModuleCache: () => getModuleCache,
+    getReactRoot: () => getReactRoot,
+    getRuntimeFactoryRegistry: () => getRuntimeFactoryRegistry2,
+    getRuntimeModuleCache: () => getRuntimeModuleCache,
+    getThemes: () => getThemes,
+    getTurbopackHelpers: () => getTurbopackHelpers,
+    humanizeKey: () => humanizeKey,
+    importModule: () => importModule,
+    init: () => init,
+    initSettings: () => initSettings,
+    injectExports: () => injectExports,
+    isBlacklisted: () => isBlacklisted,
+    isNonNullish: () => isNonNullish,
+    isObject: () => isObject,
+    isOnlineThemesEnabled: () => isOnlineThemesEnabled,
+    isPluginEnabled: () => isPluginEnabled,
+    isThemesEnabled: () => isThemesEnabled,
+    isTruthy: () => isTruthy,
+    isZustandStore: () => isZustandStore,
+    makeLazy: () => makeLazy,
+    mapGetOrCreate: () => mapGetOrCreate,
+    mapMangledCssClasses: () => mapMangledCssClasses,
+    mapMangledModule: () => mapMangledModule,
+    mapMangledModuleLazy: () => mapMangledModuleLazy,
+    matchesAllPatterns: () => matchesAllPatterns,
+    matchesPattern: () => matchesPattern,
+    mergeDefaults: () => mergeDefaults,
+    migratePluginSetting: () => migratePluginSetting,
+    migratePluginSettings: () => migratePluginSettings,
+    migrateSettingsToPlugin: () => migrateSettingsToPlugin,
+    onModuleLoad: () => onModuleLoad,
+    onceReady: () => onceReady,
+    onlyOnce: () => onlyOnce,
+    openModal: () => openModal,
+    patchReport: () => patchReport,
+    patchResults: () => patchResults,
+    patchStats: () => patchStats,
+    patches: () => patches,
+    plugins: () => plugins,
+    pluralize: () => pluralize,
+    proxyLazy: () => proxyLazy,
+    registerPlugin: () => registerPlugin,
+    registerStyle: () => registerStyle,
+    removeChatBarButton: () => removeChatBarButton,
+    removeContextMenuItem: () => removeContextMenuItem,
+    removeTheme: () => removeTheme,
+    reportFailedFinders: () => reportFailedFinders,
+    requireModule: () => requireModule,
+    sanitizeFilename: () => sanitizeFilename,
+    search: () => search,
+    sendBrowserNotification: () => sendBrowserNotification,
+    setOnlineThemesEnabled: () => setOnlineThemesEnabled,
+    setThemesEnabled: () => setThemesEnabled,
+    showNotice: () => showNotice,
+    showToast: () => showToast,
+    sleep: () => sleep,
+    sortedEntries: () => sortedEntries,
+    startPlugin: () => startPlugin,
+    stopPlugin: () => stopPlugin,
+    subscribe: () => subscribe,
+    syncLazyModules: () => syncLazyModules,
+    unregisterStyle: () => unregisterStyle,
+    updateLocalTheme: () => updateLocalTheme,
+    useEventSubscription: () => useEventSubscription,
+    useExternalStore: () => useExternalStore,
+    useForceUpdater: () => useForceUpdater,
+    useIsStreaming: () => useIsStreaming,
+    useSelectionHas: () => useSelectionHas,
+    useSelectionSize: () => useSelectionSize,
+    waitFor: () => waitFor,
+    walkFiberTree: () => walkFiberTree,
+    walkFiberUp: () => walkFiberUp
+  });
+
+  // src/turbopack/common/index.ts
+  var exports_common = {};
+  __export(exports_common, {
+    Accordion: () => Accordion,
+    AccordionContent: () => AccordionContent,
+    AccordionItem: () => AccordionItem,
+    AccordionTrigger: () => AccordionTrigger,
+    AlertDialog: () => AlertDialog,
+    AlertDialogAction: () => AlertDialogAction,
+    AlertDialogCancel: () => AlertDialogCancel,
+    AlertDialogContent: () => AlertDialogContent,
+    AlertDialogDescription: () => AlertDialogDescription,
+    AlertDialogFooter: () => AlertDialogFooter,
+    AlertDialogHeader: () => AlertDialogHeader,
+    AlertDialogTitle: () => AlertDialogTitle,
+    AlertDialogTrigger: () => AlertDialogTrigger,
+    AnimatePresence: () => AnimatePresence,
+    ApiClients: () => ApiClients,
+    Avatar: () => Avatar,
+    Badge: () => Badge,
+    Button: () => Button,
+    ButtonWithPopover: () => ButtonWithPopover,
+    ButtonWithTooltip: () => ButtonWithTooltip,
+    ButtonWithTooltipOptimized: () => ButtonWithTooltipOptimized,
+    Card: () => Card,
+    CardContent: () => CardContent,
+    CardHeader: () => CardHeader,
+    CardTitle: () => CardTitle,
+    ChatPageStore: () => ChatPageStore,
+    Checkbox: () => Checkbox,
+    ClassNames: () => ClassNames,
+    Command: () => Command,
+    CommandEmpty: () => CommandEmpty,
+    CommandGroup: () => CommandGroup,
+    CommandInput: () => CommandInput,
+    CommandItem: () => CommandItem,
+    CommandList: () => CommandList,
+    ConversationStore: () => ConversationStore,
+    Dialog: () => Dialog,
+    DialogClose: () => DialogClose,
+    DialogContent: () => DialogContent,
+    DialogDescription: () => DialogDescription,
+    DialogFooter: () => DialogFooter,
+    DialogHeader: () => DialogHeader,
+    DialogOverlay: () => DialogOverlay,
+    DialogPortal: () => DialogPortal,
+    DialogTitle: () => DialogTitle,
+    DialogTrigger: () => DialogTrigger,
+    Drawer: () => Drawer,
+    DrawerContent: () => DrawerContent,
+    DrawerDescription: () => DrawerDescription,
+    DrawerFooter: () => DrawerFooter,
+    DrawerHeader: () => DrawerHeader,
+    DrawerTitle: () => DrawerTitle,
+    DrawerTrigger: () => DrawerTrigger,
+    DropdownMenu: () => DropdownMenu,
+    DropdownMenuCheckboxItem: () => DropdownMenuCheckboxItem,
+    DropdownMenuContent: () => DropdownMenuContent,
+    DropdownMenuItem: () => DropdownMenuItem,
+    DropdownMenuPortal: () => DropdownMenuPortal,
+    DropdownMenuRadioGroup: () => DropdownMenuRadioGroup,
+    DropdownMenuRadioItem: () => DropdownMenuRadioItem,
+    DropdownMenuSeparator: () => DropdownMenuSeparator,
+    DropdownMenuSub: () => DropdownMenuSub,
+    DropdownMenuSubContent: () => DropdownMenuSubContent,
+    DropdownMenuSubTrigger: () => DropdownMenuSubTrigger,
+    DropdownMenuTrigger: () => DropdownMenuTrigger,
+    FeatureStore: () => FeatureStore,
+    FileUtils: () => FileUtils,
+    FilesPageStore: () => FilesPageStore,
+    Fragment: () => Fragment,
+    HoverCard: () => HoverCard,
+    HoverCardContent: () => HoverCardContent,
+    HoverCardTrigger: () => HoverCardTrigger,
+    Input: () => Input,
+    Label: () => Label,
+    LazyComponent: () => LazyComponent,
+    MediaStore: () => MediaStore,
+    MessageStore: () => MessageStore,
+    ModesStore: () => ModesStore,
+    MotionDiv: () => MotionDiv,
+    Popover: () => Popover,
+    PopoverArrow: () => PopoverArrow,
+    PopoverContent: () => PopoverContent,
+    PopoverTrigger: () => PopoverTrigger,
+    Portal: () => Portal,
+    React: () => React,
+    ResponseStore: () => ResponseStore,
+    ResponsiveDialog: () => ResponsiveDialog,
+    RoutingStore: () => RoutingStore,
+    Select: () => Select,
+    SelectContent: () => SelectContent,
+    SelectItem: () => SelectItem,
+    SelectTrigger: () => SelectTrigger,
+    SelectValue: () => SelectValue,
+    Separator: () => Separator,
+    SessionStore: () => SessionStore,
+    SettingsDescription: () => SettingsDescription,
+    SettingsDialogStore: () => SettingsDialogStore,
+    SettingsRow: () => SettingsRow,
+    SettingsStore: () => SettingsStore,
+    SettingsSwitch: () => SettingsSwitch,
+    SettingsTitle: () => SettingsTitle,
+    SidebarComponents: () => SidebarComponents,
+    Skeleton: () => Skeleton,
+    Slider: () => Slider,
+    Spinner: () => Spinner,
+    SubscriptionsStore: () => SubscriptionsStore,
+    Switch: () => Switch,
+    Table: () => Table,
+    TableBody: () => TableBody,
+    TableCell: () => TableCell,
+    TableHead: () => TableHead,
+    TableHeader: () => TableHeader,
+    TableRow: () => TableRow,
+    Tabs: () => Tabs,
+    TabsContent: () => TabsContent,
+    TabsList: () => TabsList,
+    TabsTrigger: () => TabsTrigger,
+    TextToSpeechStore: () => TextToSpeechStore,
+    Textarea: () => Textarea,
+    Toaster: () => Toaster,
+    ToggleGroup: () => ToggleGroup,
+    ToggleGroupItem: () => ToggleGroupItem,
+    Tooltip: () => Tooltip,
+    TooltipContent: () => TooltipContent,
+    TooltipProvider: () => TooltipProvider,
+    TooltipTrigger: () => TooltipTrigger,
+    createElement: () => createElement,
+    onceReady: () => onceReady,
+    useCallback: () => useCallback,
+    useContext: () => useContext,
+    useDeferredValue: () => useDeferredValue,
+    useEffect: () => useEffect,
+    useId: () => useId,
+    useLayoutEffect: () => useLayoutEffect,
+    useMemo: () => useMemo,
+    useReducedMotion: () => useReducedMotion,
+    useReducer: () => useReducer,
+    useRef: () => useRef,
+    useState: () => useState,
+    useSyncExternalStore: () => useSyncExternalStore,
+    useTransition: () => useTransition
+  });
 
   // src/utils/guards.ts
   function isTruthy(item) {
@@ -1963,23 +2275,6 @@ ${sourceUrl}`;
   }
 
   // src/turbopack/common/stores.ts
-  var exports_stores = {};
-  __export(exports_stores, {
-    ChatPageStore: () => ChatPageStore,
-    ConversationStore: () => ConversationStore,
-    FeatureStore: () => FeatureStore,
-    FilesPageStore: () => FilesPageStore,
-    MediaStore: () => MediaStore,
-    MessageStore: () => MessageStore,
-    ModesStore: () => ModesStore,
-    ResponseStore: () => ResponseStore,
-    RoutingStore: () => RoutingStore,
-    SessionStore: () => SessionStore,
-    SettingsDialogStore: () => SettingsDialogStore,
-    SettingsStore: () => SettingsStore,
-    SubscriptionsStore: () => SubscriptionsStore,
-    TextToSpeechStore: () => TextToSpeechStore
-  });
   var ChatPageStore = findByPropsLazy("useChatPageStore");
   var ConversationStore = findByPropsLazy("useConversationStore", "createOptimisticConversation");
   var FeatureStore = findByPropsLazy("useFeatureStore");
@@ -3408,7 +3703,7 @@ ${sourceUrl}`;
   var MSG_HELLO = "void-better-canvas-hello";
   var PANE = '[class*="pane-card"],[class*="masonry"],[class*="lightbox"]';
   var OVERFLOW = '[class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-x-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"],[class*="overflow-x-scroll"]';
-  var SCROLLER = `:is(${PANE}):is(${OVERFLOW}),:is(${PANE}) :is(${OVERFLOW}),main:has([aria-label="Generation mode"]) :is(${OVERFLOW})`;
+  var SCROLLER = `:is(${PANE}):is(${OVERFLOW}),:is(${PANE}) :is(${OVERFLOW}),:is(main,#grok-content-area,[role="main"]):has([aria-label="Generation mode"]) :is(${OVERFLOW})`;
   var IFRAME_SEL = 'iframe[title="Preview"],iframe[src*="grokusercontent.com"],iframe[src*="grok-sandbox.com"],[class*="pane-card"] iframe';
   var settings2 = definePluginSettings({
     themedScrollbar: {
@@ -3704,7 +3999,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       return false;
     const node = target.closest("button,a,[role='menuitem'],[role='tab'],[role='option']") ?? target;
     const aria = `${node.getAttribute("aria-label") ?? ""} ${node.getAttribute("title") ?? ""}`.toLowerCase();
-    const text = (node.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 64);
+    const text = (node.textContent ?? "").replaceAll(/\s+/g, " ").trim().toLowerCase().slice(0, 64);
     const blob = `${aria} ${text}`;
     const inPane = !!node.closest("[class*='pane-card']");
     const project = inProjectsGroup(target);
@@ -3899,159 +4194,11 @@ ${root}::-webkit-scrollbar-thumb:hover {
         find: 'source:"auto"',
         all: true,
         replacement: {
-          match: /&&(\i)\(\{source:"auto"\}\)/,
-          replace: '&&!$self.settings.store.hideRightPanel&&$1({source:"auto"})'
+          match: /&&(\i)\((\i\?\{source:"auto",view:"browser"\}:\{source:"auto"\}|\{source:"auto"\})\)/,
+          replace: "&&!$self.settings.store.hideRightPanel&&$1($2)"
         }
       }
     ]
-  });
-
-  // src/VoidPP.ts
-  var exports_VoidPP = {};
-  __export(exports_VoidPP, {
-    ChunkPathRegex: () => ChunkPathRegex,
-    DefaultChunkLoadRegex: () => DefaultChunkLoadRegex,
-    Devs: () => Devs,
-    ErrorBoundary: () => ErrorBoundary,
-    Logger: () => Logger,
-    NoticeType: () => NoticeType,
-    OptionType: () => OptionType,
-    PlainSettings: () => PlainSettings,
-    Settings: () => Settings,
-    SettingsStore: () => SettingsStore3,
-    StartAt: () => StartAt,
-    ToastType: () => ToastType,
-    addChatBarButton: () => addChatBarButton,
-    addContextMenuItem: () => addContextMenuItem,
-    addLocalTheme: () => addLocalTheme,
-    addPatch: () => addPatch,
-    addTheme: () => addTheme,
-    armRuntime: () => armRuntime,
-    clamp: () => clamp,
-    classNameFactory: () => classNameFactory,
-    classes: () => classes,
-    closeAllModals: () => closeAllModals,
-    closeModal: () => closeModal,
-    closeNotice: () => closeNotice,
-    common: () => exports_common,
-    copyToClipboard: () => copyToClipboard,
-    createExternalStore: () => createExternalStore,
-    debounce: () => debounce,
-    definePlugin: () => definePlugin,
-    definePluginSettings: () => definePluginSettings,
-    disableStyle: () => disableStyle,
-    disableTheme: () => disableTheme,
-    dismissToast: () => dismissToast,
-    dispatch: () => dispatch,
-    enableStyle: () => enableStyle,
-    enableTheme: () => enableTheme,
-    errorMessage: () => errorMessage,
-    escapeHtml: () => escapeHtml,
-    escapeRegExp: () => escapeRegExp,
-    extractAndLoadChunks: () => extractAndLoadChunks,
-    extractAndLoadChunksLazy: () => extractAndLoadChunksLazy,
-    fetchExternal: () => fetchExternal,
-    filters: () => filters,
-    find: () => find,
-    findAll: () => findAll,
-    findBulk: () => findBulk,
-    findByCode: () => findByCode,
-    findByCodeLazy: () => findByCodeLazy,
-    findByDisplayName: () => findByDisplayName,
-    findByDisplayNameLazy: () => findByDisplayNameLazy,
-    findByEventName: () => findByEventName,
-    findByEventNameLazy: () => findByEventNameLazy,
-    findByProps: () => findByProps,
-    findByPropsLazy: () => findByPropsLazy,
-    findComponentByCode: () => findComponentByCode,
-    findComponentByCodeLazy: () => findComponentByCodeLazy,
-    findCssClasses: () => findCssClasses,
-    findCssClassesLazy: () => findCssClassesLazy,
-    findExportedComponent: () => findExportedComponent,
-    findExportedComponentLazy: () => findExportedComponentLazy,
-    findLazy: () => findLazy,
-    findModuleFactory: () => findModuleFactory,
-    findModuleId: () => findModuleId,
-    findStore: () => findStore,
-    findStoreLazy: () => findStoreLazy,
-    fnSourceCache: () => fnSourceCache,
-    formatCountdown: () => formatCountdown,
-    formatDuration: () => formatDuration,
-    getAllStores: () => getAllStores,
-    getFiber: () => getFiber,
-    getFnSource: () => getFnSource,
-    getModuleCache: () => getModuleCache,
-    getReactRoot: () => getReactRoot,
-    getRuntimeFactoryRegistry: () => getRuntimeFactoryRegistry2,
-    getRuntimeModuleCache: () => getRuntimeModuleCache,
-    getThemes: () => getThemes,
-    getTurbopackHelpers: () => getTurbopackHelpers,
-    humanizeKey: () => humanizeKey,
-    importModule: () => importModule,
-    init: () => init,
-    initSettings: () => initSettings,
-    injectExports: () => injectExports,
-    isBlacklisted: () => isBlacklisted,
-    isNonNullish: () => isNonNullish,
-    isObject: () => isObject,
-    isOnlineThemesEnabled: () => isOnlineThemesEnabled,
-    isPluginEnabled: () => isPluginEnabled,
-    isThemesEnabled: () => isThemesEnabled,
-    isTruthy: () => isTruthy,
-    isZustandStore: () => isZustandStore,
-    makeLazy: () => makeLazy,
-    mapGetOrCreate: () => mapGetOrCreate,
-    mapMangledCssClasses: () => mapMangledCssClasses,
-    mapMangledModule: () => mapMangledModule,
-    mapMangledModuleLazy: () => mapMangledModuleLazy,
-    matchesAllPatterns: () => matchesAllPatterns,
-    matchesPattern: () => matchesPattern,
-    mergeDefaults: () => mergeDefaults,
-    migratePluginSetting: () => migratePluginSetting,
-    migratePluginSettings: () => migratePluginSettings,
-    migrateSettingsToPlugin: () => migrateSettingsToPlugin,
-    onModuleLoad: () => onModuleLoad,
-    onceReady: () => onceReady,
-    onlyOnce: () => onlyOnce,
-    openModal: () => openModal,
-    patchReport: () => patchReport,
-    patchResults: () => patchResults,
-    patchStats: () => patchStats,
-    patches: () => patches,
-    plugins: () => plugins,
-    pluralize: () => pluralize,
-    proxyLazy: () => proxyLazy,
-    registerPlugin: () => registerPlugin,
-    registerStyle: () => registerStyle,
-    removeChatBarButton: () => removeChatBarButton,
-    removeContextMenuItem: () => removeContextMenuItem,
-    removeTheme: () => removeTheme,
-    reportFailedFinders: () => reportFailedFinders,
-    requireModule: () => requireModule,
-    sanitizeFilename: () => sanitizeFilename,
-    search: () => search,
-    sendBrowserNotification: () => sendBrowserNotification,
-    setOnlineThemesEnabled: () => setOnlineThemesEnabled,
-    setThemesEnabled: () => setThemesEnabled,
-    showNotice: () => showNotice,
-    showToast: () => showToast,
-    sleep: () => sleep,
-    sortedEntries: () => sortedEntries,
-    startPlugin: () => startPlugin,
-    stopPlugin: () => stopPlugin,
-    subscribe: () => subscribe,
-    syncLazyModules: () => syncLazyModules,
-    unregisterStyle: () => unregisterStyle,
-    updateLocalTheme: () => updateLocalTheme,
-    useEventSubscription: () => useEventSubscription,
-    useExternalStore: () => useExternalStore,
-    useForceUpdater: () => useForceUpdater,
-    useIsStreaming: () => useIsStreaming,
-    useSelectionHas: () => useSelectionHas,
-    useSelectionSize: () => useSelectionSize,
-    waitFor: () => waitFor,
-    walkFiberTree: () => walkFiberTree,
-    walkFiberUp: () => walkFiberUp
   });
 
   // src/api/BuildHealth.ts
@@ -4071,7 +4218,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     }
     updateSettingsPluginData({ chunkFingerprint: current });
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ColorSettingRow.css
+  // voidpp-css:/tmp/VoidPP/src/components/ColorSettingRow.css
   registerStyle("ColorSettingRow", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -4110,7 +4257,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, title), /* @__PURE__ */ React.createElement(SettingsDescription, null, description)));
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ConfirmDialog.css
+  // voidpp-css:/tmp/VoidPP/src/components/ConfirmDialog.css
   registerStyle("ConfirmDialog", `.void-confirm-dialog {
     width: 100%;
     max-width: 28rem;
@@ -4364,7 +4511,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     },
     configurable: true
   });
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/ErrorCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/ErrorCard.css
   registerStyle("ErrorCard", `.void-error-card-root {
     contain: content;
     padding: 1rem;
@@ -4424,7 +4571,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       ...restProps
     }, children);
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/Paragraph.css
+  // voidpp-css:/tmp/VoidPP/src/components/Paragraph.css
   registerStyle("Paragraph", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -4516,7 +4663,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       weight: "medium"
     }, title), description && /* @__PURE__ */ React.createElement(Paragraph, null, description));
   }
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/SelectionUI.css
+  // voidpp-css:/tmp/VoidPP/src/components/SelectionUI.css
   registerStyle("SelectionUI", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -5413,8 +5560,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
       return null;
     for (const list of lists) {
       const tabs = [...list.querySelectorAll('[role="tab"]')];
-      const labels = tabs.map((button) => button.textContent?.trim());
-      if (!labels.includes("Connectors") || !labels.includes("Skills") || !labels.includes("Bots"))
+      const labels = new Set(tabs.map((button) => button.textContent?.trim()));
+      if (!labels.has("Connectors") || !labels.has("Skills") || !labels.has("Bots"))
         continue;
       const button = tabs.find((item) => item.textContent?.trim() === name);
       if (button instanceof HTMLElement)
@@ -5545,6 +5692,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       },
       {
         find: 'WD_REFRESH&&{id:"skills-and-connectors"',
+        noWarn: true,
         replacement: {
           match: /WD_REFRESH&&\{id:"skills-and-connectors"/,
           replace: 'WD_REFRESH&&!1&&{id:"skills-and-connectors"'
@@ -5571,14 +5719,23 @@ ${root}::-webkit-scrollbar-thumb:hover {
           },
           {
             match: /(\i)\[0\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\((\i),\{inDialog:!0,localTabs:\2\}\),\1\[0\]=\2,\1\[1\]=\3\):\3=\1\[1\]/,
-            replace: "$1[0]!==$self._shellKey($2)?($3=(0,$4.jsx)($5,{inDialog:!0,localTabs:$2,key:$self._shellKey($2)}),$1[0]=$self._shellKey($2),$1[1]=$3):$3=$1[1]"
+            replace: "$1[0]!==$self._shellKey($2)?($3=(0,$4.jsx)($5,{inDialog:!0,localTabs:$2,key:$self._shellKey($2)}),$1[0]=$self._shellKey($2),$1[1]=$3):$3=$1[1]",
+            noWarn: true
           }
         ]
+      },
+      {
+        find: "usePluginsSurfaceTitle",
+        all: true,
+        replacement: {
+          match: /(\i)\[(\d+)\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\(([A-Za-z_$][\w$.]*),\{inDialog:!0,localTabs:\3\}\),\1\[\2\]=\3,\1\[(\d+)\]=\4\):\4=\1\[\7\]/g,
+          replace: "$1[$2]!==$self._shellKey($3)?($4=(0,$5.jsx)($6,{inDialog:!0,localTabs:$3,key:$self._shellKey($3)}),$1[$2]=$self._shellKey($3),$1[$7]=$4):$4=$1[$7]"
+        }
       }
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/headerHover.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterSidebar/headerHover.css
   registerStyle("headerHover", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -5634,7 +5791,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterSidebar/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterSidebar/styles.css
   registerStyle("betterSidebar", `.group.peer [data-sidebar="sidebar"] + div,
 .group.peer [data-sidebar="content"] > .grow {
     cursor: default !important;
@@ -6211,8 +6368,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
             replace: "{defaultOpen:$1=$self._defaultOpen(),open:"
           },
           {
-            match: /data-sidebar":"sidebar",className:/,
-            replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),className:'
+            match: /data-sidebar":"sidebar",(?!onClick:)/,
+            replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),'
           }
         ]
       },
@@ -6226,24 +6383,40 @@ ${root}::-webkit-scrollbar-thumb:hover {
             replace: "=$self._wrapCheckbox($1,arguments[0].id,arguments[0].route)"
           },
           {
-            match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
-            replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4"
+            match: /\(0,(\i)\.handleIsolateClick\)\((\i)\),(\i)\?\.\(\2\)/,
+            replace: "(0,$1.handleIsolateClick)($2),$self._wrapSidebarClick($3,arguments[0].id,arguments[0].route)?.($2)"
           }
         ]
       },
       {
-        find: '"sidebar-expand","Expand"',
+        find: '"Editing actions","Editing actions"',
+        all: true,
+        noWarn: true,
         replacement: {
-          match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
-          replace: "$self._renderActionBar(),$&"
+          match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
+          replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4"
         }
+      },
+      {
+        find: '"sidebar-expand","Expand"',
+        replacement: [
+          {
+            match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
+            replace: "$self._renderActionBar(),$&",
+            noWarn: true
+          },
+          {
+            match: /\(0,\i\.jsx\)\(\i,\{title:\i\("sidebar-chats","Chats"\)/,
+            replace: "$self._renderActionBar(),$&"
+          }
+        ]
       },
       {
         find: '"sidebar.new-bot-btn.aria-label","New bot"',
         replacement: [
           {
-            match: /(\i)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover"\)/,
-            replace: '$1("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover")'
+            match: /\(0,(\i)\.(\i)\)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","(hover:bg-button-ghost-hover hover:text-(?:fg-)?primary)","(focus:outline-none focus-visible:bg-button-ghost-hover)"\)/,
+            replace: '(0,$1.$2)("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","$3","$4")'
           },
           {
             match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
@@ -6253,10 +6426,17 @@ ${root}::-webkit-scrollbar-thumb:hover {
       },
       {
         find: '"sidebar-chats","Chats"',
-        replacement: {
-          match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-          replace: "$1,action:$self._ChatsPlus()"
-        }
+        replacement: [
+          {
+            match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
+            replace: "$1,action:$self._ChatsPlus()",
+            noWarn: true
+          },
+          {
+            match: /(\i\("sidebar-chats","Chats"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
+            replace: "$1,action:$self._ChatsPlus()"
+          }
+        ]
       },
       {
         find: '"sidebar.section-title","Bots"',
@@ -6354,24 +6534,23 @@ ${root}::-webkit-scrollbar-thumb:hover {
       },
       {
         find: '"after-init"),(0,',
-        group: true,
         replacement: [
           {
-            match: /(function \i\(\)\{)if\(Object\.prototype\.hasOwnProperty\.call\(\i\.default,"get_distinct_id"\)\)return;/,
-            replace: "$1return}function _ignore(){"
-          },
-          {
-            match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]{0,300}?start_session_recording\(\)\}/,
+            match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]*?\}(?=,"stopRecordingImagineSession")/,
             replace: '"startRecordingImagineSession",0,function(){}'
           },
           {
-            match: /"stopRecordingImagineSession",0,function\(\)\{[\s\S]{0,300}?stop_session_recording\(\)\},\d+e?\d*\)\}/,
+            match: /"stopRecordingImagineSession",0,function\(\)\{[\s\S]*?\}(?=\])/,
             replace: '"stopRecordingImagineSession",0,function(){}'
+          },
+          {
+            match: /(\i)\.default\.init\((\i)\.MIXPANEL_TOKEN,/g,
+            replace: "$1.default.init=()=>{},$1.default.init($2.MIXPANEL_TOKEN,"
           }
         ]
       },
       {
-        find: "sendBatchLogEvent",
+        find: "sendBatchLogEvent=",
         all: true,
         group: true,
         replacement: [
@@ -6387,10 +6566,23 @@ ${root}::-webkit-scrollbar-thumb:hover {
       },
       {
         find: '"/api/log_metric"',
-        replacement: {
-          match: /"\/api\/log_metric",\i\)/,
-          replace: '"/api/log_metric",[])'
-        }
+        all: true,
+        replacement: [
+          {
+            match: /"\/api\/log_metric",\i\)/,
+            replace: '"/api/log_metric",[])',
+            noWarn: true
+          },
+          {
+            match: /"\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)/,
+            replace: '"/api/log_metric",[])',
+            noWarn: true
+          },
+          {
+            match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/,
+            replace: "void 0"
+          }
+        ]
       },
       {
         find: "isEnvVarsSet(){return void 0!=",
@@ -6402,7 +6594,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/_core/settings/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/_core/settings/styles.css
   registerStyle("settings", `.void-settings-version,
 .void-settings-version * {
     user-select: text;
@@ -6684,7 +6876,7 @@ button .void-info-hint {
     }
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/CustomCSSTab.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/CustomCSSTab.css
   registerStyle("CustomCSSTab", `.void-css-root {
     height: 100%;
     min-height: 0;
@@ -6695,7 +6887,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/CssEditor.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/CssEditor.css
   registerStyle("CssEditor", `.void-css-wrap {
     flex: 1;
     min-height: 0;
@@ -6971,7 +7163,7 @@ button .void-info-hint {
     }));
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/shared.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/shared.css
   registerStyle("shared", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -7046,7 +7238,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/PluginsTab.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/PluginsTab.css
   registerStyle("PluginsTab", `.void-plugins-reload-banner {
     padding: 0.625rem 0.75rem;
     border-radius: 0.5rem;
@@ -7104,7 +7296,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/PluginCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/PluginCard.css
   registerStyle("PluginCard", `.void-plugin-card-required-icon,
 .void-plugin-card-badge,
 .void-plugin-card-crashed-icon {
@@ -7155,7 +7347,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/BaseCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/BaseCard.css
   registerStyle("BaseCard", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -7437,7 +7629,7 @@ button .void-info-hint {
     });
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/PluginDialog.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/PluginDialog.css
   registerStyle("PluginDialog", `.void-plugin-dialog-settings-list>.px-3 {
     padding-left: 0;
     padding-right: 0;
@@ -7463,7 +7655,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/SettingField.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/SettingField.css
   registerStyle("SettingField", `.void-setting-select-content {
     z-index: 1000 !important;
 }
@@ -8084,7 +8276,7 @@ button .void-info-hint {
     }));
   }
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/tabs/ThemesTab.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/tabs/ThemesTab.css
   registerStyle("ThemesTab", `.void-themes-add-error {
     color: var(--fg-danger);
 }
@@ -8107,7 +8299,7 @@ button .void-info-hint {
 }
 `);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/components/settings/ThemeCard.css
+  // voidpp-css:/tmp/VoidPP/src/components/settings/ThemeCard.css
   registerStyle("ThemeCard", `.void-theme-card-name {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -8385,7 +8577,7 @@ button .void-info-hint {
   var PluginsTab2 = ErrorBoundary.wrap(PluginsTab);
   var ThemesTab2 = ErrorBoundary.wrap(ThemesTab);
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/experiments/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/experiments/styles.css
   registerStyle("experiments", `.void-experiments-section {
     padding: 0 1.25rem;
 }
@@ -8764,7 +8956,7 @@ button .void-info-hint {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/pluginsFlyout/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/pluginsFlyout/styles.css
   registerStyle("pluginsFlyout", `.void-pf-icon {
     width: 1rem;
     height: 1rem;
@@ -8922,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261007.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"cf5c13f"}`
-    }, `(${"cf5c13f"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261010.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"356d868"}`
+    }, `(${"356d868"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9046,6 +9238,11 @@ button .void-info-hint {
         replacement: [
           {
             match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
+            replace: "[...$&,...$self._tabEntries()]",
+            noWarn: true
+          },
+          {
+            match: /\i\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
             replace: "[...$&,...$self._tabEntries()]"
           },
           {
@@ -9067,16 +9264,27 @@ button .void-info-hint {
         all: true,
         replacement: [
           {
-            match: /("SettingsTitle",0,)(\i)/,
+            match: /("SettingsTitle",0,)(?!function)(\i)/,
+            replace: '$1$self._setPrimitive("SettingsTitle",$2)',
+            noWarn: true
+          },
+          {
+            match: /("SettingsTitle",0,)(function\(\i\)\{[\s\S]*?\})(?=\]\))/,
             replace: '$1$self._setPrimitive("SettingsTitle",$2)'
           },
           {
-            match: /("SettingsDescription",0,)(\i)/,
+            match: /("SettingsDescription",0,)(?!function)(\i)/,
+            replace: '$1$self._setPrimitive("SettingsDescription",$2)',
+            noWarn: true
+          },
+          {
+            match: /("SettingsDescription",0,)(function\(\i\)\{[\s\S]*?\})(?=,"Settings)/,
             replace: '$1$self._setPrimitive("SettingsDescription",$2)'
           },
           {
             match: /("SettingsRow",0,)(?!function)(\i)/,
-            replace: '$1$self._setPrimitive("SettingsRow",$2)'
+            replace: '$1$self._setPrimitive("SettingsRow",$2)',
+            noWarn: true
           },
           {
             match: /("SettingsRow",0,)(function\(\i\)\{[\s\S]*?\})(?=,"Settings)/,
@@ -9162,12 +9370,14 @@ button .void-info-hint {
           },
           {
             match: /style:\i(?:\|\|\i)*\?void 0:(\{paddingInlineEnd:\i\})/,
-            replace: "style:$1"
+            replace: "style:$1",
+            noWarn: true
           }
         ]
       },
       {
         find: "data-wd-toolbar",
+        noWarn: true,
         replacement: {
           match: /(trailingGutterPx:\i,tight:\i,children:\[[^\]]{0,80})\]/,
           replace: "$1,$self.renderImagineButtons()]"
@@ -9195,6 +9405,34 @@ button .void-info-hint {
         find: '"Editing actions","Editing actions"',
         all: true,
         group: true,
+        replacement: [
+          {
+            match: /\(0,(\i)\.jsx\)\((\i),\{editing:/,
+            replace: "(0,$1.jsx)($2,{id:arguments[0].id,editing:"
+          },
+          {
+            match: /\(0,(\i)\.jsx\)\((\i),\{menuOpen:/,
+            replace: "(0,$1.jsx)($2,{id:arguments[0].id,menuOpen:"
+          },
+          {
+            match: /\(0,(\i)\.jsx\)\((\i),\{components:/g,
+            replace: "(0,$1.jsx)($2,{id:arguments[0].id,components:"
+          },
+          {
+            match: /Item:(\i)\.(Dropdown|Context)MenuItem,/g,
+            replace: "$&VoidPPMenu:{Item:$1.$2MenuItem,Sub:$1.$2MenuSub,SubTrigger:$1.$2MenuSubTrigger,SubContent:$1.$2MenuSubContent,Separator:$1.$2MenuSeparator},"
+          },
+          {
+            match: /(\[)(\i)&&(\(0,\i\.jsx\)\(\i,\{\}\)),(\(0,\i\.jsxs?\)\(\i,\{onSelect:\(\)=>\i\(\),variant:"destructive",children:\[\i\?\?\(0,\i\.jsx\)\(\i\.Trash(?:can)?Icon)/,
+            replace: '$1$2&&$3,$self.renderItems("conversation",{conversationId:arguments[0].id},arguments[0].components.VoidPPMenu),$4'
+          }
+        ]
+      },
+      {
+        find: '"Editing actions","Editing actions"',
+        all: true,
+        group: true,
+        noWarn: true,
         replacement: [
           {
             match: /onSaveEdit:(\i),([^}]{0,80}?route:\i)\}\)(?!\{)/,
@@ -9226,7 +9464,7 @@ button .void-info-hint {
         find: '"user-dropdown.upgrade","Upgrade plan"',
         all: true,
         replacement: {
-          match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=onSelect:\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
+          match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
           replace: '$self.renderItems("user"),$1'
         }
       }
@@ -9378,7 +9616,7 @@ button .void-info-hint {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterFiles/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterFiles/styles.css
   registerStyle("betterFiles", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -9502,7 +9740,7 @@ button .void-info-hint {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterImagine/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterImagine/styles.css
   registerStyle("betterImagine", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -10311,7 +10549,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterModeSelect/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterModeSelect/styles.css
   registerStyle("betterModeSelect", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -10486,6 +10724,18 @@ html.void-cms-picked .void-cms-ghost {
     }
 }
 `);
+
+  // src/plugins/betterModeSelect/glyphs.ts
+  var HEAVY = "heavy";
+  var CONNECTORS_MARKS = ["M12 12H19V16", "17.7236"];
+  function isConnectorsGlyph(markup) {
+    return CONNECTORS_MARKS.some((mark) => markup.includes(mark));
+  }
+  function keepHarvestedGlyph(modeId, markup) {
+    if (modeId !== HEAVY)
+      return true;
+    return !isConnectorsGlyph(markup);
+  }
 
   // src/plugins/betterModeSelect/index.tsx
   var logger22 = new Logger("BetterModeSelect");
@@ -10981,7 +11231,10 @@ html.void-cms-picked .void-cms-ghost {
       const svg = item.querySelector("svg");
       if (!(svg instanceof SVGSVGElement))
         continue;
-      harvested.set(mode.id, normalizeSvg(svg));
+      const markup = normalizeSvg(svg);
+      if (!keepHarvestedGlyph(mode.id, markup))
+        continue;
+      harvested.set(mode.id, markup);
       added = true;
     }
     if (added)
@@ -11247,6 +11500,11 @@ html.void-cms-picked .void-cms-ghost {
       harvestListeners.clear();
     },
     renderPinned: ErrorBoundary.wrap(PinnedModes),
+    HeavyGlyph({ size }) {
+      return /* @__PURE__ */ React.createElement(ConnectedAppsIcon, {
+        size: size ?? 18
+      });
+    },
     patches: [
       {
         find: "data-query-bar-mode-select",
@@ -11262,11 +11520,18 @@ html.void-cms-picked .void-cms-ghost {
             replace: "$&$self.renderPinned(),"
           }
         ]
+      },
+      {
+        find: "connected_apps:",
+        replacement: {
+          match: /connected_apps:(\i)=>\(0,(\i)\.jsx\)\(\i\.ConnectorsIcon,\{size:\1\/4\}\)/,
+          replace: "connected_apps:$1=>(0,$2.jsx)($self.HeavyGlyph,{size:$1})"
+        }
       }
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterNavigator/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterNavigator/styles.css
   registerStyle("betterNavigator", `.void-bn-host {
     pointer-events: none;
     z-index: 50;
@@ -11729,8 +11994,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return null;
     return slot;
   }
+  function chatRoot() {
+    return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
+  }
   function chatPane() {
-    const main = document.querySelector("main");
+    const tagged = document.querySelector("[data-testid='chat-transcript-scroller']");
+    if (tagged && !tagged.closest(PANE_SKIP) && isVisible(tagged))
+      return tagged;
+    const main = chatRoot();
     if (!main)
       return null;
     const skip = (n) => !!n.closest(PANE_SKIP);
@@ -13290,7 +13561,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function bindWatchers() {
     const col = chatColumn();
     const pane = chatPane();
-    const main = document.querySelector("main");
+    const main = chatRoot();
     const target = col ?? pane ?? (main instanceof HTMLElement ? main : document.body);
     if (target !== observedPane) {
       paneMo?.disconnect();
@@ -13303,7 +13574,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         bindWatchers();
         debouncedPaint();
       });
-      mainMo.observe(main, { childList: true, subtree: false });
+      mainMo.observe(main, { childList: true, subtree: true });
     }
   }
   function paint() {
@@ -13408,10 +13679,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     document.addEventListener("pointerover", onPointerOver, { capture: true, passive: true, signal });
     document.addEventListener("pointerout", onPointerOut, { capture: true, passive: true, signal });
     window.addEventListener("popstate", debouncedPaint, { signal });
-    const main = document.querySelector("main");
-    if (main) {
+    const root = chatRoot();
+    if (root) {
       ro = new ResizeObserver(debouncedPaint);
-      ro.observe(main);
+      ro.observe(root);
     }
   }
   function stop() {
@@ -13476,7 +13747,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterQueue/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterQueue/styles.css
   registerStyle("betterQueue", `.void-ms-qchip {
     display: grid;
     flex-shrink: 0;
@@ -13912,13 +14183,19 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     list.push(snap);
     pending2.set(cid, list);
   }
+  function pageRoot() {
+    return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
+  }
+  function isPageShell(node) {
+    return node.matches("main, #grok-content-area, [role='main']");
+  }
   function trayCard() {
     const btn = document.querySelector(TOGGLE_SEL);
     if (!(btn instanceof HTMLElement))
       return null;
     let node = btn;
     let card = null;
-    while (node && node !== document.body && !node.matches("main")) {
+    while (node && node !== document.body && !isPageShell(node)) {
       if (node.querySelector(RAIL_SEL))
         card = node;
       node = node.parentElement;
@@ -14287,7 +14564,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function bindObs() {
     obs?.disconnect();
-    const root = document.querySelector("main") ?? document.body;
+    const root = pageRoot() ?? document.body;
     obs = new MutationObserver(() => scheduleDom());
     obs.observe(root, { childList: true, subtree: true, characterData: true });
   }
@@ -16132,13 +16409,19 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const blocks = [...row.querySelectorAll(":scope > div")].filter((d) => d.querySelectorAll("button").length >= 2);
     return blocks.at(-1) ?? null;
   }
+  function pageRoot2() {
+    return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
+  }
+  function isPageShell2(node) {
+    return node.matches("main, #grok-content-area, [role='main']");
+  }
   function trayCard2() {
     const btn = document.querySelector(TOGGLE_SEL2);
     if (!(btn instanceof HTMLElement))
       return null;
     let node = btn;
     let card = null;
-    while (node && node !== document.body && !node.matches("main")) {
+    while (node && node !== document.body && !isPageShell2(node)) {
       if (node.querySelector(RAIL_SEL2))
         card = node;
       node = node.parentElement;
@@ -16309,7 +16592,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function bindObs2() {
     obs2?.disconnect();
-    const root = document.querySelector("main") ?? document.body;
+    const root = pageRoot2() ?? document.body;
     obs2 = new MutationObserver(() => schedulePaint());
     obs2.observe(root, { childList: true, subtree: true });
   }
@@ -16706,7 +16989,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/betterQuotes/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/betterQuotes/styles.css
   registerStyle("betterQuotes", `.void-qj-hit {
     border-radius: 0.25rem;
     outline: 2px solid var(--fg-primary);
@@ -17398,11 +17681,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     collectIds(quotePopup(), out);
     return [...new Set(out)];
   }
+  function pageRoot3() {
+    return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
+  }
   function chatPane2() {
     const named = document.querySelector(SCROLLER2);
     if (named && !named.closest(PANE_SKIP2))
       return named;
-    const main = document.querySelector("main");
+    const main = pageRoot3();
     if (!main)
       return null;
     const skip = (n) => !!n.closest(PANE_SKIP2);
@@ -17443,7 +17729,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return null;
   }
   function messageEls() {
-    const root = chatPane2() ?? document.querySelector("main") ?? document.body;
+    const root = chatPane2() ?? pageRoot3() ?? document.body;
     const hosts = [...root.querySelectorAll("[id^='response-']")];
     if (hosts.length)
       return hosts;
@@ -18474,7 +18760,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function stampPreviews() {
     const keep = new Set;
-    const root = chatPane2() ?? document.querySelector("main") ?? document.body;
+    const root = chatPane2() ?? pageRoot3() ?? document.body;
     for (const host of root.querySelectorAll("[id^='response-']")) {
       if (host.closest(PANE_SKIP2))
         continue;
@@ -19697,7 +19983,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/chatListStatus/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/chatListStatus/styles.css
   registerStyle("chatListStatus", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -20064,7 +20350,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function officialInterruptedDom() {
     try {
-      const root = document.querySelector("main") ?? document.body;
+      const root = document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main") ?? document.body;
       return USER_INTERRUPT3.test(root.textContent ?? "");
     } catch {
       return false;
@@ -21440,7 +21726,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     },
     hideConnectX: {
       type: 3 /* BOOLEAN */,
-      description: 'Hide the "Connect your \uD835\uDD4F account" upsell popout.',
+      description: "Hide the Connect X upsell and the X connector ready banner.",
       default: true
     },
     hideImagineUpgrade: {
@@ -21499,9 +21785,17 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       hideComponentPatch("UpsellButton", "hideUpsellSmall", false),
       {
         find: "connect-x-upsell-dismissed",
+        noWarn: true,
         replacement: {
           match: /\.ENABLE_X_INTEGRATION&&(\i\.SHOW_CONNECT_X_UPSELL)/,
           replace: ".ENABLE_X_INTEGRATION&&!$self.settings.store.hideConnectX&&$1"
+        }
+      },
+      {
+        find: "x-connector-ready-dismissed",
+        replacement: {
+          match: /(\i)\.SHOW_X_CONNECTOR_READY_BANNER&&/,
+          replace: "$1.SHOW_X_CONNECTOR_READY_BANNER&&!$self.settings.store.hideConnectX&&"
         }
       },
       hideComponentPatch("BrowserNotificationBanner", "hideNotificationBanner"),
@@ -21523,7 +21817,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/cloneChats/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/cloneChats/styles.css
   registerStyle("cloneChats", `.void-clone-icon {
     margin-inline-end: 0.5rem;
 }
@@ -21574,7 +21868,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/completeToast/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/completeToast/styles.css
   registerStyle("completeToast", `.void-ct-host {
     contain: layout style;
     position: fixed;
@@ -22659,7 +22953,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customGreeting/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/customGreeting/styles.css
   registerStyle("customGreeting", `.void-ph-root {
     contain: layout;
 }
@@ -23344,6 +23638,7 @@ Neon rain in a quiet city`
     patches: [
       {
         find: '"LoggedOutHomeComposer",0,',
+        noWarn: true,
         replacement: {
           match: /(placeholder:)(\i)(,"aria-label":)/,
           replace: "$1$self._inputPlaceholder($2)$3"
@@ -23352,10 +23647,21 @@ Neon rain in a quiet city`
       {
         find: "data-query-bar-mode-select",
         all: true,
-        replacement: {
-          match: /("query-bar\.voice-connecting-placeholder","Connecting…"\):)(\i)(?=,isLoading)/,
-          replace: "$1$self._inputPlaceholder($2)"
-        }
+        replacement: [
+          {
+            match: /("query-bar\.voice-connecting-placeholder","Connecting…"\):)(\i)(?=,isLoading)/,
+            replace: "$1$self._inputPlaceholder($2)",
+            noWarn: true
+          },
+          {
+            match: /(\{placeholder:)(\i)(?=,newChatPlaceholder:)/,
+            replace: "$1$self._inputPlaceholder($2)"
+          },
+          {
+            match: /(\)\)\}\):)(\i)(?=,placeholderClassName:)/,
+            replace: "$1$self._inputPlaceholder($2)"
+          }
+        ]
       },
       {
         find: '"HeroHeading",0,',
@@ -23368,7 +23674,7 @@ Neon rain in a quiet city`
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customInstructions/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/customInstructions/styles.css
   registerStyle("customInstructions", `.void-ci-root {
     display: flex;
     flex-direction: column;
@@ -23757,7 +24063,7 @@ Neon rain in a quiet city`
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/customSidebarIdentity/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/customSidebarIdentity/styles.css
   registerStyle("customSidebarIdentity", `.void-csi-name {
     min-width: 0;
     overflow: hidden;
@@ -24606,7 +24912,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/downloadTTS/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/downloadTTS/styles.css
   registerStyle("downloadTTS", `.void-download-tts-spinner {
     pointer-events: none;
 }
@@ -24668,7 +24974,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     _renderDownloadButton: ErrorBoundary.wrap(DownloadButton)
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/exportChat/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/exportChat/styles.css
   registerStyle("exportChat", `.void-export-icon {
     margin-inline-end: 0.5rem;
 }
@@ -24892,7 +25198,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/inputHistory/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/inputHistory/styles.css
   registerStyle("inputHistory", `.void-ih-hud {
     contain: content;
     position: fixed;
@@ -26366,7 +26672,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/messageStars/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/messageStars/styles.css
   registerStyle("messageStars", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -27893,7 +28199,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/messageTimestamps/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/messageTimestamps/styles.css
   registerStyle("messageTimestamps", `.void-timestamp {
     margin-bottom: 0.125rem;
 }
@@ -28926,7 +29232,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/recentTopics/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/recentTopics/styles.css
   registerStyle("recentTopics", `.void-rt-root,
 .void-rt-root:popover-open {
     isolation: isolate;
@@ -29285,6 +29591,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var FILES_CHROME2 = /add files for grok to use in this project/i;
   var PANE_SKIP3 = "[data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
   var MSG_SEL3 = "[data-testid='user-message'], [data-testid='assistant-message']";
+  var SCROLLER3 = "[data-testid='chat-transcript-scroller']";
   var TIME_TOKEN = /(?:^|\s)\d{1,2}:\d{2}\s*(?:am|pm)\b/gi;
   var STATUS_TOKEN = /\b(?:connected to computer|continuing the(?: task)?|worked for \d+\s*m(?:\s*\d+\s*s)?|worked for \d+\s*s)\b/gi;
   var COUNT_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => ({ label: String(n), value: n, default: n === 5 }));
@@ -29853,7 +30160,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function accessWallText() {
     try {
-      const root = document.querySelector("main") ?? document.body;
+      const root = pageRoot4() ?? document.body;
       if (!root)
         return false;
       const text = (root.textContent || "").slice(0, 4000);
@@ -30468,8 +30775,17 @@ html.void-rt-open [data-sidebar="gap"] {
       pendingWs.delete(id);
     }
   }
+  function pageRoot4() {
+    return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
+  }
   function chatPane3() {
-    const main = document.querySelector("main");
+    const tagged = document.querySelector(SCROLLER3);
+    if (tagged && !tagged.closest(PANE_SKIP3)) {
+      const box = tagged.getBoundingClientRect();
+      if (box.width > 40 && box.height > 40)
+        return tagged;
+    }
+    const main = pageRoot4();
     if (!main)
       return null;
     const skip = (n) => !!n.closest(PANE_SKIP3);
@@ -32095,7 +32411,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/settingsFlyout/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/settingsFlyout/styles.css
   registerStyle("settingsFlyout", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -32362,7 +32678,7 @@ html.void-rt-open [data-sidebar="gap"] {
         find: '"user-dropdown.settings","Settings"',
         all: true,
         replacement: {
-          match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{onSelect:(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
+          match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{on(?:Select|Click):(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
           replace: "$self._renderSettingsMenu($1)"
         }
       }
@@ -32461,7 +32777,7 @@ html.void-rt-open [data-sidebar="gap"] {
     ]
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/streamerMode/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/streamerMode/styles.css
   registerStyle("streamerMode", `/* stylelint-disable no-descending-specificity */
 
 /* Sidebar avatar */
@@ -32633,7 +32949,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     }
   });
 
-  // voidpp-css:/workspace/artifacts/Void-src/src/plugins/usageDisplay/styles.css
+  // voidpp-css:/tmp/VoidPP/src/plugins/usageDisplay/styles.css
   registerStyle("usageDisplay", `/*
  * Void++, a modification for grok.com
  * Copyright (c) 2026 Void++ Contributors
@@ -34267,56 +34583,56 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1787870966000;
-  settings_default.updatedAt = 1790439253000;
+  settings_default.updatedAt = 1791395540000;
   chatBarButtons_default.updatedAt = 1790097681000;
-  contextMenu_default.updatedAt = 1781702684000;
-  autoCollapse_default.updatedAt = 1787789817000;
-  autoRetry_default.updatedAt = 1789906500000;
-  avatarPluginsFlyout_default.updatedAt = 0;
-  betterCanvas_default.updatedAt = 1790360947000;
-  betterFiles_default.updatedAt = 1789246749000;
-  betterImagine_default.updatedAt = 1790093417000;
-  betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1790161256000;
-  betterNavigator_default.updatedAt = 1790145289000;
-  betterQueue_default.updatedAt = 1790246920000;
-  betterQuotes_default.updatedAt = 1790442421000;
-  betterSidebar_default.updatedAt = 1789807577000;
-  chatListStatus_default.updatedAt = 1789906500000;
-  chatStateFavicons_default.updatedAt = 1789921507000;
-  cleaner_default.updatedAt = 1790093417000;
-  cloneChats_default.updatedAt = 1787870966000;
-  completeToast_default.updatedAt = 1790093417000;
-  composerOpacity_default.updatedAt = 1790097681000;
-  consoleJanitor_default.updatedAt = 1787789817000;
-  customGreeting_default.updatedAt = 1790164294000;
-  customInstructions_default.updatedAt = 1789898438000;
-  customSidebarIdentity_default.updatedAt = 1789918488000;
-  downloadTTS_default.updatedAt = 1787870966000;
-  experiments_default.updatedAt = 1788047438000;
-  exportChat_default.updatedAt = 1787870966000;
+  contextMenu_default.updatedAt = 1791395540000;
+  autoCollapse_default.updatedAt = 1791395540000;
+  autoRetry_default.updatedAt = 1791395540000;
+  avatarPluginsFlyout_default.updatedAt = 1791395540000;
+  betterCanvas_default.updatedAt = 1791395540000;
+  betterFiles_default.updatedAt = 1791395540000;
+  betterImagine_default.updatedAt = 1791395540000;
+  betterLinks_default.updatedAt = 1791395540000;
+  betterModeSelect_default.updatedAt = 1791395540000;
+  betterNavigator_default.updatedAt = 1791395540000;
+  betterQueue_default.updatedAt = 1791395540000;
+  betterQuotes_default.updatedAt = 1791395540000;
+  betterSidebar_default.updatedAt = 1791395540000;
+  chatListStatus_default.updatedAt = 1791395540000;
+  chatStateFavicons_default.updatedAt = 1791395540000;
+  cleaner_default.updatedAt = 1791395540000;
+  cloneChats_default.updatedAt = 1791395540000;
+  completeToast_default.updatedAt = 1791395540000;
+  composerOpacity_default.updatedAt = 1791395540000;
+  consoleJanitor_default.updatedAt = 1791395540000;
+  customGreeting_default.updatedAt = 1791395540000;
+  customInstructions_default.updatedAt = 1791395540000;
+  customSidebarIdentity_default.updatedAt = 1791395540000;
+  downloadTTS_default.updatedAt = 1791395540000;
+  experiments_default.updatedAt = 1791395540000;
+  exportChat_default.updatedAt = 1791395540000;
   incognito_default.updatedAt = 1787870966000;
-  inputHistory_default.updatedAt = 1790418846000;
-  messageStars_default.updatedAt = 0;
-  messageTimestamps_default.updatedAt = 1789881463000;
-  noBuildStarters_default.updatedAt = 1789894247000;
-  noDictation_default.updatedAt = 1788037550000;
-  noGrokBot_default.updatedAt = 1787789817000;
-  noShareLink_default.updatedAt = 1787789817000;
-  noSidebarIdentity_default.updatedAt = 1788577403000;
-  oneko_default.updatedAt = 1787870966000;
-  pluginsFlyout_default.updatedAt = 1788051053000;
-  recentTopics_default.updatedAt = 1789881195000;
-  responseNotification_default.updatedAt = 1790093417000;
-  settingsFlyout_default.updatedAt = 1788095208000;
-  stableComposer_default.updatedAt = 1789125421000;
-  starry_default.updatedAt = 1787870966000;
+  inputHistory_default.updatedAt = 1791395540000;
+  messageStars_default.updatedAt = 1791395540000;
+  messageTimestamps_default.updatedAt = 1791395540000;
+  noBuildStarters_default.updatedAt = 1791395540000;
+  noDictation_default.updatedAt = 1791395540000;
+  noGrokBot_default.updatedAt = 1791395540000;
+  noShareLink_default.updatedAt = 1791395540000;
+  noSidebarIdentity_default.updatedAt = 1791395540000;
+  oneko_default.updatedAt = 1791395540000;
+  pluginsFlyout_default.updatedAt = 1791395540000;
+  recentTopics_default.updatedAt = 1791395540000;
+  responseNotification_default.updatedAt = 1791395540000;
+  settingsFlyout_default.updatedAt = 1791395540000;
+  stableComposer_default.updatedAt = 1791395540000;
+  starry_default.updatedAt = 1791395540000;
   streamerMode_default.updatedAt = 1787870966000;
-  usageDisplay_default.updatedAt = 1789172854000;
-  userQuotes_default.updatedAt = 1790169322000;
-  widerChat_default.updatedAt = 1787870966000;
+  usageDisplay_default.updatedAt = 1791395540000;
+  userQuotes_default.updatedAt = 1791395540000;
+  widerChat_default.updatedAt = 1791395540000;
   var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
-  // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
+  // voidpp-css:/tmp/VoidPP/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
     display: flex;
@@ -34444,151 +34760,6 @@ button:has(.void-ud-trigger > .void-ud-label) {
       activeNoticeId = null;
     }
   }
-  // src/turbopack/common/index.ts
-  var exports_common = {};
-  __export(exports_common, {
-    Accordion: () => Accordion,
-    AccordionContent: () => AccordionContent,
-    AccordionItem: () => AccordionItem,
-    AccordionTrigger: () => AccordionTrigger,
-    AlertDialog: () => AlertDialog,
-    AlertDialogAction: () => AlertDialogAction,
-    AlertDialogCancel: () => AlertDialogCancel,
-    AlertDialogContent: () => AlertDialogContent,
-    AlertDialogDescription: () => AlertDialogDescription,
-    AlertDialogFooter: () => AlertDialogFooter,
-    AlertDialogHeader: () => AlertDialogHeader,
-    AlertDialogTitle: () => AlertDialogTitle,
-    AlertDialogTrigger: () => AlertDialogTrigger,
-    AnimatePresence: () => AnimatePresence,
-    ApiClients: () => ApiClients,
-    Avatar: () => Avatar,
-    Badge: () => Badge,
-    Button: () => Button,
-    ButtonWithPopover: () => ButtonWithPopover,
-    ButtonWithTooltip: () => ButtonWithTooltip,
-    ButtonWithTooltipOptimized: () => ButtonWithTooltipOptimized,
-    Card: () => Card,
-    CardContent: () => CardContent,
-    CardHeader: () => CardHeader,
-    CardTitle: () => CardTitle,
-    ChatPageStore: () => ChatPageStore,
-    Checkbox: () => Checkbox,
-    ClassNames: () => ClassNames,
-    Command: () => Command,
-    CommandEmpty: () => CommandEmpty,
-    CommandGroup: () => CommandGroup,
-    CommandInput: () => CommandInput,
-    CommandItem: () => CommandItem,
-    CommandList: () => CommandList,
-    ConversationStore: () => ConversationStore,
-    Dialog: () => Dialog,
-    DialogClose: () => DialogClose,
-    DialogContent: () => DialogContent,
-    DialogDescription: () => DialogDescription,
-    DialogFooter: () => DialogFooter,
-    DialogHeader: () => DialogHeader,
-    DialogOverlay: () => DialogOverlay,
-    DialogPortal: () => DialogPortal,
-    DialogTitle: () => DialogTitle,
-    DialogTrigger: () => DialogTrigger,
-    Drawer: () => Drawer,
-    DrawerContent: () => DrawerContent,
-    DrawerDescription: () => DrawerDescription,
-    DrawerFooter: () => DrawerFooter,
-    DrawerHeader: () => DrawerHeader,
-    DrawerTitle: () => DrawerTitle,
-    DrawerTrigger: () => DrawerTrigger,
-    DropdownMenu: () => DropdownMenu,
-    DropdownMenuCheckboxItem: () => DropdownMenuCheckboxItem,
-    DropdownMenuContent: () => DropdownMenuContent,
-    DropdownMenuItem: () => DropdownMenuItem,
-    DropdownMenuPortal: () => DropdownMenuPortal,
-    DropdownMenuRadioGroup: () => DropdownMenuRadioGroup,
-    DropdownMenuRadioItem: () => DropdownMenuRadioItem,
-    DropdownMenuSeparator: () => DropdownMenuSeparator,
-    DropdownMenuSub: () => DropdownMenuSub,
-    DropdownMenuSubContent: () => DropdownMenuSubContent,
-    DropdownMenuSubTrigger: () => DropdownMenuSubTrigger,
-    DropdownMenuTrigger: () => DropdownMenuTrigger,
-    FeatureStore: () => FeatureStore,
-    FileUtils: () => FileUtils,
-    FilesPageStore: () => FilesPageStore,
-    Fragment: () => Fragment,
-    HoverCard: () => HoverCard,
-    HoverCardContent: () => HoverCardContent,
-    HoverCardTrigger: () => HoverCardTrigger,
-    Input: () => Input,
-    Label: () => Label,
-    LazyComponent: () => LazyComponent,
-    MediaStore: () => MediaStore,
-    MessageStore: () => MessageStore,
-    ModesStore: () => ModesStore,
-    MotionDiv: () => MotionDiv,
-    Popover: () => Popover,
-    PopoverArrow: () => PopoverArrow,
-    PopoverContent: () => PopoverContent,
-    PopoverTrigger: () => PopoverTrigger,
-    Portal: () => Portal,
-    React: () => React,
-    ResponseStore: () => ResponseStore,
-    ResponsiveDialog: () => ResponsiveDialog,
-    RoutingStore: () => RoutingStore,
-    Select: () => Select,
-    SelectContent: () => SelectContent,
-    SelectItem: () => SelectItem,
-    SelectTrigger: () => SelectTrigger,
-    SelectValue: () => SelectValue,
-    Separator: () => Separator,
-    SessionStore: () => SessionStore,
-    SettingsDescription: () => SettingsDescription,
-    SettingsDialogStore: () => SettingsDialogStore,
-    SettingsRow: () => SettingsRow,
-    SettingsStore: () => SettingsStore,
-    SettingsSwitch: () => SettingsSwitch,
-    SettingsTitle: () => SettingsTitle,
-    SidebarComponents: () => SidebarComponents,
-    Skeleton: () => Skeleton,
-    Slider: () => Slider,
-    Spinner: () => Spinner,
-    SubscriptionsStore: () => SubscriptionsStore,
-    Switch: () => Switch,
-    Table: () => Table,
-    TableBody: () => TableBody,
-    TableCell: () => TableCell,
-    TableHead: () => TableHead,
-    TableHeader: () => TableHeader,
-    TableRow: () => TableRow,
-    Tabs: () => Tabs,
-    TabsContent: () => TabsContent,
-    TabsList: () => TabsList,
-    TabsTrigger: () => TabsTrigger,
-    TextToSpeechStore: () => TextToSpeechStore,
-    Textarea: () => Textarea,
-    Toaster: () => Toaster,
-    ToggleGroup: () => ToggleGroup,
-    ToggleGroupItem: () => ToggleGroupItem,
-    Tooltip: () => Tooltip,
-    TooltipContent: () => TooltipContent,
-    TooltipProvider: () => TooltipProvider,
-    TooltipTrigger: () => TooltipTrigger,
-    createElement: () => createElement,
-    onceReady: () => onceReady,
-    useCallback: () => useCallback,
-    useContext: () => useContext,
-    useDeferredValue: () => useDeferredValue,
-    useEffect: () => useEffect,
-    useId: () => useId,
-    useLayoutEffect: () => useLayoutEffect,
-    useMemo: () => useMemo,
-    useReducedMotion: () => useReducedMotion,
-    useReducer: () => useReducer,
-    useRef: () => useRef,
-    useState: () => useState,
-    useSyncExternalStore: () => useSyncExternalStore,
-    useTransition: () => useTransition
-  });
-
   // src/VoidPP.ts
   var logger45 = new Logger("TurbopackPatcher", "#e78284");
   var FALLBACK_MS = 15000;

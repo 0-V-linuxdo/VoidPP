@@ -20,6 +20,8 @@ import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 import type { DragEvent, MouseEvent } from "react";
 
+import { keepHarvestedGlyph } from "./glyphs";
+
 const logger = new Logger("BetterModeSelect");
 const cl = classNameFactory("void-cms-");
 
@@ -522,7 +524,9 @@ function stashGlyphs(items: HTMLElement[]) {
         if (!mode || harvested.has(mode.id)) continue;
         const svg = item.querySelector("svg");
         if (!(svg instanceof SVGSVGElement)) continue;
-        harvested.set(mode.id, normalizeSvg(svg));
+        const markup = normalizeSvg(svg);
+        if (!keepHarvestedGlyph(mode.id, markup)) continue;
+        harvested.set(mode.id, markup);
         added = true;
     }
     if (added) notifyHarvest();
@@ -799,6 +803,10 @@ export default definePlugin({
 
     renderPinned: ErrorBoundary.wrap(PinnedModes),
 
+    HeavyGlyph({ size }: { size?: number | string }) {
+        return <ConnectedAppsIcon size={size ?? 18} />;
+    },
+
     patches: [
         {
             find: "data-query-bar-mode-select",
@@ -814,6 +822,13 @@ export default definePlugin({
                     replace: "$&$self.renderPinned(),",
                 },
             ],
+        },
+        {
+            find: "connected_apps:",
+            replacement: {
+                match: /connected_apps:(\i)=>\(0,(\i)\.jsx\)\(\i\.ConnectorsIcon,\{size:\1\/4\}\)/,
+                replace: "connected_apps:$1=>(0,$2.jsx)($self.HeavyGlyph,{size:$1})",
+            },
         },
     ],
 });

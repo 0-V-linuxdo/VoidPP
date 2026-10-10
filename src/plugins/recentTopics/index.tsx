@@ -37,6 +37,7 @@ const SKIP_NOISE = /^(copy|share|retry|edit|more|thinking|analyzing|searching|co
 const FILES_CHROME = /add files for grok to use in this project/i;
 const PANE_SKIP = "[data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
 const MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
+const SCROLLER = "[data-testid='chat-transcript-scroller']";
 const TIME_TOKEN = /(?:^|\s)\d{1,2}:\d{2}\s*(?:am|pm)\b/gi;
 const STATUS_TOKEN = /\b(?:connected to computer|continuing the(?: task)?|worked for \d+\s*m(?:\s*\d+\s*s)?|worked for \d+\s*s)\b/gi;
 const COUNT_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => ({ label: String(n), value: n, default: n === 5 }));
@@ -619,7 +620,7 @@ function pageTitle(): string {
 
 function accessWallText(): boolean {
     try {
-        const root = document.querySelector("main") ?? document.body;
+        const root = pageRoot() ?? document.body;
         if (!root) return false;
         const text = (root.textContent || "").slice(0, 4000);
         return ACCESS_NEED.test(text) && ACCESS_HINT.test(text);
@@ -1181,8 +1182,18 @@ function requestWorkspace(id: string) {
     }
 }
 
+function pageRoot(): HTMLElement | null {
+    return document.getElementById("grok-content-area")
+        ?? document.querySelector<HTMLElement>("[role='main'], main");
+}
+
 function chatPane(): HTMLElement | null {
-    const main = document.querySelector("main");
+    const tagged = document.querySelector<HTMLElement>(SCROLLER);
+    if (tagged && !tagged.closest(PANE_SKIP)) {
+        const box = tagged.getBoundingClientRect();
+        if (box.width > 40 && box.height > 40) return tagged;
+    }
+    const main = pageRoot();
     if (!main) return null;
     const skip = (n: HTMLElement) => !!n.closest(PANE_SKIP);
     const msg = main.querySelector<HTMLElement>(MSG_SEL);

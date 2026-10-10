@@ -32,6 +32,34 @@ export default definePlugin({
             group: true,
             replacement: [
                 {
+                    match: /\(0,(\i)\.jsx\)\((\i),\{editing:/,
+                    replace: "(0,$1.jsx)($2,{id:arguments[0].id,editing:",
+                },
+                {
+                    match: /\(0,(\i)\.jsx\)\((\i),\{menuOpen:/,
+                    replace: "(0,$1.jsx)($2,{id:arguments[0].id,menuOpen:",
+                },
+                {
+                    match: /\(0,(\i)\.jsx\)\((\i),\{components:/g,
+                    replace: "(0,$1.jsx)($2,{id:arguments[0].id,components:",
+                },
+                {
+                    match: /Item:(\i)\.(Dropdown|Context)MenuItem,/g,
+                    replace: "$&VoidPPMenu:{Item:$1.$2MenuItem,Sub:$1.$2MenuSub,SubTrigger:$1.$2MenuSubTrigger,SubContent:$1.$2MenuSubContent,Separator:$1.$2MenuSeparator},",
+                },
+                {
+                    match: /(\[)(\i)&&(\(0,\i\.jsx\)\(\i,\{\}\)),(\(0,\i\.jsxs?\)\(\i,\{onSelect:\(\)=>\i\(\),variant:"destructive",children:\[\i\?\?\(0,\i\.jsx\)\(\i\.Trash(?:can)?Icon)/,
+                    replace: '$1$2&&$3,$self.renderItems("conversation",{conversationId:arguments[0].id},arguments[0].components.VoidPPMenu),$4',
+                },
+            ],
+        },
+        {
+            find: '"Editing actions","Editing actions"',
+            all: true,
+            group: true,
+            noWarn: true,
+            replacement: [
+                {
                     match: /onSaveEdit:(\i),([^}]{0,80}?route:\i)\}\)(?!\{)/,
                     replace: "onSaveEdit:$1,id:arguments[0].id,$2})",
                 },
@@ -61,7 +89,7 @@ export default definePlugin({
             find: '"user-dropdown.upgrade","Upgrade plan"',
             all: true,
             replacement: {
-                match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=onSelect:\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
+                match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
                 replace: '$self.renderItems("user"),$1',
             },
         },

@@ -180,8 +180,15 @@ function nativeSlot(): HTMLElement | null {
     return slot;
 }
 
+function chatRoot(): HTMLElement | null {
+    return document.getElementById("grok-content-area")
+        ?? document.querySelector<HTMLElement>("[role='main'], main");
+}
+
 function chatPane(): HTMLElement | null {
-    const main = document.querySelector("main");
+    const tagged = document.querySelector<HTMLElement>("[data-testid='chat-transcript-scroller']");
+    if (tagged && !tagged.closest(PANE_SKIP) && isVisible(tagged)) return tagged;
+    const main = chatRoot();
     if (!main) return null;
     const skip = (n: HTMLElement) => !!n.closest(PANE_SKIP);
     const msg = main.querySelector<HTMLElement>(MSG_SEL);
@@ -1641,7 +1648,7 @@ function onPointerDown(e: PointerEvent) {
 function bindWatchers() {
     const col = chatColumn();
     const pane = chatPane();
-    const main = document.querySelector("main");
+    const main = chatRoot();
     const target = col ?? pane ?? (main instanceof HTMLElement ? main : document.body);
 
     if (target !== observedPane) {
@@ -1656,7 +1663,7 @@ function bindWatchers() {
             bindWatchers();
             debouncedPaint();
         });
-        mainMo.observe(main, { childList: true, subtree: false });
+        mainMo.observe(main, { childList: true, subtree: true });
     }
 }
 
@@ -1768,10 +1775,10 @@ function start() {
     document.addEventListener("pointerover", onPointerOver, { capture: true, passive: true, signal });
     document.addEventListener("pointerout", onPointerOut, { capture: true, passive: true, signal });
     window.addEventListener("popstate", debouncedPaint, { signal });
-    const main = document.querySelector("main");
-    if (main) {
+    const root = chatRoot();
+    if (root) {
         ro = new ResizeObserver(debouncedPaint);
-        ro.observe(main);
+        ro.observe(root);
     }
 }
 

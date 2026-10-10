@@ -590,6 +590,7 @@ export default definePlugin({
     patches: [
         {
             find: '"LoggedOutHomeComposer",0,',
+            noWarn: true,
             replacement: {
                 match: /(placeholder:)(\i)(,"aria-label":)/,
                 replace: "$1$self._inputPlaceholder($2)$3",
@@ -598,10 +599,21 @@ export default definePlugin({
         {
             find: "data-query-bar-mode-select",
             all: true,
-            replacement: {
-                match: /("query-bar\.voice-connecting-placeholder","Connecting…"\):)(\i)(?=,isLoading)/,
-                replace: "$1$self._inputPlaceholder($2)",
-            },
+            replacement: [
+                {
+                    match: /("query-bar\.voice-connecting-placeholder","Connecting…"\):)(\i)(?=,isLoading)/,
+                    replace: "$1$self._inputPlaceholder($2)",
+                    noWarn: true,
+                },
+                {
+                    match: /(\{placeholder:)(\i)(?=,newChatPlaceholder:)/,
+                    replace: "$1$self._inputPlaceholder($2)",
+                },
+                {
+                    match: /(\)\)\}\):)(\i)(?=,placeholderClassName:)/,
+                    replace: "$1$self._inputPlaceholder($2)",
+                },
+            ],
         },
         {
             find: '"HeroHeading",0,',

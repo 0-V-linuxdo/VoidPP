@@ -58,9 +58,10 @@ Click the badge to install (jsDelivr, no GitHub `CSP: sandbox`). Tampermonkey au
 
 | Feature | Default | What it does |
 | --- | --- | --- |
-| <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | On | Hide inaccessible models in the model selector again. |
+| <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | On | Hide inaccessible models in the model selector again. Connect X now hides the X connector ready banner. |
 | <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | On | The queue chip menu checks that row's mode. |
-| <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | On | Keep the right panel closed without crashing plugin start when the closer is not on the store snapshot. |
+| <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | On | Keep the right panel closed, including the desktop shell auto-open (`view:"browser"`). |
+| <img src="https://api.iconify.design/lucide/message-circle.svg?color=%238b949e" width="16" height="16" alt=""> CustomGreeting | Off | The composer placeholder follows the desktop shell, not the old voice-connecting tail. |
 
 #### Settings UI
 

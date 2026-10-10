@@ -23,7 +23,7 @@ const MSG_HELLO = "void-better-canvas-hello";
 
 const PANE = '[class*="pane-card"],[class*="masonry"],[class*="lightbox"]';
 const OVERFLOW = '[class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-x-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"],[class*="overflow-x-scroll"]';
-const SCROLLER = `:is(${PANE}):is(${OVERFLOW}),:is(${PANE}) :is(${OVERFLOW}),main:has([aria-label="Generation mode"]) :is(${OVERFLOW})`;
+const SCROLLER = `:is(${PANE}):is(${OVERFLOW}),:is(${PANE}) :is(${OVERFLOW}),:is(main,#grok-content-area,[role="main"]):has([aria-label="Generation mode"]) :is(${OVERFLOW})`;
 const IFRAME_SEL = 'iframe[title="Preview"],iframe[src*="grokusercontent.com"],iframe[src*="grok-sandbox.com"],[class*="pane-card"] iframe';
 
 const settings = definePluginSettings({
@@ -364,7 +364,7 @@ function markManual(target: EventTarget | null): boolean {
     if (!(target instanceof Element)) return false;
     const node = target.closest("button,a,[role='menuitem'],[role='tab'],[role='option']") ?? target;
     const aria = `${node.getAttribute("aria-label") ?? ""} ${node.getAttribute("title") ?? ""}`.toLowerCase();
-    const text = (node.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 64);
+    const text = (node.textContent ?? "").replaceAll(/\s+/g, " ").trim().toLowerCase().slice(0, 64);
     const blob = `${aria} ${text}`;
     const inPane = !!node.closest("[class*='pane-card']");
     const project = inProjectsGroup(target);
@@ -559,8 +559,8 @@ export default definePlugin({
             find: 'source:"auto"',
             all: true,
             replacement: {
-                match: /&&(\i)\(\{source:"auto"\}\)/,
-                replace: "&&!$self.settings.store.hideRightPanel&&$1({source:\"auto\"})",
+                match: /&&(\i)\((\i\?\{source:"auto",view:"browser"\}:\{source:"auto"\}|\{source:"auto"\})\)/,
+                replace: "&&!$self.settings.store.hideRightPanel&&$1($2)",
             },
         },
     ],

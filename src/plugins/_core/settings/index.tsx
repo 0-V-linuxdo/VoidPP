@@ -248,6 +248,11 @@ export default definePlugin({
                 {
                     match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
                     replace: "[...$&,...$self._tabEntries()]",
+                    noWarn: true,
+                },
+                {
+                    match: /\i\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
+                    replace: "[...$&,...$self._tabEntries()]",
                 },
                 {
                     match: /(\["general","grok","payments","data","other"),("team-management"\])/,
@@ -268,16 +273,27 @@ export default definePlugin({
             all: true,
             replacement: [
                 {
-                    match: /("SettingsTitle",0,)(\i)/,
+                    match: /("SettingsTitle",0,)(?!function)(\i)/,
+                    replace: '$1$self._setPrimitive("SettingsTitle",$2)',
+                    noWarn: true,
+                },
+                {
+                    match: /("SettingsTitle",0,)(function\(\i\)\{[\s\S]*?\})(?=\]\))/,
                     replace: '$1$self._setPrimitive("SettingsTitle",$2)',
                 },
                 {
-                    match: /("SettingsDescription",0,)(\i)/,
+                    match: /("SettingsDescription",0,)(?!function)(\i)/,
+                    replace: '$1$self._setPrimitive("SettingsDescription",$2)',
+                    noWarn: true,
+                },
+                {
+                    match: /("SettingsDescription",0,)(function\(\i\)\{[\s\S]*?\})(?=,"Settings)/,
                     replace: '$1$self._setPrimitive("SettingsDescription",$2)',
                 },
                 {
                     match: /("SettingsRow",0,)(?!function)(\i)/,
                     replace: '$1$self._setPrimitive("SettingsRow",$2)',
+                    noWarn: true,
                 },
                 {
                     match: /("SettingsRow",0,)(function\(\i\)\{[\s\S]*?\})(?=,"Settings)/,
