@@ -95,7 +95,7 @@
 }
 
 .void-qj-back {
-    position: fixed;
+    position: absolute;
     z-index: 30;
     display: grid;
     place-items: center;

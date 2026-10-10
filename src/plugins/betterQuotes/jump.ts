@@ -1334,22 +1334,33 @@ function headerStickTop(badgeH: number): number {
     return r.top + (r.height - badgeH) / 2;
 }
 
-function followTop(host: HTMLElement, badgeH: number): number {
+function offsetWithin(host: HTMLElement, el: HTMLElement): number {
+    let y = 0;
+    let n: HTMLElement | null = el;
+    for (let i = 0; i < 8 && n && n !== host; i++) {
+        y += n.offsetTop;
+        const next = n.offsetParent;
+        if (!(next instanceof HTMLElement) || !host.contains(next)) break;
+        n = next;
+    }
+    return y;
+}
+
+function followOffset(host: HTMLElement, badgeH: number): number {
     const ts = host.querySelector<HTMLElement>(":scope > .void-timestamp");
     if (ts) {
-        const r = ts.getBoundingClientRect();
-        if (r.height >= 12 && r.height <= 48) return r.top + (r.height - badgeH) / 2;
+        const h = ts.offsetHeight;
+        if (h >= 12 && h <= 48) return ts.offsetTop + (h - badgeH) / 2;
     }
-    const bubble = host.querySelector<HTMLElement>(".message-bubble") ?? host;
-    const line = bubble.querySelector<HTMLElement>("p, li, h1, h2, h3");
+    const bubble = host.querySelector<HTMLElement>(".message-bubble");
+    const root = bubble ?? host;
+    const line = root.querySelector<HTMLElement>("p, li, h1, h2, h3");
     if (line) {
-        const r = line.getBoundingClientRect();
-        const top = bubble.getBoundingClientRect().top;
-        if (r.height >= 16 && r.height <= 48 && r.top >= top - 2 && r.top - top < 48) {
-            return r.top + (r.height - badgeH) / 2;
-        }
+        const h = line.offsetHeight;
+        const top = offsetWithin(host, line);
+        if (h >= 16 && h <= 48 && top >= -2 && top < 80) return top + (h - badgeH) / 2;
     }
-    return bubble.getBoundingClientRect().top + 8;
+    return (bubble ? offsetWithin(host, bubble) : 0) + 8;
 }
 
 function paintBacklinks() {
@@ -1373,15 +1384,26 @@ function paintBacklinks() {
             btn.type = "button";
             btn.className = cl("back");
             btn.dataset.voidQjSrc = source;
-            document.body.append(btn);
         }
         ensureGlyph(btn);
         paintCount(btn, cites.length);
         const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
         if (btn.getAttribute("aria-label") !== aria) btn.setAttribute("aria-label", aria);
-        btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
         const badgeH = btn.offsetHeight || 24;
-        btn.style.top = `${Math.round(Math.max(headerStickTop(badgeH), followTop(host, badgeH)))}px`;
+        const offset = followOffset(host, badgeH);
+        const stick = headerStickTop(badgeH);
+        const viewLeft = Math.min(window.innerWidth - 36, box.right - 28);
+        if (box.top + offset < stick) {
+            if (btn.parentElement !== document.body) document.body.append(btn);
+            btn.style.position = "fixed";
+            btn.style.left = `${Math.round(viewLeft)}px`;
+            btn.style.top = `${Math.round(stick)}px`;
+        } else {
+            if (btn.parentElement !== host) host.append(btn);
+            btn.style.position = "absolute";
+            btn.style.left = `${Math.round(viewLeft - box.left)}px`;
+            btn.style.top = `${Math.round(offset)}px`;
+        }
         if (openSrc === source) placeMenu(btn);
     }
     for (const n of document.querySelectorAll<HTMLElement>(`.${cl("back")}`)) {
