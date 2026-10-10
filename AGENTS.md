@@ -215,7 +215,7 @@ Regression table:
 
 ## SourceChips
 
-The sources chip is `div[role=button].rounded-full` with `aria-label` like `10 sources`, a `.truncate` label, and up to three favicon plates. Each plate is `div.size-5.rounded-full.border.bg-surface` around `img.size-4.rounded-full` (`google.com/s2/favicons`). That plate is the extra circle. Make only the plate's border and background transparent. Do not remove the chip's own pill border, the overlap `mask` (`radial-gradient(12px at -3px 50%…)`), or `rounded-full` on the image. Do not restyle avatars or other `rounded-full` borders. A localized label still matches because the selector keys off the favicon image and the `.truncate` sibling, not the English word.
+The sources chip is `div[role=button].rounded-full` with `aria-label` like `10 sources`, a `.truncate` label, and up to three favicon plates. Each plate is `div.size-5.rounded-full.overflow-hidden.border.bg-surface` around `img.size-4.rounded-full` (`google.com/s2/favicons`). `[20261010.6]` made the plate border and background transparent and left both `rounded-full`s. The circle was still there: the 20px plate clips a ring around the 16px image, and a transparent 1px border still antialiases. `[20261010.7]` sets `border: 0` and `border-radius: 0` on the plate and the image. Keep the chip's own pill border and the overlap `mask` (`radial-gradient(12px at -3px 50%…)`). Do not restyle avatars or other `rounded-full` borders. A localized label still matches because the selector keys off the favicon image and the `.truncate` sibling, not the English word.
 
 ## CompleteToast
 
