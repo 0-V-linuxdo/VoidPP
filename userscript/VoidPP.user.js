@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261010.7
+// @version      20261010.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261010.7] v1.0.0 — A modification for grok.com
+ * Void++ [20261010.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261010.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"34e71af"}`
-    }, `(${"34e71af"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261010.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5a6b672"}`
+    }, `(${"5a6b672"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -32744,6 +32744,10 @@ html.void-rt-open [data-sidebar="gap"] {
   // src/plugins/sourceChips/index.ts
   var STYLE_NAME8 = "sourceChips";
   var CSS3 = `
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) {
+    border: 0 !important;
+    box-shadow: none !important;
+}
 div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) > div:has(> img[src*="favicon" i]) {
     border: 0 !important;
     background: transparent !important;
@@ -32758,7 +32762,7 @@ div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" 
   var sourceChips_default = definePlugin({
     name: "SourceChips",
     icon: GlobeIcon,
-    description: "Drop the extra circle around citation favicons on the sources chip.",
+    description: "Drop the circle around citation favicons and the sources chip border.",
     authors: [Devs.p],
     tags: ["messages", "declutter"],
     enabledByDefault: true,
@@ -34710,7 +34714,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   recentTopics_default.updatedAt = 1791658451000;
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1791656586000;
-  sourceChips_default.updatedAt = 1791670786000;
+  sourceChips_default.updatedAt = 1791671691000;
   stableComposer_default.updatedAt = 1789125421000;
   starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
