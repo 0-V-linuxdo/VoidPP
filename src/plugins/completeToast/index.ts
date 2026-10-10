@@ -504,9 +504,20 @@ function resumeTimer() {
 }
 
 function show(cid: string, rid: string, kind: "chat" | "imagine" = "chat", previewText = "") {
-    hide();
     if (kind === "chat" && onBotPage()) return;
     if (kind === "imagine" && onImaginePage()) return;
+    const titleText = kind === "imagine" ? "Imagine ready" : titleOf(cid);
+    const preview = kind === "imagine" ? previewText : previewOf(cid, rid);
+    const subText = preview || (kind === "imagine" ? "Generation ready" : "Response ready");
+    if (toast?.cid === cid && toast.kind === kind && host?.isConnected) {
+        toast = { cid, rid, kind };
+        const title = host.querySelector(`.${cl("title")}`);
+        const sub = host.querySelector(`.${cl("preview")}`);
+        if (title) title.textContent = titleText;
+        if (sub) sub.textContent = subText;
+        return;
+    }
+    hide();
     toast = { cid, rid, kind };
     const root = document.createElement("div");
     root.id = HOST;
@@ -525,12 +536,11 @@ function show(cid: string, rid: string, kind: "chat" | "imagine" = "chat", previ
     body.className = cl("body");
     const title = document.createElement("span");
     title.className = cl("title");
-    title.textContent = kind === "imagine" ? "Imagine ready" : titleOf(cid);
+    title.textContent = titleText;
     body.append(title);
-    const preview = kind === "imagine" ? previewText : previewOf(cid, rid);
     const sub = document.createElement("span");
     sub.className = cl("preview");
-    sub.textContent = preview || (kind === "imagine" ? "Generation ready" : "Response ready");
+    sub.textContent = subText;
     body.append(sub);
     main.append(icon, body);
     const x = document.createElement("button");
@@ -709,6 +719,7 @@ function maybeFinish(cid: string, responseId = "") {
     if (seenFinish(cid, rid)) return;
     absorbFinish(cid, rid);
     if (!rid) markToasted(cid);
+    watched.add(cid);
     show(cid, rid);
 }
 
@@ -764,11 +775,52 @@ function finishClosed() {
             const last = lastAssistant(id, byConversationId);
             if (!last?.responseId || toasted.has(last.responseId)) continue;
             if (isLiveResponse(last) || isLiveCid(id)) continue;
-            maybeFinish(id, last.responseId);
+            watched.add(id);
+            absorbFinish(id, last.responseId);
         }
     } catch (e) {
         logger.debug("closed scan failed:", e);
     }
+}
+
+function liveGenIds(cid: string): string[] {
+    const ids: string[] = [];
+    const add = (value: unknown) => {
+        if (typeof value === "string" && value && !ids.includes(value)) ids.push(value);
+    };
+    const gw = gatewayOf(cid);
+    const gen = gw?.activeGeneration;
+    const phase = String((gen as { phase?: string } | null | undefined)?.phase ?? "").trim().toLowerCase();
+    if (LIVE_PHASE.has(phase)) {
+        add(gen?.assistantId);
+        add(gen?.responseId);
+    } else if (gen?.assistantId) {
+        const named = gw?.nodes?.[gen.assistantId];
+        if (named && (LIVE_NODE.has(named.status) || isLiveResponse(named.content))) {
+            add(gen.assistantId);
+            add(gen.responseId);
+            add(named.content?.responseId);
+        }
+    }
+    const node = lastAssistantNode(gw);
+    if (node && (LIVE_NODE.has(node.status) || isLiveResponse(node.content))) {
+        add(node.id);
+        add(node.content?.responseId);
+    }
+    try {
+        const last = lastAssistant(cid, ResponseStore.useResponseStore.getState().byConversationId);
+        if (last && isLiveResponse(last)) add(last.responseId);
+    } catch { /* store */ }
+    return ids;
+}
+
+function newOffscreenTurn(cid: string): boolean {
+    const gw = gatewayOf(cid);
+    if ((gw?.queue?.length ?? 0) > 0) return true;
+    const phase = String((gw?.activeGeneration as { phase?: string } | null | undefined)?.phase ?? "").trim().toLowerCase();
+    if (phase === "sending") return true;
+    const ids = liveGenIds(cid);
+    return ids.length > 0 && ids.every(id => !toasted.has(id));
 }
 
 function syncLive() {
@@ -776,7 +828,7 @@ function syncLive() {
     const now = liveCids();
     const open = new Set(currentIds());
     for (const id of now) {
-        if (!open.has(id)) watched.delete(id);
+        if (!open.has(id) && newOffscreenTurn(id)) watched.delete(id);
         live.add(id);
     }
     for (const id of live) {
