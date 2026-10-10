@@ -11,13 +11,15 @@ import definePlugin from "@utils/types";
 
 const STYLE_NAME = "sourceChips";
 
-/* The sources chip is a pill. Each favicon sits in a 20px rounded plate
- * (`size-5` + `rounded-full` + `overflow-hidden` + `border`) around a 16px
- * image that is also `rounded-full`. `[20261010.6]` only cleared the plate
- * paint. The circular clip stayed, so the ring was still visible.
- * Drop the circle itself: no border, no radius on the plate or the image.
- * Keep the overlap mask and the pill border. */
+/* The sources chip is a pill (`border border-border-l1`). Each favicon sits
+ * in a 20px rounded plate around a 16px image. `[20261010.7]` dropped the
+ * plate circle and left the pill border. `[20261010.8]` drops that border
+ * too. Keep the pill fill, the label, and the overlap mask. */
 const CSS = `
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) {
+    border: 0 !important;
+    box-shadow: none !important;
+}
 div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) > div:has(> img[src*="favicon" i]) {
     border: 0 !important;
     background: transparent !important;
@@ -33,7 +35,7 @@ div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" 
 export default definePlugin({
     name: "SourceChips",
     icon: GlobeIcon,
-    description: "Drop the extra circle around citation favicons on the sources chip.",
+    description: "Drop the circle around citation favicons and the sources chip border.",
     authors: [Devs.p],
     tags: ["messages", "declutter"],
     enabledByDefault: true,
