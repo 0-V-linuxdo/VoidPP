@@ -192,8 +192,8 @@ function pillButton(tab: string) {
     if (!lists) return null;
     for (const list of lists) {
         const tabs = [...list.querySelectorAll('[role="tab"]')];
-        const labels = tabs.map(button => button.textContent?.trim());
-        if (!labels.includes("Connectors") || !labels.includes("Skills") || !labels.includes("Bots")) continue;
+        const labels = new Set(tabs.map(button => button.textContent?.trim()));
+        if (!labels.has("Connectors") || !labels.has("Skills") || !labels.has("Bots")) continue;
         const button = tabs.find(item => item.textContent?.trim() === name);
         if (button instanceof HTMLElement) return button;
     }
@@ -341,6 +341,7 @@ export default definePlugin({
         },
         {
             find: 'WD_REFRESH&&{id:"skills-and-connectors"',
+            noWarn: true,
             replacement: {
                 match: /WD_REFRESH&&\{id:"skills-and-connectors"/,
                 replace: 'WD_REFRESH&&!1&&{id:"skills-and-connectors"',
@@ -367,9 +368,18 @@ export default definePlugin({
                 },
                 {
                     match: /(\i)\[0\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\((\i),\{inDialog:!0,localTabs:\2\}\),\1\[0\]=\2,\1\[1\]=\3\):\3=\1\[1\]/,
-                    replace: '$1[0]!==$self._shellKey($2)?($3=(0,$4.jsx)($5,{inDialog:!0,localTabs:$2,key:$self._shellKey($2)}),$1[0]=$self._shellKey($2),$1[1]=$3):$3=$1[1]',
+                    replace: "$1[0]!==$self._shellKey($2)?($3=(0,$4.jsx)($5,{inDialog:!0,localTabs:$2,key:$self._shellKey($2)}),$1[0]=$self._shellKey($2),$1[1]=$3):$3=$1[1]",
+                    noWarn: true,
                 },
             ],
+        },
+        {
+            find: "usePluginsSurfaceTitle",
+            all: true,
+            replacement: {
+                match: /(\i)\[(\d+)\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\(([A-Za-z_$][\w$.]*),\{inDialog:!0,localTabs:\3\}\),\1\[\2\]=\3,\1\[(\d+)\]=\4\):\4=\1\[\7\]/g,
+                replace: "$1[$2]!==$self._shellKey($3)?($4=(0,$5.jsx)($6,{inDialog:!0,localTabs:$3,key:$self._shellKey($3)}),$1[$2]=$self._shellKey($3),$1[$7]=$4):$4=$1[$7]",
+            },
         },
     ],
 });

@@ -43,7 +43,7 @@ const settings = definePluginSettings({
     },
     hideConnectX: {
         type: OptionType.BOOLEAN,
-        description: "Hide the \"Connect your 𝕏 account\" upsell popout.",
+        description: "Hide the Connect X upsell and the X connector ready banner.",
         default: true,
     },
     hideImagineUpgrade: {
@@ -106,9 +106,17 @@ export default definePlugin({
         hideComponentPatch("UpsellButton", "hideUpsellSmall", false),
         {
             find: "connect-x-upsell-dismissed",
+            noWarn: true,
             replacement: {
                 match: /\.ENABLE_X_INTEGRATION&&(\i\.SHOW_CONNECT_X_UPSELL)/,
                 replace: ".ENABLE_X_INTEGRATION&&!$self.settings.store.hideConnectX&&$1",
+            },
+        },
+        {
+            find: "x-connector-ready-dismissed",
+            replacement: {
+                match: /(\i)\.SHOW_X_CONNECTOR_READY_BANNER&&/,
+                replace: "$1.SHOW_X_CONNECTOR_READY_BANNER&&!$self.settings.store.hideConnectX&&",
             },
         },
         hideComponentPatch("BrowserNotificationBanner", "hideNotificationBanner"),

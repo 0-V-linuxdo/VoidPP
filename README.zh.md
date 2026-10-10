@@ -58,9 +58,10 @@
 
 | 功能 | 默认 | 说明 |
 | --- | --- | --- |
-| <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | 开 | 模型选择器里再次隐藏不可用 / 锁定模型。 |
+| <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | 开 | 模型选择器里再次隐藏不可用 / 锁定模型。Connect X 改为隐藏 X connector ready 横幅。 |
 | <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | 开 | 队列芯片菜单给该行模型打勾。 |
-| <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | 开 | 保持右侧栏关闭。关闭动作不在 store 快照上时不再把插件启动打死。 |
+| <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | 开 | 保持右侧栏关闭。桌面壳的自动打开（`view:"browser"`）同样拦住。 |
+| <img src="https://api.iconify.design/lucide/message-circle.svg?color=%238b949e" width="16" height="16" alt=""> CustomGreeting | 关 | 输入框占位文案跟着桌面壳走，不再认旧的 voice-connecting 尾巴。 |
 
 #### 设置 UI
 

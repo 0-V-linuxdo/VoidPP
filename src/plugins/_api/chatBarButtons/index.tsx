@@ -46,11 +46,13 @@ export default definePlugin({
                 {
                     match: /style:\i(?:\|\|\i)*\?void 0:(\{paddingInlineEnd:\i\})/,
                     replace: "style:$1",
+                    noWarn: true,
                 },
             ],
         },
         {
             find: "data-wd-toolbar",
+            noWarn: true,
             replacement: {
                 match: /(trailingGutterPx:\i,tight:\i,children:\[[^\]]{0,80})\]/,
                 replace: "$1,$self.renderImagineButtons()]",

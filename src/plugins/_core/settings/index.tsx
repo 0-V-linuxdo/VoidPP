@@ -248,6 +248,7 @@ export default definePlugin({
                 {
                     match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
                     replace: "[...$&,...$self._tabEntries()]",
+                    noWarn: true,
                 },
                 {
                     match: /\i\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,

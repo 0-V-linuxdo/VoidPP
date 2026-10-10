@@ -26,24 +26,23 @@ export default definePlugin({
         },
         {
             find: '"after-init"),(0,',
-            group: true,
             replacement: [
                 {
-                    match: /(function \i\(\)\{)if\(Object\.prototype\.hasOwnProperty\.call\(\i\.default,"get_distinct_id"\)\)return;/,
-                    replace: "$1return}function _ignore(){",
-                },
-                {
-                    match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]{0,300}?start_session_recording\(\)\}/,
+                    match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]*?\}(?=,"stopRecordingImagineSession")/,
                     replace: '"startRecordingImagineSession",0,function(){}',
                 },
                 {
-                    match: /"stopRecordingImagineSession",0,function\(\)\{[\s\S]{0,300}?stop_session_recording\(\)\},\d+e?\d*\)\}/,
+                    match: /"stopRecordingImagineSession",0,function\(\)\{[\s\S]*?\}(?=\])/,
                     replace: '"stopRecordingImagineSession",0,function(){}',
+                },
+                {
+                    match: /(\i)\.default\.init\((\i)\.MIXPANEL_TOKEN,/g,
+                    replace: "$1.default.init=()=>{},$1.default.init($2.MIXPANEL_TOKEN,",
                 },
             ],
         },
         {
-            find: "sendBatchLogEvent",
+            find: "sendBatchLogEvent=",
             all: true,
             group: true,
             replacement: [
@@ -59,10 +58,18 @@ export default definePlugin({
         },
         {
             find: '"/api/log_metric"',
-            replacement: {
-                match: /"\/api\/log_metric",\i\)/,
-                replace: '"/api/log_metric",[])',
-            },
+            all: true,
+            replacement: [
+                {
+                    match: /"\/api\/log_metric",\i\)/,
+                    replace: '"/api/log_metric",[])',
+                    noWarn: true,
+                },
+                {
+                    match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/,
+                    replace: "void 0",
+                },
+            ],
         },
         {
             find: "isEnvVarsSet(){return void 0!=",
