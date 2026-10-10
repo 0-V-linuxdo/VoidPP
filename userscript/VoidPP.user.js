@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261010.1
+// @version      20261010.2
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261010.1] v1.0.0 — A modification for grok.com
+ * Void++ [20261010.2] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3703,7 +3703,7 @@ ${sourceUrl}`;
   var MSG_HELLO = "void-better-canvas-hello";
   var PANE = '[class*="pane-card"],[class*="masonry"],[class*="lightbox"]';
   var OVERFLOW = '[class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-x-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"],[class*="overflow-x-scroll"]';
-  var SCROLLER = `:is(${PANE}):is(${OVERFLOW}),:is(${PANE}) :is(${OVERFLOW}),main:has([aria-label="Generation mode"]) :is(${OVERFLOW})`;
+  var SCROLLER = `:is(${PANE}):is(${OVERFLOW}),:is(${PANE}) :is(${OVERFLOW}),:is(main,#grok-content-area,[role="main"]):has([aria-label="Generation mode"]) :is(${OVERFLOW})`;
   var IFRAME_SEL = 'iframe[title="Preview"],iframe[src*="grokusercontent.com"],iframe[src*="grok-sandbox.com"],[class*="pane-card"] iframe';
   var settings2 = definePluginSettings({
     themedScrollbar: {
@@ -6358,8 +6358,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
             replace: "{defaultOpen:$1=$self._defaultOpen(),open:"
           },
           {
-            match: /data-sidebar":"sidebar",className:/,
-            replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),className:'
+            match: /data-sidebar":"sidebar",(?!onClick:)/,
+            replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),'
           }
         ]
       },
@@ -6373,24 +6373,40 @@ ${root}::-webkit-scrollbar-thumb:hover {
             replace: "=$self._wrapCheckbox($1,arguments[0].id,arguments[0].route)"
           },
           {
-            match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
-            replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4"
+            match: /\(0,(\i)\.handleIsolateClick\)\((\i)\),(\i)\?\.\(\2\)/,
+            replace: "(0,$1.handleIsolateClick)($2),$self._wrapSidebarClick($3,arguments[0].id,arguments[0].route)?.($2)"
           }
         ]
       },
       {
-        find: '"sidebar-expand","Expand"',
+        find: '"Editing actions","Editing actions"',
+        all: true,
+        noWarn: true,
         replacement: {
-          match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
-          replace: "$self._renderActionBar(),$&"
+          match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
+          replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4"
         }
+      },
+      {
+        find: '"sidebar-expand","Expand"',
+        replacement: [
+          {
+            match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
+            replace: "$self._renderActionBar(),$&",
+            noWarn: true
+          },
+          {
+            match: /\(0,\i\.jsx\)\(\i,\{title:\i\("sidebar-chats","Chats"\)/,
+            replace: "$self._renderActionBar(),$&"
+          }
+        ]
       },
       {
         find: '"sidebar.new-bot-btn.aria-label","New bot"',
         replacement: [
           {
-            match: /(\i)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover"\)/,
-            replace: '$1("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover")'
+            match: /\(0,(\i)\.(\i)\)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","(hover:bg-button-ghost-hover hover:text-(?:fg-)?primary)","(focus:outline-none focus-visible:bg-button-ghost-hover)"\)/,
+            replace: '(0,$1.$2)("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","$3","$4")'
           },
           {
             match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
@@ -6400,10 +6416,17 @@ ${root}::-webkit-scrollbar-thumb:hover {
       },
       {
         find: '"sidebar-chats","Chats"',
-        replacement: {
-          match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-          replace: "$1,action:$self._ChatsPlus()"
-        }
+        replacement: [
+          {
+            match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
+            replace: "$1,action:$self._ChatsPlus()",
+            noWarn: true
+          },
+          {
+            match: /(\i\("sidebar-chats","Chats"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
+            replace: "$1,action:$self._ChatsPlus()"
+          }
+        ]
       },
       {
         find: '"sidebar.section-title","Bots"',
@@ -9069,9 +9092,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261010.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2a428e7"}`
-    }, `(${"2a428e7"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261010.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1787e3a"}`
+    }, `(${"1787e3a"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9348,6 +9371,34 @@ button .void-info-hint {
         group: true,
         replacement: [
           {
+            match: /\(0,(\i)\.jsx\)\((\i),\{editing:/,
+            replace: "(0,$1.jsx)($2,{id:arguments[0].id,editing:"
+          },
+          {
+            match: /\(0,(\i)\.jsx\)\((\i),\{menuOpen:/,
+            replace: "(0,$1.jsx)($2,{id:arguments[0].id,menuOpen:"
+          },
+          {
+            match: /\(0,(\i)\.jsx\)\((\i),\{components:/g,
+            replace: "(0,$1.jsx)($2,{id:arguments[0].id,components:"
+          },
+          {
+            match: /Item:(\i)\.(Dropdown|Context)MenuItem,/g,
+            replace: "$&VoidPPMenu:{Item:$1.$2MenuItem,Sub:$1.$2MenuSub,SubTrigger:$1.$2MenuSubTrigger,SubContent:$1.$2MenuSubContent,Separator:$1.$2MenuSeparator},"
+          },
+          {
+            match: /(\[)(\i)&&(\(0,\i\.jsx\)\(\i,\{\}\)),(\(0,\i\.jsxs?\)\(\i,\{onSelect:\(\)=>\i\(\),variant:"destructive",children:\[\i\?\?\(0,\i\.jsx\)\(\i\.Trash(?:can)?Icon)/,
+            replace: '$1$2&&$3,$self.renderItems("conversation",{conversationId:arguments[0].id},arguments[0].components.VoidPPMenu),$4'
+          }
+        ]
+      },
+      {
+        find: '"Editing actions","Editing actions"',
+        all: true,
+        group: true,
+        noWarn: true,
+        replacement: [
+          {
             match: /onSaveEdit:(\i),([^}]{0,80}?route:\i)\}\)(?!\{)/,
             replace: "onSaveEdit:$1,id:arguments[0].id,$2})"
           },
@@ -9377,7 +9428,7 @@ button .void-info-hint {
         find: '"user-dropdown.upgrade","Upgrade plan"',
         all: true,
         replacement: {
-          match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=onSelect:\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
+          match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
           replace: '$self.renderItems("user"),$1'
         }
       }
@@ -14096,13 +14147,19 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     list.push(snap);
     pending2.set(cid, list);
   }
+  function pageRoot() {
+    return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
+  }
+  function isPageShell(node) {
+    return node.matches("main, #grok-content-area, [role='main']");
+  }
   function trayCard() {
     const btn = document.querySelector(TOGGLE_SEL);
     if (!(btn instanceof HTMLElement))
       return null;
     let node = btn;
     let card = null;
-    while (node && node !== document.body && !node.matches("main")) {
+    while (node && node !== document.body && !isPageShell(node)) {
       if (node.querySelector(RAIL_SEL))
         card = node;
       node = node.parentElement;
@@ -14471,7 +14528,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function bindObs() {
     obs?.disconnect();
-    const root = document.querySelector("main") ?? document.body;
+    const root = pageRoot() ?? document.body;
     obs = new MutationObserver(() => scheduleDom());
     obs.observe(root, { childList: true, subtree: true, characterData: true });
   }
@@ -16316,13 +16373,19 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const blocks = [...row.querySelectorAll(":scope > div")].filter((d) => d.querySelectorAll("button").length >= 2);
     return blocks.at(-1) ?? null;
   }
+  function pageRoot2() {
+    return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
+  }
+  function isPageShell2(node) {
+    return node.matches("main, #grok-content-area, [role='main']");
+  }
   function trayCard2() {
     const btn = document.querySelector(TOGGLE_SEL2);
     if (!(btn instanceof HTMLElement))
       return null;
     let node = btn;
     let card = null;
-    while (node && node !== document.body && !node.matches("main")) {
+    while (node && node !== document.body && !isPageShell2(node)) {
       if (node.querySelector(RAIL_SEL2))
         card = node;
       node = node.parentElement;
@@ -16493,7 +16556,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function bindObs2() {
     obs2?.disconnect();
-    const root = document.querySelector("main") ?? document.body;
+    const root = pageRoot2() ?? document.body;
     obs2 = new MutationObserver(() => schedulePaint());
     obs2.observe(root, { childList: true, subtree: true });
   }
@@ -17582,11 +17645,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     collectIds(quotePopup(), out);
     return [...new Set(out)];
   }
+  function pageRoot3() {
+    return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
+  }
   function chatPane2() {
     const named = document.querySelector(SCROLLER2);
     if (named && !named.closest(PANE_SKIP2))
       return named;
-    const main = document.querySelector("main");
+    const main = pageRoot3();
     if (!main)
       return null;
     const skip = (n) => !!n.closest(PANE_SKIP2);
@@ -17627,7 +17693,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return null;
   }
   function messageEls() {
-    const root = chatPane2() ?? document.querySelector("main") ?? document.body;
+    const root = chatPane2() ?? pageRoot3() ?? document.body;
     const hosts = [...root.querySelectorAll("[id^='response-']")];
     if (hosts.length)
       return hosts;
@@ -18658,7 +18724,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function stampPreviews() {
     const keep = new Set;
-    const root = chatPane2() ?? document.querySelector("main") ?? document.body;
+    const root = chatPane2() ?? pageRoot3() ?? document.body;
     for (const host of root.querySelectorAll("[id^='response-']")) {
       if (host.closest(PANE_SKIP2))
         continue;
@@ -20248,7 +20314,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function officialInterruptedDom() {
     try {
-      const root = document.querySelector("main") ?? document.body;
+      const root = document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main") ?? document.body;
       return USER_INTERRUPT3.test(root.textContent ?? "");
     } catch {
       return false;
@@ -29469,6 +29535,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var FILES_CHROME2 = /add files for grok to use in this project/i;
   var PANE_SKIP3 = "[data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
   var MSG_SEL3 = "[data-testid='user-message'], [data-testid='assistant-message']";
+  var SCROLLER3 = "[data-testid='chat-transcript-scroller']";
   var TIME_TOKEN = /(?:^|\s)\d{1,2}:\d{2}\s*(?:am|pm)\b/gi;
   var STATUS_TOKEN = /\b(?:connected to computer|continuing the(?: task)?|worked for \d+\s*m(?:\s*\d+\s*s)?|worked for \d+\s*s)\b/gi;
   var COUNT_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => ({ label: String(n), value: n, default: n === 5 }));
@@ -30037,7 +30104,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function accessWallText() {
     try {
-      const root = document.querySelector("main") ?? document.body;
+      const root = pageRoot4() ?? document.body;
       if (!root)
         return false;
       const text = (root.textContent || "").slice(0, 4000);
@@ -30652,8 +30719,17 @@ html.void-rt-open [data-sidebar="gap"] {
       pendingWs.delete(id);
     }
   }
+  function pageRoot4() {
+    return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
+  }
   function chatPane3() {
-    const main = document.querySelector("main");
+    const tagged = document.querySelector(SCROLLER3);
+    if (tagged && !tagged.closest(PANE_SKIP3)) {
+      const box = tagged.getBoundingClientRect();
+      if (box.width > 40 && box.height > 40)
+        return tagged;
+    }
+    const main = pageRoot4();
     if (!main)
       return null;
     const skip = (n) => !!n.closest(PANE_SKIP3);
@@ -34451,7 +34527,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1787870966000;
-  settings_default.updatedAt = 1791312608000;
+  settings_default.updatedAt = 1791656586000;
   chatBarButtons_default.updatedAt = 1790097681000;
   contextMenu_default.updatedAt = 1791312608000;
   autoCollapse_default.updatedAt = 1787789817000;
@@ -34462,7 +34538,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterImagine_default.updatedAt = 1791226275000;
   betterLinks_default.updatedAt = 1787870966000;
   betterModeSelect_default.updatedAt = 1791400125000;
-  betterNavigator_default.updatedAt = 1791226275000;
+  betterNavigator_default.updatedAt = 1791656586000;
   betterQueue_default.updatedAt = 1791226275000;
   betterQuotes_default.updatedAt = 1791226275000;
   betterSidebar_default.updatedAt = 1791226275000;
@@ -34492,7 +34568,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   pluginsFlyout_default.updatedAt = 1791226275000;
   recentTopics_default.updatedAt = 1791226275000;
   responseNotification_default.updatedAt = 1790093417000;
-  settingsFlyout_default.updatedAt = 1791314580000;
+  settingsFlyout_default.updatedAt = 1791656586000;
   stableComposer_default.updatedAt = 1789125421000;
   starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;

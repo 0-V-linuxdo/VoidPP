@@ -1665,12 +1665,21 @@ function actionRail(row: HTMLElement): HTMLElement | null {
     return (blocks.at(-1) as HTMLElement) ?? null;
 }
 
+function pageRoot(): HTMLElement | null {
+    return document.getElementById("grok-content-area")
+        ?? document.querySelector<HTMLElement>("[role='main'], main");
+}
+
+function isPageShell(node: HTMLElement): boolean {
+    return node.matches("main, #grok-content-area, [role='main']");
+}
+
 function trayCard(): HTMLElement | null {
     const btn = document.querySelector(TOGGLE_SEL);
     if (!(btn instanceof HTMLElement)) return null;
     let node: HTMLElement | null = btn;
     let card: HTMLElement | null = null;
-    while (node && node !== document.body && !node.matches("main")) {
+    while (node && node !== document.body && !isPageShell(node)) {
         if (node.querySelector(RAIL_SEL)) card = node;
         node = node.parentElement;
     }
@@ -1831,7 +1840,7 @@ function schedulePaint() {
 
 function bindObs() {
     obs?.disconnect();
-    const root = document.querySelector("main") ?? document.body;
+    const root = pageRoot() ?? document.body;
     obs = new MutationObserver(() => schedulePaint());
     obs.observe(root, { childList: true, subtree: true });
 }

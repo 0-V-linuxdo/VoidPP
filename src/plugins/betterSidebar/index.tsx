@@ -553,8 +553,8 @@ export default definePlugin({
                     replace: "{defaultOpen:$1=$self._defaultOpen(),open:",
                 },
                 {
-                    match: /data-sidebar":"sidebar",className:/,
-                    replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),className:',
+                    match: /data-sidebar":"sidebar",(?!onClick:)/,
+                    replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),',
                 },
             ],
         },
@@ -568,24 +568,40 @@ export default definePlugin({
                     replace: "=$self._wrapCheckbox($1,arguments[0].id,arguments[0].route)",
                 },
                 {
-                    match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
-                    replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4",
+                    match: /\(0,(\i)\.handleIsolateClick\)\((\i)\),(\i)\?\.\(\2\)/,
+                    replace: "(0,$1.handleIsolateClick)($2),$self._wrapSidebarClick($3,arguments[0].id,arguments[0].route)?.($2)",
                 },
             ],
         },
         {
-            find: "\"sidebar-expand\",\"Expand\"",
+            find: "\"Editing actions\",\"Editing actions\"",
+            all: true,
+            noWarn: true,
             replacement: {
-                match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
-                replace: "$self._renderActionBar(),$&",
+                match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
+                replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4",
             },
+        },
+        {
+            find: "\"sidebar-expand\",\"Expand\"",
+            replacement: [
+                {
+                    match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
+                    replace: "$self._renderActionBar(),$&",
+                    noWarn: true,
+                },
+                {
+                    match: /\(0,\i\.jsx\)\(\i,\{title:\i\("sidebar-chats","Chats"\)/,
+                    replace: "$self._renderActionBar(),$&",
+                },
+            ],
         },
         {
             find: "\"sidebar.new-bot-btn.aria-label\",\"New bot\"",
             replacement: [
                 {
-                    match: /(\i)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","hover:bg-button-ghost-hover hover:text-primary","focus:outline-none focus-visible:bg-button-ghost-hover"\)/,
-                    replace: "$1(\"flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus\",\"hover:bg-button-ghost-hover hover:text-primary\",\"focus:outline-none focus-visible:bg-button-ghost-hover\")",
+                    match: /\(0,(\i)\.(\i)\)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","(hover:bg-button-ghost-hover hover:text-(?:fg-)?primary)","(focus:outline-none focus-visible:bg-button-ghost-hover)"\)/,
+                    replace: '(0,$1.$2)("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","$3","$4")',
                 },
                 {
                     match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
@@ -595,10 +611,17 @@ export default definePlugin({
         },
         {
             find: "\"sidebar-chats\",\"Chats\"",
-            replacement: {
-                match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-                replace: "$1,action:$self._ChatsPlus()",
-            },
+            replacement: [
+                {
+                    match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
+                    replace: "$1,action:$self._ChatsPlus()",
+                    noWarn: true,
+                },
+                {
+                    match: /(\i\("sidebar-chats","Chats"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
+                    replace: "$1,action:$self._ChatsPlus()",
+                },
+            ],
         },
         {
             find: "\"sidebar.section-title\",\"Bots\"",

@@ -23,7 +23,7 @@ const MSG_HELLO = "void-better-canvas-hello";
 
 const PANE = '[class*="pane-card"],[class*="masonry"],[class*="lightbox"]';
 const OVERFLOW = '[class*="overflow-auto"],[class*="overflow-y-auto"],[class*="overflow-x-auto"],[class*="overflow-scroll"],[class*="overflow-y-scroll"],[class*="overflow-x-scroll"]';
-const SCROLLER = `:is(${PANE}):is(${OVERFLOW}),:is(${PANE}) :is(${OVERFLOW}),main:has([aria-label="Generation mode"]) :is(${OVERFLOW})`;
+const SCROLLER = `:is(${PANE}):is(${OVERFLOW}),:is(${PANE}) :is(${OVERFLOW}),:is(main,#grok-content-area,[role="main"]):has([aria-label="Generation mode"]) :is(${OVERFLOW})`;
 const IFRAME_SEL = 'iframe[title="Preview"],iframe[src*="grokusercontent.com"],iframe[src*="grok-sandbox.com"],[class*="pane-card"] iframe';
 
 const settings = definePluginSettings({

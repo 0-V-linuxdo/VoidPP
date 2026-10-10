@@ -281,7 +281,9 @@ function pageLooksLive(page: ChatPageStoreState, byId: Record<string, GrokRespon
 
 function officialInterruptedDom(): boolean {
     try {
-        const root = document.querySelector("main") ?? document.body;
+        const root = document.getElementById("grok-content-area")
+            ?? document.querySelector("[role='main'], main")
+            ?? document.body;
         return USER_INTERRUPT.test(root.textContent ?? "");
     } catch {
         return false;

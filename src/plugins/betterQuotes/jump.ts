@@ -235,10 +235,15 @@ function idsFrom(el: Element | null, extra?: unknown): string[] {
     return [...new Set(out)];
 }
 
+function pageRoot(): HTMLElement | null {
+    return document.getElementById("grok-content-area")
+        ?? document.querySelector<HTMLElement>("[role='main'], main");
+}
+
 function chatPane(): HTMLElement | null {
     const named = document.querySelector<HTMLElement>(SCROLLER);
     if (named && !named.closest(PANE_SKIP)) return named;
-    const main = document.querySelector("main");
+    const main = pageRoot();
     if (!main) return null;
     const skip = (n: HTMLElement) => !!n.closest(PANE_SKIP);
     const msg = main.querySelector<HTMLElement>(MSG);
@@ -273,7 +278,7 @@ function paneOf(el: HTMLElement): HTMLElement | null {
 }
 
 function messageEls(): HTMLElement[] {
-    const root = chatPane() ?? document.querySelector("main") ?? document.body;
+    const root = chatPane() ?? pageRoot() ?? document.body;
     const hosts = [...root.querySelectorAll<HTMLElement>("[id^='response-']")];
     if (hosts.length) return hosts;
     return [...root.querySelectorAll<HTMLElement>(MSG)];
@@ -1287,7 +1292,7 @@ function paintCount(btn: HTMLElement, n: number) {
 
 function stampPreviews() {
     const keep = new Set<HTMLElement>();
-    const root = chatPane() ?? document.querySelector("main") ?? document.body;
+    const root = chatPane() ?? pageRoot() ?? document.body;
     for (const host of root.querySelectorAll<HTMLElement>("[id^='response-']")) {
         if (host.closest(PANE_SKIP)) continue;
         const quote = norm(hostQuote(hostUuid(host), host).quoted);

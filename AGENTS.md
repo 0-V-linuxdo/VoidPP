@@ -89,7 +89,9 @@ The Settings dialog is the lazy chunk that contains `pressed_cmd_settings`, not 
 
 The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[20261010.1]`, `et.SettingsIcon` + `S("user-dropdown.settings","Settings")`). SettingsFlyout must accept both `onClick` and `onSelect`.
 
-BetterNavigator mounts on `#grok-content-area` (`div[role=main]`). There is no `<main>` element. `document.querySelector("main")` returns null, `chatPane()` bails, and the tick rail never mounts (`html.void-bn-fullticks` with no `.void-bn-host`). Prefer `[data-testid=chat-transcript-scroller]`. Native `Go to response` ticks are absent in this UI; the self rail does not need them to paint.
+BetterNavigator mounts on `#grok-content-area` (`div[role=main]`). There is no `<main>` element. `document.querySelector("main")` returns null. Prefer `[data-testid=chat-transcript-scroller]`, then `#grok-content-area`. RecentTopics, BetterQuotes, BetterQueue, and ChatListStatus use that same root. Do not stop a queue-tray walk on `main` alone. Native `Go to response` ticks are absent in this UI; the self rail does not need them to paint.
+
+`[20261010.2]` The avatar Sign Out row is `onClick`, same as Settings. ContextMenuAPI must accept `onSelect` or `onClick` or the account menu never mounts. The conversation menu no longer passes `id` on the delete row: thread `arguments[0].id` through the hover menu (`{editing:`), the dropdown shell (`{menuOpen:`), and both `{components:` calls, then render before `TrashcanIcon` with `arguments[0].components.VoidPPMenu`. Keep the old `onSaveEdit` / `TrashIcon` group as `noWarn` for cached bundles. Sidebar `data-sidebar="sidebar"` now has `onFocusCapture` before `className`; insert `onClick` immediately after the attribute. Ctrl-click select wraps `handleIsolateClick` plus `onClick?.()`, not `(Comp,{route,onClick,className`. The Chats title is no longer `SidebarSectionTitle`; it still takes `action`, and the batch bar is a sibling of that title. The Bots plus class is `hover:text-fg-primary` inside `(0,cn)(...)`.
 
 Do not rename:
 
