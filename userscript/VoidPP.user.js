@@ -9115,8 +9115,8 @@ button .void-info-hint {
       as: "span",
       color: "secondary"
     }, "[20261010.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6278dc4"}`
-    }, `(${"6278dc4"})`)), /* @__PURE__ */ React.createElement(Flex, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"988f75e"}`
+    }, `(${"988f75e"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -34704,7 +34704,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   recentTopics_default.updatedAt = 1791658451000;
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1791656586000;
-  sourceChips_default.updatedAt = 0;
+  sourceChips_default.updatedAt = 1791669094000;
   stableComposer_default.updatedAt = 1789125421000;
   starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
