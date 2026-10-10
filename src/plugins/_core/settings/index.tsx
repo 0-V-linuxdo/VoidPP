@@ -250,6 +250,10 @@ export default definePlugin({
                     replace: "[...$&,...$self._tabEntries()]",
                 },
                 {
+                    match: /\i\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
+                    replace: "[...$&,...$self._tabEntries()]",
+                },
+                {
                     match: /(\["general","grok","payments","data","other"),("team-management"\])/,
                     replace: '$1,"voidpp",$2',
                 },

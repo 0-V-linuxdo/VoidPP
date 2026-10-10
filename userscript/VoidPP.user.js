@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261007.6
+// @version      20261010.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261007.6] v1.0.0 — A modification for grok.com
+ * Void++ [20261010.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -54,6 +54,318 @@
         set: __exportSetter.bind(all, name)
       });
   };
+
+  // src/turbopack/common/stores.ts
+  var exports_stores = {};
+  __export(exports_stores, {
+    ChatPageStore: () => ChatPageStore,
+    ConversationStore: () => ConversationStore,
+    FeatureStore: () => FeatureStore,
+    FilesPageStore: () => FilesPageStore,
+    MediaStore: () => MediaStore,
+    MessageStore: () => MessageStore,
+    ModesStore: () => ModesStore,
+    ResponseStore: () => ResponseStore,
+    RoutingStore: () => RoutingStore,
+    SessionStore: () => SessionStore,
+    SettingsDialogStore: () => SettingsDialogStore,
+    SettingsStore: () => SettingsStore,
+    SubscriptionsStore: () => SubscriptionsStore,
+    TextToSpeechStore: () => TextToSpeechStore
+  });
+
+  // src/VoidPP.ts
+  var exports_VoidPP = {};
+  __export(exports_VoidPP, {
+    ChunkPathRegex: () => ChunkPathRegex,
+    DefaultChunkLoadRegex: () => DefaultChunkLoadRegex,
+    Devs: () => Devs,
+    ErrorBoundary: () => ErrorBoundary,
+    Logger: () => Logger,
+    NoticeType: () => NoticeType,
+    OptionType: () => OptionType,
+    PlainSettings: () => PlainSettings,
+    Settings: () => Settings,
+    SettingsStore: () => SettingsStore3,
+    StartAt: () => StartAt,
+    ToastType: () => ToastType,
+    addChatBarButton: () => addChatBarButton,
+    addContextMenuItem: () => addContextMenuItem,
+    addLocalTheme: () => addLocalTheme,
+    addPatch: () => addPatch,
+    addTheme: () => addTheme,
+    armRuntime: () => armRuntime,
+    clamp: () => clamp,
+    classNameFactory: () => classNameFactory,
+    classes: () => classes,
+    closeAllModals: () => closeAllModals,
+    closeModal: () => closeModal,
+    closeNotice: () => closeNotice,
+    common: () => exports_common,
+    copyToClipboard: () => copyToClipboard,
+    createExternalStore: () => createExternalStore,
+    debounce: () => debounce,
+    definePlugin: () => definePlugin,
+    definePluginSettings: () => definePluginSettings,
+    disableStyle: () => disableStyle,
+    disableTheme: () => disableTheme,
+    dismissToast: () => dismissToast,
+    dispatch: () => dispatch,
+    enableStyle: () => enableStyle,
+    enableTheme: () => enableTheme,
+    errorMessage: () => errorMessage,
+    escapeHtml: () => escapeHtml,
+    escapeRegExp: () => escapeRegExp,
+    extractAndLoadChunks: () => extractAndLoadChunks,
+    extractAndLoadChunksLazy: () => extractAndLoadChunksLazy,
+    fetchExternal: () => fetchExternal,
+    filters: () => filters,
+    find: () => find,
+    findAll: () => findAll,
+    findBulk: () => findBulk,
+    findByCode: () => findByCode,
+    findByCodeLazy: () => findByCodeLazy,
+    findByDisplayName: () => findByDisplayName,
+    findByDisplayNameLazy: () => findByDisplayNameLazy,
+    findByEventName: () => findByEventName,
+    findByEventNameLazy: () => findByEventNameLazy,
+    findByProps: () => findByProps,
+    findByPropsLazy: () => findByPropsLazy,
+    findComponentByCode: () => findComponentByCode,
+    findComponentByCodeLazy: () => findComponentByCodeLazy,
+    findCssClasses: () => findCssClasses,
+    findCssClassesLazy: () => findCssClassesLazy,
+    findExportedComponent: () => findExportedComponent,
+    findExportedComponentLazy: () => findExportedComponentLazy,
+    findLazy: () => findLazy,
+    findModuleFactory: () => findModuleFactory,
+    findModuleId: () => findModuleId,
+    findStore: () => findStore,
+    findStoreLazy: () => findStoreLazy,
+    fnSourceCache: () => fnSourceCache,
+    formatCountdown: () => formatCountdown,
+    formatDuration: () => formatDuration,
+    getAllStores: () => getAllStores,
+    getFiber: () => getFiber,
+    getFnSource: () => getFnSource,
+    getModuleCache: () => getModuleCache,
+    getReactRoot: () => getReactRoot,
+    getRuntimeFactoryRegistry: () => getRuntimeFactoryRegistry2,
+    getRuntimeModuleCache: () => getRuntimeModuleCache,
+    getThemes: () => getThemes,
+    getTurbopackHelpers: () => getTurbopackHelpers,
+    humanizeKey: () => humanizeKey,
+    importModule: () => importModule,
+    init: () => init,
+    initSettings: () => initSettings,
+    injectExports: () => injectExports,
+    isBlacklisted: () => isBlacklisted,
+    isNonNullish: () => isNonNullish,
+    isObject: () => isObject,
+    isOnlineThemesEnabled: () => isOnlineThemesEnabled,
+    isPluginEnabled: () => isPluginEnabled,
+    isThemesEnabled: () => isThemesEnabled,
+    isTruthy: () => isTruthy,
+    isZustandStore: () => isZustandStore,
+    makeLazy: () => makeLazy,
+    mapGetOrCreate: () => mapGetOrCreate,
+    mapMangledCssClasses: () => mapMangledCssClasses,
+    mapMangledModule: () => mapMangledModule,
+    mapMangledModuleLazy: () => mapMangledModuleLazy,
+    matchesAllPatterns: () => matchesAllPatterns,
+    matchesPattern: () => matchesPattern,
+    mergeDefaults: () => mergeDefaults,
+    migratePluginSetting: () => migratePluginSetting,
+    migratePluginSettings: () => migratePluginSettings,
+    migrateSettingsToPlugin: () => migrateSettingsToPlugin,
+    onModuleLoad: () => onModuleLoad,
+    onceReady: () => onceReady,
+    onlyOnce: () => onlyOnce,
+    openModal: () => openModal,
+    patchReport: () => patchReport,
+    patchResults: () => patchResults,
+    patchStats: () => patchStats,
+    patches: () => patches,
+    plugins: () => plugins,
+    pluralize: () => pluralize,
+    proxyLazy: () => proxyLazy,
+    registerPlugin: () => registerPlugin,
+    registerStyle: () => registerStyle,
+    removeChatBarButton: () => removeChatBarButton,
+    removeContextMenuItem: () => removeContextMenuItem,
+    removeTheme: () => removeTheme,
+    reportFailedFinders: () => reportFailedFinders,
+    requireModule: () => requireModule,
+    sanitizeFilename: () => sanitizeFilename,
+    search: () => search,
+    sendBrowserNotification: () => sendBrowserNotification,
+    setOnlineThemesEnabled: () => setOnlineThemesEnabled,
+    setThemesEnabled: () => setThemesEnabled,
+    showNotice: () => showNotice,
+    showToast: () => showToast,
+    sleep: () => sleep,
+    sortedEntries: () => sortedEntries,
+    startPlugin: () => startPlugin,
+    stopPlugin: () => stopPlugin,
+    subscribe: () => subscribe,
+    syncLazyModules: () => syncLazyModules,
+    unregisterStyle: () => unregisterStyle,
+    updateLocalTheme: () => updateLocalTheme,
+    useEventSubscription: () => useEventSubscription,
+    useExternalStore: () => useExternalStore,
+    useForceUpdater: () => useForceUpdater,
+    useIsStreaming: () => useIsStreaming,
+    useSelectionHas: () => useSelectionHas,
+    useSelectionSize: () => useSelectionSize,
+    waitFor: () => waitFor,
+    walkFiberTree: () => walkFiberTree,
+    walkFiberUp: () => walkFiberUp
+  });
+
+  // src/turbopack/common/index.ts
+  var exports_common = {};
+  __export(exports_common, {
+    Accordion: () => Accordion,
+    AccordionContent: () => AccordionContent,
+    AccordionItem: () => AccordionItem,
+    AccordionTrigger: () => AccordionTrigger,
+    AlertDialog: () => AlertDialog,
+    AlertDialogAction: () => AlertDialogAction,
+    AlertDialogCancel: () => AlertDialogCancel,
+    AlertDialogContent: () => AlertDialogContent,
+    AlertDialogDescription: () => AlertDialogDescription,
+    AlertDialogFooter: () => AlertDialogFooter,
+    AlertDialogHeader: () => AlertDialogHeader,
+    AlertDialogTitle: () => AlertDialogTitle,
+    AlertDialogTrigger: () => AlertDialogTrigger,
+    AnimatePresence: () => AnimatePresence,
+    ApiClients: () => ApiClients,
+    Avatar: () => Avatar,
+    Badge: () => Badge,
+    Button: () => Button,
+    ButtonWithPopover: () => ButtonWithPopover,
+    ButtonWithTooltip: () => ButtonWithTooltip,
+    ButtonWithTooltipOptimized: () => ButtonWithTooltipOptimized,
+    Card: () => Card,
+    CardContent: () => CardContent,
+    CardHeader: () => CardHeader,
+    CardTitle: () => CardTitle,
+    ChatPageStore: () => ChatPageStore,
+    Checkbox: () => Checkbox,
+    ClassNames: () => ClassNames,
+    Command: () => Command,
+    CommandEmpty: () => CommandEmpty,
+    CommandGroup: () => CommandGroup,
+    CommandInput: () => CommandInput,
+    CommandItem: () => CommandItem,
+    CommandList: () => CommandList,
+    ConversationStore: () => ConversationStore,
+    Dialog: () => Dialog,
+    DialogClose: () => DialogClose,
+    DialogContent: () => DialogContent,
+    DialogDescription: () => DialogDescription,
+    DialogFooter: () => DialogFooter,
+    DialogHeader: () => DialogHeader,
+    DialogOverlay: () => DialogOverlay,
+    DialogPortal: () => DialogPortal,
+    DialogTitle: () => DialogTitle,
+    DialogTrigger: () => DialogTrigger,
+    Drawer: () => Drawer,
+    DrawerContent: () => DrawerContent,
+    DrawerDescription: () => DrawerDescription,
+    DrawerFooter: () => DrawerFooter,
+    DrawerHeader: () => DrawerHeader,
+    DrawerTitle: () => DrawerTitle,
+    DrawerTrigger: () => DrawerTrigger,
+    DropdownMenu: () => DropdownMenu,
+    DropdownMenuCheckboxItem: () => DropdownMenuCheckboxItem,
+    DropdownMenuContent: () => DropdownMenuContent,
+    DropdownMenuItem: () => DropdownMenuItem,
+    DropdownMenuPortal: () => DropdownMenuPortal,
+    DropdownMenuRadioGroup: () => DropdownMenuRadioGroup,
+    DropdownMenuRadioItem: () => DropdownMenuRadioItem,
+    DropdownMenuSeparator: () => DropdownMenuSeparator,
+    DropdownMenuSub: () => DropdownMenuSub,
+    DropdownMenuSubContent: () => DropdownMenuSubContent,
+    DropdownMenuSubTrigger: () => DropdownMenuSubTrigger,
+    DropdownMenuTrigger: () => DropdownMenuTrigger,
+    FeatureStore: () => FeatureStore,
+    FileUtils: () => FileUtils,
+    FilesPageStore: () => FilesPageStore,
+    Fragment: () => Fragment,
+    HoverCard: () => HoverCard,
+    HoverCardContent: () => HoverCardContent,
+    HoverCardTrigger: () => HoverCardTrigger,
+    Input: () => Input,
+    Label: () => Label,
+    LazyComponent: () => LazyComponent,
+    MediaStore: () => MediaStore,
+    MessageStore: () => MessageStore,
+    ModesStore: () => ModesStore,
+    MotionDiv: () => MotionDiv,
+    Popover: () => Popover,
+    PopoverArrow: () => PopoverArrow,
+    PopoverContent: () => PopoverContent,
+    PopoverTrigger: () => PopoverTrigger,
+    Portal: () => Portal,
+    React: () => React,
+    ResponseStore: () => ResponseStore,
+    ResponsiveDialog: () => ResponsiveDialog,
+    RoutingStore: () => RoutingStore,
+    Select: () => Select,
+    SelectContent: () => SelectContent,
+    SelectItem: () => SelectItem,
+    SelectTrigger: () => SelectTrigger,
+    SelectValue: () => SelectValue,
+    Separator: () => Separator,
+    SessionStore: () => SessionStore,
+    SettingsDescription: () => SettingsDescription,
+    SettingsDialogStore: () => SettingsDialogStore,
+    SettingsRow: () => SettingsRow,
+    SettingsStore: () => SettingsStore,
+    SettingsSwitch: () => SettingsSwitch,
+    SettingsTitle: () => SettingsTitle,
+    SidebarComponents: () => SidebarComponents,
+    Skeleton: () => Skeleton,
+    Slider: () => Slider,
+    Spinner: () => Spinner,
+    SubscriptionsStore: () => SubscriptionsStore,
+    Switch: () => Switch,
+    Table: () => Table,
+    TableBody: () => TableBody,
+    TableCell: () => TableCell,
+    TableHead: () => TableHead,
+    TableHeader: () => TableHeader,
+    TableRow: () => TableRow,
+    Tabs: () => Tabs,
+    TabsContent: () => TabsContent,
+    TabsList: () => TabsList,
+    TabsTrigger: () => TabsTrigger,
+    TextToSpeechStore: () => TextToSpeechStore,
+    Textarea: () => Textarea,
+    Toaster: () => Toaster,
+    ToggleGroup: () => ToggleGroup,
+    ToggleGroupItem: () => ToggleGroupItem,
+    Tooltip: () => Tooltip,
+    TooltipContent: () => TooltipContent,
+    TooltipProvider: () => TooltipProvider,
+    TooltipTrigger: () => TooltipTrigger,
+    createElement: () => createElement,
+    onceReady: () => onceReady,
+    useCallback: () => useCallback,
+    useContext: () => useContext,
+    useDeferredValue: () => useDeferredValue,
+    useEffect: () => useEffect,
+    useId: () => useId,
+    useLayoutEffect: () => useLayoutEffect,
+    useMemo: () => useMemo,
+    useReducedMotion: () => useReducedMotion,
+    useReducer: () => useReducer,
+    useRef: () => useRef,
+    useState: () => useState,
+    useSyncExternalStore: () => useSyncExternalStore,
+    useTransition: () => useTransition
+  });
 
   // src/utils/guards.ts
   function isTruthy(item) {
@@ -1963,23 +2275,6 @@ ${sourceUrl}`;
   }
 
   // src/turbopack/common/stores.ts
-  var exports_stores = {};
-  __export(exports_stores, {
-    ChatPageStore: () => ChatPageStore,
-    ConversationStore: () => ConversationStore,
-    FeatureStore: () => FeatureStore,
-    FilesPageStore: () => FilesPageStore,
-    MediaStore: () => MediaStore,
-    MessageStore: () => MessageStore,
-    ModesStore: () => ModesStore,
-    ResponseStore: () => ResponseStore,
-    RoutingStore: () => RoutingStore,
-    SessionStore: () => SessionStore,
-    SettingsDialogStore: () => SettingsDialogStore,
-    SettingsStore: () => SettingsStore,
-    SubscriptionsStore: () => SubscriptionsStore,
-    TextToSpeechStore: () => TextToSpeechStore
-  });
   var ChatPageStore = findByPropsLazy("useChatPageStore");
   var ConversationStore = findByPropsLazy("useConversationStore", "createOptimisticConversation");
   var FeatureStore = findByPropsLazy("useFeatureStore");
@@ -3904,154 +4199,6 @@ ${root}::-webkit-scrollbar-thumb:hover {
         }
       }
     ]
-  });
-
-  // src/VoidPP.ts
-  var exports_VoidPP = {};
-  __export(exports_VoidPP, {
-    ChunkPathRegex: () => ChunkPathRegex,
-    DefaultChunkLoadRegex: () => DefaultChunkLoadRegex,
-    Devs: () => Devs,
-    ErrorBoundary: () => ErrorBoundary,
-    Logger: () => Logger,
-    NoticeType: () => NoticeType,
-    OptionType: () => OptionType,
-    PlainSettings: () => PlainSettings,
-    Settings: () => Settings,
-    SettingsStore: () => SettingsStore3,
-    StartAt: () => StartAt,
-    ToastType: () => ToastType,
-    addChatBarButton: () => addChatBarButton,
-    addContextMenuItem: () => addContextMenuItem,
-    addLocalTheme: () => addLocalTheme,
-    addPatch: () => addPatch,
-    addTheme: () => addTheme,
-    armRuntime: () => armRuntime,
-    clamp: () => clamp,
-    classNameFactory: () => classNameFactory,
-    classes: () => classes,
-    closeAllModals: () => closeAllModals,
-    closeModal: () => closeModal,
-    closeNotice: () => closeNotice,
-    common: () => exports_common,
-    copyToClipboard: () => copyToClipboard,
-    createExternalStore: () => createExternalStore,
-    debounce: () => debounce,
-    definePlugin: () => definePlugin,
-    definePluginSettings: () => definePluginSettings,
-    disableStyle: () => disableStyle,
-    disableTheme: () => disableTheme,
-    dismissToast: () => dismissToast,
-    dispatch: () => dispatch,
-    enableStyle: () => enableStyle,
-    enableTheme: () => enableTheme,
-    errorMessage: () => errorMessage,
-    escapeHtml: () => escapeHtml,
-    escapeRegExp: () => escapeRegExp,
-    extractAndLoadChunks: () => extractAndLoadChunks,
-    extractAndLoadChunksLazy: () => extractAndLoadChunksLazy,
-    fetchExternal: () => fetchExternal,
-    filters: () => filters,
-    find: () => find,
-    findAll: () => findAll,
-    findBulk: () => findBulk,
-    findByCode: () => findByCode,
-    findByCodeLazy: () => findByCodeLazy,
-    findByDisplayName: () => findByDisplayName,
-    findByDisplayNameLazy: () => findByDisplayNameLazy,
-    findByEventName: () => findByEventName,
-    findByEventNameLazy: () => findByEventNameLazy,
-    findByProps: () => findByProps,
-    findByPropsLazy: () => findByPropsLazy,
-    findComponentByCode: () => findComponentByCode,
-    findComponentByCodeLazy: () => findComponentByCodeLazy,
-    findCssClasses: () => findCssClasses,
-    findCssClassesLazy: () => findCssClassesLazy,
-    findExportedComponent: () => findExportedComponent,
-    findExportedComponentLazy: () => findExportedComponentLazy,
-    findLazy: () => findLazy,
-    findModuleFactory: () => findModuleFactory,
-    findModuleId: () => findModuleId,
-    findStore: () => findStore,
-    findStoreLazy: () => findStoreLazy,
-    fnSourceCache: () => fnSourceCache,
-    formatCountdown: () => formatCountdown,
-    formatDuration: () => formatDuration,
-    getAllStores: () => getAllStores,
-    getFiber: () => getFiber,
-    getFnSource: () => getFnSource,
-    getModuleCache: () => getModuleCache,
-    getReactRoot: () => getReactRoot,
-    getRuntimeFactoryRegistry: () => getRuntimeFactoryRegistry2,
-    getRuntimeModuleCache: () => getRuntimeModuleCache,
-    getThemes: () => getThemes,
-    getTurbopackHelpers: () => getTurbopackHelpers,
-    humanizeKey: () => humanizeKey,
-    importModule: () => importModule,
-    init: () => init,
-    initSettings: () => initSettings,
-    injectExports: () => injectExports,
-    isBlacklisted: () => isBlacklisted,
-    isNonNullish: () => isNonNullish,
-    isObject: () => isObject,
-    isOnlineThemesEnabled: () => isOnlineThemesEnabled,
-    isPluginEnabled: () => isPluginEnabled,
-    isThemesEnabled: () => isThemesEnabled,
-    isTruthy: () => isTruthy,
-    isZustandStore: () => isZustandStore,
-    makeLazy: () => makeLazy,
-    mapGetOrCreate: () => mapGetOrCreate,
-    mapMangledCssClasses: () => mapMangledCssClasses,
-    mapMangledModule: () => mapMangledModule,
-    mapMangledModuleLazy: () => mapMangledModuleLazy,
-    matchesAllPatterns: () => matchesAllPatterns,
-    matchesPattern: () => matchesPattern,
-    mergeDefaults: () => mergeDefaults,
-    migratePluginSetting: () => migratePluginSetting,
-    migratePluginSettings: () => migratePluginSettings,
-    migrateSettingsToPlugin: () => migrateSettingsToPlugin,
-    onModuleLoad: () => onModuleLoad,
-    onceReady: () => onceReady,
-    onlyOnce: () => onlyOnce,
-    openModal: () => openModal,
-    patchReport: () => patchReport,
-    patchResults: () => patchResults,
-    patchStats: () => patchStats,
-    patches: () => patches,
-    plugins: () => plugins,
-    pluralize: () => pluralize,
-    proxyLazy: () => proxyLazy,
-    registerPlugin: () => registerPlugin,
-    registerStyle: () => registerStyle,
-    removeChatBarButton: () => removeChatBarButton,
-    removeContextMenuItem: () => removeContextMenuItem,
-    removeTheme: () => removeTheme,
-    reportFailedFinders: () => reportFailedFinders,
-    requireModule: () => requireModule,
-    sanitizeFilename: () => sanitizeFilename,
-    search: () => search,
-    sendBrowserNotification: () => sendBrowserNotification,
-    setOnlineThemesEnabled: () => setOnlineThemesEnabled,
-    setThemesEnabled: () => setThemesEnabled,
-    showNotice: () => showNotice,
-    showToast: () => showToast,
-    sleep: () => sleep,
-    sortedEntries: () => sortedEntries,
-    startPlugin: () => startPlugin,
-    stopPlugin: () => stopPlugin,
-    subscribe: () => subscribe,
-    syncLazyModules: () => syncLazyModules,
-    unregisterStyle: () => unregisterStyle,
-    updateLocalTheme: () => updateLocalTheme,
-    useEventSubscription: () => useEventSubscription,
-    useExternalStore: () => useExternalStore,
-    useForceUpdater: () => useForceUpdater,
-    useIsStreaming: () => useIsStreaming,
-    useSelectionHas: () => useSelectionHas,
-    useSelectionSize: () => useSelectionSize,
-    waitFor: () => waitFor,
-    walkFiberTree: () => walkFiberTree,
-    walkFiberUp: () => walkFiberUp
   });
 
   // src/api/BuildHealth.ts
@@ -8922,9 +9069,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261007.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"dc69343"}`
-    }, `(${"dc69343"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261010.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2a428e7"}`
+    }, `(${"2a428e7"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9046,6 +9193,10 @@ button .void-info-hint {
         replacement: [
           {
             match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
+            replace: "[...$&,...$self._tabEntries()]"
+          },
+          {
+            match: /\i\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
             replace: "[...$&,...$self._tabEntries()]"
           },
           {
@@ -11756,8 +11907,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return null;
     return slot;
   }
+  function chatRoot() {
+    return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
+  }
   function chatPane() {
-    const main = document.querySelector("main");
+    const tagged = document.querySelector("[data-testid='chat-transcript-scroller']");
+    if (tagged && !tagged.closest(PANE_SKIP) && isVisible(tagged))
+      return tagged;
+    const main = chatRoot();
     if (!main)
       return null;
     const skip = (n) => !!n.closest(PANE_SKIP);
@@ -13317,7 +13474,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function bindWatchers() {
     const col = chatColumn();
     const pane = chatPane();
-    const main = document.querySelector("main");
+    const main = chatRoot();
     const target = col ?? pane ?? (main instanceof HTMLElement ? main : document.body);
     if (target !== observedPane) {
       paneMo?.disconnect();
@@ -13330,7 +13487,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         bindWatchers();
         debouncedPaint();
       });
-      mainMo.observe(main, { childList: true, subtree: false });
+      mainMo.observe(main, { childList: true, subtree: true });
     }
   }
   function paint() {
@@ -13435,10 +13592,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     document.addEventListener("pointerover", onPointerOver, { capture: true, passive: true, signal });
     document.addEventListener("pointerout", onPointerOut, { capture: true, passive: true, signal });
     window.addEventListener("popstate", debouncedPaint, { signal });
-    const main = document.querySelector("main");
-    if (main) {
+    const root = chatRoot();
+    if (root) {
       ro = new ResizeObserver(debouncedPaint);
-      ro.observe(main);
+      ro.observe(root);
     }
   }
   function stop() {
@@ -32389,7 +32546,7 @@ html.void-rt-open [data-sidebar="gap"] {
         find: '"user-dropdown.settings","Settings"',
         all: true,
         replacement: {
-          match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{onSelect:(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
+          match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{on(?:Select|Click):(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
           replace: "$self._renderSettingsMenu($1)"
         }
       }
@@ -34304,7 +34461,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1791226275000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1791399226000;
+  betterModeSelect_default.updatedAt = 1791400125000;
   betterNavigator_default.updatedAt = 1791226275000;
   betterQueue_default.updatedAt = 1791226275000;
   betterQuotes_default.updatedAt = 1791226275000;
@@ -34471,151 +34628,6 @@ button:has(.void-ud-trigger > .void-ud-label) {
       activeNoticeId = null;
     }
   }
-  // src/turbopack/common/index.ts
-  var exports_common = {};
-  __export(exports_common, {
-    Accordion: () => Accordion,
-    AccordionContent: () => AccordionContent,
-    AccordionItem: () => AccordionItem,
-    AccordionTrigger: () => AccordionTrigger,
-    AlertDialog: () => AlertDialog,
-    AlertDialogAction: () => AlertDialogAction,
-    AlertDialogCancel: () => AlertDialogCancel,
-    AlertDialogContent: () => AlertDialogContent,
-    AlertDialogDescription: () => AlertDialogDescription,
-    AlertDialogFooter: () => AlertDialogFooter,
-    AlertDialogHeader: () => AlertDialogHeader,
-    AlertDialogTitle: () => AlertDialogTitle,
-    AlertDialogTrigger: () => AlertDialogTrigger,
-    AnimatePresence: () => AnimatePresence,
-    ApiClients: () => ApiClients,
-    Avatar: () => Avatar,
-    Badge: () => Badge,
-    Button: () => Button,
-    ButtonWithPopover: () => ButtonWithPopover,
-    ButtonWithTooltip: () => ButtonWithTooltip,
-    ButtonWithTooltipOptimized: () => ButtonWithTooltipOptimized,
-    Card: () => Card,
-    CardContent: () => CardContent,
-    CardHeader: () => CardHeader,
-    CardTitle: () => CardTitle,
-    ChatPageStore: () => ChatPageStore,
-    Checkbox: () => Checkbox,
-    ClassNames: () => ClassNames,
-    Command: () => Command,
-    CommandEmpty: () => CommandEmpty,
-    CommandGroup: () => CommandGroup,
-    CommandInput: () => CommandInput,
-    CommandItem: () => CommandItem,
-    CommandList: () => CommandList,
-    ConversationStore: () => ConversationStore,
-    Dialog: () => Dialog,
-    DialogClose: () => DialogClose,
-    DialogContent: () => DialogContent,
-    DialogDescription: () => DialogDescription,
-    DialogFooter: () => DialogFooter,
-    DialogHeader: () => DialogHeader,
-    DialogOverlay: () => DialogOverlay,
-    DialogPortal: () => DialogPortal,
-    DialogTitle: () => DialogTitle,
-    DialogTrigger: () => DialogTrigger,
-    Drawer: () => Drawer,
-    DrawerContent: () => DrawerContent,
-    DrawerDescription: () => DrawerDescription,
-    DrawerFooter: () => DrawerFooter,
-    DrawerHeader: () => DrawerHeader,
-    DrawerTitle: () => DrawerTitle,
-    DrawerTrigger: () => DrawerTrigger,
-    DropdownMenu: () => DropdownMenu,
-    DropdownMenuCheckboxItem: () => DropdownMenuCheckboxItem,
-    DropdownMenuContent: () => DropdownMenuContent,
-    DropdownMenuItem: () => DropdownMenuItem,
-    DropdownMenuPortal: () => DropdownMenuPortal,
-    DropdownMenuRadioGroup: () => DropdownMenuRadioGroup,
-    DropdownMenuRadioItem: () => DropdownMenuRadioItem,
-    DropdownMenuSeparator: () => DropdownMenuSeparator,
-    DropdownMenuSub: () => DropdownMenuSub,
-    DropdownMenuSubContent: () => DropdownMenuSubContent,
-    DropdownMenuSubTrigger: () => DropdownMenuSubTrigger,
-    DropdownMenuTrigger: () => DropdownMenuTrigger,
-    FeatureStore: () => FeatureStore,
-    FileUtils: () => FileUtils,
-    FilesPageStore: () => FilesPageStore,
-    Fragment: () => Fragment,
-    HoverCard: () => HoverCard,
-    HoverCardContent: () => HoverCardContent,
-    HoverCardTrigger: () => HoverCardTrigger,
-    Input: () => Input,
-    Label: () => Label,
-    LazyComponent: () => LazyComponent,
-    MediaStore: () => MediaStore,
-    MessageStore: () => MessageStore,
-    ModesStore: () => ModesStore,
-    MotionDiv: () => MotionDiv,
-    Popover: () => Popover,
-    PopoverArrow: () => PopoverArrow,
-    PopoverContent: () => PopoverContent,
-    PopoverTrigger: () => PopoverTrigger,
-    Portal: () => Portal,
-    React: () => React,
-    ResponseStore: () => ResponseStore,
-    ResponsiveDialog: () => ResponsiveDialog,
-    RoutingStore: () => RoutingStore,
-    Select: () => Select,
-    SelectContent: () => SelectContent,
-    SelectItem: () => SelectItem,
-    SelectTrigger: () => SelectTrigger,
-    SelectValue: () => SelectValue,
-    Separator: () => Separator,
-    SessionStore: () => SessionStore,
-    SettingsDescription: () => SettingsDescription,
-    SettingsDialogStore: () => SettingsDialogStore,
-    SettingsRow: () => SettingsRow,
-    SettingsStore: () => SettingsStore,
-    SettingsSwitch: () => SettingsSwitch,
-    SettingsTitle: () => SettingsTitle,
-    SidebarComponents: () => SidebarComponents,
-    Skeleton: () => Skeleton,
-    Slider: () => Slider,
-    Spinner: () => Spinner,
-    SubscriptionsStore: () => SubscriptionsStore,
-    Switch: () => Switch,
-    Table: () => Table,
-    TableBody: () => TableBody,
-    TableCell: () => TableCell,
-    TableHead: () => TableHead,
-    TableHeader: () => TableHeader,
-    TableRow: () => TableRow,
-    Tabs: () => Tabs,
-    TabsContent: () => TabsContent,
-    TabsList: () => TabsList,
-    TabsTrigger: () => TabsTrigger,
-    TextToSpeechStore: () => TextToSpeechStore,
-    Textarea: () => Textarea,
-    Toaster: () => Toaster,
-    ToggleGroup: () => ToggleGroup,
-    ToggleGroupItem: () => ToggleGroupItem,
-    Tooltip: () => Tooltip,
-    TooltipContent: () => TooltipContent,
-    TooltipProvider: () => TooltipProvider,
-    TooltipTrigger: () => TooltipTrigger,
-    createElement: () => createElement,
-    onceReady: () => onceReady,
-    useCallback: () => useCallback,
-    useContext: () => useContext,
-    useDeferredValue: () => useDeferredValue,
-    useEffect: () => useEffect,
-    useId: () => useId,
-    useLayoutEffect: () => useLayoutEffect,
-    useMemo: () => useMemo,
-    useReducedMotion: () => useReducedMotion,
-    useReducer: () => useReducer,
-    useRef: () => useRef,
-    useState: () => useState,
-    useSyncExternalStore: () => useSyncExternalStore,
-    useTransition: () => useTransition
-  });
-
   // src/VoidPP.ts
   var logger45 = new Logger("TurbopackPatcher", "#e78284");
   var FALLBACK_MS = 15000;
