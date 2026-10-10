@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261010.3
+// @version      20261010.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261010.3] v1.0.0 — A modification for grok.com
+ * Void++ [20261010.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -6574,6 +6574,11 @@ ${root}::-webkit-scrollbar-thumb:hover {
             noWarn: true
           },
           {
+            match: /"\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)/,
+            replace: '"/api/log_metric",[])',
+            noWarn: true
+          },
+          {
             match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/,
             replace: "void 0"
           }
@@ -9109,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261010.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"cf42bfc"}`
-    }, `(${"cf42bfc"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261010.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"0a01460"}`
+    }, `(${"0a01460"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9259,16 +9264,27 @@ button .void-info-hint {
         all: true,
         replacement: [
           {
-            match: /("SettingsTitle",0,)(\i)/,
+            match: /("SettingsTitle",0,)(?!function)(\i)/,
+            replace: '$1$self._setPrimitive("SettingsTitle",$2)',
+            noWarn: true
+          },
+          {
+            match: /("SettingsTitle",0,)(function\(\i\)\{[\s\S]*?\})(?=\]\))/,
             replace: '$1$self._setPrimitive("SettingsTitle",$2)'
           },
           {
-            match: /("SettingsDescription",0,)(\i)/,
+            match: /("SettingsDescription",0,)(?!function)(\i)/,
+            replace: '$1$self._setPrimitive("SettingsDescription",$2)',
+            noWarn: true
+          },
+          {
+            match: /("SettingsDescription",0,)(function\(\i\)\{[\s\S]*?\})(?=,"Settings)/,
             replace: '$1$self._setPrimitive("SettingsDescription",$2)'
           },
           {
             match: /("SettingsRow",0,)(?!function)(\i)/,
-            replace: '$1$self._setPrimitive("SettingsRow",$2)'
+            replace: '$1$self._setPrimitive("SettingsRow",$2)',
+            noWarn: true
           },
           {
             match: /("SettingsRow",0,)(function\(\i\)\{[\s\S]*?\})(?=,"Settings)/,
@@ -34566,14 +34582,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.updatedAt = 1791395540000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  noTelemetry_default.updatedAt = 1791395540000;
-  settings_default.updatedAt = 1791656586000;
-  chatBarButtons_default.updatedAt = 1791395540000;
+  noTelemetry_default.updatedAt = 1791660269000;
+  settings_default.updatedAt = 1791660269000;
+  chatBarButtons_default.updatedAt = 1791660269000;
   contextMenu_default.updatedAt = 1791658451000;
   autoCollapse_default.updatedAt = 1791395540000;
   autoRetry_default.updatedAt = 1791395540000;
-  avatarPluginsFlyout_default.updatedAt = 1791395540000;
-  betterCanvas_default.updatedAt = 1791658451000;
+  avatarPluginsFlyout_default.updatedAt = 1791660269000;
+  betterCanvas_default.updatedAt = 1791660269000;
   betterFiles_default.updatedAt = 1791395540000;
   betterImagine_default.updatedAt = 1791395540000;
   betterLinks_default.updatedAt = 1791395540000;
@@ -34584,12 +34600,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterSidebar_default.updatedAt = 1791658451000;
   chatListStatus_default.updatedAt = 1791658451000;
   chatStateFavicons_default.updatedAt = 1791395540000;
-  cleaner_default.updatedAt = 1791395540000;
+  cleaner_default.updatedAt = 1791660269000;
   cloneChats_default.updatedAt = 1791395540000;
   completeToast_default.updatedAt = 1791395540000;
   composerOpacity_default.updatedAt = 1791395540000;
   consoleJanitor_default.updatedAt = 1791395540000;
-  customGreeting_default.updatedAt = 1791395540000;
+  customGreeting_default.updatedAt = 1791660269000;
   customInstructions_default.updatedAt = 1791395540000;
   customSidebarIdentity_default.updatedAt = 1791395540000;
   downloadTTS_default.updatedAt = 1791395540000;

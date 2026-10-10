@@ -66,6 +66,11 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
+                    match: /"\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)/,
+                    replace: '"/api/log_metric",[])',
+                    noWarn: true,
+                },
+                {
                     match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/,
                     replace: "void 0",
                 },
