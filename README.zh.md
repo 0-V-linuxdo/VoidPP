@@ -28,7 +28,7 @@
 | <img src="https://api.iconify.design/lucide/user-round-pen.svg?color=%238b949e" width="16" height="16" alt=""> CustomSidebarIdentity | 关 | 替换侧栏头像和显示名。留空则保持官方。Avatar Url 支持粘贴图片或填 `https://` / `data:image`，圆形台可拖拽/缩放裁切。`avatarSize` 可调展开侧栏头像直径（24–64px，默认 40）。折叠轨仍为 32。可选 `applyToMenu` 同时改账号下拉顶栏。 |
 | <img src="https://api.iconify.design/lucide/app-window.svg?color=%238b949e" width="16" height="16" alt=""> ChatStateFavicons | 开 | 标签页图标反映会话状态（streaming / done / ready / error），五种叠层样式。 |
 | <img src="https://api.iconify.design/lucide/link-2-off.svg?color=%238b949e" width="16" height="16" alt=""> NoShareLink | 开 | 分开开关，隐藏「分享项目」和「创建分享链接」。 |
-| <img src="https://api.iconify.design/lucide/mic-off.svg?color=%238b949e" width="16" height="16" alt=""> NoDictation | 开 | 隐藏输入栏语音按钮。可选隐藏设置弹窗 Behavior 里的 Dictation Refinement。 |
+| <img src="https://api.iconify.design/lucide/globe.svg?color=%238b949e" width="16" height="16" alt=""> SourceChips | 开 | 去掉 sources 徽标里每个引用图标外面多出来的那一圈。图标和胶囊本身保留。 |
 | <img src="https://api.iconify.design/lucide/circle-gauge.svg?color=%238b949e" width="16" height="16" alt=""> UsageDisplay | 开 | 聊天栏显示官方 SuperGrok 周用量（聊天和 Imagine）。可选日统计（`usageStats`，默认关）：悬停先看本周，再看今日；点击打开按日历史。 |
 | <img src="https://api.iconify.design/lucide/message-circle.svg?color=%238b949e" width="16" height="16" alt=""> CustomGreeting | 关 | 替换非 Project 首页问候语。项目外默认不换输入框（`heroOnlyOutsideProject`，默认开）。Project 聊天仍用第一句。问候语轮播：进入首页 / 定时 / 点击标题（`mode`、`order`、`intervalSec`）。可选 `imaginePhrases` 用于 Imagine 输入框。 |
 | <img src="https://api.iconify.design/lucide/frame.svg?color=%238b949e" width="16" height="16" alt=""> BetterCanvas | 开 | 工程栏和 Imagine masonry 滚动条跟随主题（`themedScrollbar`，默认开）。可选在自动打开和恢复时关闭右侧栏（`hideRightPanel`，默认关）。手动展开保持打开。 |

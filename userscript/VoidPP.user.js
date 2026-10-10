@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261010.5
+// @version      20261010.6
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261010.5] v1.0.0 — A modification for grok.com
+ * Void++ [20261010.6] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261010.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f35b054"}`
-    }, `(${"f35b054"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261010.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6278dc4"}`
+    }, `(${"6278dc4"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -32741,6 +32741,29 @@ html.void-rt-open [data-sidebar="gap"] {
     ]
   });
 
+  // src/plugins/sourceChips/index.ts
+  var STYLE_NAME8 = "sourceChips";
+  var CSS3 = `
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) > div.rounded-full.border:has(> img[src*="favicon" i]) {
+    border-color: transparent !important;
+    background-color: transparent !important;
+}
+`;
+  var sourceChips_default = definePlugin({
+    name: "SourceChips",
+    icon: GlobeIcon,
+    description: "Drop the extra circle around citation favicons on the sources chip.",
+    authors: [Devs.p],
+    tags: ["messages", "declutter"],
+    enabledByDefault: true,
+    start() {
+      registerStyle(STYLE_NAME8, CSS3);
+    },
+    stop() {
+      unregisterStyle(STYLE_NAME8);
+    }
+  });
+
   // src/plugins/stableComposer/index.ts
   var cachedDeps = null;
   var cachedSig = "";
@@ -34555,7 +34578,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // src/plugins/userQuotes/index.ts
-  var STYLE_NAME8 = "userQuotes";
+  var STYLE_NAME9 = "userQuotes";
   var SEL = '[data-testid="user-message"] blockquote:not(.twitter-tweet)';
   var settings34 = definePluginSettings({
     italic: {
@@ -34580,7 +34603,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       rules.push(`${SEL}{quotes:none!important}`);
       rules.push(`${SEL}::before,${SEL}::after,${SEL} p::before,${SEL} p::after{content:none!important}`);
     }
-    registerStyle(STYLE_NAME8, rules.join(`
+    registerStyle(STYLE_NAME9, rules.join(`
 `));
   }
   var userQuotes_default = definePlugin({
@@ -34603,12 +34626,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
     start: apply8,
     onSettingsChange: apply8,
     stop() {
-      unregisterStyle(STYLE_NAME8);
+      unregisterStyle(STYLE_NAME9);
     }
   });
 
   // src/plugins/widerChat/index.ts
-  var STYLE_NAME9 = "widerChat";
+  var STYLE_NAME10 = "widerChat";
   var settings35 = definePluginSettings({
     width: {
       type: 1 /* NUMBER */,
@@ -34618,7 +34641,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
   function applyWidth() {
     const w = settings35.store.width;
-    registerStyle(STYLE_NAME9, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
+    registerStyle(STYLE_NAME10, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
   var widerChat_default = definePlugin({
     name: "WiderChat",
@@ -34630,7 +34653,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     start: applyWidth,
     onSettingsChange: applyWidth,
     stop() {
-      unregisterStyle(STYLE_NAME9);
+      unregisterStyle(STYLE_NAME10);
     }
   });
 
@@ -34658,7 +34681,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1791660269000;
   cloneChats_default.updatedAt = 1787870966000;
-  completeToast_default.updatedAt = 1791665952000;
+  completeToast_default.updatedAt = 1791666004000;
   composerOpacity_default.updatedAt = 1791226275000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customGreeting_default.updatedAt = 1791660269000;
@@ -34681,13 +34704,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
   recentTopics_default.updatedAt = 1791658451000;
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1791656586000;
+  sourceChips_default.updatedAt = 0;
   stableComposer_default.updatedAt = 1789125421000;
   starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
   usageDisplay_default.updatedAt = 1791226275000;
   userQuotes_default.updatedAt = 1791226275000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [sourceChips_default.name]: sourceChips_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;

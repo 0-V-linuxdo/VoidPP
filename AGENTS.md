@@ -213,6 +213,10 @@ Regression table:
 - 26.30 two scrolls — official Jump then a comfort-band nudge, and `settleScroll` fired a second `scrollTo`
 - 26.31 long `smooth` on a far mounted row — the virtualizer cancelled the animation and the scroll stopped mid-way
 
+## SourceChips
+
+The sources chip is `div[role=button].rounded-full` with `aria-label` like `10 sources`, a `.truncate` label, and up to three favicon plates. Each plate is `div.size-5.rounded-full.border.bg-surface` around `img.size-4.rounded-full` (`google.com/s2/favicons`). That plate is the extra circle. Make only the plate's border and background transparent. Do not remove the chip's own pill border, the overlap `mask` (`radial-gradient(12px at -3px 50%…)`), or `rounded-full` on the image. Do not restyle avatars or other `rounded-full` borders. A localized label still matches because the selector keys off the favicon image and the `.truncate` sibling, not the English word.
+
 ## CompleteToast
 
 Toast only when a chat finishes **off the page you are looking at**, and only if this page saw that turn go live. A reply you already watched must not toast after you leave. History that arrives already closed must not toast. `[20260927.1]` `maybeFinish` / `onStreamEnd` returned while `currentIds()` contained the cid and did not `markToasted`, then `finishClosed()` treated that same turn as new on the next `MessageStore` / `ResponseStore` tick. `[20261010.5]` `finishClosed` toasted any closed assistant that was not in `toasted` — search highlight (`loadPreviewResponses` → `appendResponses`) and a page change that hydrates a non-project chat both did that, and a later response id toasted again because a background `show` did not `watched.add`.
