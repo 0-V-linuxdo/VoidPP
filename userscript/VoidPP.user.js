@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261010.10
+// @version      20261010.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261010.10] v1.0.0 — A modification for grok.com
+ * Void++ [20261010.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261010.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1fb15a3"}`
-    }, `(${"1fb15a3"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261010.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d01898c"}`
+    }, `(${"d01898c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18811,6 +18811,24 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const r = ref.getBoundingClientRect();
     return r.top + (r.height - badgeH) / 2;
   }
+  function followTop(host, badgeH) {
+    const ts = host.querySelector(":scope > .void-timestamp");
+    if (ts) {
+      const r = ts.getBoundingClientRect();
+      if (r.height >= 12 && r.height <= 48)
+        return r.top + (r.height - badgeH) / 2;
+    }
+    const bubble = host.querySelector(".message-bubble") ?? host;
+    const line = bubble.querySelector("p, li, h1, h2, h3");
+    if (line) {
+      const r = line.getBoundingClientRect();
+      const top = bubble.getBoundingClientRect().top;
+      if (r.height >= 16 && r.height <= 48 && r.top >= top - 2 && r.top - top < 48) {
+        return r.top + (r.height - badgeH) / 2;
+      }
+    }
+    return bubble.getBoundingClientRect().top + 8;
+  }
   function paintBacklinks() {
     if (!jumpArmed || onImaginePage2()) {
       clearBadges();
@@ -18844,7 +18862,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         btn.setAttribute("aria-label", aria);
       btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
       const badgeH = btn.offsetHeight || 24;
-      btn.style.top = `${Math.round(Math.max(headerStickTop(badgeH), box.top + 8))}px`;
+      btn.style.top = `${Math.round(Math.max(headerStickTop(badgeH), followTop(host, badgeH)))}px`;
       if (openSrc === source)
         placeMenu(btn);
     }
@@ -34703,7 +34721,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1791671752000;
   betterNavigator_default.updatedAt = 1791671752000;
   betterQueue_default.updatedAt = 1791671752000;
-  betterQuotes_default.updatedAt = 1791674989000;
+  betterQuotes_default.updatedAt = 1791675796000;
   betterSidebar_default.updatedAt = 1791671752000;
   chatListStatus_default.updatedAt = 1791671752000;
   chatStateFavicons_default.updatedAt = 1791671752000;
