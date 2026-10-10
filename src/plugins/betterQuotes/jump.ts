@@ -1319,6 +1319,21 @@ function stampPreviews() {
     }
 }
 
+function headerStickTop(badgeH: number): number {
+    const nav = document.querySelector("nav.absolute.inset-x-0.top-0");
+    if (!(nav instanceof HTMLElement)) return 8;
+    let ref: HTMLElement | null = null;
+    for (const b of nav.querySelectorAll("button")) {
+        if (!(b instanceof HTMLElement)) continue;
+        const r = b.getBoundingClientRect();
+        if (r.width < 24 || r.height < 24 || r.bottom <= 0 || r.top > 80) continue;
+        ref = b;
+    }
+    if (!ref) return 8;
+    const r = ref.getBoundingClientRect();
+    return r.top + (r.height - badgeH) / 2;
+}
+
 function paintBacklinks() {
     if (!jumpArmed || onImaginePage()) {
         clearBadges();
@@ -1347,7 +1362,8 @@ function paintBacklinks() {
         const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
         if (btn.getAttribute("aria-label") !== aria) btn.setAttribute("aria-label", aria);
         btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
-        btn.style.top = `${Math.round(Math.max(8, box.top + 8))}px`;
+        const badgeH = btn.offsetHeight || 24;
+        btn.style.top = `${Math.round(Math.max(headerStickTop(badgeH), box.top + 8))}px`;
         if (openSrc === source) placeMenu(btn);
     }
     for (const n of document.querySelectorAll<HTMLElement>(`.${cl("back")}`)) {
