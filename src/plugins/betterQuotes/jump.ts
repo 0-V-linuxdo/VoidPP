@@ -1334,6 +1334,24 @@ function headerStickTop(badgeH: number): number {
     return r.top + (r.height - badgeH) / 2;
 }
 
+function followTop(host: HTMLElement, badgeH: number): number {
+    const ts = host.querySelector<HTMLElement>(":scope > .void-timestamp");
+    if (ts) {
+        const r = ts.getBoundingClientRect();
+        if (r.height >= 12 && r.height <= 48) return r.top + (r.height - badgeH) / 2;
+    }
+    const bubble = host.querySelector<HTMLElement>(".message-bubble") ?? host;
+    const line = bubble.querySelector<HTMLElement>("p, li, h1, h2, h3");
+    if (line) {
+        const r = line.getBoundingClientRect();
+        const top = bubble.getBoundingClientRect().top;
+        if (r.height >= 16 && r.height <= 48 && r.top >= top - 2 && r.top - top < 48) {
+            return r.top + (r.height - badgeH) / 2;
+        }
+    }
+    return bubble.getBoundingClientRect().top + 8;
+}
+
 function paintBacklinks() {
     if (!jumpArmed || onImaginePage()) {
         clearBadges();
@@ -1363,7 +1381,7 @@ function paintBacklinks() {
         if (btn.getAttribute("aria-label") !== aria) btn.setAttribute("aria-label", aria);
         btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
         const badgeH = btn.offsetHeight || 24;
-        btn.style.top = `${Math.round(Math.max(headerStickTop(badgeH), box.top + 8))}px`;
+        btn.style.top = `${Math.round(Math.max(headerStickTop(badgeH), followTop(host, badgeH)))}px`;
         if (openSrc === source) placeMenu(btn);
     }
     for (const n of document.querySelectorAll<HTMLElement>(`.${cl("back")}`)) {
