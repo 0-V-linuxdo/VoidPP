@@ -15,7 +15,7 @@ import { CircleGaugeIcon } from "@components/icons";
 import { VoidPPDialogShell } from "@components/settings/tabs/VoidPPDialogShell";
 import type { GrokSubscription } from "@grok-types";
 import { getPlanName } from "@turbopack/common/plan";
-import { React, useEffect, useLayoutEffect, useRef, useState } from "@turbopack/common/react";
+import { React, useCallback, useEffect, useRef, useState } from "@turbopack/common/react";
 import { RoutingStore, SessionStore, SubscriptionsStore } from "@turbopack/common/stores";
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
@@ -587,44 +587,54 @@ function StatsModal({ onClose }: ModalProps) {
     const scale = chartScale(bars);
     const [selected, setSelected] = useState(todayKey);
     const active = bars.find(d => d.date === selected) ?? bars.at(-1) ?? null;
-    const chartRef = useRef<HTMLDivElement>(null);
+    const chartRef = useRef<HTMLDivElement | null>(null);
 
-    // Keep the latest day at the right edge. Dialog focus and scroll anchoring
-    // both pull this scroller back to 0 after the first layout.
-    useLayoutEffect(() => {
-        const node = chartRef.current;
+    const bindChart = useCallback((node: HTMLDivElement | null) => {
+        const prev = chartRef.current as (HTMLDivElement & { _voidUdOff?: () => void }) | null;
+        prev?._voidUdOff?.();
+        chartRef.current = node;
         if (!node) return;
-        const options = node.querySelectorAll("[role=option]");
-        const marked = node.querySelector(`.${cl("bar-on")}`);
-        const toEnd = !marked || marked === options[options.length - 1];
+        const el = node as HTMLDivElement & { _voidUdOff?: () => void };
         let user = false;
+        const wantsEnd = () => {
+            const options = node.querySelectorAll("[role=option]");
+            const marked = node.querySelector(`.${cl("bar-on")}`);
+            return !marked || marked === options[options.length - 1];
+        };
         const place = () => {
-            if (!user) scrollUsageChart(node, toEnd);
+            if (!user) scrollUsageChart(node, wantsEnd());
         };
         const onScroll = () => {
-            if (user || !toEnd) return;
+            if (user || !wantsEnd()) return;
             const max = node.scrollWidth - node.clientWidth;
             if (max > 1 && node.scrollLeft < max - 1) node.scrollLeft = node.scrollWidth;
+        };
+        const mark = () => {
+            user = true;
         };
         place();
         const ro = new ResizeObserver(place);
         ro.observe(node);
         node.addEventListener("scroll", onScroll);
-        const mark = () => {
-            user = true;
-        };
         node.addEventListener("pointerdown", mark);
         node.addEventListener("wheel", mark, { passive: true });
-        const timers = [0, 50, 150, 400, 800].map(ms => setTimeout(place, ms));
-        return () => {
-            user = true;
+        const timers = [0, 50, 200, 600].map(ms => setTimeout(place, ms));
+        el._voidUdOff = () => {
             ro.disconnect();
             node.removeEventListener("scroll", onScroll);
             node.removeEventListener("pointerdown", mark);
             node.removeEventListener("wheel", mark);
             for (const id of timers) clearTimeout(id);
         };
-    }, [bars.length, selected]);
+    }, []);
+
+    useEffect(() => {
+        const node = chartRef.current;
+        if (!node) return;
+        const options = node.querySelectorAll("[role=option]");
+        const marked = node.querySelector(`.${cl("bar-on")}`);
+        scrollUsageChart(node, !marked || marked === options[options.length - 1]);
+    }, [selected]);
 
     return (
         <VoidPPDialogShell title="Usage by date" subtitle="Stored on this device." onClose={onClose} size="sm">
@@ -636,7 +646,7 @@ function StatsModal({ onClose }: ModalProps) {
             ) : (
                 <Flex flexDirection="column" gap="0.75rem" className={cl("history")}>
                     <div
-                        ref={chartRef}
+                        ref={bindChart}
                         className={cl("chart")}
                         tabIndex={0}
                         role="listbox"

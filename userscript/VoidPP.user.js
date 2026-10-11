@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261011.12
+// @version      20261011.13
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261011.12] v1.0.0 — A modification for grok.com
+ * Void++ [20261011.13] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261011.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"58f3254"}`
-    }, `(${"58f3254"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261011.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"553962f"}`
+    }, `(${"553962f"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -34576,37 +34576,41 @@ button:has(.void-ud-trigger > .void-ud-label) {
     const [selected, setSelected] = useState(todayKey);
     const active = bars.find((d) => d.date === selected) ?? bars.at(-1) ?? null;
     const chartRef = useRef(null);
-    useLayoutEffect(() => {
-      const node = chartRef.current;
+    const bindChart = useCallback((node) => {
+      const prev = chartRef.current;
+      prev?._voidUdOff?.();
+      chartRef.current = node;
       if (!node)
         return;
-      const options = node.querySelectorAll("[role=option]");
-      const marked = node.querySelector(`.${cl31("bar-on")}`);
-      const toEnd = !marked || marked === options[options.length - 1];
+      const el = node;
       let user = false;
+      const wantsEnd = () => {
+        const options = node.querySelectorAll("[role=option]");
+        const marked = node.querySelector(`.${cl31("bar-on")}`);
+        return !marked || marked === options[options.length - 1];
+      };
       const place = () => {
         if (!user)
-          scrollUsageChart(node, toEnd);
+          scrollUsageChart(node, wantsEnd());
       };
       const onScroll = () => {
-        if (user || !toEnd)
+        if (user || !wantsEnd())
           return;
         const max = node.scrollWidth - node.clientWidth;
         if (max > 1 && node.scrollLeft < max - 1)
           node.scrollLeft = node.scrollWidth;
       };
+      const mark = () => {
+        user = true;
+      };
       place();
       const ro = new ResizeObserver(place);
       ro.observe(node);
       node.addEventListener("scroll", onScroll);
-      const mark = () => {
-        user = true;
-      };
       node.addEventListener("pointerdown", mark);
       node.addEventListener("wheel", mark, { passive: true });
-      const timers = [0, 50, 150, 400, 800].map((ms) => setTimeout(place, ms));
-      return () => {
-        user = true;
+      const timers = [0, 50, 200, 600].map((ms) => setTimeout(place, ms));
+      el._voidUdOff = () => {
         ro.disconnect();
         node.removeEventListener("scroll", onScroll);
         node.removeEventListener("pointerdown", mark);
@@ -34614,7 +34618,15 @@ button:has(.void-ud-trigger > .void-ud-label) {
         for (const id of timers)
           clearTimeout(id);
       };
-    }, [bars.length, selected]);
+    }, []);
+    useEffect(() => {
+      const node = chartRef.current;
+      if (!node)
+        return;
+      const options = node.querySelectorAll("[role=option]");
+      const marked = node.querySelector(`.${cl31("bar-on")}`);
+      scrollUsageChart(node, !marked || marked === options[options.length - 1]);
+    }, [selected]);
     return /* @__PURE__ */ React.createElement(VoidPPDialogShell, {
       title: "Usage by date",
       subtitle: "Stored on this device.",
@@ -34625,7 +34637,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       gap: "0.75rem",
       className: cl31("history")
     }, /* @__PURE__ */ React.createElement("div", {
-      ref: chartRef,
+      ref: bindChart,
       className: cl31("chart"),
       tabIndex: 0,
       role: "listbox",
@@ -34889,7 +34901,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   stableComposer_default.updatedAt = 1789125421000;
   starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
-  usageDisplay_default.updatedAt = 1791753295000;
+  usageDisplay_default.updatedAt = 1791754071000;
   userQuotes_default.updatedAt = 1791226275000;
   widerChat_default.updatedAt = 1787870966000;
   var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
