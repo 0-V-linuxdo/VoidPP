@@ -589,9 +589,9 @@ function StatsModal({ onClose }: ModalProps) {
     const active = bars.find(d => d.date === selected) ?? bars.at(-1) ?? null;
     const chartRef = useRef<HTMLDivElement>(null);
 
-    // Opening focuses the first day button. The browser then scrolls that
-    // button into view, so the chart lands on the oldest day. Pin today
-    // (the right edge) until the user actually scrolls.
+    // The chart ref has to sit on this div. A ref on Flex never attached, so the
+    // old scroll-to-end was a no-op and the dialog opened on the oldest day.
+    // Re-pin after layout and after focus, until the user scrolls.
     useLayoutEffect(() => {
         const node = chartRef.current;
         if (!node) return;
@@ -606,7 +606,7 @@ function StatsModal({ onClose }: ModalProps) {
         const ro = new ResizeObserver(place);
         ro.observe(node);
         const raf = requestAnimationFrame(place);
-        const timers = [0, 50, 150].map(ms => setTimeout(place, ms));
+        const timers = [0, 50, 150, 400].map(ms => setTimeout(place, ms));
         const halt = () => {
             alive = false;
         };
@@ -633,11 +633,9 @@ function StatsModal({ onClose }: ModalProps) {
                 <Paragraph>No days recorded yet. Stats start from the moment you enable tracking.</Paragraph>
             ) : (
                 <Flex flexDirection="column" gap="0.75rem" className={cl("history")}>
-                    <Flex
+                    <div
                         ref={chartRef}
                         className={cl("chart")}
-                        alignItems="stretch"
-                        gap="0.35rem"
                         tabIndex={0}
                         role="listbox"
                         aria-label="Daily usage"
@@ -655,11 +653,8 @@ function StatsModal({ onClose }: ModalProps) {
                             const on = rec.date === active?.date;
                             const pct = empty || !scale ? 0 : clamp((delta / scale) * 100, 0, 100);
                             return (
-                                <Button
+                                <div
                                     key={rec.date}
-                                    variant="none"
-                                    size="none"
-                                    shape="rectangle"
                                     tabIndex={-1}
                                     role="option"
                                     aria-selected={on}
@@ -672,10 +667,10 @@ function StatsModal({ onClose }: ModalProps) {
                                         <span className={cl("bar-fill")} style={{ height: `${pct}%` }} />
                                     </span>
                                     <span className={cl("bar-label")}>{rec.date === todayKey ? "Today" : formatDayNumber(rec.date)}</span>
-                                </Button>
+                                </div>
                             );
                         })}
-                    </Flex>
+                    </div>
                     {active != null && (
                         <Flex flexDirection="column" gap="0.35rem" className={cl("detail")}>
                             <Text size="sm" weight="semibold">{active.date === todayKey ? "Today" : formatDayLabel(active.date)}</Text>

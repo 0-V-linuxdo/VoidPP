@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261011.10
+// @version      20261011.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261011.10] v1.0.0 — A modification for grok.com
+ * Void++ [20261011.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261011.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ea09f77"}`
-    }, `(${"ea09f77"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261011.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"cfe1509"}`
+    }, `(${"cfe1509"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -33241,6 +33241,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
 }
 
 .void-ud-chart {
+    display: flex;
+    align-items: stretch;
+    gap: 0.35rem;
     min-height: 0;
     min-width: 0;
     width: 100%;
@@ -33259,6 +33262,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
     align-items: center;
     justify-content: flex-end;
     gap: 0.3rem;
+    border: 0;
+    background: transparent;
+    font: inherit;
     border-radius: 0.5rem;
     color: inherit;
     cursor: pointer;
@@ -34585,7 +34591,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       const ro = new ResizeObserver(place);
       ro.observe(node);
       const raf = requestAnimationFrame(place);
-      const timers = [0, 50, 150].map((ms) => setTimeout(place, ms));
+      const timers = [0, 50, 150, 400].map((ms) => setTimeout(place, ms));
       const halt = () => {
         alive = false;
       };
@@ -34612,11 +34618,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
       flexDirection: "column",
       gap: "0.75rem",
       className: cl31("history")
-    }, /* @__PURE__ */ React.createElement(Flex, {
+    }, /* @__PURE__ */ React.createElement("div", {
       ref: chartRef,
       className: cl31("chart"),
-      alignItems: "stretch",
-      gap: "0.35rem",
       tabIndex: 0,
       role: "listbox",
       "aria-label": "Daily usage",
@@ -34634,11 +34638,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
       const empty = delta == null;
       const on = rec.date === active?.date;
       const pct = empty || !scale ? 0 : clamp(delta / scale * 100, 0, 100);
-      return /* @__PURE__ */ React.createElement(Button, {
+      return /* @__PURE__ */ React.createElement("div", {
         key: rec.date,
-        variant: "none",
-        size: "none",
-        shape: "rectangle",
         tabIndex: -1,
         role: "option",
         "aria-selected": on,
