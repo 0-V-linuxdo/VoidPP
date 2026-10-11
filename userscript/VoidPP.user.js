@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261011.13
+// @version      20261011.14
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261011.13] v1.0.0 — A modification for grok.com
+ * Void++ [20261011.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261011.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"553962f"}`
-    }, `(${"553962f"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261011.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"0b8b853"}`
+    }, `(${"0b8b853"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -32890,6 +32890,162 @@ html.void-rt-open [data-sidebar="gap"] {
     ]
   });
 
+  // src/plugins/skillBlocker/index.ts
+  var SKILLS_PATH = "/rest/user-skills";
+  var MIN_POLL_SEC = 5;
+  var logger43 = new Logger("SkillBlocker");
+  var settings32 = definePluginSettings({
+    blockedSkills: {
+      type: 0 /* STRING */,
+      description: "Private skill names to delete whenever they reappear. Separate names with commas.",
+      default: "remote-helium-sop"
+    },
+    pollInterval: {
+      type: 1 /* NUMBER */,
+      description: "Seconds between checks. Minimum 5.",
+      default: 30
+    },
+    notify: {
+      type: 3 /* BOOLEAN */,
+      description: "Show a toast when a blocked skill is removed.",
+      default: true
+    }
+  });
+  var timer2 = null;
+  var sweeping = false;
+  var active = false;
+  var origFetch3 = null;
+  function blockedNames() {
+    return settings32.store.blockedSkills.split(/[\n,]/).map((name) => name.trim()).filter(Boolean);
+  }
+  function pollMs() {
+    const sec = settings32.store.pollInterval;
+    const n = typeof sec === "number" && Number.isFinite(sec) ? sec : MIN_POLL_SEC;
+    return Math.max(MIN_POLL_SEC, n) * 1000;
+  }
+  function requestUrl3(input) {
+    if (typeof input === "string")
+      return input;
+    if (input instanceof URL)
+      return input.href;
+    try {
+      return input.url;
+    } catch {
+      return "";
+    }
+  }
+  function requestMethod(input, init) {
+    const method = init?.method ?? (typeof input === "object" && "method" in input ? input.method : "GET");
+    return method.toUpperCase();
+  }
+  function isSkillWrite(input, init) {
+    const method = requestMethod(input, init);
+    if (method === "GET" || method === "HEAD" || method === "DELETE")
+      return false;
+    return requestUrl3(input).includes(SKILLS_PATH);
+  }
+  async function removeSkill(name) {
+    if (!origFetch3)
+      return;
+    const res = await origFetch3.call(pageWindow, `${SKILLS_PATH}/${encodeURIComponent(name)}`, {
+      method: "DELETE",
+      credentials: "include"
+    });
+    if (!res.ok) {
+      logger43.warn(`Delete ${name} failed`, res.status);
+      return;
+    }
+    logger43.info(`Removed ${name}`);
+    if (settings32.store.notify)
+      showToast(`Removed skill ${name}.`, 1 /* SUCCESS */);
+  }
+  async function sweep() {
+    if (!active || sweeping || !origFetch3)
+      return;
+    const names = blockedNames();
+    if (!names.length)
+      return;
+    sweeping = true;
+    try {
+      const res = await origFetch3.call(pageWindow, SKILLS_PATH, { credentials: "include" });
+      if (!res.ok)
+        return;
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        logger43.warn("Skill list was not JSON", e);
+        return;
+      }
+      const blocked = new Set(names);
+      const hits = (data.skills ?? []).flatMap((skill) => {
+        const { name } = skill;
+        return name && blocked.has(name) ? [name] : [];
+      });
+      if (!hits.length)
+        return;
+      await Promise.all(hits.map((name) => removeSkill(name)));
+    } catch (e) {
+      logger43.error("Skill sweep failed", e);
+    } finally {
+      sweeping = false;
+    }
+  }
+  function skillBlockerFetch(input, init) {
+    const promise = origFetch3.call(pageWindow, input, init);
+    if (!active || !isSkillWrite(input, init))
+      return promise;
+    return promise.then((res) => {
+      if (res.ok)
+        sweep();
+      return res;
+    });
+  }
+  function arm() {
+    if (timer2 != null)
+      clearInterval(timer2);
+    timer2 = setInterval(() => {
+      sweep();
+    }, pollMs());
+    sweep();
+  }
+  function start3() {
+    active = true;
+    if (!origFetch3) {
+      origFetch3 = pageWindow.fetch;
+      pageWindow.fetch = skillBlockerFetch;
+    }
+    arm();
+  }
+  function stop3() {
+    active = false;
+    if (timer2 != null) {
+      clearInterval(timer2);
+      timer2 = null;
+    }
+    if (origFetch3 && pageWindow.fetch === skillBlockerFetch) {
+      pageWindow.fetch = origFetch3;
+      origFetch3 = null;
+    }
+  }
+  var skillBlocker_default = definePlugin({
+    name: "SkillBlocker",
+    icon: ShieldOffIcon,
+    description: "Delete listed private skills whenever they reappear.",
+    authors: [Devs.p],
+    tags: ["privacy"],
+    enabledByDefault: true,
+    settings: settings32,
+    startAt: "TurbopackReady" /* TurbopackReady */,
+    start: start3,
+    stop: stop3,
+    onSettingsChange() {
+      if (!active)
+        return;
+      arm();
+    }
+  });
+
   // src/plugins/stableComposer/index.ts
   var cachedDeps = null;
   var cachedSig = "";
@@ -32932,18 +33088,18 @@ html.void-rt-open [data-sidebar="gap"] {
     return [n >> 16 & 255, n >> 8 & 255, n & 255];
   }
   function ColorRow2() {
-    const { starColor } = settings32.use(["starColor"]);
+    const { starColor } = settings33.use(["starColor"]);
     return /* @__PURE__ */ React.createElement(ColorSettingRow, {
       value: starColor,
       onChange: (v) => {
-        settings32.store.starColor = v;
+        settings33.store.starColor = v;
       },
       title: "Star color",
       description: "Color of the twinkling stars."
     });
   }
   function StarryBackground() {
-    const { starColor } = settings32.use(["starColor"]);
+    const { starColor } = settings33.use(["starColor"]);
     return /* @__PURE__ */ React.createElement("div", {
       "aria-hidden": true,
       className: "fixed inset-0 -z-10 pointer-events-none"
@@ -32952,7 +33108,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }));
   }
   var WrappedStarry = ErrorBoundary.wrap(StarryBackground);
-  var settings32 = definePluginSettings({
+  var settings33 = definePluginSettings({
     starColor: {
       type: 6 /* COMPONENT */,
       default: DEFAULT_COLOR,
@@ -32965,7 +33121,7 @@ html.void-rt-open [data-sidebar="gap"] {
     description: "Adds Grok's native twinkling starry background to the main page.",
     authors: [Devs.Prism],
     tags: ["appearance"],
-    settings: settings32,
+    settings: settings33,
     _StarryBg() {
       return /* @__PURE__ */ React.createElement(WrappedStarry, {
         key: "void-starry-bg"
@@ -33089,7 +33245,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     projects: "void-streamer-projects",
     conversations: "void-streamer-conversations"
   };
-  var settings33 = definePluginSettings({
+  var settings34 = definePluginSettings({
     sidebarAvatar: {
       type: 3 /* BOOLEAN */,
       description: "Blur your avatar in the sidebar.",
@@ -33134,7 +33290,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   function syncClasses() {
     const { classList } = document.documentElement;
     for (const [key, cls] of Object.entries(CSS_CLASSES)) {
-      classList.toggle(cls, !!settings33.store[key]);
+      classList.toggle(cls, !!settings34.store[key]);
     }
   }
   var streamerMode_default = definePlugin({
@@ -33143,7 +33299,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     description: "Blurs personal information for privacy while streaming.",
     authors: [Devs.Prism],
     tags: ["privacy"],
-    settings: settings33,
+    settings: settings34,
     start: syncClasses,
     onSettingsChange: syncClasses,
     stop() {
@@ -33779,7 +33935,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var CHART_SCALE_MIN = 20;
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   var DAY_MS2 = 86400000;
-  var logger43 = new Logger("UsageDisplay");
+  var logger44 = new Logger("UsageDisplay");
   function isRecord2(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
@@ -33835,7 +33991,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      logger43.debug("Failed to read usage stats", error);
+      logger44.debug("Failed to read usage stats", error);
       return memory3.get(key) ?? null;
     }
   }
@@ -33847,7 +34003,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      logger43.debug("Failed to persist usage stats", error);
+      logger44.debug("Failed to persist usage stats", error);
       memory3.set(key, value);
     }
   }
@@ -33859,7 +34015,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      logger43.debug("Failed to clear usage stats", error);
+      logger44.debug("Failed to clear usage stats", error);
       memory3.delete(key);
     }
   }
@@ -33879,7 +34035,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }
       return { version: STATS_VERSION, userId, days };
     } catch (error) {
-      logger43.debug("Failed to read usage stats", error);
+      logger44.debug("Failed to read usage stats", error);
       return emptyStore(userId);
     }
   }
@@ -34063,9 +34219,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
 
   // src/plugins/usageDisplay/index.tsx
-  var logger44 = new Logger("UsageDisplay");
+  var logger45 = new Logger("UsageDisplay");
   var cl31 = classNameFactory("void-ud-");
-  var settings34 = definePluginSettings({
+  var settings35 = definePluginSettings({
     usageStats: {
       type: 3 /* BOOLEAN */,
       description: "Record daily usage. Hover shows today after a delay; click opens history.",
@@ -34166,7 +34322,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       await hook.getState().refreshUsage();
       return normalizeBotUsage(hook.getState().usage);
     } catch (error) {
-      logger44.warn("Failed to fetch Grok Bot usage", error);
+      logger45.warn("Failed to fetch Grok Bot usage", error);
       return null;
     }
   }
@@ -34180,12 +34336,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
     SettingsStore3.markAsChanged();
   }
   function snapshotToday() {
-    if (!settings34.store.usageStats)
+    if (!settings35.store.usageStats)
       return;
     syncAccount();
     if (!state.userId)
       return;
-    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings34.store.retainDays));
+    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings35.store.retainDays));
   }
   async function refresh(reason = "manual") {
     if (refreshPromise)
@@ -34214,7 +34370,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
         const pageUsage = readNativeUsage();
         const remote = await fetchOfficialUsage().then((usage) => ({ ok: true, usage })).catch((error) => {
-          logger44.warn("Failed to fetch official usage", error);
+          logger45.warn("Failed to fetch official usage", error);
           return { ok: false };
         });
         if (currentPoolId() !== poolId)
@@ -34303,7 +34459,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function ButtonIcon() {
     useExternalStore(store3);
-    const { showPercent } = settings34.use(["showPercent"]);
+    const { showPercent } = settings35.use(["showPercent"]);
     const weekly = state.usage?.weekly;
     const percent = weekly?.usedPercent ?? null;
     const tone = usageTone(percent);
@@ -34373,7 +34529,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function UsagePanel() {
     useExternalStore(store3);
-    const { usageStats, hoverStatsDelay } = settings34.use(["usageStats", "hoverStatsDelay"]);
+    const { usageStats, hoverStatsDelay } = settings35.use(["usageStats", "hoverStatsDelay"]);
     const delay = hoverDelayOf(hoverStatsDelay);
     const [showToday, setShowToday] = useState(usageStats && delay <= 0);
     const weekly = state.usage?.weekly;
@@ -34415,7 +34571,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }));
   }
   function StatsToggle() {
-    const { usageStats } = settings34.use(["usageStats"]);
+    const { usageStats } = settings35.use(["usageStats"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       justifyContent: "space-between",
@@ -34433,7 +34589,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }, "Record local daily usage on this device.")), /* @__PURE__ */ React.createElement(Switch, {
       checked: !!usageStats,
       onCheckedChange: (value) => {
-        settings34.store.usageStats = value;
+        settings35.store.usageStats = value;
         store3.notify();
         if (value)
           refresh("manual");
@@ -34542,7 +34698,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       onClick: () => {
         if (pre == null)
           return;
-        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings34.store.retainDays));
+        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings35.store.retainDays));
         store3.notify();
       }
     }, "Repair")));
@@ -34568,7 +34724,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function StatsModal({ onClose }) {
     useExternalStore(store3);
-    const { usageStats } = settings34.use(["usageStats"]);
+    const { usageStats } = settings35.use(["usageStats"]);
     const days = usageStats && state.userId ? listDays(state.userId) : [];
     const todayKey = localDateKey(Date.now());
     const bars = days.length ? fillChartDays(days) : [];
@@ -34742,7 +34898,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
-    settings: settings34,
+    settings: settings35,
     start() {
       migrateUsageStats();
       try {
@@ -34753,7 +34909,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
           refresh("route");
         });
       } catch (error) {
-        logger44.warn("RoutingStore subscribe failed", error);
+        logger45.warn("RoutingStore subscribe failed", error);
       }
     },
     stop() {
@@ -34765,7 +34921,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       streamEnd: onStreamEnd8
     },
     onSettingsChange() {
-      if (settings34.store.usageStats)
+      if (settings35.store.usageStats)
         refresh("manual");
     }
   });
@@ -34773,7 +34929,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   // src/plugins/userQuotes/index.ts
   var STYLE_NAME8 = "userQuotes";
   var SEL = '[data-testid="user-message"] blockquote:not(.twitter-tweet)';
-  var settings35 = definePluginSettings({
+  var settings36 = definePluginSettings({
     italic: {
       type: 3 /* BOOLEAN */,
       description: "Render quoted lines in italic.",
@@ -34790,9 +34946,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
       `${SEL}{margin:0!important;border-inline-start-color:var(--fg-secondary)!important;border-inline-start-width:0.25rem!important;border-inline-start-style:solid!important;padding-inline-start:0.75rem!important}`,
       `${SEL}>*{margin-block:0!important}`
     ];
-    if (!settings35.store.italic)
+    if (!settings36.store.italic)
       rules.push(`${SEL}{font-style:inherit!important}`);
-    if (!settings35.store.quotes) {
+    if (!settings36.store.quotes) {
       rules.push(`${SEL}{quotes:none!important}`);
       rules.push(`${SEL}::before,${SEL}::after,${SEL} p::before,${SEL} p::after{content:none!important}`);
     }
@@ -34806,7 +34962,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["messages"],
     enabledByDefault: true,
-    settings: settings35,
+    settings: settings36,
     patches: [
       {
         find: '["###### ",',
@@ -34825,7 +34981,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
   // src/plugins/widerChat/index.ts
   var STYLE_NAME9 = "widerChat";
-  var settings36 = definePluginSettings({
+  var settings37 = definePluginSettings({
     width: {
       type: 1 /* NUMBER */,
       description: "Maximum chat width in rem.",
@@ -34833,7 +34989,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
   function applyWidth() {
-    const w = settings36.store.width;
+    const w = settings37.store.width;
     registerStyle(STYLE_NAME9, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
   var widerChat_default = definePlugin({
@@ -34842,7 +34998,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     description: "Adjustable chat width for big monitors.",
     authors: [Devs.Prism],
     tags: ["appearance"],
-    settings: settings36,
+    settings: settings37,
     start: applyWidth,
     onSettingsChange: applyWidth,
     stop() {
@@ -34898,13 +35054,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
   recentTopics_default.updatedAt = 1791658451000;
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1791656586000;
+  skillBlocker_default.updatedAt = 0;
   stableComposer_default.updatedAt = 1789125421000;
   starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
-  usageDisplay_default.updatedAt = 1791754071000;
+  usageDisplay_default.updatedAt = 1791754940000;
   userQuotes_default.updatedAt = 1791226275000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
@@ -35034,14 +35191,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   }
   // src/VoidPP.ts
-  var logger45 = new Logger("TurbopackPatcher", "#e78284");
+  var logger46 = new Logger("TurbopackPatcher", "#e78284");
   var FALLBACK_MS = 15000;
   var ORPHAN_REPORT_DELAY_MS = 5000;
   function safely(name, fn) {
     try {
       fn();
     } catch (e) {
-      logger45.error(`${name} failed:`, e);
+      logger46.error(`${name} failed:`, e);
     }
   }
   function deferOrphanReport() {
@@ -35062,7 +35219,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       safely("initStreamEvents", initStreamEvents);
       safely("_resolveReady", _resolveReady);
       safely("startAllPlugins", () => startAllPlugins("TurbopackReady" /* TurbopackReady */));
-      logger45.info(`${getModuleCache().size} modules loaded, ready`);
+      logger46.info(`${getModuleCache().size} modules loaded, ready`);
       safely("retryFailedPlugins", retryFailedPlugins);
       safely("deferOrphanReport", deferOrphanReport);
       safely("checkBuildFingerprint", checkBuildFingerprint);
