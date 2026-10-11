@@ -15,7 +15,7 @@ import { CircleGaugeIcon } from "@components/icons";
 import { VoidPPDialogShell } from "@components/settings/tabs/VoidPPDialogShell";
 import type { GrokSubscription } from "@grok-types";
 import { getPlanName } from "@turbopack/common/plan";
-import { React, useEffect, useRef, useState } from "@turbopack/common/react";
+import { React, useCallback, useEffect, useRef, useState } from "@turbopack/common/react";
 import { RoutingStore, SessionStore, SubscriptionsStore } from "@turbopack/common/stores";
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
@@ -563,6 +563,21 @@ function RepairReset({ rec, prev, userId }: { rec: DailyUsageRecord; prev: Daily
     );
 }
 
+function scrollUsageChart(node: HTMLElement, toEnd: boolean) {
+    if (toEnd) {
+        const max = node.scrollWidth - node.clientWidth;
+        if (max > 1 && node.scrollLeft < max - 1) node.scrollLeft = node.scrollWidth;
+        return;
+    }
+    const bar = node.querySelector<HTMLElement>(`.${cl("bar-on")}`);
+    if (!bar) return;
+    const host = node.getBoundingClientRect();
+    const rect = bar.getBoundingClientRect();
+    if (host.width === 0 || rect.width === 0) return;
+    if (rect.left < host.left - 1) node.scrollLeft -= host.left - rect.left;
+    else if (rect.right > host.right + 1) node.scrollLeft += rect.right - host.right;
+}
+
 function StatsModal({ onClose }: ModalProps) {
     useExternalStore(store);
     const { usageStats } = settings.use(["usageStats"]);
@@ -572,15 +587,53 @@ function StatsModal({ onClose }: ModalProps) {
     const scale = chartScale(bars);
     const [selected, setSelected] = useState(todayKey);
     const active = bars.find(d => d.date === selected) ?? bars.at(-1) ?? null;
-    const chartRef = useRef<HTMLDivElement>(null);
+    const chartRef = useRef<HTMLDivElement | null>(null);
+
+    const bindChart = useCallback((node: HTMLDivElement | null) => {
+        const prev = chartRef.current as (HTMLDivElement & { _voidUdOff?: () => void }) | null;
+        prev?._voidUdOff?.();
+        chartRef.current = node;
+        if (!node) return;
+        const el = node as HTMLDivElement & { _voidUdOff?: () => void };
+        let user = false;
+        const wantsEnd = () => {
+            const options = node.querySelectorAll("[role=option]");
+            const marked = node.querySelector(`.${cl("bar-on")}`);
+            return !marked || marked === options[options.length - 1];
+        };
+        const place = () => {
+            if (!user) scrollUsageChart(node, wantsEnd());
+        };
+        const onScroll = () => {
+            if (user || !wantsEnd()) return;
+            const max = node.scrollWidth - node.clientWidth;
+            if (max > 1 && node.scrollLeft < max - 1) node.scrollLeft = node.scrollWidth;
+        };
+        const mark = () => {
+            user = true;
+        };
+        place();
+        const ro = new ResizeObserver(place);
+        ro.observe(node);
+        node.addEventListener("scroll", onScroll);
+        node.addEventListener("pointerdown", mark);
+        node.addEventListener("wheel", mark, { passive: true });
+        const timers = [0, 50, 200, 600].map(ms => setTimeout(place, ms));
+        el._voidUdOff = () => {
+            ro.disconnect();
+            node.removeEventListener("scroll", onScroll);
+            node.removeEventListener("pointerdown", mark);
+            node.removeEventListener("wheel", mark);
+            for (const id of timers) clearTimeout(id);
+        };
+    }, []);
 
     useEffect(() => {
         const node = chartRef.current;
-        if (node) node.scrollLeft = node.scrollWidth;
-    }, [bars.length]);
-
-    useEffect(() => {
-        chartRef.current?.querySelector(`.${cl("bar-on")}`)?.scrollIntoView({ inline: "nearest", block: "nearest" });
+        if (!node) return;
+        const options = node.querySelectorAll("[role=option]");
+        const marked = node.querySelector(`.${cl("bar-on")}`);
+        scrollUsageChart(node, !marked || marked === options[options.length - 1]);
     }, [selected]);
 
     return (
@@ -592,11 +645,9 @@ function StatsModal({ onClose }: ModalProps) {
                 <Paragraph>No days recorded yet. Stats start from the moment you enable tracking.</Paragraph>
             ) : (
                 <Flex flexDirection="column" gap="0.75rem" className={cl("history")}>
-                    <Flex
-                        ref={chartRef}
+                    <div
+                        ref={bindChart}
                         className={cl("chart")}
-                        alignItems="stretch"
-                        gap="0.35rem"
                         tabIndex={0}
                         role="listbox"
                         aria-label="Daily usage"
@@ -614,11 +665,8 @@ function StatsModal({ onClose }: ModalProps) {
                             const on = rec.date === active?.date;
                             const pct = empty || !scale ? 0 : clamp((delta / scale) * 100, 0, 100);
                             return (
-                                <Button
+                                <div
                                     key={rec.date}
-                                    variant="none"
-                                    size="none"
-                                    shape="rectangle"
                                     tabIndex={-1}
                                     role="option"
                                     aria-selected={on}
@@ -631,10 +679,10 @@ function StatsModal({ onClose }: ModalProps) {
                                         <span className={cl("bar-fill")} style={{ height: `${pct}%` }} />
                                     </span>
                                     <span className={cl("bar-label")}>{rec.date === todayKey ? "Today" : formatDayNumber(rec.date)}</span>
-                                </Button>
+                                </div>
                             );
                         })}
-                    </Flex>
+                    </div>
                     {active != null && (
                         <Flex flexDirection="column" gap="0.35rem" className={cl("detail")}>
                             <Text size="sm" weight="semibold">{active.date === todayKey ? "Today" : formatDayLabel(active.date)}</Text>

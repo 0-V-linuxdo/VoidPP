@@ -87,6 +87,30 @@ export default definePlugin({
 
     patches: [
         {
+            find: 'overflow-hidden rounded-full bg-surface border border-border-l1',
+            all: true,
+            replacement: {
+                match: /!\i&&"overflow-hidden rounded-full bg-surface border border-border-l1"/,
+                replace: '!1&&""',
+            },
+        },
+        {
+            find: '"rounded-full cursor-pointer","bg-surface-l1 border border-border-l1"',
+            all: true,
+            replacement: {
+                match: /"rounded-full cursor-pointer","bg-surface-l1 border border-border-l1"/,
+                replace: '"cursor-pointer","bg-surface-l1"',
+            },
+        },
+        {
+            find: "radial-gradient(circle 12px at -3px 50%, transparent 99%, black 100%)",
+            all: true,
+            replacement: {
+                match: /,mask:"radial-gradient\(circle 12px at -3px 50%, transparent 99%, black 100%\)",WebkitMask:"radial-gradient\(circle 12px at -3px 50%, transparent 99%, black 100%\)"/,
+                replace: "",
+            },
+        },
+        {
             find: '"user-dropdown.upgrade","Upgrade plan"',
             all: true,
             replacement: {

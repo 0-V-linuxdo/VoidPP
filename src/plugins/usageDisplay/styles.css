@@ -79,12 +79,19 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
 .void-ud-history {
     min-height: 0;
+    min-width: 0;
     flex: 1;
 }
 
 .void-ud-chart {
+    display: flex;
+    align-items: stretch;
+    gap: 0.35rem;
     min-height: 0;
+    min-width: 0;
+    width: 100%;
     overflow-x: auto;
+    overflow-anchor: none;
     height: 9.25rem;
     outline: none;
 }
@@ -99,6 +106,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
     align-items: center;
     justify-content: flex-end;
     gap: 0.3rem;
+    border: 0;
+    background: transparent;
+    font: inherit;
     border-radius: 0.5rem;
     color: inherit;
     cursor: pointer;

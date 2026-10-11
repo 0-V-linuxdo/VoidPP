@@ -22,6 +22,10 @@ const logger = new Logger("BetterNavigator");
 const cl = classNameFactory("void-bn-");
 const MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
 const ASST_SEL = "[data-testid='assistant-message']";
+const CHAT_PANE_SEL = "[data-testid='chat-transcript-scroller']";
+const BOT_PANE_SEL = "[data-testid='bot-transcript-scroller']";
+const BOT_ENTRY_SEL = "[data-bot-entry-id]";
+const BOT_TEXT_SEL = "[data-bot-message-text='true']";
 const TICK_SEL = "button[aria-label^='Go to response ']";
 const PREV_SEL = "button[aria-label='Navigate to previous message']";
 const NEXT_SEL = "button[aria-label='Navigate to next message']";
@@ -185,9 +189,18 @@ function chatRoot(): HTMLElement | null {
         ?? document.querySelector<HTMLElement>("[role='main'], main");
 }
 
+function transcriptScrollers(): HTMLElement[] {
+    const out: HTMLElement[] = [];
+    for (const sel of [CHAT_PANE_SEL, BOT_PANE_SEL]) {
+        const tagged = document.querySelector<HTMLElement>(sel);
+        if (tagged && !tagged.closest(PANE_SKIP) && isVisible(tagged)) out.push(tagged);
+    }
+    return out;
+}
+
 function chatPane(): HTMLElement | null {
-    const tagged = document.querySelector<HTMLElement>("[data-testid='chat-transcript-scroller']");
-    if (tagged && !tagged.closest(PANE_SKIP) && isVisible(tagged)) return tagged;
+    const tagged = transcriptScrollers()[0];
+    if (tagged) return tagged;
     const main = chatRoot();
     if (!main) return null;
     const skip = (n: HTMLElement) => !!n.closest(PANE_SKIP);
@@ -358,9 +371,32 @@ function stopVisible(): boolean {
     return false;
 }
 
+function isUserTurn(el: HTMLElement): boolean {
+    if (el.getAttribute("data-testid") === "assistant-message") return false;
+    if (el.getAttribute("data-testid") === "user-message") return true;
+    if (el.querySelector("[data-testid='user-message']")) return true;
+    return !!el.querySelector(".items-end");
+}
+
+function messageNodes(root: ParentNode): HTMLElement[] {
+    const entries = [...root.querySelectorAll<HTMLElement>(BOT_ENTRY_SEL)].filter(el => !el.parentElement?.closest(BOT_ENTRY_SEL));
+    if (entries.length) return entries;
+    return [...root.querySelectorAll<HTMLElement>(MSG_SEL)];
+}
+
+function roleOf(el: HTMLElement): Role {
+    return isUserTurn(el) ? "user" : "assistant";
+}
+
+function assistantEls(root: ParentNode): HTMLElement[] {
+    const nodes = messageNodes(root).filter(el => roleOf(el) === "assistant");
+    if (nodes.length) return nodes;
+    return [...root.querySelectorAll<HTMLElement>(ASST_SEL)];
+}
+
 function liveAssistantEl(): HTMLElement | null {
     const root = chatPane() ?? document;
-    const last = [...root.querySelectorAll<HTMLElement>(ASST_SEL)].findLast(el => document.body.contains(el));
+    const last = assistantEls(root).findLast(el => document.body.contains(el));
     if (!last) return null;
     if (lookSettled(last)) return null;
     if (stopVisible()) return last;
@@ -447,19 +483,23 @@ function responseIdOf(el: HTMLElement): string | undefined {
     if (el.id.startsWith("response-")) return el.id.slice("response-".length);
     const host = el.closest<HTMLElement>("[id^='response-']");
     if (host?.id.startsWith("response-")) return host.id.slice("response-".length);
-    return undefined;
+    const entry = el.matches(BOT_ENTRY_SEL) ? el : el.closest<HTMLElement>(BOT_ENTRY_SEL);
+    return entry?.getAttribute("data-bot-entry-id") || undefined;
 }
 
 function bubbleOf(el: HTMLElement | null): HTMLElement | null {
     if (!el) return null;
-    if (el.matches(MSG_SEL)) return el;
-    return el.querySelector<HTMLElement>(MSG_SEL);
+    if (el.matches(MSG_SEL) || el.matches(BOT_TEXT_SEL)) return el;
+    return el.querySelector<HTMLElement>(MSG_SEL)
+        ?? el.querySelector<HTMLElement>(BOT_TEXT_SEL)
+        ?? (el.matches(BOT_ENTRY_SEL) ? el : el.querySelector<HTMLElement>(BOT_ENTRY_SEL));
 }
 
 function elForId(id: string): HTMLElement | null {
     const shell = document.getElementById(`response-${id}`);
-    if (!(shell instanceof HTMLElement)) return null;
-    return bubbleOf(shell);
+    if (shell instanceof HTMLElement) return bubbleOf(shell);
+    const bot = document.querySelector<HTMLElement>(`[data-bot-entry-id="${CSS.escape(id)}"]`);
+    return bot ? bubbleOf(bot) : null;
 }
 
 function mountedEl(item: NavItem | undefined): HTMLElement | null {
@@ -516,12 +556,13 @@ function collectDom(): NavItem[] {
     const showAsst = settings.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const out: NavItem[] = [];
-    for (const el of root.querySelectorAll<HTMLElement>(MSG_SEL)) {
+    for (const el of messageNodes(root)) {
         if (!document.body.contains(el)) continue;
-        const role: Role = el.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
+        const role = roleOf(el);
         if (!showAsst && role === "assistant") continue;
-        const live = el === liveEl;
-        const text = summarize(el) || (live ? LIVE_LABEL : "");
+        const live = role === "assistant" && !!liveEl && (el === liveEl || el.contains(liveEl));
+        const bubble = bubbleOf(el) ?? el;
+        const text = summarize(bubble) || (live ? LIVE_LABEL : "");
         if (!text) continue;
         out.push({ id: responseIdOf(el), el, role, text, live });
     }
@@ -598,13 +639,19 @@ function absorbLive(base: NavItem[], dom: NavItem[]): NavItem[] {
     return out;
 }
 
+function idsCovered(leaf: NavItem[], dom: NavItem[]): boolean {
+    const leafIds = new Set(leaf.map(n => n.id).filter((id): id is string => !!id));
+    const domIds = dom.map(n => n.id).filter((id): id is string => !!id);
+    return domIds.length > 0 && domIds.every(id => leafIds.has(id));
+}
+
 function collect(): NavItem[] {
     const leaf = collectLeaf();
     const dom = collectDom();
     if (!leaf.length) return dom;
-    const leafIds = new Set(leaf.map(n => n.id).filter((id): id is string => !!id));
-    const domIds = dom.map(n => n.id).filter((id): id is string => !!id);
-    const covered = domIds.length > 0 && domIds.every(id => leafIds.has(id));
+    const covered = idsCovered(leaf, dom);
+    const onBot = transcriptScrollers().some(pane => pane.matches(BOT_PANE_SEL));
+    if (onBot && !covered) return dom;
     const base = covered || dom.length <= leaf.length ? leaf : dom;
     const nav = absorbLive(base, dom);
     for (const item of nav) {
@@ -749,9 +796,9 @@ function frame(): Promise<void> {
 }
 
 function livePane(el?: HTMLElement | null): HTMLElement | null {
-    const tagged = document.querySelector<HTMLElement>("[data-testid='chat-transcript-scroller']");
-    const taggedOk = !!tagged && !tagged.closest(PANE_SKIP) && tagged.scrollHeight > tagged.clientHeight + 2;
-    if (taggedOk && tagged && (!el || tagged.contains(el))) return tagged;
+    const list = transcriptScrollers().filter(pane => pane.scrollHeight > pane.clientHeight + 2);
+    const hit = el ? list.find(pane => pane.contains(el)) : list[0];
+    if (hit) return hit;
     return chatPane();
 }
 
@@ -927,7 +974,9 @@ function nudge(pane: HTMLElement, dir: -1 | 1, screens: number) {
 }
 
 function firstResponseId(pane: HTMLElement): string {
-    return pane.querySelector("[id^='response-']")?.id ?? "";
+    const shell = pane.querySelector("[id^='response-']");
+    if (shell?.id) return shell.id;
+    return pane.querySelector(BOT_ENTRY_SEL)?.getAttribute("data-bot-entry-id") ?? "";
 }
 
 function targetEl(item: NavItem): HTMLElement | null {
