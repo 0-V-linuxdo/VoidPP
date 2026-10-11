@@ -11,7 +11,9 @@ assets/logos/app-icon/*
 *.log
 *.tsbuildinfo
 .DS_Store
-.claude
+.claude/*
+!.claude/skills/
+!.claude/skills/**
 .voidpp-cache
 .void-cache
 .env
