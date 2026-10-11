@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         Void++
-// @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261011.5
+// @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp-beta
+// @version      20261011.6
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
-// @environment  Development
+// @environment  Beta
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
-// @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/assets/logos/app-icon/voidpp-icon.svg
+// @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/assets/logos/app-icon/voidpp-icon.svg
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
 // @match        *://artifacts.grokusercontent.com/*
@@ -29,12 +29,12 @@
 // @compatible   opera
 // @license      GPL-3.0-or-later
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP
-// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
+// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/userscript/VoidPP.user.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/userscript/VoidPP.user.js
 // ==/UserScript==
 
 /**
- * Void++ [20261011.5] v1.0.0 — A modification for grok.com
+ * Void++ [20261011.6] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261011.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e2851d6"}`
-    }, `(${"e2851d6"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261011.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ed5a14d"}`
+    }, `(${"ed5a14d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21843,6 +21843,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       type: 3 /* BOOLEAN */,
       description: "Hide the Upgrade button on the Imagine page.",
       default: true
+    },
+    flatSourceChips: {
+      type: 3 /* BOOLEAN */,
+      description: "Drop the circle around citation favicons and the sources chip border.",
+      default: true
     }
   });
   var hideComponentPatch = (name, setting, all = true) => ({
@@ -21855,24 +21860,82 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   });
   var IMAGINE_UPGRADE_STYLE = "cleanerImagineUpgrade";
   var IMAGINE_UPGRADE_CSS = 'form:has([aria-label="Generation mode"]) a[href*="upgrade"],form:has([aria-label="Generation mode"]) button[aria-label="Upgrade"],form:has([aria-label="Generation mode"]) button[aria-label*="Upgrade plan"],[data-wd-toolbar] a[href*="upgrade"],[data-wd-toolbar] button[aria-label="Upgrade"]{display:none!important}';
+  var SOURCE_CHIPS_STYLE = "cleanerSourceChips";
+  var SOURCE_CHIPS_CSS = `
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) {
+    border: 0 !important;
+    box-shadow: none !important;
+}
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) > div:has(> img[src*="favicon" i]) {
+    border: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) img[src*="favicon" i] {
+    border-radius: 0 !important;
+}
+`;
+  function dropName3(list) {
+    if (!Array.isArray(list))
+      return;
+    const next = list.filter((n) => typeof n === "string" && n !== "SourceChips");
+    return next.length === list.length ? undefined : next;
+  }
+  function migrateSourceChips() {
+    const plugins = PlainSettings.plugins;
+    const old = plugins.SourceChips;
+    if (!old)
+      return;
+    const target = plugins.Cleaner ??= {};
+    if (old.enabled === false && !("flatSourceChips" in target))
+      target.flatSourceChips = false;
+    delete plugins.SourceChips;
+    const meta = plugins.Settings;
+    if (meta) {
+      const pinned = dropName3(meta.pinnedPlugins);
+      const starred = dropName3(meta.starredPlugins);
+      if (pinned)
+        meta.pinnedPlugins = pinned;
+      if (starred)
+        meta.starredPlugins = starred;
+      const known = meta.knownPlugins;
+      if (known && typeof known === "object")
+        delete known.SourceChips;
+    }
+    SettingsStore3.markAsChanged();
+  }
   function applyImagineUpgrade() {
     if (settings16.store.hideImagineUpgrade)
       registerStyle(IMAGINE_UPGRADE_STYLE, IMAGINE_UPGRADE_CSS);
     else
       unregisterStyle(IMAGINE_UPGRADE_STYLE);
   }
+  function applySourceChips() {
+    if (settings16.store.flatSourceChips)
+      registerStyle(SOURCE_CHIPS_STYLE, SOURCE_CHIPS_CSS);
+    else
+      unregisterStyle(SOURCE_CHIPS_STYLE);
+  }
+  function apply3() {
+    migrateSourceChips();
+    applyImagineUpgrade();
+    applySourceChips();
+  }
   var cleaner_default = definePlugin({
     name: "Cleaner",
     icon: BrushCleaningIcon,
-    description: "Hides upgrade nags and upsell banners.",
+    description: "Hides upgrade nags, upsell banners, and the circle around citation favicons.",
     authors: [Devs.Prism, Devs.p],
     tags: ["declutter"],
     enabledByDefault: true,
     settings: settings16,
-    start: applyImagineUpgrade,
-    onSettingsChange: applyImagineUpgrade,
+    start: apply3,
+    onSettingsChange: apply3,
     stop() {
       unregisterStyle(IMAGINE_UPGRADE_STYLE);
+      unregisterStyle(SOURCE_CHIPS_STYLE);
     },
     patches: [
       {
@@ -23108,7 +23171,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       default: 16
     }
   });
-  function apply3() {
+  function apply4() {
     const pct = clamp(settings19.store.opacity, 0, 100);
     const blur = clamp(settings19.store.blur, 0, 40);
     const alpha = pct / 100;
@@ -23123,8 +23186,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["composer", "appearance"],
     enabledByDefault: true,
     settings: settings19,
-    start: apply3,
-    onSettingsChange: apply3,
+    start: apply4,
+    onSettingsChange: apply4,
     stop() {
       unregisterStyle(STYLE_NAME3);
     }
@@ -25026,7 +25089,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function clearSize() {
     document.documentElement.style.removeProperty(SIZE_VAR);
   }
-  function apply4() {
+  function apply5() {
     if (!started6 || painting2)
       return;
     painting2 = true;
@@ -25043,7 +25106,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return;
     raf6 = requestAnimationFrame(() => {
       raf6 = 0;
-      apply4();
+      apply5();
     });
   }
   function onMut(muts) {
@@ -25087,11 +25150,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       started6 = true;
       failed.clear();
       bind();
-      apply4();
+      apply5();
     },
     onSettingsChange() {
       failed.clear();
-      apply4();
+      apply5();
     },
     stop() {
       started6 = false;
@@ -29211,7 +29274,7 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
       default: true
     }
   });
-  function apply5() {
+  function apply6() {
     const rules = [BUTTON_CSS];
     if (settings26.store.hideDictationRefinement)
       rules.push(REFINEMENT_CSS);
@@ -29235,8 +29298,8 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
         }
       }
     ],
-    start: apply5,
-    onSettingsChange: apply5,
+    start: apply6,
+    onSettingsChange: apply6,
     stop() {
       unregisterStyle(STYLE_NAME4);
     }
@@ -29296,7 +29359,7 @@ span:has(> [aria-label*="Grok Bot"]) {
       default: true
     }
   });
-  function apply6() {
+  function apply7() {
     const rules = [];
     if (settings27.store.hideShareProject) {
       rules.push('button[aria-label="Share Project"]{display:none!important}');
@@ -29315,8 +29378,8 @@ span:has(> [aria-label*="Grok Bot"]) {
     tags: ["declutter", "privacy"],
     enabledByDefault: true,
     settings: settings27,
-    start: apply6,
-    onSettingsChange: apply6,
+    start: apply7,
+    onSettingsChange: apply7,
     stop() {
       unregisterStyle(STYLE_NAME6);
     }
@@ -29342,7 +29405,7 @@ span:has(> [aria-label*="Grok Bot"]) {
       default: true
     }
   });
-  function apply7() {
+  function apply8() {
     const rules = [];
     if (settings28.store.hideUsername) {
       rules.push(`${STACK}>:first-child{display:none!important}`);
@@ -29384,8 +29447,8 @@ span:has(> [aria-label*="Grok Bot"]) {
         ]
       }
     ],
-    start: apply7,
-    onSettingsChange: apply7,
+    start: apply8,
+    onSettingsChange: apply8,
     stop() {
       unregisterStyle(STYLE_NAME7);
     }
@@ -32866,39 +32929,6 @@ html.void-rt-open [data-sidebar="gap"] {
     ]
   });
 
-  // src/plugins/sourceChips/index.ts
-  var STYLE_NAME8 = "sourceChips";
-  var CSS3 = `
-div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) {
-    border: 0 !important;
-    box-shadow: none !important;
-}
-div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) > div:has(> img[src*="favicon" i]) {
-    border: 0 !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-}
-div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) img[src*="favicon" i] {
-    border-radius: 0 !important;
-}
-`;
-  var sourceChips_default = definePlugin({
-    name: "SourceChips",
-    icon: GlobeIcon,
-    description: "Drop the circle around citation favicons and the sources chip border.",
-    authors: [Devs.p],
-    tags: ["messages", "declutter"],
-    enabledByDefault: true,
-    start() {
-      registerStyle(STYLE_NAME8, CSS3);
-    },
-    stop() {
-      unregisterStyle(STYLE_NAME8);
-    }
-  });
-
   // src/plugins/stableComposer/index.ts
   var cachedDeps = null;
   var cachedSig = "";
@@ -34713,7 +34743,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // src/plugins/userQuotes/index.ts
-  var STYLE_NAME9 = "userQuotes";
+  var STYLE_NAME8 = "userQuotes";
   var SEL = '[data-testid="user-message"] blockquote:not(.twitter-tweet)';
   var settings35 = definePluginSettings({
     italic: {
@@ -34727,7 +34757,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       default: false
     }
   });
-  function apply8() {
+  function apply9() {
     const rules = [
       `${SEL}{margin:0!important;border-inline-start-color:var(--fg-secondary)!important;border-inline-start-width:0.25rem!important;border-inline-start-style:solid!important;padding-inline-start:0.75rem!important}`,
       `${SEL}>*{margin-block:0!important}`
@@ -34738,7 +34768,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       rules.push(`${SEL}{quotes:none!important}`);
       rules.push(`${SEL}::before,${SEL}::after,${SEL} p::before,${SEL} p::after{content:none!important}`);
     }
-    registerStyle(STYLE_NAME9, rules.join(`
+    registerStyle(STYLE_NAME8, rules.join(`
 `));
   }
   var userQuotes_default = definePlugin({
@@ -34758,15 +34788,15 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
       }
     ],
-    start: apply8,
-    onSettingsChange: apply8,
+    start: apply9,
+    onSettingsChange: apply9,
     stop() {
-      unregisterStyle(STYLE_NAME9);
+      unregisterStyle(STYLE_NAME8);
     }
   });
 
   // src/plugins/widerChat/index.ts
-  var STYLE_NAME10 = "widerChat";
+  var STYLE_NAME9 = "widerChat";
   var settings36 = definePluginSettings({
     width: {
       type: 1 /* NUMBER */,
@@ -34776,7 +34806,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
   function applyWidth() {
     const w = settings36.store.width;
-    registerStyle(STYLE_NAME10, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
+    registerStyle(STYLE_NAME9, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
   var widerChat_default = definePlugin({
     name: "WiderChat",
@@ -34788,66 +34818,65 @@ button:has(.void-ud-trigger > .void-ud-label) {
     start: applyWidth,
     onSettingsChange: applyWidth,
     stop() {
-      unregisterStyle(STYLE_NAME10);
+      unregisterStyle(STYLE_NAME9);
     }
   });
 
   // virtual:~plugins
-  fixChrome_default.updatedAt = 1791748402000;
+  fixChrome_default.updatedAt = 1791671752000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  noTelemetry_default.updatedAt = 1791748402000;
-  settings_default.updatedAt = 1791748402000;
-  chatBarButtons_default.updatedAt = 1791748402000;
-  contextMenu_default.updatedAt = 1791748402000;
-  autoCollapse_default.updatedAt = 1791748402000;
-  autoRetry_default.updatedAt = 1791748402000;
-  avatarPluginsFlyout_default.updatedAt = 1791748402000;
-  betterCanvas_default.updatedAt = 1791748402000;
-  betterFiles_default.updatedAt = 1791748402000;
-  betterImagine_default.updatedAt = 1791748402000;
-  betterLinks_default.updatedAt = 1791748402000;
-  betterModeSelect_default.updatedAt = 1791748402000;
+  noTelemetry_default.updatedAt = 1791671752000;
+  settings_default.updatedAt = 1791671752000;
+  chatBarButtons_default.updatedAt = 1791671752000;
+  contextMenu_default.updatedAt = 1791671752000;
+  autoCollapse_default.updatedAt = 1791671752000;
+  autoRetry_default.updatedAt = 1791671752000;
+  avatarPluginsFlyout_default.updatedAt = 1791671752000;
+  betterCanvas_default.updatedAt = 1791671752000;
+  betterFiles_default.updatedAt = 1791671752000;
+  betterImagine_default.updatedAt = 1791671752000;
+  betterLinks_default.updatedAt = 1791671752000;
+  betterModeSelect_default.updatedAt = 1791671752000;
   betterNavigator_default.updatedAt = 1791750681000;
-  betterQueue_default.updatedAt = 1791748402000;
-  betterQuotes_default.updatedAt = 1791748402000;
-  betterSidebar_default.updatedAt = 1791748402000;
-  chatListStatus_default.updatedAt = 1791748402000;
-  chatStateFavicons_default.updatedAt = 1791748402000;
-  cleaner_default.updatedAt = 1791748402000;
-  cloneChats_default.updatedAt = 1791748402000;
-  collapseThoughts_default.updatedAt = 1791748402000;
-  completeToast_default.updatedAt = 1791748402000;
-  composerOpacity_default.updatedAt = 1791748402000;
-  consoleJanitor_default.updatedAt = 1791748402000;
-  customGreeting_default.updatedAt = 1791748402000;
-  customInstructions_default.updatedAt = 1791748402000;
-  customSidebarIdentity_default.updatedAt = 1791748402000;
-  downloadTTS_default.updatedAt = 1791748402000;
-  experiments_default.updatedAt = 1791748402000;
-  exportChat_default.updatedAt = 1791748402000;
-  incognito_default.updatedAt = 1791748402000;
-  inputHistory_default.updatedAt = 1791748402000;
-  messageStars_default.updatedAt = 1791748402000;
-  messageTimestamps_default.updatedAt = 1791748402000;
-  noBuildStarters_default.updatedAt = 1791748402000;
-  noDictation_default.updatedAt = 1791748402000;
-  noGrokBot_default.updatedAt = 1791748402000;
-  noShareLink_default.updatedAt = 1791748402000;
-  noSidebarIdentity_default.updatedAt = 1791748402000;
-  oneko_default.updatedAt = 1791748402000;
-  pluginsFlyout_default.updatedAt = 1791748402000;
-  recentTopics_default.updatedAt = 1791748402000;
-  responseNotification_default.updatedAt = 1791748402000;
-  settingsFlyout_default.updatedAt = 1791748402000;
-  sourceChips_default.updatedAt = 1791748402000;
-  stableComposer_default.updatedAt = 1791748402000;
-  starry_default.updatedAt = 1791748402000;
-  streamerMode_default.updatedAt = 1791748402000;
-  usageDisplay_default.updatedAt = 1791748402000;
-  userQuotes_default.updatedAt = 1791748402000;
-  widerChat_default.updatedAt = 1791748402000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [sourceChips_default.name]: sourceChips_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  betterQueue_default.updatedAt = 1791671752000;
+  betterQuotes_default.updatedAt = 1791676681000;
+  betterSidebar_default.updatedAt = 1791671752000;
+  chatListStatus_default.updatedAt = 1791671752000;
+  chatStateFavicons_default.updatedAt = 1791671752000;
+  cleaner_default.updatedAt = 1791671752000;
+  cloneChats_default.updatedAt = 1791671752000;
+  collapseThoughts_default.updatedAt = 1791751054000;
+  completeToast_default.updatedAt = 1791671752000;
+  composerOpacity_default.updatedAt = 1791671752000;
+  consoleJanitor_default.updatedAt = 1791671752000;
+  customGreeting_default.updatedAt = 1791671752000;
+  customInstructions_default.updatedAt = 1791671752000;
+  customSidebarIdentity_default.updatedAt = 1791671752000;
+  downloadTTS_default.updatedAt = 1791671752000;
+  experiments_default.updatedAt = 1791671752000;
+  exportChat_default.updatedAt = 1791671752000;
+  incognito_default.updatedAt = 1791671752000;
+  inputHistory_default.updatedAt = 1791671752000;
+  messageStars_default.updatedAt = 1791682713000;
+  messageTimestamps_default.updatedAt = 1791671752000;
+  noBuildStarters_default.updatedAt = 1791671752000;
+  noDictation_default.updatedAt = 1791671752000;
+  noGrokBot_default.updatedAt = 1791671752000;
+  noShareLink_default.updatedAt = 1791671752000;
+  noSidebarIdentity_default.updatedAt = 1791712752000;
+  oneko_default.updatedAt = 1791671752000;
+  pluginsFlyout_default.updatedAt = 1791671752000;
+  recentTopics_default.updatedAt = 1791671752000;
+  responseNotification_default.updatedAt = 1791671752000;
+  settingsFlyout_default.updatedAt = 1791671752000;
+  stableComposer_default.updatedAt = 1791671752000;
+  starry_default.updatedAt = 1791671752000;
+  streamerMode_default.updatedAt = 1791671752000;
+  usageDisplay_default.updatedAt = 1791671752000;
+  userQuotes_default.updatedAt = 1791671752000;
+  widerChat_default.updatedAt = 1791671752000;
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;

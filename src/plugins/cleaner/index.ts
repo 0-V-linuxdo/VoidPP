@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { definePluginSettings } from "@api/Settings";
+import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
 import { BrushCleaningIcon } from "@components/icons";
 import { Devs } from "@utils/constants";
 import { registerStyle, unregisterStyle } from "@utils/css";
@@ -51,6 +51,11 @@ const settings = definePluginSettings({
         description: "Hide the Upgrade button on the Imagine page.",
         default: true,
     },
+    flatSourceChips: {
+        type: OptionType.BOOLEAN,
+        description: "Drop the circle around citation favicons and the sources chip border.",
+        default: true,
+    },
 });
 
 const hideComponentPatch = (name: string, setting: keyof typeof settings.store, all = true) => ({
@@ -65,24 +70,82 @@ const hideComponentPatch = (name: string, setting: keyof typeof settings.store, 
 const IMAGINE_UPGRADE_STYLE = "cleanerImagineUpgrade";
 const IMAGINE_UPGRADE_CSS = 'form:has([aria-label="Generation mode"]) a[href*="upgrade"],form:has([aria-label="Generation mode"]) button[aria-label="Upgrade"],form:has([aria-label="Generation mode"]) button[aria-label*="Upgrade plan"],[data-wd-toolbar] a[href*="upgrade"],[data-wd-toolbar] button[aria-label="Upgrade"]{display:none!important}';
 
+/* The sources chip is a pill (`border border-border-l1`). Each favicon sits
+ * in a 20px rounded plate around a 16px image. Keep the pill fill, the label,
+ * and the overlap mask. Do not restyle avatars. */
+const SOURCE_CHIPS_STYLE = "cleanerSourceChips";
+const SOURCE_CHIPS_CSS = `
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) {
+    border: 0 !important;
+    box-shadow: none !important;
+}
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) > div:has(> img[src*="favicon" i]) {
+    border: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) img[src*="favicon" i] {
+    border-radius: 0 !important;
+}
+`;
+
+function dropName(list: unknown): string[] | undefined {
+    if (!Array.isArray(list)) return undefined;
+    const next = list.filter((n): n is string => typeof n === "string" && n !== "SourceChips");
+    return next.length === list.length ? undefined : next;
+}
+
+function migrateSourceChips() {
+    const plugins = PlainSettings.plugins;
+    const old = plugins.SourceChips;
+    if (!old) return;
+    const target = plugins.Cleaner ??= {};
+    if (old.enabled === false && !("flatSourceChips" in target)) target.flatSourceChips = false;
+    delete plugins.SourceChips;
+    const meta = plugins.Settings;
+    if (meta) {
+        const pinned = dropName(meta.pinnedPlugins);
+        const starred = dropName(meta.starredPlugins);
+        if (pinned) meta.pinnedPlugins = pinned;
+        if (starred) meta.starredPlugins = starred;
+        const known = meta.knownPlugins;
+        if (known && typeof known === "object") delete (known as Record<string, unknown>).SourceChips;
+    }
+    SettingsStore.markAsChanged();
+}
+
 function applyImagineUpgrade() {
     if (settings.store.hideImagineUpgrade) registerStyle(IMAGINE_UPGRADE_STYLE, IMAGINE_UPGRADE_CSS);
     else unregisterStyle(IMAGINE_UPGRADE_STYLE);
 }
 
+function applySourceChips() {
+    if (settings.store.flatSourceChips) registerStyle(SOURCE_CHIPS_STYLE, SOURCE_CHIPS_CSS);
+    else unregisterStyle(SOURCE_CHIPS_STYLE);
+}
+
+function apply() {
+    migrateSourceChips();
+    applyImagineUpgrade();
+    applySourceChips();
+}
+
 export default definePlugin({
     name: "Cleaner",
     icon: BrushCleaningIcon,
-    description: "Hides upgrade nags and upsell banners.",
+    description: "Hides upgrade nags, upsell banners, and the circle around citation favicons.",
     authors: [Devs.Prism, Devs.p],
     tags: ["declutter"],
     enabledByDefault: true,
     settings,
 
-    start: applyImagineUpgrade,
-    onSettingsChange: applyImagineUpgrade,
+    start: apply,
+    onSettingsChange: apply,
     stop() {
         unregisterStyle(IMAGINE_UPGRADE_STYLE);
+        unregisterStyle(SOURCE_CHIPS_STYLE);
     },
 
     patches: [

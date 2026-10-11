@@ -215,7 +215,9 @@ Regression table:
 - 26.30 two scrolls — official Jump then a comfort-band nudge, and `settleScroll` fired a second `scrollTo`
 - 26.31 long `smooth` on a far mounted row — the virtualizer cancelled the animation and the scroll stopped mid-way
 
-## SourceChips
+## Cleaner source chips
+
+`[20261011.6]` Do not ship a SourceChips plugin. The favicon circle and the sources-chip border are a Cleaner setting, `flatSourceChips` (default on). On first start, copy `plugins.SourceChips.enabled === false` onto that flag, then delete the SourceChips key and its pin, star, and known entries.
 
 The sources chip is `div[role=button].rounded-full` with `aria-label` like `10 sources`, a `.truncate` label, and up to three favicon plates. Each plate is `div.size-5.rounded-full.overflow-hidden.border.bg-surface` around `img.size-4.rounded-full` (`google.com/s2/favicons`). `[20261010.6]` made the plate border and background transparent and left both `rounded-full`s. The circle was still there: the 20px plate clips a ring around the 16px image, and a transparent 1px border still antialiases. `[20261010.7]` sets `border: 0` and `border-radius: 0` on the plate and the image. `[20261010.8]` also sets `border: 0` on the chip itself (`border-border-l1`, about `1px solid rgba(252, 252, 252, 0.06)`). Keep the pill fill, the label, and the overlap `mask` (`radial-gradient(12px at -3px 50%…)`). Do not restyle avatars or other `rounded-full` borders. A localized label still matches because the selector keys off the favicon image and the `.truncate` sibling, not the English word.
 
