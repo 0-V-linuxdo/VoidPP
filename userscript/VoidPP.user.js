@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         Void++
-// @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp-beta
-// @version      20261011.6
+// @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
+// @version      20261011.7
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
-// @environment  Beta
+// @environment  Development
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
-// @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/assets/logos/app-icon/voidpp-icon.svg
+// @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/assets/logos/app-icon/voidpp-icon.svg
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
 // @match        *://artifacts.grokusercontent.com/*
@@ -29,12 +29,12 @@
 // @compatible   opera
 // @license      GPL-3.0-or-later
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP
-// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/userscript/VoidPP.user.js
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/userscript/VoidPP.user.js
+// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
 // ==/UserScript==
 
 /**
- * Void++ [20261011.6] v1.0.0 — A modification for grok.com
+ * Void++ [20261011.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261011.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ed5a14d"}`
-    }, `(${"ed5a14d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261011.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6136243"}`
+    }, `(${"6136243"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -34844,7 +34844,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterSidebar_default.updatedAt = 1791671752000;
   chatListStatus_default.updatedAt = 1791671752000;
   chatStateFavicons_default.updatedAt = 1791671752000;
-  cleaner_default.updatedAt = 1791671752000;
+  cleaner_default.updatedAt = 1791751900000;
   cloneChats_default.updatedAt = 1791671752000;
   collapseThoughts_default.updatedAt = 1791751054000;
   completeToast_default.updatedAt = 1791671752000;
