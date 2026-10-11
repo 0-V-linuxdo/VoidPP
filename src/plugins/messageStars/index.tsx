@@ -494,28 +494,50 @@ function applyFade(star: HTMLButtonElement, copy: HTMLElement, row: HTMLElement)
     star.classList.toggle("void-stars-rest", !shown);
 }
 
+const PAGER_RE = /^(previous|next) message$|^(上一|下一)(条|则)?(消息|回复)$/i;
+
+function isPagerNode(el: HTMLElement): boolean {
+    for (const btn of el.querySelectorAll("button")) {
+        if (btn.classList.contains("void-stars-bubble")) continue;
+        const label = (btn.getAttribute("aria-label") || "").trim();
+        if (PAGER_RE.test(label)) return true;
+    }
+    const text = (el.textContent || "").replace(/\s+/g, "");
+    return /^\d+\/\d+$/.test(text);
+}
+
+/** Action span, or the slot after the version pager when that pager is a sibling. */
+function starHost(row: HTMLElement): HTMLElement {
+    const parent = row.parentElement;
+    if (!parent) return row;
+    const kids = [...parent.children].filter((el): el is HTMLElement => el instanceof HTMLElement);
+    const pagerAt = kids.findIndex(el => el !== row && isPagerNode(el));
+    if (pagerAt < 0) return row;
+    const trail = kids.slice(pagerAt + 1).find(el => el !== row && !el.classList.contains("void-stars-bubble"));
+    return trail ?? parent;
+}
+
 function placeBeside(row: HTMLElement, star: HTMLButtonElement): boolean {
-    if (getComputedStyle(row).position === "static") row.classList.add("void-stars-bar");
-    if (star.parentElement !== row) row.appendChild(star);
-    const rowBox = row.getBoundingClientRect();
-    let edge = -1;
-    let top = 0;
+    // The pager (`< 4 / 4 >`) is a sibling between two hover spans. Anchoring the
+    // star on the leading span paints it on top of Previous message. The trailing
+    // span is the right side of the bar — the star belongs there, in flow.
+    // [20261010.13]
+    row.classList.remove("void-stars-bar");
+    const host = starHost(row);
     let height = 0;
+    let visible = 0;
     for (const child of row.children) {
         if (!(child instanceof HTMLElement) || child === star) continue;
         const box = child.getBoundingClientRect();
         if (box.width < 1 || box.height < 1) continue;
-        const right = box.right - rowBox.left - row.clientLeft;
-        if (right > edge) {
-            edge = right;
-            top = box.top - rowBox.top - row.clientTop;
-            height = box.height;
-        }
+        visible++;
+        if (box.height > height) height = box.height;
     }
-    if (edge < 0) return false;
+    if (!visible) return false;
+    if (host.lastElementChild !== star) host.appendChild(star);
+    star.style.left = "";
+    star.style.top = "";
     const size = Math.max(16, Math.round(height));
-    star.style.left = `${Math.round(edge + 2)}px`;
-    star.style.top = `${Math.round(top)}px`;
     star.style.width = `${size}px`;
     star.style.height = `${size}px`;
     return true;
@@ -580,7 +602,9 @@ function paintBubbles() {
         if (!found || seen.has(found.row)) continue;
         seen.add(found.row);
         const { row, copy } = found;
-        let btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
+        const host = starHost(row);
+        let btn = host.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
+        if (!btn) btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
         if (!btn) btn = makeBubble();
         if (!placeBeside(row, btn)) {
             btn.remove();

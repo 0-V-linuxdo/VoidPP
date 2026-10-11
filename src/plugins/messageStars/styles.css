@@ -46,8 +46,7 @@
 }
 
 .void-stars-bubble {
-    position: absolute;
-    z-index: 2;
+    position: static;
     display: inline-flex;
     flex: none;
     align-items: center;
