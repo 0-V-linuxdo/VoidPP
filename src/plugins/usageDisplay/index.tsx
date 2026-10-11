@@ -589,38 +589,40 @@ function StatsModal({ onClose }: ModalProps) {
     const active = bars.find(d => d.date === selected) ?? bars.at(-1) ?? null;
     const chartRef = useRef<HTMLDivElement>(null);
 
-    // The chart ref has to sit on this div. A ref on Flex never attached, so the
-    // old scroll-to-end was a no-op and the dialog opened on the oldest day.
-    // Re-pin after layout and after focus, until the user scrolls.
+    // Keep the latest day at the right edge. Dialog focus and scroll anchoring
+    // both pull this scroller back to 0 after the first layout.
     useLayoutEffect(() => {
         const node = chartRef.current;
         if (!node) return;
         const options = node.querySelectorAll("[role=option]");
-        const on = node.querySelector(`.${cl("bar-on")}`);
-        const toEnd = !on || on === options[options.length - 1];
-        let alive = true;
+        const marked = node.querySelector(`.${cl("bar-on")}`);
+        const toEnd = !marked || marked === options[options.length - 1];
+        let user = false;
         const place = () => {
-            if (alive) scrollUsageChart(node, toEnd);
+            if (!user) scrollUsageChart(node, toEnd);
+        };
+        const onScroll = () => {
+            if (user || !toEnd) return;
+            const max = node.scrollWidth - node.clientWidth;
+            if (max > 1 && node.scrollLeft < max - 1) node.scrollLeft = node.scrollWidth;
         };
         place();
         const ro = new ResizeObserver(place);
         ro.observe(node);
-        const raf = requestAnimationFrame(place);
-        const timers = [0, 50, 150, 400].map(ms => setTimeout(place, ms));
-        const halt = () => {
-            alive = false;
+        node.addEventListener("scroll", onScroll);
+        const mark = () => {
+            user = true;
         };
-        node.addEventListener("pointerdown", halt);
-        node.addEventListener("wheel", halt, { passive: true });
-        node.addEventListener("focusin", place);
+        node.addEventListener("pointerdown", mark);
+        node.addEventListener("wheel", mark, { passive: true });
+        const timers = [0, 50, 150, 400, 800].map(ms => setTimeout(place, ms));
         return () => {
-            alive = false;
+            user = true;
             ro.disconnect();
-            cancelAnimationFrame(raf);
+            node.removeEventListener("scroll", onScroll);
+            node.removeEventListener("pointerdown", mark);
+            node.removeEventListener("wheel", mark);
             for (const id of timers) clearTimeout(id);
-            node.removeEventListener("pointerdown", halt);
-            node.removeEventListener("wheel", halt);
-            node.removeEventListener("focusin", place);
         };
     }, [bars.length, selected]);
 

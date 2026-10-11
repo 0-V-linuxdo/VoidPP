@@ -91,6 +91,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     min-width: 0;
     width: 100%;
     overflow-x: auto;
+    overflow-anchor: none;
     height: 9.25rem;
     outline: none;
 }
