@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261010.14
+// @version      20261011.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261010.14] v1.0.0 — A modification for grok.com
+ * Void++ [20261011.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261010.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1182720"}`
-    }, `(${"1182720"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261011.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4574506"}`
+    }, `(${"4574506"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -29251,6 +29251,8 @@ span:has(> [aria-label*="Grok Bot"]) {
   var STACK = `${FOOTER2} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
   var TEXT_WRAP = `${FOOTER2} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER2} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
   var MENU_EMAIL = '[role="menu"] [class*="max-w-[400px]"].truncate';
+  var MENU_EMAIL_LABEL = '[role="menu"] :has(> [class*="max-w-[400px]"].truncate)';
+  var MENU_EMAIL_ROW = '[role="menu"] > :has([class*="max-w-[400px]"].truncate):not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]))';
   var settings27 = definePluginSettings({
     hideUsername: {
       type: 3 /* BOOLEAN */,
@@ -29271,7 +29273,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     }
     if (settings27.store.hideEmail) {
       rules.push(`${STACK}>:nth-child(2){display:none!important}`);
-      rules.push(`${MENU_EMAIL}{display:none!important}`);
+      rules.push(`${MENU_EMAIL},${MENU_EMAIL_LABEL},${MENU_EMAIL_ROW}{display:none!important}`);
     }
     if (settings27.store.hideUsername && settings27.store.hideEmail) {
       rules.push(`${TEXT_WRAP}{display:none!important}`);
@@ -29290,12 +29292,19 @@ span:has(> [aria-label*="Grok Bot"]) {
     settings: settings27,
     patches: [
       {
-        find: '"max-w-[400px] truncate"',
+        find: "max-w-[400px] truncate",
         all: true,
-        replacement: {
-          match: /WD_REFRESH&&(\i)\.user\.email&&/,
-          replace: "WD_REFRESH&&!$self.settings.store.hideEmail&&$1.user.email&&"
-        }
+        replacement: [
+          {
+            match: /\((\i)\.user\.email\|\|(\i)\)&&(?=\(0,\i\.jsx\)\(\i\.DropdownMenuLabel,\{children:\(0,\i\.jsx\)\("span",\{className:"block max-w-\[400px\] truncate")/,
+            replace: "!$self.settings.store.hideEmail&&($1.user.email||$2)&&"
+          },
+          {
+            match: /WD_REFRESH&&(\i)\.user\.email&&/,
+            replace: "WD_REFRESH&&!$self.settings.store.hideEmail&&$1.user.email&&",
+            noWarn: true
+          }
+        ]
       }
     ],
     start: apply7,
@@ -34741,7 +34750,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   exportChat_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
   inputHistory_default.updatedAt = 1791226275000;
-  messageStars_default.updatedAt = 1791680558000;
+  messageStars_default.updatedAt = 1791682713000;
   messageTimestamps_default.updatedAt = 1789881463000;
   noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1791395540000;
