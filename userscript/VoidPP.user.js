@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/voidpp-beta
-// @version      20261010.4
+// @version      20261010.14
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Beta
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261010.4] v1.0.0 — A modification for grok.com
+ * Void++ [20261010.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261010.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"356d868"}`
-    }, `(${"356d868"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261010.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5ae643c"}`
+    }, `(${"5ae643c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -17087,7 +17087,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 }
 
 .void-qj-back {
-    position: fixed;
+    position: absolute;
     z-index: 30;
     display: grid;
     place-items: center;
@@ -17096,10 +17096,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     padding: 0;
     border: 0;
     border-radius: 999px;
-    background: var(--surface-l2);
+    background: transparent;
     color: var(--fg-secondary);
     cursor: pointer;
-    box-shadow: inset 0 0 0 1px var(--fg-secondary);
 }
 
 .void-qj-back:is(:hover, :focus-visible) {
@@ -18794,6 +18793,54 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         n.setAttribute("data-void-qj-preview", "");
     }
   }
+  function headerStickTop(badgeH) {
+    const nav = document.querySelector("nav.absolute.inset-x-0.top-0");
+    if (!(nav instanceof HTMLElement))
+      return 8;
+    let ref = null;
+    for (const b of nav.querySelectorAll("button")) {
+      if (!(b instanceof HTMLElement))
+        continue;
+      const r = b.getBoundingClientRect();
+      if (r.width < 24 || r.height < 24 || r.bottom <= 0 || r.top > 80)
+        continue;
+      ref = b;
+    }
+    if (!ref)
+      return 8;
+    const r = ref.getBoundingClientRect();
+    return r.top + (r.height - badgeH) / 2;
+  }
+  function offsetWithin(host, el) {
+    let y = 0;
+    let n = el;
+    for (let i = 0;i < 8 && n && n !== host; i++) {
+      y += n.offsetTop;
+      const next = n.offsetParent;
+      if (!(next instanceof HTMLElement) || !host.contains(next))
+        break;
+      n = next;
+    }
+    return y;
+  }
+  function followOffset(host, badgeH) {
+    const ts = host.querySelector(":scope > .void-timestamp");
+    if (ts) {
+      const h = ts.offsetHeight;
+      if (h >= 12 && h <= 48)
+        return ts.offsetTop + (h - badgeH) / 2;
+    }
+    const bubble = host.querySelector(".message-bubble");
+    const root = bubble ?? host;
+    const line = root.querySelector("p, li, h1, h2, h3");
+    if (line) {
+      const h = line.offsetHeight;
+      const top = offsetWithin(host, line);
+      if (h >= 16 && h <= 48 && top >= -2 && top < 80)
+        return top + (h - badgeH) / 2;
+    }
+    return (bubble ? offsetWithin(host, bubble) : 0) + 8;
+  }
   function paintBacklinks() {
     if (!jumpArmed || onImaginePage2()) {
       clearBadges();
@@ -18818,15 +18865,29 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         btn.type = "button";
         btn.className = cl21("back");
         btn.dataset.voidQjSrc = source;
-        document.body.append(btn);
       }
       ensureGlyph(btn);
       paintCount(btn, cites.length);
       const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
       if (btn.getAttribute("aria-label") !== aria)
         btn.setAttribute("aria-label", aria);
-      btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
-      btn.style.top = `${Math.round(Math.max(8, box.top + 8))}px`;
+      const badgeH = btn.offsetHeight || 24;
+      const offset = followOffset(host, badgeH);
+      const stick = headerStickTop(badgeH);
+      const viewLeft = Math.min(window.innerWidth - 36, box.right - 28);
+      if (box.top + offset < stick) {
+        if (btn.parentElement !== document.body)
+          document.body.append(btn);
+        btn.style.position = "fixed";
+        btn.style.left = `${Math.round(viewLeft)}px`;
+        btn.style.top = `${Math.round(stick)}px`;
+      } else {
+        if (btn.parentElement !== host)
+          host.append(btn);
+        btn.style.position = "absolute";
+        btn.style.left = `${Math.round(viewLeft - box.left)}px`;
+        btn.style.top = `${Math.round(offset)}px`;
+      }
       if (openSrc === source)
         placeMenu(btn);
     }
@@ -22473,11 +22534,24 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     hideTimer = setTimeout(hide, remain);
   }
   function show(cid, rid, kind = "chat", previewText = "") {
-    hide();
     if (kind === "chat" && onBotPage2())
       return;
     if (kind === "imagine" && onImaginePage3())
       return;
+    const titleText = kind === "imagine" ? "Imagine ready" : titleOf(cid);
+    const preview = kind === "imagine" ? previewText : previewOf(cid, rid);
+    const subText = preview || (kind === "imagine" ? "Generation ready" : "Response ready");
+    if (toast?.cid === cid && toast.kind === kind && host2?.isConnected) {
+      toast = { cid, rid, kind };
+      const title = host2.querySelector(`.${cl23("title")}`);
+      const sub = host2.querySelector(`.${cl23("preview")}`);
+      if (title)
+        title.textContent = titleText;
+      if (sub)
+        sub.textContent = subText;
+      return;
+    }
+    hide();
     toast = { cid, rid, kind };
     const root = document.createElement("div");
     root.id = HOST2;
@@ -22496,12 +22570,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     body.className = cl23("body");
     const title = document.createElement("span");
     title.className = cl23("title");
-    title.textContent = kind === "imagine" ? "Imagine ready" : titleOf(cid);
+    title.textContent = titleText;
     body.append(title);
-    const preview = kind === "imagine" ? previewText : previewOf(cid, rid);
     const sub = document.createElement("span");
     sub.className = cl23("preview");
-    sub.textContent = preview || (kind === "imagine" ? "Generation ready" : "Response ready");
+    sub.textContent = subText;
     body.append(sub);
     main.append(icon, body);
     const x = document.createElement("button");
@@ -22699,6 +22772,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     absorbFinish(cid, rid);
     if (!rid)
       markToasted(cid);
+    watched.add(cid);
     show(cid, rid);
   }
   function liveCids() {
@@ -22757,11 +22831,54 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           continue;
         if (isLiveResponse2(last) || isLiveCid(id))
           continue;
-        maybeFinish(id, last.responseId);
+        watched.add(id);
+        absorbFinish(id, last.responseId);
       }
     } catch (e) {
       logger33.debug("closed scan failed:", e);
     }
+  }
+  function liveGenIds(cid) {
+    const ids = [];
+    const add = (value) => {
+      if (typeof value === "string" && value && !ids.includes(value))
+        ids.push(value);
+    };
+    const gw = gatewayOf2(cid);
+    const gen = gw?.activeGeneration;
+    const phase = String(gen?.phase ?? "").trim().toLowerCase();
+    if (LIVE_PHASE2.has(phase)) {
+      add(gen?.assistantId);
+      add(gen?.responseId);
+    } else if (gen?.assistantId) {
+      const named = gw?.nodes?.[gen.assistantId];
+      if (named && (LIVE_NODE2.has(named.status) || isLiveResponse2(named.content))) {
+        add(gen.assistantId);
+        add(gen.responseId);
+        add(named.content?.responseId);
+      }
+    }
+    const node = lastAssistantNode(gw);
+    if (node && (LIVE_NODE2.has(node.status) || isLiveResponse2(node.content))) {
+      add(node.id);
+      add(node.content?.responseId);
+    }
+    try {
+      const last = lastAssistant2(cid, ResponseStore.useResponseStore.getState().byConversationId);
+      if (last && isLiveResponse2(last))
+        add(last.responseId);
+    } catch {}
+    return ids;
+  }
+  function newOffscreenTurn(cid) {
+    const gw = gatewayOf2(cid);
+    if ((gw?.queue?.length ?? 0) > 0)
+      return true;
+    const phase = String(gw?.activeGeneration?.phase ?? "").trim().toLowerCase();
+    if (phase === "sending")
+      return true;
+    const ids = liveGenIds(cid);
+    return ids.length > 0 && ids.every((id) => !toasted.has(id));
   }
   function syncLive() {
     if (!started4)
@@ -22769,7 +22886,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const now = liveCids();
     const open = new Set(currentIds2());
     for (const id of now) {
-      if (!open.has(id))
+      if (!open.has(id) && newOffscreenTurn(id))
         watched.delete(id);
       live.add(id);
     }
@@ -26721,8 +26838,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 }
 
 .void-stars-bubble {
-    position: absolute;
-    z-index: 2;
+    position: static;
     display: inline-flex;
     flex: none;
     align-items: center;
@@ -26731,19 +26847,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     padding: 0;
     border-radius: 999px;
     color: var(--fg-secondary);
-}
-
-.void-stars-bubble.void-stars-rest {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s ease;
-}
-
-.void-stars-bubble.void-stars-rest:focus-visible,
-[id^="response-"]:hover .void-stars-bubble.void-stars-rest,
-[id^="response-"]:focus-within .void-stars-bubble.void-stars-rest {
-    opacity: 1;
-    pointer-events: auto;
 }
 
 .void-stars-toggle {
@@ -27670,69 +27773,58 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
     return best ? { row: best.row, copy: best.copy } : null;
   }
-  function isFadeClass(name) {
-    return name === "transition-opacity" || /opacity-0|opacity-100|(?:^|:)invisible(?:$|:)|pointer-events-(?:none|auto)/.test(name);
-  }
-  function fadeTokens(from, row) {
-    const out = [];
-    let node = from;
-    while (node && node !== row) {
-      for (const name of node.classList) {
-        if (!isFadeClass(name) || out.includes(name))
-          continue;
-        out.push(name);
-      }
-      node = node.parentElement;
-    }
-    return out;
-  }
-  function applyFade(star, copy, row) {
-    const next = fadeTokens(copy, row);
+  function clearStarFade(star) {
     const prev = star.dataset.fadeClass?.split(" ").filter(Boolean) ?? [];
-    for (const name of prev) {
-      if (!next.includes(name))
-        star.classList.remove(name);
+    for (const name of prev)
+      star.classList.remove(name);
+    delete star.dataset.fadeClass;
+    star.classList.remove("void-stars-rest");
+  }
+  var PAGER_RE = /^(previous|next) message$|^(上一|下一)(条|则)?(消息|回复)$/i;
+  function isPagerNode(el) {
+    for (const btn of el.querySelectorAll("button")) {
+      if (btn.classList.contains("void-stars-bubble"))
+        continue;
+      const label = (btn.getAttribute("aria-label") || "").trim();
+      if (PAGER_RE.test(label))
+        return true;
     }
-    for (const name of next)
-      star.classList.add(name);
-    star.dataset.fadeClass = next.join(" ");
-    if (next.some((name) => /opacity-0|invisible/.test(name))) {
-      star.classList.remove("void-stars-rest");
-      return;
-    }
-    const shell = row.closest("[id^='response-']");
-    const idle = !!shell && !shell.matches(":hover") && !shell.matches(":focus-within");
-    const style = getComputedStyle(copy);
-    const shown = idle && Number(style.opacity) > 0.9 && style.visibility !== "hidden";
-    star.classList.toggle("void-stars-rest", !shown);
+    const text = (el.textContent || "").replace(/\s+/g, "");
+    return /^\d+\/\d+$/.test(text);
+  }
+  function starHost(row) {
+    const parent = row.parentElement;
+    if (!parent)
+      return row;
+    const kids = [...parent.children].filter((el) => el instanceof HTMLElement);
+    const pagerAt = kids.findIndex((el) => el !== row && isPagerNode(el));
+    if (pagerAt < 0)
+      return row;
+    const trail = kids.slice(pagerAt + 1).find((el) => el !== row && !el.classList.contains("void-stars-bubble"));
+    return trail ?? parent;
   }
   function placeBeside(row, star) {
-    if (getComputedStyle(row).position === "static")
-      row.classList.add("void-stars-bar");
-    if (star.parentElement !== row)
-      row.appendChild(star);
-    const rowBox = row.getBoundingClientRect();
-    let edge = -1;
-    let top = 0;
+    row.classList.remove("void-stars-bar");
+    const host = starHost(row);
     let height = 0;
+    let visible = 0;
     for (const child of row.children) {
       if (!(child instanceof HTMLElement) || child === star)
         continue;
       const box = child.getBoundingClientRect();
       if (box.width < 1 || box.height < 1)
         continue;
-      const right = box.right - rowBox.left - row.clientLeft;
-      if (right > edge) {
-        edge = right;
-        top = box.top - rowBox.top - row.clientTop;
+      visible++;
+      if (box.height > height)
         height = box.height;
-      }
     }
-    if (edge < 0)
+    if (!visible)
       return false;
+    if (host.lastElementChild !== star)
+      host.appendChild(star);
+    star.style.left = "";
+    star.style.top = "";
     const size = Math.max(16, Math.round(height));
-    star.style.left = `${Math.round(edge + 2)}px`;
-    star.style.top = `${Math.round(top)}px`;
     star.style.width = `${size}px`;
     star.style.height = `${size}px`;
     return true;
@@ -27797,15 +27889,18 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (!found || seen.has(found.row))
         continue;
       seen.add(found.row);
-      const { row, copy } = found;
-      let btn = row.querySelector(":scope > .void-stars-bubble");
+      const { row } = found;
+      const host = starHost(row);
+      let btn = host.querySelector(":scope > .void-stars-bubble");
+      if (!btn)
+        btn = row.querySelector(":scope > .void-stars-bubble");
       if (!btn)
         btn = makeBubble();
       if (!placeBeside(row, btn)) {
         btn.remove();
         continue;
       }
-      applyFade(btn, copy, row);
+      clearStarFade(btn);
       const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
       syncBubble(btn, cid, id, role);
       keep.add(btn);
@@ -32685,6 +32780,39 @@ html.void-rt-open [data-sidebar="gap"] {
     ]
   });
 
+  // src/plugins/sourceChips/index.ts
+  var STYLE_NAME8 = "sourceChips";
+  var CSS3 = `
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) {
+    border: 0 !important;
+    box-shadow: none !important;
+}
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) > div:has(> img[src*="favicon" i]) {
+    border: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) img[src*="favicon" i] {
+    border-radius: 0 !important;
+}
+`;
+  var sourceChips_default = definePlugin({
+    name: "SourceChips",
+    icon: GlobeIcon,
+    description: "Drop the circle around citation favicons and the sources chip border.",
+    authors: [Devs.p],
+    tags: ["messages", "declutter"],
+    enabledByDefault: true,
+    start() {
+      registerStyle(STYLE_NAME8, CSS3);
+    },
+    stop() {
+      unregisterStyle(STYLE_NAME8);
+    }
+  });
+
   // src/plugins/stableComposer/index.ts
   var cachedDeps = null;
   var cachedSig = "";
@@ -34499,7 +34627,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // src/plugins/userQuotes/index.ts
-  var STYLE_NAME8 = "userQuotes";
+  var STYLE_NAME9 = "userQuotes";
   var SEL = '[data-testid="user-message"] blockquote:not(.twitter-tweet)';
   var settings34 = definePluginSettings({
     italic: {
@@ -34524,7 +34652,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       rules.push(`${SEL}{quotes:none!important}`);
       rules.push(`${SEL}::before,${SEL}::after,${SEL} p::before,${SEL} p::after{content:none!important}`);
     }
-    registerStyle(STYLE_NAME8, rules.join(`
+    registerStyle(STYLE_NAME9, rules.join(`
 `));
   }
   var userQuotes_default = definePlugin({
@@ -34547,12 +34675,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
     start: apply8,
     onSettingsChange: apply8,
     stop() {
-      unregisterStyle(STYLE_NAME8);
+      unregisterStyle(STYLE_NAME9);
     }
   });
 
   // src/plugins/widerChat/index.ts
-  var STYLE_NAME9 = "widerChat";
+  var STYLE_NAME10 = "widerChat";
   var settings35 = definePluginSettings({
     width: {
       type: 1 /* NUMBER */,
@@ -34562,7 +34690,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
   function applyWidth() {
     const w = settings35.store.width;
-    registerStyle(STYLE_NAME9, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
+    registerStyle(STYLE_NAME10, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
   var widerChat_default = definePlugin({
     name: "WiderChat",
@@ -34574,7 +34702,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     start: applyWidth,
     onSettingsChange: applyWidth,
     stop() {
-      unregisterStyle(STYLE_NAME9);
+      unregisterStyle(STYLE_NAME10);
     }
   });
 
@@ -34582,56 +34710,57 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.updatedAt = 1787789817000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  noTelemetry_default.updatedAt = 1787870966000;
-  settings_default.updatedAt = 1791395540000;
-  chatBarButtons_default.updatedAt = 1790097681000;
-  contextMenu_default.updatedAt = 1791395540000;
-  autoCollapse_default.updatedAt = 1791395540000;
-  autoRetry_default.updatedAt = 1791395540000;
-  avatarPluginsFlyout_default.updatedAt = 1791395540000;
-  betterCanvas_default.updatedAt = 1791395540000;
-  betterFiles_default.updatedAt = 1791395540000;
-  betterImagine_default.updatedAt = 1791395540000;
-  betterLinks_default.updatedAt = 1791395540000;
-  betterModeSelect_default.updatedAt = 1791395540000;
-  betterNavigator_default.updatedAt = 1791395540000;
-  betterQueue_default.updatedAt = 1791395540000;
-  betterQuotes_default.updatedAt = 1791395540000;
-  betterSidebar_default.updatedAt = 1791395540000;
-  chatListStatus_default.updatedAt = 1791395540000;
-  chatStateFavicons_default.updatedAt = 1791395540000;
-  cleaner_default.updatedAt = 1791395540000;
-  cloneChats_default.updatedAt = 1791395540000;
-  completeToast_default.updatedAt = 1791395540000;
-  composerOpacity_default.updatedAt = 1791395540000;
-  consoleJanitor_default.updatedAt = 1791395540000;
-  customGreeting_default.updatedAt = 1791395540000;
-  customInstructions_default.updatedAt = 1791395540000;
-  customSidebarIdentity_default.updatedAt = 1791395540000;
-  downloadTTS_default.updatedAt = 1791395540000;
-  experiments_default.updatedAt = 1791395540000;
-  exportChat_default.updatedAt = 1791395540000;
+  noTelemetry_default.updatedAt = 1791660888000;
+  settings_default.updatedAt = 1791660888000;
+  chatBarButtons_default.updatedAt = 1791660269000;
+  contextMenu_default.updatedAt = 1791658451000;
+  autoCollapse_default.updatedAt = 1787789817000;
+  autoRetry_default.updatedAt = 1789906500000;
+  avatarPluginsFlyout_default.updatedAt = 1791660269000;
+  betterCanvas_default.updatedAt = 1791660269000;
+  betterFiles_default.updatedAt = 1789246749000;
+  betterImagine_default.updatedAt = 1791226275000;
+  betterLinks_default.updatedAt = 1787870966000;
+  betterModeSelect_default.updatedAt = 1791400125000;
+  betterNavigator_default.updatedAt = 1791656586000;
+  betterQueue_default.updatedAt = 1791658451000;
+  betterQuotes_default.updatedAt = 1791658451000;
+  betterSidebar_default.updatedAt = 1791658451000;
+  chatListStatus_default.updatedAt = 1791658451000;
+  chatStateFavicons_default.updatedAt = 1789921507000;
+  cleaner_default.updatedAt = 1791660269000;
+  cloneChats_default.updatedAt = 1787870966000;
+  completeToast_default.updatedAt = 1791226275000;
+  composerOpacity_default.updatedAt = 1791226275000;
+  consoleJanitor_default.updatedAt = 1787789817000;
+  customGreeting_default.updatedAt = 1791660269000;
+  customInstructions_default.updatedAt = 1791226275000;
+  customSidebarIdentity_default.updatedAt = 1791226275000;
+  downloadTTS_default.updatedAt = 1787870966000;
+  experiments_default.updatedAt = 1791226275000;
+  exportChat_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
-  inputHistory_default.updatedAt = 1791395540000;
-  messageStars_default.updatedAt = 1791395540000;
-  messageTimestamps_default.updatedAt = 1791395540000;
-  noBuildStarters_default.updatedAt = 1791395540000;
+  inputHistory_default.updatedAt = 1791226275000;
+  messageStars_default.updatedAt = 1791226275000;
+  messageTimestamps_default.updatedAt = 1789881463000;
+  noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1791395540000;
-  noGrokBot_default.updatedAt = 1791395540000;
-  noShareLink_default.updatedAt = 1791395540000;
-  noSidebarIdentity_default.updatedAt = 1791395540000;
-  oneko_default.updatedAt = 1791395540000;
-  pluginsFlyout_default.updatedAt = 1791395540000;
-  recentTopics_default.updatedAt = 1791395540000;
-  responseNotification_default.updatedAt = 1791395540000;
-  settingsFlyout_default.updatedAt = 1791395540000;
-  stableComposer_default.updatedAt = 1791395540000;
-  starry_default.updatedAt = 1791395540000;
+  noGrokBot_default.updatedAt = 1790943206000;
+  noShareLink_default.updatedAt = 1787789817000;
+  noSidebarIdentity_default.updatedAt = 1788577403000;
+  oneko_default.updatedAt = 1787870966000;
+  pluginsFlyout_default.updatedAt = 1791226275000;
+  recentTopics_default.updatedAt = 1791658451000;
+  responseNotification_default.updatedAt = 1790093417000;
+  settingsFlyout_default.updatedAt = 1791656586000;
+  sourceChips_default.updatedAt = 0;
+  stableComposer_default.updatedAt = 1789125421000;
+  starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
-  usageDisplay_default.updatedAt = 1791395540000;
-  userQuotes_default.updatedAt = 1791395540000;
-  widerChat_default.updatedAt = 1791395540000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  usageDisplay_default.updatedAt = 1791226275000;
+  userQuotes_default.updatedAt = 1791226275000;
+  widerChat_default.updatedAt = 1787870966000;
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [sourceChips_default.name]: sourceChips_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/tmp/VoidPP/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;

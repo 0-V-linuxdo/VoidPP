@@ -1319,6 +1319,50 @@ function stampPreviews() {
     }
 }
 
+function headerStickTop(badgeH: number): number {
+    const nav = document.querySelector("nav.absolute.inset-x-0.top-0");
+    if (!(nav instanceof HTMLElement)) return 8;
+    let ref: HTMLElement | null = null;
+    for (const b of nav.querySelectorAll("button")) {
+        if (!(b instanceof HTMLElement)) continue;
+        const r = b.getBoundingClientRect();
+        if (r.width < 24 || r.height < 24 || r.bottom <= 0 || r.top > 80) continue;
+        ref = b;
+    }
+    if (!ref) return 8;
+    const r = ref.getBoundingClientRect();
+    return r.top + (r.height - badgeH) / 2;
+}
+
+function offsetWithin(host: HTMLElement, el: HTMLElement): number {
+    let y = 0;
+    let n: HTMLElement | null = el;
+    for (let i = 0; i < 8 && n && n !== host; i++) {
+        y += n.offsetTop;
+        const next = n.offsetParent;
+        if (!(next instanceof HTMLElement) || !host.contains(next)) break;
+        n = next;
+    }
+    return y;
+}
+
+function followOffset(host: HTMLElement, badgeH: number): number {
+    const ts = host.querySelector<HTMLElement>(":scope > .void-timestamp");
+    if (ts) {
+        const h = ts.offsetHeight;
+        if (h >= 12 && h <= 48) return ts.offsetTop + (h - badgeH) / 2;
+    }
+    const bubble = host.querySelector<HTMLElement>(".message-bubble");
+    const root = bubble ?? host;
+    const line = root.querySelector<HTMLElement>("p, li, h1, h2, h3");
+    if (line) {
+        const h = line.offsetHeight;
+        const top = offsetWithin(host, line);
+        if (h >= 16 && h <= 48 && top >= -2 && top < 80) return top + (h - badgeH) / 2;
+    }
+    return (bubble ? offsetWithin(host, bubble) : 0) + 8;
+}
+
 function paintBacklinks() {
     if (!jumpArmed || onImaginePage()) {
         clearBadges();
@@ -1340,14 +1384,26 @@ function paintBacklinks() {
             btn.type = "button";
             btn.className = cl("back");
             btn.dataset.voidQjSrc = source;
-            document.body.append(btn);
         }
         ensureGlyph(btn);
         paintCount(btn, cites.length);
         const aria = cites.length > 1 ? `${cites.length} quotes of this passage` : "Jump to quote";
         if (btn.getAttribute("aria-label") !== aria) btn.setAttribute("aria-label", aria);
-        btn.style.left = `${Math.round(Math.min(window.innerWidth - 36, box.right - 28))}px`;
-        btn.style.top = `${Math.round(Math.max(8, box.top + 8))}px`;
+        const badgeH = btn.offsetHeight || 24;
+        const offset = followOffset(host, badgeH);
+        const stick = headerStickTop(badgeH);
+        const viewLeft = Math.min(window.innerWidth - 36, box.right - 28);
+        if (box.top + offset < stick) {
+            if (btn.parentElement !== document.body) document.body.append(btn);
+            btn.style.position = "fixed";
+            btn.style.left = `${Math.round(viewLeft)}px`;
+            btn.style.top = `${Math.round(stick)}px`;
+        } else {
+            if (btn.parentElement !== host) host.append(btn);
+            btn.style.position = "absolute";
+            btn.style.left = `${Math.round(viewLeft - box.left)}px`;
+            btn.style.top = `${Math.round(offset)}px`;
+        }
         if (openSrc === source) placeMenu(btn);
     }
     for (const n of document.querySelectorAll<HTMLElement>(`.${cl("back")}`)) {

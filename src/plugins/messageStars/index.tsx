@@ -458,64 +458,63 @@ function messageBar(shell: HTMLElement, bubble: HTMLElement): { row: HTMLElement
     return best ? { row: best.row, copy: best.copy } : null;
 }
 
-function isFadeClass(name: string): boolean {
-    return name === "transition-opacity" || /opacity-0|opacity-100|(?:^|:)invisible(?:$|:)|pointer-events-(?:none|auto)/.test(name);
-}
-
-function fadeTokens(from: HTMLElement, row: HTMLElement): string[] {
-    const out: string[] = [];
-    let node: HTMLElement | null = from;
-    while (node && node !== row) {
-        for (const name of node.classList) {
-            if (!isFadeClass(name) || out.includes(name)) continue;
-            out.push(name);
-        }
-        node = node.parentElement;
-    }
-    return out;
-}
-
-function applyFade(star: HTMLButtonElement, copy: HTMLElement, row: HTMLElement) {
-    const next = fadeTokens(copy, row);
+function clearStarFade(star: HTMLButtonElement) {
+    // The toolbar span is `opacity-0` until hover, and
+    // `[.last-response_&]:opacity-100` on the latest reply, so that bar stays
+    // visible without a hover. The star is a child of that span and must
+    // inherit. `void-stars-rest` set the star's own opacity to 0 and transitioned
+    // it over 0.15s whenever `#response-*` hover flipped, so the latest reply's
+    // star flashed while Copy / Like / Regenerate stayed put. [20261010.14]
     const prev = star.dataset.fadeClass?.split(" ").filter(Boolean) ?? [];
-    for (const name of prev) {
-        if (!next.includes(name)) star.classList.remove(name);
+    for (const name of prev) star.classList.remove(name);
+    delete star.dataset.fadeClass;
+    star.classList.remove("void-stars-rest");
+}
+
+const PAGER_RE = /^(previous|next) message$|^(上一|下一)(条|则)?(消息|回复)$/i;
+
+function isPagerNode(el: HTMLElement): boolean {
+    for (const btn of el.querySelectorAll("button")) {
+        if (btn.classList.contains("void-stars-bubble")) continue;
+        const label = (btn.getAttribute("aria-label") || "").trim();
+        if (PAGER_RE.test(label)) return true;
     }
-    for (const name of next) star.classList.add(name);
-    star.dataset.fadeClass = next.join(" ");
-    if (next.some(name => /opacity-0|invisible/.test(name))) {
-        star.classList.remove("void-stars-rest");
-        return;
-    }
-    const shell = row.closest<HTMLElement>("[id^='response-']");
-    const idle = !!shell && !shell.matches(":hover") && !shell.matches(":focus-within");
-    const style = getComputedStyle(copy);
-    const shown = idle && Number(style.opacity) > 0.9 && style.visibility !== "hidden";
-    star.classList.toggle("void-stars-rest", !shown);
+    const text = (el.textContent || "").replace(/\s+/g, "");
+    return /^\d+\/\d+$/.test(text);
+}
+
+/** Action span, or the slot after the version pager when that pager is a sibling. */
+function starHost(row: HTMLElement): HTMLElement {
+    const parent = row.parentElement;
+    if (!parent) return row;
+    const kids = [...parent.children].filter((el): el is HTMLElement => el instanceof HTMLElement);
+    const pagerAt = kids.findIndex(el => el !== row && isPagerNode(el));
+    if (pagerAt < 0) return row;
+    const trail = kids.slice(pagerAt + 1).find(el => el !== row && !el.classList.contains("void-stars-bubble"));
+    return trail ?? parent;
 }
 
 function placeBeside(row: HTMLElement, star: HTMLButtonElement): boolean {
-    if (getComputedStyle(row).position === "static") row.classList.add("void-stars-bar");
-    if (star.parentElement !== row) row.appendChild(star);
-    const rowBox = row.getBoundingClientRect();
-    let edge = -1;
-    let top = 0;
+    // The pager (`< 4 / 4 >`) is a sibling between two hover spans. Anchoring the
+    // star on the leading span paints it on top of Previous message. The trailing
+    // span is the right side of the bar — the star belongs there, in flow.
+    // [20261010.13]
+    row.classList.remove("void-stars-bar");
+    const host = starHost(row);
     let height = 0;
+    let visible = 0;
     for (const child of row.children) {
         if (!(child instanceof HTMLElement) || child === star) continue;
         const box = child.getBoundingClientRect();
         if (box.width < 1 || box.height < 1) continue;
-        const right = box.right - rowBox.left - row.clientLeft;
-        if (right > edge) {
-            edge = right;
-            top = box.top - rowBox.top - row.clientTop;
-            height = box.height;
-        }
+        visible++;
+        if (box.height > height) height = box.height;
     }
-    if (edge < 0) return false;
+    if (!visible) return false;
+    if (host.lastElementChild !== star) host.appendChild(star);
+    star.style.left = "";
+    star.style.top = "";
     const size = Math.max(16, Math.round(height));
-    star.style.left = `${Math.round(edge + 2)}px`;
-    star.style.top = `${Math.round(top)}px`;
     star.style.width = `${size}px`;
     star.style.height = `${size}px`;
     return true;
@@ -579,14 +578,16 @@ function paintBubbles() {
         const found = messageBar(shellOf(msg), msg);
         if (!found || seen.has(found.row)) continue;
         seen.add(found.row);
-        const { row, copy } = found;
-        let btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
+        const { row } = found;
+        const host = starHost(row);
+        let btn = host.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
+        if (!btn) btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
         if (!btn) btn = makeBubble();
         if (!placeBeside(row, btn)) {
             btn.remove();
             continue;
         }
-        applyFade(btn, copy, row);
+        clearStarFade(btn);
         const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
         syncBubble(btn, cid, id, role);
         keep.add(btn);
