@@ -55,7 +55,7 @@ Before any push to `dev`, `voidpp-beta`, or `voidpp-stable`:
 
 ## Apply the update
 
-The Helium wrap-up (收尾: update the installed script and check the live effect) is `.agents/skills/wrap-up/SKILL.md` (also `.cursor/skills/wrap-up/` and `.claude/skills/wrap-up/`). The folder name is the skill name: wrap-up. Follow that skill after a `dev` push, before saying the change is done. The channel rules below still apply.
+The Helium wrap-up (收尾: update the installed script and check the live effect) is `skills/wrap-up/SKILL.md`. Follow that skill after a `dev` push, before saying the change is done. The channel rules below still apply.
 
 
 The installed manager is Violentmonkey 2.49 (`jinjaccalgkegednnccohejagnlnfdag`, Chrome name 暴力猴). `chrome_devtools___list_extensions` is not implemented on this connector (`Tool list_extensions not found`). Read the list from `chrome://extensions`: `extensions-manager` shadow root → `extensions-item-list` shadow root → `extensions-item` (`#name`, `id`).
