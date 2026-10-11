@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261011.7
+// @version      20261011.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261011.7] v1.0.0 — A modification for grok.com
+ * Void++ [20261011.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261011.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6136243"}`
-    }, `(${"6136243"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261011.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"c60a23b"}`
+    }, `(${"c60a23b"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -21843,11 +21843,6 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       type: 3 /* BOOLEAN */,
       description: "Hide the Upgrade button on the Imagine page.",
       default: true
-    },
-    flatSourceChips: {
-      type: 3 /* BOOLEAN */,
-      description: "Drop the circle around citation favicons and the sources chip border.",
-      default: true
     }
   });
   var hideComponentPatch = (name, setting, all = true) => ({
@@ -21860,84 +21855,50 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   });
   var IMAGINE_UPGRADE_STYLE = "cleanerImagineUpgrade";
   var IMAGINE_UPGRADE_CSS = 'form:has([aria-label="Generation mode"]) a[href*="upgrade"],form:has([aria-label="Generation mode"]) button[aria-label="Upgrade"],form:has([aria-label="Generation mode"]) button[aria-label*="Upgrade plan"],[data-wd-toolbar] a[href*="upgrade"],[data-wd-toolbar] button[aria-label="Upgrade"]{display:none!important}';
-  var SOURCE_CHIPS_STYLE = "cleanerSourceChips";
-  var SOURCE_CHIPS_CSS = `
-div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) {
-    border: 0 !important;
-    box-shadow: none !important;
-}
-div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) > div:has(> img[src*="favicon" i]) {
-    border: 0 !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-}
-div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" i]) img[src*="favicon" i] {
-    border-radius: 0 !important;
-}
-`;
-  function dropName3(list) {
-    if (!Array.isArray(list))
-      return;
-    const next = list.filter((n) => typeof n === "string" && n !== "SourceChips");
-    return next.length === list.length ? undefined : next;
-  }
-  function migrateSourceChips() {
-    const plugins = PlainSettings.plugins;
-    const old = plugins.SourceChips;
-    if (!old)
-      return;
-    const target = plugins.Cleaner ??= {};
-    if (old.enabled === false && !("flatSourceChips" in target))
-      target.flatSourceChips = false;
-    delete plugins.SourceChips;
-    const meta = plugins.Settings;
-    if (meta) {
-      const pinned = dropName3(meta.pinnedPlugins);
-      const starred = dropName3(meta.starredPlugins);
-      if (pinned)
-        meta.pinnedPlugins = pinned;
-      if (starred)
-        meta.starredPlugins = starred;
-      const known = meta.knownPlugins;
-      if (known && typeof known === "object")
-        delete known.SourceChips;
-    }
-    SettingsStore3.markAsChanged();
-  }
   function applyImagineUpgrade() {
     if (settings16.store.hideImagineUpgrade)
       registerStyle(IMAGINE_UPGRADE_STYLE, IMAGINE_UPGRADE_CSS);
     else
       unregisterStyle(IMAGINE_UPGRADE_STYLE);
   }
-  function applySourceChips() {
-    if (settings16.store.flatSourceChips)
-      registerStyle(SOURCE_CHIPS_STYLE, SOURCE_CHIPS_CSS);
-    else
-      unregisterStyle(SOURCE_CHIPS_STYLE);
-  }
-  function apply3() {
-    migrateSourceChips();
-    applyImagineUpgrade();
-    applySourceChips();
-  }
   var cleaner_default = definePlugin({
     name: "Cleaner",
     icon: BrushCleaningIcon,
-    description: "Hides upgrade nags, upsell banners, and the circle around citation favicons.",
+    description: "Hides upgrade nags and upsell banners.",
     authors: [Devs.Prism, Devs.p],
     tags: ["declutter"],
     enabledByDefault: true,
     settings: settings16,
-    start: apply3,
-    onSettingsChange: apply3,
+    start: applyImagineUpgrade,
+    onSettingsChange: applyImagineUpgrade,
     stop() {
       unregisterStyle(IMAGINE_UPGRADE_STYLE);
-      unregisterStyle(SOURCE_CHIPS_STYLE);
     },
     patches: [
+      {
+        find: "overflow-hidden rounded-full bg-surface border border-border-l1",
+        all: true,
+        replacement: {
+          match: /!\i&&"overflow-hidden rounded-full bg-surface border border-border-l1"/,
+          replace: '!1&&""'
+        }
+      },
+      {
+        find: '"rounded-full cursor-pointer","bg-surface-l1 border border-border-l1"',
+        all: true,
+        replacement: {
+          match: /"rounded-full cursor-pointer","bg-surface-l1 border border-border-l1"/,
+          replace: '"cursor-pointer","bg-surface-l1"'
+        }
+      },
+      {
+        find: "radial-gradient(circle 12px at -3px 50%, transparent 99%, black 100%)",
+        all: true,
+        replacement: {
+          match: /,mask:"radial-gradient\(circle 12px at -3px 50%, transparent 99%, black 100%\)",WebkitMask:"radial-gradient\(circle 12px at -3px 50%, transparent 99%, black 100%\)"/,
+          replace: ""
+        }
+      },
       {
         find: '"user-dropdown.upgrade","Upgrade plan"',
         all: true,
@@ -23171,7 +23132,7 @@ div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" 
       default: 16
     }
   });
-  function apply4() {
+  function apply3() {
     const pct = clamp(settings19.store.opacity, 0, 100);
     const blur = clamp(settings19.store.blur, 0, 40);
     const alpha = pct / 100;
@@ -23186,8 +23147,8 @@ div[role="button"].rounded-full:has(> .truncate):has(> div > img[src*="favicon" 
     tags: ["composer", "appearance"],
     enabledByDefault: true,
     settings: settings19,
-    start: apply4,
-    onSettingsChange: apply4,
+    start: apply3,
+    onSettingsChange: apply3,
     stop() {
       unregisterStyle(STYLE_NAME3);
     }
@@ -25089,7 +25050,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function clearSize() {
     document.documentElement.style.removeProperty(SIZE_VAR);
   }
-  function apply5() {
+  function apply4() {
     if (!started6 || painting2)
       return;
     painting2 = true;
@@ -25106,7 +25067,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       return;
     raf6 = requestAnimationFrame(() => {
       raf6 = 0;
-      apply5();
+      apply4();
     });
   }
   function onMut(muts) {
@@ -25150,11 +25111,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       started6 = true;
       failed.clear();
       bind();
-      apply5();
+      apply4();
     },
     onSettingsChange() {
       failed.clear();
-      apply5();
+      apply4();
     },
     stop() {
       started6 = false;
@@ -29274,7 +29235,7 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
       default: true
     }
   });
-  function apply6() {
+  function apply5() {
     const rules = [BUTTON_CSS];
     if (settings26.store.hideDictationRefinement)
       rules.push(REFINEMENT_CSS);
@@ -29298,8 +29259,8 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
         }
       }
     ],
-    start: apply6,
-    onSettingsChange: apply6,
+    start: apply5,
+    onSettingsChange: apply5,
     stop() {
       unregisterStyle(STYLE_NAME4);
     }
@@ -29359,7 +29320,7 @@ span:has(> [aria-label*="Grok Bot"]) {
       default: true
     }
   });
-  function apply7() {
+  function apply6() {
     const rules = [];
     if (settings27.store.hideShareProject) {
       rules.push('button[aria-label="Share Project"]{display:none!important}');
@@ -29378,8 +29339,8 @@ span:has(> [aria-label*="Grok Bot"]) {
     tags: ["declutter", "privacy"],
     enabledByDefault: true,
     settings: settings27,
-    start: apply7,
-    onSettingsChange: apply7,
+    start: apply6,
+    onSettingsChange: apply6,
     stop() {
       unregisterStyle(STYLE_NAME6);
     }
@@ -29405,7 +29366,7 @@ span:has(> [aria-label*="Grok Bot"]) {
       default: true
     }
   });
-  function apply8() {
+  function apply7() {
     const rules = [];
     if (settings28.store.hideUsername) {
       rules.push(`${STACK}>:first-child{display:none!important}`);
@@ -29447,8 +29408,8 @@ span:has(> [aria-label*="Grok Bot"]) {
         ]
       }
     ],
-    start: apply8,
-    onSettingsChange: apply8,
+    start: apply7,
+    onSettingsChange: apply7,
     stop() {
       unregisterStyle(STYLE_NAME7);
     }
@@ -34757,7 +34718,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       default: false
     }
   });
-  function apply9() {
+  function apply8() {
     const rules = [
       `${SEL}{margin:0!important;border-inline-start-color:var(--fg-secondary)!important;border-inline-start-width:0.25rem!important;border-inline-start-style:solid!important;padding-inline-start:0.75rem!important}`,
       `${SEL}>*{margin-block:0!important}`
@@ -34788,8 +34749,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
       }
     ],
-    start: apply9,
-    onSettingsChange: apply9,
+    start: apply8,
+    onSettingsChange: apply8,
     stop() {
       unregisterStyle(STYLE_NAME8);
     }

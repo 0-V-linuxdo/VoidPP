@@ -21,7 +21,7 @@
 | 功能 | 默认 | 说明 |
 | --- | --- | --- |
 | <img src="https://api.iconify.design/lucide/lightbulb.svg?color=%238b949e" width="16" height="16" alt=""> CollapseThoughts | 开 | 思考记录里，灯泡下面的具体步骤默认收起，只留第一行和 +N more。点一下仍可展开。 |
-| <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | 开 | 上游已有该插件；Void++ 改为默认打开。隐藏升级提示、首页横幅、输入栏 SuperGrok 标记、锁定模型，以及 Imagine 页 Upgrade 按钮（`hideImagineUpgrade`）。`flatSourceChips`（默认开）去掉 sources 徽标里每个引用图标外面的圆，以及胶囊自己的边框。 |
+| <img src="https://api.iconify.design/lucide/brush-cleaning.svg?color=%238b949e" width="16" height="16" alt=""> Cleaner | 开 | 上游已有该插件；Void++ 改为默认打开。隐藏升级提示、首页横幅、输入栏 SuperGrok 标记、锁定模型，以及 Imagine 页 Upgrade 按钮（`hideImagineUpgrade`）。 |
 | <img src="https://api.iconify.design/lucide/images.svg?color=%238b949e" width="16" height="16" alt=""> BetterImagine | 关 | Imagine 增强：收藏筛选/排序/搜索、悬停播放、隐藏审核内容、批量超分与复制、智能文件名。`hideDefaultPreviews` 隐藏首页模板（默认关）。快捷键 i/v/r 仅在收藏页生效。 |
 | <img src="https://api.iconify.design/lucide/history.svg?color=%238b949e" width="16" height="16" alt=""> InputHistory | 开 | 在输入框用 ↑ / ↓ 翻看历史提示词，类似终端。Esc 还原草稿。点击计数器打开历史。可选 `separateImagine` 把 Imagine 提示词单独存一份。 |
 | <img src="https://api.iconify.design/lucide/bot-off.svg?color=%238b949e" width="16" height="16" alt=""> NoGrokBot | 开 | 隐藏右上角 Grok Bot 推广按钮。 |
