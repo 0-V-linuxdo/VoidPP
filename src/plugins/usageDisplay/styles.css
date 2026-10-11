@@ -79,11 +79,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
 .void-ud-history {
     min-height: 0;
+    min-width: 0;
     flex: 1;
 }
 
 .void-ud-chart {
     min-height: 0;
+    min-width: 0;
+    width: 100%;
     overflow-x: auto;
     height: 9.25rem;
     outline: none;

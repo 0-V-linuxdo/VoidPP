@@ -15,7 +15,7 @@ import { CircleGaugeIcon } from "@components/icons";
 import { VoidPPDialogShell } from "@components/settings/tabs/VoidPPDialogShell";
 import type { GrokSubscription } from "@grok-types";
 import { getPlanName } from "@turbopack/common/plan";
-import { React, useEffect, useRef, useState } from "@turbopack/common/react";
+import { React, useEffect, useLayoutEffect, useRef, useState } from "@turbopack/common/react";
 import { RoutingStore, SessionStore, SubscriptionsStore } from "@turbopack/common/stores";
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
@@ -563,6 +563,21 @@ function RepairReset({ rec, prev, userId }: { rec: DailyUsageRecord; prev: Daily
     );
 }
 
+function scrollUsageChart(node: HTMLElement, toEnd: boolean) {
+    if (toEnd) {
+        const max = node.scrollWidth - node.clientWidth;
+        if (max > 1 && node.scrollLeft < max - 1) node.scrollLeft = node.scrollWidth;
+        return;
+    }
+    const bar = node.querySelector<HTMLElement>(`.${cl("bar-on")}`);
+    if (!bar) return;
+    const host = node.getBoundingClientRect();
+    const rect = bar.getBoundingClientRect();
+    if (host.width === 0 || rect.width === 0) return;
+    if (rect.left < host.left - 1) node.scrollLeft -= host.left - rect.left;
+    else if (rect.right > host.right + 1) node.scrollLeft += rect.right - host.right;
+}
+
 function StatsModal({ onClose }: ModalProps) {
     useExternalStore(store);
     const { usageStats } = settings.use(["usageStats"]);
@@ -574,14 +589,40 @@ function StatsModal({ onClose }: ModalProps) {
     const active = bars.find(d => d.date === selected) ?? bars.at(-1) ?? null;
     const chartRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
+    // Opening focuses the first day button. The browser then scrolls that
+    // button into view, so the chart lands on the oldest day. Pin today
+    // (the right edge) until the user actually scrolls.
+    useLayoutEffect(() => {
         const node = chartRef.current;
-        if (node) node.scrollLeft = node.scrollWidth;
-    }, [bars.length]);
-
-    useEffect(() => {
-        chartRef.current?.querySelector(`.${cl("bar-on")}`)?.scrollIntoView({ inline: "nearest", block: "nearest" });
-    }, [selected]);
+        if (!node) return;
+        const options = node.querySelectorAll("[role=option]");
+        const on = node.querySelector(`.${cl("bar-on")}`);
+        const toEnd = !on || on === options[options.length - 1];
+        let alive = true;
+        const place = () => {
+            if (alive) scrollUsageChart(node, toEnd);
+        };
+        place();
+        const ro = new ResizeObserver(place);
+        ro.observe(node);
+        const raf = requestAnimationFrame(place);
+        const timers = [0, 50, 150].map(ms => setTimeout(place, ms));
+        const halt = () => {
+            alive = false;
+        };
+        node.addEventListener("pointerdown", halt);
+        node.addEventListener("wheel", halt, { passive: true });
+        node.addEventListener("focusin", place);
+        return () => {
+            alive = false;
+            ro.disconnect();
+            cancelAnimationFrame(raf);
+            for (const id of timers) clearTimeout(id);
+            node.removeEventListener("pointerdown", halt);
+            node.removeEventListener("wheel", halt);
+            node.removeEventListener("focusin", place);
+        };
+    }, [bars.length, selected]);
 
     return (
         <VoidPPDialogShell title="Usage by date" subtitle="Stored on this device." onClose={onClose} size="sm">
