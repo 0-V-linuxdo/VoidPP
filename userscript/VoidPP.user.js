@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261010.13
+// @version      20261010.14
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261010.13] v1.0.0 — A modification for grok.com
+ * Void++ [20261010.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261010.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"86ac7e9"}`
-    }, `(${"86ac7e9"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261010.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1182720"}`
+    }, `(${"1182720"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -26849,19 +26849,6 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     color: var(--fg-secondary);
 }
 
-.void-stars-bubble.void-stars-rest {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s ease;
-}
-
-.void-stars-bubble.void-stars-rest:focus-visible,
-[id^="response-"]:hover .void-stars-bubble.void-stars-rest,
-[id^="response-"]:focus-within .void-stars-bubble.void-stars-rest {
-    opacity: 1;
-    pointer-events: auto;
-}
-
 .void-stars-toggle {
     display: inline-flex;
     flex: none;
@@ -27786,41 +27773,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
     return best ? { row: best.row, copy: best.copy } : null;
   }
-  function isFadeClass(name) {
-    return name === "transition-opacity" || /opacity-0|opacity-100|(?:^|:)invisible(?:$|:)|pointer-events-(?:none|auto)/.test(name);
-  }
-  function fadeTokens(from, row) {
-    const out = [];
-    let node = from;
-    while (node && node !== row) {
-      for (const name of node.classList) {
-        if (!isFadeClass(name) || out.includes(name))
-          continue;
-        out.push(name);
-      }
-      node = node.parentElement;
-    }
-    return out;
-  }
-  function applyFade(star, copy, row) {
-    const next = fadeTokens(copy, row);
+  function clearStarFade(star) {
     const prev = star.dataset.fadeClass?.split(" ").filter(Boolean) ?? [];
-    for (const name of prev) {
-      if (!next.includes(name))
-        star.classList.remove(name);
-    }
-    for (const name of next)
-      star.classList.add(name);
-    star.dataset.fadeClass = next.join(" ");
-    if (next.some((name) => /opacity-0|invisible/.test(name))) {
-      star.classList.remove("void-stars-rest");
-      return;
-    }
-    const shell = row.closest("[id^='response-']");
-    const idle = !!shell && !shell.matches(":hover") && !shell.matches(":focus-within");
-    const style = getComputedStyle(copy);
-    const shown = idle && Number(style.opacity) > 0.9 && style.visibility !== "hidden";
-    star.classList.toggle("void-stars-rest", !shown);
+    for (const name of prev)
+      star.classList.remove(name);
+    delete star.dataset.fadeClass;
+    star.classList.remove("void-stars-rest");
   }
   var PAGER_RE = /^(previous|next) message$|^(上一|下一)(条|则)?(消息|回复)$/i;
   function isPagerNode(el) {
@@ -27931,7 +27889,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (!found || seen.has(found.row))
         continue;
       seen.add(found.row);
-      const { row, copy } = found;
+      const { row } = found;
       const host = starHost(row);
       let btn = host.querySelector(":scope > .void-stars-bubble");
       if (!btn)
@@ -27942,7 +27900,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         btn.remove();
         continue;
       }
-      applyFade(btn, copy, row);
+      clearStarFade(btn);
       const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
       syncBubble(btn, cid, id, role);
       keep.add(btn);
@@ -34783,7 +34741,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   exportChat_default.updatedAt = 1787870966000;
   incognito_default.updatedAt = 1787870966000;
   inputHistory_default.updatedAt = 1791226275000;
-  messageStars_default.updatedAt = 1791226275000;
+  messageStars_default.updatedAt = 1791680558000;
   messageTimestamps_default.updatedAt = 1789881463000;
   noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1791395540000;

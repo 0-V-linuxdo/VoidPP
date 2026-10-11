@@ -458,40 +458,17 @@ function messageBar(shell: HTMLElement, bubble: HTMLElement): { row: HTMLElement
     return best ? { row: best.row, copy: best.copy } : null;
 }
 
-function isFadeClass(name: string): boolean {
-    return name === "transition-opacity" || /opacity-0|opacity-100|(?:^|:)invisible(?:$|:)|pointer-events-(?:none|auto)/.test(name);
-}
-
-function fadeTokens(from: HTMLElement, row: HTMLElement): string[] {
-    const out: string[] = [];
-    let node: HTMLElement | null = from;
-    while (node && node !== row) {
-        for (const name of node.classList) {
-            if (!isFadeClass(name) || out.includes(name)) continue;
-            out.push(name);
-        }
-        node = node.parentElement;
-    }
-    return out;
-}
-
-function applyFade(star: HTMLButtonElement, copy: HTMLElement, row: HTMLElement) {
-    const next = fadeTokens(copy, row);
+function clearStarFade(star: HTMLButtonElement) {
+    // The toolbar span is `opacity-0` until hover, and
+    // `[.last-response_&]:opacity-100` on the latest reply, so that bar stays
+    // visible without a hover. The star is a child of that span and must
+    // inherit. `void-stars-rest` set the star's own opacity to 0 and transitioned
+    // it over 0.15s whenever `#response-*` hover flipped, so the latest reply's
+    // star flashed while Copy / Like / Regenerate stayed put. [20261010.14]
     const prev = star.dataset.fadeClass?.split(" ").filter(Boolean) ?? [];
-    for (const name of prev) {
-        if (!next.includes(name)) star.classList.remove(name);
-    }
-    for (const name of next) star.classList.add(name);
-    star.dataset.fadeClass = next.join(" ");
-    if (next.some(name => /opacity-0|invisible/.test(name))) {
-        star.classList.remove("void-stars-rest");
-        return;
-    }
-    const shell = row.closest<HTMLElement>("[id^='response-']");
-    const idle = !!shell && !shell.matches(":hover") && !shell.matches(":focus-within");
-    const style = getComputedStyle(copy);
-    const shown = idle && Number(style.opacity) > 0.9 && style.visibility !== "hidden";
-    star.classList.toggle("void-stars-rest", !shown);
+    for (const name of prev) star.classList.remove(name);
+    delete star.dataset.fadeClass;
+    star.classList.remove("void-stars-rest");
 }
 
 const PAGER_RE = /^(previous|next) message$|^(上一|下一)(条|则)?(消息|回复)$/i;
@@ -601,7 +578,7 @@ function paintBubbles() {
         const found = messageBar(shellOf(msg), msg);
         if (!found || seen.has(found.row)) continue;
         seen.add(found.row);
-        const { row, copy } = found;
+        const { row } = found;
         const host = starHost(row);
         let btn = host.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
         if (!btn) btn = row.querySelector<HTMLButtonElement>(":scope > .void-stars-bubble");
@@ -610,7 +587,7 @@ function paintBubbles() {
             btn.remove();
             continue;
         }
-        applyFade(btn, copy, row);
+        clearStarFade(btn);
         const role = msg.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
         syncBubble(btn, cid, id, role);
         keep.add(btn);
