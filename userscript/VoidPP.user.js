@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261011.3
+// @version      20261011.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261011.3] v1.0.0 — A modification for grok.com
+ * Void++ [20261011.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261011.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"df4d5d4"}`
-    }, `(${"df4d5d4"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261011.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"261507a"}`
+    }, `(${"261507a"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11839,6 +11839,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var cl20 = classNameFactory("void-bn-");
   var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
   var ASST_SEL = "[data-testid='assistant-message']";
+  var CHAT_PANE_SEL = "[data-testid='chat-transcript-scroller']";
+  var BOT_PANE_SEL = "[data-testid='bot-transcript-scroller']";
+  var BOT_ENTRY_SEL = "[data-bot-entry-id]";
+  var BOT_TEXT_SEL = "[data-bot-message-text='true']";
   var TICK_SEL = "button[aria-label^='Go to response ']";
   var PREV_SEL = "button[aria-label='Navigate to previous message']";
   var NEXT_SEL = "button[aria-label='Navigate to next message']";
@@ -11997,9 +12001,18 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function chatRoot() {
     return document.getElementById("grok-content-area") ?? document.querySelector("[role='main'], main");
   }
+  function transcriptScrollers() {
+    const out = [];
+    for (const sel of [CHAT_PANE_SEL, BOT_PANE_SEL]) {
+      const tagged = document.querySelector(sel);
+      if (tagged && !tagged.closest(PANE_SKIP) && isVisible(tagged))
+        out.push(tagged);
+    }
+    return out;
+  }
   function chatPane() {
-    const tagged = document.querySelector("[data-testid='chat-transcript-scroller']");
-    if (tagged && !tagged.closest(PANE_SKIP) && isVisible(tagged))
+    const tagged = transcriptScrollers()[0];
+    if (tagged)
       return tagged;
     const main = chatRoot();
     if (!main)
@@ -12190,9 +12203,33 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     return false;
   }
+  function isUserTurn(el) {
+    if (el.getAttribute("data-testid") === "assistant-message")
+      return false;
+    if (el.getAttribute("data-testid") === "user-message")
+      return true;
+    if (el.querySelector("[data-testid='user-message']"))
+      return true;
+    return !!el.querySelector(".items-end");
+  }
+  function messageNodes(root) {
+    const entries = [...root.querySelectorAll(BOT_ENTRY_SEL)].filter((el) => !el.parentElement?.closest(BOT_ENTRY_SEL));
+    if (entries.length)
+      return entries;
+    return [...root.querySelectorAll(MSG_SEL)];
+  }
+  function roleOf(el) {
+    return isUserTurn(el) ? "user" : "assistant";
+  }
+  function assistantEls(root) {
+    const nodes = messageNodes(root).filter((el) => roleOf(el) === "assistant");
+    if (nodes.length)
+      return nodes;
+    return [...root.querySelectorAll(ASST_SEL)];
+  }
   function liveAssistantEl() {
     const root = chatPane() ?? document;
-    const last = [...root.querySelectorAll(ASST_SEL)].findLast((el) => document.body.contains(el));
+    const last = assistantEls(root).findLast((el) => document.body.contains(el));
     if (!last)
       return null;
     if (lookSettled(last))
@@ -12289,20 +12326,22 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const host = el.closest("[id^='response-']");
     if (host?.id.startsWith("response-"))
       return host.id.slice("response-".length);
-    return;
+    const entry = el.matches(BOT_ENTRY_SEL) ? el : el.closest(BOT_ENTRY_SEL);
+    return entry?.getAttribute("data-bot-entry-id") || undefined;
   }
   function bubbleOf(el) {
     if (!el)
       return null;
-    if (el.matches(MSG_SEL))
+    if (el.matches(MSG_SEL) || el.matches(BOT_TEXT_SEL))
       return el;
-    return el.querySelector(MSG_SEL);
+    return el.querySelector(MSG_SEL) ?? el.querySelector(BOT_TEXT_SEL) ?? (el.matches(BOT_ENTRY_SEL) ? el : el.querySelector(BOT_ENTRY_SEL));
   }
   function elForId(id) {
     const shell = document.getElementById(`response-${id}`);
-    if (!(shell instanceof HTMLElement))
-      return null;
-    return bubbleOf(shell);
+    if (shell instanceof HTMLElement)
+      return bubbleOf(shell);
+    const bot = document.querySelector(`[data-bot-entry-id="${CSS.escape(id)}"]`);
+    return bot ? bubbleOf(bot) : null;
   }
   function mountedEl(item) {
     if (!item)
@@ -12362,14 +12401,15 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const showAsst = settings12.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const out = [];
-    for (const el of root.querySelectorAll(MSG_SEL)) {
+    for (const el of messageNodes(root)) {
       if (!document.body.contains(el))
         continue;
-      const role = el.getAttribute("data-testid") === "user-message" ? "user" : "assistant";
+      const role = roleOf(el);
       if (!showAsst && role === "assistant")
         continue;
-      const live = el === liveEl;
-      const text = summarize(el) || (live ? LIVE_LABEL : "");
+      const live = role === "assistant" && !!liveEl && (el === liveEl || el.contains(liveEl));
+      const bubble = bubbleOf(el) ?? el;
+      const text = summarize(bubble) || (live ? LIVE_LABEL : "");
       if (!text)
         continue;
       out.push({ id: responseIdOf(el), el, role, text, live });
@@ -12459,14 +12499,20 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     return out;
   }
+  function idsCovered(leaf, dom) {
+    const leafIds = new Set(leaf.map((n) => n.id).filter((id) => !!id));
+    const domIds = dom.map((n) => n.id).filter((id) => !!id);
+    return domIds.length > 0 && domIds.every((id) => leafIds.has(id));
+  }
   function collect() {
     const leaf = collectLeaf();
     const dom = collectDom();
     if (!leaf.length)
       return dom;
-    const leafIds = new Set(leaf.map((n) => n.id).filter((id) => !!id));
-    const domIds = dom.map((n) => n.id).filter((id) => !!id);
-    const covered = domIds.length > 0 && domIds.every((id) => leafIds.has(id));
+    const covered = idsCovered(leaf, dom);
+    const onBot = transcriptScrollers().some((pane) => pane.matches(BOT_PANE_SEL));
+    if (onBot && !covered)
+      return dom;
     const base = covered || dom.length <= leaf.length ? leaf : dom;
     const nav = absorbLive(base, dom);
     for (const item of nav) {
@@ -12620,10 +12666,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     });
   }
   function livePane(el) {
-    const tagged = document.querySelector("[data-testid='chat-transcript-scroller']");
-    const taggedOk = !!tagged && !tagged.closest(PANE_SKIP) && tagged.scrollHeight > tagged.clientHeight + 2;
-    if (taggedOk && tagged && (!el || tagged.contains(el)))
-      return tagged;
+    const list = transcriptScrollers().filter((pane) => pane.scrollHeight > pane.clientHeight + 2);
+    const hit = el ? list.find((pane) => pane.contains(el)) : list[0];
+    if (hit)
+      return hit;
     return chatPane();
   }
   function aim(el, pane) {
@@ -12789,7 +12835,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     pane.scrollTop = Math.max(0, Math.min(max, pane.scrollTop + dir * vh * screens));
   }
   function firstResponseId(pane) {
-    return pane.querySelector("[id^='response-']")?.id ?? "";
+    const shell = pane.querySelector("[id^='response-']");
+    if (shell?.id)
+      return shell.id;
+    return pane.querySelector(BOT_ENTRY_SEL)?.getAttribute("data-bot-entry-id") ?? "";
   }
   function targetEl(item) {
     const found = mountedEl(item) ?? (item.id ? document.getElementById(`response-${item.id}`) : null);
@@ -34736,60 +34785,60 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // virtual:~plugins
-  fixChrome_default.updatedAt = 1791712752000;
+  fixChrome_default.updatedAt = 1787789817000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  noTelemetry_default.updatedAt = 1791712752000;
-  settings_default.updatedAt = 1791712752000;
-  chatBarButtons_default.updatedAt = 1791712752000;
-  contextMenu_default.updatedAt = 1791712752000;
-  autoCollapse_default.updatedAt = 1791712752000;
-  autoRetry_default.updatedAt = 1791712752000;
-  avatarPluginsFlyout_default.updatedAt = 1791712752000;
-  betterCanvas_default.updatedAt = 1791712752000;
-  betterFiles_default.updatedAt = 1791712752000;
-  betterImagine_default.updatedAt = 1791712752000;
-  betterLinks_default.updatedAt = 1791712752000;
-  betterModeSelect_default.updatedAt = 1791712752000;
-  betterNavigator_default.updatedAt = 1791712752000;
-  betterQueue_default.updatedAt = 1791712752000;
-  betterQuotes_default.updatedAt = 1791712752000;
-  betterSidebar_default.updatedAt = 1791712752000;
-  chatListStatus_default.updatedAt = 1791712752000;
-  chatStateFavicons_default.updatedAt = 1791712752000;
-  cleaner_default.updatedAt = 1791712752000;
-  cloneChats_default.updatedAt = 1791712752000;
-  collapseThoughts_default.updatedAt = 1791747692000;
-  completeToast_default.updatedAt = 1791712752000;
-  composerOpacity_default.updatedAt = 1791712752000;
-  consoleJanitor_default.updatedAt = 1791712752000;
-  customGreeting_default.updatedAt = 1791712752000;
-  customInstructions_default.updatedAt = 1791712752000;
-  customSidebarIdentity_default.updatedAt = 1791712752000;
-  downloadTTS_default.updatedAt = 1791712752000;
-  experiments_default.updatedAt = 1791712752000;
-  exportChat_default.updatedAt = 1791712752000;
-  incognito_default.updatedAt = 1791712752000;
-  inputHistory_default.updatedAt = 1791712752000;
-  messageStars_default.updatedAt = 1791712752000;
-  messageTimestamps_default.updatedAt = 1791712752000;
-  noBuildStarters_default.updatedAt = 1791712752000;
-  noDictation_default.updatedAt = 1791712752000;
-  noGrokBot_default.updatedAt = 1791712752000;
-  noShareLink_default.updatedAt = 1791712752000;
+  noTelemetry_default.updatedAt = 1791660888000;
+  settings_default.updatedAt = 1791660888000;
+  chatBarButtons_default.updatedAt = 1791660269000;
+  contextMenu_default.updatedAt = 1791658451000;
+  autoCollapse_default.updatedAt = 1787789817000;
+  autoRetry_default.updatedAt = 1789906500000;
+  avatarPluginsFlyout_default.updatedAt = 1791660269000;
+  betterCanvas_default.updatedAt = 1791660269000;
+  betterFiles_default.updatedAt = 1789246749000;
+  betterImagine_default.updatedAt = 1791226275000;
+  betterLinks_default.updatedAt = 1787870966000;
+  betterModeSelect_default.updatedAt = 1791400125000;
+  betterNavigator_default.updatedAt = 1791656586000;
+  betterQueue_default.updatedAt = 1791658451000;
+  betterQuotes_default.updatedAt = 1791676681000;
+  betterSidebar_default.updatedAt = 1791658451000;
+  chatListStatus_default.updatedAt = 1791658451000;
+  chatStateFavicons_default.updatedAt = 1789921507000;
+  cleaner_default.updatedAt = 1791660269000;
+  cloneChats_default.updatedAt = 1787870966000;
+  collapseThoughts_default.updatedAt = 1791748402000;
+  completeToast_default.updatedAt = 1791666004000;
+  composerOpacity_default.updatedAt = 1791226275000;
+  consoleJanitor_default.updatedAt = 1787789817000;
+  customGreeting_default.updatedAt = 1791660269000;
+  customInstructions_default.updatedAt = 1791226275000;
+  customSidebarIdentity_default.updatedAt = 1791226275000;
+  downloadTTS_default.updatedAt = 1787870966000;
+  experiments_default.updatedAt = 1791226275000;
+  exportChat_default.updatedAt = 1787870966000;
+  incognito_default.updatedAt = 1787870966000;
+  inputHistory_default.updatedAt = 1791226275000;
+  messageStars_default.updatedAt = 1791682713000;
+  messageTimestamps_default.updatedAt = 1789881463000;
+  noBuildStarters_default.updatedAt = 1789894247000;
+  noDictation_default.updatedAt = 1791395540000;
+  noGrokBot_default.updatedAt = 1790943206000;
+  noShareLink_default.updatedAt = 1787789817000;
   noSidebarIdentity_default.updatedAt = 1791712752000;
-  oneko_default.updatedAt = 1791712752000;
-  pluginsFlyout_default.updatedAt = 1791712752000;
-  recentTopics_default.updatedAt = 1791712752000;
-  responseNotification_default.updatedAt = 1791712752000;
-  settingsFlyout_default.updatedAt = 1791712752000;
-  sourceChips_default.updatedAt = 1791712752000;
-  stableComposer_default.updatedAt = 1791712752000;
-  starry_default.updatedAt = 1791712752000;
-  streamerMode_default.updatedAt = 1791712752000;
-  usageDisplay_default.updatedAt = 1791712752000;
-  userQuotes_default.updatedAt = 1791712752000;
-  widerChat_default.updatedAt = 1791712752000;
+  oneko_default.updatedAt = 1787870966000;
+  pluginsFlyout_default.updatedAt = 1791226275000;
+  recentTopics_default.updatedAt = 1791658451000;
+  responseNotification_default.updatedAt = 1790093417000;
+  settingsFlyout_default.updatedAt = 1791656586000;
+  sourceChips_default.updatedAt = 1791671691000;
+  stableComposer_default.updatedAt = 1789125421000;
+  starry_default.updatedAt = 1787870966000;
+  streamerMode_default.updatedAt = 1787870966000;
+  usageDisplay_default.updatedAt = 1791226275000;
+  userQuotes_default.updatedAt = 1791226275000;
+  widerChat_default.updatedAt = 1787870966000;
   var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [sourceChips_default.name]: sourceChips_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
