@@ -18,7 +18,8 @@ export default definePlugin({
 
     patches: [
         {
-            find: "thoughts-sidepanel.more-notes",
+            find: 'thoughts-sidepanel.more-notes","+{{count}} more"',
+            all: true,
             replacement: {
                 match: /\.length>=2,\[(\i),(\i)\]=\(0,(\i)\.useState\)\(!0\)/,
                 replace: ".length>=2,[$1,$2]=(0,$3.useState)(!1)",
