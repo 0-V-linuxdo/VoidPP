@@ -123,8 +123,6 @@ let ro: ResizeObserver | null = null;
 let io: IntersectionObserver | null = null;
 let host: HTMLElement | null = null;
 let rail: HTMLElement | null = null;
-let frameTouched: HTMLElement | null = null;
-let framePrevPos = "";
 let paintedKey = "";
 let lastPath = "";
 let lastNav: NavItem[] = [];
@@ -1339,16 +1337,17 @@ function setActive(nav: NavItem[]) {
     applyActive(pickByLine(nav), "list");
 }
 
-function columnSpan(): { top: number; height: number } {
+function columnSpan(): { top: number; height: number; right: string } {
     const pane = chatPane();
     const frame = chatColumn();
     const pr = pane?.getBoundingClientRect();
     const fr = frame?.getBoundingClientRect();
-    const topVp = pr?.top ?? 8;
-    const bottomVp = Math.min(pr?.bottom ?? window.innerHeight, composerTop());
-    const height = Math.max(120, bottomVp - topVp);
-    const top = frame ? topVp - (fr?.top ?? 0) : 0;
-    return { top, height };
+    const top = pr?.top ?? 8;
+    const bottom = Math.min(pr?.bottom ?? window.innerHeight, composerTop());
+    const height = Math.max(120, bottom - top);
+    const gutter = fr ? Math.max(0, window.innerWidth - fr.right) : 0;
+    const right = gutter ? `calc(${gutter}px + 0.75rem)` : "0.75rem";
+    return { top, height, right };
 }
 
 function placeHost() {
@@ -1356,7 +1355,7 @@ function placeHost() {
     const span = columnSpan();
     host.style.top = `${span.top}px`;
     host.style.height = `${span.height}px`;
-    host.style.right = "0.75rem";
+    host.style.right = span.right;
     host.style.transform = "none";
     host.style.justifyContent = "center";
     const ticks = host.querySelector<HTMLElement>(".void-bn-ticks");
@@ -1530,21 +1529,6 @@ function tickRail(nav: NavItem[]): HTMLElement {
     return wrap;
 }
 
-function restoreFrame() {
-    if (!frameTouched) return;
-    frameTouched.style.position = framePrevPos;
-    frameTouched = null;
-    framePrevPos = "";
-}
-
-function pinFrame(frame: HTMLElement) {
-    if (scrolls(frame)) return;
-    if (getComputedStyle(frame).position !== "static") return;
-    frameTouched = frame;
-    framePrevPos = frame.style.position;
-    frame.style.position = "relative";
-}
-
 function unmount() {
     rail?.classList.remove(SLOT_CLASS, "void-bn-open");
     host?.remove();
@@ -1552,7 +1536,6 @@ function unmount() {
     rail = null;
     paintedKey = "";
     overMenu = false;
-    restoreFrame();
     clearNativeDash();
     document.documentElement.classList.remove("void-bn-fullticks");
 }
@@ -1751,14 +1734,13 @@ function paint() {
 
     unmount();
     document.documentElement.classList.add("void-bn-fullticks");
-    const box = document.createElement("div");
-    box.className = cl("host", "self");
     const frame = chatColumn();
     if (!frame) return;
-    pinFrame(frame);
+    const box = document.createElement("div");
+    box.className = cl("host", "self");
     box.classList.add(SLOT_CLASS);
     box.append(tickRail(nav), menuEl(nav));
-    frame.appendChild(box);
+    document.body.append(box);
 
     host = box;
     lastNav = nav;

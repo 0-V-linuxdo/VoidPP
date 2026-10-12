@@ -1,10 +1,10 @@
 .void-bn-host {
     pointer-events: none;
-    z-index: 50;
+    position: fixed;
+    z-index: 60;
 }
 
 .void-bn-self {
-    position: absolute;
     top: 0;
     right: 0.75rem;
     display: flex;
