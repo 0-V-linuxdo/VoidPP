@@ -55,6 +55,8 @@ Before any push to `dev`, `voidpp-beta`, or `voidpp-stable`:
 
 ## Apply the update
 
+总是在 Violentmonkey 标签页组中进行更新。不要在组外 `new_page` 打开选项页。`list_pages` 后只 `select_page` 该组里已有的暴力猴选项页（`chrome-extension://jinjaccalgkegednnccohejagnlnfdag/options/index.html`），再 `CheckUpdate`。组里没有这一页就停，不要另开到别的组。
+
 The installed manager is Violentmonkey 2.49 (`jinjaccalgkegednnccohejagnlnfdag`, Chrome name 暴力猴). `chrome_devtools___list_extensions` is not implemented on this connector (`Tool list_extensions not found`). Read the list from `chrome://extensions`: `extensions-manager` shadow root → `extensions-item-list` shadow root → `extensions-item` (`#name`, `id`).
 
 Do not open the GitHub raw `.user.js` in a tab. That response sends `Content-Security-Policy: sandbox`, so the install intercept never runs and the tab only shows source. The extension's own fetch is not subject to that CSP.
