@@ -11,7 +11,7 @@ import { Logger } from "@utils/Logger";
 import { sleep } from "@utils/misc";
 import { getFiber } from "@utils/react";
 
-import { DISMISS, KEEP, onImaginePage, QUERY } from "./shared";
+import { DISMISS, KEEP, nativeQuoteButton, onImaginePage, QUERY } from "./shared";
 
 const logger = new Logger("QuoteJump");
 const cl = classNameFactory("void-qj-");
@@ -1502,6 +1502,7 @@ function onClick(e: MouseEvent) {
         if (!e.isTrusted || e.button !== 0 || onImaginePage()) return;
         const t = eventEl(e.target);
         if (!t) return;
+        if (nativeQuoteButton(t)) return;
         if (t.closest(`.${cl("back")}, .${cl("menu")}`)) {
             e.preventDefault();
             e.stopPropagation();

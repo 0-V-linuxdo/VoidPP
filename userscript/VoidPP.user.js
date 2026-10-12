@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261012.1
+// @version      20261012.2
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261012.1] v1.0.0 — A modification for grok.com
+ * Void++ [20261012.2] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9114,9 +9114,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261012.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ccdafb3"}`
-    }, `(${"ccdafb3"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261012.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ab5788e"}`
+    }, `(${"ab5788e"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -17221,6 +17221,34 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return false;
     }
   }
+  function nativeQuoteButton(el) {
+    const node = el instanceof Element ? el : el instanceof Node ? el.parentElement : null;
+    const btn = node?.closest("button");
+    if (!(btn instanceof HTMLElement))
+      return null;
+    const host = btn.parentElement;
+    if (!(host instanceof HTMLElement))
+      return null;
+    const cls = typeof host.className === "string" ? host.className : "";
+    if (!cls.includes("absolute") || !cls.includes("z-50") || !cls.includes("rounded-full"))
+      return null;
+    return btn;
+  }
+  function isToolbarPopup(popup) {
+    if (!popup || typeof popup !== "object")
+      return false;
+    const range = popup.range;
+    return !!range && typeof range.cloneRange === "function";
+  }
+  function cloneToolbarPopup(popup) {
+    if (!isToolbarPopup(popup))
+      return popup;
+    try {
+      return { ...popup, range: popup.range.cloneRange() };
+    } catch {
+      return popup;
+    }
+  }
 
   // src/plugins/betterQuotes/icon.ts
   var MARK = "data-void-bq-glyph";
@@ -19027,6 +19055,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const t = eventEl(e.target);
       if (!t)
         return;
+      if (nativeQuoteButton(t))
+        return;
       if (t.closest(`.${cl21("back")}, .${cl21("menu")}`)) {
         e.preventDefault();
         e.stopPropagation();
@@ -19101,6 +19131,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var pendingRestore = "";
   var consumedUntil = 0;
   var unsubQuote = null;
+  var toolbarLive = false;
+  var armedRange = null;
+  var quoteClickAbort = null;
+  var quoteClickArmed = false;
   function justConsumed() {
     return performance.now() < consumedUntil;
   }
@@ -19124,6 +19158,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const h = viewportHeight();
     return h > 0 && h < COLLAPSE_PX;
   }
+  function snapPopup(popup) {
+    if (isToolbarPopup(popup))
+      return isToolbarPopup(lastPopup) ? undefined : lastPopup;
+    return popup;
+  }
   function pinHold() {
     const live = readText();
     if (!hold)
@@ -19133,9 +19172,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!key)
       return;
     if (live.text) {
-      remember2(key, live.text, live.popup);
+      const popup = snapPopup(live.popup);
+      remember2(key, live.text, popup);
       lastText = live.text;
-      lastPopup = live.popup;
+      lastPopup = popup;
       return;
     }
     const snap = saved.get(key);
@@ -19528,9 +19568,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const dest = destKey();
     const key = snapKey();
     if (now.text && key && !(dest && lastKey && dest !== lastKey)) {
-      remember2(key, now.text, now.popup);
+      const popup = snapPopup(now.popup);
+      remember2(key, now.text, popup);
       lastText = now.text;
-      lastPopup = now.popup;
+      lastPopup = popup;
       lastKey = key;
     }
     if (!dest) {
@@ -19772,9 +19813,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
             remember2(lastKey, lastText, lastPopup);
           return result;
         }
-        remember2(key, text, popup ?? lastPopup);
+        remember2(key, text, snapPopup(popup ?? lastPopup));
         lastText = text;
-        lastPopup = popup ?? lastPopup;
+        lastPopup = snapPopup(popup ?? lastPopup);
         lastKey = key;
       } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
         scheduleRestore();
@@ -19784,23 +19825,61 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function makePopupWrapper(orig) {
     return function voidQuoteStickyPopup(...args) {
+      const incoming = args[0];
+      if (isToolbarPopup(incoming)) {
+        toolbarLive = true;
+        try {
+          args[0] = cloneToolbarPopup(incoming);
+        } catch {}
+        return orig.apply(this, args);
+      }
       const result = orig.apply(this, args);
       if (applying2)
         return result;
       const dest = destKey();
       const popup = args[0];
+      if (popup == null && toolbarLive) {
+        toolbarLive = false;
+        return result;
+      }
       const live = String(ChatPageStore.useChatPageStore.getState().quotedText || "");
       if (popup != null && live && !(dest && lastKey && dest !== lastKey)) {
         const key = dest || pathCid() || routeCid() || lastKey;
+        const kept = snapPopup(popup);
         if (key) {
-          remember2(key, live, popup);
-          lastPopup = popup;
+          remember2(key, live, kept);
+          lastPopup = kept;
           lastText = live;
           lastKey = key;
         }
       } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
         scheduleRestore();
       }
+      return result;
+    };
+  }
+  function makeQuotedSourceWrapper(orig) {
+    return function voidQuoteStickyQuotedSource(...args) {
+      const result = orig.apply(this, args);
+      if (applying2)
+        return result;
+      const text = String(args[0] ?? "");
+      if (!text)
+        return result;
+      const dest = destKey();
+      const key = dest || pathCid() || routeCid() || lastKey;
+      if (!key)
+        return result;
+      if (dest && lastKey && dest !== lastKey) {
+        if (lastText)
+          remember2(lastKey, lastText, lastPopup);
+        return result;
+      }
+      const kept = snapPopup(ChatPageStore.useChatPageStore.getState().quotePopupData);
+      remember2(key, text, kept);
+      lastText = text;
+      lastPopup = kept;
+      lastKey = key;
       return result;
     };
   }
@@ -19844,6 +19923,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function wrapAll() {
     wrapOne2("chat.setQuotedText", chatState, chatSet, "setQuotedText", makeQuotedTextWrapper);
     wrapOne2("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
+    wrapOne2("chat.setQuotedSource", chatState, chatSet, "setQuotedSource", makeQuotedSourceWrapper);
     wrapOne2("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
     wrapOne2("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
     wrapOne2("chat.sendResponse", chatState, chatSet, "sendResponse", makeSendWrapper2);
@@ -19863,6 +19943,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function unwrapAll() {
     unwrapOne(chatState, chatSet, "setQuotedText", "chat.setQuotedText");
     unwrapOne(chatState, chatSet, "setQuotePopupData", "chat.setQuotePopupData");
+    unwrapOne(chatState, chatSet, "setQuotedSource", "chat.setQuotedSource");
     unwrapOne(chatState, chatSet, "setConversationId", "chat.setConversationId");
     unwrapOne(chatState, chatSet, "setOptimisticConversationId", "chat.setOptimisticConversationId");
     unwrapOne(chatState, chatSet, "sendResponse", "chat.sendResponse");
@@ -19899,10 +19980,129 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const key = dest || pathCid() || routeCid() || lastKey;
     if (!key)
       return;
-    remember2(key, text, state.quotePopupData);
+    const kept = snapPopup(state.quotePopupData);
+    remember2(key, text, kept);
     lastText = text;
-    lastPopup = state.quotePopupData;
+    lastPopup = kept;
     lastKey = key;
+  }
+  function selectionRange() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount < 1 || sel.isCollapsed)
+      return null;
+    if (!sel.toString().trim())
+      return null;
+    try {
+      return sel.getRangeAt(0).cloneRange();
+    } catch {
+      return null;
+    }
+  }
+  function patchPopupHooks(fiber, range) {
+    let n = 0;
+    let h = fiber?.memoizedState ?? null;
+    let i = 0;
+    while (h && i < 90) {
+      const ms = h.memoizedState;
+      if (isToolbarPopup(ms)) {
+        try {
+          ms.range = range.cloneRange();
+          n++;
+        } catch {}
+      }
+      h = h.next;
+      i++;
+    }
+    return n;
+  }
+  function retargetQuote(btn, range) {
+    let fiber = getFiber(btn);
+    let n = 0;
+    let d = 0;
+    while (fiber && d < 30) {
+      n += patchPopupHooks(fiber, range);
+      if (fiber.alternate)
+        n += patchPopupHooks(fiber.alternate, range);
+      fiber = fiber.return;
+      d++;
+    }
+    return n > 0;
+  }
+  function quoteResponseId(btn) {
+    try {
+      const popup = ChatPageStore.useChatPageStore.getState().quotePopupData;
+      if (popup && typeof popup === "object") {
+        const id = popup.responseId;
+        if (typeof id === "string" && id)
+          return id;
+      }
+    } catch {}
+    return btn.closest("[id^='response-']")?.id.replace(/^response-/, "") || "";
+  }
+  function commitFreshQuote(btn, text) {
+    try {
+      const chat = ChatPageStore.useChatPageStore.getState();
+      chat.setQuotedSource(text, { sourceResponseId: quoteResponseId(btn) });
+      if (typeof chat.setQuotePopupData === "function")
+        chat.setQuotePopupData(undefined);
+      window.getSelection()?.removeAllRanges();
+    } catch (e) {
+      logger28.debug("native quote", e);
+    }
+  }
+  function onQuotePointerDown(e) {
+    if (!e.isTrusted)
+      return;
+    const t = e.target;
+    if (!(t instanceof Node))
+      return;
+    const el = t instanceof Element ? t : t.parentElement;
+    if (!el || !nativeQuoteButton(el))
+      return;
+    armedRange = selectionRange();
+  }
+  function onNativeQuoteClick(e) {
+    if (!e.isTrusted || e.button !== 0)
+      return;
+    const t = e.target;
+    if (!(t instanceof Node))
+      return;
+    const el = t instanceof Element ? t : t.parentElement;
+    if (!el)
+      return;
+    const btn = nativeQuoteButton(el);
+    if (!btn)
+      return;
+    const range = selectionRange() || armedRange;
+    armedRange = null;
+    if (!range)
+      return;
+    const text = range.toString().trim();
+    if (!text)
+      return;
+    if (retargetQuote(btn, range))
+      return;
+    e.preventDefault();
+    e.stopPropagation();
+    commitFreshQuote(btn, text);
+  }
+  function startNativeQuote() {
+    if (quoteClickArmed)
+      return;
+    quoteClickArmed = true;
+    quoteClickAbort = new AbortController;
+    const opt = { capture: true, signal: quoteClickAbort.signal };
+    document.addEventListener("pointerdown", onQuotePointerDown, opt);
+    document.addEventListener("mousedown", onQuotePointerDown, opt);
+    document.addEventListener("click", onNativeQuoteClick, opt);
+  }
+  function stopNativeQuote() {
+    if (!quoteClickArmed && !quoteClickAbort)
+      return;
+    quoteClickArmed = false;
+    quoteClickAbort?.abort();
+    quoteClickAbort = null;
+    armedRange = null;
   }
   function startSticky() {
     if (armed2)
@@ -19912,9 +20112,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const key = snapKey() || now.key;
     lastKey = key;
     if (key && now.text) {
-      remember2(key, now.text, now.popup);
+      const popup = snapPopup(now.popup);
+      remember2(key, now.text, popup);
       lastText = now.text;
-      lastPopup = now.popup;
+      lastPopup = popup;
     }
     abort3 = new AbortController;
     document.addEventListener("pointerdown", onPointerDown3, { capture: true, signal: abort3.signal });
@@ -19960,6 +20161,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     holdKey = "";
     pendingRestore = "";
     consumedUntil = 0;
+    toolbarLive = false;
   }
 
   // src/plugins/betterQuotes/index.ts
@@ -20050,12 +20252,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     cleanupSelectors: [".void-qs-chip", ".void-qj-back", ".void-qj-menu", "[data-void-bq-icon]"],
     start() {
       startIcons();
+      startNativeQuote();
       apply2();
     },
     onSettingsChange: apply2,
     stop() {
       stopJump();
       stopSticky();
+      stopNativeQuote();
       stopIcons();
     },
     zustand: {
@@ -35232,7 +35436,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterImagine_default.updatedAt = 1791226275000;
   betterLinks_default.updatedAt = 1787870966000;
   betterModeSelect_default.updatedAt = 1791400125000;
-  betterNavigator_default.updatedAt = 1791750681000;
+  betterNavigator_default.updatedAt = 1791839284000;
   betterQueue_default.updatedAt = 1791658451000;
   betterQuotes_default.updatedAt = 1791676681000;
   betterSidebar_default.updatedAt = 1791658451000;

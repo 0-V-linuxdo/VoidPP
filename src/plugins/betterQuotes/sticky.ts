@@ -10,9 +10,10 @@ import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { ChatPageStore, MessageStore, RoutingStore } from "@turbopack/common/stores";
 import { classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
+import { getFiber, type Fiber } from "@utils/react";
 
 import { mountQuoteMark } from "./icon";
-import { DISMISS, KEEP as KEEP_BTN, onImaginePage, QUERY } from "./shared";
+import { cloneToolbarPopup, DISMISS, isToolbarPopup, KEEP as KEEP_BTN, nativeQuoteButton, onImaginePage, QUERY } from "./shared";
 
 const logger = new Logger("QuoteSticky");
 const cl = classNameFactory("void-qs-");
@@ -55,6 +56,10 @@ let holdKey = "";
 let pendingRestore = "";
 let consumedUntil = 0;
 let unsubQuote: (() => void) | null = null;
+let toolbarLive = false;
+let armedRange: Range | null = null;
+let quoteClickAbort: AbortController | null = null;
+let quoteClickArmed = false;
 
 function justConsumed(): boolean {
     return performance.now() < consumedUntil;
@@ -81,6 +86,11 @@ function viewportCollapsed(): boolean {
     return h > 0 && h < COLLAPSE_PX;
 }
 
+function snapPopup(popup: unknown): unknown {
+    if (isToolbarPopup(popup)) return isToolbarPopup(lastPopup) ? undefined : lastPopup;
+    return popup;
+}
+
 function pinHold() {
     const live = readText();
     if (!hold) holdKey = live.key || lastKey || routeCid() || pathCid();
@@ -88,9 +98,10 @@ function pinHold() {
     const key = holdKey;
     if (!key) return;
     if (live.text) {
-        remember(key, live.text, live.popup);
+        const popup = snapPopup(live.popup);
+        remember(key, live.text, popup);
         lastText = live.text;
-        lastPopup = live.popup;
+        lastPopup = popup;
         return;
     }
     const snap = saved.get(key);
@@ -472,9 +483,10 @@ export function onChat() {
     const dest = destKey();
     const key = snapKey();
     if (now.text && key && !(dest && lastKey && dest !== lastKey)) {
-        remember(key, now.text, now.popup);
+        const popup = snapPopup(now.popup);
+        remember(key, now.text, popup);
         lastText = now.text;
-        lastPopup = now.popup;
+        lastPopup = popup;
         lastKey = key;
     }
     if (!dest) {
@@ -693,9 +705,9 @@ function makeQuotedTextWrapper(orig: SendFn): SendFn {
                 if (lastText) remember(lastKey, lastText, lastPopup);
                 return result;
             }
-            remember(key, text, popup ?? lastPopup);
+            remember(key, text, snapPopup(popup ?? lastPopup));
             lastText = text;
-            lastPopup = popup ?? lastPopup;
+            lastPopup = snapPopup(popup ?? lastPopup);
             lastKey = key;
         } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
             scheduleRestore();
@@ -706,22 +718,55 @@ function makeQuotedTextWrapper(orig: SendFn): SendFn {
 
 function makePopupWrapper(orig: SendFn): SendFn {
     return function voidQuoteStickyPopup(this: unknown, ...args: unknown[]) {
+        const incoming = args[0];
+        if (isToolbarPopup(incoming)) {
+            toolbarLive = true;
+            try { args[0] = cloneToolbarPopup(incoming); } catch { /* keep the live range */ }
+            return orig.apply(this, args);
+        }
         const result = orig.apply(this, args);
         if (applying) return result;
         const dest = destKey();
         const popup = args[0];
+        if (popup == null && toolbarLive) {
+            toolbarLive = false;
+            return result;
+        }
         const live = String(ChatPageStore.useChatPageStore.getState().quotedText || "");
         if (popup != null && live && !(dest && lastKey && dest !== lastKey)) {
             const key = dest || pathCid() || routeCid() || lastKey;
+            const kept = snapPopup(popup);
             if (key) {
-                remember(key, live, popup);
-                lastPopup = popup;
+                remember(key, live, kept);
+                lastPopup = kept;
                 lastText = live;
                 lastKey = key;
             }
         } else if (dest && (!lastKey || lastKey === dest) && saved.get(dest)?.text) {
             scheduleRestore();
         }
+        return result;
+    };
+}
+
+function makeQuotedSourceWrapper(orig: SendFn): SendFn {
+    return function voidQuoteStickyQuotedSource(this: unknown, ...args: unknown[]) {
+        const result = orig.apply(this, args);
+        if (applying) return result;
+        const text = String(args[0] ?? "");
+        if (!text) return result;
+        const dest = destKey();
+        const key = dest || pathCid() || routeCid() || lastKey;
+        if (!key) return result;
+        if (dest && lastKey && dest !== lastKey) {
+            if (lastText) remember(lastKey, lastText, lastPopup);
+            return result;
+        }
+        const kept = snapPopup(ChatPageStore.useChatPageStore.getState().quotePopupData);
+        remember(key, text, kept);
+        lastText = text;
+        lastPopup = kept;
+        lastKey = key;
         return result;
     };
 }
@@ -770,6 +815,7 @@ function msgSet(p: object) {
 function wrapAll() {
     wrapOne("chat.setQuotedText", chatState, chatSet, "setQuotedText", makeQuotedTextWrapper);
     wrapOne("chat.setQuotePopupData", chatState, chatSet, "setQuotePopupData", makePopupWrapper);
+    wrapOne("chat.setQuotedSource", chatState, chatSet, "setQuotedSource", makeQuotedSourceWrapper);
     wrapOne("chat.setConversationId", chatState, chatSet, "setConversationId", makeNavWrapper);
     wrapOne("chat.setOptimisticConversationId", chatState, chatSet, "setOptimisticConversationId", makeNavWrapper);
     wrapOne("chat.sendResponse", chatState, chatSet, "sendResponse", makeSendWrapper);
@@ -789,6 +835,7 @@ function unwrapOne(getState: () => Record<string, unknown>, setState: (partial: 
 function unwrapAll() {
     unwrapOne(chatState, chatSet, "setQuotedText", "chat.setQuotedText");
     unwrapOne(chatState, chatSet, "setQuotePopupData", "chat.setQuotePopupData");
+    unwrapOne(chatState, chatSet, "setQuotedSource", "chat.setQuotedSource");
     unwrapOne(chatState, chatSet, "setConversationId", "chat.setConversationId");
     unwrapOne(chatState, chatSet, "setOptimisticConversationId", "chat.setOptimisticConversationId");
     unwrapOne(chatState, chatSet, "sendResponse", "chat.sendResponse");
@@ -821,10 +868,123 @@ function onStore(state: ChatPageStoreState) {
     if (dest && lastKey && dest !== lastKey) return;
     const key = dest || pathCid() || routeCid() || lastKey;
     if (!key) return;
-    remember(key, text, state.quotePopupData);
+    const kept = snapPopup(state.quotePopupData);
+    remember(key, text, kept);
     lastText = text;
-    lastPopup = state.quotePopupData;
+    lastPopup = kept;
     lastKey = key;
+}
+
+type AltFiber = Fiber & { alternate?: Fiber | null };
+
+function selectionRange(): Range | null {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount < 1 || sel.isCollapsed) return null;
+    if (!sel.toString().trim()) return null;
+    try {
+        return sel.getRangeAt(0).cloneRange();
+    } catch {
+        return null;
+    }
+}
+
+function patchPopupHooks(fiber: Fiber | null, range: Range): number {
+    let n = 0;
+    let h = fiber?.memoizedState ?? null;
+    let i = 0;
+    while (h && i < 90) {
+        const ms = h.memoizedState;
+        if (isToolbarPopup(ms)) {
+            try {
+                ms.range = range.cloneRange();
+                n++;
+            } catch { /* detached */ }
+        }
+        h = h.next;
+        i++;
+    }
+    return n;
+}
+
+function retargetQuote(btn: HTMLElement, range: Range): boolean {
+    let fiber = getFiber(btn) as AltFiber | null;
+    let n = 0;
+    let d = 0;
+    while (fiber && d < 30) {
+        n += patchPopupHooks(fiber, range);
+        if (fiber.alternate) n += patchPopupHooks(fiber.alternate, range);
+        fiber = fiber.return as AltFiber | null;
+        d++;
+    }
+    return n > 0;
+}
+
+function quoteResponseId(btn: HTMLElement): string {
+    try {
+        const popup = ChatPageStore.useChatPageStore.getState().quotePopupData;
+        if (popup && typeof popup === "object") {
+            const id = (popup as { responseId?: unknown }).responseId;
+            if (typeof id === "string" && id) return id;
+        }
+    } catch { /* store not ready */ }
+    return btn.closest("[id^='response-']")?.id.replace(/^response-/, "") || "";
+}
+
+function commitFreshQuote(btn: HTMLElement, text: string) {
+    try {
+        const chat = ChatPageStore.useChatPageStore.getState();
+        chat.setQuotedSource(text, { sourceResponseId: quoteResponseId(btn) });
+        if (typeof chat.setQuotePopupData === "function") chat.setQuotePopupData(undefined);
+        window.getSelection()?.removeAllRanges();
+    } catch (e) {
+        logger.debug("native quote", e);
+    }
+}
+
+function onQuotePointerDown(e: Event) {
+    if (!e.isTrusted) return;
+    const t = e.target;
+    if (!(t instanceof Node)) return;
+    const el = t instanceof Element ? t : t.parentElement;
+    if (!el || !nativeQuoteButton(el)) return;
+    armedRange = selectionRange();
+}
+
+function onNativeQuoteClick(e: MouseEvent) {
+    if (!e.isTrusted || e.button !== 0) return;
+    const t = e.target;
+    if (!(t instanceof Node)) return;
+    const el = t instanceof Element ? t : t.parentElement;
+    if (!el) return;
+    const btn = nativeQuoteButton(el);
+    if (!btn) return;
+    const range = selectionRange() || armedRange;
+    armedRange = null;
+    if (!range) return;
+    const text = range.toString().trim();
+    if (!text) return;
+    if (retargetQuote(btn, range)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    commitFreshQuote(btn, text);
+}
+
+export function startNativeQuote() {
+    if (quoteClickArmed) return;
+    quoteClickArmed = true;
+    quoteClickAbort = new AbortController();
+    const opt = { capture: true, signal: quoteClickAbort.signal };
+    document.addEventListener("pointerdown", onQuotePointerDown, opt);
+    document.addEventListener("mousedown", onQuotePointerDown, opt);
+    document.addEventListener("click", onNativeQuoteClick, opt);
+}
+
+export function stopNativeQuote() {
+    if (!quoteClickArmed && !quoteClickAbort) return;
+    quoteClickArmed = false;
+    quoteClickAbort?.abort();
+    quoteClickAbort = null;
+    armedRange = null;
 }
 
 export function startSticky() {
@@ -834,9 +994,10 @@ export function startSticky() {
     const key = snapKey() || now.key;
     lastKey = key;
     if (key && now.text) {
-        remember(key, now.text, now.popup);
+        const popup = snapPopup(now.popup);
+        remember(key, now.text, popup);
         lastText = now.text;
-        lastPopup = now.popup;
+        lastPopup = popup;
     }
     abort = new AbortController();
     document.addEventListener("pointerdown", onPointerDown, { capture: true, signal: abort.signal });
@@ -880,4 +1041,5 @@ export function stopSticky() {
     holdKey = "";
     pendingRestore = "";
     consumedUntil = 0;
+    toolbarLive = false;
 }

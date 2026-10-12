@@ -21,3 +21,31 @@ export function onImaginePage(): boolean {
         return false;
     }
 }
+
+/** Grok's selection toolbar ("Add to chat"), not the composer chip or a jump button. */
+export function nativeQuoteButton(el: EventTarget | null): HTMLElement | null {
+    const node = el instanceof Element ? el : el instanceof Node ? el.parentElement : null;
+    const btn = node?.closest("button");
+    if (!(btn instanceof HTMLElement)) return null;
+    const host = btn.parentElement;
+    if (!(host instanceof HTMLElement)) return null;
+    const cls = typeof host.className === "string" ? host.className : "";
+    if (!cls.includes("absolute") || !cls.includes("z-50") || !cls.includes("rounded-full")) return null;
+    return btn;
+}
+
+/** Selection toolbar payload `{ range, responseId }`. Not the composer quote card. */
+export function isToolbarPopup(popup: unknown): popup is { range: Range; responseId?: string } {
+    if (!popup || typeof popup !== "object") return false;
+    const range = (popup as { range?: unknown }).range;
+    return !!range && typeof (range as Range).cloneRange === "function";
+}
+
+export function cloneToolbarPopup<T>(popup: T): T {
+    if (!isToolbarPopup(popup)) return popup;
+    try {
+        return { ...popup, range: popup.range.cloneRange() };
+    } catch {
+        return popup;
+    }
+}

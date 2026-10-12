@@ -14,7 +14,7 @@ import definePlugin, { OptionType, StartAt } from "@utils/types";
 
 import { startIcons, stopIcons } from "./icon";
 import { startJump, stopJump } from "./jump";
-import { chatSel, hydrateSel, onChat, onNav, routeSel, startSticky, stopSticky } from "./sticky";
+import { chatSel, hydrateSel, onChat, onNav, routeSel, startNativeQuote, startSticky, stopNativeQuote, stopSticky } from "./sticky";
 
 const logger = new Logger("BetterQuotes");
 
@@ -102,12 +102,14 @@ export default definePlugin({
 
     start() {
         startIcons();
+        startNativeQuote();
         apply();
     },
     onSettingsChange: apply,
     stop() {
         stopJump();
         stopSticky();
+        stopNativeQuote();
         stopIcons();
     },
 

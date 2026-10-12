@@ -174,6 +174,8 @@ Do not wrap `setChatPageLoaded` to fight hydrate. That fought ModeSync. Restore 
 
 Docked DevTools can collapse `innerHeight` and `visualViewport.height` to about 1px. Grok then `setState`s `quotedText` empty and calls `setConversationId` without going through `setQuotedText`. That frame is not navigation. While either height is under 80px, pin the snap, do not `clearLive`, and do not retarget `lastKey`. Restore when the viewport is tall again. A raw store subscription must remember a non-empty `quotedText`, because the setter wrapper never sees a `setState` write. `/project/` is not home: dest empty must not `clearLive` only because `pathCid()` is empty. Do not store the project id in `pathCid`. `officialVisible` must ignore the Tiptap editor and hidden nodes, or the fallback chip is removed while the official chip is already gone.
 
+`[20261012.2]` Native "Add to chat" is the `absolute z-50 rounded-full` button on the response, not the composer chip and not `button[aria-label="Jump to quoted message"]`. Its click reads `eN.range` from the last render of that response (`eN = useChatPageStore(s => s.quotePopupData)`). The stored `range` is the live `getRangeAt(0)`, not a clone. A second selection on the same message writes a new `{range, responseId}` into the store, but that response does not re-render, so the button still quotes the first passage and the composer looks unchanged. On `pointerdown` of that button, remember the current selection. On `click` (document capture, before React), write that selection into the toolbar popup object the render closed over. Do not `preventDefault` the pointerdown — that can swallow the button click. Do not `preventDefault` / `stopPropagation` the click when the retarget lands. `jump` must ignore this button. A toolbar popup has `range.cloneRange`. Do not remember it as the composer snap, clone it before it is stored, and do not `scheduleRestore` when it is cleared. `setQuotedSource` is the native commit: remember that text, and do not let the toolbar dismiss put the previous snap back.
+
 ## BetterQueue
 
 ModeSync and QueuePersist are one plugin. `mode.ts` captures each queued row's mode, paints the chip, and sends with that mode. `persist.ts` writes the same rows to IndexedDB key `queue-persist:v1` and replays them after refresh. Do not split them back into two plugins. Do not add a second `queueMessage` wrapper — `noteEnqueue` / `afterEnqueue` run inside the mode wrapper. Keep `Symbol.for("voidpp.modeSync.enqueueIntent")` and `Symbol.for("voidpp.modeSync.intent")`. Do not rename the IDB key or `.void-ms-*` classes.
@@ -216,6 +218,7 @@ Regression table:
 - 26.29 official Jump only highlighted — a sentence low in a tall card stayed below the viewport because `ownScroll` skipped the comfort-band check
 - 26.30 two scrolls — official Jump then a comfort-band nudge, and `settleScroll` fired a second `scrollTo`
 - 26.31 long `smooth` on a far mounted row — the virtualizer cancelled the animation and the scroll stopped mid-way
+- 12.2 second native Add to chat reused the first selection — the response did not re-render, so `eN.range` was still the previous passage and the composer did not change
 
 ## Sources pill
 
