@@ -147,15 +147,12 @@
     color: var(--fg-danger);
 }
 
-.void-ci-trigger {
-    gap: 0.5rem;
-}
-
 .void-ci-menu-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
+    width: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {

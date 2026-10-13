@@ -27,6 +27,8 @@ import type {
 } from "@grok-types";
 import type { ComponentType } from "react";
 
+import { getFnSource } from "../fnSource";
+import { getModuleCache } from "../patchTurbopack";
 import { filters, findByProps, findByPropsLazy, findExportedComponent, waitFor } from "../turbopack";
 import { type AnyComponent, createElement, LazyComponent } from "./react";
 import { SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle } from "./settingsPrimitives";
@@ -42,6 +44,47 @@ function createModuleLazy(...filterProps: string[]) {
 
 function lazyExport<P = {}>(name: string): ComponentType<P> {
     return LazyComponent(name, () => findExportedComponent(name)) as unknown as ComponentType<P>;
+}
+
+const DROPDOWN_ROOTS = ["DropdownMenu", "DropdownMenuContent", "DropdownMenuTrigger"] as const;
+
+function isDropdownModule(mod: unknown): mod is Record<string, ComponentType> {
+    if (mod == null || typeof mod !== "object") return false;
+    const exp = mod as Record<string, unknown>;
+    return DROPDOWN_ROOTS.every(key => exp[key] != null);
+}
+
+function isStyledDropdown(mod: Record<string, ComponentType>): boolean {
+    const item = mod.DropdownMenuItem as unknown;
+    return typeof item === "function" && getFnSource(item).includes("useKeepLegacy");
+}
+
+let styledDropdown: Record<string, ComponentType> | null = null;
+let legacyDropdown: Record<string, ComponentType> | null = null;
+let dropdownCacheSize = -1;
+
+function dropdownModule(): Record<string, ComponentType> | null {
+    if (styledDropdown) return styledDropdown;
+    let legacy = legacyDropdown;
+    for (const [, exp] of getModuleCache()) {
+        try {
+            if (!isDropdownModule(exp)) continue;
+            if (isStyledDropdown(exp)) {
+                styledDropdown = exp;
+                return exp;
+            }
+            if (!legacy) legacy = exp;
+        } catch {}
+    }
+    legacyDropdown = legacy;
+    const size = getModuleCache().size;
+    if (legacy && size === dropdownCacheSize) return legacy;
+    dropdownCacheSize = size;
+    return null;
+}
+
+function dropdownLazy<P = {}>(name: string): ComponentType<P> {
+    return LazyComponent(name, () => (dropdownModule()?.[name] ?? null) as AnyComponent | null) as unknown as ComponentType<P>;
 }
 
 const buttonLazy = createModuleLazy("Button", "IconButton");
@@ -92,19 +135,18 @@ export const DrawerHeader = drawerLazy<DrawerHeaderProps>("DrawerHeader");
 export const DrawerTitle = drawerLazy<DrawerTitleProps>("DrawerTitle");
 export const ResponsiveDialog = drawerLazy<ResponsiveDialogProps>("ResponsiveDialog");
 
-const dropdownMenuLazy = createModuleLazy("DropdownMenu", "DropdownMenuContent", "DropdownMenuTrigger");
-export const DropdownMenu = dropdownMenuLazy<DropdownMenuProps>("DropdownMenu");
-export const DropdownMenuTrigger = dropdownMenuLazy<DropdownMenuTriggerProps>("DropdownMenuTrigger");
-export const DropdownMenuContent = dropdownMenuLazy<DropdownMenuContentProps>("DropdownMenuContent");
-export const DropdownMenuItem = dropdownMenuLazy<DropdownMenuItemProps>("DropdownMenuItem");
-export const DropdownMenuCheckboxItem = dropdownMenuLazy<DropdownMenuCheckboxItemProps>("DropdownMenuCheckboxItem");
-export const DropdownMenuRadioGroup = dropdownMenuLazy<DropdownMenuRadioGroupProps>("DropdownMenuRadioGroup");
-export const DropdownMenuRadioItem = dropdownMenuLazy<DropdownMenuRadioItemProps>("DropdownMenuRadioItem");
-export const DropdownMenuSeparator = dropdownMenuLazy<DropdownMenuSeparatorProps>("DropdownMenuSeparator");
-export const DropdownMenuSub = dropdownMenuLazy<DropdownMenuSubProps>("DropdownMenuSub");
-export const DropdownMenuSubTrigger = dropdownMenuLazy<DropdownMenuSubTriggerProps>("DropdownMenuSubTrigger");
-export const DropdownMenuSubContent = dropdownMenuLazy<DropdownMenuSubContentProps>("DropdownMenuSubContent");
-export const DropdownMenuPortal = dropdownMenuLazy<DropdownMenuPortalProps>("DropdownMenuPortal");
+export const DropdownMenu = dropdownLazy<DropdownMenuProps>("DropdownMenu");
+export const DropdownMenuTrigger = dropdownLazy<DropdownMenuTriggerProps>("DropdownMenuTrigger");
+export const DropdownMenuContent = dropdownLazy<DropdownMenuContentProps>("DropdownMenuContent");
+export const DropdownMenuItem = dropdownLazy<DropdownMenuItemProps>("DropdownMenuItem");
+export const DropdownMenuCheckboxItem = dropdownLazy<DropdownMenuCheckboxItemProps>("DropdownMenuCheckboxItem");
+export const DropdownMenuRadioGroup = dropdownLazy<DropdownMenuRadioGroupProps>("DropdownMenuRadioGroup");
+export const DropdownMenuRadioItem = dropdownLazy<DropdownMenuRadioItemProps>("DropdownMenuRadioItem");
+export const DropdownMenuSeparator = dropdownLazy<DropdownMenuSeparatorProps>("DropdownMenuSeparator");
+export const DropdownMenuSub = dropdownLazy<DropdownMenuSubProps>("DropdownMenuSub");
+export const DropdownMenuSubTrigger = dropdownLazy<DropdownMenuSubTriggerProps>("DropdownMenuSubTrigger");
+export const DropdownMenuSubContent = dropdownLazy<DropdownMenuSubContentProps>("DropdownMenuSubContent");
+export const DropdownMenuPortal = dropdownLazy<DropdownMenuPortalProps>("DropdownMenuPortal");
 
 const hoverCardLazy = createModuleLazy("HoverCard", "HoverCardContent", "HoverCardTrigger");
 export const HoverCard = hoverCardLazy<HoverCardProps>("HoverCard");

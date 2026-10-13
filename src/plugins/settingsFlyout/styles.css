@@ -16,9 +16,3 @@
     padding: 0.25rem 0.5rem 0.125rem;
     pointer-events: none;
 }
-
-.void-sf-menu {
-    max-height: min(24rem, calc(100vh - 6rem));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}

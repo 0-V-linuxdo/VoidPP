@@ -4,15 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-.void-as-content {
+[data-void-as="content"] {
     min-width: 16rem;
     max-width: 22rem;
-}
-
-.void-as-trigger,
-.void-as-save {
-    display: flex;
-    align-items: center;
 }
 
 .void-as-icon-lead {
@@ -44,7 +38,7 @@
     margin-block: 0.125rem;
 }
 
-.void-as-row {
+[data-void-as="row"] {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -54,7 +48,7 @@
     min-width: 0;
 }
 
-.void-as-row-active .void-as-row {
+.void-as-row-active [data-void-as="row"] {
     background: var(--surface-l2);
 }
 

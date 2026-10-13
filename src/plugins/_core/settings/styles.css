@@ -34,12 +34,6 @@
     flex-shrink: 0;
 }
 
-.void-settings-plugin-menu {
-    max-height: min(24rem, calc(100vh - 6rem));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
-
 .void-settings-tab-label {
     display: inline-flex;
     align-items: center;

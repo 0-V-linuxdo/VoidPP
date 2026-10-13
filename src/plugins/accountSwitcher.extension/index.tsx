@@ -234,7 +234,7 @@ function AccountRow({ account, isActive, onSwitch, onDelete }: {
 
     return (
         <div className={classes(cl("row-wrap"), isActive ? cl("row-active") : "")}>
-            <DropdownMenuItem onSelect={onSwitch} className={cl("row")}>
+            <DropdownMenuItem onSelect={onSwitch} data-void-as="row">
                 {avatarSrc
                     ? <img src={avatarSrc} alt="" className={cl("avatar")} loading="lazy" referrerPolicy="no-referrer" />
                     : <div className={cl("avatar", "avatar-fallback")}>{fallbackInitial}</div>}
@@ -270,11 +270,11 @@ function AccountMenu() {
     return (
         <>
             <DropdownMenuSub>
-                <DropdownMenuSubTrigger className={cl("trigger")}>
+                <DropdownMenuSubTrigger>
                     <UsersIcon className={cl("icon-lead")} />
                     <Text as="span" size="sm">Accounts</Text>
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className={cl("content")}>
+                <DropdownMenuSubContent data-void-as="content">
                     {accounts.length > 0 && (
                         <div className={cl("heading")}>
                             <Text as="span" size="xs" color="secondary">Saved Accounts</Text>
@@ -290,7 +290,7 @@ function AccountMenu() {
                         />
                     ))}
                     {accounts.length > 0 && <DropdownMenuSeparator />}
-                    <DropdownMenuItem onSelect={() => user && void saveCurrent(user)} disabled={!user} className={cl("save")}>
+                    <DropdownMenuItem onSelect={() => user && void saveCurrent(user)} disabled={!user}>
                         {hasCurrent ? <RefreshCwIcon className={cl("icon-lead")} /> : <PlusIcon className={cl("icon-lead")} />}
                         <Text as="span" size="sm">{hasCurrent ? "Update current account" : "Save current account"}</Text>
                     </DropdownMenuItem>

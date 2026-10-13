@@ -154,7 +154,7 @@ function VoidPPMenu() {
                             <UnplugIcon className={cl("menu-icon")} />
                             Plugins
                         </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className={cl("plugin-menu")}>
+                        <DropdownMenuSubContent maxHeight="lg">
                             {menuPlugins.map(name => {
                                 const Icon = plugins[name].icon ?? UnplugIcon;
                                 return (

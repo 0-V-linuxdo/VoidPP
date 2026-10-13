@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261012.2
+// @version      20261013.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261012.2] v1.0.0 — A modification for grok.com
+ * Void++ [20261013.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4313,6 +4313,46 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function lazyExport(name) {
     return LazyComponent(name, () => findExportedComponent(name));
   }
+  var DROPDOWN_ROOTS = ["DropdownMenu", "DropdownMenuContent", "DropdownMenuTrigger"];
+  function isDropdownModule(mod) {
+    if (mod == null || typeof mod !== "object")
+      return false;
+    const exp = mod;
+    return DROPDOWN_ROOTS.every((key) => exp[key] != null);
+  }
+  function isStyledDropdown(mod) {
+    const item = mod.DropdownMenuItem;
+    return typeof item === "function" && getFnSource(item).includes("useKeepLegacy");
+  }
+  var styledDropdown = null;
+  var legacyDropdown = null;
+  var dropdownCacheSize = -1;
+  function dropdownModule() {
+    if (styledDropdown)
+      return styledDropdown;
+    let legacy = legacyDropdown;
+    for (const [, exp] of getModuleCache()) {
+      try {
+        if (!isDropdownModule(exp))
+          continue;
+        if (isStyledDropdown(exp)) {
+          styledDropdown = exp;
+          return exp;
+        }
+        if (!legacy)
+          legacy = exp;
+      } catch {}
+    }
+    legacyDropdown = legacy;
+    const size = getModuleCache().size;
+    if (legacy && size === dropdownCacheSize)
+      return legacy;
+    dropdownCacheSize = size;
+    return null;
+  }
+  function dropdownLazy(name) {
+    return LazyComponent(name, () => dropdownModule()?.[name] ?? null);
+  }
   var buttonLazy = createModuleLazy("Button", "IconButton");
   var Button = buttonLazy("Button");
   function buttonWithTooltip(props) {
@@ -4356,19 +4396,18 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var DrawerHeader = drawerLazy("DrawerHeader");
   var DrawerTitle = drawerLazy("DrawerTitle");
   var ResponsiveDialog = drawerLazy("ResponsiveDialog");
-  var dropdownMenuLazy = createModuleLazy("DropdownMenu", "DropdownMenuContent", "DropdownMenuTrigger");
-  var DropdownMenu = dropdownMenuLazy("DropdownMenu");
-  var DropdownMenuTrigger = dropdownMenuLazy("DropdownMenuTrigger");
-  var DropdownMenuContent = dropdownMenuLazy("DropdownMenuContent");
-  var DropdownMenuItem = dropdownMenuLazy("DropdownMenuItem");
-  var DropdownMenuCheckboxItem = dropdownMenuLazy("DropdownMenuCheckboxItem");
-  var DropdownMenuRadioGroup = dropdownMenuLazy("DropdownMenuRadioGroup");
-  var DropdownMenuRadioItem = dropdownMenuLazy("DropdownMenuRadioItem");
-  var DropdownMenuSeparator = dropdownMenuLazy("DropdownMenuSeparator");
-  var DropdownMenuSub = dropdownMenuLazy("DropdownMenuSub");
-  var DropdownMenuSubTrigger = dropdownMenuLazy("DropdownMenuSubTrigger");
-  var DropdownMenuSubContent = dropdownMenuLazy("DropdownMenuSubContent");
-  var DropdownMenuPortal = dropdownMenuLazy("DropdownMenuPortal");
+  var DropdownMenu = dropdownLazy("DropdownMenu");
+  var DropdownMenuTrigger = dropdownLazy("DropdownMenuTrigger");
+  var DropdownMenuContent = dropdownLazy("DropdownMenuContent");
+  var DropdownMenuItem = dropdownLazy("DropdownMenuItem");
+  var DropdownMenuCheckboxItem = dropdownLazy("DropdownMenuCheckboxItem");
+  var DropdownMenuRadioGroup = dropdownLazy("DropdownMenuRadioGroup");
+  var DropdownMenuRadioItem = dropdownLazy("DropdownMenuRadioItem");
+  var DropdownMenuSeparator = dropdownLazy("DropdownMenuSeparator");
+  var DropdownMenuSub = dropdownLazy("DropdownMenuSub");
+  var DropdownMenuSubTrigger = dropdownLazy("DropdownMenuSubTrigger");
+  var DropdownMenuSubContent = dropdownLazy("DropdownMenuSubContent");
+  var DropdownMenuPortal = dropdownLazy("DropdownMenuPortal");
   var hoverCardLazy = createModuleLazy("HoverCard", "HoverCardContent", "HoverCardTrigger");
   var HoverCard = hoverCardLazy("HoverCard");
   var HoverCardContent = hoverCardLazy("HoverCardContent");
@@ -6629,12 +6668,6 @@ ${root}::-webkit-scrollbar-thumb:hover {
     margin-inline-end: 0.5rem;
     color: var(--fg-secondary);
     flex-shrink: 0;
-}
-
-.void-settings-plugin-menu {
-    max-height: min(24rem, calc(100vh - 6rem));
-    overflow-y: auto;
-    overscroll-behavior: contain;
 }
 
 .void-settings-tab-label {
@@ -9114,9 +9147,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261012.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ab5788e"}`
-    }, `(${"ab5788e"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261013.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"0086c27"}`
+    }, `(${"0086c27"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9153,7 +9186,7 @@ button .void-info-hint {
     }), "Void++"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, null, menuPlugins.length > 0 && /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(UnplugIcon, {
       className: cl17("menu-icon")
     }), "Plugins"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, {
-      className: cl17("plugin-menu")
+      maxHeight: "lg"
     }, menuPlugins.map((name) => {
       const Icon = plugins[name].icon ?? UnplugIcon;
       return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
@@ -24227,15 +24260,12 @@ Neon rain in a quiet city`
     color: var(--fg-danger);
 }
 
-.void-ci-trigger {
-    gap: 0.5rem;
-}
-
 .void-ci-menu-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
+    width: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -24410,26 +24440,26 @@ Neon rain in a quiet city`
     }, [conversationId]);
     if (!presets.length)
       return null;
-    return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, {
-      className: cl25("trigger")
-    }, /* @__PURE__ */ React.createElement(BookIcon, {
+    return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, null, /* @__PURE__ */ React.createElement(BookIcon, {
       size: 16
     }), " Instructions"), /* @__PURE__ */ React.createElement(MenuSubContent, null, /* @__PURE__ */ React.createElement(MenuItem, {
-      onSelect: () => assign(),
+      onSelect: () => assign()
+    }, /* @__PURE__ */ React.createElement("span", {
       className: cl25("menu-item")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm"
     }, "None"), !activePresetId && /* @__PURE__ */ React.createElement(CheckIcon, {
       className: "size-3.5 shrink-0"
-    })), presets.map((p) => /* @__PURE__ */ React.createElement(MenuItem, {
+    }))), presets.map((p) => /* @__PURE__ */ React.createElement(MenuItem, {
       key: p.id,
-      onSelect: () => assign(p.id),
+      onSelect: () => assign(p.id)
+    }, /* @__PURE__ */ React.createElement("span", {
       className: cl25("menu-item")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "sm"
     }, p.name || "Untitled"), activePresetId === p.id && /* @__PURE__ */ React.createElement(CheckIcon, {
       className: "size-3.5 shrink-0"
-    })))));
+    }))))));
   }
   var customInstructions_default = definePlugin({
     name: "CustomInstructions",
@@ -32820,12 +32850,6 @@ html.void-rt-open [data-sidebar="gap"] {
     padding: 0.25rem 0.5rem 0.125rem;
     pointer-events: none;
 }
-
-.void-sf-menu {
-    max-height: min(24rem, calc(100vh - 6rem));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
 `);
 
   // src/plugins/settingsFlyout/icons.tsx
@@ -33038,7 +33062,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(CogIcon, {
       className: cl30("menu-icon")
     }), "Settings"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, {
-      className: cl30("menu")
+      maxHeight: "lg"
     }, showOpen && /* @__PURE__ */ React.createElement(DropdownMenuItem, {
       onSelect: (e) => openTab(undefined, onOpen, e)
     }, /* @__PURE__ */ React.createElement(CogIcon, {
@@ -35438,7 +35462,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1791400125000;
   betterNavigator_default.updatedAt = 1791839284000;
   betterQueue_default.updatedAt = 1791658451000;
-  betterQuotes_default.updatedAt = 1791676681000;
+  betterQuotes_default.updatedAt = 1791844386000;
   betterSidebar_default.updatedAt = 1791658451000;
   chatListStatus_default.updatedAt = 1791658451000;
   chatStateFavicons_default.updatedAt = 1789921507000;

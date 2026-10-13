@@ -182,18 +182,22 @@ function InstructionsMenu({ conversationId }: ContextMenuLocationMap["conversati
 
     return (
         <MenuSub>
-            <MenuSubTrigger className={cl("trigger")}>
+            <MenuSubTrigger>
                 <BookIcon size={16} /> Instructions
             </MenuSubTrigger>
             <MenuSubContent>
-                <MenuItem onSelect={() => assign()} className={cl("menu-item")}>
-                    <Text size="sm">None</Text>
-                    {!activePresetId && <CheckIcon className="size-3.5 shrink-0" />}
+                <MenuItem onSelect={() => assign()}>
+                    <span className={cl("menu-item")}>
+                        <Text size="sm">None</Text>
+                        {!activePresetId && <CheckIcon className="size-3.5 shrink-0" />}
+                    </span>
                 </MenuItem>
                 {presets.map(p => (
-                    <MenuItem key={p.id} onSelect={() => assign(p.id)} className={cl("menu-item")}>
-                        <Text size="sm">{p.name || "Untitled"}</Text>
-                        {activePresetId === p.id && <CheckIcon className="size-3.5 shrink-0" />}
+                    <MenuItem key={p.id} onSelect={() => assign(p.id)}>
+                        <span className={cl("menu-item")}>
+                            <Text size="sm">{p.name || "Untitled"}</Text>
+                            {activePresetId === p.id && <CheckIcon className="size-3.5 shrink-0" />}
+                        </span>
                     </MenuItem>
                 ))}
             </MenuSubContent>

@@ -189,7 +189,7 @@ function SettingsMenu({ onOpen }: { onOpen?: (event?: Event) => void }) {
                 <CogIcon className={cl("menu-icon")} />
                 Settings
             </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className={cl("menu")}>
+            <DropdownMenuSubContent maxHeight="lg">
                 {showOpen && (
                     <DropdownMenuItem onSelect={e => openTab(undefined, onOpen, e)}>
                         <CogIcon className={cl("menu-icon")} />
