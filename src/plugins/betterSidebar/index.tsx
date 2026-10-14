@@ -15,8 +15,9 @@ import { PanelLeftIcon, PlusIcon } from "@components/icons";
 import { Text } from "@components/Text";
 import { SidebarComponents } from "@turbopack/common/components";
 import { getPlanName } from "@turbopack/common/plan";
+import { subscriptionIsCommerce, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
 import { createElement, Fragment, React, useRef, useState } from "@turbopack/common/react";
-import { ChatPageStore, ConversationStore, RoutingStore, SessionStore, SubscriptionsStore } from "@turbopack/common/stores";
+import { ChatPageStore, ConversationStore, RoutingStore, SessionStore } from "@turbopack/common/stores";
 import { findByProps } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classNameFactory, disableStyle, enableStyle } from "@utils/css";
@@ -400,7 +401,7 @@ const ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
 function UserCard({ AvatarMenu }: { AvatarMenu: ComponentType }) {
     const { open } = SidebarComponents.useSidebar();
     const { user } = SessionStore.useSession();
-    const bestSubscription = SubscriptionsStore.useSubscriptionsStore(s => s.bestSubscription);
+    const snapshot = useSubscriptionSnapshot();
     const cardRef = useRef<HTMLDivElement>(null);
 
     if (!open || !user) return <AvatarMenu />;
@@ -419,7 +420,7 @@ function UserCard({ AvatarMenu }: { AvatarMenu: ComponentType }) {
                     {user.givenName ?? user.email?.split("@")[0] ?? "User"}
                 </Text>
                 <Text as="span" size="xs" color="secondary" className={cl("plan")}>
-                    {getPlanName(bestSubscription, user.xSubscriptionType)}
+                    {getPlanName(snapshot.bestSubscription, user.xSubscriptionType, subscriptionIsCommerce(snapshot))}
                 </Text>
             </Flex>
         </div>

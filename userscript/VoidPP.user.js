@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261013.1
+// @version      20261014.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261013.1] v1.0.0 — A modification for grok.com
+ * Void++ [20261014.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -5893,15 +5893,77 @@ ${root}::-webkit-scrollbar-thumb:hover {
     SUBSCRIPTION_TIER_X_PREMIUM_PLUS: "X Premium+",
     SUBSCRIPTION_TIER_SUPER_GROK_LITE: "SuperGrok Lite",
     SUBSCRIPTION_TIER_GROK_PRO: "SuperGrok",
-    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "SuperGrok Pro"
+    SUBSCRIPTION_TIER_SUPER_GROK_PLUS: "SuperGrok Plus",
+    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "SuperGrok Heavy"
+  };
+  var COMMERCE_PLAN_NAMES = {
+    SUBSCRIPTION_TIER_SUPER_GROK_LITE: "Plus",
+    SUBSCRIPTION_TIER_GROK_PRO: "Premium",
+    SUBSCRIPTION_TIER_SUPER_GROK_PLUS: "Super",
+    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "Ultra"
   };
   var X_SUB_NAMES = {
     PremiumPlus: "SuperGrok",
     Premium: "X Premium",
     Basic: "X Basic"
   };
-  function getPlanName(bestSubscription, xSubscriptionType) {
+  function getPlanName(bestSubscription, xSubscriptionType, commerce = false) {
+    if (commerce && bestSubscription) {
+      const unified = COMMERCE_PLAN_NAMES[bestSubscription];
+      if (unified)
+        return unified;
+    }
     return (bestSubscription ? PLAN_NAMES[bestSubscription] : undefined) ?? (xSubscriptionType ? X_SUB_NAMES[xSubscriptionType] : undefined) ?? "Free";
+  }
+
+  // src/turbopack/common/subscriptions.ts
+  var COMMERCE_BILLING = "BILLING_SYSTEM_COMMERCE";
+  var SubscriptionsApi = findByPropsLazy("useSubscriptions", "getSubscriptionTierName");
+  var QueryClientApi = findByPropsLazy("getQueryClient");
+  function legacyHook() {
+    const store = SubscriptionsStore.useSubscriptionsStore;
+    if (typeof store === "function" && typeof store.getState === "function") {
+      return store;
+    }
+    return null;
+  }
+  function modernHook() {
+    const hook = SubscriptionsApi.useSubscriptions;
+    return typeof hook === "function" ? hook : null;
+  }
+  function cachedSnapshot() {
+    try {
+      const client = QueryClientApi.getQueryClient?.();
+      const data = client?.getQueryCache?.().find?.({ queryKey: ["subscriptions"] })?.state?.data;
+      if (data && typeof data === "object")
+        return data;
+    } catch {}
+    return {};
+  }
+  function useSubscriptionSnapshot() {
+    const modern = modernHook();
+    if (modern)
+      return modern() ?? {};
+    const legacy = legacyHook();
+    if (legacy)
+      return legacy((state) => state) ?? {};
+    return cachedSnapshot();
+  }
+  function subscriptionIsCommerce(snapshot) {
+    const tier = snapshot?.bestSubscription;
+    if (!tier)
+      return false;
+    return !!snapshot.activeSubscriptions?.some((sub) => sub?.tier === tier && sub.billingSystem === COMMERCE_BILLING);
+  }
+  function subscriptionIsPaid(snapshot) {
+    if (!snapshot)
+      return false;
+    if (snapshot.isSubscribed)
+      return true;
+    if (snapshot.isSuperGrokUser || snapshot.isSuperGrokLiteUser || snapshot.isSuperGrokPlusUser || snapshot.isSuperGrokProUser || snapshot.isEnterpriseUser || snapshot.hasXSubscription || snapshot.isXPremiumUser)
+      return true;
+    const tier = snapshot.bestSubscription;
+    return !!tier && tier !== "SUBSCRIPTION_TIER_INVALID";
   }
 
   // src/plugins/betterSidebar/index.tsx
@@ -6263,7 +6325,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function UserCard({ AvatarMenu }) {
     const { open } = SidebarComponents.useSidebar();
     const { user } = SessionStore.useSession();
-    const bestSubscription = SubscriptionsStore.useSubscriptionsStore((s) => s.bestSubscription);
+    const snapshot = useSubscriptionSnapshot();
     const cardRef = useRef(null);
     if (!open || !user)
       return /* @__PURE__ */ React.createElement(AvatarMenu, null);
@@ -6292,7 +6354,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       size: "xs",
       color: "secondary",
       className: cl5("plan")
-    }, getPlanName(bestSubscription, user.xSubscriptionType))));
+    }, getPlanName(snapshot.bestSubscription, user.xSubscriptionType, subscriptionIsCommerce(snapshot)))));
   }
   var selection = createSelectionStore();
   var CONVERSATION_PAGE = "chat";
@@ -9147,9 +9209,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261013.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"0086c27"}`
-    }, `(${"0086c27"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261014.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4bc7107"}`
+    }, `(${"4bc7107"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -34842,13 +34904,10 @@ button:has(.void-ud-trigger > .void-ud-label) {
   function readPlan() {
     if (isBotPage())
       return false;
-    let bestSubscription;
-    try {
-      bestSubscription = SubscriptionsStore.useSubscriptionsStore.getState().bestSubscription;
-    } catch {
-      bestSubscription = undefined;
-    }
-    return getPlanName(bestSubscription, sessionUser()?.xSubscriptionType) === "Free";
+    const snapshot = useSubscriptionSnapshot();
+    if (subscriptionIsPaid(snapshot))
+      return false;
+    return getPlanName(snapshot.bestSubscription, sessionUser()?.xSubscriptionType, subscriptionIsCommerce(snapshot)) === "Free";
   }
   function triggerLabel(isFree, percent, loading, showPercent) {
     if (isFree)
@@ -35449,7 +35508,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1791660888000;
-  settings_default.updatedAt = 1791660888000;
+  settings_default.updatedAt = 1791911974000;
   chatBarButtons_default.updatedAt = 1791660269000;
   contextMenu_default.updatedAt = 1791658451000;
   autoCollapse_default.updatedAt = 1787789817000;
@@ -35473,7 +35532,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   composerOpacity_default.updatedAt = 1791226275000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customGreeting_default.updatedAt = 1791660269000;
-  customInstructions_default.updatedAt = 1791226275000;
+  customInstructions_default.updatedAt = 1791911974000;
   customSidebarIdentity_default.updatedAt = 1791226275000;
   downloadTTS_default.updatedAt = 1787870966000;
   experiments_default.updatedAt = 1791226275000;
@@ -35491,7 +35550,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   pluginsFlyout_default.updatedAt = 1791226275000;
   recentTopics_default.updatedAt = 1791658451000;
   responseNotification_default.updatedAt = 1790093417000;
-  settingsFlyout_default.updatedAt = 1791656586000;
+  settingsFlyout_default.updatedAt = 1791911974000;
   skillBlocker_default.updatedAt = 1791758395000;
   stableComposer_default.updatedAt = 1789125421000;
   starry_default.updatedAt = 1787870966000;

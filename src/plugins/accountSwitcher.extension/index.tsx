@@ -14,8 +14,9 @@ import { ErrorBoundary } from "@components/ErrorBoundary";
 import { TrashIcon, UsersRoundIcon } from "@components/icons";
 import type { GrokUser } from "@grok-types/common/User";
 import { getPlanName } from "@turbopack/common/plan";
+import { readSubscriptionSnapshot, subscriptionIsCommerce } from "@turbopack/common/subscriptions";
 import { React, useState } from "@turbopack/common/react";
-import { SessionStore, SubscriptionsStore } from "@turbopack/common/stores";
+import { SessionStore } from "@turbopack/common/stores";
 import { findExportedComponentLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
@@ -157,7 +158,7 @@ async function persistCurrent(user: GrokUser): Promise<SavedAccount> {
         snapshotAvatar(user.profileImageUrl),
     ]);
     const fallbackLabel = user.givenName || user.email.split("@")[0] || "Account";
-    const { bestSubscription } = SubscriptionsStore.useSubscriptionsStore.getState();
+    const snapshot = readSubscriptionSnapshot();
 
     const account: SavedAccount = {
         id,
@@ -167,7 +168,7 @@ async function persistCurrent(user: GrokUser): Promise<SavedAccount> {
         givenName: user.givenName,
         profileImageUrl: user.profileImageUrl,
         profileImageData: profileImageData ?? accounts[existingIdx]?.profileImageData,
-        plan: getPlanName(bestSubscription, user.xSubscriptionType),
+        plan: getPlanName(snapshot.bestSubscription, user.xSubscriptionType, subscriptionIsCommerce(snapshot)),
         encryptedCookies,
         savedAt: Date.now(),
     };

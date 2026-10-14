@@ -13,10 +13,10 @@ import { Button, ConfirmDialog, Flex, Input, Paragraph, Switch, Text } from "@co
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { CircleGaugeIcon } from "@components/icons";
 import { VoidPPDialogShell } from "@components/settings/tabs/VoidPPDialogShell";
-import type { GrokSubscription } from "@grok-types";
 import { getPlanName } from "@turbopack/common/plan";
+import { subscriptionIsCommerce, subscriptionIsPaid, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
 import { React, useCallback, useEffect, useRef, useState } from "@turbopack/common/react";
-import { RoutingStore, SessionStore, SubscriptionsStore } from "@turbopack/common/stores";
+import { RoutingStore, SessionStore } from "@turbopack/common/stores";
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
@@ -268,13 +268,13 @@ function onStreamEnd() {
 
 function readPlan() {
     if (isBotPage()) return false;
-    let bestSubscription: GrokSubscription["tier"];
-    try {
-        bestSubscription = SubscriptionsStore.useSubscriptionsStore.getState().bestSubscription;
-    } catch {
-        bestSubscription = undefined;
-    }
-    return getPlanName(bestSubscription, sessionUser()?.xSubscriptionType) === "Free";
+    const snapshot = useSubscriptionSnapshot();
+    if (subscriptionIsPaid(snapshot)) return false;
+    return getPlanName(
+        snapshot.bestSubscription,
+        sessionUser()?.xSubscriptionType,
+        subscriptionIsCommerce(snapshot),
+    ) === "Free";
 }
 
 function triggerLabel(isFree: boolean, percent: number | null, loading: boolean, showPercent: boolean): string | null {
