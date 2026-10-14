@@ -71,15 +71,24 @@ export function getRuntimeModuleCache(): Record<number, TurbopackModule> | null 
     return runtimeModuleCache;
 }
 let lastSyncRtCount = 0;
+// A runtime slot can exist before `exports` is filled. Key count then stays
+// put, so a count-only bail would never cache that module.
+const pendingRuntimeIds = new Set<number>();
 export function syncLazyModules(): void {
     if (!runtimeModuleCache) return;
     const keys = Object.keys(runtimeModuleCache);
-    if (keys.length === lastSyncRtCount) return;
-    for (const id of keys) {
-        const numId = Number(id);
+    if (keys.length === lastSyncRtCount && pendingRuntimeIds.size === 0) return;
+
+    if (keys.length !== lastSyncRtCount) {
+        pendingRuntimeIds.clear();
+        for (const id of keys) pendingRuntimeIds.add(Number(id));
+    }
+
+    for (const numId of pendingRuntimeIds) {
         const mod = runtimeModuleCache[numId];
         if (mod?.exports == null) continue;
         if (!moduleCache.has(numId)) notifyModuleLoaded(mod.exports, numId);
+        if (moduleCache.has(numId)) pendingRuntimeIds.delete(numId);
     }
     lastSyncRtCount = keys.length;
 }

@@ -65,6 +65,7 @@ let dropdownCacheSize = -1;
 
 function dropdownModule(): Record<string, ComponentType> | null {
     if (styledDropdown) return styledDropdown;
+    syncLazyModules();
     let legacy = legacyDropdown;
     for (const [, exp] of getModuleCache()) {
         try {
