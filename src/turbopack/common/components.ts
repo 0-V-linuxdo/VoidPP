@@ -28,7 +28,7 @@ import type {
 import type { ComponentType } from "react";
 
 import { getFnSource } from "../fnSource";
-import { getModuleCache } from "../patchTurbopack";
+import { getModuleCache, syncLazyModules } from "../patchTurbopack";
 import { filters, findByProps, findByPropsLazy, findExportedComponent, waitFor } from "../turbopack";
 import { type AnyComponent, createElement, LazyComponent } from "./react";
 import { SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle } from "./settingsPrimitives";
