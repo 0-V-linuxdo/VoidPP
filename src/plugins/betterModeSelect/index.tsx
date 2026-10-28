@@ -811,11 +811,15 @@ export default definePlugin({
         {
             find: "data-query-bar-mode-select",
             all: true,
-            group: true,
             replacement: [
+                {
+                    match: /\{compact:\i\|\|\i,(?=onOpenChange:)/,
+                    replace: "{compact:!0,",
+                },
                 {
                     match: /ModeSelect,\{compact:\i\|\|\i,/,
                     replace: "ModeSelect,{compact:!0,",
+                    noWarn: true,
                 },
                 {
                     match: /\},"mode-select"\),/,
@@ -825,10 +829,17 @@ export default definePlugin({
         },
         {
             find: "connected_apps:",
-            replacement: {
-                match: /connected_apps:(\i)=>\(0,(\i)\.jsx\)\(\i\.ConnectorsIcon,\{size:\1\/4\}\)/,
-                replace: "connected_apps:$1=>(0,$2.jsx)($self.HeavyGlyph,{size:$1})",
-            },
+            replacement: [
+                {
+                    match: /connected_apps:(\i)=>\(0,(\i)\.jsx\)\(\i(?:\.\i)?,\{size:\1\/4\}\)/,
+                    replace: "connected_apps:$1=>(0,$2.jsx)($self.HeavyGlyph,{size:$1})",
+                },
+                {
+                    match: /connected_apps:(\i)=>\(0,(\i)\.jsx\)\(\i\.ConnectorsIcon,\{size:\1\/4\}\)/,
+                    replace: "connected_apps:$1=>(0,$2.jsx)($self.HeavyGlyph,{size:$1})",
+                    noWarn: true,
+                },
+            ],
         },
     ],
 });

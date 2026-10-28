@@ -59,6 +59,32 @@ function isStyledDropdown(mod: Record<string, ComponentType>): boolean {
     return typeof item === "function" && getFnSource(item).includes("useKeepLegacy");
 }
 
+/** Desktop menu parts. `String(fn)` is the factory body (`menu:` / `keepLegacy`), not the `name:"DropdownMenu…",Legacy:` call. Radix still exports `DropdownMenuSub`; reject `__scopeDropdownMenu`. */
+function readStyledDropdown(mod: Record<string, unknown>): Record<string, ComponentType> | null {
+    const mapped: Record<string, ComponentType> = {};
+    for (const value of Object.values(mod)) {
+        if (typeof value !== "function") continue;
+        let src: string;
+        try {
+            src = getFnSource(value);
+        } catch {
+            continue;
+        }
+        if (src.includes("__scopeDropdownMenu") || src.includes("__scopeMenu")) continue;
+        const fromCall = /name:"(DropdownMenu[A-Za-z]*)",Legacy:/.exec(src)?.[1];
+        const displayName = (value as { displayName?: unknown }).displayName;
+        const fromName = typeof displayName === "string" && /^DropdownMenu[A-Za-z]*$/.test(displayName)
+            && (src.includes("keepLegacy") || src.includes("menu:"))
+            ? displayName
+            : "";
+        const name = fromCall || fromName;
+        if (!name || mapped[name]) continue;
+        mapped[name] = value as ComponentType;
+    }
+    if (!mapped.DropdownMenu || !mapped.DropdownMenuItem || !mapped.DropdownMenuSub || !mapped.DropdownMenuSubTrigger) return null;
+    return mapped;
+}
+
 let styledDropdown: Record<string, ComponentType> | null = null;
 let legacyDropdown: Record<string, ComponentType> | null = null;
 let dropdownCacheSize = -1;
@@ -69,6 +95,12 @@ function dropdownModule(): Record<string, ComponentType> | null {
     let legacy = legacyDropdown;
     for (const [, exp] of getModuleCache()) {
         try {
+            if (exp == null || typeof exp !== "object") continue;
+            const styled = readStyledDropdown(exp as Record<string, unknown>);
+            if (styled) {
+                styledDropdown = styled;
+                return styled;
+            }
             if (!isDropdownModule(exp)) continue;
             if (isStyledDropdown(exp)) {
                 styledDropdown = exp;

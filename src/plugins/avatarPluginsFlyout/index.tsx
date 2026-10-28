@@ -333,7 +333,15 @@ export default definePlugin({
 
     patches: [
         {
+            find: '"skills-and-connectors"!==',
+            replacement: {
+                match: /(\(0,\i\.jsx\)\(\i(?:\.\i)?,\{icon:.{0,180}?onClick:\(\)=>\{"skills-and-connectors")/,
+                replace: "false&&$1",
+            },
+        },
+        {
             find: "usePluginsDialogStore.getState().setOpen(!0)",
+            noWarn: true,
             replacement: {
                 match: /(\(0,\i\.jsx\)\(\i\.AppSidebarItem,\{icon:.{0,80}?onClick:\(\)=>\{"skills-and-connectors")/,
                 replace: "false&&$1",
@@ -350,10 +358,17 @@ export default definePlugin({
         {
             find: "avatar_menu_click",
             all: true,
-            replacement: {
-                match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,240}"user-dropdown\.help")/,
-                replace: "$self._renderItem(),",
-            },
+            replacement: [
+                {
+                    match: /(?=\(0,\i\.jsxs\)\(\i\.W,\{children:\[\(0,\i\.jsxs\)\(\i\.f,\{ref:\i,children:\[.{0,260}"user-dropdown\.help")/,
+                    replace: "$self._renderItem(),",
+                },
+                {
+                    match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,240}"user-dropdown\.help")/,
+                    replace: "$self._renderItem(),",
+                    noWarn: true,
+                },
+            ],
         },
         {
             find: "SkillsAndConnectorsPage:handleTabChange",

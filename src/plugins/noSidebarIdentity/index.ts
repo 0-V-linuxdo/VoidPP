@@ -65,8 +65,9 @@ export default definePlugin({
             all: true,
             replacement: [
                 {
-                    // `(email||@handle)&&jsx(DropdownMenuLabel,{children:jsx("span",{className:"block max-w-[400px] truncate"`
-                    match: /\((\i)\.user\.email\|\|(\i)\)&&(?=\(0,\i\.jsx\)\(\i\.DropdownMenuLabel,\{children:\(0,\i\.jsx\)\("span",\{className:"block max-w-\[400px\] truncate")/,
+                    // `(email||@handle)&&jsx(d.B,{children:jsx("span",{className:"block max-w-[400px] truncate"`
+                    // also the older `jsx(mod.DropdownMenuLabel,{…` shape.
+                    match: /\((\i)\.user\.email\|\|(\i)\)&&(?=\(0,\i\.jsx\)\(\i(?:\.\i)?,\{children:\(0,\i\.jsx\)\("span",\{className:"block max-w-\[400px\] truncate")/,
                     replace: "!$self.settings.store.hideEmail&&($1.user.email||$2)&&",
                 },
                 {

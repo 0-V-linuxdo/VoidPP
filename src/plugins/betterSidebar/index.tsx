@@ -538,7 +538,15 @@ export default definePlugin({
 
     patches: [
         {
+            find: "avatarSize:\"md\",accountInfoSlot:",
+            replacement: {
+                match: /\(0,(\i)\.jsx\)\((\i)\.Z,\{expanded:!0,/,
+                replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.Z,",
+            },
+        },
+        {
             find: "AvatarDropdownMenu,{expanded:",
+            noWarn: true,
             replacement: {
                 match: /\(0,(\i)\.jsx\)\((\i)\.AvatarDropdownMenu,\{/,
                 replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.AvatarDropdownMenu,",
@@ -562,15 +570,19 @@ export default definePlugin({
         {
             find: "\"Editing actions\",\"Editing actions\"",
             all: true,
-            group: true,
             replacement: [
                 {
                     match: /=(\(0,\i\.jsx\)\(\i,\{title:\i,editing:\i,[^}]{0,80}?validationErrorMessage:\i[^}]{0,40}?\}\))/,
                     replace: "=$self._wrapCheckbox($1,arguments[0].id,arguments[0].route)",
                 },
                 {
+                    match: /onClick:(\i),onDoubleClick:/g,
+                    replace: "onClick:$self._wrapSidebarClick($1,arguments[0].id,arguments[0].route),onDoubleClick:",
+                },
+                {
                     match: /\(0,(\i)\.handleIsolateClick\)\((\i)\),(\i)\?\.\(\2\)/,
                     replace: "(0,$1.handleIsolateClick)($2),$self._wrapSidebarClick($3,arguments[0].id,arguments[0].route)?.($2)",
+                    noWarn: true,
                 },
             ],
         },

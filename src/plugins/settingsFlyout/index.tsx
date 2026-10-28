@@ -229,10 +229,17 @@ export default definePlugin({
         {
             find: '"user-dropdown.settings","Settings"',
             all: true,
-            replacement: {
-                match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{on(?:Select|Click):(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
-                replace: "$self._renderSettingsMenu($1)",
-            },
+            replacement: [
+                {
+                    match: /\(0,\i\.jsxs?\)\(\i\.r,\{on(?:Select|Click):(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i(?:\.\i)?,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
+                    replace: "$self._renderSettingsMenu($1)",
+                },
+                {
+                    match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{on(?:Select|Click):(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
+                    replace: "$self._renderSettingsMenu($1)",
+                    noWarn: true,
+                },
+            ],
         },
     ],
 });

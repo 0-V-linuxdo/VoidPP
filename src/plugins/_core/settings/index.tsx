@@ -237,10 +237,17 @@ export default definePlugin({
         {
             find: "avatar_menu_click",
             all: true,
-            replacement: {
-                match: /\(0,(\i)\.jsxs\)\((\i)\.DropdownMenuSub,\{children:\[\(0,\1\.jsxs\)\(\2\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,240}"user-dropdown\.help"/,
-                replace: "$self._renderVoidPPMenu(),$&",
-            },
+            replacement: [
+                {
+                    match: /(?=\(0,\i\.jsxs\)\(\i\.W,\{children:\[\(0,\i\.jsxs\)\(\i\.f,\{ref:\i,children:\[.{0,260}"user-dropdown\.help")/,
+                    replace: "$self._renderVoidPPMenu(),",
+                },
+                {
+                    match: /\(0,(\i)\.jsxs\)\((\i)\.DropdownMenuSub,\{children:\[\(0,\1\.jsxs\)\(\2\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,240}"user-dropdown\.help"/,
+                    replace: "$self._renderVoidPPMenu(),$&",
+                    noWarn: true,
+                },
+            ],
         },
         {
             find: "pressed_cmd_settings",
@@ -257,16 +264,24 @@ export default definePlugin({
                 {
                     match: /(\["general","grok","payments","data","other"),("team-management"\])/,
                     replace: '$1,"voidpp",$2',
+                    noWarn: true,
                 },
                 {
                     match: /(case"other":return \i\("settings-nav-group\.other","Other"\);)(case"team-management":)/,
                     replace: '$1case"voidpp":return"Void++";$2',
                 },
                 {
-                    match: /default:return\(0,\i\.logError\)\("SettingsDialog:tabLabel",`No label for settings tab \${(\i)\.id}`\),\1\.id/,
+                    match: /default:return\(0,\i(?:\.\i)?\)\("SettingsDialog:tabLabel",`No label for settings tab \${(\i)\.id}`\),\1\.id/,
                     replace: "default:return $self._tabLabel($1)",
                 },
             ],
+        },
+        {
+            find: '["general","grok","payments","data","other","team-management"]',
+            replacement: {
+                match: /(\["general","grok","payments","data","other"),("team-management"\])/,
+                replace: '$1,"voidpp",$2',
+            },
         },
         {
             find: '"SettingsTitle",0,',

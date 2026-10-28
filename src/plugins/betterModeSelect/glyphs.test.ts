@@ -30,7 +30,9 @@ describe("keepHarvestedGlyph", () => {
 });
 
 const LIVE = "connected_apps:e=>(0,t.jsx)(h.ConnectorsIcon,{size:e/4})";
+const LIVE_SHORT = "connected_apps:e=>(0,i.jsx)(p.f,{size:e/4})";
 const HEAVY_ICON_MATCH = canonicalizeMatch(/connected_apps:(\i)=>\(0,(\i)\.jsx\)\(\i\.ConnectorsIcon,\{size:\1\/4\}\)/);
+const HEAVY_SHORT_MATCH = canonicalizeMatch(/connected_apps:(\i)=>\(0,(\i)\.jsx\)\(\i(?:\.\i)?,\{size:\1\/4\}\)/);
 
 describe("heavy icon patch", () => {
     test("rewrites the connected_apps hint off ConnectorsIcon", () => {
@@ -39,8 +41,14 @@ describe("heavy icon patch", () => {
         expect(isConnectorsGlyph(next)).toBe(false);
     });
 
+    test("rewrites the short export glyph", () => {
+        const next = LIVE_SHORT.replace(HEAVY_SHORT_MATCH, "connected_apps:$1=>(0,$2.jsx)($self.HeavyGlyph,{size:$1})");
+        expect(next).toBe("connected_apps:e=>(0,i.jsx)($self.HeavyGlyph,{size:e})");
+    });
+
     test("does not touch the Connectors menu row", () => {
         const row = "(0,t.jsx)(T.ConnectorsIcon,{size:4})";
         expect(row.replace(HEAVY_ICON_MATCH, "nope")).toBe(row);
+        expect(row.replace(HEAVY_SHORT_MATCH, "nope")).toBe(row);
     });
 });

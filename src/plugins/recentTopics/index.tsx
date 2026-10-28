@@ -2391,7 +2391,7 @@ export default definePlugin({
             find: "response-family:handleEditSave",
             all: true,
             replacement: {
-                match: /\(0,\i\.jsx\)\(\i\.MessageBubble,\{isUser:\i,isIncognito:\i,responseId:(\i)\.responseId/,
+                match: /\(0,\i\.jsx\)\(\i(?:\.\i)?,\{isUser:\i,isIncognito:\i,responseId:(\i)\.responseId/,
                 replace: "$self._mark({response:$1}),$&",
             },
         },

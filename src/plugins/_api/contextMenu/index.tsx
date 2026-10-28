@@ -29,7 +29,6 @@ export default definePlugin({
         {
             find: '"Editing actions","Editing actions"',
             all: true,
-            group: true,
             replacement: [
                 {
                     match: /\(0,(\i)\.jsx\)\((\i),\{editing:/,
@@ -44,12 +43,20 @@ export default definePlugin({
                     replace: "(0,$1.jsx)($2,{id:arguments[0].id,components:",
                 },
                 {
+                    // Delete row is `jsxs(Item,{onSelect:()=>fn(),variant:"destructive",children:[icon??jsx(d.f,{size:4.5}),label??t("Delete","Delete")]})`.
+                    // `arguments[0].components` is `{Item,Sub,SubTrigger,SubContent}`. A miss here must not roll back the id threading above.
+                    match: /(?=\(0,\i\.jsxs\)\(\i,\{onSelect:\(\)=>\i\(\),variant:"destructive",children:\[\i\?\?\(0,\i\.jsx\)\(\i(?:\.\i)?,\{size:[^}]+\}\),\i\?\?\i\("Delete","Delete"\)\])/,
+                    replace: '$self.renderItems("conversation",{conversationId:arguments[0].id},arguments[0].components),',
+                },
+                {
                     match: /Item:(\i)\.(Dropdown|Context)MenuItem,/g,
                     replace: "$&VoidPPMenu:{Item:$1.$2MenuItem,Sub:$1.$2MenuSub,SubTrigger:$1.$2MenuSubTrigger,SubContent:$1.$2MenuSubContent,Separator:$1.$2MenuSeparator},",
+                    noWarn: true,
                 },
                 {
                     match: /(\[)(\i)&&(\(0,\i\.jsx\)\(\i,\{\}\)),(\(0,\i\.jsxs?\)\(\i,\{onSelect:\(\)=>\i\(\),variant:"destructive",children:\[\i\?\?\(0,\i\.jsx\)\(\i\.Trash(?:can)?Icon)/,
                     replace: '$1$2&&$3,$self.renderItems("conversation",{conversationId:arguments[0].id},arguments[0].components.VoidPPMenu),$4',
+                    noWarn: true,
                 },
             ],
         },
@@ -88,10 +95,17 @@ export default definePlugin({
         {
             find: '"user-dropdown.upgrade","Upgrade plan"',
             all: true,
-            replacement: {
-                match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
-                replace: '$self.renderItems("user"),$1',
-            },
+            replacement: [
+                {
+                    match: /(?=\(0,\i\.jsxs?\)\(\i\.r,\{on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i(?:\.\i)?,\{size:4\}\)\}\),\i\("user-dropdown\.sign-out","Sign Out"\))/,
+                    replace: '$self.renderItems("user"),',
+                },
+                {
+                    match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
+                    replace: '$self.renderItems("user"),$1',
+                    noWarn: true,
+                },
+            ],
         },
     ],
 });

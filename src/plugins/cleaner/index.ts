@@ -113,10 +113,18 @@ export default definePlugin({
         {
             find: '"user-dropdown.upgrade","Upgrade plan"',
             all: true,
-            replacement: {
-                match: /(\i(?:\|\|\i){3}\|\|null!==\i&&"pending"!==\i)\?null:(?=\jsx{\i\.DropdownMenuItem}\{.{0,260}"user-dropdown\.upgrade","Upgrade plan")/,
-                replace: "($self.settings.store.hideUpgradePlan||($1))?null:",
-            },
+            replacement: [
+                {
+                    // `(a||b||c||d||e||null!==x&&"pending"!==x)?null:(0,t.jsxs)(d.r,{onClick,…"Upgrade plan")`
+                    match: /(\i(?:\|\|\i){2,8}\|\|null!==\i&&"pending"!==\i)\?null:(?=\(0,\i\.jsxs?\)\(\i(?:\.\i)?,\{on(?:Select|Click):\i,children:\[[\s\S]{0,360}?"user-dropdown\.upgrade","Upgrade plan")/,
+                    replace: "($self.settings.store.hideUpgradePlan||($1))?null:",
+                },
+                {
+                    match: /(\i(?:\|\|\i){3}\|\|null!==\i&&"pending"!==\i)\?null:(?=\jsx{\i\.DropdownMenuItem}\{.{0,260}"user-dropdown\.upgrade","Upgrade plan")/,
+                    replace: "($self.settings.store.hideUpgradePlan||($1))?null:",
+                    noWarn: true,
+                },
+            ],
         },
         {
             find: "UPSELL_CARD_PRIORITY)",
