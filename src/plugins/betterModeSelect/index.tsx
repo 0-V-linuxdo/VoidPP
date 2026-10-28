@@ -848,8 +848,11 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
-                    match: /\},"mode-select"\),/,
-                    replace: "$&$self.renderPinned(),",
+                    // React Compiler stores the control as `t3=cond&&jsx(...,"mode-select"),cache=t3`
+                    // and renders `children:[t3,…]`. A comma after `},"mode-select"),` is discarded.
+                    // Wrap the jsx so the cached value flattens to [chips, control] in that row.
+                    match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
+                    replace: "[$self.renderPinned(),$&]",
                 },
             ],
         },

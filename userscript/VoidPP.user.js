@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.5
+// @version      20261028.6
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.5] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.6] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9353,9 +9353,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ebf2419"}`
-    }, `(${"ebf2419"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"fce3332"}`
+    }, `(${"fce3332"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9619,8 +9619,8 @@ button .void-info-hint {
         all: true,
         replacement: [
           {
-            match: /\},"mode-select"\),/,
-            replace: "$&$self.renderButtons(),"
+            match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
+            replace: "[$&,$self.renderButtons()]"
           },
           {
             match: /style:\i(?:\|\|\i)*\?void 0:(\{paddingInlineEnd:\i\})/,
@@ -11814,8 +11814,8 @@ html.void-cms-picked .void-cms-ghost {
             noWarn: true
           },
           {
-            match: /\},"mode-select"\),/,
-            replace: "$&$self.renderPinned(),"
+            match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
+            replace: "[$self.renderPinned(),$&]"
           }
         ]
       },
@@ -35769,9 +35769,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1791226275000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1793174778000;
+  betterModeSelect_default.updatedAt = 1793180938000;
   betterNavigator_default.updatedAt = 1791839284000;
-  betterQueue_default.updatedAt = 1791658451000;
+  betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1791844386000;
   betterSidebar_default.updatedAt = 1793176926000;
   chatListStatus_default.updatedAt = 1791658451000;

@@ -40,8 +40,10 @@ export default definePlugin({
             all: true,
             replacement: [
                 {
-                    match: /\},"mode-select"\),/,
-                    replace: "$&$self.renderButtons(),",
+                    // Same compiler temp as BetterModeSelect. Nesting `[jsx, buttons]` inside
+                    // `[pins, jsx]` still flattens to pins, control, buttons.
+                    match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
+                    replace: "[$&,$self.renderButtons()]",
                 },
                 {
                     match: /style:\i(?:\|\|\i)*\?void 0:(\{paddingInlineEnd:\i\})/,
