@@ -17,7 +17,7 @@ import { Logger } from "@utils/Logger";
 import { mapGetOrCreate, pageWindow } from "@utils/misc";
 
 import { afterEnqueue, noteEnqueue } from "./persist";
-import { gatewaySendMode, keepBuildPreference, sessionNeedsUpdate } from "./modeSend";
+import { gatewaySendMode, keepBuildPreference, sessionModelMatches, sessionNeedsUpdate } from "./modeSend";
 import { settings } from "./settings";
 
 const logger = new Logger("ModeSync");
@@ -588,7 +588,12 @@ function followModelMode() {
         storedModel = "";
     }
     if (privateBuild() && slug === "auto" && storedModel === "build") hidBuild = true;
-    const modes = ModesStore.useModesStore.getState();
+    let modes: ReturnType<typeof ModesStore.useModesStore.getState>;
+    try {
+        modes = ModesStore.useModesStore.getState();
+    } catch {
+        return;
+    }
     const selected = modeSlug(String(modes.selectedModeId || ""));
     if (selected !== slug) {
         applying = true;
@@ -934,7 +939,7 @@ function settleWaiters(cid: string, slug: string) {
     if (!list?.length) return;
     const keep: SessionWaiter[] = [];
     for (const waiter of list) {
-        if (slug && waiter.slug === slug) {
+        if (slug && sessionModelMatches(slug, waiter.slug)) {
             clearTimeout(waiter.timer);
             waiter.done(true);
         } else keep.push(waiter);
@@ -945,7 +950,7 @@ function settleWaiters(cid: string, slug: string) {
 
 function waitSessionAck(cid: string, slug: string): Promise<boolean> {
     const key = cid || "*";
-    if (modeSlug(ackedModel.get(key) ?? "") === slug || (key !== "*" && modeSlug(ackedModel.get("*") ?? "") === slug)) return Promise.resolve(true);
+    if (sessionModelMatches(ackedModel.get(key), slug) || (key !== "*" && sessionModelMatches(ackedModel.get("*"), slug))) return Promise.resolve(true);
     return new Promise(resolve => {
         const waiter: SessionWaiter = {
             slug,
@@ -1019,7 +1024,8 @@ let alignGen = 0;
 
 /**
  * Wait until `session.created` / `session.updated` names this slug.
- * A pending lease update keeps waiting. Two nudges with no ack cancel the send.
+ * A pending lease update keeps waiting. Two nudges with no ack still send:
+ * dropping the frame leaves an optimistic turn that vanishes on refresh.
  */
 function alignSessionToChip(cid: string, slug: string): Promise<boolean> {
     const key = cid || "*";
@@ -1031,7 +1037,7 @@ function alignSessionToChip(cid: string, slug: string): Promise<boolean> {
         if (gen !== alignGen) return Promise.resolve(false);
         return waitSessionAck(key, slug).then(ok => {
             if (gen !== alignGen) return false;
-            if (ok || modeSlug(ackedModel.get(key) ?? "") === slug) return true;
+            if (ok || sessionModelMatches(ackedModel.get(key), slug)) return true;
             if (updateInFlight(key, slug) && pending < MAX_PENDING) {
                 logger.info("session update pending", key, slug);
                 return arm(pass, pending + 1);
@@ -1085,10 +1091,7 @@ function hookSocket() {
                 const slug = sendSlug();
                 if (needsSessionAlign(cid, slug)) {
                     alignSessionToChip(cid, slug).then(ok => {
-                        if (!ok) {
-                            logger.info("session align cancelled", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
-                            return;
-                        }
+                        if (!ok) logger.info("session align gave up", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
                         try { orig.call(this, data); } catch (e) { logger.debug("held send failed", e); }
                     });
                     return;

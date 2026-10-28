@@ -46,6 +46,15 @@ export function keepBuildPreference(privateChat: boolean, substituted: boolean, 
     return privateChat && substituted && settled === "auto" && stored === "build";
 }
 
+/** True when the acked session model is the chip. Build Beta acks `grok-build-*`, not `build`. */
+export function sessionModelMatches(acked: string | undefined, want: string): boolean {
+    const need = modeSlug(want);
+    if (!need) return true;
+    const have = modeSlug(acked ?? "");
+    if (have === need) return true;
+    return need === "build" && have.includes("build");
+}
+
 /**
  * Hold `response.create` until the acked session model is this chip.
  * An unknown ack (just refreshed, or `session.created` not seen yet) blocks.
@@ -53,10 +62,8 @@ export function keepBuildPreference(privateChat: boolean, substituted: boolean, 
  * A chip that already matches the ack does not wait.
  */
 export function sessionNeedsUpdate(acked: string | undefined, chip: string, hasSession: boolean): boolean {
+    void hasSession;
     const want = modeSlug(chip);
     if (!want) return false;
-    const have = modeSlug(acked ?? "");
-    if (have === want) return false;
-    void hasSession;
-    return true;
+    return !sessionModelMatches(acked, chip);
 }

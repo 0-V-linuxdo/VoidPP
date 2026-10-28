@@ -14,6 +14,7 @@ import type { ModesStoreState } from "@grok-types/stores/ModesStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React } from "@turbopack/common/react";
 import { ChatPageStore, MessageStore, ModesStore, RoutingStore, SettingsStore as GrokSettings } from "@turbopack/common/stores";
+import { onModuleLoad } from "@turbopack/patchTurbopack";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -719,11 +720,18 @@ function PinOrderEditor() {
     );
 }
 
+function chipOn(selected: string, id: string): boolean {
+    const cur = selected.toLowerCase();
+    if (cur === id) return true;
+    return id === "build" && cur.includes("build");
+}
+
 function PinnedModes() {
     const cfg = settings.use([...SETTING_KEYS]);
     const page = RoutingStore.useRoutingStore((s: RoutingStoreState) => s.route.page);
-    const selectedModeId = ModesStore.useModesStore((s: ModesStoreState) => s.selectedModeId);
-    const catalog = ModesStore.useModesStore((s: ModesStoreState) => s.modes);
+    const selectedModeId = String(ModesStore.useModesStore((s: ModesStoreState) => s.selectedModeId) || "");
+    const listed = ModesStore.useModesStore((s: ModesStoreState) => s.modes);
+    const catalog = Array.isArray(listed) ? listed : [];
     const incognito = GrokSettings.useSettingsStore(s => s.isIncognito);
     const routeTemporary = RoutingStore.useRoutingStore(s => !!s.route.temporary);
     const routeCid = RoutingStore.useRoutingStore(s => s.route.conversationId ?? "");
@@ -754,13 +762,26 @@ function PinnedModes() {
                         icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels} />}
                         tooltip={m.label}
                         onClick={onPin(m.id)}
-                        className={classes(cl("pin"), selectedModeId === m.id && cl("on"), showLabels && cl("labeled"), "hover:bg-button-ghost-hover")}
+                        className={classes(cl("pin"), chipOn(selectedModeId, m.id) && cl("on"), showLabels && cl("labeled"), "hover:bg-button-ghost-hover")}
                         aria-label={m.label}
                     />
                 </span>
             ))}
         </div>
     );
+}
+
+function PinnedHost() {
+    const ready = typeof ModesStore.useModesStore === "function";
+    const [, bump] = React.useState(0);
+    React.useEffect(() => {
+        if (ready) return;
+        return onModuleLoad(() => {
+            if (typeof ModesStore.useModesStore === "function") bump(n => n + 1);
+        });
+    }, [ready]);
+    if (!ready) return null;
+    return <PinnedModes />;
 }
 
 export default definePlugin({
@@ -775,7 +796,12 @@ export default definePlugin({
     startAt: StartAt.TurbopackReady,
 
     start() {
-        void ModesStore.useModesStore.getState().ensureLoaded();
+        try {
+            const hook = ModesStore.useModesStore;
+            if (typeof hook === "function") void hook.getState().ensureLoaded();
+        } catch (e) {
+            logger.debug("modes not ready", e);
+        }
         bindModelHotkey();
         watchIncognitoMenu();
         try {
@@ -801,7 +827,7 @@ export default definePlugin({
         harvestListeners.clear();
     },
 
-    renderPinned: ErrorBoundary.wrap(PinnedModes),
+    renderPinned: ErrorBoundary.wrap(PinnedHost),
 
     HeavyGlyph({ size }: { size?: number | string }) {
         return <ConnectedAppsIcon size={size ?? 18} />;

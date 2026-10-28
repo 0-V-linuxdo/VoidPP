@@ -6,7 +6,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { gatewaySendMode, keepBuildPreference, sessionNeedsUpdate, type SendModeInput } from "./modeSend";
+import { gatewaySendMode, keepBuildPreference, sessionModelMatches, sessionNeedsUpdate, type SendModeInput } from "./modeSend";
 
 function input(partial: Partial<SendModeInput>): SendModeInput {
     return {
@@ -85,7 +85,10 @@ describe("sessionNeedsUpdate", () => {
         expect(sessionNeedsUpdate("heavy", "heavy", true)).toBe(false);
         expect(sessionNeedsUpdate("heavy", "heavy", false)).toBe(false);
         expect(sessionNeedsUpdate("MODEL_MODE_BUILD", "build", true)).toBe(false);
+        expect(sessionNeedsUpdate("grok-build-0.1", "build", true)).toBe(false);
         expect(sessionNeedsUpdate("MODEL_MODE_BUILD", "heavy", true)).toBe(true);
+        expect(sessionModelMatches("grok-build-0.1", "build")).toBe(true);
+        expect(sessionModelMatches("grok-build-0.1", "heavy")).toBe(false);
     });
 
     test("an unknown ack or a session that is not up yet blocks the send", () => {

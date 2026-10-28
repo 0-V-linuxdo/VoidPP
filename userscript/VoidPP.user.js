@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.4
+// @version      20261028.5
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.4] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.5] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -2288,20 +2288,30 @@ ${sourceUrl}`;
   var FilesPageStore = findByPropsLazy("useFilesPageStore", "useAssetsList");
   var MediaStore = findByPropsLazy("useMediaStore", "useImagineModeStore");
   var MessageStore = findByPropsLazy("useMessageStore", "nodeToResponse");
+  function isModesHook(value) {
+    if (!isZustandStore(value))
+      return false;
+    try {
+      const state = value.getState();
+      return !!state && typeof state === "object" && "selectedModeId" in state && typeof state.setSelectedModeId === "function" && typeof state.ensureLoaded === "function";
+    } catch {
+      return false;
+    }
+  }
   function modesHook() {
-    const legacy = find((mod) => typeof mod?.useModesStore === "function" && typeof mod.useModesStore.getState === "function");
+    const legacy = find((mod) => isModesHook(mod?.useModesStore));
     if (legacy?.useModesStore)
       return legacy.useModesStore;
-    return find((value) => {
-      if (!isZustandStore(value))
-        return false;
-      try {
-        const state = value.getState();
-        return !!state && typeof state === "object" && "selectedModeId" in state && Array.isArray(state.modes) && typeof state.ensureLoaded === "function" && typeof state.setSelectedModeId === "function";
-      } catch {
-        return false;
+    for (const id of Object.keys(search("useModesStore"))) {
+      const mod = requireModule(Number(id));
+      if (!mod || typeof mod !== "object")
+        continue;
+      for (const value of Object.values(mod)) {
+        if (isModesHook(value))
+          return value;
       }
-    });
+    }
+    return find(isModesHook) ?? null;
   }
   var ModesStore = proxyLazy(() => {
     const hook = modesHook();
@@ -9343,9 +9353,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2b05c65"}`
-    }, `(${"2b05c65"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ebf2419"}`
+    }, `(${"ebf2419"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11675,11 +11685,18 @@ html.void-cms-picked .void-cms-ghost {
       })));
     })));
   }
+  function chipOn(selected, id) {
+    const cur = selected.toLowerCase();
+    if (cur === id)
+      return true;
+    return id === "build" && cur.includes("build");
+  }
   function PinnedModes() {
     const cfg = settings11.use([...SETTING_KEYS]);
     const page = RoutingStore.useRoutingStore((s) => s.route.page);
-    const selectedModeId = ModesStore.useModesStore((s) => s.selectedModeId);
-    const catalog = ModesStore.useModesStore((s) => s.modes);
+    const selectedModeId = String(ModesStore.useModesStore((s) => s.selectedModeId) || "");
+    const listed = ModesStore.useModesStore((s) => s.modes);
+    const catalog = Array.isArray(listed) ? listed : [];
     const incognito = SettingsStore.useSettingsStore((s) => s.isIncognito);
     const routeTemporary = RoutingStore.useRoutingStore((s) => !!s.route.temporary);
     const routeCid = RoutingStore.useRoutingStore((s) => s.route.conversationId ?? "");
@@ -11715,9 +11732,24 @@ html.void-cms-picked .void-cms-ghost {
       }),
       tooltip: m.label,
       onClick: onPin(m.id),
-      className: classes(cl19("pin"), selectedModeId === m.id && cl19("on"), showLabels && cl19("labeled"), "hover:bg-button-ghost-hover"),
+      className: classes(cl19("pin"), chipOn(selectedModeId, m.id) && cl19("on"), showLabels && cl19("labeled"), "hover:bg-button-ghost-hover"),
       "aria-label": m.label
     }))));
+  }
+  function PinnedHost() {
+    const ready = typeof ModesStore.useModesStore === "function";
+    const [, bump] = React.useState(0);
+    React.useEffect(() => {
+      if (ready)
+        return;
+      return onModuleLoad(() => {
+        if (typeof ModesStore.useModesStore === "function")
+          bump((n) => n + 1);
+      });
+    }, [ready]);
+    if (!ready)
+      return null;
+    return /* @__PURE__ */ React.createElement(PinnedModes, null);
   }
   var betterModeSelect_default = definePlugin({
     name: "BetterModeSelect",
@@ -11730,7 +11762,13 @@ html.void-cms-picked .void-cms-ghost {
     managedStyle: "betterModeSelect",
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
-      ModesStore.useModesStore.getState().ensureLoaded();
+      try {
+        const hook = ModesStore.useModesStore;
+        if (typeof hook === "function")
+          hook.getState().ensureLoaded();
+      } catch (e) {
+        logger22.debug("modes not ready", e);
+      }
       bindModelHotkey();
       watchIncognitoMenu();
       try {
@@ -11755,7 +11793,7 @@ html.void-cms-picked .void-cms-ghost {
       harvested.clear();
       harvestListeners.clear();
     },
-    renderPinned: ErrorBoundary.wrap(PinnedModes),
+    renderPinned: ErrorBoundary.wrap(PinnedHost),
     HeavyGlyph({ size }) {
       return /* @__PURE__ */ React.createElement(ConnectedAppsIcon, {
         size: size ?? 18
@@ -15001,14 +15039,20 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function keepBuildPreference(privateChat, substituted, settled, stored) {
     return privateChat && substituted && settled === "auto" && stored === "build";
   }
+  function sessionModelMatches(acked, want) {
+    const need = modeSlug(want);
+    if (!need)
+      return true;
+    const have = modeSlug(acked ?? "");
+    if (have === need)
+      return true;
+    return need === "build" && have.includes("build");
+  }
   function sessionNeedsUpdate(acked, chip, hasSession) {
     const want = modeSlug(chip);
     if (!want)
       return false;
-    const have = modeSlug(acked ?? "");
-    if (have === want)
-      return false;
-    return true;
+    return !sessionModelMatches(acked, chip);
   }
 
   // src/plugins/betterQueue/settings.ts
@@ -15560,7 +15604,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (privateBuild2() && slug === "auto" && storedModel === "build")
       hidBuild = true;
-    const modes = ModesStore.useModesStore.getState();
+    let modes;
+    try {
+      modes = ModesStore.useModesStore.getState();
+    } catch {
+      return;
+    }
     const selected = modeSlug2(String(modes.selectedModeId || ""));
     if (selected !== slug) {
       applying = true;
@@ -15930,7 +15979,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     const keep = [];
     for (const waiter of list) {
-      if (slug && waiter.slug === slug) {
+      if (slug && sessionModelMatches(slug, waiter.slug)) {
         clearTimeout(waiter.timer);
         waiter.done(true);
       } else
@@ -15943,7 +15992,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function waitSessionAck(cid, slug) {
     const key = cid || "*";
-    if (modeSlug2(ackedModel.get(key) ?? "") === slug || key !== "*" && modeSlug2(ackedModel.get("*") ?? "") === slug)
+    if (sessionModelMatches(ackedModel.get(key), slug) || key !== "*" && sessionModelMatches(ackedModel.get("*"), slug))
       return Promise.resolve(true);
     return new Promise((resolve) => {
       const waiter = {
@@ -16031,7 +16080,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return waitSessionAck(key, slug).then((ok) => {
         if (gen !== alignGen)
           return false;
-        if (ok || modeSlug2(ackedModel.get(key) ?? "") === slug)
+        if (ok || sessionModelMatches(ackedModel.get(key), slug))
           return true;
         if (updateInFlight(key, slug) && pending < MAX_PENDING) {
           logger25.info("session update pending", key, slug);
@@ -16088,10 +16137,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           const slug = sendSlug();
           if (needsSessionAlign(cid, slug)) {
             alignSessionToChip(cid, slug).then((ok) => {
-              if (!ok) {
-                logger25.info("session align cancelled", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
-                return;
-              }
+              if (!ok)
+                logger25.info("session align gave up", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
               try {
                 orig.call(this, data);
               } catch (e) {
@@ -35726,7 +35773,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1791839284000;
   betterQueue_default.updatedAt = 1791658451000;
   betterQuotes_default.updatedAt = 1791844386000;
-  betterSidebar_default.updatedAt = 1793175588000;
+  betterSidebar_default.updatedAt = 1793176926000;
   chatListStatus_default.updatedAt = 1791658451000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1793174778000;
