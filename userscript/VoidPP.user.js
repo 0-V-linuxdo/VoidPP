@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.6
+// @version      20261028.7
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.6] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -2287,7 +2287,21 @@ ${sourceUrl}`;
   var FeatureStore = findByPropsLazy("useFeatureStore");
   var FilesPageStore = findByPropsLazy("useFilesPageStore", "useAssetsList");
   var MediaStore = findByPropsLazy("useMediaStore", "useImagineModeStore");
-  var MessageStore = findByPropsLazy("useMessageStore", "nodeToResponse");
+  function hookFromFactory(label, accept) {
+    const legacy = find((mod) => accept(mod?.[label]));
+    if (legacy && accept(legacy[label]))
+      return legacy[label];
+    for (const id of Object.keys(search(label))) {
+      const mod = requireModule(Number(id));
+      if (!mod || typeof mod !== "object")
+        continue;
+      for (const value of Object.values(mod)) {
+        if (accept(value))
+          return value;
+      }
+    }
+    return find(accept) ?? null;
+  }
   function isModesHook(value) {
     if (!isZustandStore(value))
       return false;
@@ -2298,32 +2312,44 @@ ${sourceUrl}`;
       return false;
     }
   }
-  function modesHook() {
-    const legacy = find((mod) => isModesHook(mod?.useModesStore));
-    if (legacy?.useModesStore)
-      return legacy.useModesStore;
-    for (const id of Object.keys(search("useModesStore"))) {
-      const mod = requireModule(Number(id));
-      if (!mod || typeof mod !== "object")
-        continue;
-      for (const value of Object.values(mod)) {
-        if (isModesHook(value))
-          return value;
-      }
+  function isRoutingHook(value) {
+    if (!isZustandStore(value))
+      return false;
+    try {
+      const state = value.getState();
+      return !!state?.route && typeof state.route === "object" && "page" in state.route && typeof state.push === "function";
+    } catch {
+      return false;
     }
-    return find(isModesHook) ?? null;
+  }
+  function isMessageHook(value) {
+    if (!isZustandStore(value))
+      return false;
+    try {
+      const state = value.getState();
+      return !!state && typeof state.conversations === "object" && state.conversations !== null;
+    } catch {
+      return false;
+    }
   }
   var ModesStore = proxyLazy(() => {
-    const hook = modesHook();
+    const hook = hookFromFactory("useModesStore", isModesHook);
     return hook ? { useModesStore: hook } : null;
   }, Infinity);
   var ResponseStore = findByPropsLazy("useResponseStore", "createOptimisticResponse");
-  var RoutingStore = findByPropsLazy("useRoutingStore", "formatUrl");
+  var RoutingStore = proxyLazy(() => {
+    const hook = hookFromFactory("useRoutingStore", isRoutingHook);
+    return hook ? { useRoutingStore: hook } : null;
+  }, Infinity);
   var SessionStore = findByPropsLazy("useSession", "SessionStoreProvider");
   var SettingsDialogStore = findByPropsLazy("useSettingsDialogStore");
   var SettingsStore = findByPropsLazy("useSettingsStore", "modelConfigOverrideSchema");
   var SubscriptionsStore = findByPropsLazy("useSubscriptionsStore");
   var TextToSpeechStore = findByPropsLazy("useTextToSpeechStore");
+  var MessageStore = proxyLazy(() => {
+    const hook = hookFromFactory("useMessageStore", isMessageHook);
+    return hook ? { useMessageStore: hook } : null;
+  }, Infinity);
 
   // src/utils/react.ts
   function findFiberKey(el) {
@@ -4444,17 +4470,79 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var CardContent = cardLazy("CardContent");
   var CardHeader = cardLazy("CardHeader");
   var CardTitle = cardLazy("CardTitle");
-  var dialogLazy = createModuleLazy("Dialog", "DialogContent", "DialogHeader");
-  var Dialog = dialogLazy("Dialog");
-  var DialogContent = dialogLazy("DialogContent");
-  var DialogHeader = dialogLazy("DialogHeader");
-  var DialogTitle = dialogLazy("DialogTitle");
-  var DialogDescription = dialogLazy("DialogDescription");
-  var DialogFooter = dialogLazy("DialogFooter");
-  var DialogClose = dialogLazy("DialogClose");
-  var DialogTrigger = dialogLazy("DialogTrigger");
-  var DialogOverlay = dialogLazy("DialogOverlay");
-  var DialogPortal = dialogLazy("DialogPortal");
+  function componentSource(value) {
+    try {
+      if (typeof value === "function")
+        return getFnSource(value);
+      const render = value && typeof value === "object" ? value.render : null;
+      if (typeof render === "function")
+        return getFnSource(render);
+    } catch {}
+    return "";
+  }
+  function readStyledDialog(mod) {
+    const entries = [];
+    for (const value of Object.values(mod)) {
+      const src = componentSource(value);
+      if (!src || src.includes("__scopeDialog"))
+        continue;
+      entries.push({ value, src });
+    }
+    const pick = (pred) => entries.find((entry) => pred(entry.src))?.value ?? null;
+    const Dialog = pick((src) => src.includes("keepLegacy") && src.includes("onOpenChange:"));
+    const DialogContent = pick((src) => src.includes("overlayClassname:"));
+    if (!Dialog || !DialogContent)
+      return null;
+    const mapped = { Dialog, DialogContent };
+    const extra = [
+      ["DialogTrigger", pick((src) => src.includes("aria-haspopup"))],
+      ["DialogClose", pick((src) => src.includes("asChild:") && src.includes("onClick:") && !src.includes("aria-haspopup"))],
+      ["DialogHeader", pick((src) => src.includes("flex flex-col") && src.includes("layout:") && !src.includes("overlayClassname:"))],
+      ["DialogTitle", pick((src) => src.includes("DialogTitle"))],
+      ["DialogDescription", pick((src) => src.includes("DialogDescription"))],
+      ["DialogFooter", pick((src) => src.includes("DialogFooter") && src.includes("orientation:"))]
+    ];
+    for (const [key, value] of extra)
+      if (value)
+        mapped[key] = value;
+    return mapped;
+  }
+  var styledDialog = null;
+  function dialogModule() {
+    if (styledDialog)
+      return styledDialog;
+    syncLazyModules();
+    const consider = (exp) => {
+      if (styledDialog || exp == null || typeof exp !== "object")
+        return;
+      const read = readStyledDialog(exp);
+      if (read)
+        styledDialog = read;
+    };
+    for (const [, exp] of getModuleCache())
+      consider(exp);
+    if (styledDialog)
+      return styledDialog;
+    for (const id of Object.keys(search("overlayClassname:"))) {
+      consider(requireModule(Number(id)));
+      if (styledDialog)
+        return styledDialog;
+    }
+    return null;
+  }
+  function dialogPart(name) {
+    return LazyComponent(name, () => dialogModule()?.[name] ?? findExportedComponent(name));
+  }
+  var Dialog = dialogPart("Dialog");
+  var DialogContent = dialogPart("DialogContent");
+  var DialogHeader = dialogPart("DialogHeader");
+  var DialogTitle = dialogPart("DialogTitle");
+  var DialogDescription = dialogPart("DialogDescription");
+  var DialogFooter = dialogPart("DialogFooter");
+  var DialogClose = dialogPart("DialogClose");
+  var DialogTrigger = dialogPart("DialogTrigger");
+  var DialogOverlay = dialogPart("DialogOverlay");
+  var DialogPortal = dialogPart("DialogPortal");
   var drawerLazy = createModuleLazy("Drawer", "DrawerContent", "DrawerTrigger");
   var Drawer = drawerLazy("Drawer");
   var DrawerContent = drawerLazy("DrawerContent");
@@ -9353,9 +9441,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"fce3332"}`
-    }, `(${"fce3332"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5b799cf"}`
+    }, `(${"5b799cf"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11247,8 +11335,12 @@ html.void-cms-picked .void-cms-ghost {
       const route = RoutingStore.useRoutingStore.getState().route;
       if (route?.temporary)
         return true;
-      const chat = ChatPageStore.useChatPageStore.getState();
-      const cid = String(route?.conversationId || chat.conversationId || chat.optimisticConversationId || "");
+      let cid = String(route?.conversationId || "");
+      const chatHook = ChatPageStore.useChatPageStore;
+      if (!cid && typeof chatHook === "function") {
+        const chat = chatHook.getState();
+        cid = String(chat.conversationId || chat.optimisticConversationId || "");
+      }
       if (!cid)
         return false;
       const conv = MessageStore.useMessageStore.getState().conversations[cid];
@@ -11691,17 +11783,19 @@ html.void-cms-picked .void-cms-ghost {
       return true;
     return id === "build" && cur.includes("build");
   }
+  function storesReady() {
+    return typeof ModesStore.useModesStore === "function" && typeof RoutingStore.useRoutingStore === "function" && typeof MessageStore.useMessageStore === "function" && typeof SettingsStore.useSettingsStore === "function";
+  }
   function PinnedModes() {
     const cfg = settings11.use([...SETTING_KEYS]);
-    const page = RoutingStore.useRoutingStore((s) => s.route.page);
+    const page = RoutingStore.useRoutingStore((s) => s.route?.page);
     const selectedModeId = String(ModesStore.useModesStore((s) => s.selectedModeId) || "");
     const listed = ModesStore.useModesStore((s) => s.modes);
     const catalog = Array.isArray(listed) ? listed : [];
     const incognito = SettingsStore.useSettingsStore((s) => s.isIncognito);
-    const routeTemporary = RoutingStore.useRoutingStore((s) => !!s.route.temporary);
-    const routeCid = RoutingStore.useRoutingStore((s) => s.route.conversationId ?? "");
-    const chatCid = ChatPageStore.useChatPageStore((s) => s.conversationId || s.optimisticConversationId || "");
-    const cid = String(routeCid || chatCid || "");
+    const routeTemporary = RoutingStore.useRoutingStore((s) => !!s.route?.temporary);
+    const routeCid = RoutingStore.useRoutingStore((s) => s.route?.conversationId ?? "");
+    const cid = String(routeCid || "");
     const convTemporary = MessageStore.useMessageStore((s) => !!(cid && s.conversations[cid]?.temporary));
     const hideBuild = !!(incognito || routeTemporary || convTemporary);
     const knownCatalog = catalog.filter((c) => KNOWN_IDS.has(c.id));
@@ -11737,13 +11831,13 @@ html.void-cms-picked .void-cms-ghost {
     }))));
   }
   function PinnedHost() {
-    const ready = typeof ModesStore.useModesStore === "function";
+    const ready = storesReady();
     const [, bump] = React.useState(0);
     React.useEffect(() => {
       if (ready)
         return;
       return onModuleLoad(() => {
-        if (typeof ModesStore.useModesStore === "function")
+        if (storesReady())
           bump((n) => n + 1);
       });
     }, [ready]);
@@ -35760,7 +35854,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1791660888000;
   settings_default.updatedAt = 1793174778000;
-  chatBarButtons_default.updatedAt = 1791660269000;
+  chatBarButtons_default.updatedAt = 1793189713000;
   contextMenu_default.updatedAt = 1793174778000;
   autoCollapse_default.updatedAt = 1787789817000;
   autoRetry_default.updatedAt = 1789906500000;
@@ -35769,7 +35863,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1791226275000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1793180938000;
+  betterModeSelect_default.updatedAt = 1793189713000;
   betterNavigator_default.updatedAt = 1791839284000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1791844386000;

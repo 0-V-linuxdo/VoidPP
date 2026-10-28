@@ -29,7 +29,7 @@ import type { ComponentType } from "react";
 
 import { getFnSource } from "../fnSource";
 import { getModuleCache, syncLazyModules } from "../patchTurbopack";
-import { filters, findByProps, findByPropsLazy, findExportedComponent, waitFor } from "../turbopack";
+import { filters, findByProps, findByPropsLazy, findExportedComponent, requireModule, search, waitFor } from "../turbopack";
 import { type AnyComponent, createElement, LazyComponent } from "./react";
 import { SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle } from "./settingsPrimitives";
 
@@ -146,17 +146,72 @@ export const CardContent = cardLazy<CardContentProps>("CardContent");
 export const CardHeader = cardLazy<CardHeaderProps>("CardHeader");
 export const CardTitle = cardLazy<CardTitleProps>("CardTitle");
 
-const dialogLazy = createModuleLazy("Dialog", "DialogContent", "DialogHeader");
-export const Dialog = dialogLazy<DialogProps>("Dialog");
-export const DialogContent = dialogLazy<DialogContentProps>("DialogContent");
-export const DialogHeader = dialogLazy<DialogHeaderProps>("DialogHeader");
-export const DialogTitle = dialogLazy<RadixSubProps>("DialogTitle");
-export const DialogDescription = dialogLazy<RadixSubProps>("DialogDescription");
-export const DialogFooter = dialogLazy<RadixSubProps>("DialogFooter");
-export const DialogClose = dialogLazy<RadixSubProps>("DialogClose");
-export const DialogTrigger = dialogLazy<DialogTriggerProps>("DialogTrigger");
-export const DialogOverlay = dialogLazy<DialogOverlayProps>("DialogOverlay");
-export const DialogPortal = dialogLazy<DialogPortalProps>("DialogPortal");
+function componentSource(value: unknown): string {
+    try {
+        if (typeof value === "function") return getFnSource(value);
+        const render = value && typeof value === "object" ? (value as { render?: unknown }).render : null;
+        if (typeof render === "function") return getFnSource(render);
+    } catch {}
+    return "";
+}
+
+function readStyledDialog(mod: Record<string, unknown>): Record<string, AnyComponent> | null {
+    const entries: { value: AnyComponent; src: string }[] = [];
+    for (const value of Object.values(mod)) {
+        const src = componentSource(value);
+        if (!src || src.includes("__scopeDialog")) continue;
+        entries.push({ value: value as AnyComponent, src });
+    }
+    const pick = (pred: (src: string) => boolean) => entries.find(entry => pred(entry.src))?.value ?? null;
+    const Dialog = pick(src => src.includes("keepLegacy") && src.includes("onOpenChange:"));
+    const DialogContent = pick(src => src.includes("overlayClassname:"));
+    if (!Dialog || !DialogContent) return null;
+    const mapped: Record<string, AnyComponent> = { Dialog, DialogContent };
+    const extra: [string, AnyComponent | null][] = [
+        ["DialogTrigger", pick(src => src.includes("aria-haspopup"))],
+        ["DialogClose", pick(src => src.includes("asChild:") && src.includes("onClick:") && !src.includes("aria-haspopup"))],
+        ["DialogHeader", pick(src => src.includes("flex flex-col") && src.includes("layout:") && !src.includes("overlayClassname:"))],
+        ["DialogTitle", pick(src => src.includes("DialogTitle"))],
+        ["DialogDescription", pick(src => src.includes("DialogDescription"))],
+        ["DialogFooter", pick(src => src.includes("DialogFooter") && src.includes("orientation:"))],
+    ];
+    for (const [key, value] of extra) if (value) mapped[key] = value;
+    return mapped;
+}
+
+let styledDialog: Record<string, AnyComponent> | null = null;
+
+function dialogModule(): Record<string, AnyComponent> | null {
+    if (styledDialog) return styledDialog;
+    syncLazyModules();
+    const consider = (exp: unknown) => {
+        if (styledDialog || exp == null || typeof exp !== "object") return;
+        const read = readStyledDialog(exp as Record<string, unknown>);
+        if (read) styledDialog = read;
+    };
+    for (const [, exp] of getModuleCache()) consider(exp);
+    if (styledDialog) return styledDialog;
+    for (const id of Object.keys(search("overlayClassname:"))) {
+        consider(requireModule(Number(id)));
+        if (styledDialog) return styledDialog;
+    }
+    return null;
+}
+
+function dialogPart<P = {}>(name: string): ComponentType<P> {
+    return LazyComponent(name, () => (dialogModule()?.[name] ?? findExportedComponent(name)) as AnyComponent | null) as unknown as ComponentType<P>;
+}
+
+export const Dialog = dialogPart<DialogProps>("Dialog");
+export const DialogContent = dialogPart<DialogContentProps>("DialogContent");
+export const DialogHeader = dialogPart<DialogHeaderProps>("DialogHeader");
+export const DialogTitle = dialogPart<RadixSubProps>("DialogTitle");
+export const DialogDescription = dialogPart<RadixSubProps>("DialogDescription");
+export const DialogFooter = dialogPart<RadixSubProps>("DialogFooter");
+export const DialogClose = dialogPart<RadixSubProps>("DialogClose");
+export const DialogTrigger = dialogPart<DialogTriggerProps>("DialogTrigger");
+export const DialogOverlay = dialogPart<DialogOverlayProps>("DialogOverlay");
+export const DialogPortal = dialogPart<DialogPortalProps>("DialogPortal");
 
 const drawerLazy = createModuleLazy("Drawer", "DrawerContent", "DrawerTrigger");
 export const Drawer = drawerLazy<DrawerProps>("Drawer");

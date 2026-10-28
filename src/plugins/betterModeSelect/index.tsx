@@ -274,8 +274,12 @@ function privateBuild(): boolean {
     try {
         const route = RoutingStore.useRoutingStore.getState().route;
         if (route?.temporary) return true;
-        const chat = ChatPageStore.useChatPageStore.getState();
-        const cid = String(route?.conversationId || chat.conversationId || chat.optimisticConversationId || "");
+        let cid = String(route?.conversationId || "");
+        const chatHook = ChatPageStore.useChatPageStore;
+        if (!cid && typeof chatHook === "function") {
+            const chat = chatHook.getState();
+            cid = String(chat.conversationId || chat.optimisticConversationId || "");
+        }
         if (!cid) return false;
         const conv = MessageStore.useMessageStore.getState().conversations[cid] as { temporary?: boolean } | undefined;
         return conv?.temporary === true;
@@ -726,17 +730,23 @@ function chipOn(selected: string, id: string): boolean {
     return id === "build" && cur.includes("build");
 }
 
+function storesReady() {
+    return typeof ModesStore.useModesStore === "function"
+        && typeof RoutingStore.useRoutingStore === "function"
+        && typeof MessageStore.useMessageStore === "function"
+        && typeof GrokSettings.useSettingsStore === "function";
+}
+
 function PinnedModes() {
     const cfg = settings.use([...SETTING_KEYS]);
-    const page = RoutingStore.useRoutingStore((s: RoutingStoreState) => s.route.page);
+    const page = RoutingStore.useRoutingStore((s: RoutingStoreState) => s.route?.page);
     const selectedModeId = String(ModesStore.useModesStore((s: ModesStoreState) => s.selectedModeId) || "");
     const listed = ModesStore.useModesStore((s: ModesStoreState) => s.modes);
     const catalog = Array.isArray(listed) ? listed : [];
     const incognito = GrokSettings.useSettingsStore(s => s.isIncognito);
-    const routeTemporary = RoutingStore.useRoutingStore(s => !!s.route.temporary);
-    const routeCid = RoutingStore.useRoutingStore(s => s.route.conversationId ?? "");
-    const chatCid = ChatPageStore.useChatPageStore(s => s.conversationId || s.optimisticConversationId || "");
-    const cid = String(routeCid || chatCid || "");
+    const routeTemporary = RoutingStore.useRoutingStore(s => !!s.route?.temporary);
+    const routeCid = RoutingStore.useRoutingStore(s => s.route?.conversationId ?? "");
+    const cid = String(routeCid || "");
     const convTemporary = MessageStore.useMessageStore(s => !!(cid && (s.conversations[cid] as { temporary?: boolean } | undefined)?.temporary));
     const hideBuild = !!(incognito || routeTemporary || convTemporary);
     const knownCatalog = catalog.filter(c => KNOWN_IDS.has(c.id));
@@ -772,12 +782,12 @@ function PinnedModes() {
 }
 
 function PinnedHost() {
-    const ready = typeof ModesStore.useModesStore === "function";
+    const ready = storesReady();
     const [, bump] = React.useState(0);
     React.useEffect(() => {
         if (ready) return;
         return onModuleLoad(() => {
-            if (typeof ModesStore.useModesStore === "function") bump(n => n + 1);
+            if (storesReady()) bump(n => n + 1);
         });
     }, [ready]);
     if (!ready) return null;
