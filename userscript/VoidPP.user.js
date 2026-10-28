@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.3
+// @version      20261028.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.3] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -2288,7 +2288,25 @@ ${sourceUrl}`;
   var FilesPageStore = findByPropsLazy("useFilesPageStore", "useAssetsList");
   var MediaStore = findByPropsLazy("useMediaStore", "useImagineModeStore");
   var MessageStore = findByPropsLazy("useMessageStore", "nodeToResponse");
-  var ModesStore = findByPropsLazy("useModesStore");
+  function modesHook() {
+    const legacy = find((mod) => typeof mod?.useModesStore === "function" && typeof mod.useModesStore.getState === "function");
+    if (legacy?.useModesStore)
+      return legacy.useModesStore;
+    return find((value) => {
+      if (!isZustandStore(value))
+        return false;
+      try {
+        const state = value.getState();
+        return !!state && typeof state === "object" && "selectedModeId" in state && Array.isArray(state.modes) && typeof state.ensureLoaded === "function" && typeof state.setSelectedModeId === "function";
+      } catch {
+        return false;
+      }
+    });
+  }
+  var ModesStore = proxyLazy(() => {
+    const hook = modesHook();
+    return hook ? { useModesStore: hook } : null;
+  }, Infinity);
   var ResponseStore = findByPropsLazy("useResponseStore", "createOptimisticResponse");
   var RoutingStore = findByPropsLazy("useRoutingStore", "formatUrl");
   var SessionStore = findByPropsLazy("useSession", "SessionStoreProvider");
@@ -4678,7 +4696,41 @@ ${root}::-webkit-scrollbar-thumb:hover {
   // src/turbopack/common/utils.ts
   var ApiClients = findByPropsLazy("chatApi", "modelsApi");
   var Toaster = findByPropsLazy("Toaster", "toast");
-  var ClassNames = findByPropsLazy("cn", "middleTruncate");
+  function cn(...inputs) {
+    const out = [];
+    const walk = (value) => {
+      if (!value)
+        return;
+      if (typeof value === "string" || typeof value === "number") {
+        out.push(String(value));
+        return;
+      }
+      if (Array.isArray(value)) {
+        for (const item of value)
+          walk(item);
+        return;
+      }
+      if (typeof value === "object") {
+        for (const [key, on] of Object.entries(value))
+          if (on)
+            out.push(key);
+      }
+    };
+    for (const input of inputs)
+      walk(input);
+    return out.join(" ");
+  }
+  function middleTruncate(text, maxLength) {
+    if (text.length <= maxLength)
+      return text;
+    if (maxLength <= 1)
+      return text.slice(0, maxLength);
+    const mark = "…";
+    const head = Math.ceil((maxLength - mark.length) / 2);
+    const tail = Math.floor((maxLength - mark.length) / 2);
+    return `${text.slice(0, head)}${mark}${text.slice(text.length - tail)}`;
+  }
+  var ClassNames = { cn, middleTruncate };
   var FileUtils = findByPropsLazy("downloadBlob");
 
   // src/components/Text.tsx
@@ -6377,13 +6429,15 @@ ${root}::-webkit-scrollbar-thumb:hover {
       size: 14
     }));
   }, null);
-  function UserCard({ AvatarMenu }) {
+  function UserCard({ AvatarMenu, ...rest }) {
     const { open } = SidebarComponents.useSidebar();
     const { user } = SessionStore.useSession();
     const snapshot = useSubscriptionSnapshot();
     const cardRef = useRef(null);
     if (!open || !user)
-      return /* @__PURE__ */ React.createElement(AvatarMenu, null);
+      return /* @__PURE__ */ React.createElement(AvatarMenu, {
+        ...rest
+      });
     const forward = (e, type) => {
       if (!e.isTrusted)
         return;
@@ -6394,7 +6448,9 @@ ${root}::-webkit-scrollbar-thumb:hover {
       className: cl5("card"),
       onPointerDown: (e) => forward(e, "pointerdown"),
       onPointerUp: (e) => forward(e, "pointerup")
-    }, /* @__PURE__ */ React.createElement(AvatarMenu, null), /* @__PURE__ */ React.createElement(Flex, {
+    }, /* @__PURE__ */ React.createElement(AvatarMenu, {
+      ...rest
+    }), /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       justifyContent: "center",
       gap: "0",
@@ -6511,7 +6567,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
         find: 'avatarSize:"md",accountInfoSlot:',
         replacement: {
           match: /\(0,(\i)\.jsx\)\((\i)\.Z,\{expanded:!0,/,
-          replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.Z,"
+          replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.Z,expanded:!0,"
         }
       },
       {
@@ -9287,9 +9343,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"70089eb"}`
-    }, `(${"70089eb"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2b05c65"}`
+    }, `(${"2b05c65"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -35670,16 +35726,16 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1791839284000;
   betterQueue_default.updatedAt = 1791658451000;
   betterQuotes_default.updatedAt = 1791844386000;
-  betterSidebar_default.updatedAt = 1793174778000;
+  betterSidebar_default.updatedAt = 1793175588000;
   chatListStatus_default.updatedAt = 1791658451000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1793174778000;
   cloneChats_default.updatedAt = 1787870966000;
-  collapseThoughts_default.updatedAt = 1791751054000;
+  collapseThoughts_default.updatedAt = 1793175588000;
   completeToast_default.updatedAt = 1791666004000;
   composerOpacity_default.updatedAt = 1791226275000;
   consoleJanitor_default.updatedAt = 1787789817000;
-  customGreeting_default.updatedAt = 1791660269000;
+  customGreeting_default.updatedAt = 1793175588000;
   customInstructions_default.updatedAt = 1791911974000;
   customSidebarIdentity_default.updatedAt = 1791226275000;
   downloadTTS_default.updatedAt = 1787870966000;
@@ -35700,7 +35756,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1793174778000;
   skillBlocker_default.updatedAt = 1791758395000;
-  stableComposer_default.updatedAt = 1789125421000;
+  stableComposer_default.updatedAt = 1793175588000;
   starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
   usageDisplay_default.updatedAt = 1792012694000;

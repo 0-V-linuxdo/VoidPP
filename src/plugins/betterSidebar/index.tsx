@@ -398,13 +398,13 @@ const ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
     );
 }, null);
 
-function UserCard({ AvatarMenu }: { AvatarMenu: ComponentType }) {
+function UserCard({ AvatarMenu, ...rest }: { AvatarMenu: ComponentType<Record<string, unknown>> }) {
     const { open } = SidebarComponents.useSidebar();
     const { user } = SessionStore.useSession();
     const snapshot = useSubscriptionSnapshot();
     const cardRef = useRef<HTMLDivElement>(null);
 
-    if (!open || !user) return <AvatarMenu />;
+    if (!open || !user) return <AvatarMenu {...rest} />;
 
     const forward = (e: React.PointerEvent, type: string) => {
         if (!e.isTrusted) return;
@@ -414,7 +414,7 @@ function UserCard({ AvatarMenu }: { AvatarMenu: ComponentType }) {
 
     return (
         <div ref={cardRef} className={cl("card")} onPointerDown={e => forward(e, "pointerdown")} onPointerUp={e => forward(e, "pointerup")}>
-            <AvatarMenu />
+            <AvatarMenu {...rest} />
             <Flex flexDirection="column" justifyContent="center" gap="0" className={cl("info")}>
                 <Text as="span" size="sm" weight="medium" className={cl("name")}>
                     {user.givenName ?? user.email?.split("@")[0] ?? "User"}
@@ -541,7 +541,7 @@ export default definePlugin({
             find: "avatarSize:\"md\",accountInfoSlot:",
             replacement: {
                 match: /\(0,(\i)\.jsx\)\((\i)\.Z,\{expanded:!0,/,
-                replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.Z,",
+                replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.Z,expanded:!0,",
             },
         },
         {

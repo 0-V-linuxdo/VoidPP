@@ -22,10 +22,41 @@ export const Toaster: {
     toast: import("@grok-types").ToastFn;
 } = findByPropsLazy("Toaster", "toast");
 
+function cn(...inputs: unknown[]): string {
+    const out: string[] = [];
+    const walk = (value: unknown) => {
+        if (!value) return;
+        if (typeof value === "string" || typeof value === "number") {
+            out.push(String(value));
+            return;
+        }
+        if (Array.isArray(value)) {
+            for (const item of value) walk(item);
+            return;
+        }
+        if (typeof value === "object") {
+            for (const [key, on] of Object.entries(value)) if (on) out.push(key);
+        }
+    };
+    for (const input of inputs) walk(input);
+    return out.join(" ");
+}
+
+function middleTruncate(text: string, maxLength: number): string {
+    if (text.length <= maxLength) return text;
+    if (maxLength <= 1) return text.slice(0, maxLength);
+    const mark = "…";
+    const head = Math.ceil((maxLength - mark.length) / 2);
+    const tail = Math.floor((maxLength - mark.length) / 2);
+    return `${text.slice(0, head)}${mark}${text.slice(text.length - tail)}`;
+}
+
+// `cn` + `middleTruncate` left the module cache. Text joins plain class strings,
+// so a local joiner is enough and does not go blank when the export is renamed.
 export const ClassNames: {
     cn: (...inputs: unknown[]) => string;
     middleTruncate: (text: string, maxLength: number) => string;
-} = findByPropsLazy("cn", "middleTruncate");
+} = { cn, middleTruncate };
 
 export const FileUtils: {
     downloadBlob: (blob: Blob, filename: string) => Promise<void>;
