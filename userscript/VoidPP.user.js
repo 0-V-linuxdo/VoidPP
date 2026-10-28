@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.2
+// @version      20261028.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.2] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -6609,15 +6609,15 @@ ${root}::-webkit-scrollbar-thumb:hover {
       {
         find: '"sidebar.section-title","Bots"',
         replacement: {
-          match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,\i\.useLocalStorage\)\("sidebar-bots-unassigned-collapsed")/,
+          match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,(?:\i\.useLocalStorage|\i\.\i)\)\("sidebar-bots-unassigned-collapsed")/,
           replace: "$self._useBotsCollapsed()"
         }
       },
       {
         find: "sidebar-history-collapsed",
         replacement: {
-          match: /useLocalStorage\)\("sidebar-history-collapsed",!1,!1\)/,
-          replace: 'useLocalStorage)("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)'
+          match: /((?:useLocalStorage\)|\(0,\i\.\i\)))\("sidebar-history-collapsed",!1,!1\)/,
+          replace: '$1("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)'
         }
       },
       {
@@ -6625,8 +6625,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
         group: true,
         replacement: [
           {
-            match: /useLocalStorage\)\("sidebar-projects-collapsed",!1,!1\)/,
-            replace: 'useLocalStorage)("sidebar-projects-collapsed",$self._projectsCollapsedInit(),!1)'
+            match: /((?:useLocalStorage\)|\(0,\i\.\i\)))\("sidebar-projects-collapsed",!1,!1\)/,
+            replace: '$1("sidebar-projects-collapsed",$self._projectsCollapsedInit(),!1)'
           },
           {
             match: /!(\i)\.current&&(\i)&&\((\i)\.length>0\|\|(\i)\.length>0\)&&\(\1\.current=!0,(\i)\(!1\)\)/,
@@ -6643,6 +6643,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       },
       {
         find: "useBotsSectionEnabled)();return",
+        noWarn: true,
         replacement: {
           match: /useBotsSectionEnabled\)\(\);return\(\(0,(\i)\.useBotsBootstrap\)\((\i)\),\2\)\?/,
           replace: "useBotsSectionEnabled)();return((0,$1.useBotsBootstrap)($2),!0)?"
@@ -6650,13 +6651,23 @@ ${root}::-webkit-scrollbar-thumb:hover {
       },
       {
         find: "shouldPaintBotsSidebar)({hasBots:",
+        noWarn: true,
         replacement: {
           match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
           replace: ""
         }
       },
       {
+        find: "teamSeatEntitled:",
+        all: true,
+        replacement: {
+          match: /if\(!\(0,\i(?:\.\i)?\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
+          replace: ""
+        }
+      },
+      {
         find: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+        noWarn: true,
         replacement: {
           match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
           replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null"
@@ -9276,9 +9287,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"c533f29"}`
-    }, `(${"c533f29"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"70089eb"}`
+    }, `(${"70089eb"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -22414,10 +22425,16 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       {
         find: 'thoughts-sidepanel.more-notes","+{{count}} more"',
         all: true,
-        replacement: {
-          match: /\.length>=2,\[(\i),(\i)\]=\(0,(\i)\.useState\)\(!0\)/,
-          replace: ".length>=($self.settings.store.collapseSingle?1:2),[$1,$2]=(0,$3.useState)(!1)"
-        }
+        replacement: [
+          {
+            match: /\.length>=2,\[(\i),(\i)\]=\(0,(\i)\.useState\)\(!0\)/,
+            replace: ".length>=($self.settings.store.collapseSingle?1:2),[$1,$2]=(0,$3.useState)(!1)"
+          },
+          {
+            match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(!0\),(\i)=(\i)\[0\]\?\.text\?\?\"\",(\i)=\5\.length>1/,
+            replace: '[$1,$2]=(0,$3.useState)(!1),$4=$5[0]?.text??"",$6=$5.length>($self.settings.store.collapseSingle?0:1)'
+          }
+        ]
       }
     ]
   });
@@ -24269,6 +24286,11 @@ Neon rain in a quiet city`
           },
           {
             match: /(\)\)\}\):)(\i)(?=,placeholderClassName:)/,
+            replace: "$1$self._inputPlaceholder($2)",
+            noWarn: true
+          },
+          {
+            match: /(newChatPlaceholder:\i\}\):)(\i)/,
             replace: "$1$self._inputPlaceholder($2)"
           }
         ]
@@ -33688,10 +33710,17 @@ html.void-rt-open [data-sidebar="gap"] {
     patches: [
       {
         find: "transformPastedHTML:",
-        replacement: {
-          match: /(transformPastedHTML:\i\}\},)\[(\i),(\i)\]\)/,
-          replace: "$1$self._deps($2,$3))"
-        }
+        replacement: [
+          {
+            match: /(transformPastedHTML:\i\}\},)\[(\i),(\i)\]\)/,
+            replace: "$1$self._deps($2,$3))",
+            noWarn: true
+          },
+          {
+            match: /(\i)=\[(\i),(\i)\](?=,\i\[\d+\]=\2,\i\[\d+\]=\3,\i\[\d+\]=\1\):\1=\i\[\d+\];let \i=\(0,\i\.\i\)\(\i,\1\))/,
+            replace: "$1=$self._deps($2,$3)"
+          }
+        ]
       }
     ]
   });
@@ -35627,24 +35656,24 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1791660888000;
-  settings_default.updatedAt = 1791911974000;
+  settings_default.updatedAt = 1793174778000;
   chatBarButtons_default.updatedAt = 1791660269000;
-  contextMenu_default.updatedAt = 1791658451000;
+  contextMenu_default.updatedAt = 1793174778000;
   autoCollapse_default.updatedAt = 1787789817000;
   autoRetry_default.updatedAt = 1789906500000;
-  avatarPluginsFlyout_default.updatedAt = 1791660269000;
+  avatarPluginsFlyout_default.updatedAt = 1793174778000;
   betterCanvas_default.updatedAt = 1791660269000;
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1791226275000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1791400125000;
+  betterModeSelect_default.updatedAt = 1793174778000;
   betterNavigator_default.updatedAt = 1791839284000;
   betterQueue_default.updatedAt = 1791658451000;
   betterQuotes_default.updatedAt = 1791844386000;
-  betterSidebar_default.updatedAt = 1792012694000;
+  betterSidebar_default.updatedAt = 1793174778000;
   chatListStatus_default.updatedAt = 1791658451000;
   chatStateFavicons_default.updatedAt = 1789921507000;
-  cleaner_default.updatedAt = 1791752505000;
+  cleaner_default.updatedAt = 1793174778000;
   cloneChats_default.updatedAt = 1787870966000;
   collapseThoughts_default.updatedAt = 1791751054000;
   completeToast_default.updatedAt = 1791666004000;
@@ -35659,17 +35688,17 @@ button:has(.void-ud-trigger > .void-ud-label) {
   incognito_default.updatedAt = 1787870966000;
   inputHistory_default.updatedAt = 1791226275000;
   messageStars_default.updatedAt = 1791682713000;
-  messageTimestamps_default.updatedAt = 1789881463000;
+  messageTimestamps_default.updatedAt = 1793174778000;
   noBuildStarters_default.updatedAt = 1789894247000;
   noDictation_default.updatedAt = 1791395540000;
   noGrokBot_default.updatedAt = 1790943206000;
   noShareLink_default.updatedAt = 1787789817000;
-  noSidebarIdentity_default.updatedAt = 1791712752000;
+  noSidebarIdentity_default.updatedAt = 1793174778000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;
-  recentTopics_default.updatedAt = 1791658451000;
+  recentTopics_default.updatedAt = 1793174778000;
   responseNotification_default.updatedAt = 1790093417000;
-  settingsFlyout_default.updatedAt = 1791911974000;
+  settingsFlyout_default.updatedAt = 1793174778000;
   skillBlocker_default.updatedAt = 1791758395000;
   stableComposer_default.updatedAt = 1789125421000;
   starry_default.updatedAt = 1787870966000;

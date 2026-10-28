@@ -639,15 +639,15 @@ export default definePlugin({
         {
             find: "\"sidebar.section-title\",\"Bots\"",
             replacement: {
-                match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,\i\.useLocalStorage\)\("sidebar-bots-unassigned-collapsed")/,
+                match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,(?:\i\.useLocalStorage|\i\.\i)\)\("sidebar-bots-unassigned-collapsed")/,
                 replace: "$self._useBotsCollapsed()",
             },
         },
         {
             find: "sidebar-history-collapsed",
             replacement: {
-                match: /useLocalStorage\)\("sidebar-history-collapsed",!1,!1\)/,
-                replace: "useLocalStorage)(\"sidebar-history-collapsed\",$self._chatsCollapsedInit(),!1)",
+                match: /((?:useLocalStorage\)|\(0,\i\.\i\)))\("sidebar-history-collapsed",!1,!1\)/,
+                replace: '$1("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)',
             },
         },
         {
@@ -655,8 +655,8 @@ export default definePlugin({
             group: true,
             replacement: [
                 {
-                    match: /useLocalStorage\)\("sidebar-projects-collapsed",!1,!1\)/,
-                    replace: "useLocalStorage)(\"sidebar-projects-collapsed\",$self._projectsCollapsedInit(),!1)",
+                    match: /((?:useLocalStorage\)|\(0,\i\.\i\)))\("sidebar-projects-collapsed",!1,!1\)/,
+                    replace: '$1("sidebar-projects-collapsed",$self._projectsCollapsedInit(),!1)',
                 },
                 {
                     match: /!(\i)\.current&&(\i)&&\((\i)\.length>0\|\|(\i)\.length>0\)&&\(\1\.current=!0,(\i)\(!1\)\)/,
@@ -673,6 +673,7 @@ export default definePlugin({
         },
         {
             find: "useBotsSectionEnabled)();return",
+            noWarn: true,
             replacement: {
                 match: /useBotsSectionEnabled\)\(\);return\(\(0,(\i)\.useBotsBootstrap\)\((\i)\),\2\)\?/,
                 replace: "useBotsSectionEnabled)();return((0,$1.useBotsBootstrap)($2),!0)?",
@@ -680,13 +681,25 @@ export default definePlugin({
         },
         {
             find: "shouldPaintBotsSidebar)({hasBots:",
+            noWarn: true,
             replacement: {
                 match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
                 replace: "",
             },
         },
         {
+            // `shouldPaintBotsSidebar` is now the short export `G`. The call is
+            // `if(!(0,a2.G)({hasBots,…,teamSeatEntitled}))return null`.
+            find: "teamSeatEntitled:",
+            all: true,
+            replacement: {
+                match: /if\(!\(0,\i(?:\.\i)?\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
+                replace: "",
+            },
+        },
+        {
             find: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+            noWarn: true,
             replacement: {
                 match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
                 replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null",

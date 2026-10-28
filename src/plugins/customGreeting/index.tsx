@@ -612,6 +612,12 @@ export default definePlugin({
                 {
                     match: /(\)\)\}\):)(\i)(?=,placeholderClassName:)/,
                     replace: "$1$self._inputPlaceholder($2)",
+                    noWarn: true,
+                },
+                {
+                    // Desktop object, then the non-desktop placeholder: `}):ident`.
+                    match: /(newChatPlaceholder:\i\}\):)(\i)/,
+                    replace: "$1$self._inputPlaceholder($2)",
                 },
             ],
         },
