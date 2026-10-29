@@ -23,6 +23,7 @@
 button:has(.void-ud-trigger) {
     height: 2.5rem;
     min-height: 2.5rem;
+    border-radius: 999px;
 }
 
 button:has(.void-ud-icon-only) {

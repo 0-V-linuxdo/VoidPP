@@ -766,16 +766,15 @@ function PinnedModes() {
     return (
         <div className={classes(cl("pins"), hideNative && cl("hide-native"))}>
             {items.map(m => (
-                <span key={m.id} className={cl("pin-host")} data-void-mode-id={m.id}>
-                    <ChatBarButton
-                        size="sm"
+                <span key={m.id} className={cl("pin-host")} data-void-mode-id={m.id}><ChatBarButton
+                        size="xl"
+                        shape="circle"
                         icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels} />}
                         tooltip={m.label}
                         onClick={onPin(m.id)}
-                        className={classes(cl("pin"), chipOn(selectedModeId, m.id) && cl("on"), showLabels && cl("labeled"), "hover:bg-button-ghost-hover")}
+                        className={classes(cl("pin"), chipOn(selectedModeId, m.id) && cl("on"), showLabels && cl("labeled"))}
                         aria-label={m.label}
-                    />
-                </span>
+                    /></span>
             ))}
         </div>
     );

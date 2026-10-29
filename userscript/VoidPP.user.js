@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.7
+// @version      20261028.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.7] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4447,8 +4447,61 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function dropdownLazy(name) {
     return LazyComponent(name, () => dropdownModule()?.[name] ?? null);
   }
-  var buttonLazy = createModuleLazy("Button", "IconButton");
-  var Button = buttonLazy("Button");
+  var LEGACY_BUTTON_VARIANT = {
+    tertiary: "ghost",
+    secondary: "muted",
+    danger: "destructive",
+    text: "ghost",
+    textsecondary: "ghost"
+  };
+  function buttonExportSource(value) {
+    try {
+      if (typeof value === "function")
+        return getFnSource(value);
+      const render = value && typeof value === "object" ? value.render : null;
+      if (typeof render === "function")
+        return getFnSource(render);
+    } catch {}
+    return "";
+  }
+  function isStyledButtonExport(value) {
+    const src = buttonExportSource(value);
+    return src.includes(".Button") && src.includes('"chrome"===');
+  }
+  var styledButton = null;
+  function styledButtonExport() {
+    if (styledButton)
+      return styledButton;
+    syncLazyModules();
+    const consider = (exp) => {
+      if (styledButton || exp == null || typeof exp !== "object")
+        return;
+      for (const value of Object.values(exp)) {
+        if (isStyledButtonExport(value)) {
+          styledButton = value;
+          return;
+        }
+      }
+    };
+    for (const [, exp] of getModuleCache())
+      consider(exp);
+    if (styledButton)
+      return styledButton;
+    for (const id of Object.keys(search('"chrome"==='))) {
+      consider(requireModule(Number(id)));
+      if (styledButton)
+        return styledButton;
+    }
+    return null;
+  }
+  function renderButton(props) {
+    const Inner = styledButtonExport() ?? findExportedComponent("Button");
+    if (!Inner || !createElement)
+      return null;
+    const variant = typeof props.variant === "string" ? LEGACY_BUTTON_VARIANT[props.variant] ?? props.variant : props.variant;
+    return createElement(Inner, variant === props.variant ? props : { ...props, variant });
+  }
+  var Button = renderButton;
   function buttonWithTooltip(props) {
     const { tooltipContent, tooltipProps, tooltipContentProps, stayOpenOnClick, ...rest } = props;
     if (!createElement)
@@ -4998,8 +5051,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
     tooltip,
     popover,
     onClick,
-    variant = "tertiary",
-    size = "md",
+    variant = "ghost",
+    size = "xl",
     shape = "circle",
     disabled,
     active,
@@ -9441,9 +9494,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5b799cf"}`
-    }, `(${"5b799cf"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5725360"}`
+    }, `(${"5725360"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10919,13 +10972,11 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
     display: none !important;
 }
 
+.void-cms-pin-host {
+    display: contents;
+}
+
 .void-cms-pin {
-    width: 2.25rem;
-    height: 2.25rem;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-    max-height: 2.25rem;
-    padding: 0;
     box-sizing: border-box;
 }
 
@@ -10936,10 +10987,6 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
 .query-bar .void-cms-on:not(:hover, :focus-visible) {
     background-color: transparent !important;
     box-shadow: none !important;
-}
-
-.query-bar .void-cms-pin:is(:hover, :focus-visible) {
-    background-color: var(--button-ghost-hover, rgb(255 255 255 / 8%)) !important;
 }
 
 .void-cms-label {
@@ -10974,11 +11021,11 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
 }
 
 .query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button {
-    width: 2.25rem;
-    height: 2.25rem;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-    max-height: 2.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    max-height: 2.5rem;
     padding: 0;
     position: relative;
     display: grid;
@@ -11064,10 +11111,12 @@ html.void-cms-picked .void-cms-ghost {
 }
 
 @media (width >= 48rem) {
-    .void-cms-labeled {
+    .query-bar .void-cms-labeled {
         width: auto;
-        min-width: 2.25rem;
-        max-height: 2.25rem;
+        min-width: 2.5rem;
+        height: 2.5rem;
+        max-height: 2.5rem;
+        overflow: visible;
         border-radius: 999px;
         padding-inline: 0.5rem;
         gap: 0.25rem;
@@ -11817,7 +11866,8 @@ html.void-cms-picked .void-cms-ghost {
       className: cl19("pin-host"),
       "data-void-mode-id": m.id
     }, /* @__PURE__ */ React.createElement(ChatBarButton, {
-      size: "sm",
+      size: "xl",
+      shape: "circle",
       icon: /* @__PURE__ */ React.createElement(PinGlyph, {
         id: m.id,
         Icon: m.Icon,
@@ -11826,7 +11876,7 @@ html.void-cms-picked .void-cms-ghost {
       }),
       tooltip: m.label,
       onClick: onPin(m.id),
-      className: classes(cl19("pin"), chipOn(selectedModeId, m.id) && cl19("on"), showLabels && cl19("labeled"), "hover:bg-button-ghost-hover"),
+      className: classes(cl19("pin"), chipOn(selectedModeId, m.id) && cl19("on"), showLabels && cl19("labeled")),
       "aria-label": m.label
     }))));
   }
@@ -34181,6 +34231,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
 button:has(.void-ud-trigger) {
     height: 2.5rem;
     min-height: 2.5rem;
+    border-radius: 999px;
 }
 
 button:has(.void-ud-icon-only) {
@@ -35729,6 +35780,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
     icon: () => /* @__PURE__ */ React.createElement(SafeButtonIcon, null),
     onClick: () => openHistory(),
     order: 1,
+    variant: "ghost",
+    size: "xl",
+    shape: "pill",
     className: "text-fg-primary",
     "aria-label": "Grok usage",
     locations: ["chat", "imagine"]
@@ -35863,7 +35917,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1791226275000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1793189713000;
+  betterModeSelect_default.updatedAt = 1793192699000;
   betterNavigator_default.updatedAt = 1791839284000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1791844386000;
