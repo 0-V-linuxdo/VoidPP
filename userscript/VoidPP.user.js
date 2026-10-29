@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.8
+// @version      20261028.9
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.8] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.9] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4642,11 +4642,61 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var TableHead = tableLazy("TableHead");
   var TableHeader = tableLazy("TableHeader");
   var TableRow = tableLazy("TableRow");
-  var tooltipLazy = createModuleLazy("Tooltip", "TooltipTrigger", "TooltipContent");
-  var Tooltip = tooltipLazy("Tooltip");
-  var TooltipTrigger = tooltipLazy("TooltipTrigger");
-  var TooltipContent = tooltipLazy("TooltipContent");
-  var TooltipProvider = tooltipLazy("TooltipProvider");
+  var styledTooltip = null;
+  function readStyledTooltip(mod) {
+    let Tooltip = null;
+    let TooltipTrigger = null;
+    let TooltipContent = null;
+    let TooltipProvider = null;
+    for (const value of Object.values(mod)) {
+      const src = componentSource(value);
+      if (!src || src.includes("__scopeTooltip"))
+        continue;
+      if (!Tooltip && src.includes("keepLegacy:") && src.includes("desktopUi:"))
+        Tooltip = value;
+      else if (!TooltipProvider && src.includes("disableHoverableContent:") && src.includes(".TooltipProvider"))
+        TooltipProvider = value;
+      else if (!TooltipContent && src.includes("{...e,desktop:"))
+        TooltipContent = value;
+      else if (!TooltipTrigger && src.includes("{...o,desktop:"))
+        TooltipTrigger = value;
+    }
+    if (!Tooltip || !TooltipTrigger || !TooltipContent)
+      return null;
+    const mapped = { Tooltip, TooltipTrigger, TooltipContent };
+    if (TooltipProvider)
+      mapped.TooltipProvider = TooltipProvider;
+    return mapped;
+  }
+  function tooltipModule() {
+    if (styledTooltip)
+      return styledTooltip;
+    syncLazyModules();
+    const consider = (exp) => {
+      if (styledTooltip || exp == null || typeof exp !== "object")
+        return;
+      const read = readStyledTooltip(exp);
+      if (read)
+        styledTooltip = read;
+    };
+    for (const [, exp] of getModuleCache())
+      consider(exp);
+    if (styledTooltip)
+      return styledTooltip;
+    for (const id of Object.keys(search("desktopUi:"))) {
+      consider(requireModule(Number(id)));
+      if (styledTooltip)
+        return styledTooltip;
+    }
+    return null;
+  }
+  function tooltipPart(name) {
+    return LazyComponent(name, () => tooltipModule()?.[name] ?? findExportedComponent(name));
+  }
+  var Tooltip = tooltipPart("Tooltip");
+  var TooltipTrigger = tooltipPart("TooltipTrigger");
+  var TooltipContent = tooltipPart("TooltipContent");
+  var TooltipProvider = tooltipPart("TooltipProvider");
   var Textarea = lazyExport("Textarea");
   var Checkbox = lazyExport("Checkbox");
   var Spinner = lazyExport("Spinner");
@@ -5059,7 +5109,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     className,
     "aria-label": ariaLabel
   }) {
-    const cls = classes(active && "bg-button-ghost-hover", className);
+    const cls = classes(active && "bg-button-secondary-fill", className);
     const label = ariaLabel ?? (typeof tooltip === "string" ? tooltip : undefined);
     if (popover) {
       return /* @__PURE__ */ React.createElement(ButtonWithPopover, {
@@ -6271,7 +6321,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
   });
   migrateSettingsToPlugin("BetterSidebar", "SidebarHeaderHover", "titleRowHover", "chatsPlus");
   migrateSettingsToPlugin("BetterSidebar", "BotsPlusHover", "titleRowHover", "chatsPlus");
-  var BTN_CLASS = "void-chats-plus flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary hover:bg-button-ghost-hover hover:text-primary focus:outline-none focus-visible:bg-button-ghost-hover";
+  var BTN_CLASS = "void-chats-plus flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary hover:bg-button-ghost-hover hover:text-fg-primary focus:outline-none focus-visible:bg-button-ghost-hover";
   var BOTS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-bots-plus], .void-bots-plus)";
   var CHATS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-chats-plus], .void-chats-plus)";
   var CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
@@ -9494,9 +9544,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5725360"}`
-    }, `(${"5725360"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"94f19cf"}`
+    }, `(${"94f19cf"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -35917,7 +35967,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1789246749000;
   betterImagine_default.updatedAt = 1791226275000;
   betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1793192699000;
+  betterModeSelect_default.updatedAt = 1793258018000;
   betterNavigator_default.updatedAt = 1791839284000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1791844386000;
@@ -35954,7 +36004,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   stableComposer_default.updatedAt = 1793175588000;
   starry_default.updatedAt = 1787870966000;
   streamerMode_default.updatedAt = 1787870966000;
-  usageDisplay_default.updatedAt = 1792012694000;
+  usageDisplay_default.updatedAt = 1793258018000;
   userQuotes_default.updatedAt = 1791226275000;
   widerChat_default.updatedAt = 1787870966000;
   var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };

@@ -43,7 +43,7 @@ export function ChatBarButton({
     className,
     "aria-label": ariaLabel,
 }: ChatBarButtonProps) {
-    const cls = classes(active && "bg-button-ghost-hover", className);
+    const cls = classes(active && "bg-button-secondary-fill", className);
     const label = ariaLabel ?? (typeof tooltip === "string" ? tooltip : undefined);
 
     if (popover) {

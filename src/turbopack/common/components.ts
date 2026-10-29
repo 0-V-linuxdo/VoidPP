@@ -321,11 +321,52 @@ export const TableHead = tableLazy<TableHeadProps>("TableHead");
 export const TableHeader = tableLazy<TableHeaderProps>("TableHeader");
 export const TableRow = tableLazy<TableRowProps>("TableRow");
 
-const tooltipLazy = createModuleLazy("Tooltip", "TooltipTrigger", "TooltipContent");
-export const Tooltip = tooltipLazy<TooltipProps>("Tooltip");
-export const TooltipTrigger = tooltipLazy<TooltipTriggerProps>("TooltipTrigger");
-export const TooltipContent = tooltipLazy<TooltipContentProps>("TooltipContent");
-export const TooltipProvider = tooltipLazy<TooltipProviderProps>("TooltipProvider");
+let styledTooltip: Record<string, AnyComponent> | null = null;
+
+function readStyledTooltip(mod: Record<string, unknown>): Record<string, AnyComponent> | null {
+    let Tooltip: AnyComponent | null = null;
+    let TooltipTrigger: AnyComponent | null = null;
+    let TooltipContent: AnyComponent | null = null;
+    let TooltipProvider: AnyComponent | null = null;
+    for (const value of Object.values(mod)) {
+        const src = componentSource(value);
+        if (!src || src.includes("__scopeTooltip")) continue;
+        if (!Tooltip && src.includes("keepLegacy:") && src.includes("desktopUi:")) Tooltip = value as AnyComponent;
+        else if (!TooltipProvider && src.includes("disableHoverableContent:") && src.includes(".TooltipProvider")) TooltipProvider = value as AnyComponent;
+        else if (!TooltipContent && src.includes("{...e,desktop:")) TooltipContent = value as AnyComponent;
+        else if (!TooltipTrigger && src.includes("{...o,desktop:")) TooltipTrigger = value as AnyComponent;
+    }
+    if (!Tooltip || !TooltipTrigger || !TooltipContent) return null;
+    const mapped: Record<string, AnyComponent> = { Tooltip, TooltipTrigger, TooltipContent };
+    if (TooltipProvider) mapped.TooltipProvider = TooltipProvider;
+    return mapped;
+}
+
+function tooltipModule(): Record<string, AnyComponent> | null {
+    if (styledTooltip) return styledTooltip;
+    syncLazyModules();
+    const consider = (exp: unknown) => {
+        if (styledTooltip || exp == null || typeof exp !== "object") return;
+        const read = readStyledTooltip(exp as Record<string, unknown>);
+        if (read) styledTooltip = read;
+    };
+    for (const [, exp] of getModuleCache()) consider(exp);
+    if (styledTooltip) return styledTooltip;
+    for (const id of Object.keys(search("desktopUi:"))) {
+        consider(requireModule(Number(id)));
+        if (styledTooltip) return styledTooltip;
+    }
+    return null;
+}
+
+function tooltipPart<P = {}>(name: string): ComponentType<P> {
+    return LazyComponent(name, () => (tooltipModule()?.[name] ?? findExportedComponent(name)) as AnyComponent | null) as unknown as ComponentType<P>;
+}
+
+export const Tooltip = tooltipPart<TooltipProps>("Tooltip");
+export const TooltipTrigger = tooltipPart<TooltipTriggerProps>("TooltipTrigger");
+export const TooltipContent = tooltipPart<TooltipContentProps>("TooltipContent");
+export const TooltipProvider = tooltipPart<TooltipProviderProps>("TooltipProvider");
 
 export const Textarea = lazyExport<TextareaProps>("Textarea");
 export const Checkbox = lazyExport<CheckboxProps>("Checkbox");
