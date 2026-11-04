@@ -250,7 +250,7 @@ export default definePlugin({
             ],
         },
         {
-            find: "pressed_cmd_settings",
+            find: "registryTabs",
             replacement: [
                 {
                     match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
@@ -258,7 +258,7 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
-                    match: /\i\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
+                    match: /\i(?:\.\i)?\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
                     replace: "[...$&,...$self._tabEntries()]",
                 },
                 {
@@ -318,6 +318,7 @@ export default definePlugin({
         },
         {
             find: '"SettingsSwitch",0,',
+            noWarn: true,
             replacement: {
                 match: /("SettingsSwitch",0,)(\i)/,
                 replace: '$1$self._setPrimitive("SettingsSwitch",$2)',

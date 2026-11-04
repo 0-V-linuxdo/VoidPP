@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.9
+// @version      20261028.10
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.9] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.10] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4518,11 +4518,65 @@ ${root}::-webkit-scrollbar-thumb:hover {
   }
   var ButtonWithTooltip = buttonWithTooltip;
   var ButtonWithTooltipOptimized = ButtonWithTooltip;
-  var cardLazy = createModuleLazy("Card", "CardContent", "CardHeader", "CardTitle");
-  var Card = cardLazy("Card");
-  var CardContent = cardLazy("CardContent");
-  var CardHeader = cardLazy("CardHeader");
-  var CardTitle = cardLazy("CardTitle");
+  function componentDisplayName(value) {
+    if (value == null || typeof value !== "function" && typeof value !== "object")
+      return "";
+    const named = value;
+    if (typeof named.displayName === "string")
+      return named.displayName;
+    if (typeof named.render?.displayName === "string")
+      return named.render.displayName;
+    return "";
+  }
+  function readDisplayNames(mod, names) {
+    const wanted = new Set(names);
+    const mapped = {};
+    for (const value of Object.values(mod)) {
+      const displayName = componentDisplayName(value);
+      if (!wanted.has(displayName) || mapped[displayName])
+        continue;
+      if (componentSource(value).includes("__scope"))
+        continue;
+      mapped[displayName] = value;
+    }
+    if (!names.every((name) => mapped[name]))
+      return null;
+    return mapped;
+  }
+  function moduleByDisplayNames(anchor, names, cache) {
+    if (cache.current)
+      return cache.current;
+    syncLazyModules();
+    const consider = (exp) => {
+      if (cache.current || exp == null || typeof exp !== "object")
+        return;
+      const read = readDisplayNames(exp, names);
+      if (read)
+        cache.current = read;
+    };
+    for (const [, exp] of getModuleCache())
+      consider(exp);
+    if (cache.current)
+      return cache.current;
+    for (const id of Object.keys(search(anchor))) {
+      consider(requireModule(Number(id)));
+      if (cache.current)
+        return cache.current;
+    }
+    return null;
+  }
+  var CARD_PARTS = ["Card", "CardHeader", "CardTitle", "CardContent"];
+  var cardCache = { current: null };
+  function cardModule() {
+    return moduleByDisplayNames('displayName="CardContent"', CARD_PARTS, cardCache);
+  }
+  function cardPart(name) {
+    return LazyComponent(name, () => cardModule()?.[name] ?? findExportedComponent(name));
+  }
+  var Card = cardPart("Card");
+  var CardContent = cardPart("CardContent");
+  var CardHeader = cardPart("CardHeader");
+  var CardTitle = cardPart("CardTitle");
   function componentSource(value) {
     try {
       if (typeof value === "function")
@@ -4621,20 +4675,124 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var HoverCard = hoverCardLazy("HoverCard");
   var HoverCardContent = hoverCardLazy("HoverCardContent");
   var HoverCardTrigger = hoverCardLazy("HoverCardTrigger");
-  var Input = lazyExport("Input");
+  function renderInput(props) {
+    const Inner = findExportedComponent("Input");
+    if (!createElement)
+      return null;
+    if (Inner)
+      return createElement(Inner, props);
+    const className = ["void-native-input", props.className].filter(Boolean).join(" ");
+    return createElement("input", { ...props, className });
+  }
+  var Input = renderInput;
   var Label = lazyExport("Label");
   var MotionDiv = LazyComponent("MotionDiv", () => findByProps("motion")?.motion?.div);
   var Portal = lazyExport("Portal");
-  var selectLazy = createModuleLazy("Select", "SelectContent", "SelectTrigger");
-  var Select = selectLazy("Select");
-  var SelectTrigger = selectLazy("SelectTrigger");
-  var SelectContent = selectLazy("SelectContent");
-  var SelectItem = selectLazy("SelectItem");
-  var SelectValue = selectLazy("SelectValue");
-  var Separator = lazyExport("Separator");
+  var SELECT_PARTS = ["Select", "SelectTrigger", "SelectContent", "SelectItem", "SelectValue"];
+  var selectCache = { current: null };
+  function selectModule() {
+    return moduleByDisplayNames('name:"SelectTrigger"', SELECT_PARTS, selectCache);
+  }
+  function selectPart(name) {
+    return LazyComponent(name, () => selectModule()?.[name] ?? findExportedComponent(name));
+  }
+  var Select = selectPart("Select");
+  var SelectTrigger = selectPart("SelectTrigger");
+  var SelectContent = selectPart("SelectContent");
+  var SelectItem = selectPart("SelectItem");
+  var SelectValue = selectPart("SelectValue");
+  var styledSeparator = null;
+  var separatorMissAt = -1;
+  function separatorExport() {
+    if (styledSeparator)
+      return styledSeparator;
+    syncLazyModules();
+    if (getModuleCache().size === separatorMissAt)
+      return null;
+    const take = (value) => {
+      const src = componentSource(value);
+      if (!src || src.includes("__scope") || src.includes("ContextMenu") || src.includes("SelectSeparator"))
+        return null;
+      if (src.includes('role:"separator"') && src.includes("decorative"))
+        return value;
+      return null;
+    };
+    const scan = (exp) => {
+      if (styledSeparator || exp == null || typeof exp !== "object")
+        return;
+      for (const value of Object.values(exp)) {
+        const hit = take(value);
+        if (hit) {
+          styledSeparator = hit;
+          return;
+        }
+      }
+    };
+    for (const [, exp] of getModuleCache())
+      scan(exp);
+    if (!styledSeparator) {
+      const hit = take(findExportedComponent("Separator"));
+      if (hit)
+        styledSeparator = hit;
+    }
+    if (!styledSeparator) {
+      for (const id of Object.keys(search('displayName="Separator"'))) {
+        scan(requireModule(Number(id)));
+        if (styledSeparator)
+          break;
+      }
+    }
+    if (!styledSeparator) {
+      for (const [, exp] of getModuleCache())
+        scan(exp);
+    }
+    if (!styledSeparator)
+      separatorMissAt = getModuleCache().size;
+    return styledSeparator;
+  }
+  function renderSeparator(props) {
+    if (!createElement)
+      return null;
+    const Inner = separatorExport();
+    if (Inner)
+      return createElement(Inner, props);
+    const className = ["void-settings-sep", props?.className].filter(Boolean).join(" ");
+    return createElement("div", { ...props, role: "separator", className });
+  }
+  var Separator = renderSeparator;
   var Skeleton = lazyExport("Skeleton");
   var Slider = lazyExport("Slider");
-  var Switch = lazyExport("Switch");
+  var styledSwitch = null;
+  function isStyledSwitchExport(value) {
+    const src = componentSource(value);
+    return src.includes('"control"===') && src.includes(".Switch") && !src.includes("useFormContext") && !src.includes("useFieldRootContext") && !src.includes("__scopeSwitch");
+  }
+  function styledSwitchExport() {
+    if (styledSwitch)
+      return styledSwitch;
+    syncLazyModules();
+    const consider = (exp) => {
+      if (styledSwitch || exp == null || typeof exp !== "object")
+        return;
+      for (const value of Object.values(exp)) {
+        if (isStyledSwitchExport(value)) {
+          styledSwitch = value;
+          return;
+        }
+      }
+    };
+    for (const [, exp] of getModuleCache())
+      consider(exp);
+    if (styledSwitch)
+      return styledSwitch;
+    for (const id of Object.keys(search('"control"==='))) {
+      consider(requireModule(Number(id)));
+      if (styledSwitch)
+        return styledSwitch;
+    }
+    return null;
+  }
+  var Switch = LazyComponent("Switch", () => styledSwitchExport() ?? findExportedComponent("Switch"));
   var tableLazy = createModuleLazy("Table", "TableBody", "TableCell");
   var Table = tableLazy("Table");
   var TableBody = tableLazy("TableBody");
@@ -7101,6 +7259,31 @@ button .void-info-hint {
     line-height: 1rem;
     color: var(--fg-secondary);
 }
+
+.void-settings-sep {
+    height: 1px;
+    width: 100%;
+    margin: 0.25rem 0;
+    border: 0;
+    background: var(--border-l1);
+}
+
+.void-native-input {
+    box-sizing: border-box;
+    height: 2rem;
+    padding: 0 0.625rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-l1);
+    background: transparent;
+    color: var(--fg-primary);
+    font: inherit;
+    outline: none;
+}
+
+.void-native-input:focus,
+.void-native-input:focus-visible {
+    border-color: var(--border-l2, var(--fg-secondary));
+}
 `);
 
   // src/api/Themes.ts
@@ -9544,9 +9727,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"94f19cf"}`
-    }, `(${"94f19cf"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5912d6d"}`
+    }, `(${"5912d6d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9671,7 +9854,7 @@ button .void-info-hint {
         ]
       },
       {
-        find: "pressed_cmd_settings",
+        find: "registryTabs",
         replacement: [
           {
             match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
@@ -9679,7 +9862,7 @@ button .void-info-hint {
             noWarn: true
           },
           {
-            match: /\i\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
+            match: /\i(?:\.\i)?\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
             replace: "[...$&,...$self._tabEntries()]"
           },
           {
@@ -9739,6 +9922,7 @@ button .void-info-hint {
       },
       {
         find: '"SettingsSwitch",0,',
+        noWarn: true,
         replacement: {
           match: /("SettingsSwitch",0,)(\i)/,
           replace: '$1$self._setPrimitive("SettingsSwitch",$2)'
@@ -35971,7 +36155,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1791839284000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1791844386000;
-  betterSidebar_default.updatedAt = 1793176926000;
+  betterSidebar_default.updatedAt = 1793259228000;
   chatListStatus_default.updatedAt = 1791658451000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1793174778000;

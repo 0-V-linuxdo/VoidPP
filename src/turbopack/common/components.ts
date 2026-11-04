@@ -192,11 +192,60 @@ function buttonWithTooltip(props: ButtonWithTooltipProps) {
 export const ButtonWithTooltip = buttonWithTooltip as ComponentType<ButtonWithTooltipProps>;
 export const ButtonWithTooltipOptimized = ButtonWithTooltip;
 
-const cardLazy = createModuleLazy("Card", "CardContent", "CardHeader", "CardTitle");
-export const Card = cardLazy<CardProps>("Card");
-export const CardContent = cardLazy<CardContentProps>("CardContent");
-export const CardHeader = cardLazy<CardHeaderProps>("CardHeader");
-export const CardTitle = cardLazy<CardTitleProps>("CardTitle");
+function componentDisplayName(value: unknown): string {
+    if (value == null || (typeof value !== "function" && typeof value !== "object")) return "";
+    const named = value as { displayName?: unknown; render?: { displayName?: unknown } };
+    if (typeof named.displayName === "string") return named.displayName;
+    if (typeof named.render?.displayName === "string") return named.render.displayName;
+    return "";
+}
+
+/** Short exports keep `displayName` (`Select`, `Card`, …). Skip radix parts that still mention `__scope`. */
+function readDisplayNames(mod: Record<string, unknown>, names: readonly string[]): Record<string, AnyComponent> | null {
+    const wanted = new Set(names);
+    const mapped: Record<string, AnyComponent> = {};
+    for (const value of Object.values(mod)) {
+        const displayName = componentDisplayName(value);
+        if (!wanted.has(displayName) || mapped[displayName]) continue;
+        if (componentSource(value).includes("__scope")) continue;
+        mapped[displayName] = value as AnyComponent;
+    }
+    if (!names.every(name => mapped[name])) return null;
+    return mapped;
+}
+
+function moduleByDisplayNames(anchor: string, names: readonly string[], cache: { current: Record<string, AnyComponent> | null }): Record<string, AnyComponent> | null {
+    if (cache.current) return cache.current;
+    syncLazyModules();
+    const consider = (exp: unknown) => {
+        if (cache.current || exp == null || typeof exp !== "object") return;
+        const read = readDisplayNames(exp as Record<string, unknown>, names);
+        if (read) cache.current = read;
+    };
+    for (const [, exp] of getModuleCache()) consider(exp);
+    if (cache.current) return cache.current;
+    for (const id of Object.keys(search(anchor))) {
+        consider(requireModule(Number(id)));
+        if (cache.current) return cache.current;
+    }
+    return null;
+}
+
+const CARD_PARTS = ["Card", "CardHeader", "CardTitle", "CardContent"] as const;
+const cardCache: { current: Record<string, AnyComponent> | null } = { current: null };
+
+function cardModule(): Record<string, AnyComponent> | null {
+    return moduleByDisplayNames('displayName="CardContent"', CARD_PARTS, cardCache);
+}
+
+function cardPart<P = {}>(name: string): ComponentType<P> {
+    return LazyComponent(name, () => (cardModule()?.[name] ?? findExportedComponent(name)) as AnyComponent | null) as unknown as ComponentType<P>;
+}
+
+export const Card = cardPart<CardProps>("Card");
+export const CardContent = cardPart<CardContentProps>("CardContent");
+export const CardHeader = cardPart<CardHeaderProps>("CardHeader");
+export const CardTitle = cardPart<CardTitleProps>("CardTitle");
 
 function componentSource(value: unknown): string {
     try {
@@ -293,25 +342,120 @@ export const HoverCard = hoverCardLazy<HoverCardProps>("HoverCard");
 export const HoverCardContent = hoverCardLazy<HoverCardContentProps>("HoverCardContent");
 export const HoverCardTrigger = hoverCardLazy<HoverCardTriggerProps>("HoverCardTrigger");
 
-export const Input = lazyExport<InputProps>("Input");
+function renderInput(props: InputProps) {
+    const Inner = findExportedComponent("Input");
+    if (!createElement) return null;
+    if (Inner) return createElement(Inner, props);
+    const className = ["void-native-input", props.className].filter(Boolean).join(" ");
+    return createElement("input", { ...props, className });
+}
+
+export const Input = renderInput as ComponentType<InputProps>;
 export const Label = lazyExport<LabelProps>("Label");
 export const MotionDiv: ComponentType<MotionProps> = LazyComponent("MotionDiv", () => findByProps("motion")?.motion?.div);
 export const Portal = lazyExport<PortalProps>("Portal");
 
-const selectLazy = createModuleLazy("Select", "SelectContent", "SelectTrigger");
-export const Select = selectLazy<SelectProps>("Select");
-export const SelectTrigger = selectLazy<SelectTriggerProps>("SelectTrigger");
-export const SelectContent = selectLazy<SelectContentProps>("SelectContent");
-export const SelectItem = selectLazy<SelectItemProps>("SelectItem");
-export const SelectValue = selectLazy<SelectValueProps>("SelectValue");
+const SELECT_PARTS = ["Select", "SelectTrigger", "SelectContent", "SelectItem", "SelectValue"] as const;
+const selectCache: { current: Record<string, AnyComponent> | null } = { current: null };
 
-export const Separator = lazyExport<SeparatorProps>("Separator");
+function selectModule(): Record<string, AnyComponent> | null {
+    return moduleByDisplayNames('name:"SelectTrigger"', SELECT_PARTS, selectCache);
+}
+
+function selectPart<P = {}>(name: string): ComponentType<P> {
+    return LazyComponent(name, () => (selectModule()?.[name] ?? findExportedComponent(name)) as AnyComponent | null) as unknown as ComponentType<P>;
+}
+
+export const Select = selectPart<SelectProps>("Select");
+export const SelectTrigger = selectPart<SelectTriggerProps>("SelectTrigger");
+export const SelectContent = selectPart<SelectContentProps>("SelectContent");
+export const SelectItem = selectPart<SelectItemProps>("SelectItem");
+export const SelectValue = selectPart<SelectValueProps>("SelectValue");
+
+let styledSeparator: AnyComponent | null = null;
+let separatorMissAt = -1;
+
+function separatorExport(): AnyComponent | null {
+    if (styledSeparator) return styledSeparator;
+    syncLazyModules();
+    if (getModuleCache().size === separatorMissAt) return null;
+    const take = (value: unknown): AnyComponent | null => {
+        const src = componentSource(value);
+        if (!src || src.includes("__scope") || src.includes("ContextMenu") || src.includes("SelectSeparator")) return null;
+        if (src.includes('role:"separator"') && src.includes("decorative")) return value as AnyComponent;
+        return null;
+    };
+    const scan = (exp: unknown) => {
+        if (styledSeparator || exp == null || typeof exp !== "object") return;
+        for (const value of Object.values(exp as Record<string, unknown>)) {
+            const hit = take(value);
+            if (hit) {
+                styledSeparator = hit;
+                return;
+            }
+        }
+    };
+    for (const [, exp] of getModuleCache()) scan(exp);
+    if (!styledSeparator) {
+        const hit = take(findExportedComponent("Separator"));
+        if (hit) styledSeparator = hit;
+    }
+    if (!styledSeparator) {
+        for (const id of Object.keys(search('displayName="Separator"'))) {
+            scan(requireModule(Number(id)));
+            if (styledSeparator) break;
+        }
+    }
+    if (!styledSeparator) {
+        for (const [, exp] of getModuleCache()) scan(exp);
+    }
+    if (!styledSeparator) separatorMissAt = getModuleCache().size;
+    return styledSeparator;
+}
+
+function renderSeparator(props: SeparatorProps) {
+    if (!createElement) return null;
+    const Inner = separatorExport();
+    if (Inner) return createElement(Inner, props);
+    const className = ["void-settings-sep", props?.className].filter(Boolean).join(" ");
+    return createElement("div", { ...props, role: "separator", className });
+}
+
+export const Separator = renderSeparator as ComponentType<SeparatorProps>;
 
 export { SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle };
 
 export const Skeleton = lazyExport<SkeletonProps>("Skeleton");
 export const Slider = lazyExport<SliderProps>("Slider");
-export const Switch = lazyExport<SwitchProps>("Switch");
+let styledSwitch: AnyComponent | null = null;
+
+function isStyledSwitchExport(value: unknown): value is AnyComponent {
+    const src = componentSource(value);
+    return src.includes('"control"===') && src.includes(".Switch") && !src.includes("useFormContext") && !src.includes("useFieldRootContext") && !src.includes("__scopeSwitch");
+}
+
+function styledSwitchExport(): AnyComponent | null {
+    if (styledSwitch) return styledSwitch;
+    syncLazyModules();
+    const consider = (exp: unknown) => {
+        if (styledSwitch || exp == null || typeof exp !== "object") return;
+        for (const value of Object.values(exp as Record<string, unknown>)) {
+            if (isStyledSwitchExport(value)) {
+                styledSwitch = value;
+                return;
+            }
+        }
+    };
+    for (const [, exp] of getModuleCache()) consider(exp);
+    if (styledSwitch) return styledSwitch;
+    for (const id of Object.keys(search('"control"==='))) {
+        consider(requireModule(Number(id)));
+        if (styledSwitch) return styledSwitch;
+    }
+    return null;
+}
+
+export const Switch = LazyComponent("Switch", () => styledSwitchExport() ?? findExportedComponent("Switch")) as unknown as ComponentType<SwitchProps>;
 
 const tableLazy = createModuleLazy("Table", "TableBody", "TableCell");
 export const Table = tableLazy<TableProps>("Table");

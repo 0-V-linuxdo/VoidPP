@@ -68,3 +68,28 @@ button .void-info-hint {
     line-height: 1rem;
     color: var(--fg-secondary);
 }
+
+.void-settings-sep {
+    height: 1px;
+    width: 100%;
+    margin: 0.25rem 0;
+    border: 0;
+    background: var(--border-l1);
+}
+
+.void-native-input {
+    box-sizing: border-box;
+    height: 2rem;
+    padding: 0 0.625rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-l1);
+    background: transparent;
+    color: var(--fg-primary);
+    font: inherit;
+    outline: none;
+}
+
+.void-native-input:focus,
+.void-native-input:focus-visible {
+    border-color: var(--border-l2, var(--fg-secondary));
+}
