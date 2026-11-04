@@ -90,7 +90,35 @@ export const RoutingStore: RoutingStoreModule = proxyLazy(() => {
     return hook ? { useRoutingStore: hook } : null;
 }, Infinity);
 export const SessionStore: SessionStoreModule = findByPropsLazy("useSession", "SessionStoreProvider");
-export const SettingsDialogStore: SettingsDialogStoreModule = findByPropsLazy("useSettingsDialogStore");
+function isSettingsDialogHook(value: unknown): value is SettingsDialogStoreModule["useSettingsDialogStore"] {
+    if (typeof value !== "function" || typeof (value as { getState?: unknown }).getState !== "function") return false;
+    try {
+        const state = (value as { getState: () => { setOpen?: unknown; setTab?: unknown; open?: unknown } }).getState();
+        return !!state && typeof state.setOpen === "function" && typeof state.setTab === "function" && "open" in state;
+    } catch {
+        return false;
+    }
+}
+
+/** Named export is gone. The hook is a short key on the factory that still contains `useSettingsDialogStore`. */
+function settingsDialogHook(): SettingsDialogStoreModule["useSettingsDialogStore"] | null {
+    const legacy = find((mod: Record<string, unknown>) => isSettingsDialogHook(mod?.useSettingsDialogStore)) as Record<string, SettingsDialogStoreModule["useSettingsDialogStore"]> | null;
+    if (legacy && isSettingsDialogHook(legacy.useSettingsDialogStore)) return legacy.useSettingsDialogStore;
+
+    for (const id of Object.keys(search("useSettingsDialogStore"))) {
+        const mod = requireModule<Record<string, unknown>>(Number(id));
+        if (!mod || typeof mod !== "object") continue;
+        for (const value of Object.values(mod)) {
+            if (isSettingsDialogHook(value)) return value;
+        }
+    }
+    return null;
+}
+
+export const SettingsDialogStore: SettingsDialogStoreModule = proxyLazy(() => {
+    const hook = settingsDialogHook();
+    return hook ? { useSettingsDialogStore: hook } : null;
+}, Infinity);
 export const SettingsStore: SettingsStoreModule = findByPropsLazy("useSettingsStore", "modelConfigOverrideSchema");
 export const SubscriptionsStore: SubscriptionsStoreModule = findByPropsLazy("useSubscriptionsStore");
 export const TextToSpeechStore: TextToSpeechStoreModule = findByPropsLazy("useTextToSpeechStore");

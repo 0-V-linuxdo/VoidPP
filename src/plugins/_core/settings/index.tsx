@@ -123,7 +123,9 @@ function TabLabel({ text, description }: { text: string; description: string }) 
 }
 
 function openSettingsTab(tab: string) {
-    const store = SettingsDialogStore.useSettingsDialogStore.getState();
+    const hook = SettingsDialogStore.useSettingsDialogStore;
+    if (!hook || typeof hook.getState !== "function") return;
+    const store = hook.getState();
     store.setTab(tab);
     store.setOpen(true);
 }

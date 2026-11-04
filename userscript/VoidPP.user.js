@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.10
+// @version      20261028.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.10] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -2342,7 +2342,35 @@ ${sourceUrl}`;
     return hook ? { useRoutingStore: hook } : null;
   }, Infinity);
   var SessionStore = findByPropsLazy("useSession", "SessionStoreProvider");
-  var SettingsDialogStore = findByPropsLazy("useSettingsDialogStore");
+  function isSettingsDialogHook(value) {
+    if (typeof value !== "function" || typeof value.getState !== "function")
+      return false;
+    try {
+      const state = value.getState();
+      return !!state && typeof state.setOpen === "function" && typeof state.setTab === "function" && "open" in state;
+    } catch {
+      return false;
+    }
+  }
+  function settingsDialogHook() {
+    const legacy = find((mod) => isSettingsDialogHook(mod?.useSettingsDialogStore));
+    if (legacy && isSettingsDialogHook(legacy.useSettingsDialogStore))
+      return legacy.useSettingsDialogStore;
+    for (const id of Object.keys(search("useSettingsDialogStore"))) {
+      const mod = requireModule(Number(id));
+      if (!mod || typeof mod !== "object")
+        continue;
+      for (const value of Object.values(mod)) {
+        if (isSettingsDialogHook(value))
+          return value;
+      }
+    }
+    return null;
+  }
+  var SettingsDialogStore = proxyLazy(() => {
+    const hook = settingsDialogHook();
+    return hook ? { useSettingsDialogStore: hook } : null;
+  }, Infinity);
   var SettingsStore = findByPropsLazy("useSettingsStore", "modelConfigOverrideSchema");
   var SubscriptionsStore = findByPropsLazy("useSubscriptionsStore");
   var TextToSpeechStore = findByPropsLazy("useTextToSpeechStore");
@@ -9727,9 +9755,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5912d6d"}`
-    }, `(${"5912d6d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9eefd84"}`
+    }, `(${"9eefd84"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9746,7 +9774,10 @@ button .void-info-hint {
     }, text, /* @__PURE__ */ React.createElement(InfoHint, null, description));
   }
   function openSettingsTab(tab) {
-    const store = SettingsDialogStore.useSettingsDialogStore.getState();
+    const hook = SettingsDialogStore.useSettingsDialogStore;
+    if (!hook || typeof hook.getState !== "function")
+      return;
+    const store = hook.getState();
     store.setTab(tab);
     store.setOpen(true);
   }
@@ -33685,15 +33716,17 @@ html.void-rt-open [data-sidebar="gap"] {
     { id: "voidpp_css_tab", name: "Quick CSS", setting: "css", icon: BracesIcon }
   ];
   function openTab(tab, onOpen, event) {
-    const store = SettingsDialogStore.useSettingsDialogStore.getState();
-    if (tab) {
-      store.setTab(tab);
-      store.setOpen(true);
-      return;
+    if (!tab) {
+      try {
+        onOpen?.(event);
+      } catch {}
     }
-    try {
-      onOpen?.(event);
-    } catch {}
+    const hook = SettingsDialogStore.useSettingsDialogStore;
+    const store = hook && typeof hook.getState === "function" ? hook.getState() : null;
+    if (!store)
+      return;
+    if (tab)
+      store.setTab(tab);
     store.setOpen(true);
   }
   function tabItems(tabs) {
@@ -36141,7 +36174,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1791660888000;
-  settings_default.updatedAt = 1793174778000;
+  settings_default.updatedAt = 1793784674000;
   chatBarButtons_default.updatedAt = 1793189713000;
   contextMenu_default.updatedAt = 1793174778000;
   autoCollapse_default.updatedAt = 1787789817000;

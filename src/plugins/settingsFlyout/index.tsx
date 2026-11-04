@@ -127,15 +127,13 @@ const VOIDPP_TABS: VoidPPFlyoutTab[] = [
 ];
 
 function openTab(tab: string | undefined, onOpen?: (event?: Event) => void, event?: Event) {
-    const store = SettingsDialogStore.useSettingsDialogStore.getState();
-    if (tab) {
-        store.setTab(tab);
-        store.setOpen(true);
-        return;
+    if (!tab) {
+        try { onOpen?.(event); } catch { /* grok's opener can throw; still try the store */ }
     }
-    try {
-        onOpen?.(event);
-    } catch {}
+    const hook = SettingsDialogStore.useSettingsDialogStore;
+    const store = hook && typeof hook.getState === "function" ? hook.getState() : null;
+    if (!store) return;
+    if (tab) store.setTab(tab);
     store.setOpen(true);
 }
 
