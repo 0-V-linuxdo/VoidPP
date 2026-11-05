@@ -66,8 +66,9 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
+                    // The match already consumes stringify's closing paren. The call's own paren stays.
                     match: /"\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)/,
-                    replace: '"/api/log_metric",[])',
+                    replace: '"/api/log_metric",[]',
                     noWarn: true,
                 },
                 {

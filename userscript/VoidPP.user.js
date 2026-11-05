@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.14
+// @version      20261028.15
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.14] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.15] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7280,7 +7280,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
           },
           {
             match: /"\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)/,
-            replace: '"/api/log_metric",[])',
+            replace: '"/api/log_metric",[]',
             noWarn: true
           },
           {
@@ -9838,9 +9838,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"91607f6"}`
-    }, `(${"91607f6"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a483fe1"}`
+    }, `(${"a483fe1"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36264,7 +36264,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.updatedAt = 1787789817000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  noTelemetry_default.updatedAt = 1791660888000;
+  noTelemetry_default.updatedAt = 1793875235594;
   settings_default.updatedAt = 1793786643000;
   chatBarButtons_default.updatedAt = 1793189713000;
   contextMenu_default.updatedAt = 1793174778000;

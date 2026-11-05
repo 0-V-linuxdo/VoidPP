@@ -121,6 +121,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261028.14]` A fresh load leaves the sidebar footer empty. `UserCard` calls `SessionStore.useSession()` and the error boundary latches on `useSession is not a function`. The live module still exports `useSession` and `SessionStoreProvider` (the hook body throws `useSession must be used within SessionStoreProvider`). `findByProps("useSession","SessionStoreProvider")` does not see that module; `requireModule` of the factory that contains the throw does. Prefer `namespaceObject` when the cached exports object has no hook. Do not call `useSession` until it is a function — that throw is what blanks the footer slot.
 
+`[20261028.15]` `c$("/api/log_metric",JSON.stringify([{...}]))` compiled as `c$(...,[]))`. The stringify match already eats that call's `)`, and the replace added another, so the module threw `Unexpected token ')'` and fell back to the original. Telemetry still left. Replace with `"/api/log_metric",[]` and leave the call's paren.
+
 
 `[20261014.2]` The styled dropdown (`DropdownMenu` + `DropdownMenuItem` whose source contains `useKeepLegacy`, module next to `avatar_menu_click`) sits in the Turbopack runtime cache before `exports` is filled. `syncLazyModules` treated a stable key count as done, so `getModuleCache()` never received it. `dropdownLazy` rendered null: Settings, Void++, and Plugins stayed in the tree as empty `DropdownMenuSub`s and the account menu showed only Help and Sign Out. Retry runtime ids that were not cached. `dropdownModule` must call `syncLazyModules()` before scanning. Do not treat a stable runtime key count as "every module is cached".
 
