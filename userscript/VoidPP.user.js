@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.12
+// @version      20261028.13
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.12] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.13] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9785,9 +9785,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e48f6f6"}`
-    }, `(${"e48f6f6"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8d1da7d"}`
+    }, `(${"8d1da7d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -30169,14 +30169,22 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var BUTTON_CSS = `
 button[aria-label="Dictation"]:not([role="dialog"] *),
 button[aria-label^="Dictation ("]:not([role="dialog"] *),
+button[aria-label^="Enter voice mode"]:not([role="dialog"] *),
+button[aria-label^="Exit voice mode"]:not([role="dialog"] *),
 div:has(> button[aria-label="Dictation"]):not([role="dialog"] *),
 div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *),
+div:has(> button[aria-label^="Enter voice mode"]):not([role="dialog"] *),
+div:has(> button[aria-label^="Exit voice mode"]):not([role="dialog"] *),
 div:has(> span > button[aria-label="Dictation"]):not([role="dialog"] *),
 div:has(> span > button[aria-label^="Dictation ("]):not([role="dialog"] *),
+div:has(> span > button[aria-label^="Enter voice mode"]):not([role="dialog"] *),
 .h-10.w-10:has(button[aria-label="Dictation"]):not([role="dialog"] *),
 .h-10.w-10:has(button[aria-label^="Dictation ("]):not([role="dialog"] *),
+.h-10.w-10:has(button[aria-label^="Enter voice mode"]):not([role="dialog"] *),
+.h-10.w-10:has(button[aria-label^="Exit voice mode"]):not([role="dialog"] *),
 div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-label="Dictation"]):not([role="dialog"] *),
-div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-label^="Dictation ("]):not([role="dialog"] *) {
+div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-label^="Dictation ("]):not([role="dialog"] *),
+div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-label^="Enter voice mode"]):not([role="dialog"] *) {
     display: none !important;
 }
 `;
@@ -30198,7 +30206,7 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
   var noDictation_default = definePlugin({
     name: "NoDictation",
     icon: MicOffIcon,
-    description: "Hide the Dictation (voice input) button from the chat input bar, and optionally Dictation Refinement in Settings.",
+    description: "Hide the Dictation and Enter voice mode buttons from the chat input bar, and optionally Dictation Refinement in Settings.",
     authors: [Devs.p],
     tags: ["declutter"],
     enabledByDefault: true,
@@ -36238,7 +36246,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   messageStars_default.updatedAt = 1791682713000;
   messageTimestamps_default.updatedAt = 1793174778000;
   noBuildStarters_default.updatedAt = 1789894247000;
-  noDictation_default.updatedAt = 1791395540000;
+  noDictation_default.updatedAt = 1793871071000;
   noGrokBot_default.updatedAt = 1790943206000;
   noShareLink_default.updatedAt = 1787789817000;
   noSidebarIdentity_default.updatedAt = 1793174778000;
