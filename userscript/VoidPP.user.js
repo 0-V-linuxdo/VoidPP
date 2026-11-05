@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.11
+// @version      20261028.12
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.11] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.12] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -65,6 +65,7 @@
     MediaStore: () => MediaStore,
     MessageStore: () => MessageStore,
     ModesStore: () => ModesStore,
+    PluginsDialogStore: () => PluginsDialogStore,
     ResponseStore: () => ResponseStore,
     RoutingStore: () => RoutingStore,
     SessionStore: () => SessionStore,
@@ -303,6 +304,7 @@
     MessageStore: () => MessageStore,
     ModesStore: () => ModesStore,
     MotionDiv: () => MotionDiv,
+    PluginsDialogStore: () => PluginsDialogStore,
     Popover: () => Popover,
     PopoverArrow: () => PopoverArrow,
     PopoverContent: () => PopoverContent,
@@ -2370,6 +2372,33 @@ ${sourceUrl}`;
   var SettingsDialogStore = proxyLazy(() => {
     const hook = settingsDialogHook();
     return hook ? { useSettingsDialogStore: hook } : null;
+  }, Infinity);
+  function isPluginsDialogHook(value) {
+    if (typeof value !== "function" || typeof value.getState !== "function")
+      return false;
+    try {
+      const state = value.getState();
+      return !!state && typeof state.setOpen === "function" && "open" in state && !("setTab" in state);
+    } catch {
+      return false;
+    }
+  }
+  function pluginsDialogHook() {
+    for (const id of Object.keys(search("usePluginsDialogStore"))) {
+      const mod = requireModule(Number(id));
+      if (!mod || typeof mod !== "object")
+        continue;
+      for (const value of Object.values(mod)) {
+        if (isPluginsDialogHook(value))
+          return value;
+      }
+    }
+    const legacy = find((mod) => isPluginsDialogHook(mod?.usePluginsDialogStore));
+    return legacy && isPluginsDialogHook(legacy.usePluginsDialogStore) ? legacy.usePluginsDialogStore : null;
+  }
+  var PluginsDialogStore = proxyLazy(() => {
+    const hook = pluginsDialogHook();
+    return hook ? { usePluginsDialogStore: hook } : null;
   }, Infinity);
   var SettingsStore = findByPropsLazy("useSettingsStore", "modelConfigOverrideSchema");
   var SubscriptionsStore = findByPropsLazy("useSubscriptionsStore");
@@ -5905,7 +5934,6 @@ ${root}::-webkit-scrollbar-thumb:hover {
 
   // src/plugins/avatarPluginsFlyout/index.tsx
   var logger13 = new Logger("AvatarPluginsFlyout");
-  var PluginsDialogStore = findByPropsLazy("usePluginsDialogStore");
   var settings3 = definePluginSettings({});
   var NEW_NAME = "AvatarPluginsFlyout";
   var OLD_NAMES = ["BetterAvatarPlugins", "NoSidebarPlugins"];
@@ -6105,7 +6133,9 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function openPlugins(tab) {
     pendingTab = tab;
     latchedTab = tab;
-    PluginsDialogStore.usePluginsDialogStore.getState().setOpen(true);
+    const hook = PluginsDialogStore.usePluginsDialogStore;
+    const store = hook && typeof hook.getState === "function" ? hook.getState() : null;
+    store?.setOpen(true);
     requestAnimationFrame(() => syncTabDom(tab));
   }
   function applyTab(local, state, setState) {
@@ -9755,9 +9785,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9eefd84"}`
-    }, `(${"9eefd84"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e48f6f6"}`
+    }, `(${"e48f6f6"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36174,7 +36204,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1791660888000;
-  settings_default.updatedAt = 1793784674000;
+  settings_default.updatedAt = 1793786643000;
   chatBarButtons_default.updatedAt = 1793189713000;
   contextMenu_default.updatedAt = 1793174778000;
   autoCollapse_default.updatedAt = 1787789817000;
@@ -36216,7 +36246,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   pluginsFlyout_default.updatedAt = 1791226275000;
   recentTopics_default.updatedAt = 1793174778000;
   responseNotification_default.updatedAt = 1790093417000;
-  settingsFlyout_default.updatedAt = 1793174778000;
+  settingsFlyout_default.updatedAt = 1793786643000;
   skillBlocker_default.updatedAt = 1791758395000;
   stableComposer_default.updatedAt = 1793175588000;
   starry_default.updatedAt = 1787870966000;

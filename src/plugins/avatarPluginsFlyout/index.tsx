@@ -14,14 +14,12 @@ import {
     DropdownMenuSubTrigger,
 } from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
-import { findByPropsLazy } from "@turbopack/turbopack";
+import { PluginsDialogStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
 
 const logger = new Logger("AvatarPluginsFlyout");
-
-const PluginsDialogStore = findByPropsLazy("usePluginsDialogStore");
 
 const settings = definePluginSettings({});
 
@@ -218,7 +216,9 @@ function syncTabDom(tab: string, attempt = 0) {
 function openPlugins(tab: string) {
     pendingTab = tab;
     latchedTab = tab;
-    PluginsDialogStore.usePluginsDialogStore.getState().setOpen(true);
+    const hook = PluginsDialogStore.usePluginsDialogStore;
+    const store = hook && typeof hook.getState === "function" ? hook.getState() : null;
+    store?.setOpen(true);
     requestAnimationFrame(() => syncTabDom(tab));
 }
 

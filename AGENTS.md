@@ -117,6 +117,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261028.11]` Clicking a Settings flyout row never opened the dialog. `useSettingsDialogStore` is export `R` on the factory that still contains that name. `findByProps("useSettingsDialogStore")` is null, so `getState()` throws before `setOpen`. Resolve the hook from that factory. State has `open`, `setOpen`, and `setTab`. Do not require `setState`. Call Grok's original opener before the store when the row has no tab id.
 
+`[20261028.12]` Avatar Plugins → Connectors / Skills / Bots never opened the dialog. `usePluginsDialogStore` is export `f`. `findByProps("usePluginsDialogStore")` is null, so `getState().setOpen(true)` throws. Resolve that hook from the factory. State has `open` and `setOpen`, not `setTab`. The sidebar mounts `PluginsSidebarDialog` only after `open` has been true once (`h&&!p&&setP(true)`, then `p&&jsx(dialog)`). Do not require the long export name.
+
 
 `[20261014.2]` The styled dropdown (`DropdownMenu` + `DropdownMenuItem` whose source contains `useKeepLegacy`, module next to `avatar_menu_click`) sits in the Turbopack runtime cache before `exports` is filled. `syncLazyModules` treated a stable key count as done, so `getModuleCache()` never received it. `dropdownLazy` rendered null: Settings, Void++, and Plugins stayed in the tree as empty `DropdownMenuSub`s and the account menu showed only Help and Sign Out. Retry runtime ids that were not cached. `dropdownModule` must call `syncLazyModules()` before scanning. Do not treat a stable runtime key count as "every module is cached".
 

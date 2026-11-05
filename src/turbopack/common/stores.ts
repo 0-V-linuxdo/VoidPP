@@ -119,6 +119,38 @@ export const SettingsDialogStore: SettingsDialogStoreModule = proxyLazy(() => {
     const hook = settingsDialogHook();
     return hook ? { useSettingsDialogStore: hook } : null;
 }, Infinity);
+
+interface PluginsDialogHook {
+    getState(): { open: boolean; setOpen(open: boolean): void };
+}
+
+function isPluginsDialogHook(value: unknown): value is PluginsDialogHook {
+    if (typeof value !== "function" || typeof (value as { getState?: unknown }).getState !== "function") return false;
+    try {
+        const state = (value as PluginsDialogHook).getState();
+        return !!state && typeof state.setOpen === "function" && "open" in state && !("setTab" in state);
+    } catch {
+        return false;
+    }
+}
+
+/** Named export is gone. The hook is a short key on the factory that still contains `usePluginsDialogStore`. */
+function pluginsDialogHook(): PluginsDialogHook | null {
+    for (const id of Object.keys(search("usePluginsDialogStore"))) {
+        const mod = requireModule<Record<string, unknown>>(Number(id));
+        if (!mod || typeof mod !== "object") continue;
+        for (const value of Object.values(mod)) {
+            if (isPluginsDialogHook(value)) return value;
+        }
+    }
+    const legacy = find((mod: Record<string, unknown>) => isPluginsDialogHook(mod?.usePluginsDialogStore)) as { usePluginsDialogStore?: PluginsDialogHook } | null;
+    return legacy && isPluginsDialogHook(legacy.usePluginsDialogStore) ? legacy.usePluginsDialogStore : null;
+}
+
+export const PluginsDialogStore: { usePluginsDialogStore: PluginsDialogHook } = proxyLazy(() => {
+    const hook = pluginsDialogHook();
+    return hook ? { usePluginsDialogStore: hook } : null;
+}, Infinity);
 export const SettingsStore: SettingsStoreModule = findByPropsLazy("useSettingsStore", "modelConfigOverrideSchema");
 export const SubscriptionsStore: SubscriptionsStoreModule = findByPropsLazy("useSubscriptionsStore");
 export const TextToSpeechStore: TextToSpeechStoreModule = findByPropsLazy("useTextToSpeechStore");
