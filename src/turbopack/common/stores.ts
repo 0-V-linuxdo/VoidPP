@@ -23,6 +23,8 @@ import type {
 
 import { proxyLazy } from "@utils/lazy";
 
+import { getFnSource } from "../fnSource";
+import { getRuntimeModuleCache } from "../patchTurbopack";
 import { find, findByPropsLazy, isZustandStore, requireModule, search } from "../turbopack";
 
 export const ChatPageStore: ChatPageStoreModule = findByPropsLazy("useChatPageStore");
@@ -89,7 +91,45 @@ export const RoutingStore: RoutingStoreModule = proxyLazy(() => {
     const hook = hookFromFactory("useRoutingStore", isRoutingHook);
     return hook ? { useRoutingStore: hook } : null;
 }, Infinity);
-export const SessionStore: SessionStoreModule = findByPropsLazy("useSession", "SessionStoreProvider");
+
+const SESSION_MARKER = "useSession must be used within SessionStoreProvider";
+
+function isSessionHook(value: unknown): value is SessionStoreModule["useSession"] {
+    if (typeof value !== "function") return false;
+    try {
+        return getFnSource(value).includes(SESSION_MARKER);
+    } catch {
+        return false;
+    }
+}
+
+function readSessionModule(mod: Record<string, unknown> | null | undefined): SessionStoreModule | null {
+    if (!mod || typeof mod !== "object") return null;
+    if (typeof mod.useSession === "function" && typeof mod.SessionStoreProvider === "function") return mod as unknown as SessionStoreModule;
+    for (const value of Object.values(mod)) {
+        if (isSessionHook(value)) return { useSession: value } as SessionStoreModule;
+    }
+    return null;
+}
+
+/** Named exports exist, but this module is not in the finder cache. `requireModule` of the factory still returns them. */
+function sessionModule(): SessionStoreModule | null {
+    const legacy = find((mod: Record<string, unknown>) => typeof mod?.useSession === "function" && typeof mod?.SessionStoreProvider === "function") as SessionStoreModule | null;
+    if (legacy?.useSession) return legacy;
+
+    for (const id of Object.keys(search(SESSION_MARKER))) {
+        const num = Number(id);
+        const required = requireModule<Record<string, unknown>>(num);
+        const runtime = getRuntimeModuleCache()?.[num];
+        const hit = readSessionModule(required)
+            ?? readSessionModule(runtime?.namespaceObject)
+            ?? (runtime?.exports !== required ? readSessionModule(runtime?.exports) : null);
+        if (hit) return hit;
+    }
+    return null;
+}
+
+export const SessionStore: SessionStoreModule = proxyLazy(() => sessionModule(), Infinity);
 function isSettingsDialogHook(value: unknown): value is SettingsDialogStoreModule["useSettingsDialogStore"] {
     if (typeof value !== "function" || typeof (value as { getState?: unknown }).getState !== "function") return false;
     try {

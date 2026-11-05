@@ -16,8 +16,9 @@ import { Text } from "@components/Text";
 import { SidebarComponents } from "@turbopack/common/components";
 import { getPlanName } from "@turbopack/common/plan";
 import { subscriptionIsCommerce, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
-import { createElement, Fragment, React, useRef, useState } from "@turbopack/common/react";
+import { createElement, Fragment, React, useEffect, useRef, useState } from "@turbopack/common/react";
 import { ChatPageStore, ConversationStore, RoutingStore, SessionStore } from "@turbopack/common/stores";
+import { onModuleLoad } from "@turbopack/patchTurbopack";
 import { findByProps } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classNameFactory, disableStyle, enableStyle } from "@utils/css";
@@ -398,7 +399,21 @@ const ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
     );
 }, null);
 
-function UserCard({ AvatarMenu, ...rest }: { AvatarMenu: ComponentType<Record<string, unknown>> }) {
+function UserCard(props: { AvatarMenu: ComponentType<Record<string, unknown>> }) {
+    const ready = typeof SessionStore.useSession === "function";
+    const [, bump] = useState(0);
+    useEffect(() => {
+        if (ready) return;
+        return onModuleLoad(() => bump(n => n + 1));
+    }, [ready]);
+    if (!ready) {
+        const { AvatarMenu, ...rest } = props;
+        return <AvatarMenu {...rest} />;
+    }
+    return <UserCardBody {...props} />;
+}
+
+function UserCardBody({ AvatarMenu, ...rest }: { AvatarMenu: ComponentType<Record<string, unknown>> }) {
     const { open } = SidebarComponents.useSidebar();
     const { user } = SessionStore.useSession();
     const snapshot = useSubscriptionSnapshot();

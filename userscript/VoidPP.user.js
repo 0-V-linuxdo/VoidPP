@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.13
+// @version      20261028.14
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.13] v1.0.0 — A modification for grok.com
+ * Void++ [20261028.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -2343,7 +2343,42 @@ ${sourceUrl}`;
     const hook = hookFromFactory("useRoutingStore", isRoutingHook);
     return hook ? { useRoutingStore: hook } : null;
   }, Infinity);
-  var SessionStore = findByPropsLazy("useSession", "SessionStoreProvider");
+  var SESSION_MARKER = "useSession must be used within SessionStoreProvider";
+  function isSessionHook(value) {
+    if (typeof value !== "function")
+      return false;
+    try {
+      return getFnSource(value).includes(SESSION_MARKER);
+    } catch {
+      return false;
+    }
+  }
+  function readSessionModule(mod) {
+    if (!mod || typeof mod !== "object")
+      return null;
+    if (typeof mod.useSession === "function" && typeof mod.SessionStoreProvider === "function")
+      return mod;
+    for (const value of Object.values(mod)) {
+      if (isSessionHook(value))
+        return { useSession: value };
+    }
+    return null;
+  }
+  function sessionModule() {
+    const legacy = find((mod) => typeof mod?.useSession === "function" && typeof mod?.SessionStoreProvider === "function");
+    if (legacy?.useSession)
+      return legacy;
+    for (const id of Object.keys(search(SESSION_MARKER))) {
+      const num = Number(id);
+      const required = requireModule(num);
+      const runtime = getRuntimeModuleCache()?.[num];
+      const hit = readSessionModule(required) ?? readSessionModule(runtime?.namespaceObject) ?? (runtime?.exports !== required ? readSessionModule(runtime?.exports) : null);
+      if (hit)
+        return hit;
+    }
+    return null;
+  }
+  var SessionStore = proxyLazy(() => sessionModule(), Infinity);
   function isSettingsDialogHook(value) {
     if (typeof value !== "function" || typeof value.getState !== "function")
       return false;
@@ -6846,7 +6881,25 @@ ${root}::-webkit-scrollbar-thumb:hover {
       size: 14
     }));
   }, null);
-  function UserCard({ AvatarMenu, ...rest }) {
+  function UserCard(props) {
+    const ready = typeof SessionStore.useSession === "function";
+    const [, bump] = useState(0);
+    useEffect(() => {
+      if (ready)
+        return;
+      return onModuleLoad(() => bump((n) => n + 1));
+    }, [ready]);
+    if (!ready) {
+      const { AvatarMenu, ...rest } = props;
+      return /* @__PURE__ */ React.createElement(AvatarMenu, {
+        ...rest
+      });
+    }
+    return /* @__PURE__ */ React.createElement(UserCardBody, {
+      ...props
+    });
+  }
+  function UserCardBody({ AvatarMenu, ...rest }) {
     const { open } = SidebarComponents.useSidebar();
     const { user } = SessionStore.useSession();
     const snapshot = useSubscriptionSnapshot();
@@ -9785,9 +9838,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8d1da7d"}`
-    }, `(${"8d1da7d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261028.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"91607f6"}`
+    }, `(${"91607f6"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36226,7 +36279,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1791839284000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1791844386000;
-  betterSidebar_default.updatedAt = 1793259228000;
+  betterSidebar_default.updatedAt = 1793874759020;
   chatListStatus_default.updatedAt = 1791658451000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1793174778000;
