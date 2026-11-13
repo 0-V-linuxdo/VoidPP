@@ -618,12 +618,21 @@ export default definePlugin({
                     // Desktop object, then the non-desktop placeholder: `}):ident`.
                     match: /(newChatPlaceholder:\i\}\):)(\i)/,
                     replace: "$1$self._inputPlaceholder($2)",
+                    noWarn: true,
                 },
             ],
         },
         {
+            find: "desktop-shell.home.greeting-explore",
+            replacement: {
+                match: /\(0,(\i)\.jsx\)\((\i),\{alternate:(\i),current:(\i),showingAlternate:(\i)\}\)/,
+                replace: '(0,$1.jsx)("h1",{"data-void-ph-hero":"",style:{display:"contents"},children:(0,$1.jsx)($2,{alternate:$3,current:$4,showingAlternate:$5})})',
+            },
+        },
+        {
             find: '"HeroHeading",0,',
             all: true,
+            noWarn: true,
             replacement: {
                 match: /("h1",\{className:(?:"[^"]*"|\i)),children:/,
                 replace: '$1,"data-void-ph-hero":"",children:',

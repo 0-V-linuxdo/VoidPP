@@ -567,6 +567,9 @@ export default definePlugin({
     _autoPlay: () => !settings.store.noAutoplay,
     _bypassPaywall: () => settings.store.bypassPaywall,
     _ctrlClickSelect: () => settings.store.ctrlClickSelect,
+    _playCard: (e: { currentTarget: HTMLElement }) => { if (settings.store.playOnHover) onMouseEnter(e); },
+    _pauseCard: (e: { currentTarget: HTMLElement }) => { if (settings.store.playOnHover) onMouseLeave(e); },
+    _postById: (id: string) => MediaStore.useMediaStore.getState().byId?.[id],
     _hoverProps: () => settings.store.playOnHover ? { onMouseEnter, onMouseLeave } : {},
     _useFilteredFavorites: useFilteredFavorites,
     _renderFilterButtons: ErrorBoundary.wrap(FilterButtons, null),
@@ -590,36 +593,45 @@ export default definePlugin({
     patches: [
         {
             find: "image_feed_opened",
-            group: true,
+            all: true,
             replacement: [
                 {
                     match: /\(0,(\i\.jsx)\)\((\i),\{containerRef:(\i),variant:(\i),width:/,
                     replace: '(0,$1)($self._hideDefault()&&"favorites"!==$4?$self._NullGrid:$2,{containerRef:$3,variant:$4,width:',
                 },
                 {
+                    match: /=\(0,\i\.\i\)\(\i=>\i\.favoritesList\)/,
+                    replace: "=$self._useFilteredFavorites()",
+                },
+                {
                     match: /=\(0,\i\.useMediaStore\)\(\i=>\i\.favoritesList\)/,
                     replace: "=$self._useFilteredFavorites()",
+                    noWarn: true,
                 },
             ],
         },
         {
             find: "image_feed_image_selected",
-            group: true,
+            all: true,
             replacement: [
                 {
                     match: /autoPlay:!0/g,
                     replace: "autoPlay:$self._autoPlay()",
                 },
                 {
-                    match: /\.updateShiftPreview\(null\)\)\},onClick:/,
-                    replace: ".updateShiftPreview(null))},...$self._hoverProps(),onClick:",
+                    match: /onMouseOver:\(\)=>\{(?=[^}]{0,500}updateShiftPreview\()/g,
+                    replace: "onMouseOver:e=>{$self._playCard(e);",
+                },
+                {
+                    match: /onMouseLeave:\(\)=>\{(?=[^}]{0,500}clearShiftPreview\()/g,
+                    replace: "onMouseLeave:e=>{$self._pauseCard(e);",
                 },
                 {
                     match: /if\(([^)]{1,40})\)return void (\i)\((\i)\);(?=let \i=\{imagine:"home-grid")/,
                     replace: "if($1||($self._ctrlClickSelect()&&($3.ctrlKey||$3.metaKey)))return void $2($3);",
                 },
                 {
-                    match: /if\(([^)]{1,40})\)return void (\i)\((\i)\);(?=if\(!\i\)return;\i\.useMediaStore\.getState\(\)\.clearMultiSelect)/,
+                    match: /if\(([^)]{1,40})\)return void (\i)\((\i)\);(?=if\(!\i\)return;\i\.\i\.getState\(\)\.clearMultiSelect\(\))/,
                     replace: "if($1||($self._ctrlClickSelect()&&($3.ctrlKey||$3.metaKey)))return void $2($3);",
                 },
             ],
@@ -627,8 +639,8 @@ export default definePlugin({
         {
             find: 'imagine-folder.all","All"',
             replacement: {
-                match: /"imagine-folder\.all","All"\)\}\)/,
-                replace: "$&,$self._renderFilterButtons({})",
+                match: /(?<="imagine-folder\.all","All"\)\]\}\))/,
+                replace: ',$self._renderFilterButtons({})',
             },
         },
         {
@@ -643,14 +655,35 @@ export default definePlugin({
         {
             find: '"imagine-set-resolution"',
             all: true,
-            replacement: {
-                match: /return void \i\.useUpsellStore\.getState\(\)\.openUpsell\(\{entrypointKey:"imagine-[\w-]+"\}\)/g,
-                replace: "if(!$self._bypassPaywall())$&",
-            },
+            replacement: [
+                {
+                    match: /loginCheck\((\i)\)&&(?=\i(?:\.\i)?\.getState\(\)\.openUpsell\(\{entrypointKey:\1)/,
+                    replace: "loginCheck($1)&&!$self._bypassPaywall()&&",
+                },
+                {
+                    match: /(\i(?:\.\i)?\.getState\(\)\.openUpsell\(\{entrypointKey:"imagine-[\w-]+"(?:,targetTier:\i)?\}\))/g,
+                    replace: "($self._bypassPaywall()||$1)",
+                },
+            ],
+        },
+        {
+            find: "imagine-multiselect:download",
+            all: true,
+            replacement: [
+                {
+                    match: /`imagine-\$\{(\i)\.slice\(0,8\)\}\.\$\{(\i)\?"mp4":"png"\}`/g,
+                    replace: "($self._buildFilename($self._postById($1),!!$2)||$&)",
+                },
+                {
+                    match: /`imagine-\$\{(\i)\.slice\(0,8\)\}\.\$\{(\i)\}`/g,
+                    replace: '($self._buildFilename($self._postById($1),$2==="mp4")||$&)',
+                },
+            ],
         },
         {
             find: ["imagine-multiselect.add-to-tag", 'DropdownMenuContent,{align:"end",sideOffset:8,children:[(0,'],
             group: true,
+            noWarn: true,
             replacement: [
                 {
                     match: /(?<=\.DropdownMenuContent,\{align:"end",sideOffset:8,children:\[)/,

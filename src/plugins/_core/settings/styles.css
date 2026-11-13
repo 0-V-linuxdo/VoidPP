@@ -12,7 +12,7 @@
     right: 0;
     padding: 0.75rem;
     opacity: 0.3;
-    color: var(--fg-secondary);
+    color: var(--fg-secondary, var(--grok-text-secondary));
     pointer-events: none;
 }
 
@@ -30,7 +30,7 @@
     width: 1rem;
     height: 1rem;
     margin-inline-end: 0.5rem;
-    color: var(--fg-secondary);
+    color: var(--fg-secondary, var(--grok-text-secondary));
     flex-shrink: 0;
 }
 
@@ -60,13 +60,13 @@ button .void-info-hint {
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.25rem;
-    color: var(--fg-primary);
+    color: var(--fg-primary, var(--grok-text-primary));
 }
 
 .void-settings-description {
     font-size: 0.75rem;
     line-height: 1rem;
-    color: var(--fg-secondary);
+    color: var(--fg-secondary, var(--grok-text-secondary));
 }
 
 .void-settings-sep {
@@ -74,7 +74,7 @@ button .void-info-hint {
     width: 100%;
     margin: 0.25rem 0;
     border: 0;
-    background: var(--border-l1);
+    background: var(--border-l1, var(--grok-border-l1, var(--border)));
 }
 
 .void-native-input {
@@ -82,9 +82,9 @@ button .void-info-hint {
     height: 2rem;
     padding: 0 0.625rem;
     border-radius: 0.5rem;
-    border: 1px solid var(--border-l1);
+    border: 1px solid var(--border-l1, var(--grok-border-l1, var(--border)));
     background: transparent;
-    color: var(--fg-primary);
+    color: var(--fg-primary, var(--grok-text-primary));
     font: inherit;
     outline: none;
 }

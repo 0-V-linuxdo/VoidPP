@@ -848,8 +848,13 @@ export default definePlugin({
             all: true,
             replacement: [
                 {
+                    match: /\{compact:\i\|\|\i,(?=selectedModeId:)/,
+                    replace: "{compact:!0,",
+                },
+                {
                     match: /\{compact:\i\|\|\i,(?=onOpenChange:)/,
                     replace: "{compact:!0,",
+                    noWarn: true,
                 },
                 {
                     match: /ModeSelect,\{compact:\i\|\|\i,/,

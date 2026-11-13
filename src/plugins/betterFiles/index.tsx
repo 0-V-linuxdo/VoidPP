@@ -94,6 +94,7 @@ export default definePlugin({
     patches: [
         {
             find: "LibraryPageContent:refreshAssets",
+            noWarn: true,
             replacement: [
                 {
                     match: /("data-library-item-id":\i\.id,onPointerDown:\i,onClick:)(\i)(,className:"absolute inset-0 z-0 focus-visible:outline-none")/,

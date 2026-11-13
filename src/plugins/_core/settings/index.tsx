@@ -288,6 +288,7 @@ export default definePlugin({
         {
             find: '"SettingsTitle",0,',
             all: true,
+            noWarn: true,
             replacement: [
                 {
                     match: /("SettingsTitle",0,)(?!function)(\i)/,

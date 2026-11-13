@@ -103,9 +103,18 @@ export default definePlugin({
         },
         {
             find: "chat-markdown-load-third-party",
+            noWarn: true,
             replacement: {
                 match: /singleDollarTextMath:!1\}\],([^\]]{0,200})\]/,
                 replace: "singleDollarTextMath:!1}],$1,$self._remarkLinkify]",
+            },
+        },
+        {
+            find: '"user-content-"',
+            all: true,
+            replacement: {
+                match: /let (\i)=(\i)\((\i)=>\[(\i),(\i)\.f,\.\.\.\3\.filter\(\3=>\3!==(\i)\.n&&\3!==\6\.m\),(\i)\]\)/,
+                replace: "let $1=$2($3=>[$4,$5.f,...$3.filter($3=>$3!==$6.n&&$3!==$6.m),$7,$self._remarkLinkify])",
             },
         },
     ],

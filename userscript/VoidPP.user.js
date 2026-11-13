@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261028.15
+// @version      20261113.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261028.15] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -6323,8 +6323,9 @@ ${root}::-webkit-scrollbar-thumb:hover {
         ]
       },
       {
-        find: "usePluginsSurfaceTitle",
+        find: "SkillsAndConnectorsPageContent",
         all: true,
+        noWarn: true,
         replacement: {
           match: /(\i)\[(\d+)\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\(([A-Za-z_$][\w$.]*),\{inDialog:!0,localTabs:\3\}\),\1\[\2\]=\3,\1\[(\d+)\]=\4\):\4=\1\[\7\]/g,
           replace: "$1[$2]!==$self._shellKey($3)?($4=(0,$5.jsx)($6,{inDialog:!0,localTabs:$3,key:$self._shellKey($3)}),$1[$2]=$self._shellKey($3),$1[$7]=$4):$4=$1[$7]"
@@ -7162,6 +7163,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       },
       {
         find: "enterDistance:8,collapsed:",
+        noWarn: true,
         replacement: {
           match: /\i\?\(0,(\i)\.jsx\)\((\i),\{enterDistance:8,collapsed:(\i),onToggleCollapsed:(\i),activeProjectId:(\i),expandedProjectIds:(\i),onToggleProjectExpanded:(\i)\}\):null/,
           replace: "(0,$1.jsx)($2,{enterDistance:8,collapsed:$3,onToggleCollapsed:$4,activeProjectId:$5,expandedProjectIds:$6,onToggleProjectExpanded:$7})"
@@ -7232,13 +7234,22 @@ ${root}::-webkit-scrollbar-thumb:hover {
     patches: [
       {
         find: '"opentelemetry.js.api."',
+        noWarn: true,
         replacement: {
           match: /("onRouterTransitionStart",0,)function\([^)]*\)\{[^}]{0,200}\}/,
           replace: "$1function(){}"
         }
       },
       {
+        find: '"onRouterTransitionStart",0,function',
+        replacement: {
+          match: /"onRouterTransitionStart",0,function\(\i,\i\)\{[^}]{0,120}\}/,
+          replace: '"onRouterTransitionStart",0,function(){}'
+        }
+      },
+      {
         find: '"after-init"),(0,',
+        noWarn: true,
         replacement: [
           {
             match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]*?\}(?=,"stopRecordingImagineSession")/,
@@ -7285,7 +7296,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
           },
           {
             match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/,
-            replace: "void 0"
+            replace: "void 0",
+            noWarn: true
           }
         ]
       },
@@ -7314,7 +7326,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     right: 0;
     padding: 0.75rem;
     opacity: 0.3;
-    color: var(--fg-secondary);
+    color: var(--fg-secondary, var(--grok-text-secondary));
     pointer-events: none;
 }
 
@@ -7332,7 +7344,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     width: 1rem;
     height: 1rem;
     margin-inline-end: 0.5rem;
-    color: var(--fg-secondary);
+    color: var(--fg-secondary, var(--grok-text-secondary));
     flex-shrink: 0;
 }
 
@@ -7362,13 +7374,13 @@ button .void-info-hint {
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.25rem;
-    color: var(--fg-primary);
+    color: var(--fg-primary, var(--grok-text-primary));
 }
 
 .void-settings-description {
     font-size: 0.75rem;
     line-height: 1rem;
-    color: var(--fg-secondary);
+    color: var(--fg-secondary, var(--grok-text-secondary));
 }
 
 .void-settings-sep {
@@ -7376,7 +7388,7 @@ button .void-info-hint {
     width: 100%;
     margin: 0.25rem 0;
     border: 0;
-    background: var(--border-l1);
+    background: var(--border-l1, var(--grok-border-l1, var(--border)));
 }
 
 .void-native-input {
@@ -7384,9 +7396,9 @@ button .void-info-hint {
     height: 2rem;
     padding: 0 0.625rem;
     border-radius: 0.5rem;
-    border: 1px solid var(--border-l1);
+    border: 1px solid var(--border-l1, var(--grok-border-l1, var(--border)));
     background: transparent;
-    color: var(--fg-primary);
+    color: var(--fg-primary, var(--grok-text-primary));
     font: inherit;
     outline: none;
 }
@@ -9650,10 +9662,17 @@ button .void-info-hint {
       {
         find: "xai-ff-overrides",
         all: true,
-        replacement: {
-          match: /return \i\.overridesEnabled&&(void 0!==\i\.overrides\[\i\])/,
-          replace: "return $1"
-        }
+        replacement: [
+          {
+            match: /return (\i)\.overridesEnabled&&void 0!==\1\.overrides\[(\i)\]\?\1\.overrides\[\2\]:\1\.config\[\2\]/,
+            replace: "return void 0!==$1.overrides[$2]?$1.overrides[$2]:$1.config[$2]"
+          },
+          {
+            match: /return \i\.overridesEnabled&&(void 0!==\i\.overrides\[\i\])/,
+            replace: "return $1",
+            noWarn: true
+          }
+        ]
       },
       {
         find: '"Feature flag overrides active","Feature flag overrides active"',
@@ -9665,15 +9684,24 @@ button .void-info-hint {
       {
         find: "feature-store-set-override",
         all: true,
-        group: true,
         replacement: [
           {
+            match: /this\.set\(t=>\(\{\.\.\.t,status:"ready",config:(\i\.serverConfig)/,
+            replace: 'this.set(t=>({...t,status:"ready",config:$self._proxy($1,this.get)'
+          },
+          {
+            match: /this\.set\((\i)=>(\i)\?\{\.\.\.\1,status:"ready",config:\2,/,
+            replace: 'this.set($1=>$2?{...$1,status:"ready",config:$self._proxy($2,this.get),'
+          },
+          {
             match: /config:("ready"===\i\.status\?\i\.serverConfig:\{\})/,
-            replace: "config:$self._proxy($1,this.get)"
+            replace: "config:$self._proxy($1,this.get)",
+            noWarn: true
           },
           {
             match: /"ready"===\i\.status\)\i\(this\.config\)/,
-            replace: "$&,this.config=$self._proxy(this.config,this.get)"
+            replace: "$&,this.config=$self._proxy(this.config,this.get)",
+            noWarn: true
           }
         ]
       }
@@ -9838,9 +9866,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261028.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a483fe1"}`
-    }, `(${"a483fe1"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6ac993c"}`
+    }, `(${"6ac993c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10004,6 +10032,7 @@ button .void-info-hint {
       {
         find: '"SettingsTitle",0,',
         all: true,
+        noWarn: true,
         replacement: [
           {
             match: /("SettingsTitle",0,)(?!function)(\i)/,
@@ -10236,7 +10265,7 @@ button .void-info-hint {
     _collapse: () => true,
     patches: [
       {
-        find: ["isInitiallyCollapsed", "showRunCode"],
+        find: "isInitiallyCollapsed:",
         all: true,
         replacement: {
           match: /isInitiallyCollapsed:(\i)=!1/g,
@@ -10469,6 +10498,7 @@ button .void-info-hint {
     patches: [
       {
         find: "LibraryPageContent:refreshAssets",
+        noWarn: true,
         replacement: [
           {
             match: /("data-library-item-id":\i\.id,onPointerDown:\i,onClick:)(\i)(,className:"absolute inset-0 z-0 focus-visible:outline-none")/,
@@ -11065,6 +11095,15 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     _autoPlay: () => !settings9.store.noAutoplay,
     _bypassPaywall: () => settings9.store.bypassPaywall,
     _ctrlClickSelect: () => settings9.store.ctrlClickSelect,
+    _playCard: (e) => {
+      if (settings9.store.playOnHover)
+        onMouseEnter(e);
+    },
+    _pauseCard: (e) => {
+      if (settings9.store.playOnHover)
+        onMouseLeave(e);
+    },
+    _postById: (id) => MediaStore.useMediaStore.getState().byId?.[id],
     _hoverProps: () => settings9.store.playOnHover ? { onMouseEnter, onMouseLeave } : {},
     _useFilteredFavorites: useFilteredFavorites,
     _renderFilterButtons: ErrorBoundary.wrap(FilterButtons, null),
@@ -11086,36 +11125,45 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     patches: [
       {
         find: "image_feed_opened",
-        group: true,
+        all: true,
         replacement: [
           {
             match: /\(0,(\i\.jsx)\)\((\i),\{containerRef:(\i),variant:(\i),width:/,
             replace: '(0,$1)($self._hideDefault()&&"favorites"!==$4?$self._NullGrid:$2,{containerRef:$3,variant:$4,width:'
           },
           {
-            match: /=\(0,\i\.useMediaStore\)\(\i=>\i\.favoritesList\)/,
+            match: /=\(0,\i\.\i\)\(\i=>\i\.favoritesList\)/,
             replace: "=$self._useFilteredFavorites()"
+          },
+          {
+            match: /=\(0,\i\.useMediaStore\)\(\i=>\i\.favoritesList\)/,
+            replace: "=$self._useFilteredFavorites()",
+            noWarn: true
           }
         ]
       },
       {
         find: "image_feed_image_selected",
-        group: true,
+        all: true,
         replacement: [
           {
             match: /autoPlay:!0/g,
             replace: "autoPlay:$self._autoPlay()"
           },
           {
-            match: /\.updateShiftPreview\(null\)\)\},onClick:/,
-            replace: ".updateShiftPreview(null))},...$self._hoverProps(),onClick:"
+            match: /onMouseOver:\(\)=>\{(?=[^}]{0,500}updateShiftPreview\()/g,
+            replace: "onMouseOver:e=>{$self._playCard(e);"
+          },
+          {
+            match: /onMouseLeave:\(\)=>\{(?=[^}]{0,500}clearShiftPreview\()/g,
+            replace: "onMouseLeave:e=>{$self._pauseCard(e);"
           },
           {
             match: /if\(([^)]{1,40})\)return void (\i)\((\i)\);(?=let \i=\{imagine:"home-grid")/,
             replace: "if($1||($self._ctrlClickSelect()&&($3.ctrlKey||$3.metaKey)))return void $2($3);"
           },
           {
-            match: /if\(([^)]{1,40})\)return void (\i)\((\i)\);(?=if\(!\i\)return;\i\.useMediaStore\.getState\(\)\.clearMultiSelect)/,
+            match: /if\(([^)]{1,40})\)return void (\i)\((\i)\);(?=if\(!\i\)return;\i\.\i\.getState\(\)\.clearMultiSelect\(\))/,
             replace: "if($1||($self._ctrlClickSelect()&&($3.ctrlKey||$3.metaKey)))return void $2($3);"
           }
         ]
@@ -11123,8 +11171,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       {
         find: 'imagine-folder.all","All"',
         replacement: {
-          match: /"imagine-folder\.all","All"\)\}\)/,
-          replace: "$&,$self._renderFilterButtons({})"
+          match: /(?<="imagine-folder\.all","All"\)\]\}\))/,
+          replace: ",$self._renderFilterButtons({})"
         }
       },
       {
@@ -11139,14 +11187,35 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       {
         find: '"imagine-set-resolution"',
         all: true,
-        replacement: {
-          match: /return void \i\.useUpsellStore\.getState\(\)\.openUpsell\(\{entrypointKey:"imagine-[\w-]+"\}\)/g,
-          replace: "if(!$self._bypassPaywall())$&"
-        }
+        replacement: [
+          {
+            match: /loginCheck\((\i)\)&&(?=\i(?:\.\i)?\.getState\(\)\.openUpsell\(\{entrypointKey:\1)/,
+            replace: "loginCheck($1)&&!$self._bypassPaywall()&&"
+          },
+          {
+            match: /(\i(?:\.\i)?\.getState\(\)\.openUpsell\(\{entrypointKey:"imagine-[\w-]+"(?:,targetTier:\i)?\}\))/g,
+            replace: "($self._bypassPaywall()||$1)"
+          }
+        ]
+      },
+      {
+        find: "imagine-multiselect:download",
+        all: true,
+        replacement: [
+          {
+            match: /`imagine-\$\{(\i)\.slice\(0,8\)\}\.\$\{(\i)\?"mp4":"png"\}`/g,
+            replace: "($self._buildFilename($self._postById($1),!!$2)||$&)"
+          },
+          {
+            match: /`imagine-\$\{(\i)\.slice\(0,8\)\}\.\$\{(\i)\}`/g,
+            replace: '($self._buildFilename($self._postById($1),$2==="mp4")||$&)'
+          }
+        ]
       },
       {
         find: ["imagine-multiselect.add-to-tag", 'DropdownMenuContent,{align:"end",sideOffset:8,children:[(0,'],
         group: true,
+        noWarn: true,
         replacement: [
           {
             match: /(?<=\.DropdownMenuContent,\{align:"end",sideOffset:8,children:\[)/,
@@ -11243,9 +11312,18 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       },
       {
         find: "chat-markdown-load-third-party",
+        noWarn: true,
         replacement: {
           match: /singleDollarTextMath:!1\}\],([^\]]{0,200})\]/,
           replace: "singleDollarTextMath:!1}],$1,$self._remarkLinkify]"
+        }
+      },
+      {
+        find: '"user-content-"',
+        all: true,
+        replacement: {
+          match: /let (\i)=(\i)\((\i)=>\[(\i),(\i)\.f,\.\.\.\3\.filter\(\3=>\3!==(\i)\.n&&\3!==\6\.m\),(\i)\]\)/,
+          replace: "let $1=$2($3=>[$4,$5.f,...$3.filter($3=>$3!==$6.n&&$3!==$6.m),$7,$self._remarkLinkify])"
         }
       }
     ],
@@ -12297,8 +12375,13 @@ html.void-cms-picked .void-cms-ghost {
         all: true,
         replacement: [
           {
-            match: /\{compact:\i\|\|\i,(?=onOpenChange:)/,
+            match: /\{compact:\i\|\|\i,(?=selectedModeId:)/,
             replace: "{compact:!0,"
+          },
+          {
+            match: /\{compact:\i\|\|\i,(?=onOpenChange:)/,
+            replace: "{compact:!0,",
+            noWarn: true
           },
           {
             match: /ModeSelect,\{compact:\i\|\|\i,/,
@@ -22908,9 +22991,18 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       {
         find: "UPSELL_CARD_PRIORITY)",
         all: true,
+        noWarn: true,
         replacement: {
           match: /(\(0,\i\.useIsUpsellLayerVisible\)\(\i\.UPSELL_CARD_PRIORITY\))/,
           replace: "$1&&!$self.settings.store.hideUpsellCard"
+        }
+      },
+      {
+        find: '"upsell-card.upgrade","Upgrade"',
+        all: true,
+        replacement: {
+          match: /if\(!(\i)\)return null;(?=[\s\S]{0,600}"upsell-card\.upgrade","Upgrade")/,
+          replace: "if(!$1||$self.settings.store.hideUpsellCard)return null;"
         }
       },
       hideComponentPatch("UpsellSuperGrokSmall", "hideUpsellSmall"),
@@ -22932,9 +23024,18 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       },
       hideComponentPatch("BrowserNotificationBanner", "hideNotificationBanner"),
       {
+        find: "upgradePrimaryModes:",
+        all: true,
+        replacement: {
+          match: /upgradePrimaryModes:(\i),unavailablePrimaryModes:(\i)\}/,
+          replace: "upgradePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$1,unavailablePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$2}"
+        }
+      },
+      {
         find: ["mode-select.search-placeholder", "UPSELL_MODEL_SELECT_PRIORITY"],
         all: true,
         group: true,
+        noWarn: true,
         replacement: [
           {
             match: /UPSELL_MODEL_SELECT_PRIORITY\),.{0,200}?if\(/,
@@ -24886,13 +24987,22 @@ Neon rain in a quiet city`
           },
           {
             match: /(newChatPlaceholder:\i\}\):)(\i)/,
-            replace: "$1$self._inputPlaceholder($2)"
+            replace: "$1$self._inputPlaceholder($2)",
+            noWarn: true
           }
         ]
       },
       {
+        find: "desktop-shell.home.greeting-explore",
+        replacement: {
+          match: /\(0,(\i)\.jsx\)\((\i),\{alternate:(\i),current:(\i),showingAlternate:(\i)\}\)/,
+          replace: '(0,$1.jsx)("h1",{"data-void-ph-hero":"",style:{display:"contents"},children:(0,$1.jsx)($2,{alternate:$3,current:$4,showingAlternate:$5})})'
+        }
+      },
+      {
         find: '"HeroHeading",0,',
         all: true,
+        noWarn: true,
         replacement: {
           match: /("h1",\{className:(?:"[^"]*"|\i)),children:/,
           replace: '$1,"data-void-ph-hero":"",children:'
@@ -30207,7 +30317,15 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     enabledByDefault: true,
     patches: [
       {
+        find: "build-mode-starters.more",
+        replacement: {
+          match: /(?=\(0,\i\.jsx\)\(\i\.f\.div,\{className:"flex w-full flex-col items-center pt-1 pb-2)/,
+          replace: "true?null:"
+        }
+      },
+      {
         find: '"BuildModeStarters",0,',
+        noWarn: true,
         replacement: {
           match: /"BuildModeStarters",0,/,
           replace: '"BuildModeStarters",0,true?()=>null:'
@@ -36261,60 +36379,60 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // virtual:~plugins
-  fixChrome_default.updatedAt = 1787789817000;
+  fixChrome_default.updatedAt = 1793875238000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  noTelemetry_default.updatedAt = 1793875235594;
-  settings_default.updatedAt = 1793786643000;
-  chatBarButtons_default.updatedAt = 1793189713000;
-  contextMenu_default.updatedAt = 1793174778000;
-  autoCollapse_default.updatedAt = 1787789817000;
-  autoRetry_default.updatedAt = 1789906500000;
-  avatarPluginsFlyout_default.updatedAt = 1793174778000;
-  betterCanvas_default.updatedAt = 1791660269000;
-  betterFiles_default.updatedAt = 1789246749000;
-  betterImagine_default.updatedAt = 1791226275000;
-  betterLinks_default.updatedAt = 1787870966000;
-  betterModeSelect_default.updatedAt = 1793258018000;
-  betterNavigator_default.updatedAt = 1791839284000;
-  betterQueue_default.updatedAt = 1793180938000;
-  betterQuotes_default.updatedAt = 1791844386000;
-  betterSidebar_default.updatedAt = 1793874759020;
-  chatListStatus_default.updatedAt = 1791658451000;
-  chatStateFavicons_default.updatedAt = 1789921507000;
-  cleaner_default.updatedAt = 1793174778000;
-  cloneChats_default.updatedAt = 1787870966000;
-  collapseThoughts_default.updatedAt = 1793175588000;
-  completeToast_default.updatedAt = 1791666004000;
-  composerOpacity_default.updatedAt = 1791226275000;
-  consoleJanitor_default.updatedAt = 1787789817000;
-  customGreeting_default.updatedAt = 1793175588000;
-  customInstructions_default.updatedAt = 1791911974000;
-  customSidebarIdentity_default.updatedAt = 1791226275000;
-  downloadTTS_default.updatedAt = 1787870966000;
-  experiments_default.updatedAt = 1791226275000;
-  exportChat_default.updatedAt = 1787870966000;
-  incognito_default.updatedAt = 1787870966000;
-  inputHistory_default.updatedAt = 1791226275000;
-  messageStars_default.updatedAt = 1791682713000;
-  messageTimestamps_default.updatedAt = 1793174778000;
-  noBuildStarters_default.updatedAt = 1789894247000;
-  noDictation_default.updatedAt = 1793871071000;
-  noGrokBot_default.updatedAt = 1790943206000;
-  noShareLink_default.updatedAt = 1787789817000;
-  noSidebarIdentity_default.updatedAt = 1793174778000;
-  oneko_default.updatedAt = 1787870966000;
-  pluginsFlyout_default.updatedAt = 1791226275000;
-  recentTopics_default.updatedAt = 1793174778000;
-  responseNotification_default.updatedAt = 1790093417000;
-  settingsFlyout_default.updatedAt = 1793786643000;
-  skillBlocker_default.updatedAt = 1791758395000;
-  stableComposer_default.updatedAt = 1793175588000;
-  starry_default.updatedAt = 1787870966000;
-  streamerMode_default.updatedAt = 1787870966000;
-  usageDisplay_default.updatedAt = 1793258018000;
-  userQuotes_default.updatedAt = 1791226275000;
-  widerChat_default.updatedAt = 1787870966000;
+  noTelemetry_default.updatedAt = 1793875238000;
+  settings_default.updatedAt = 1793875238000;
+  chatBarButtons_default.updatedAt = 1793875238000;
+  contextMenu_default.updatedAt = 1793875238000;
+  autoCollapse_default.updatedAt = 1793875238000;
+  autoRetry_default.updatedAt = 1793875238000;
+  avatarPluginsFlyout_default.updatedAt = 1793875238000;
+  betterCanvas_default.updatedAt = 1793875238000;
+  betterFiles_default.updatedAt = 1793875238000;
+  betterImagine_default.updatedAt = 1793875238000;
+  betterLinks_default.updatedAt = 1793875238000;
+  betterModeSelect_default.updatedAt = 1793875238000;
+  betterNavigator_default.updatedAt = 1793875238000;
+  betterQueue_default.updatedAt = 1793875238000;
+  betterQuotes_default.updatedAt = 1793875238000;
+  betterSidebar_default.updatedAt = 1793875238000;
+  chatListStatus_default.updatedAt = 1793875238000;
+  chatStateFavicons_default.updatedAt = 1793875238000;
+  cleaner_default.updatedAt = 1793875238000;
+  cloneChats_default.updatedAt = 1793875238000;
+  collapseThoughts_default.updatedAt = 1793875238000;
+  completeToast_default.updatedAt = 1793875238000;
+  composerOpacity_default.updatedAt = 1793875238000;
+  consoleJanitor_default.updatedAt = 1793875238000;
+  customGreeting_default.updatedAt = 1793875238000;
+  customInstructions_default.updatedAt = 1793875238000;
+  customSidebarIdentity_default.updatedAt = 1793875238000;
+  downloadTTS_default.updatedAt = 1793875238000;
+  experiments_default.updatedAt = 1793875238000;
+  exportChat_default.updatedAt = 1793875238000;
+  incognito_default.updatedAt = 1793875238000;
+  inputHistory_default.updatedAt = 1793875238000;
+  messageStars_default.updatedAt = 1793875238000;
+  messageTimestamps_default.updatedAt = 1793875238000;
+  noBuildStarters_default.updatedAt = 1793875238000;
+  noDictation_default.updatedAt = 1793875238000;
+  noGrokBot_default.updatedAt = 1793875238000;
+  noShareLink_default.updatedAt = 1793875238000;
+  noSidebarIdentity_default.updatedAt = 1793875238000;
+  oneko_default.updatedAt = 1793875238000;
+  pluginsFlyout_default.updatedAt = 1793875238000;
+  recentTopics_default.updatedAt = 1793875238000;
+  responseNotification_default.updatedAt = 1793875238000;
+  settingsFlyout_default.updatedAt = 1793875238000;
+  skillBlocker_default.updatedAt = 1793875238000;
+  stableComposer_default.updatedAt = 1793875238000;
+  starry_default.updatedAt = 1793875238000;
+  streamerMode_default.updatedAt = 1793875238000;
+  usageDisplay_default.updatedAt = 1793875238000;
+  userQuotes_default.updatedAt = 1793875238000;
+  widerChat_default.updatedAt = 1793875238000;
   var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {

@@ -288,10 +288,17 @@ export default definePlugin({
         {
             find: "xai-ff-overrides",
             all: true,
-            replacement: {
-                match: /return \i\.overridesEnabled&&(void 0!==\i\.overrides\[\i\])/,
-                replace: "return $1",
-            },
+            replacement: [
+                {
+                    match: /return (\i)\.overridesEnabled&&void 0!==\1\.overrides\[(\i)\]\?\1\.overrides\[\2\]:\1\.config\[\2\]/,
+                    replace: "return void 0!==$1.overrides[$2]?$1.overrides[$2]:$1.config[$2]",
+                },
+                {
+                    match: /return \i\.overridesEnabled&&(void 0!==\i\.overrides\[\i\])/,
+                    replace: "return $1",
+                    noWarn: true,
+                },
+            ],
         },
         {
             find: '"Feature flag overrides active","Feature flag overrides active"',
@@ -303,15 +310,24 @@ export default definePlugin({
         {
             find: "feature-store-set-override",
             all: true,
-            group: true,
             replacement: [
+                {
+                    match: /this\.set\(t=>\(\{\.\.\.t,status:"ready",config:(\i\.serverConfig)/,
+                    replace: 'this.set(t=>({...t,status:"ready",config:$self._proxy($1,this.get)',
+                },
+                {
+                    match: /this\.set\((\i)=>(\i)\?\{\.\.\.\1,status:"ready",config:\2,/,
+                    replace: 'this.set($1=>$2?{...$1,status:"ready",config:$self._proxy($2,this.get),',
+                },
                 {
                     match: /config:("ready"===\i\.status\?\i\.serverConfig:\{\})/,
                     replace: "config:$self._proxy($1,this.get)",
+                    noWarn: true,
                 },
                 {
                     match: /"ready"===\i\.status\)\i\(this\.config\)/,
                     replace: "$&,this.config=$self._proxy(this.config,this.get)",
+                    noWarn: true,
                 },
             ],
         },

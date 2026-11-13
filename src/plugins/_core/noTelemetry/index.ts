@@ -19,13 +19,22 @@ export default definePlugin({
     patches: [
         {
             find: '"opentelemetry.js.api."',
+            noWarn: true,
             replacement: {
                 match: /("onRouterTransitionStart",0,)function\([^)]*\)\{[^}]{0,200}\}/,
                 replace: "$1function(){}",
             },
         },
         {
+            find: '"onRouterTransitionStart",0,function',
+            replacement: {
+                match: /"onRouterTransitionStart",0,function\(\i,\i\)\{[^}]{0,120}\}/,
+                replace: '"onRouterTransitionStart",0,function(){}',
+            },
+        },
+        {
             find: '"after-init"),(0,',
+            noWarn: true,
             replacement: [
                 {
                     match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]*?\}(?=,"stopRecordingImagineSession")/,
@@ -74,6 +83,7 @@ export default definePlugin({
                 {
                     match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/,
                     replace: "void 0",
+                    noWarn: true,
                 },
             ],
         },

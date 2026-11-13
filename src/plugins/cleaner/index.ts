@@ -129,9 +129,18 @@ export default definePlugin({
         {
             find: "UPSELL_CARD_PRIORITY)",
             all: true,
+            noWarn: true,
             replacement: {
                 match: /(\(0,\i\.useIsUpsellLayerVisible\)\(\i\.UPSELL_CARD_PRIORITY\))/,
                 replace: "$1&&!$self.settings.store.hideUpsellCard",
+            },
+        },
+        {
+            find: '"upsell-card.upgrade","Upgrade"',
+            all: true,
+            replacement: {
+                match: /if\(!(\i)\)return null;(?=[\s\S]{0,600}"upsell-card\.upgrade","Upgrade")/,
+                replace: "if(!$1||$self.settings.store.hideUpsellCard)return null;",
             },
         },
         hideComponentPatch("UpsellSuperGrokSmall", "hideUpsellSmall"),
@@ -153,9 +162,18 @@ export default definePlugin({
         },
         hideComponentPatch("BrowserNotificationBanner", "hideNotificationBanner"),
         {
+            find: "upgradePrimaryModes:",
+            all: true,
+            replacement: {
+                match: /upgradePrimaryModes:(\i),unavailablePrimaryModes:(\i)\}/,
+                replace: "upgradePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$1,unavailablePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$2}",
+            },
+        },
+        {
             find: ["mode-select.search-placeholder", "UPSELL_MODEL_SELECT_PRIORITY"],
             all: true,
             group: true,
+            noWarn: true,
             replacement: [
                 {
                     match: /UPSELL_MODEL_SELECT_PRIORITY\),.{0,200}?if\(/,

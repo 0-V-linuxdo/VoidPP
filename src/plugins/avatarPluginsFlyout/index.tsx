@@ -389,8 +389,9 @@ export default definePlugin({
             ],
         },
         {
-            find: "usePluginsSurfaceTitle",
+            find: "SkillsAndConnectorsPageContent",
             all: true,
+            noWarn: true,
             replacement: {
                 match: /(\i)\[(\d+)\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\(([A-Za-z_$][\w$.]*),\{inDialog:!0,localTabs:\3\}\),\1\[\2\]=\3,\1\[(\d+)\]=\4\):\4=\1\[\7\]/g,
                 replace: "$1[$2]!==$self._shellKey($3)?($4=(0,$5.jsx)($6,{inDialog:!0,localTabs:$3,key:$self._shellKey($3)}),$1[$2]=$self._shellKey($3),$1[$7]=$4):$4=$1[$7]",
