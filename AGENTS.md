@@ -131,6 +131,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.4]` Inline layout is one grid row: `grid-template-areas:"leading field actions"`, controls row `display:contents`, form `height` is one control. Do not append pins or chat-bar buttons as siblings of the mode div — unplaced items form a second row and `align-content:end` plus `overflow-clip-margin` paints the field above the pill. Pins go in the mode div's `children`. Buttons go in the actions div's `children` (`[!!(em&&!ed)|!!ed<<1]`). Keep `form[data-composer][data-composer-layout="inline"]{height:auto}` so a leftover row stays inside the border.
 
+`[20261113.5]` Hide-native is `.query-bar:has(.void-cms-hide-native) [data-query-bar-mode-select]`. The desktop trigger (`#model-select-trigger`, label like "Build Beta") is not inside `.query-bar`. Do not zero that whole cell — pins are its children. Hide `form[data-composer] [data-query-bar-mode-select] > :not(.void-cms-pins)` with `!important` so stylex loses. `hideNativeTrigger` defaults to true.
+
 
 
 

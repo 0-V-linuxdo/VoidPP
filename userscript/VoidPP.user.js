@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.4
+// @version      20261113.5
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.4] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.5] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9894,9 +9894,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"2dbc5fc"}`
-    }, `(${"2dbc5fc"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"49640aa"}`
+    }, `(${"49640aa"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11497,6 +11497,33 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
     overflow: hidden;
     opacity: 0;
     pointer-events: none;
+}
+
+/* Desktop shell: pins are children of this cell, so hide the native trigger only. */
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(.void-cms-pins) {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins) {
+    position: absolute !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    border: 0 !important;
 }
 
 .query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button {
@@ -36487,7 +36514,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794557302000;
   settings_default.updatedAt = 1794560326000;
-  chatBarButtons_default.updatedAt = 1794560326000;
+  chatBarButtons_default.updatedAt = 1794562645000;
   contextMenu_default.updatedAt = 1794560326000;
   autoCollapse_default.updatedAt = 1794557302000;
   autoRetry_default.updatedAt = 1793875238000;
@@ -36496,7 +36523,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1794560326000;
   betterImagine_default.updatedAt = 1794557302000;
   betterLinks_default.updatedAt = 1794557302000;
-  betterModeSelect_default.updatedAt = 1794560326000;
+  betterModeSelect_default.updatedAt = 1794562645000;
   betterNavigator_default.updatedAt = 1794560326000;
   betterQueue_default.updatedAt = 1793875238000;
   betterQuotes_default.updatedAt = 1794560326000;
@@ -36507,7 +36534,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   cloneChats_default.updatedAt = 1793875238000;
   collapseThoughts_default.updatedAt = 1793875238000;
   completeToast_default.updatedAt = 1793875238000;
-  composerOpacity_default.updatedAt = 1794561914000;
+  composerOpacity_default.updatedAt = 1794562645000;
   consoleJanitor_default.updatedAt = 1793875238000;
   customGreeting_default.updatedAt = 1794561914000;
   customInstructions_default.updatedAt = 1793875238000;

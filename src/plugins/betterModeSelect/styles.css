@@ -61,6 +61,33 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
     pointer-events: none;
 }
 
+/* Desktop shell: pins are children of this cell, so hide the native trigger only. */
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(.void-cms-pins) {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins) {
+    position: absolute !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    border: 0 !important;
+}
+
 .query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button {
     width: 2.5rem;
     height: 2.5rem;
