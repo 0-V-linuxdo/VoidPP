@@ -878,6 +878,30 @@ export default definePlugin({
             ],
         },
         {
+            find: "dictation_button_click",
+            replacement: [
+                {
+                    // Idle/acquiring dictate control. Recording cancel/finish returns earlier.
+                    match: /(\.dictate\.aria,disabled:\i,icon:\i\.\i,label:\i,onClick:\i,shape:"round",size:"lg",tooltip:\i,type:"button"\}\),\i\[\d+\]=\i,\i\[\d+\]=\i\.dictate\.aria,\i\[\d+\]=\i,\i\[\d+\]=\i,\i\[\d+\]=\i,\i\[\d+\]=\i\):\i=\i\[\d+\];)let \i=\i;return \i\?\i:/,
+                    replace: "$1return null;let _v=0;return _v?_v:",
+                },
+            ],
+        },
+        {
+            find: '"data-composer-action":"voice"',
+            replacement: [
+                {
+                    // Trailing slot is voice or send. Bail before the voice button is built.
+                    match: /"voice"===(\i)\.kind\?\1:null,(\i)="send"===\1\.kind\?\1:null;/,
+                    replace: '"voice"===$1.kind?$1:null,$2="send"===$1.kind?$1:null;if("voice"===$1.kind)return null;',
+                },
+                {
+                    match: /\(0,\i\.jsx\)\(\i\._,\{"data-composer-action":"voice","data-testid":"bot-voice-call-start"[^}]*\}\)/,
+                    replace: "null",
+                },
+            ],
+        },
+        {
             find: "connected_apps:",
             replacement: [
                 {

@@ -135,6 +135,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.6]` Hide the desktop voice controls with the native mode trigger. Dictate is `form[data-composer] button[aria-keyshortcuts$="+Shift+O"]` (Control/Meta+Shift+O, label "Dictate"). Voice chat is `[data-composer-action="voice"]` (`data-testid="bot-voice-call-start"`). Do not hide `data-testid="composer-stop"` or the recording cancel/finish buttons.
 
+`[20261113.7]` CSS on those attributes still left the mic on screen. Do not render it. `dictation_button_click`: after the idle button cache write, `return null` before `let G;return N?G` (recording UI already returned). `"data-composer-action":"voice"` module: after `"voice"===id.kind?id:null,send=...`, `if("voice"===id.kind)return null` so the trailing slot stays a send button only. The `bot-voice-call-start` jsx is `null`. Keep the attribute CSS as a backup, without requiring `form[data-composer] button`.
+
 
 
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.6
+// @version      20261113.7
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.6] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9894,9 +9894,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"59b9fb3"}`
-    }, `(${"59b9fb3"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"43ee0e0"}`
+    }, `(${"43ee0e0"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11526,9 +11526,10 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :n
     border: 0 !important;
 }
 
-/* Dictate is Control/Meta+Shift+O. Voice chat is data-composer-action="voice". */
-form[data-composer] button[aria-keyshortcuts$="+Shift+O"],
-[data-composer-action="voice"] {
+/* Dictate is Control/Meta+Shift+O. Voice chat sets data-composer-action="voice". */
+[aria-keyshortcuts$="+Shift+O"],
+[data-composer-action="voice"],
+[data-testid="bot-voice-call-start"] {
     display: none !important;
 }
 
@@ -12481,6 +12482,28 @@ html.void-cms-picked .void-cms-ghost {
           {
             match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:)(\i)(\}\):null)/,
             replace: "$1[$self.renderPinned(),$2]$3"
+          }
+        ]
+      },
+      {
+        find: "dictation_button_click",
+        replacement: [
+          {
+            match: /(\.dictate\.aria,disabled:\i,icon:\i\.\i,label:\i,onClick:\i,shape:"round",size:"lg",tooltip:\i,type:"button"\}\),\i\[\d+\]=\i,\i\[\d+\]=\i\.dictate\.aria,\i\[\d+\]=\i,\i\[\d+\]=\i,\i\[\d+\]=\i,\i\[\d+\]=\i\):\i=\i\[\d+\];)let \i=\i;return \i\?\i:/,
+            replace: "$1return null;let _v=0;return _v?_v:"
+          }
+        ]
+      },
+      {
+        find: '"data-composer-action":"voice"',
+        replacement: [
+          {
+            match: /"voice"===(\i)\.kind\?\1:null,(\i)="send"===\1\.kind\?\1:null;/,
+            replace: '"voice"===$1.kind?$1:null,$2="send"===$1.kind?$1:null;if("voice"===$1.kind)return null;'
+          },
+          {
+            match: /\(0,\i\.jsx\)\(\i\._,\{"data-composer-action":"voice","data-testid":"bot-voice-call-start"[^}]*\}\)/,
+            replace: "null"
           }
         ]
       },
@@ -36529,7 +36552,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1794563342000;
   betterImagine_default.updatedAt = 1794563342000;
   betterLinks_default.updatedAt = 1794563342000;
-  betterModeSelect_default.updatedAt = 1794563342000;
+  betterModeSelect_default.updatedAt = 1794573433000;
   betterNavigator_default.updatedAt = 1794563342000;
   betterQueue_default.updatedAt = 1794563342000;
   betterQuotes_default.updatedAt = 1794563342000;
