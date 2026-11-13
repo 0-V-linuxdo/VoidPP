@@ -127,6 +127,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.2]` Library bulk delete is on the lazy desktop page, not the old `LibraryPageContent:refreshAssets` module. Find `"library-page.title","Library"`. Wrap LibraryRow `item:ident,leading:ident,onOpen:ident,title:` and the tile overlay `"data-library-item-id":ident.id,onClick:` (`grok-jyslct grok-jbqb8w grok-ng3xce grok-t0e3qv`). Checkboxes go into the `grok-jp7ctv` row and the tile root; both get `data-void-file` so hover can show `.void-sel-wrap`. The action bar is PageShell `controls` (`(0,jsx)(ident.M,{controls:ident,title:ident,toolbar:ident,children:ident}),ident[42]=` that controls ident). `deleteLibraryAsset` is gone. `useFilesPageStore.getState().deleteAsset(id)` returns false unless the asset is already cached — pass the stored `item.asset` as the second argument. Id is `item.asset.assetId` or `item.id`. Model-select upgrade is `(0,ident.f)("model-select",ident);if(ident)return null` next to `model-select.upsell.upgrade","Upgrade"` (`all: true`; the component is duplicated). `UPSELL_MODEL_SELECT_PRIORITY` stays `noWarn`. Imagine composer buttons are `data-unified-toolbar` plus `trailingGutterPx:ident,tight:ident,children:[…]`, not `data-wd-toolbar`.
 
+`[20261113.3]` Empty desktop composer (`form[data-composer][data-composer-layout="inline"]`) keeps its own box-shadow. ComposerOpacity must not clear `form[data-composer]` or paint radius/clip-path on a `.query-bar` inside it — that shell is only the absolutely positioned field, so the placeholder row sat above the tool row. The empty Tiptap `p` needs `min-height: 1lh` (fallback `1.5em`) because the placeholder `::before` is `position:absolute`. Do not use `p.is-empty:first-child`.
+
 
 
 

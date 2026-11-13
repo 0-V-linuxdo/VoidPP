@@ -12,9 +12,9 @@ import { clamp } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
 
 const STYLE_NAME = "composerOpacity";
-const SHELL = ".query-bar";
-const FRAME = "form:has(.query-bar),form:has(.query-bar)>:first-child";
-const FRAME_KIDS = "form:has(.query-bar)>:first-child>*";
+const SHELL = ".query-bar:not(form[data-composer] .query-bar)";
+const FRAME = "form:not([data-composer]):has(.query-bar),form:not([data-composer]):has(.query-bar)>:first-child";
+const FRAME_KIDS = "form:not([data-composer]):has(.query-bar)>:first-child>*";
 const BACKDROP = ".chat-input-backdrop,.pointer-events-none.absolute.bottom-0.z-0[class*=bg-gradient-to-t]";
 const RADIUS = "var(--border-t-radius,10rem) var(--border-t-radius,10rem) var(--border-b-radius,10rem) var(--border-b-radius,10rem)";
 

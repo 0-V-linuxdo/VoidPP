@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.2
+// @version      20261113.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.2] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9894,9 +9894,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d3606b8"}`
-    }, `(${"d3606b8"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"61f8e5f"}`
+    }, `(${"61f8e5f"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -24310,9 +24310,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 
   // src/plugins/composerOpacity/index.ts
   var STYLE_NAME3 = "composerOpacity";
-  var SHELL = ".query-bar";
-  var FRAME = "form:has(.query-bar),form:has(.query-bar)>:first-child";
-  var FRAME_KIDS = "form:has(.query-bar)>:first-child>*";
+  var SHELL = ".query-bar:not(form[data-composer] .query-bar)";
+  var FRAME = "form:not([data-composer]):has(.query-bar),form:not([data-composer]):has(.query-bar)>:first-child";
+  var FRAME_KIDS = "form:not([data-composer]):has(.query-bar)>:first-child>*";
   var BACKDROP = ".chat-input-backdrop,.pointer-events-none.absolute.bottom-0.z-0[class*=bg-gradient-to-t]";
   var RADIUS = "var(--border-t-radius,10rem) var(--border-t-radius,10rem) var(--border-b-radius,10rem) var(--border-b-radius,10rem)";
   var settings19 = definePluginSettings({
@@ -24466,6 +24466,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 .query-bar .tiptap p.is-editor-empty:first-child,
 .query-bar .tiptap p.is-empty:only-child {
     position: relative;
+    min-height: 1.5em;
+    min-height: 1lh;
 }
 
 .query-bar .tiptap p.is-editor-empty:first-child::before,
@@ -36483,30 +36485,30 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794557302000;
-  settings_default.updatedAt = 1794557302000;
-  chatBarButtons_default.updatedAt = 1793875238000;
-  contextMenu_default.updatedAt = 1793875238000;
+  settings_default.updatedAt = 1794560326000;
+  chatBarButtons_default.updatedAt = 1794560326000;
+  contextMenu_default.updatedAt = 1794560326000;
   autoCollapse_default.updatedAt = 1794557302000;
   autoRetry_default.updatedAt = 1793875238000;
-  avatarPluginsFlyout_default.updatedAt = 1794557302000;
-  betterCanvas_default.updatedAt = 1793875238000;
-  betterFiles_default.updatedAt = 1794557302000;
+  avatarPluginsFlyout_default.updatedAt = 1794560326000;
+  betterCanvas_default.updatedAt = 1794560326000;
+  betterFiles_default.updatedAt = 1794560326000;
   betterImagine_default.updatedAt = 1794557302000;
   betterLinks_default.updatedAt = 1794557302000;
-  betterModeSelect_default.updatedAt = 1794557302000;
-  betterNavigator_default.updatedAt = 1793875238000;
+  betterModeSelect_default.updatedAt = 1794560326000;
+  betterNavigator_default.updatedAt = 1794560326000;
   betterQueue_default.updatedAt = 1793875238000;
-  betterQuotes_default.updatedAt = 1793875238000;
-  betterSidebar_default.updatedAt = 1794557302000;
-  chatListStatus_default.updatedAt = 1793875238000;
+  betterQuotes_default.updatedAt = 1794560326000;
+  betterSidebar_default.updatedAt = 1794560326000;
+  chatListStatus_default.updatedAt = 1794560326000;
   chatStateFavicons_default.updatedAt = 1793875238000;
-  cleaner_default.updatedAt = 1794557302000;
+  cleaner_default.updatedAt = 1794560326000;
   cloneChats_default.updatedAt = 1793875238000;
   collapseThoughts_default.updatedAt = 1793875238000;
   completeToast_default.updatedAt = 1793875238000;
   composerOpacity_default.updatedAt = 1793875238000;
   consoleJanitor_default.updatedAt = 1793875238000;
-  customGreeting_default.updatedAt = 1794557302000;
+  customGreeting_default.updatedAt = 1794560326000;
   customInstructions_default.updatedAt = 1793875238000;
   customSidebarIdentity_default.updatedAt = 1793875238000;
   downloadTTS_default.updatedAt = 1793875238000;
@@ -36514,18 +36516,18 @@ button:has(.void-ud-trigger > .void-ud-label) {
   exportChat_default.updatedAt = 1793875238000;
   incognito_default.updatedAt = 1793875238000;
   inputHistory_default.updatedAt = 1793875238000;
-  messageStars_default.updatedAt = 1793875238000;
+  messageStars_default.updatedAt = 1794560326000;
   messageTimestamps_default.updatedAt = 1793875238000;
-  noBuildStarters_default.updatedAt = 1794557302000;
+  noBuildStarters_default.updatedAt = 1794560326000;
   noDictation_default.updatedAt = 1793875238000;
   noGrokBot_default.updatedAt = 1793875238000;
   noShareLink_default.updatedAt = 1793875238000;
   noSidebarIdentity_default.updatedAt = 1793875238000;
   oneko_default.updatedAt = 1793875238000;
   pluginsFlyout_default.updatedAt = 1793875238000;
-  recentTopics_default.updatedAt = 1793875238000;
+  recentTopics_default.updatedAt = 1794560326000;
   responseNotification_default.updatedAt = 1793875238000;
-  settingsFlyout_default.updatedAt = 1793875238000;
+  settingsFlyout_default.updatedAt = 1794560326000;
   skillBlocker_default.updatedAt = 1793875238000;
   stableComposer_default.updatedAt = 1793875238000;
   starry_default.updatedAt = 1793875238000;

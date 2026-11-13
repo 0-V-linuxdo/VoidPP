@@ -93,6 +93,8 @@
 .query-bar .tiptap p.is-editor-empty:first-child,
 .query-bar .tiptap p.is-empty:only-child {
     position: relative;
+    min-height: 1.5em;
+    min-height: 1lh;
 }
 
 .query-bar .tiptap p.is-editor-empty:first-child::before,
