@@ -24,30 +24,11 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
 .query-bar .void-cms-on,
 form[data-composer] .void-cms-on {
     color: #ff7a17 !important;
-    width: auto !important;
-    min-width: 2.5rem;
-    padding-inline: 0.55rem;
-    gap: 0.3rem;
-    border-radius: 999px;
     background: color-mix(in srgb, #ff7a17 18%, transparent) !important;
 }
 
 .query-bar .void-cms-on:not(:hover, :focus-visible) {
     box-shadow: none !important;
-}
-
-form[data-composer] .void-cms-on .void-cms-label,
-.void-cms-current .void-cms-label {
-    display: inline !important;
-}
-
-form[data-composer] button.void-cms-current {
-    display: inline-flex;
-    align-items: center;
-    height: 2.5rem;
-    border: 0;
-    cursor: pointer;
-    font: inherit;
 }
 
 .void-cms-label {

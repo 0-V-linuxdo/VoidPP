@@ -729,36 +729,18 @@ function PinnedModes() {
         void selectMode(id);
     };
 
-    const current = catalog.find(c => c.id === selectedModeId);
-    const currentPinned = items.some(m => chipOn(selectedModeId, m.id));
-
     return (
         <div className={classes(cl("pins"), hideNative && cl("hide-native"))}>
-            {!currentPinned && selectedModeId ? (
-                <button
-                    type="button"
-                    className={classes(cl("pin"), cl("on"), cl("current"))}
-                    aria-label={current?.title || selectedModeId}
-                    onClick={event => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        const trigger = modelTrigger();
-                        if (trigger) clickEl(trigger);
-                    }}
-                >
-                    <span className={cl("label")}>{current?.title || selectedModeId}</span>
-                </button>
-            ) : null}
             {items.map(m => {
                 const on = chipOn(selectedModeId, m.id);
                 return (
                     <span key={m.id} className={cl("pin-host")} data-void-mode-id={m.id}><ChatBarButton
                         size="xl"
                         shape="circle"
-                        icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels || on} />}
+                        icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels} />}
                         tooltip={m.label}
                         onClick={onPin(m.id)}
-                        className={classes(cl("pin"), on && cl("on"), (showLabels || on) && cl("labeled"))}
+                        className={classes(cl("pin"), on && cl("on"), showLabels && cl("labeled"))}
                         aria-label={m.label}
                     /></span>
                 );

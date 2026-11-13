@@ -26,10 +26,12 @@ const cl = classNameFactory("void-ph-");
 const HERO_STYLE = "placeholderHero";
 const INPUT_STYLE = "placeholderInput";
 const HERO_SEL = "h1[data-void-ph-hero]";
-const EDITOR_SEL = ".query-bar .tiptap";
-const EMPTY_SEL = `${EDITOR_SEL} p.is-editor-empty, ${EDITOR_SEL} p.is-empty:only-child`;
-const ROOT_BEFORE = `${EDITOR_SEL}::before`;
-const EMPTY_BEFORE = `${EDITOR_SEL} p.is-editor-empty:first-child::before,${EDITOR_SEL} p.is-empty:only-child::before`;
+const EDITORS = [".query-bar .tiptap", "form[data-composer] .tiptap"];
+const EDITOR_SEL = EDITORS.join(", ");
+const EMPTY_SEL = EDITORS.map(s => `${s} p.is-editor-empty, ${s} p.is-empty:only-child`).join(", ");
+const ROOT_BEFORE = EDITORS.map(s => `${s}::before`).join(", ");
+const EMPTY_BEFORE = EDITORS.map(s => `${s} p.is-editor-empty:first-child::before, ${s} p.is-empty:only-child::before`).join(", ");
+const INPUT_HOST = ".query-bar, form[data-composer]";
 const CYCLING_SEL = ".query-bar div.absolute.inset-0.pointer-events-none[aria-hidden=\"true\"]";
 const WIDTH_PAD = 8;
 
@@ -485,7 +487,7 @@ function paintInput() {
         return;
     }
     const shown = clampToWidth(full, Math.max(0, p.clientWidth - WIDTH_PAD), t => measureFor(p, t));
-    const css = `${ROOT_BEFORE}{content:none!important}${EMPTY_BEFORE}{content:"${escapeForCssContent(shown)}"!important}`;
+    const css = `${ROOT_BEFORE}{content:none!important}${EMPTY_BEFORE}{content:"${escapeForCssContent(shown)}"!important;text-overflow:clip!important}`;
     if (css === lastInputCss) return;
     lastInputCss = css;
     registerStyle(INPUT_STYLE, css);
@@ -529,13 +531,13 @@ export default definePlugin({
         treeObs = new MutationObserver(muts => {
             for (const m of muts) {
                 const t = m.target;
-                if (t instanceof Element && t.closest(".query-bar")) {
+                if (t instanceof Element && t.closest(INPUT_HOST)) {
                     scheduleInput();
                     return;
                 }
                 if (m.type !== "childList") continue;
                 for (const n of m.addedNodes) {
-                    if (n instanceof Element && (n.matches(".query-bar") || n.querySelector(".query-bar"))) {
+                    if (n instanceof Element && (n.matches(INPUT_HOST) || n.querySelector(INPUT_HOST))) {
                         scheduleInput();
                         return;
                     }

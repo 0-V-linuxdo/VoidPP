@@ -86,19 +86,25 @@
    replaces attr(data-placeholder). Typing drops is-editor-empty and
    restores the official autosize. */
 .query-bar .tiptap:has(> p.is-editor-empty),
-.query-bar .tiptap:has(> p.is-empty:only-child) {
+.query-bar .tiptap:has(> p.is-empty:only-child),
+form[data-composer] .tiptap:has(> p.is-editor-empty),
+form[data-composer] .tiptap:has(> p.is-empty:only-child) {
     overflow-y: hidden !important;
 }
 
 .query-bar .tiptap p.is-editor-empty:first-child,
-.query-bar .tiptap p.is-empty:only-child {
+.query-bar .tiptap p.is-empty:only-child,
+form[data-composer] .tiptap p.is-editor-empty:first-child,
+form[data-composer] .tiptap p.is-empty:only-child {
     position: relative;
     min-height: 1.5em;
     min-height: 1lh;
 }
 
 .query-bar .tiptap p.is-editor-empty:first-child::before,
-.query-bar .tiptap p.is-empty:only-child::before {
+.query-bar .tiptap p.is-empty:only-child::before,
+form[data-composer] .tiptap p.is-editor-empty:first-child::before,
+form[data-composer] .tiptap p.is-empty:only-child::before {
     float: none !important;
     height: auto !important;
     position: absolute;

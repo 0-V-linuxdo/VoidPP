@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.10
+// @version      20261113.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.10] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9894,9 +9894,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6f88d51"}`
-    }, `(${"6f88d51"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ddd49f3"}`
+    }, `(${"ddd49f3"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11462,30 +11462,11 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
 .query-bar .void-cms-on,
 form[data-composer] .void-cms-on {
     color: #ff7a17 !important;
-    width: auto !important;
-    min-width: 2.5rem;
-    padding-inline: 0.55rem;
-    gap: 0.3rem;
-    border-radius: 999px;
     background: color-mix(in srgb, #ff7a17 18%, transparent) !important;
 }
 
 .query-bar .void-cms-on:not(:hover, :focus-visible) {
     box-shadow: none !important;
-}
-
-form[data-composer] .void-cms-on .void-cms-label,
-.void-cms-current .void-cms-label {
-    display: inline !important;
-}
-
-form[data-composer] button.void-cms-current {
-    display: inline-flex;
-    align-items: center;
-    height: 2.5rem;
-    border: 0;
-    cursor: pointer;
-    font: inherit;
 }
 
 .void-cms-label {
@@ -12390,24 +12371,9 @@ html.void-cms-picked .void-cms-ghost {
       e.stopPropagation();
       selectMode(id);
     };
-    const current = catalog.find((c) => c.id === selectedModeId);
-    const currentPinned = items.some((m) => chipOn(selectedModeId, m.id));
     return /* @__PURE__ */ React.createElement("div", {
       className: classes(cl19("pins"), hideNative && cl19("hide-native"))
-    }, !currentPinned && selectedModeId ? /* @__PURE__ */ React.createElement("button", {
-      type: "button",
-      className: classes(cl19("pin"), cl19("on"), cl19("current")),
-      "aria-label": current?.title || selectedModeId,
-      onClick: (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const trigger = modelTrigger();
-        if (trigger)
-          clickEl(trigger);
-      }
-    }, /* @__PURE__ */ React.createElement("span", {
-      className: cl19("label")
-    }, current?.title || selectedModeId)) : null, items.map((m) => {
+    }, items.map((m) => {
       const on = chipOn(selectedModeId, m.id);
       return /* @__PURE__ */ React.createElement("span", {
         key: m.id,
@@ -12420,11 +12386,11 @@ html.void-cms-picked .void-cms-ghost {
           id: m.id,
           Icon: m.Icon,
           label: m.label,
-          showLabels: showLabels || on
+          showLabels
         }),
         tooltip: m.label,
         onClick: onPin(m.id),
-        className: classes(cl19("pin"), on && cl19("on"), (showLabels || on) && cl19("labeled")),
+        className: classes(cl19("pin"), on && cl19("on"), showLabels && cl19("labeled")),
         "aria-label": m.label
       }));
     }));
@@ -24552,19 +24518,25 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
    replaces attr(data-placeholder). Typing drops is-editor-empty and
    restores the official autosize. */
 .query-bar .tiptap:has(> p.is-editor-empty),
-.query-bar .tiptap:has(> p.is-empty:only-child) {
+.query-bar .tiptap:has(> p.is-empty:only-child),
+form[data-composer] .tiptap:has(> p.is-editor-empty),
+form[data-composer] .tiptap:has(> p.is-empty:only-child) {
     overflow-y: hidden !important;
 }
 
 .query-bar .tiptap p.is-editor-empty:first-child,
-.query-bar .tiptap p.is-empty:only-child {
+.query-bar .tiptap p.is-empty:only-child,
+form[data-composer] .tiptap p.is-editor-empty:first-child,
+form[data-composer] .tiptap p.is-empty:only-child {
     position: relative;
     min-height: 1.5em;
     min-height: 1lh;
 }
 
 .query-bar .tiptap p.is-editor-empty:first-child::before,
-.query-bar .tiptap p.is-empty:only-child::before {
+.query-bar .tiptap p.is-empty:only-child::before,
+form[data-composer] .tiptap p.is-editor-empty:first-child::before,
+form[data-composer] .tiptap p.is-empty:only-child::before {
     float: none !important;
     height: auto !important;
     position: absolute;
@@ -24601,10 +24573,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var HERO_STYLE = "placeholderHero";
   var INPUT_STYLE = "placeholderInput";
   var HERO_SEL = "h1[data-void-ph-hero]";
-  var EDITOR_SEL2 = ".query-bar .tiptap";
-  var EMPTY_SEL = `${EDITOR_SEL2} p.is-editor-empty, ${EDITOR_SEL2} p.is-empty:only-child`;
-  var ROOT_BEFORE = `${EDITOR_SEL2}::before`;
-  var EMPTY_BEFORE = `${EDITOR_SEL2} p.is-editor-empty:first-child::before,${EDITOR_SEL2} p.is-empty:only-child::before`;
+  var EDITORS = [".query-bar .tiptap", "form[data-composer] .tiptap"];
+  var EDITOR_SEL2 = EDITORS.join(", ");
+  var EMPTY_SEL = EDITORS.map((s) => `${s} p.is-editor-empty, ${s} p.is-empty:only-child`).join(", ");
+  var ROOT_BEFORE = EDITORS.map((s) => `${s}::before`).join(", ");
+  var EMPTY_BEFORE = EDITORS.map((s) => `${s} p.is-editor-empty:first-child::before, ${s} p.is-empty:only-child::before`).join(", ");
+  var INPUT_HOST = ".query-bar, form[data-composer]";
   var CYCLING_SEL = '.query-bar div.absolute.inset-0.pointer-events-none[aria-hidden="true"]';
   var WIDTH_PAD = 8;
   var DEFAULT_PHRASES = [
@@ -25045,7 +25019,7 @@ Neon rain in a quiet city`
       return;
     }
     const shown = clampToWidth(full, Math.max(0, p.clientWidth - WIDTH_PAD), (t) => measureFor(p, t));
-    const css = `${ROOT_BEFORE}{content:none!important}${EMPTY_BEFORE}{content:"${escapeForCssContent(shown)}"!important}`;
+    const css = `${ROOT_BEFORE}{content:none!important}${EMPTY_BEFORE}{content:"${escapeForCssContent(shown)}"!important;text-overflow:clip!important}`;
     if (css === lastInputCss)
       return;
     lastInputCss = css;
@@ -25091,14 +25065,14 @@ Neon rain in a quiet city`
       treeObs = new MutationObserver((muts) => {
         for (const m of muts) {
           const t = m.target;
-          if (t instanceof Element && t.closest(".query-bar")) {
+          if (t instanceof Element && t.closest(INPUT_HOST)) {
             scheduleInput();
             return;
           }
           if (m.type !== "childList")
             continue;
           for (const n of m.addedNodes) {
-            if (n instanceof Element && (n.matches(".query-bar") || n.querySelector(".query-bar"))) {
+            if (n instanceof Element && (n.matches(INPUT_HOST) || n.querySelector(INPUT_HOST))) {
               scheduleInput();
               return;
             }
@@ -36588,7 +36562,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1794563342000;
   betterImagine_default.updatedAt = 1794563342000;
   betterLinks_default.updatedAt = 1794563342000;
-  betterModeSelect_default.updatedAt = 1794579915000;
+  betterModeSelect_default.updatedAt = 1794580283000;
   betterNavigator_default.updatedAt = 1794563342000;
   betterQueue_default.updatedAt = 1794563342000;
   betterQuotes_default.updatedAt = 1794563342000;
