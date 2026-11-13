@@ -88,8 +88,11 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :n
     border: 0 !important;
 }
 
-/* Dictate is Control/Meta+Shift+O. Voice chat sets data-composer-action="voice". */
-[aria-keyshortcuts$="+Shift+O"],
+/* Dictate is Shift+Space (aria-label "Dictate"). Voice chat is Shift+O or data-composer-action="voice". */
+button[aria-keyshortcuts$="+Shift+Space"],
+button[aria-keyshortcuts$="+Shift+O"],
+button[aria-label="Dictate"],
+button[aria-label="Voice mode"],
 [data-composer-action="voice"],
 [data-testid="bot-voice-call-start"] {
     display: none !important;

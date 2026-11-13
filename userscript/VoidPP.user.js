@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.7
+// @version      20261113.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.7] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9894,9 +9894,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"43ee0e0"}`
-    }, `(${"43ee0e0"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4ab19c2"}`
+    }, `(${"4ab19c2"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11526,8 +11526,11 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :n
     border: 0 !important;
 }
 
-/* Dictate is Control/Meta+Shift+O. Voice chat sets data-composer-action="voice". */
-[aria-keyshortcuts$="+Shift+O"],
+/* Dictate is Shift+Space (aria-label "Dictate"). Voice chat is Shift+O or data-composer-action="voice". */
+button[aria-keyshortcuts$="+Shift+Space"],
+button[aria-keyshortcuts$="+Shift+O"],
+button[aria-label="Dictate"],
+button[aria-label="Voice mode"],
 [data-composer-action="voice"],
 [data-testid="bot-voice-call-start"] {
     display: none !important;
@@ -36552,7 +36555,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1794563342000;
   betterImagine_default.updatedAt = 1794563342000;
   betterLinks_default.updatedAt = 1794563342000;
-  betterModeSelect_default.updatedAt = 1794573433000;
+  betterModeSelect_default.updatedAt = 1794574165000;
   betterNavigator_default.updatedAt = 1794563342000;
   betterQueue_default.updatedAt = 1794563342000;
   betterQuotes_default.updatedAt = 1794563342000;

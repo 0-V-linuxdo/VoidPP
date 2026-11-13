@@ -137,6 +137,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.7]` CSS on those attributes still left the mic on screen. Do not render it. `dictation_button_click`: after the idle button cache write, `return null` before `let G;return N?G` (recording UI already returned). `"data-composer-action":"voice"` module: after `"voice"===id.kind?id:null,send=...`, `if("voice"===id.kind)return null` so the trailing slot stays a send button only. The `bot-voice-call-start` jsx is `null`. Keep the attribute CSS as a backup, without requiring `form[data-composer] button`.
 
+`[20261113.8]` Helium showed the mic still mounted: `aria-label="Dictate"`, `aria-keyshortcuts="Meta+Shift+Space"` (32×32, `display:flex`). Dictate is Shift+Space. Voice mode is Shift+O. The 20261113.6/7 rule hid `+Shift+O` and missed the mic. Hide `button[aria-keyshortcuts$="+Shift+Space"]` and `button[aria-label="Dictate"]` as well as the voice-chat selectors.
+
 
 
 
