@@ -17,6 +17,7 @@ import {
 } from "@components";
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { ScrollTextIcon } from "@components/icons";
+import { MenuGlyphIcon } from "@turbopack/common/components";
 import { React, useCallback, useState } from "@turbopack/common/react";
 import { ChatPageStore } from "@turbopack/common/stores";
 import { findByPropsLazy, findExportedComponentLazy } from "@turbopack/turbopack";
@@ -183,7 +184,7 @@ function InstructionsMenu({ conversationId }: ContextMenuLocationMap["conversati
     return (
         <MenuSub>
             <MenuSubTrigger>
-                <BookIcon size={16} /> Instructions
+                <MenuGlyphIcon icon={BookIcon} /> Instructions
             </MenuSubTrigger>
             <MenuSubContent>
                 <MenuItem onSelect={() => assign()}>

@@ -9,6 +9,7 @@ import "./styles.css";
 import { type ContextMenuLocationMap, MenuItem } from "@api/ContextMenus";
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { CopyIcon } from "@components/icons";
+import { MenuGlyphIcon } from "@turbopack/common/components";
 import { React } from "@turbopack/common/react";
 import { ResponseStore, RoutingStore } from "@turbopack/common/stores";
 import { ApiClients } from "@turbopack/common/utils";
@@ -45,7 +46,7 @@ function CloneItem({ conversationId }: ContextMenuLocationMap["conversation"]) {
 
     return (
         <MenuItem onSelect={() => cloneChat(conversationId).catch(e => logger.error("Failed to clone chat:", e))} disabled={streaming}>
-            <CopyIcon size={16} className="void-clone-icon" />
+            <MenuGlyphIcon icon={CopyIcon} className="void-clone-icon" />
             Clone
         </MenuItem>
     );

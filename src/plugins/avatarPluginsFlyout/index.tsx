@@ -7,7 +7,7 @@
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { GrokConnectorsIcon, type IconProps } from "@components/icons";
-import { accountMenuParts, accountMenuSelect } from "@turbopack/common/components";
+import { accountMenuParts, accountMenuSelect, MenuGlyphIcon } from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
 import { PluginsDialogStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
@@ -228,7 +228,7 @@ function PluginsMenu() {
     return (
         <Sub>
             <Trigger>
-                <PluginsIcon className="void-settings-menu-icon" />
+                <MenuGlyphIcon icon={PluginsIcon} className="void-settings-menu-icon" desktop={desktop} />
                 Plugins
             </Trigger>
             <Content>
@@ -236,7 +236,7 @@ function PluginsMenu() {
                     const Icon = tab.icon;
                     return (
                         <Item key={tab.id} {...accountMenuSelect(desktop, () => openPlugins(tab.id))}>
-                            <Icon className="void-settings-menu-icon" />
+                            <MenuGlyphIcon icon={Icon} className="void-settings-menu-icon" desktop={desktop} />
                             {tab.name}
                         </Item>
                     );

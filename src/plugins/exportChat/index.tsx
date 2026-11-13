@@ -10,6 +10,7 @@ import { type ContextMenuLocationMap, MenuItem, MenuSub, MenuSubContent, MenuSub
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { DownloadIcon, FileDownIcon } from "@components/icons";
 import type { GrokResponse } from "@grok-types";
+import { MenuGlyphIcon } from "@turbopack/common/components";
 import { React } from "@turbopack/common/react";
 import { ConversationStore } from "@turbopack/common/stores";
 import { ApiClients, FileUtils } from "@turbopack/common/utils";
@@ -197,7 +198,7 @@ function ExportMenu({ conversationId }: ContextMenuLocationMap["conversation"]) 
     return (
         <MenuSub>
             <MenuSubTrigger disabled={streaming}>
-                <DownloadIcon size={16} className="void-export-icon" />
+                <MenuGlyphIcon icon={DownloadIcon} className="void-export-icon" />
                 Export
             </MenuSubTrigger>
             <MenuSubContent>

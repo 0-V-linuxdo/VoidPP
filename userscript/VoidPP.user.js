@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.12
+// @version      20261113.13
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.12] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.13] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -301,6 +301,7 @@
     Label: () => Label,
     LazyComponent: () => LazyComponent,
     MediaStore: () => MediaStore,
+    MenuGlyphIcon: () => MenuGlyphIcon,
     MessageStore: () => MessageStore,
     ModesStore: () => ModesStore,
     MotionDiv: () => MotionDiv,
@@ -4614,6 +4615,14 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function accountMenuSelect(desktop, run) {
     return desktop ? { onClick: run } : { onSelect: run };
   }
+  function MenuGlyphIcon(props) {
+    const Icon = props.icon;
+    if (!createElement || !Icon)
+      return null;
+    const className = [props.className, props.desktop === false ? "void-menu-glyph-gap" : ""].filter(Boolean).join(" ");
+    return createElement(Icon, className ? { className } : {});
+  }
+  MenuGlyphIcon.displayName = "MenuGlyphIcon";
   var LEGACY_BUTTON_VARIANT = {
     tertiary: "ghost",
     secondary: "muted",
@@ -6278,15 +6287,19 @@ ${root}::-webkit-scrollbar-thumb:hover {
   }
   function PluginsMenu() {
     const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
-    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(PluginsIcon, {
-      className: "void-settings-menu-icon"
+    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+      icon: PluginsIcon,
+      className: "void-settings-menu-icon",
+      desktop
     }), "Plugins"), /* @__PURE__ */ React.createElement(Content, null, PLUGIN_TABS.map((tab) => {
       const Icon = tab.icon;
       return /* @__PURE__ */ React.createElement(Item, {
         key: tab.id,
         ...accountMenuSelect(desktop, () => openPlugins(tab.id))
-      }, /* @__PURE__ */ React.createElement(Icon, {
-        className: "void-settings-menu-icon"
+      }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+        icon: Icon,
+        className: "void-settings-menu-icon",
+        desktop
       }), tab.name);
     })));
   }
@@ -7464,11 +7477,15 @@ ${root}::-webkit-scrollbar-thumb:hover {
 }
 
 .void-settings-menu-icon {
+    color: var(--fg-secondary, var(--grok-text-secondary));
+    flex-shrink: 0;
+}
+
+/* Legacy dropdown only. Desktop Glyph already insets the icon; this margin pushes the label past Help. */
+.void-menu-glyph-gap {
     width: 1rem;
     height: 1rem;
     margin-inline-end: 0.5rem;
-    color: var(--fg-secondary, var(--grok-text-secondary));
-    flex-shrink: 0;
 }
 
 .void-settings-tab-label {
@@ -9989,9 +10006,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e8b1a0b"}`
-    }, `(${"e8b1a0b"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f08a844"}`
+    }, `(${"f08a844"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10028,10 +10045,14 @@ button .void-info-hint {
     if (!showVoidPPMenu)
       return null;
     const scroll = desktop ? {} : { maxHeight: "lg" };
-    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(VoidPPIcon, {
-      className: cl17("menu-icon")
-    }), "Void++"), /* @__PURE__ */ React.createElement(Content, null, menuPlugins.length > 0 && /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(UnplugIcon, {
-      className: cl17("menu-icon")
+    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+      icon: VoidPPIcon,
+      className: cl17("menu-icon"),
+      desktop
+    }), "Void++"), /* @__PURE__ */ React.createElement(Content, null, menuPlugins.length > 0 && /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+      icon: UnplugIcon,
+      className: cl17("menu-icon"),
+      desktop
     }), "Plugins"), /* @__PURE__ */ React.createElement(Content, {
       ...scroll
     }, menuPlugins.map((name) => {
@@ -10039,16 +10060,20 @@ button .void-info-hint {
       return /* @__PURE__ */ React.createElement(Item, {
         key: name,
         ...accountMenuSelect(desktop, () => openPluginSettings(name))
-      }, /* @__PURE__ */ React.createElement(Icon, {
-        className: cl17("menu-icon")
+      }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+        icon: Icon,
+        className: cl17("menu-icon"),
+        desktop
       }), name);
     }))), getVisibleTabs().filter((t) => t.id !== PLUGINS_TAB_ID).map((t) => {
       const Icon = t.icon;
       return /* @__PURE__ */ React.createElement(Item, {
         key: t.id,
         ...accountMenuSelect(desktop, () => openSettingsTab(t.id))
-      }, /* @__PURE__ */ React.createElement(Icon, {
-        className: cl17("menu-icon")
+      }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+        icon: Icon,
+        className: cl17("menu-icon"),
+        desktop
       }), t.name);
     })));
   }
@@ -23302,7 +23327,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/cloneChats/styles.css
   registerStyle("cloneChats", `.void-clone-icon {
-    margin-inline-end: 0.5rem;
+    color: var(--fg-secondary, var(--grok-text-secondary));
+    flex-shrink: 0;
 }
 `);
 
@@ -23332,8 +23358,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return /* @__PURE__ */ React.createElement(MenuItem, {
       onSelect: () => cloneChat(conversationId).catch((e) => logger32.error("Failed to clone chat:", e)),
       disabled: streaming
-    }, /* @__PURE__ */ React.createElement(CopyIcon, {
-      size: 16,
+    }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+      icon: CopyIcon,
       className: "void-clone-icon"
     }), "Clone");
   }
@@ -25602,8 +25628,8 @@ Neon rain in a quiet city`
     }, [conversationId]);
     if (!presets.length)
       return null;
-    return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, null, /* @__PURE__ */ React.createElement(BookIcon, {
-      size: 16
+    return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+      icon: BookIcon
     }), " Instructions"), /* @__PURE__ */ React.createElement(MenuSubContent, null, /* @__PURE__ */ React.createElement(MenuItem, {
       onSelect: () => assign()
     }, /* @__PURE__ */ React.createElement("span", {
@@ -26571,7 +26597,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/exportChat/styles.css
   registerStyle("exportChat", `.void-export-icon {
-    margin-inline-end: 0.5rem;
+    color: var(--fg-secondary, var(--grok-text-secondary));
+    flex-shrink: 0;
 }
 `);
 
@@ -26746,8 +26773,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const streaming = useIsStreaming(conversationId);
     return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, {
       disabled: streaming
-    }, /* @__PURE__ */ React.createElement(DownloadIcon, {
-      size: 16,
+    }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+      icon: DownloadIcon,
       className: "void-export-icon"
     }), "Export"), /* @__PURE__ */ React.createElement(MenuSubContent, null, FORMATS.map(({ fmt, label }) => /* @__PURE__ */ React.createElement(MenuItem, {
       key: fmt,
@@ -34018,9 +34045,6 @@ html.void-rt-open [data-sidebar="gap"] {
  */
 
 .void-sf-menu-icon {
-    width: 1rem;
-    height: 1rem;
-    margin-inline-end: 0.5rem;
     color: var(--fg-secondary);
     flex-shrink: 0;
 }
@@ -34207,8 +34231,10 @@ html.void-rt-open [data-sidebar="gap"] {
       return /* @__PURE__ */ React.createElement(Item, {
         key: t.id,
         ...accountMenuSelect(desktop, () => openTab(t.id))
-      }, /* @__PURE__ */ React.createElement(Icon, {
-        className: cl30("menu-icon")
+      }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+        icon: Icon,
+        className: cl30("menu-icon"),
+        desktop
       }), t.name);
     });
   }
@@ -34243,14 +34269,18 @@ html.void-rt-open [data-sidebar="gap"] {
     const showOpen = cfg.showOpenSettings || grokTabs.length === 0 && voidppTabs.length === 0;
     const voidppFirst = cfg.voidppPosition !== "below";
     const hasBoth = grokTabs.length > 0 && voidppTabs.length > 0;
-    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(CogIcon, {
-      className: cl30("menu-icon")
+    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+      icon: CogIcon,
+      className: cl30("menu-icon"),
+      desktop
     }), "Settings"), /* @__PURE__ */ React.createElement(Content, {
       ...desktop ? {} : { maxHeight: "lg" }
     }, showOpen && /* @__PURE__ */ React.createElement(Item, {
       ...accountMenuSelect(desktop, (event) => openTab(undefined, onOpen, event))
-    }, /* @__PURE__ */ React.createElement(CogIcon, {
-      className: cl30("menu-icon")
+    }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+      icon: CogIcon,
+      className: cl30("menu-icon"),
+      desktop
     }), "Open Settings"), showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && /* @__PURE__ */ React.createElement(Separator, null), voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
       tabs: voidppTabs,
       menu
@@ -36654,12 +36684,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794563342000;
-  settings_default.updatedAt = 1794563342000;
+  settings_default.updatedAt = 1794583222000;
   chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794563342000;
   autoCollapse_default.updatedAt = 1794563342000;
   autoRetry_default.updatedAt = 1794563342000;
-  avatarPluginsFlyout_default.updatedAt = 1794563342000;
+  avatarPluginsFlyout_default.updatedAt = 1794583222000;
   betterCanvas_default.updatedAt = 1794563342000;
   betterFiles_default.updatedAt = 1794563342000;
   betterImagine_default.updatedAt = 1794563342000;
@@ -36696,7 +36726,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   pluginsFlyout_default.updatedAt = 1794563342000;
   recentTopics_default.updatedAt = 1794563342000;
   responseNotification_default.updatedAt = 1794563342000;
-  settingsFlyout_default.updatedAt = 1794563342000;
+  settingsFlyout_default.updatedAt = 1794583222000;
   skillBlocker_default.updatedAt = 1794563342000;
   stableComposer_default.updatedAt = 1794563342000;
   starry_default.updatedAt = 1794563342000;

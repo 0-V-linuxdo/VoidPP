@@ -27,11 +27,15 @@
 }
 
 .void-settings-menu-icon {
+    color: var(--fg-secondary, var(--grok-text-secondary));
+    flex-shrink: 0;
+}
+
+/* Legacy dropdown only. Desktop Glyph already insets the icon; this margin pushes the label past Help. */
+.void-menu-glyph-gap {
     width: 1rem;
     height: 1rem;
     margin-inline-end: 0.5rem;
-    color: var(--fg-secondary, var(--grok-text-secondary));
-    flex-shrink: 0;
 }
 
 .void-settings-tab-label {

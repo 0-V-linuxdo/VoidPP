@@ -14,7 +14,7 @@ import { BracesIcon, PaletteIcon, SettingsIcon, TestTubeIcon, UnplugIcon, VoidPP
 import { CustomCSSTab, loadSavedCSS, PluginsTab, setPendingPluginDialog, ThemesTab } from "@components/settings/tabs";
 import { Tab as ExperimentsTab } from "@plugins/experiments";
 import { usePluginMenu } from "@plugins/pluginsFlyout";
-import { accountMenuParts, accountMenuSelect } from "@turbopack/common/components";
+import { accountMenuParts, accountMenuSelect, MenuGlyphIcon } from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
 import { setSettingsPrimitive, type SettingsPrimitives } from "@turbopack/common/settingsPrimitives";
 import { SettingsDialogStore } from "@turbopack/common/stores";
@@ -144,14 +144,14 @@ function VoidPPMenu() {
     return (
         <Sub>
             <Trigger>
-                <VoidPPIcon className={cl("menu-icon")} />
+                <MenuGlyphIcon icon={VoidPPIcon} className={cl("menu-icon")} desktop={desktop} />
                 Void++
             </Trigger>
             <Content>
                 {menuPlugins.length > 0 && (
                     <Sub>
                         <Trigger>
-                            <UnplugIcon className={cl("menu-icon")} />
+                            <MenuGlyphIcon icon={UnplugIcon} className={cl("menu-icon")} desktop={desktop} />
                             Plugins
                         </Trigger>
                         <Content {...scroll}>
@@ -159,7 +159,7 @@ function VoidPPMenu() {
                                 const Icon = plugins[name].icon ?? UnplugIcon;
                                 return (
                                     <Item key={name} {...accountMenuSelect(desktop, () => openPluginSettings(name))}>
-                                        <Icon className={cl("menu-icon")} />
+                                        <MenuGlyphIcon icon={Icon} className={cl("menu-icon")} desktop={desktop} />
                                         {name}
                                     </Item>
                                 );
@@ -171,7 +171,7 @@ function VoidPPMenu() {
                     const Icon = t.icon;
                     return (
                         <Item key={t.id} {...accountMenuSelect(desktop, () => openSettingsTab(t.id))}>
-                            <Icon className={cl("menu-icon")} />
+                            <MenuGlyphIcon icon={Icon} className={cl("menu-icon")} desktop={desktop} />
                             {t.name}
                         </Item>
                     );

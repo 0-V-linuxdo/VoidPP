@@ -9,7 +9,7 @@ import "./styles.css";
 import { definePluginSettings, migratePluginSetting } from "@api/Settings";
 import { ErrorBoundary, Text } from "@components";
 import { BracesIcon, PaletteIcon, Settings2Icon, UnplugIcon } from "@components/icons";
-import { accountMenuParts, accountMenuSelect, type AccountMenuParts } from "@turbopack/common/components";
+import { accountMenuParts, accountMenuSelect, MenuGlyphIcon, type AccountMenuParts } from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
 import { SettingsDialogStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
@@ -137,7 +137,7 @@ function tabItems(tabs: FlyoutTab[], menu: AccountMenuParts) {
         const Icon = t.icon;
         return (
             <Item key={t.id} {...accountMenuSelect(desktop, () => openTab(t.id))}>
-                <Icon className={cl("menu-icon")} />
+                <MenuGlyphIcon icon={Icon} className={cl("menu-icon")} desktop={desktop} />
                 {t.name}
             </Item>
         );
@@ -181,13 +181,13 @@ function SettingsMenu({ onOpen }: { onOpen?: (event?: Event) => void }) {
     return (
         <Sub>
             <Trigger>
-                <CogIcon className={cl("menu-icon")} />
+                <MenuGlyphIcon icon={CogIcon} className={cl("menu-icon")} desktop={desktop} />
                 Settings
             </Trigger>
             <Content {...(desktop ? {} : { maxHeight: "lg" })}>
                 {showOpen && (
                     <Item {...accountMenuSelect(desktop, event => openTab(undefined, onOpen, event as Event | undefined))}>
-                        <CogIcon className={cl("menu-icon")} />
+                        <MenuGlyphIcon icon={CogIcon} className={cl("menu-icon")} desktop={desktop} />
                         Open Settings
                     </Item>
                 )}

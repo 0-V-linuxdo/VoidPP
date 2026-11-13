@@ -194,6 +194,15 @@ export function accountMenuSelect(desktop: boolean, run: (event?: unknown) => vo
     return desktop ? { onClick: run } : { onSelect: run };
 }
 
+/** First child of a desktop menu row. `displayName` must end in `Icon` or Grok will not mount it in the Glyph slot (`--grok-icon-size`, no extra margin). */
+export function MenuGlyphIcon(props: { icon: ComponentType<{ className?: string }>; className?: string; desktop?: boolean }) {
+    const Icon = props.icon;
+    if (!createElement || !Icon) return null;
+    const className = [props.className, props.desktop === false ? "void-menu-glyph-gap" : ""].filter(Boolean).join(" ");
+    return createElement(Icon, className ? { className } : {});
+}
+MenuGlyphIcon.displayName = "MenuGlyphIcon";
+
 const LEGACY_BUTTON_VARIANT: Record<string, string> = {
     tertiary: "ghost",
     secondary: "muted",
