@@ -129,6 +129,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.3]` Empty desktop composer (`form[data-composer][data-composer-layout="inline"]`) keeps its own box-shadow. ComposerOpacity must not clear `form[data-composer]` or paint radius/clip-path on a `.query-bar` inside it — that shell is only the absolutely positioned field, so the placeholder row sat above the tool row. The empty Tiptap `p` needs `min-height: 1lh` (fallback `1.5em`) because the placeholder `::before` is `position:absolute`. Do not use `p.is-empty:first-child`.
 
+`[20261113.4]` Inline layout is one grid row: `grid-template-areas:"leading field actions"`, controls row `display:contents`, form `height` is one control. Do not append pins or chat-bar buttons as siblings of the mode div — unplaced items form a second row and `align-content:end` plus `overflow-clip-margin` paints the field above the pill. Pins go in the mode div's `children`. Buttons go in the actions div's `children` (`[!!(em&&!ed)|!!ed<<1]`). Keep `form[data-composer][data-composer-layout="inline"]{height:auto}` so a leftover row stays inside the border.
+
 
 
 

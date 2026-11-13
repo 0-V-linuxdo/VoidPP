@@ -56,7 +56,8 @@ function apply() {
         + `clip-path:inset(0 round ${RADIUS})!important;`
         + frost
         + "}"
-        + `${SHELL}:has([data-wd-toolbar]){overflow:visible!important;clip-path:none!important}`,
+        + `${SHELL}:has([data-wd-toolbar]){overflow:visible!important;clip-path:none!important}`
+        + `form[data-composer][data-composer-layout="inline"]{height:auto!important;min-height:calc(var(--grok-control-height-lg) + 2*var(--grok-space-3) + 2px)}`,
     );
 }
 

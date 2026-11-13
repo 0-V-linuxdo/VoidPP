@@ -869,9 +869,11 @@ export default definePlugin({
                     replace: "[$self.renderPinned(),$&]",
                 },
                 {
-                    // Desktop shell: `"data-query-bar-mode-select":""` on a stylex div, not `!0` plus `"mode-select"`.
-                    match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:\i\}\):null)/,
-                    replace: "[$self.renderPinned(),$1]",
+                    // Desktop shell: the mode div is one grid cell on the inline row
+                    // (`display:contents` on the controls row). A sibling array becomes
+                    // another row and the fixed-height pill clips the field above the border.
+                    match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:)(\i)(\}\):null)/,
+                    replace: "$1[$self.renderPinned(),$2]$3",
                 },
             ],
         },

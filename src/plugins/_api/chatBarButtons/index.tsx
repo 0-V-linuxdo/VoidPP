@@ -46,8 +46,11 @@ export default definePlugin({
                     replace: "[$&,$self.renderButtons()]",
                 },
                 {
-                    match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:\i\}\):null)/,
-                    replace: "[$1,$self.renderButtons()]",
+                    // Same cell as mic / voice. A sibling of the inline mode div is an
+                    // unplaced grid item, so the one-row pill overflows the placeholder.
+                    match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\(\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
+                    replace: "$1[$2,$self.renderButtons()]$3",
+                    noWarn: true,
                 },
                 {
                     match: /style:\i(?:\|\|\i)*\?void 0:(\{paddingInlineEnd:\i\})/,
