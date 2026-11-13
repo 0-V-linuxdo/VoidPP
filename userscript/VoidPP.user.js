@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.5
+// @version      20261113.6
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.5] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.6] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9894,9 +9894,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"49640aa"}`
-    }, `(${"49640aa"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"59b9fb3"}`
+    }, `(${"59b9fb3"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11524,6 +11524,12 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :n
     opacity: 0 !important;
     pointer-events: none !important;
     border: 0 !important;
+}
+
+/* Dictate is Control/Meta+Shift+O. Voice chat is data-composer-action="voice". */
+form[data-composer] button[aria-keyshortcuts$="+Shift+O"],
+[data-composer-action="voice"] {
+    display: none !important;
 }
 
 .query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button {
@@ -36509,60 +36515,60 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // virtual:~plugins
-  fixChrome_default.updatedAt = 1793875238000;
+  fixChrome_default.updatedAt = 1794563342000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  noTelemetry_default.updatedAt = 1794557302000;
-  settings_default.updatedAt = 1794560326000;
-  chatBarButtons_default.updatedAt = 1794562645000;
-  contextMenu_default.updatedAt = 1794560326000;
-  autoCollapse_default.updatedAt = 1794557302000;
-  autoRetry_default.updatedAt = 1793875238000;
-  avatarPluginsFlyout_default.updatedAt = 1794560326000;
-  betterCanvas_default.updatedAt = 1794560326000;
-  betterFiles_default.updatedAt = 1794560326000;
-  betterImagine_default.updatedAt = 1794557302000;
-  betterLinks_default.updatedAt = 1794557302000;
-  betterModeSelect_default.updatedAt = 1794562645000;
-  betterNavigator_default.updatedAt = 1794560326000;
-  betterQueue_default.updatedAt = 1793875238000;
-  betterQuotes_default.updatedAt = 1794560326000;
-  betterSidebar_default.updatedAt = 1794560326000;
-  chatListStatus_default.updatedAt = 1794560326000;
-  chatStateFavicons_default.updatedAt = 1793875238000;
-  cleaner_default.updatedAt = 1794560326000;
-  cloneChats_default.updatedAt = 1793875238000;
-  collapseThoughts_default.updatedAt = 1793875238000;
-  completeToast_default.updatedAt = 1793875238000;
-  composerOpacity_default.updatedAt = 1794562645000;
-  consoleJanitor_default.updatedAt = 1793875238000;
-  customGreeting_default.updatedAt = 1794561914000;
-  customInstructions_default.updatedAt = 1793875238000;
-  customSidebarIdentity_default.updatedAt = 1793875238000;
-  downloadTTS_default.updatedAt = 1793875238000;
-  experiments_default.updatedAt = 1794557302000;
-  exportChat_default.updatedAt = 1793875238000;
-  incognito_default.updatedAt = 1793875238000;
-  inputHistory_default.updatedAt = 1793875238000;
-  messageStars_default.updatedAt = 1794560326000;
-  messageTimestamps_default.updatedAt = 1793875238000;
-  noBuildStarters_default.updatedAt = 1794560326000;
-  noDictation_default.updatedAt = 1793875238000;
-  noGrokBot_default.updatedAt = 1793875238000;
-  noShareLink_default.updatedAt = 1793875238000;
-  noSidebarIdentity_default.updatedAt = 1793875238000;
-  oneko_default.updatedAt = 1793875238000;
-  pluginsFlyout_default.updatedAt = 1793875238000;
-  recentTopics_default.updatedAt = 1794560326000;
-  responseNotification_default.updatedAt = 1793875238000;
-  settingsFlyout_default.updatedAt = 1794560326000;
-  skillBlocker_default.updatedAt = 1793875238000;
-  stableComposer_default.updatedAt = 1793875238000;
-  starry_default.updatedAt = 1793875238000;
-  streamerMode_default.updatedAt = 1793875238000;
-  usageDisplay_default.updatedAt = 1793875238000;
-  userQuotes_default.updatedAt = 1793875238000;
-  widerChat_default.updatedAt = 1793875238000;
+  noTelemetry_default.updatedAt = 1794563342000;
+  settings_default.updatedAt = 1794563342000;
+  chatBarButtons_default.updatedAt = 1794563342000;
+  contextMenu_default.updatedAt = 1794563342000;
+  autoCollapse_default.updatedAt = 1794563342000;
+  autoRetry_default.updatedAt = 1794563342000;
+  avatarPluginsFlyout_default.updatedAt = 1794563342000;
+  betterCanvas_default.updatedAt = 1794563342000;
+  betterFiles_default.updatedAt = 1794563342000;
+  betterImagine_default.updatedAt = 1794563342000;
+  betterLinks_default.updatedAt = 1794563342000;
+  betterModeSelect_default.updatedAt = 1794563342000;
+  betterNavigator_default.updatedAt = 1794563342000;
+  betterQueue_default.updatedAt = 1794563342000;
+  betterQuotes_default.updatedAt = 1794563342000;
+  betterSidebar_default.updatedAt = 1794563342000;
+  chatListStatus_default.updatedAt = 1794563342000;
+  chatStateFavicons_default.updatedAt = 1794563342000;
+  cleaner_default.updatedAt = 1794563342000;
+  cloneChats_default.updatedAt = 1794563342000;
+  collapseThoughts_default.updatedAt = 1794563342000;
+  completeToast_default.updatedAt = 1794563342000;
+  composerOpacity_default.updatedAt = 1794563342000;
+  consoleJanitor_default.updatedAt = 1794563342000;
+  customGreeting_default.updatedAt = 1794563342000;
+  customInstructions_default.updatedAt = 1794563342000;
+  customSidebarIdentity_default.updatedAt = 1794563342000;
+  downloadTTS_default.updatedAt = 1794563342000;
+  experiments_default.updatedAt = 1794563342000;
+  exportChat_default.updatedAt = 1794563342000;
+  incognito_default.updatedAt = 1794563342000;
+  inputHistory_default.updatedAt = 1794563342000;
+  messageStars_default.updatedAt = 1794563342000;
+  messageTimestamps_default.updatedAt = 1794563342000;
+  noBuildStarters_default.updatedAt = 1794563342000;
+  noDictation_default.updatedAt = 1794563342000;
+  noGrokBot_default.updatedAt = 1794563342000;
+  noShareLink_default.updatedAt = 1794563342000;
+  noSidebarIdentity_default.updatedAt = 1794563342000;
+  oneko_default.updatedAt = 1794563342000;
+  pluginsFlyout_default.updatedAt = 1794563342000;
+  recentTopics_default.updatedAt = 1794563342000;
+  responseNotification_default.updatedAt = 1794563342000;
+  settingsFlyout_default.updatedAt = 1794563342000;
+  skillBlocker_default.updatedAt = 1794563342000;
+  stableComposer_default.updatedAt = 1794563342000;
+  starry_default.updatedAt = 1794563342000;
+  streamerMode_default.updatedAt = 1794563342000;
+  usageDisplay_default.updatedAt = 1794563342000;
+  userQuotes_default.updatedAt = 1794563342000;
+  widerChat_default.updatedAt = 1794563342000;
   var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/workspace/artifacts/Void-src/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {

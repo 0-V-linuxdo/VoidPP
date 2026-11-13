@@ -88,6 +88,12 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :n
     border: 0 !important;
 }
 
+/* Dictate is Control/Meta+Shift+O. Voice chat is data-composer-action="voice". */
+form[data-composer] button[aria-keyshortcuts$="+Shift+O"],
+[data-composer-action="voice"] {
+    display: none !important;
+}
+
 .query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button {
     width: 2.5rem;
     height: 2.5rem;

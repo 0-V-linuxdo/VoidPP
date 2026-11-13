@@ -133,6 +133,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.5]` Hide-native is `.query-bar:has(.void-cms-hide-native) [data-query-bar-mode-select]`. The desktop trigger (`#model-select-trigger`, label like "Build Beta") is not inside `.query-bar`. Do not zero that whole cell — pins are its children. Hide `form[data-composer] [data-query-bar-mode-select] > :not(.void-cms-pins)` with `!important` so stylex loses. `hideNativeTrigger` defaults to true.
 
+`[20261113.6]` Hide the desktop voice controls with the native mode trigger. Dictate is `form[data-composer] button[aria-keyshortcuts$="+Shift+O"]` (Control/Meta+Shift+O, label "Dictate"). Voice chat is `[data-composer-action="voice"]` (`data-testid="bot-voice-call-start"`). Do not hide `data-testid="composer-stop"` or the recording cancel/finish buttons.
+
 
 
 
