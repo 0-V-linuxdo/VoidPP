@@ -61,31 +61,48 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
     pointer-events: none;
 }
 
-/* Desktop shell: pins are children of this cell, so hide the native trigger only. */
+/* Desktop shell: pins are children of this cell, so hide the native trigger only.
+   Absolute 0-size still painted "Default" under the pill via overflow-clip-margin. */
 form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(.void-cms-pins) {
     position: static !important;
     width: auto !important;
     height: auto !important;
     min-width: 0 !important;
     min-height: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     opacity: 1 !important;
     pointer-events: auto !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
 }
 
 form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins) {
-    position: absolute !important;
-    width: 0 !important;
-    height: 0 !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    border: 0 !important;
+    display: none !important;
+}
+
+/* Inline is one row: leading | field | mode | actions. Mode used to share the
+   field cell and fall out under the border. Usage stays in the actions cell,
+   before Send. */
+form[data-composer][data-composer-layout="inline"] {
+    grid-template-columns: auto minmax(0, 1fr) auto auto !important;
+    grid-template-areas: "leading field mode actions" !important;
+    overflow-clip-margin: 0px !important;
+}
+
+form[data-composer][data-composer-layout="inline"] [data-query-bar-mode-select] {
+    grid-column: mode !important;
+    grid-row: field !important;
+    justify-self: end !important;
+    align-self: center !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: var(--grok-control-height-lg) !important;
+    margin-inline: 0 !important;
+}
+
+form[data-composer][data-composer-layout="stacked"] {
+    overflow-clip-margin: 0px !important;
 }
 
 /* Dictate is Shift+Space (aria-label "Dictate"). Voice chat is Shift+O or data-composer-action="voice". */

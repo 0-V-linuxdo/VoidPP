@@ -139,6 +139,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.8]` Helium showed the mic still mounted: `aria-label="Dictate"`, `aria-keyshortcuts="Meta+Shift+Space"` (32×32, `display:flex`). Dictate is Shift+Space. Voice mode is Shift+O. The 20261113.6/7 rule hid `+Shift+O` and missed the mic. Hide `button[aria-keyshortcuts$="+Shift+Space"]` and `button[aria-label="Dictate"]` as well as the voice-chat selectors.
 
+`[20261113.9]` Two layout bugs of the same kind. Desktop `actions` is the fragment `[dictation, send]`; ChatBarButtonAPI appended usage after it, so the ring sat to the right of Send. Prepend `renderButtons()` instead. Inline grid is one row `leading | field | actions` with `overflow:clip` and a clip-margin, and the mode cell was `grid-column:field; justify-self:end`. A wide native trigger (absolute, 0-size, still painted) plus pins dropped under the border. Give inline a `mode` column, `display:none` the native trigger (not absolute), and zero `overflow-clip-margin` on both inline and stacked so nothing paints outside the pill. Imagine gutter append is the tool row, not Send. Leave it.
+
 
 
 

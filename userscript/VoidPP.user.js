@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.8
+// @version      20261113.9
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.8] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.9] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9894,9 +9894,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"4ab19c2"}`
-    }, `(${"4ab19c2"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"42e54c5"}`
+    }, `(${"42e54c5"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10178,7 +10178,7 @@ button .void-info-hint {
           },
           {
             match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\(\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
-            replace: "$1[$2,$self.renderButtons()]$3",
+            replace: "$1[$self.renderButtons(),$2]$3",
             noWarn: true
           },
           {
@@ -11499,31 +11499,48 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
     pointer-events: none;
 }
 
-/* Desktop shell: pins are children of this cell, so hide the native trigger only. */
+/* Desktop shell: pins are children of this cell, so hide the native trigger only.
+   Absolute 0-size still painted "Default" under the pill via overflow-clip-margin. */
 form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(.void-cms-pins) {
     position: static !important;
     width: auto !important;
     height: auto !important;
     min-width: 0 !important;
     min-height: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     opacity: 1 !important;
     pointer-events: auto !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
 }
 
 form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins) {
-    position: absolute !important;
-    width: 0 !important;
-    height: 0 !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-width: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    border: 0 !important;
+    display: none !important;
+}
+
+/* Inline is one row: leading | field | mode | actions. Mode used to share the
+   field cell and fall out under the border. Usage stays in the actions cell,
+   before Send. */
+form[data-composer][data-composer-layout="inline"] {
+    grid-template-columns: auto minmax(0, 1fr) auto auto !important;
+    grid-template-areas: "leading field mode actions" !important;
+    overflow-clip-margin: 0px !important;
+}
+
+form[data-composer][data-composer-layout="inline"] [data-query-bar-mode-select] {
+    grid-column: mode !important;
+    grid-row: field !important;
+    justify-self: end !important;
+    align-self: center !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: var(--grok-control-height-lg) !important;
+    margin-inline: 0 !important;
+}
+
+form[data-composer][data-composer-layout="stacked"] {
+    overflow-clip-margin: 0px !important;
 }
 
 /* Dictate is Shift+Space (aria-label "Dictate"). Voice chat is Shift+O or data-composer-action="voice". */
@@ -36555,7 +36572,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1794563342000;
   betterImagine_default.updatedAt = 1794563342000;
   betterLinks_default.updatedAt = 1794563342000;
-  betterModeSelect_default.updatedAt = 1794574165000;
+  betterModeSelect_default.updatedAt = 1794579042000;
   betterNavigator_default.updatedAt = 1794563342000;
   betterQueue_default.updatedAt = 1794563342000;
   betterQuotes_default.updatedAt = 1794563342000;

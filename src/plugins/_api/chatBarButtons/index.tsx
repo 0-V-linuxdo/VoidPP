@@ -46,10 +46,11 @@ export default definePlugin({
                     replace: "[$&,$self.renderButtons()]",
                 },
                 {
-                    // Same cell as mic / voice. A sibling of the inline mode div is an
-                    // unplaced grid item, so the one-row pill overflows the placeholder.
+                    // Actions are [dictate, send]. Buttons must sit before that,
+                    // or usage lands to the right of Send. A sibling of this div
+                    // is an unplaced grid item and the one-row pill clips it.
                     match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\(\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
-                    replace: "$1[$2,$self.renderButtons()]$3",
+                    replace: "$1[$self.renderButtons(),$2]$3",
                     noWarn: true,
                 },
                 {
