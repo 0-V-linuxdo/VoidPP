@@ -105,7 +105,20 @@ export default definePlugin({
                     replace: '$self.renderItems("user"),$1',
                     noWarn: true,
                 },
+                {
+                    match: /(?<=\("Sign out","Sign out"\)[\s\S]{0,250})(\(0,(\i)\.jsxs\)\(\i(?:\.\i)?\.Item,\{onClick:\i,children:\[[^\]]+\]\}\))/,
+                    replace: '(0,$2.jsx)($2.Fragment,{children:[$self.renderItems("user"),$1]})',
+                },
             ],
+        },
+        {
+            // Desktop conversation row menu. `eq` is the item list; the id is the drag payload in the same call.
+            find: "file-tree.row-actions",
+            all: true,
+            replacement: {
+                match: /(data:(\i)\}:void 0[\s\S]{0,1200}?children:)(\i)(\}\)\]\}\):void 0,overlayActionRevealed)/,
+                replace: '$1[$self.renderItems("conversation",{conversationId:$2}),$3]$4',
+            },
         },
     ],
 });

@@ -29,7 +29,7 @@ const BOT_TEXT_SEL = "[data-bot-message-text='true']";
 const TICK_SEL = "button[aria-label^='Go to response ']";
 const PREV_SEL = "button[aria-label='Navigate to previous message']";
 const NEXT_SEL = "button[aria-label='Navigate to next message']";
-const PANE_SKIP = "[data-sidebar], [class*='pane-card']";
+const PANE_SKIP = "#app-sidebar, [data-sidebar], [class*='pane-card']";
 const STRIP_SEL = [
     "button", "svg", "nav", "time", ".void-timestamp", "[class*='timestamp']",
     "details", "[data-testid*='think']", "[class*='thinking']", "[class*='Thought']",

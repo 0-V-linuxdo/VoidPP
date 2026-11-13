@@ -252,6 +252,16 @@ export default definePlugin({
             ],
         },
         {
+            // Desktop account menu builds Help as `(0,jsx)(HelpMenu,{onOpenChangelog})`.
+            // A fragment flattens so Void++ sits immediately before Help.
+            find: '"user-dropdown.help","Help"',
+            all: true,
+            replacement: {
+                match: /(\(0,(\i)\.jsx\)\(\i,\{onOpenChangelog:\i\}\))/,
+                replace: '(0,$2.jsx)($2.Fragment,{children:[$self._renderVoidPPMenu(),$1]})',
+            },
+        },
+        {
             find: "registryTabs",
             replacement: [
                 {

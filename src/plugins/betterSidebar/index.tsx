@@ -639,6 +639,7 @@ export default definePlugin({
         },
         {
             find: "\"sidebar-chats\",\"Chats\"",
+            all: true,
             replacement: [
                 {
                     match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
@@ -653,6 +654,7 @@ export default definePlugin({
         },
         {
             find: "\"sidebar.section-title\",\"Bots\"",
+            all: true,
             replacement: {
                 match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,(?:\i\.useLocalStorage|\i\.\i)\)\("sidebar-bots-unassigned-collapsed")/,
                 replace: "$self._useBotsCollapsed()",
@@ -719,6 +721,25 @@ export default definePlugin({
             replacement: {
                 match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
                 replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null",
+            },
+        },
+        {
+            // Desktop shell conversation row. Ctrl-click selects; the checkbox
+            // sits in front of the label. `page:"chat"` is the batch gate, not
+            // the route — project chats are still conversations.
+            find: "file-tree.row-actions",
+            all: true,
+            replacement: {
+                match: /\{type:(\i(?:\.\i)?),data:(\i)\}:void 0,onClick:(\i),onDoubleClick:([\s\S]{0,2500}?children:\[)(\(0,\i\.jsx\)\(\i\.\$\.ItemLabel)/,
+                replace: '{type:$1,data:$2}:void 0,onClick:$self._wrapSidebarClick($3,$2,{page:"chat"}),onDoubleClick:$4$self._wrapCheckbox(null,$2,{page:"chat"}),$5',
+            },
+        },
+        {
+            find: 'sectionId:"recent"',
+            all: true,
+            replacement: {
+                match: /sectionId:"recent",children:\[/,
+                replace: 'sectionId:"recent",children:[$self._renderActionBar(),',
             },
         },
     ],

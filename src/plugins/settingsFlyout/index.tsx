@@ -237,6 +237,11 @@ export default definePlugin({
                     replace: "$self._renderSettingsMenu($1)",
                     noWarn: true,
                 },
+                {
+                    // Desktop account menu: `Item,{onClick,children:[icon,label]}` after the settings string.
+                    match: /("user-dropdown\.settings","Settings"\)[\s\S]{0,160}?)(\(0,\i\.jsxs?\)\(\i(?:\.\i)?\.Item,\{onClick:(\i),children:\[[^\]]{0,30}\]\}\))/,
+                    replace: "$1$self._renderSettingsMenu($3)",
+                },
             ],
         },
     ],

@@ -46,6 +46,10 @@ export default definePlugin({
                     replace: "[$&,$self.renderButtons()]",
                 },
                 {
+                    match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:\i\}\):null)/,
+                    replace: "[$1,$self.renderButtons()]",
+                },
+                {
                     match: /style:\i(?:\|\|\i)*\?void 0:(\{paddingInlineEnd:\i\})/,
                     replace: "style:$1",
                     noWarn: true,
@@ -53,10 +57,13 @@ export default definePlugin({
             ],
         },
         {
-            find: "data-wd-toolbar",
-            noWarn: true,
+            // Imagine composer dropped data-wd-toolbar. The gutter row is still
+            // trailingGutterPx / tight / children:[…]. all:true so a module that
+            // only mentions the prop does not consume the patch.
+            find: "data-unified-toolbar",
+            all: true,
             replacement: {
-                match: /(trailingGutterPx:\i,tight:\i,children:\[[^\]]{0,80})\]/,
+                match: /(trailingGutterPx:\i,tight:\i,children:\[[^\]]{0,120})\]/,
                 replace: "$1,$self.renderImagineButtons()]",
             },
         },

@@ -350,6 +350,7 @@ function userHeld() {
 }
 
 function inProjectsGroup(node: Element) {
+    if (node.closest("#app-sidebar [data-reorder-item='projects'], #app-sidebar [data-project-row]")) return true;
     const group = node.closest("[data-sidebar='group']");
     if (!group) return false;
     if (group.querySelector("button[aria-label='Add project'], button[aria-label='All projects'], button[aria-label='添加项目'], button[aria-label='全部项目']")) return true;

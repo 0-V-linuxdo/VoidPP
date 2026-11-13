@@ -624,6 +624,7 @@ export default definePlugin({
         },
         {
             find: "desktop-shell.home.greeting-explore",
+            all: true,
             replacement: {
                 match: /\(0,(\i)\.jsx\)\((\i),\{alternate:(\i),current:(\i),showingAlternate:(\i)\}\)/,
                 replace: '(0,$1.jsx)("h1",{"data-void-ph-hero":"",style:{display:"contents"},children:(0,$1.jsx)($2,{alternate:$3,current:$4,showingAlternate:$5})})',

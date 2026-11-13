@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.1
+// @version      20261113.2
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.1] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.2] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4135,6 +4135,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
     return Date.now() < manualUntil;
   }
   function inProjectsGroup(node) {
+    if (node.closest("#app-sidebar [data-reorder-item='projects'], #app-sidebar [data-project-row]"))
+      return true;
     const group = node.closest("[data-sidebar='group']");
     if (!group)
       return false;
@@ -6204,7 +6206,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     return (el.getAttribute("aria-label") || "").trim();
   }
   function hideSidebarPlugins() {
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    const sidebar = document.querySelector("#app-sidebar, [data-sidebar=sidebar]");
     if (!sidebar)
       return;
     for (const el of sidebar.querySelectorAll("a, button")) {
@@ -6329,6 +6331,14 @@ ${root}::-webkit-scrollbar-thumb:hover {
         replacement: {
           match: /(\i)\[(\d+)\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\(([A-Za-z_$][\w$.]*),\{inDialog:!0,localTabs:\3\}\),\1\[\2\]=\3,\1\[(\d+)\]=\4\):\4=\1\[\7\]/g,
           replace: "$1[$2]!==$self._shellKey($3)?($4=(0,$5.jsx)($6,{inDialog:!0,localTabs:$3,key:$self._shellKey($3)}),$1[$2]=$self._shellKey($3),$1[$7]=$4):$4=$1[$7]"
+        }
+      },
+      {
+        find: '"user-dropdown.help","Help"',
+        all: true,
+        replacement: {
+          match: /(children:\[)(\i,\i,\i,\i,)(\i,\i,\i,\i\])([\s\S]{0,220}?function \i\(e\)\{return e\.toggleOpen\})/,
+          replace: "$1$2$self._renderItem(),$3$4"
         }
       }
     ]
@@ -7121,6 +7131,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       },
       {
         find: '"sidebar-chats","Chats"',
+        all: true,
         replacement: [
           {
             match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
@@ -7135,6 +7146,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       },
       {
         find: '"sidebar.section-title","Bots"',
+        all: true,
         replacement: {
           match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,(?:\i\.useLocalStorage|\i\.\i)\)\("sidebar-bots-unassigned-collapsed")/,
           replace: "$self._useBotsCollapsed()"
@@ -7199,6 +7211,22 @@ ${root}::-webkit-scrollbar-thumb:hover {
         replacement: {
           match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
           replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null"
+        }
+      },
+      {
+        find: "file-tree.row-actions",
+        all: true,
+        replacement: {
+          match: /\{type:(\i(?:\.\i)?),data:(\i)\}:void 0,onClick:(\i),onDoubleClick:([\s\S]{0,2500}?children:\[)(\(0,\i\.jsx\)\(\i\.\$\.ItemLabel)/,
+          replace: '{type:$1,data:$2}:void 0,onClick:$self._wrapSidebarClick($3,$2,{page:"chat"}),onDoubleClick:$4$self._wrapCheckbox(null,$2,{page:"chat"}),$5'
+        }
+      },
+      {
+        find: 'sectionId:"recent"',
+        all: true,
+        replacement: {
+          match: /sectionId:"recent",children:\[/,
+          replace: 'sectionId:"recent",children:[$self._renderActionBar(),'
         }
       }
     ]
@@ -9866,9 +9894,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6ac993c"}`
-    }, `(${"6ac993c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d3606b8"}`
+    }, `(${"d3606b8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9994,6 +10022,14 @@ button .void-info-hint {
             noWarn: true
           }
         ]
+      },
+      {
+        find: '"user-dropdown.help","Help"',
+        all: true,
+        replacement: {
+          match: /(\(0,(\i)\.jsx\)\(\i,\{onOpenChangelog:\i\}\))/,
+          replace: "(0,$2.jsx)($2.Fragment,{children:[$self._renderVoidPPMenu(),$1]})"
+        }
       },
       {
         find: "registryTabs",
@@ -10141,6 +10177,10 @@ button .void-info-hint {
             replace: "[$&,$self.renderButtons()]"
           },
           {
+            match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:\i\}\):null)/,
+            replace: "[$1,$self.renderButtons()]"
+          },
+          {
             match: /style:\i(?:\|\|\i)*\?void 0:(\{paddingInlineEnd:\i\})/,
             replace: "style:$1",
             noWarn: true
@@ -10148,10 +10188,10 @@ button .void-info-hint {
         ]
       },
       {
-        find: "data-wd-toolbar",
-        noWarn: true,
+        find: "data-unified-toolbar",
+        all: true,
         replacement: {
-          match: /(trailingGutterPx:\i,tight:\i,children:\[[^\]]{0,80})\]/,
+          match: /(trailingGutterPx:\i,tight:\i,children:\[[^\]]{0,120})\]/,
           replace: "$1,$self.renderImagineButtons()]"
         }
       }
@@ -10249,8 +10289,20 @@ button .void-info-hint {
             match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
             replace: '$self.renderItems("user"),$1',
             noWarn: true
+          },
+          {
+            match: /(?<=\("Sign out","Sign out"\)[\s\S]{0,250})(\(0,(\i)\.jsxs\)\(\i(?:\.\i)?\.Item,\{onClick:\i,children:\[[^\]]+\]\}\))/,
+            replace: '(0,$2.jsx)($2.Fragment,{children:[$self.renderItems("user"),$1]})'
           }
         ]
+      },
+      {
+        find: "file-tree.row-actions",
+        all: true,
+        replacement: {
+          match: /(data:(\i)\}:void 0[\s\S]{0,1200}?children:)(\i)(\}\)\]\}\):void 0,overlayActionRevealed)/,
+          replace: '$1[$self.renderItems("conversation",{conversationId:$2}),$3]$4'
+        }
       }
     ]
   });
@@ -10407,13 +10459,13 @@ button .void-info-hint {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/* stylelint-disable-next-line selector-class-pattern */
-.group\\/sidebar-menu-item:hover .void-sel-wrap {
-    display: inline-flex;
+[data-void-file] {
+    position: relative;
 }
 
-/* stylelint-disable-next-line selector-class-pattern */
-.group\\/sidebar-menu-item.relative > .void-sel-wrap {
+[data-void-file]:hover > .void-sel-wrap,
+[data-void-file]:focus-within > .void-sel-wrap {
+    display: inline-flex;
     position: absolute;
     inset-inline-start: 0.5rem;
     top: 0.5rem;
@@ -10424,7 +10476,6 @@ button .void-info-hint {
 
   // src/plugins/betterFiles/index.tsx
   var logger20 = new Logger("BetterFiles");
-  var LibraryAssets = findByPropsLazy("deleteLibraryAsset", "useLibraryAssets");
   var selection2 = createSelectionStore();
   var assetsById = new Map;
   function fileId(item) {
@@ -10443,16 +10494,18 @@ button .void-info-hint {
     });
   }
   async function deleteAssets(ids) {
-    const { deleteLibraryAsset } = LibraryAssets;
-    for (const id of ids) {
-      const asset = assetsById.get(id) ?? { assetId: id };
+    const deleteAsset = FilesPageStore.useFilesPageStore.getState().deleteAsset;
+    await Promise.allSettled(ids.map(async (id) => {
+      const asset = assetsById.get(id);
       try {
-        await deleteLibraryAsset(asset);
+        const ok = await deleteAsset(id, asset);
+        if (ok === false)
+          logger20.error("Failed to delete asset", id);
       } catch (e) {
         logger20.error("Failed to delete asset", id, e);
       }
       assetsById.delete(id);
-    }
+    }));
   }
   function wrapItemClick(onClick, item) {
     return (e) => {
@@ -10497,28 +10550,27 @@ button .void-info-hint {
     _wrapItemClick: wrapItemClick,
     patches: [
       {
-        find: "LibraryPageContent:refreshAssets",
-        noWarn: true,
+        find: '"library-page.title","Library"',
         replacement: [
           {
-            match: /("data-library-item-id":\i\.id,onPointerDown:\i,onClick:)(\i)(,className:"absolute inset-0 z-0 focus-visible:outline-none")/,
-            replace: "$1$self._wrapItemClick($2,arguments[0].item)$3"
+            match: /(item:)(\i)(,leading:)(\i)(,onOpen:)(\i)(,title:\i)/,
+            replace: "$1$2$3$4$5$self._wrapItemClick($6,$2)$7"
           },
           {
-            match: /(SIDEBAR_ROW_MASK_STYLE,children:\[)(\i,\i,\i,\i)\]/,
-            replace: "$1$self._renderFileCheckbox({item:arguments[0].item}),$2]"
+            match: /\(0,(\i)\.jsx\)\("div",\{ref:(\i),className:"grok-jp7ctv",children:(\i)\}\)/,
+            replace: '(0,$1.jsxs)("div",{"data-void-file":"",ref:$2,className:"grok-jp7ctv",children:[$self._renderFileCheckbox({item:arguments[0].item}),$3]})'
           },
           {
-            match: /("data-library-item-id":\i\.id,onClick:)(\i=>\{\i\.stopPropagation\(\),\i\(\i\)\})/,
-            replace: "$1$self._wrapItemClick($2,arguments[0].item)"
+            match: /("data-library-item-id":)(\i)\.id,onClick:(\i)(,type:"button",className:"grok-jyslct grok-jbqb8w grok-ng3xce grok-t0e3qv)/,
+            replace: "$1$2.id,onClick:$self._wrapItemClick($3,$2)$4"
           },
           {
-            match: /("flex min-w-0 items-center gap-3 text-left font-medium",children:\[)(\i,\i)\]/,
-            replace: "$1$self._renderFileCheckbox({item:arguments[0].item}),$2]"
+            match: /\(0,(\i)\.jsxs\)\("div",\{ref:(\i),\.\.\.(\i),children:\[(\i),(\i)\]\}\)/,
+            replace: '(0,$1.jsxs)("div",{"data-void-file":"",ref:$2,...$3,children:[$self._renderFileCheckbox({item:arguments[0].item}),$4,$5]})'
           },
           {
-            match: /("library-page\.title","Library"\)\}\),\(0,\i\.jsx\)\("div",\{className:"flex items-center gap-3",children:)(\i)\}\)/,
-            replace: "$1[$self._renderFileActionBar(),$2]})"
+            match: /\(0,(\i)\.jsx\)\((\i)\.M,\{controls:(\i),title:(\i),toolbar:(\i),children:(\i)\}\),(\i)\[42\]=\3/,
+            replace: "(0,$1.jsx)($2.M,{controls:[$self._renderFileActionBar(),$3],title:$4,toolbar:$5,children:$6}),$7[42]=$3"
           }
         ]
       }
@@ -12391,6 +12443,10 @@ html.void-cms-picked .void-cms-ghost {
           {
             match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
             replace: "[$self.renderPinned(),$&]"
+          },
+          {
+            match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:\i\}\):null)/,
+            replace: "[$self.renderPinned(),$1]"
           }
         ]
       },
@@ -12726,7 +12782,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var TICK_SEL = "button[aria-label^='Go to response ']";
   var PREV_SEL = "button[aria-label='Navigate to previous message']";
   var NEXT_SEL = "button[aria-label='Navigate to next message']";
-  var PANE_SKIP = "[data-sidebar], [class*='pane-card']";
+  var PANE_SKIP = "#app-sidebar, [data-sidebar], [class*='pane-card']";
   var STRIP_SEL = [
     "button",
     "svg",
@@ -18410,7 +18466,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var HL = "void-qj";
   var EDITOR = ".tiptap, [contenteditable='true']";
   var MSG2 = "[data-testid='user-message'], [data-testid='assistant-message']";
-  var PANE_SKIP2 = "[data-sidebar], [class*='pane-card']";
+  var PANE_SKIP2 = "#app-sidebar, [data-sidebar], [class*='pane-card']";
   var THINK_SEL2 = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
   var OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
   var UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
@@ -21178,7 +21234,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     [data-sidebar="menu-button"],
     [data-sidebar="menu-sub-button"],
     a
-):has(> .void-cls):not([data-void-cls-nest]) {
+):has(> .void-cls):not([data-void-cls-nest]),
+#app-sidebar button:has(> .void-cls):not([data-void-cls-nest]) {
     display: flex;
     align-items: center;
     min-width: 0;
@@ -21251,9 +21308,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var EXTRA_HINT = /computer|sandbox|agent|task|working/i;
   var USER_INTERRUPT3 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
   var OWN_HOOKS = new Set(["useChatPageStore", "useConversationStore", "useResponseStore", "useRoutingStore"]);
-  var SIDEBAR = '[data-sidebar="sidebar"], [data-sidebar="content"]';
+  var SIDEBAR = '#app-sidebar, [data-sidebar="sidebar"], [data-sidebar="content"]';
   var HOST = '[data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]';
-  var ROW = 'a[href*="/c/"], a[href*="/chat/"], a[href*="chat="]';
+  var ROW = 'a[href*="/c/"], a[href*="/chat/"], a[href*="chat="], #app-sidebar button:not([data-icon-button]):not([data-account-trigger]):not([aria-expanded]):not([data-project-row])';
   var PRIMARY_PATH = new Set(["/", "/chat", "/imagine", "/library", "/automations"]);
   var CONV_PATH = /^\/(?:c|chat|project)\/[^/]+/i;
   var SPIN_PATH = "M21 12a9 9 0 1 1-6.219-8.56";
@@ -21719,6 +21776,31 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function hrefId(el) {
     return idFromHref(hrefOf(el));
   }
+  function fiberOf(node) {
+    const key = Object.keys(node).find((k) => k.startsWith("__reactFiber"));
+    return key ? node[key] : null;
+  }
+  function convIdFromEl(el) {
+    let node = el;
+    for (let depth = 0;node && depth < 6; depth++, node = node.parentElement) {
+      let cur = fiberOf(node);
+      for (let i = 0;cur && i < 16; i++, cur = cur.return) {
+        const props = cur.memoizedProps;
+        if (!props || typeof props !== "object")
+          continue;
+        const fromConv = props.conversation?.conversationId;
+        if (typeof fromConv === "string" && isConvId(fromConv))
+          return fromConv;
+        const drag = props.drag;
+        if (drag?.type === "application/x-grok-conversation-id" && isConvId(drag.data))
+          return drag.data;
+      }
+    }
+    return "";
+  }
+  function rowId(el) {
+    return hrefId(el) || (el.closest("#app-sidebar") ? convIdFromEl(el) : "");
+  }
   function isPrimaryNav(el) {
     if (!el.closest('[data-sidebar="menu-sub-button"]')) {
       const scope = navScope(el);
@@ -21739,7 +21821,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return null;
     if (isPrimaryNav(el))
       return null;
-    if (!hrefId(el))
+    if (!rowId(el))
       return null;
     const wrapped = el.closest(HOST);
     return wrapped && root.contains(wrapped) ? wrapped : el;
@@ -21791,12 +21873,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function rowForId(root, id) {
     if (!isConvId(id))
       return null;
-    for (const a of root.querySelectorAll(`a[href*="${id}"]`)) {
-      if (hrefId(a) !== id)
+    for (const el of root.querySelectorAll(ROW)) {
+      if (rowId(el) !== id)
         continue;
-      if (isPrimaryNav(a))
+      if (isPrimaryNav(el))
         continue;
-      const host = rowHost(a, root);
+      const host = rowHost(el, root);
       if (host)
         return host;
     }
@@ -21822,7 +21904,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         if (!host || seen.has(host))
           continue;
         seen.add(host);
-        const id = hrefId(host);
+        const id = rowId(host);
         if (!id) {
           clearMark(host);
           continue;
@@ -22985,6 +23067,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
             match: /(\i(?:\|\|\i){3}\|\|null!==\i&&"pending"!==\i)\?null:(?=\jsx{\i\.DropdownMenuItem}\{.{0,260}"user-dropdown\.upgrade","Upgrade plan")/,
             replace: "($self.settings.store.hideUpgradePlan||($1))?null:",
             noWarn: true
+          },
+          {
+            match: /(\i)\?(\(0,\i\.jsxs?\)\(\i(?:\.\i)?\.Item,\{onClick:\(\)=>\{[\s\S]{0,160}?upgrade_plan[\s\S]{0,220}?"user-dropdown\.upgrade","Upgrade plan"[\s\S]{0,80}\}\)):null/,
+            replace: "($self.settings.store.hideUpgradePlan||!$1)?null:$2"
           }
         ]
       },
@@ -23046,6 +23132,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
             replace: "upgradePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$1,unavailablePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$2}"
           }
         ]
+      },
+      {
+        find: 'model-select.upsell.upgrade","Upgrade"',
+        all: true,
+        replacement: {
+          match: /\(0,(\i)\.f\)\("model-select",(\i)\);if\((\i)\)return null/,
+          replace: '(0,$1.f)("model-select",$2);if($3||$self.settings.store.hideModelUpsell)return null'
+        }
       }
     ]
   });
@@ -24994,6 +25088,7 @@ Neon rain in a quiet city`
       },
       {
         find: "desktop-shell.home.greeting-explore",
+        all: true,
         replacement: {
           match: /\(0,(\i)\.jsx\)\((\i),\{alternate:(\i),current:(\i),showingAlternate:(\i)\}\)/,
           replace: '(0,$1.jsx)("h1",{"data-void-ph-hero":"",style:{display:"contents"},children:(0,$1.jsx)($2,{alternate:$3,current:$4,showingAlternate:$5})})'
@@ -29196,7 +29291,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function headerSkipped(el) {
     if (el.classList.contains("void-stars-toggle") || el.classList.contains("void-stars-bubble"))
       return true;
-    if (el.closest("[data-sidebar], .query-bar, [class*='pane-card'], [role='dialog'], [role='menu'], [id^='response-'], .void-bn-host, .void-stars-panel"))
+    if (el.closest("#app-sidebar, [data-sidebar], .query-bar, [class*='pane-card'], [role='dialog'], [role='menu'], [id^='response-'], .void-bn-host, .void-stars-panel"))
       return true;
     const style = getComputedStyle(el);
     if (style.display === "none" || style.visibility === "hidden")
@@ -30318,6 +30413,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     patches: [
       {
         find: "build-mode-starters.more",
+        all: true,
         replacement: {
           match: /(?=\(0,\i\.jsx\)\(\i\.f\.div,\{className:"flex w-full flex-col items-center pt-1 pb-2)/,
           replace: "true?null:"
@@ -30926,7 +31022,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var SKIP_LABEL_G = new RegExp(`\\b(?:${SKIP_PHRASE})\\b`, "gi");
   var SKIP_NOISE2 = /^(copy|share|retry|edit|more|thinking|analyzing|searching|continue from here|what can i help with\??|files|add files for grok to use in this project)$/i;
   var FILES_CHROME2 = /add files for grok to use in this project/i;
-  var PANE_SKIP3 = "[data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
+  var PANE_SKIP3 = "#app-sidebar, [data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
   var MSG_SEL3 = "[data-testid='user-message'], [data-testid='assistant-message']";
   var SCROLLER3 = "[data-testid='chat-transcript-scroller']";
   var TIME_TOKEN = /(?:^|\s)\d{1,2}:\d{2}\s*(?:am|pm)\b/gi;
@@ -31840,7 +31936,7 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function sidebarIndex() {
     const empty = { wsByConv: {}, nameByWs: {}, nameByConv: {}, iconByWs: {} };
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    const sidebar = document.querySelector("#app-sidebar, [data-sidebar=sidebar]");
     if (!sidebar)
       return empty;
     let iconSig = 0;
@@ -34019,6 +34115,10 @@ html.void-rt-open [data-sidebar="gap"] {
             match: /\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{on(?:Select|Click):(\i),children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SettingsIcon,\{size:4\}\)\}\),\i\("user-dropdown\.settings","Settings"\)\]\}\)/,
             replace: "$self._renderSettingsMenu($1)",
             noWarn: true
+          },
+          {
+            match: /("user-dropdown\.settings","Settings"\)[\s\S]{0,160}?)(\(0,\i\.jsxs?\)\(\i(?:\.\i)?\.Item,\{onClick:(\i),children:\[[^\]]{0,30}\]\}\))/,
+            replace: "$1$self._renderSettingsMenu($3)"
           }
         ]
       }
@@ -36382,41 +36482,41 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.updatedAt = 1793875238000;
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
-  noTelemetry_default.updatedAt = 1793875238000;
-  settings_default.updatedAt = 1793875238000;
+  noTelemetry_default.updatedAt = 1794557302000;
+  settings_default.updatedAt = 1794557302000;
   chatBarButtons_default.updatedAt = 1793875238000;
   contextMenu_default.updatedAt = 1793875238000;
-  autoCollapse_default.updatedAt = 1793875238000;
+  autoCollapse_default.updatedAt = 1794557302000;
   autoRetry_default.updatedAt = 1793875238000;
-  avatarPluginsFlyout_default.updatedAt = 1793875238000;
+  avatarPluginsFlyout_default.updatedAt = 1794557302000;
   betterCanvas_default.updatedAt = 1793875238000;
-  betterFiles_default.updatedAt = 1793875238000;
-  betterImagine_default.updatedAt = 1793875238000;
-  betterLinks_default.updatedAt = 1793875238000;
-  betterModeSelect_default.updatedAt = 1793875238000;
+  betterFiles_default.updatedAt = 1794557302000;
+  betterImagine_default.updatedAt = 1794557302000;
+  betterLinks_default.updatedAt = 1794557302000;
+  betterModeSelect_default.updatedAt = 1794557302000;
   betterNavigator_default.updatedAt = 1793875238000;
   betterQueue_default.updatedAt = 1793875238000;
   betterQuotes_default.updatedAt = 1793875238000;
-  betterSidebar_default.updatedAt = 1793875238000;
+  betterSidebar_default.updatedAt = 1794557302000;
   chatListStatus_default.updatedAt = 1793875238000;
   chatStateFavicons_default.updatedAt = 1793875238000;
-  cleaner_default.updatedAt = 1793875238000;
+  cleaner_default.updatedAt = 1794557302000;
   cloneChats_default.updatedAt = 1793875238000;
   collapseThoughts_default.updatedAt = 1793875238000;
   completeToast_default.updatedAt = 1793875238000;
   composerOpacity_default.updatedAt = 1793875238000;
   consoleJanitor_default.updatedAt = 1793875238000;
-  customGreeting_default.updatedAt = 1793875238000;
+  customGreeting_default.updatedAt = 1794557302000;
   customInstructions_default.updatedAt = 1793875238000;
   customSidebarIdentity_default.updatedAt = 1793875238000;
   downloadTTS_default.updatedAt = 1793875238000;
-  experiments_default.updatedAt = 1793875238000;
+  experiments_default.updatedAt = 1794557302000;
   exportChat_default.updatedAt = 1793875238000;
   incognito_default.updatedAt = 1793875238000;
   inputHistory_default.updatedAt = 1793875238000;
   messageStars_default.updatedAt = 1793875238000;
   messageTimestamps_default.updatedAt = 1793875238000;
-  noBuildStarters_default.updatedAt = 1793875238000;
+  noBuildStarters_default.updatedAt = 1794557302000;
   noDictation_default.updatedAt = 1793875238000;
   noGrokBot_default.updatedAt = 1793875238000;
   noShareLink_default.updatedAt = 1793875238000;

@@ -124,6 +124,11 @@ export default definePlugin({
                     replace: "($self.settings.store.hideUpgradePlan||($1))?null:",
                     noWarn: true,
                 },
+                {
+                    // Desktop: `ident?(0,jsx)(Item,{onClick:()=>{…"upgrade_plan"…"Upgrade plan")}):null`
+                    match: /(\i)\?(\(0,\i\.jsxs?\)\(\i(?:\.\i)?\.Item,\{onClick:\(\)=>\{[\s\S]{0,160}?upgrade_plan[\s\S]{0,220}?"user-dropdown\.upgrade","Upgrade plan"[\s\S]{0,80}\}\)):null/,
+                    replace: "($self.settings.store.hideUpgradePlan||!$1)?null:$2",
+                },
             ],
         },
         {
@@ -184,6 +189,14 @@ export default definePlugin({
                     replace: "upgradePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$1,unavailablePrimaryModes:$self.settings.store.hideInaccessibleModels?[]:$2}",
                 },
             ],
+        },
+        {
+            find: 'model-select.upsell.upgrade","Upgrade"',
+            all: true,
+            replacement: {
+                match: /\(0,(\i)\.f\)\("model-select",(\i)\);if\((\i)\)return null/,
+                replace: '(0,$1.f)("model-select",$2);if($3||$self.settings.store.hideModelUpsell)return null',
+            },
         },
     ],
 });

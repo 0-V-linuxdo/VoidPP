@@ -10,15 +10,13 @@ import { SelectionActionBar, SelectionCheckbox } from "@components";
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { FilesIcon } from "@components/icons";
 import { React } from "@turbopack/common/react";
-import { findByPropsLazy } from "@turbopack/turbopack";
+import { FilesPageStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import { createSelectionStore } from "@utils/misc";
 import definePlugin from "@utils/types";
 
 const logger = new Logger("BetterFiles");
-
-const LibraryAssets: { deleteLibraryAsset: (asset: { assetId: string }) => Promise<unknown> } = findByPropsLazy("deleteLibraryAsset", "useLibraryAssets");
 
 const selection = createSelectionStore<string>();
 const assetsById = new Map<string, { assetId: string }>();
@@ -42,12 +40,20 @@ function FileCheckbox({ item }: { item: LibraryItem }) {
 }
 
 async function deleteAssets(ids: string[]) {
-    const { deleteLibraryAsset } = LibraryAssets;
-    for (const id of ids) {
-        const asset = assetsById.get(id) ?? { assetId: id };
-        try { await deleteLibraryAsset(asset); } catch (e) { logger.error("Failed to delete asset", id, e); }
+    const deleteAsset = FilesPageStore.useFilesPageStore.getState().deleteAsset as (
+        assetId: string,
+        asset?: { assetId?: string; fileSource?: string },
+    ) => Promise<unknown>;
+    await Promise.allSettled(ids.map(async id => {
+        const asset = assetsById.get(id);
+        try {
+            const ok = await deleteAsset(id, asset);
+            if (ok === false) logger.error("Failed to delete asset", id);
+        } catch (e) {
+            logger.error("Failed to delete asset", id, e);
+        }
         assetsById.delete(id);
-    }
+    }));
 }
 
 function wrapItemClick(onClick: (e: MouseEvent) => void, item: LibraryItem) {
@@ -93,28 +99,33 @@ export default definePlugin({
 
     patches: [
         {
-            find: "LibraryPageContent:refreshAssets",
-            noWarn: true,
+            find: '"library-page.title","Library"',
             replacement: [
                 {
-                    match: /("data-library-item-id":\i\.id,onPointerDown:\i,onClick:)(\i)(,className:"absolute inset-0 z-0 focus-visible:outline-none")/,
-                    replace: "$1$self._wrapItemClick($2,arguments[0].item)$3",
+                    // LibraryRow: ctrl/meta-click. Source: item:c,leading:w,onOpen:x,title:k
+                    match: /(item:)(\i)(,leading:)(\i)(,onOpen:)(\i)(,title:\i)/,
+                    replace: "$1$2$3$4$5$self._wrapItemClick($6,$2)$7",
                 },
                 {
-                    match: /(SIDEBAR_ROW_MASK_STYLE,children:\[)(\i,\i,\i,\i)\]/,
-                    replace: "$1$self._renderFileCheckbox({item:arguments[0].item}),$2]",
+                    // LibraryRow checkbox. Source: (0,r.jsx)("div",{ref:j,className:"grok-jp7ctv",children:s})
+                    match: /\(0,(\i)\.jsx\)\("div",\{ref:(\i),className:"grok-jp7ctv",children:(\i)\}\)/,
+                    replace: '(0,$1.jsxs)("div",{"data-void-file":"",ref:$2,className:"grok-jp7ctv",children:[$self._renderFileCheckbox({item:arguments[0].item}),$3]})',
                 },
                 {
-                    match: /("data-library-item-id":\i\.id,onClick:)(\i=>\{\i\.stopPropagation\(\),\i\(\i\)\})/,
-                    replace: "$1$self._wrapItemClick($2,arguments[0].item)",
+                    // LibraryTile overlay button. Source: "data-library-item-id":u.id,onClick:v,type:"button",className:"grok-jyslct grok-jbqb8w grok-ng3xce grok-t0e3qv
+                    match: /("data-library-item-id":)(\i)\.id,onClick:(\i)(,type:"button",className:"grok-jyslct grok-jbqb8w grok-ng3xce grok-t0e3qv)/,
+                    replace: "$1$2.id,onClick:$self._wrapItemClick($3,$2)$4",
                 },
                 {
-                    match: /("flex min-w-0 items-center gap-3 text-left font-medium",children:\[)(\i,\i)\]/,
-                    replace: "$1$self._renderFileCheckbox({item:arguments[0].item}),$2]",
+                    // LibraryTile checkbox. Source: (0,r.jsxs)("div",{ref:b,...L,children:[a,c]})
+                    match: /\(0,(\i)\.jsxs\)\("div",\{ref:(\i),\.\.\.(\i),children:\[(\i),(\i)\]\}\)/,
+                    replace: '(0,$1.jsxs)("div",{"data-void-file":"",ref:$2,...$3,children:[$self._renderFileCheckbox({item:arguments[0].item}),$4,$5]})',
                 },
                 {
-                    match: /("library-page\.title","Library"\)\}\),\(0,\i\.jsx\)\("div",\{className:"flex items-center gap-3",children:)(\i)\}\)/,
-                    replace: "$1[$self._renderFileActionBar(),$2]})",
+                    // Action bar beside Upload. Source: (0,r.jsx)(i.M,{controls:F,title:n,toolbar:p,children:x}),v[42]=F
+                    // The =\3 backref must stay so controls ident matches the cache slot.
+                    match: /\(0,(\i)\.jsx\)\((\i)\.M,\{controls:(\i),title:(\i),toolbar:(\i),children:(\i)\}\),(\i)\[42\]=\3/,
+                    replace: "(0,$1.jsx)($2.M,{controls:[$self._renderFileActionBar(),$3],title:$4,toolbar:$5,children:$6}),$7[42]=$3",
                 },
             ],
         },

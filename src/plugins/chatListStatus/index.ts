@@ -30,9 +30,9 @@ const SKIP_KEY = /^(message|content|html|query|text|title|thinkingTrace)$/i;
 const EXTRA_HINT = /computer|sandbox|agent|task|working/i;
 const USER_INTERRUPT = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
 const OWN_HOOKS = new Set(["useChatPageStore", "useConversationStore", "useResponseStore", "useRoutingStore"]);
-const SIDEBAR = '[data-sidebar="sidebar"], [data-sidebar="content"]';
+const SIDEBAR = '#app-sidebar, [data-sidebar="sidebar"], [data-sidebar="content"]';
 const HOST = '[data-sidebar="menu-button"], [data-sidebar="menu-sub-button"]';
-const ROW = 'a[href*="/c/"], a[href*="/chat/"], a[href*="chat="]';
+const ROW = 'a[href*="/c/"], a[href*="/chat/"], a[href*="chat="], #app-sidebar button:not([data-icon-button]):not([data-account-trigger]):not([aria-expanded]):not([data-project-row])';
 const PRIMARY_PATH = new Set(["/", "/chat", "/imagine", "/library", "/automations"]);
 const CONV_PATH = /^\/(?:c|chat|project)\/[^/]+/i;
 const SPIN_PATH = "M21 12a9 9 0 1 1-6.219-8.56";
@@ -468,6 +468,31 @@ function hrefId(el: Element): string {
     return idFromHref(hrefOf(el));
 }
 
+function fiberOf(node: Element): { return?: unknown; memoizedProps?: Record<string, any> } | null {
+    const key = Object.keys(node).find(k => k.startsWith("__reactFiber"));
+    return key ? (node as unknown as Record<string, any>)[key] : null;
+}
+
+function convIdFromEl(el: Element): string {
+    let node: Element | null = el;
+    for (let depth = 0; node && depth < 6; depth++, node = node.parentElement) {
+        let cur = fiberOf(node);
+        for (let i = 0; cur && i < 16; i++, cur = cur.return as typeof cur) {
+            const props = cur.memoizedProps;
+            if (!props || typeof props !== "object") continue;
+            const fromConv = props.conversation?.conversationId;
+            if (typeof fromConv === "string" && isConvId(fromConv)) return fromConv;
+            const drag = props.drag;
+            if (drag?.type === "application/x-grok-conversation-id" && isConvId(drag.data)) return drag.data;
+        }
+    }
+    return "";
+}
+
+function rowId(el: Element): string {
+    return hrefId(el) || (el.closest("#app-sidebar") ? convIdFromEl(el) : "");
+}
+
 function isPrimaryNav(el: Element): boolean {
     if (!el.closest('[data-sidebar="menu-sub-button"]')) {
         const scope = navScope(el);
@@ -483,7 +508,7 @@ function rowHost(el: HTMLElement, root: Element): HTMLElement | null {
     if (el.classList.contains(MARK)) return null;
     if (el.closest('[data-sidebar="menu-action"], [data-sidebar="footer"], [data-sidebar="header"]')) return null;
     if (isPrimaryNav(el)) return null;
-    if (!hrefId(el)) return null;
+    if (!rowId(el)) return null;
     const wrapped = el.closest<HTMLElement>(HOST);
     return wrapped && root.contains(wrapped) ? wrapped : el;
 }
@@ -536,10 +561,10 @@ function roots(): Element[] {
 
 function rowForId(root: Element, id: string): HTMLElement | null {
     if (!isConvId(id)) return null;
-    for (const a of root.querySelectorAll<HTMLElement>(`a[href*="${id}"]`)) {
-        if (hrefId(a) !== id) continue;
-        if (isPrimaryNav(a)) continue;
-        const host = rowHost(a, root);
+    for (const el of root.querySelectorAll<HTMLElement>(ROW)) {
+        if (rowId(el) !== id) continue;
+        if (isPrimaryNav(el)) continue;
+        const host = rowHost(el, root);
         if (host) return host;
     }
     return null;
@@ -564,7 +589,7 @@ function paint() {
             const host = rowHost(el, root);
             if (!host || seen.has(host)) continue;
             seen.add(host);
-            const id = hrefId(host);
+            const id = rowId(host);
             if (!id) {
                 clearMark(host);
                 continue;

@@ -18,7 +18,7 @@ const cl = classNameFactory("void-qj-");
 const HL = "void-qj";
 const EDITOR = ".tiptap, [contenteditable='true']";
 const MSG = "[data-testid='user-message'], [data-testid='assistant-message']";
-const PANE_SKIP = "[data-sidebar], [class*='pane-card']";
+const PANE_SKIP = "#app-sidebar, [data-sidebar], [class*='pane-card']";
 const THINK_SEL = "details, [data-testid*='think'], [class*='thinking'], [class*='Thought'], [aria-label*='Thought']";
 const OVERFLOW_SEL = "[class*='overflow-y-auto'], [class*='overflow-auto'], [class*='overflow-y-scroll']";
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;

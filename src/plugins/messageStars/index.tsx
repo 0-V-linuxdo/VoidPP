@@ -668,7 +668,7 @@ function signature(groups: readonly StarGroup[]): string {
 
 function headerSkipped(el: HTMLElement): boolean {
     if (el.classList.contains("void-stars-toggle") || el.classList.contains("void-stars-bubble")) return true;
-    if (el.closest("[data-sidebar], .query-bar, [class*='pane-card'], [role='dialog'], [role='menu'], [id^='response-'], .void-bn-host, .void-stars-panel")) return true;
+    if (el.closest("#app-sidebar, [data-sidebar], .query-bar, [class*='pane-card'], [role='dialog'], [role='menu'], [id^='response-'], .void-bn-host, .void-stars-panel")) return true;
     const style = getComputedStyle(el);
     if (style.display === "none" || style.visibility === "hidden") return true;
     const box = el.getBoundingClientRect();

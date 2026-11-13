@@ -8,7 +8,8 @@
     [data-sidebar="menu-button"],
     [data-sidebar="menu-sub-button"],
     a
-):has(> .void-cls):not([data-void-cls-nest]) {
+):has(> .void-cls):not([data-void-cls-nest]),
+#app-sidebar button:has(> .void-cls):not([data-void-cls-nest]) {
     display: flex;
     align-items: center;
     min-width: 0;

@@ -19,6 +19,7 @@ export default definePlugin({
     patches: [
         {
             find: "build-mode-starters.more",
+            all: true,
             replacement: {
                 match: /(?=\(0,\i\.jsx\)\(\i\.f\.div,\{className:"flex w-full flex-col items-center pt-1 pb-2)/,
                 replace: "true?null:",

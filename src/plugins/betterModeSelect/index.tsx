@@ -868,6 +868,11 @@ export default definePlugin({
                     match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
                     replace: "[$self.renderPinned(),$&]",
                 },
+                {
+                    // Desktop shell: `"data-query-bar-mode-select":""` on a stylex div, not `!0` plus `"mode-select"`.
+                    match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:\i\}\):null)/,
+                    replace: "[$self.renderPinned(),$1]",
+                },
             ],
         },
         {

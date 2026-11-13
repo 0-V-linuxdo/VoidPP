@@ -35,7 +35,7 @@ const SKIP_LABEL = new RegExp(`^(?:${SKIP_PHRASE})$`, "i");
 const SKIP_LABEL_G = new RegExp(`\\b(?:${SKIP_PHRASE})\\b`, "gi");
 const SKIP_NOISE = /^(copy|share|retry|edit|more|thinking|analyzing|searching|continue from here|what can i help with\??|files|add files for grok to use in this project)$/i;
 const FILES_CHROME = /add files for grok to use in this project/i;
-const PANE_SKIP = "[data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
+const PANE_SKIP = "#app-sidebar, [data-sidebar], .void-rt-root, #void-rt-host, [class*='pane-card']";
 const MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
 const SCROLLER = "[data-testid='chat-transcript-scroller']";
 const TIME_TOKEN = /(?:^|\s)\d{1,2}:\d{2}\s*(?:am|pm)\b/gi;
@@ -928,7 +928,7 @@ function invalidateSidebar() {
 
 function sidebarIndex(): SidebarIndex {
     const empty: SidebarIndex = { wsByConv: {}, nameByWs: {}, nameByConv: {}, iconByWs: {} };
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    const sidebar = document.querySelector("#app-sidebar, [data-sidebar=sidebar]");
     if (!sidebar) return empty;
     let iconSig = 0;
     for (const p of sidebar.querySelectorAll("svg path")) iconSig += (p.getAttribute("d") || "").length;

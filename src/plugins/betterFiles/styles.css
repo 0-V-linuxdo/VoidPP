@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/* stylelint-disable-next-line selector-class-pattern */
-.group\/sidebar-menu-item:hover .void-sel-wrap {
-    display: inline-flex;
+[data-void-file] {
+    position: relative;
 }
 
-/* stylelint-disable-next-line selector-class-pattern */
-.group\/sidebar-menu-item.relative > .void-sel-wrap {
+[data-void-file]:hover > .void-sel-wrap,
+[data-void-file]:focus-within > .void-sel-wrap {
+    display: inline-flex;
     position: absolute;
     inset-inline-start: 0.5rem;
     top: 0.5rem;

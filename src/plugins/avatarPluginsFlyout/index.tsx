@@ -263,7 +263,7 @@ function pluginControlLabel(el: HTMLElement): string {
 }
 
 function hideSidebarPlugins() {
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    const sidebar = document.querySelector("#app-sidebar, [data-sidebar=sidebar]");
     if (!sidebar) return;
     for (const el of sidebar.querySelectorAll<HTMLElement>("a, button")) {
         if (el.closest("[role=menu], [role=menuitem], [data-radix-popper-content-wrapper]")) continue;
@@ -395,6 +395,15 @@ export default definePlugin({
             replacement: {
                 match: /(\i)\[(\d+)\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\(([A-Za-z_$][\w$.]*),\{inDialog:!0,localTabs:\3\}\),\1\[\2\]=\3,\1\[(\d+)\]=\4\):\4=\1\[\7\]/g,
                 replace: "$1[$2]!==$self._shellKey($3)?($4=(0,$5.jsx)($6,{inDialog:!0,localTabs:$3,key:$self._shellKey($3)}),$1[$2]=$self._shellKey($3),$1[$7]=$4):$4=$1[$7]",
+            },
+        },
+        {
+            // Desktop account menu: insert Plugins before the Help submenu in the item list.
+            find: '"user-dropdown.help","Help"',
+            all: true,
+            replacement: {
+                match: /(children:\[)(\i,\i,\i,\i,)(\i,\i,\i,\i\])([\s\S]{0,220}?function \i\(e\)\{return e\.toggleOpen\})/,
+                replace: "$1$2$self._renderItem(),$3$4",
             },
         },
     ],
