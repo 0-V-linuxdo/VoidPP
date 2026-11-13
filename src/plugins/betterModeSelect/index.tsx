@@ -53,7 +53,7 @@ const MENU_ROOT_SEL = [
     "[role='menu']",
     "[role='listbox']",
 ].join(", ");
-const TRIGGER_SEL = ".query-bar [data-query-bar-mode-select] button";
+const TRIGGER_SEL = "#model-select-trigger, form[data-composer] [data-query-bar-mode-select] > button, .query-bar [data-query-bar-mode-select] button";
 const PICK_MS = 900;
 const POINTER: PointerEventInit = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
 const GHOST_STYLE = { opacity: "0", visibility: "hidden" } as const;
@@ -453,7 +453,7 @@ function isModelHotkey(e: KeyboardEvent) {
 }
 
 function typingOutsideComposer(target: EventTarget | null) {
-    if (!(target instanceof Element) || target.closest(".query-bar")) return false;
+    if (!(target instanceof Element) || target.closest(".query-bar, form[data-composer]")) return false;
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
     return target instanceof HTMLElement && target.isContentEditable;
 }
@@ -566,44 +566,10 @@ async function harvestIcons() {
 
 async function selectMode(id: string) {
     if (picking) return;
-    setPicking(true);
-    try {
-        await ModesStore.useModesStore.getState().ensureLoaded();
-
-        let menu = modeMenu();
-        if (!menu) {
-            const trigger = nativeTrigger();
-            if (!trigger) {
-                logger.warn("Native mode selector not found");
-                return;
-            }
-            clickEl(trigger);
-            menu = await waitForMenu();
-        }
-        if (!menu) {
-            logger.warn("Native mode item not found:", id);
-            return;
-        }
-
-        cloak(menu);
-        stashGlyphs(menu.items);
-        const item = menu.items.find(el => matchItem(el, id));
-        if (!item) {
-            logger.warn("Native mode item not found:", id);
-            const trigger = nativeTrigger();
-            if (modeMenu() && trigger) clickEl(trigger);
-            lockGhosts();
-            await waitForGone();
-            return;
-        }
-        clickEl(item);
-        lockGhosts();
-        await waitForGone();
-    } catch (e) {
-        logger.warn("Failed to select mode:", e);
-    } finally {
-        setPicking(false);
-    }
+    const store = ModesStore.useModesStore.getState();
+    if (String(store.selectedModeId || "") === id) return;
+    store.setSelectedModeId(id, { source: "user" });
+    closeModelMenu();
 }
 
 function useNativeGlyph(id: string) {
@@ -763,19 +729,40 @@ function PinnedModes() {
         void selectMode(id);
     };
 
+    const current = catalog.find(c => c.id === selectedModeId);
+    const currentPinned = items.some(m => chipOn(selectedModeId, m.id));
+
     return (
         <div className={classes(cl("pins"), hideNative && cl("hide-native"))}>
-            {items.map(m => (
-                <span key={m.id} className={cl("pin-host")} data-void-mode-id={m.id}><ChatBarButton
+            {!currentPinned && selectedModeId ? (
+                <button
+                    type="button"
+                    className={classes(cl("pin"), cl("on"), cl("current"))}
+                    aria-label={current?.title || selectedModeId}
+                    onClick={event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const trigger = modelTrigger();
+                        if (trigger) clickEl(trigger);
+                    }}
+                >
+                    <span className={cl("label")}>{current?.title || selectedModeId}</span>
+                </button>
+            ) : null}
+            {items.map(m => {
+                const on = chipOn(selectedModeId, m.id);
+                return (
+                    <span key={m.id} className={cl("pin-host")} data-void-mode-id={m.id}><ChatBarButton
                         size="xl"
                         shape="circle"
-                        icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels} />}
+                        icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels || on} />}
                         tooltip={m.label}
                         onClick={onPin(m.id)}
-                        className={classes(cl("pin"), chipOn(selectedModeId, m.id) && cl("on"), showLabels && cl("labeled"))}
+                        className={classes(cl("pin"), on && cl("on"), (showLabels || on) && cl("labeled"))}
                         aria-label={m.label}
                     /></span>
-            ))}
+                );
+            })}
         </div>
     );
 }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.9
+// @version      20261113.10
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.9] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.10] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9894,9 +9894,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"42e54c5"}`
-    }, `(${"42e54c5"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6f88d51"}`
+    }, `(${"6f88d51"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11459,13 +11459,33 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
     box-sizing: border-box;
 }
 
-.query-bar .void-cms-on {
-    color: #ff7a17;
+.query-bar .void-cms-on,
+form[data-composer] .void-cms-on {
+    color: #ff7a17 !important;
+    width: auto !important;
+    min-width: 2.5rem;
+    padding-inline: 0.55rem;
+    gap: 0.3rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, #ff7a17 18%, transparent) !important;
 }
 
 .query-bar .void-cms-on:not(:hover, :focus-visible) {
-    background-color: transparent !important;
     box-shadow: none !important;
+}
+
+form[data-composer] .void-cms-on .void-cms-label,
+.void-cms-current .void-cms-label {
+    display: inline !important;
+}
+
+form[data-composer] button.void-cms-current {
+    display: inline-flex;
+    align-items: center;
+    height: 2.5rem;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
 }
 
 .void-cms-label {
@@ -11507,7 +11527,7 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(
     height: auto !important;
     min-width: 0 !important;
     min-height: 0 !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     opacity: 1 !important;
     pointer-events: auto !important;
     flex-wrap: nowrap !important;
@@ -11515,7 +11535,16 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(
 }
 
 form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins) {
-    display: none !important;
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    border: 0 !important;
 }
 
 /* Inline is one row: leading | field | mode | actions. Mode used to share the
@@ -11535,8 +11564,9 @@ form[data-composer][data-composer-layout="inline"] [data-query-bar-mode-select] 
     position: static !important;
     width: auto !important;
     height: auto !important;
-    max-height: var(--grok-control-height-lg) !important;
+    max-height: none !important;
     margin-inline: 0 !important;
+    overflow: visible !important;
 }
 
 form[data-composer][data-composer-layout="stacked"] {
@@ -11698,7 +11728,7 @@ html.void-cms-picked .void-cms-ghost {
     "[role='menu']",
     "[role='listbox']"
   ].join(", ");
-  var TRIGGER_SEL = ".query-bar [data-query-bar-mode-select] button";
+  var TRIGGER_SEL = "#model-select-trigger, form[data-composer] [data-query-bar-mode-select] > button, .query-bar [data-query-bar-mode-select] button";
   var PICK_MS = 900;
   var POINTER = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
   var GHOST_STYLE = { opacity: "0", visibility: "hidden" };
@@ -12093,7 +12123,7 @@ html.void-cms-picked .void-cms-ghost {
     return e.code === "KeyM" || e.key === "m" || e.key === "M";
   }
   function typingOutsideComposer(target) {
-    if (!(target instanceof Element) || target.closest(".query-bar"))
+    if (!(target instanceof Element) || target.closest(".query-bar, form[data-composer]"))
       return false;
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)
       return true;
@@ -12214,43 +12244,11 @@ html.void-cms-picked .void-cms-ghost {
   async function selectMode(id) {
     if (picking)
       return;
-    setPicking(true);
-    try {
-      await ModesStore.useModesStore.getState().ensureLoaded();
-      let menu = modeMenu();
-      if (!menu) {
-        const trigger = nativeTrigger();
-        if (!trigger) {
-          logger22.warn("Native mode selector not found");
-          return;
-        }
-        clickEl(trigger);
-        menu = await waitForMenu();
-      }
-      if (!menu) {
-        logger22.warn("Native mode item not found:", id);
-        return;
-      }
-      cloak(menu);
-      stashGlyphs(menu.items);
-      const item = menu.items.find((el) => matchItem(el, id));
-      if (!item) {
-        logger22.warn("Native mode item not found:", id);
-        const trigger = nativeTrigger();
-        if (modeMenu() && trigger)
-          clickEl(trigger);
-        lockGhosts();
-        await waitForGone();
-        return;
-      }
-      clickEl(item);
-      lockGhosts();
-      await waitForGone();
-    } catch (e) {
-      logger22.warn("Failed to select mode:", e);
-    } finally {
-      setPicking(false);
-    }
+    const store = ModesStore.useModesStore.getState();
+    if (String(store.selectedModeId || "") === id)
+      return;
+    store.setSelectedModeId(id, { source: "user" });
+    closeModelMenu();
   }
   function useNativeGlyph(id) {
     const [, bump] = React.useState(0);
@@ -12392,26 +12390,44 @@ html.void-cms-picked .void-cms-ghost {
       e.stopPropagation();
       selectMode(id);
     };
+    const current = catalog.find((c) => c.id === selectedModeId);
+    const currentPinned = items.some((m) => chipOn(selectedModeId, m.id));
     return /* @__PURE__ */ React.createElement("div", {
       className: classes(cl19("pins"), hideNative && cl19("hide-native"))
-    }, items.map((m) => /* @__PURE__ */ React.createElement("span", {
-      key: m.id,
-      className: cl19("pin-host"),
-      "data-void-mode-id": m.id
-    }, /* @__PURE__ */ React.createElement(ChatBarButton, {
-      size: "xl",
-      shape: "circle",
-      icon: /* @__PURE__ */ React.createElement(PinGlyph, {
-        id: m.id,
-        Icon: m.Icon,
-        label: m.label,
-        showLabels
-      }),
-      tooltip: m.label,
-      onClick: onPin(m.id),
-      className: classes(cl19("pin"), chipOn(selectedModeId, m.id) && cl19("on"), showLabels && cl19("labeled")),
-      "aria-label": m.label
-    }))));
+    }, !currentPinned && selectedModeId ? /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      className: classes(cl19("pin"), cl19("on"), cl19("current")),
+      "aria-label": current?.title || selectedModeId,
+      onClick: (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const trigger = modelTrigger();
+        if (trigger)
+          clickEl(trigger);
+      }
+    }, /* @__PURE__ */ React.createElement("span", {
+      className: cl19("label")
+    }, current?.title || selectedModeId)) : null, items.map((m) => {
+      const on = chipOn(selectedModeId, m.id);
+      return /* @__PURE__ */ React.createElement("span", {
+        key: m.id,
+        className: cl19("pin-host"),
+        "data-void-mode-id": m.id
+      }, /* @__PURE__ */ React.createElement(ChatBarButton, {
+        size: "xl",
+        shape: "circle",
+        icon: /* @__PURE__ */ React.createElement(PinGlyph, {
+          id: m.id,
+          Icon: m.Icon,
+          label: m.label,
+          showLabels: showLabels || on
+        }),
+        tooltip: m.label,
+        onClick: onPin(m.id),
+        className: classes(cl19("pin"), on && cl19("on"), (showLabels || on) && cl19("labeled")),
+        "aria-label": m.label
+      }));
+    }));
   }
   function PinnedHost() {
     const ready = storesReady();
@@ -36563,7 +36579,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794563342000;
   settings_default.updatedAt = 1794563342000;
-  chatBarButtons_default.updatedAt = 1794563342000;
+  chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794563342000;
   autoCollapse_default.updatedAt = 1794563342000;
   autoRetry_default.updatedAt = 1794563342000;
@@ -36572,7 +36588,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1794563342000;
   betterImagine_default.updatedAt = 1794563342000;
   betterLinks_default.updatedAt = 1794563342000;
-  betterModeSelect_default.updatedAt = 1794579042000;
+  betterModeSelect_default.updatedAt = 1794579915000;
   betterNavigator_default.updatedAt = 1794563342000;
   betterQueue_default.updatedAt = 1794563342000;
   betterQuotes_default.updatedAt = 1794563342000;
