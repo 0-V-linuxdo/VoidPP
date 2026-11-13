@@ -7,12 +7,7 @@
 import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
 import { ErrorBoundary } from "@components/ErrorBoundary";
 import { GrokConnectorsIcon, type IconProps } from "@components/icons";
-import {
-    DropdownMenuItem,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-} from "@turbopack/common/components";
+import { accountMenuParts, accountMenuSelect } from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
 import { PluginsDialogStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
@@ -229,24 +224,25 @@ function applyTab(local: boolean, state: string | null, setState: (tab: string) 
 }
 
 function PluginsMenu() {
+    const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
     return (
-        <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
+        <Sub>
+            <Trigger>
                 <PluginsIcon className="void-settings-menu-icon" />
                 Plugins
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
+            </Trigger>
+            <Content>
                 {PLUGIN_TABS.map(tab => {
                     const Icon = tab.icon;
                     return (
-                        <DropdownMenuItem key={tab.id} onSelect={() => openPlugins(tab.id)}>
+                        <Item key={tab.id} {...accountMenuSelect(desktop, () => openPlugins(tab.id))}>
                             <Icon className="void-settings-menu-icon" />
                             {tab.name}
-                        </DropdownMenuItem>
+                        </Item>
                     );
                 })}
-            </DropdownMenuSubContent>
-        </DropdownMenuSub>
+            </Content>
+        </Sub>
     );
 }
 

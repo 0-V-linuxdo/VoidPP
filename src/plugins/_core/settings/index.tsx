@@ -14,12 +14,7 @@ import { BracesIcon, PaletteIcon, SettingsIcon, TestTubeIcon, UnplugIcon, VoidPP
 import { CustomCSSTab, loadSavedCSS, PluginsTab, setPendingPluginDialog, ThemesTab } from "@components/settings/tabs";
 import { Tab as ExperimentsTab } from "@plugins/experiments";
 import { usePluginMenu } from "@plugins/pluginsFlyout";
-import {
-    DropdownMenuItem,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-} from "@turbopack/common/components";
+import { accountMenuParts, accountMenuSelect } from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
 import { setSettingsPrimitive, type SettingsPrimitives } from "@turbopack/common/settingsPrimitives";
 import { SettingsDialogStore } from "@turbopack/common/stores";
@@ -140,46 +135,49 @@ function VoidPPMenu() {
     useEventSubscription("pluginToggle", forceUpdate);
     const { showVoidPPMenu } = settings.use(["showVoidPPMenu"]);
     const menuPlugins = usePluginMenu();
+    const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
 
     if (!showVoidPPMenu) return null;
 
+    const scroll = desktop ? {} : { maxHeight: "lg" };
+
     return (
-        <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
+        <Sub>
+            <Trigger>
                 <VoidPPIcon className={cl("menu-icon")} />
                 Void++
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
+            </Trigger>
+            <Content>
                 {menuPlugins.length > 0 && (
-                    <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
+                    <Sub>
+                        <Trigger>
                             <UnplugIcon className={cl("menu-icon")} />
                             Plugins
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent maxHeight="lg">
+                        </Trigger>
+                        <Content {...scroll}>
                             {menuPlugins.map(name => {
                                 const Icon = plugins[name].icon ?? UnplugIcon;
                                 return (
-                                    <DropdownMenuItem key={name} onSelect={() => openPluginSettings(name)}>
+                                    <Item key={name} {...accountMenuSelect(desktop, () => openPluginSettings(name))}>
                                         <Icon className={cl("menu-icon")} />
                                         {name}
-                                    </DropdownMenuItem>
+                                    </Item>
                                 );
                             })}
-                        </DropdownMenuSubContent>
-                    </DropdownMenuSub>
+                        </Content>
+                    </Sub>
                 )}
                 {getVisibleTabs().filter(t => t.id !== PLUGINS_TAB_ID).map(t => {
                     const Icon = t.icon;
                     return (
-                        <DropdownMenuItem key={t.id} onSelect={() => openSettingsTab(t.id)}>
+                        <Item key={t.id} {...accountMenuSelect(desktop, () => openSettingsTab(t.id))}>
                             <Icon className={cl("menu-icon")} />
                             {t.name}
-                        </DropdownMenuItem>
+                        </Item>
                     );
                 })}
-            </DropdownMenuSubContent>
-        </DropdownMenuSub>
+            </Content>
+        </Sub>
     );
 }
 

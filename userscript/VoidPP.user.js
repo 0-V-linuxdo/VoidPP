@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.11
+// @version      20261113.12
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.11] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.12] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -352,6 +352,8 @@
     TooltipContent: () => TooltipContent,
     TooltipProvider: () => TooltipProvider,
     TooltipTrigger: () => TooltipTrigger,
+    accountMenuParts: () => accountMenuParts,
+    accountMenuSelect: () => accountMenuSelect,
     createElement: () => createElement,
     onceReady: () => onceReady,
     useCallback: () => useCallback,
@@ -4541,6 +4543,77 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function dropdownLazy(name) {
     return LazyComponent(name, () => dropdownModule()?.[name] ?? null);
   }
+  var accountMenuKitCache = null;
+  function menuPartFn(value) {
+    if (typeof value === "function")
+      return value;
+    if (value && typeof value === "object" && (("render" in value) || ("$$typeof" in value)))
+      return value;
+    return null;
+  }
+  function readAccountMenuKit(mod) {
+    const buckets = [];
+    const push = (obj) => {
+      if (!obj || typeof obj !== "object" || !("SubmenuTrigger" in obj))
+        return;
+      buckets.push(obj);
+    };
+    push(mod);
+    for (const key of Object.getOwnPropertyNames(mod)) {
+      try {
+        push(mod[key]);
+      } catch {}
+    }
+    for (const obj of buckets) {
+      const trigger = menuPartFn(obj.SubmenuTrigger);
+      if (!trigger)
+        continue;
+      const src = componentSource(trigger);
+      if (!src.includes("Menu.SubmenuTrigger") || src.includes("__scope"))
+        continue;
+      const item = menuPartFn(obj.Item);
+      const content = menuPartFn(obj.SubmenuContent);
+      const root = menuPartFn(obj.SubmenuRoot);
+      if (!item || !content || !root || !componentSource(item).includes("Menu.Item"))
+        continue;
+      const mapped = {
+        SubmenuRoot: root,
+        SubmenuTrigger: trigger,
+        SubmenuContent: content,
+        Item: item
+      };
+      const sep = menuPartFn(obj.Separator);
+      if (sep)
+        mapped.Separator = sep;
+      return mapped;
+    }
+    return null;
+  }
+  function accountMenuKit() {
+    if (accountMenuKitCache)
+      return accountMenuKitCache;
+    syncLazyModules();
+    const consider = (exp) => {
+      if (accountMenuKitCache || exp == null || typeof exp !== "object")
+        return;
+      const read = readAccountMenuKit(exp);
+      if (read)
+        accountMenuKitCache = read;
+    };
+    for (const [, exp] of getModuleCache())
+      consider(exp);
+    if (accountMenuKitCache)
+      return accountMenuKitCache;
+    for (const id of Object.keys(search("Menu.SubmenuTrigger"))) {
+      consider(requireModule(Number(id)));
+      if (accountMenuKitCache)
+        return accountMenuKitCache;
+    }
+    return null;
+  }
+  function accountMenuSelect(desktop, run) {
+    return desktop ? { onClick: run } : { onSelect: run };
+  }
   var LEGACY_BUTTON_VARIANT = {
     tertiary: "ghost",
     secondary: "muted",
@@ -4765,6 +4838,27 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var DropdownMenuSubTrigger = dropdownLazy("DropdownMenuSubTrigger");
   var DropdownMenuSubContent = dropdownLazy("DropdownMenuSubContent");
   var DropdownMenuPortal = dropdownLazy("DropdownMenuPortal");
+  function accountMenuParts() {
+    const kit = accountMenuKit();
+    if (kit) {
+      return {
+        Sub: kit.SubmenuRoot,
+        Trigger: kit.SubmenuTrigger,
+        Content: kit.SubmenuContent,
+        Item: kit.Item,
+        Separator: kit.Separator ?? DropdownMenuSeparator,
+        desktop: true
+      };
+    }
+    return {
+      Sub: DropdownMenuSub,
+      Trigger: DropdownMenuSubTrigger,
+      Content: DropdownMenuSubContent,
+      Item: DropdownMenuItem,
+      Separator: DropdownMenuSeparator,
+      desktop: false
+    };
+  }
   var hoverCardLazy = createModuleLazy("HoverCard", "HoverCardContent", "HoverCardTrigger");
   var HoverCard = hoverCardLazy("HoverCard");
   var HoverCardContent = hoverCardLazy("HoverCardContent");
@@ -6183,13 +6277,14 @@ ${root}::-webkit-scrollbar-thumb:hover {
     return pendingTab;
   }
   function PluginsMenu() {
-    return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(PluginsIcon, {
+    const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
+    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(PluginsIcon, {
       className: "void-settings-menu-icon"
-    }), "Plugins"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, null, PLUGIN_TABS.map((tab) => {
+    }), "Plugins"), /* @__PURE__ */ React.createElement(Content, null, PLUGIN_TABS.map((tab) => {
       const Icon = tab.icon;
-      return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+      return /* @__PURE__ */ React.createElement(Item, {
         key: tab.id,
-        onSelect: () => openPlugins(tab.id)
+        ...accountMenuSelect(desktop, () => openPlugins(tab.id))
       }, /* @__PURE__ */ React.createElement(Icon, {
         className: "void-settings-menu-icon"
       }), tab.name);
@@ -9894,9 +9989,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"ddd49f3"}`
-    }, `(${"ddd49f3"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"e8b1a0b"}`
+    }, `(${"e8b1a0b"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9929,27 +10024,29 @@ button .void-info-hint {
     useEventSubscription("pluginToggle", forceUpdate);
     const { showVoidPPMenu } = settings7.use(["showVoidPPMenu"]);
     const menuPlugins = usePluginMenu();
+    const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
     if (!showVoidPPMenu)
       return null;
-    return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(VoidPPIcon, {
+    const scroll = desktop ? {} : { maxHeight: "lg" };
+    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(VoidPPIcon, {
       className: cl17("menu-icon")
-    }), "Void++"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, null, menuPlugins.length > 0 && /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(UnplugIcon, {
+    }), "Void++"), /* @__PURE__ */ React.createElement(Content, null, menuPlugins.length > 0 && /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(UnplugIcon, {
       className: cl17("menu-icon")
-    }), "Plugins"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, {
-      maxHeight: "lg"
+    }), "Plugins"), /* @__PURE__ */ React.createElement(Content, {
+      ...scroll
     }, menuPlugins.map((name) => {
       const Icon = plugins[name].icon ?? UnplugIcon;
-      return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+      return /* @__PURE__ */ React.createElement(Item, {
         key: name,
-        onSelect: () => openPluginSettings(name)
+        ...accountMenuSelect(desktop, () => openPluginSettings(name))
       }, /* @__PURE__ */ React.createElement(Icon, {
         className: cl17("menu-icon")
       }), name);
     }))), getVisibleTabs().filter((t) => t.id !== PLUGINS_TAB_ID).map((t) => {
       const Icon = t.icon;
-      return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+      return /* @__PURE__ */ React.createElement(Item, {
         key: t.id,
-        onSelect: () => openSettingsTab(t.id)
+        ...accountMenuSelect(desktop, () => openSettingsTab(t.id))
       }, /* @__PURE__ */ React.createElement(Icon, {
         className: cl17("menu-icon")
       }), t.name);
@@ -34103,25 +34200,26 @@ html.void-rt-open [data-sidebar="gap"] {
       store.setTab(tab);
     store.setOpen(true);
   }
-  function tabItems(tabs) {
+  function tabItems(tabs, menu) {
+    const { Item, desktop } = menu;
     return tabs.map((t) => {
       const Icon = t.icon;
-      return /* @__PURE__ */ React.createElement(DropdownMenuItem, {
+      return /* @__PURE__ */ React.createElement(Item, {
         key: t.id,
-        onSelect: () => openTab(t.id)
+        ...accountMenuSelect(desktop, () => openTab(t.id))
       }, /* @__PURE__ */ React.createElement(Icon, {
         className: cl30("menu-icon")
       }), t.name);
     });
   }
-  function VoidPPSection({ tabs }) {
+  function VoidPPSection({ tabs, menu }) {
     if (tabs.length === 0)
       return null;
     return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       color: "secondary",
       className: cl30("group")
-    }, "Void++"), tabItems(tabs));
+    }, "Void++"), tabItems(tabs, menu));
   }
   function SettingsMenu({ onOpen }) {
     const cfg = settings31.use([
@@ -34138,23 +34236,27 @@ html.void-rt-open [data-sidebar="gap"] {
       "usage",
       "data"
     ]);
+    const menu = accountMenuParts();
+    const { Sub, Trigger, Content, Item, Separator, desktop } = menu;
     const grokTabs = GROK_TABS.filter((t) => cfg[t.setting]);
     const voidppTabs = VOIDPP_TABS.filter((t) => cfg[t.setting]);
     const showOpen = cfg.showOpenSettings || grokTabs.length === 0 && voidppTabs.length === 0;
     const voidppFirst = cfg.voidppPosition !== "below";
     const hasBoth = grokTabs.length > 0 && voidppTabs.length > 0;
-    return /* @__PURE__ */ React.createElement(DropdownMenuSub, null, /* @__PURE__ */ React.createElement(DropdownMenuSubTrigger, null, /* @__PURE__ */ React.createElement(CogIcon, {
+    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(CogIcon, {
       className: cl30("menu-icon")
-    }), "Settings"), /* @__PURE__ */ React.createElement(DropdownMenuSubContent, {
-      maxHeight: "lg"
-    }, showOpen && /* @__PURE__ */ React.createElement(DropdownMenuItem, {
-      onSelect: (e) => openTab(undefined, onOpen, e)
+    }), "Settings"), /* @__PURE__ */ React.createElement(Content, {
+      ...desktop ? {} : { maxHeight: "lg" }
+    }, showOpen && /* @__PURE__ */ React.createElement(Item, {
+      ...accountMenuSelect(desktop, (event) => openTab(undefined, onOpen, event))
     }, /* @__PURE__ */ React.createElement(CogIcon, {
       className: cl30("menu-icon")
-    }), "Open Settings"), showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
-      tabs: voidppTabs
-    }), voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), tabItems(grokTabs), !voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(DropdownMenuSeparator, null), !voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
-      tabs: voidppTabs
+    }), "Open Settings"), showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && /* @__PURE__ */ React.createElement(Separator, null), voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
+      tabs: voidppTabs,
+      menu
+    }), voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(Separator, null), tabItems(grokTabs, menu), !voidppFirst && hasBoth && /* @__PURE__ */ React.createElement(Separator, null), !voidppFirst && /* @__PURE__ */ React.createElement(VoidPPSection, {
+      tabs: voidppTabs,
+      menu
     })));
   }
   var WrappedSettingsMenu = ErrorBoundary.wrap(SettingsMenu);
@@ -36562,7 +36664,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1794563342000;
   betterImagine_default.updatedAt = 1794563342000;
   betterLinks_default.updatedAt = 1794563342000;
-  betterModeSelect_default.updatedAt = 1794580283000;
+  betterModeSelect_default.updatedAt = 1794581758000;
   betterNavigator_default.updatedAt = 1794563342000;
   betterQueue_default.updatedAt = 1794563342000;
   betterQuotes_default.updatedAt = 1794563342000;
@@ -36575,7 +36677,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   completeToast_default.updatedAt = 1794563342000;
   composerOpacity_default.updatedAt = 1794563342000;
   consoleJanitor_default.updatedAt = 1794563342000;
-  customGreeting_default.updatedAt = 1794563342000;
+  customGreeting_default.updatedAt = 1794581758000;
   customInstructions_default.updatedAt = 1794563342000;
   customSidebarIdentity_default.updatedAt = 1794563342000;
   downloadTTS_default.updatedAt = 1794563342000;

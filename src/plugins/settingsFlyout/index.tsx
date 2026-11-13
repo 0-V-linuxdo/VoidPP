@@ -9,13 +9,7 @@ import "./styles.css";
 import { definePluginSettings, migratePluginSetting } from "@api/Settings";
 import { ErrorBoundary, Text } from "@components";
 import { BracesIcon, PaletteIcon, Settings2Icon, UnplugIcon } from "@components/icons";
-import {
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-} from "@turbopack/common/components";
+import { accountMenuParts, accountMenuSelect, type AccountMenuParts } from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
 import { SettingsDialogStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
@@ -137,24 +131,25 @@ function openTab(tab: string | undefined, onOpen?: (event?: Event) => void, even
     store.setOpen(true);
 }
 
-function tabItems(tabs: FlyoutTab[]) {
+function tabItems(tabs: FlyoutTab[], menu: AccountMenuParts) {
+    const { Item, desktop } = menu;
     return tabs.map(t => {
         const Icon = t.icon;
         return (
-            <DropdownMenuItem key={t.id} onSelect={() => openTab(t.id)}>
+            <Item key={t.id} {...accountMenuSelect(desktop, () => openTab(t.id))}>
                 <Icon className={cl("menu-icon")} />
                 {t.name}
-            </DropdownMenuItem>
+            </Item>
         );
     });
 }
 
-function VoidPPSection({ tabs }: { tabs: FlyoutTab[] }) {
+function VoidPPSection({ tabs, menu }: { tabs: FlyoutTab[]; menu: AccountMenuParts }) {
     if (tabs.length === 0) return null;
     return (
         <>
             <Text size="xs" color="secondary" className={cl("group")}>Void++</Text>
-            {tabItems(tabs)}
+            {tabItems(tabs, menu)}
         </>
     );
 }
@@ -174,6 +169,8 @@ function SettingsMenu({ onOpen }: { onOpen?: (event?: Event) => void }) {
         "usage",
         "data",
     ]);
+    const menu = accountMenuParts();
+    const { Sub, Trigger, Content, Item, Separator, desktop } = menu;
 
     const grokTabs = GROK_TABS.filter(t => cfg[t.setting]);
     const voidppTabs = VOIDPP_TABS.filter(t => cfg[t.setting]);
@@ -182,26 +179,26 @@ function SettingsMenu({ onOpen }: { onOpen?: (event?: Event) => void }) {
     const hasBoth = grokTabs.length > 0 && voidppTabs.length > 0;
 
     return (
-        <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
+        <Sub>
+            <Trigger>
                 <CogIcon className={cl("menu-icon")} />
                 Settings
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent maxHeight="lg">
+            </Trigger>
+            <Content {...(desktop ? {} : { maxHeight: "lg" })}>
                 {showOpen && (
-                    <DropdownMenuItem onSelect={e => openTab(undefined, onOpen, e)}>
+                    <Item {...accountMenuSelect(desktop, event => openTab(undefined, onOpen, event as Event | undefined))}>
                         <CogIcon className={cl("menu-icon")} />
                         Open Settings
-                    </DropdownMenuItem>
+                    </Item>
                 )}
-                {showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && <DropdownMenuSeparator />}
-                {voidppFirst && <VoidPPSection tabs={voidppTabs} />}
-                {voidppFirst && hasBoth && <DropdownMenuSeparator />}
-                {tabItems(grokTabs)}
-                {!voidppFirst && hasBoth && <DropdownMenuSeparator />}
-                {!voidppFirst && <VoidPPSection tabs={voidppTabs} />}
-            </DropdownMenuSubContent>
-        </DropdownMenuSub>
+                {showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && <Separator />}
+                {voidppFirst && <VoidPPSection tabs={voidppTabs} menu={menu} />}
+                {voidppFirst && hasBoth && <Separator />}
+                {tabItems(grokTabs, menu)}
+                {!voidppFirst && hasBoth && <Separator />}
+                {!voidppFirst && <VoidPPSection tabs={voidppTabs} menu={menu} />}
+            </Content>
+        </Sub>
     );
 }
 

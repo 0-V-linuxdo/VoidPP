@@ -120,6 +120,80 @@ function dropdownLazy<P = {}>(name: string): ComponentType<P> {
     return LazyComponent(name, () => (dropdownModule()?.[name] ?? null) as AnyComponent | null) as unknown as ComponentType<P>;
 }
 
+let accountMenuKitCache: Record<string, AnyComponent> | null = null;
+
+function menuPartFn(value: unknown): AnyComponent | null {
+    if (typeof value === "function") return value as AnyComponent;
+    if (value && typeof value === "object" && ("render" in value || "$$typeof" in value)) return value as AnyComponent;
+    return null;
+}
+
+/** Desktop account menu exports `k` with `SubmenuRoot` / `SubmenuTrigger` (`Menu.SubmenuTrigger`). Radix `DropdownMenuSub` throws `MenuSub must be used within Menu` inside that root. */
+function readAccountMenuKit(mod: Record<string, unknown>): Record<string, AnyComponent> | null {
+    const buckets: Record<string, unknown>[] = [];
+    const push = (obj: unknown) => {
+        if (!obj || typeof obj !== "object" || !("SubmenuTrigger" in obj)) return;
+        buckets.push(obj as Record<string, unknown>);
+    };
+    push(mod);
+    for (const key of Object.getOwnPropertyNames(mod)) {
+        try {
+            push(mod[key]);
+        } catch { /* getter */ }
+    }
+    for (const obj of buckets) {
+        const trigger = menuPartFn(obj.SubmenuTrigger);
+        if (!trigger) continue;
+        const src = componentSource(trigger);
+        if (!src.includes("Menu.SubmenuTrigger") || src.includes("__scope")) continue;
+        const item = menuPartFn(obj.Item);
+        const content = menuPartFn(obj.SubmenuContent);
+        const root = menuPartFn(obj.SubmenuRoot);
+        if (!item || !content || !root || !componentSource(item).includes("Menu.Item")) continue;
+        const mapped: Record<string, AnyComponent> = {
+            SubmenuRoot: root,
+            SubmenuTrigger: trigger,
+            SubmenuContent: content,
+            Item: item,
+        };
+        const sep = menuPartFn(obj.Separator);
+        if (sep) mapped.Separator = sep;
+        return mapped;
+    }
+    return null;
+}
+
+function accountMenuKit(): Record<string, AnyComponent> | null {
+    if (accountMenuKitCache) return accountMenuKitCache;
+    syncLazyModules();
+    const consider = (exp: unknown) => {
+        if (accountMenuKitCache || exp == null || typeof exp !== "object") return;
+        const read = readAccountMenuKit(exp as Record<string, unknown>);
+        if (read) accountMenuKitCache = read;
+    };
+    for (const [, exp] of getModuleCache()) consider(exp);
+    if (accountMenuKitCache) return accountMenuKitCache;
+    for (const id of Object.keys(search("Menu.SubmenuTrigger"))) {
+        consider(requireModule(Number(id)));
+        if (accountMenuKitCache) return accountMenuKitCache;
+    }
+    return null;
+}
+
+export interface AccountMenuParts {
+    Sub: AnyComponent;
+    Trigger: AnyComponent;
+    Content: AnyComponent;
+    Item: AnyComponent;
+    Separator: AnyComponent;
+    desktop: boolean;
+}
+
+/** Desktop `Item` closes on `onClick`. The legacy dropdown still uses `onSelect`. */
+export function accountMenuSelect(desktop: boolean, run: (event?: unknown) => void) {
+    return desktop ? { onClick: run } : { onSelect: run };
+}
+
 const LEGACY_BUTTON_VARIANT: Record<string, string> = {
     tertiary: "ghost",
     secondary: "muted",
@@ -336,6 +410,28 @@ export const DropdownMenuSub = dropdownLazy<DropdownMenuSubProps>("DropdownMenuS
 export const DropdownMenuSubTrigger = dropdownLazy<DropdownMenuSubTriggerProps>("DropdownMenuSubTrigger");
 export const DropdownMenuSubContent = dropdownLazy<DropdownMenuSubContentProps>("DropdownMenuSubContent");
 export const DropdownMenuPortal = dropdownLazy<DropdownMenuPortalProps>("DropdownMenuPortal");
+
+export function accountMenuParts(): AccountMenuParts {
+    const kit = accountMenuKit();
+    if (kit) {
+        return {
+            Sub: kit.SubmenuRoot,
+            Trigger: kit.SubmenuTrigger,
+            Content: kit.SubmenuContent,
+            Item: kit.Item,
+            Separator: kit.Separator ?? (DropdownMenuSeparator as unknown as AnyComponent),
+            desktop: true,
+        };
+    }
+    return {
+        Sub: DropdownMenuSub as unknown as AnyComponent,
+        Trigger: DropdownMenuSubTrigger as unknown as AnyComponent,
+        Content: DropdownMenuSubContent as unknown as AnyComponent,
+        Item: DropdownMenuItem as unknown as AnyComponent,
+        Separator: DropdownMenuSeparator as unknown as AnyComponent,
+        desktop: false,
+    };
+}
 
 const hoverCardLazy = createModuleLazy("HoverCard", "HoverCardContent", "HoverCardTrigger");
 export const HoverCard = hoverCardLazy<HoverCardProps>("HoverCard");
