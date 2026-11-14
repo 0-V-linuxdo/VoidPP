@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.14
+// @version      20261114.15
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.14] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.15] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -6309,9 +6309,10 @@ ${root}::-webkit-scrollbar-thumb:hover {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#app-sidebar button[aria-keyshortcuts="Meta+J"] {
+#app-sidebar button[aria-keyshortcuts="Meta+J"],
+#app-sidebar button[aria-keyshortcuts="Control+J"] {
     position: absolute;
-    top: 12px;
+    top: -44px;
     inset-inline-end: 12px;
     z-index: 3;
     box-sizing: border-box;
@@ -6326,13 +6327,16 @@ ${root}::-webkit-scrollbar-thumb:hover {
     border-radius: 8px;
 }
 
-#app-sidebar button[aria-keyshortcuts="Meta+J"] svg {
+#app-sidebar button[aria-keyshortcuts="Meta+J"] svg,
+#app-sidebar button[aria-keyshortcuts="Control+J"] svg {
     width: 20px !important;
     height: 20px !important;
 }
 
 #app-sidebar button[aria-keyshortcuts="Meta+J"] [data-sidebar-item-label],
-#app-sidebar button[aria-keyshortcuts="Meta+J"] [data-slot="sidebar-item-shortcut"] {
+#app-sidebar button[aria-keyshortcuts="Meta+J"] [data-slot="sidebar-item-shortcut"],
+#app-sidebar button[aria-keyshortcuts="Control+J"] [data-sidebar-item-label],
+#app-sidebar button[aria-keyshortcuts="Control+J"] [data-slot="sidebar-item-shortcut"] {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -6344,7 +6348,9 @@ ${root}::-webkit-scrollbar-thumb:hover {
     border: 0;
 }
 
-#app-sidebar div:has(> button[aria-keyshortcuts="Meta+J"]) {
+#app-sidebar div:has(> button[aria-keyshortcuts="Meta+J"]),
+#app-sidebar div:has(> button[aria-keyshortcuts="Control+J"]) {
+    position: relative !important;
     height: 0 !important;
     min-height: 0 !important;
     max-height: 0 !important;
@@ -9966,9 +9972,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8dbad20"}`
-    }, `(${"8dbad20"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"804584d"}`
+    }, `(${"804584d"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36040,7 +36046,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1794560326000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1794676705000;
-  betterSidebar_default.updatedAt = 1794672837000;
+  betterSidebar_default.updatedAt = 1794682336000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1794560326000;
   cloneChats_default.updatedAt = 1794669091000;

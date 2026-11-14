@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#app-sidebar button[aria-keyshortcuts="Meta+J"] {
+#app-sidebar button[aria-keyshortcuts="Meta+J"],
+#app-sidebar button[aria-keyshortcuts="Control+J"] {
     position: absolute;
-    top: 12px;
+    top: -44px;
     inset-inline-end: 12px;
     z-index: 3;
     box-sizing: border-box;
@@ -21,13 +22,16 @@
     border-radius: 8px;
 }
 
-#app-sidebar button[aria-keyshortcuts="Meta+J"] svg {
+#app-sidebar button[aria-keyshortcuts="Meta+J"] svg,
+#app-sidebar button[aria-keyshortcuts="Control+J"] svg {
     width: 20px !important;
     height: 20px !important;
 }
 
 #app-sidebar button[aria-keyshortcuts="Meta+J"] [data-sidebar-item-label],
-#app-sidebar button[aria-keyshortcuts="Meta+J"] [data-slot="sidebar-item-shortcut"] {
+#app-sidebar button[aria-keyshortcuts="Meta+J"] [data-slot="sidebar-item-shortcut"],
+#app-sidebar button[aria-keyshortcuts="Control+J"] [data-sidebar-item-label],
+#app-sidebar button[aria-keyshortcuts="Control+J"] [data-slot="sidebar-item-shortcut"] {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -39,7 +43,9 @@
     border: 0;
 }
 
-#app-sidebar div:has(> button[aria-keyshortcuts="Meta+J"]) {
+#app-sidebar div:has(> button[aria-keyshortcuts="Meta+J"]),
+#app-sidebar div:has(> button[aria-keyshortcuts="Control+J"]) {
+    position: relative !important;
     height: 0 !important;
     min-height: 0 !important;
     max-height: 0 !important;
