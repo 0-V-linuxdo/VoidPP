@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.14
+// @version      20261114.1
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.14] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.1] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -6473,7 +6473,17 @@ ${root}::-webkit-scrollbar-thumb:hover {
     [data-sidebar="sidebar"] .void-chats-plus,
     [data-sidebar="sidebar"] button[aria-label="Add project"],
     [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ) {
         opacity: 0 !important;
         transition: opacity 0.15s ease;
     }
@@ -6493,7 +6503,27 @@ ${root}::-webkit-scrollbar-thumb:hover {
     [data-sidebar="sidebar"] [data-void-chats-plus]:is(:hover, :focus-visible, [data-state="open"]),
     [data-sidebar="sidebar"] .void-chats-plus:is(:hover, :focus-visible, [data-state="open"]),
     [data-sidebar="sidebar"] button[aria-label="Add project"]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]) {
+    [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]),
+    #app-sidebar div:has(> button[aria-expanded]):is(:hover, :focus-within) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ),
+    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ):is(:hover, :focus-visible, [data-state="open"]) {
         opacity: 1 !important;
     }
 }
@@ -6506,7 +6536,17 @@ ${root}::-webkit-scrollbar-thumb:hover {
     [data-sidebar="sidebar"] .void-chats-plus,
     [data-sidebar="sidebar"] button[aria-label="Add project"],
     [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ) {
         transition: none;
     }
 }
@@ -7425,19 +7465,16 @@ ${root}::-webkit-scrollbar-thumb:hover {
         all: true,
         replacement: [
           {
-            match: /"\/api\/log_metric",\i\)/,
-            replace: '"/api/log_metric",[])',
-            noWarn: true
+            match: /\i\("\/api\/log_metric",\i\)/g,
+            replace: "false"
           },
           {
-            match: /"\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)/,
-            replace: '"/api/log_metric",[]',
-            noWarn: true
+            match: /\i\("\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)\)/g,
+            replace: "false"
           },
           {
-            match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/,
-            replace: "void 0",
-            noWarn: true
+            match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/g,
+            replace: "void 0"
           }
         ]
       },
@@ -10012,9 +10049,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"08259b3"}`
-    }, `(${"08259b3"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.1] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"40954d7"}`
+    }, `(${"40954d7"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -25746,7 +25783,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     background: var(--surface-l2);
 }
 
-[data-sidebar="footer"] img[alt="pfp"] {
+[data-sidebar="footer"] img[alt="pfp"],
+#app-sidebar footer button[data-account-trigger] img {
     width: var(--void-csi-avatar-size, 2rem) !important;
     height: var(--void-csi-avatar-size, 2rem) !important;
     min-width: var(--void-csi-avatar-size, 2rem) !important;
@@ -25757,7 +25795,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     flex-shrink: 0 !important;
 }
 
-[data-sidebar="footer"] :has(> img[alt="pfp"]):not(button, .void-sidebar-card) {
+[data-sidebar="footer"] :has(> img[alt="pfp"]):not(button, .void-sidebar-card),
+#app-sidebar footer button[data-account-trigger] :has(> img) {
     width: var(--void-csi-avatar-size, 2rem) !important;
     height: var(--void-csi-avatar-size, 2rem) !important;
     min-width: var(--void-csi-avatar-size, 2rem) !important;
@@ -25840,9 +25879,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/customSidebarIdentity/index.tsx
-  var FOOTER = '[data-sidebar="footer"]';
+  var FOOTER = '[data-sidebar="footer"], #app-sidebar footer';
   var MENU = '[role="menu"]';
   var PFP = 'img[alt="pfp"]';
+  var ACCOUNT_BTN = "button[data-account-trigger]";
   var NAME_CLASS = "void-csi-name";
   var HIDE_CLASS2 = "void-csi-hide";
   var MARK3 = "data-void-csi";
@@ -26292,7 +26332,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return null;
   }
   function footerBtn(footer) {
-    return footer.querySelector('button[data-slot="button"], button[data-state]');
+    return footer.querySelector(`${ACCOUNT_BTN}, button[data-slot="button"], button[data-state]`);
   }
   function restoreImg(img) {
     const orig = img.getAttribute(ORIG2);
@@ -26339,7 +26379,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const tagged = [...scope.querySelectorAll(PFP)];
     if (tagged.length)
       return tagged;
-    const img = fallbackRoot?.querySelector("img");
+    const btn = scope instanceof Element ? scope.matches(ACCOUNT_BTN) ? scope : scope.querySelector(ACCOUNT_BTN) : null;
+    const img = btn?.querySelector("img") ?? fallbackRoot?.querySelector("img");
     return img instanceof HTMLImageElement ? [img] : [];
   }
   function ensureName(host, text) {
@@ -30601,6 +30642,49 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           match: /\(0,\i\.jsx\)\(\i(?:\.\i)?,\{isUser:(\i),isIncognito:\i,responseId:(\i)\.responseId/,
           replace: "$self._renderTimestamp({response:$2,isUser:$1}),$&"
         }
+      },
+      {
+        find: "TurnTail",
+        all: true,
+        replacement: [
+          {
+            match: /(\i)=`response-\$\{(\i)\.responseId\}`([\s\S]{0,3500}?)(\(0,\i\.jsxs?\)\("div",\{ref:\i,id:\1,className:"[^"]*",children:)\[(\i),(\i),(\i),(\i),(\i),(\i)\]/g,
+            replace: "$1=`response-${$2.responseId}`$3$4[$self._renderTimestamp({response:$2,isUser:!1}),$5,$6,$7,$8,$9,$10]"
+          },
+          {
+            match: /let (\i)=(\i)\.responseId\?\?"";return ([\s\S]{0,500}?)(\(0,\i\.jsxs?\)\("div",\{className:"[^"]*",children:)\[(\i),(\i),(\i)\]/g,
+            replace: 'let $1=$2.responseId??"";return $3$4[$self._renderTimestamp({response:$2,isUser:!1}),$5,$6,$7]'
+          }
+        ]
+      },
+      {
+        find: '"data-user-message-row":""',
+        all: true,
+        replacement: [
+          {
+            match: /(\(0,\i\.jsxs?\)\("div",\{ref:\i,id:(\i),"data-row-lifted":\i,"data-user-message-row":"",(?:\.\.\.\i,)?children:)\[(\i),(\i)\]/g,
+            replace(match, ...rest) {
+              const prefix = rest[0];
+              const idVar = rest[1];
+              const a = rest[2];
+              const b = rest[3];
+              const offset = rest[4];
+              const full = rest[5];
+              if (typeof full !== "string" || typeof idVar !== "string")
+                return match;
+              const before = full.slice(0, offset);
+              const re = new RegExp(`${idVar}=\`response-\\$\\{([A-Za-z_$][\\w$]*)\\.responseId\\}\``, "g");
+              const resp = [...before.matchAll(re)].at(-1)?.[1];
+              if (!resp)
+                return match;
+              return `${prefix}[$self._renderTimestamp({response:${resp},isUser:!0}),${a},${b}]`;
+            }
+          },
+          {
+            match: /(\{response:(\i)[\s\S]{0,800}?"data-user-message-row":"",className:"[^"]*",children:)\[/g,
+            replace: "$1[$self._renderTimestamp({response:$2,isUser:!0}),"
+          }
+        ]
       }
     ]
   });
@@ -30779,9 +30863,10 @@ span:has(> [aria-label*="Grok Bot"]) {
 
   // src/plugins/noSidebarIdentity/index.ts
   var STYLE_NAME7 = "noSidebarIdentity";
-  var FOOTER2 = '[data-sidebar="footer"]';
+  var FOOTER2 = '[data-sidebar="footer"], #app-sidebar footer';
   var STACK = `${FOOTER2} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
   var TEXT_WRAP = `${FOOTER2} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER2} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
+  var ACCOUNT_NAME = "#app-sidebar button[data-account-trigger] :has(> img) + span";
   var MENU_EMAIL = '[role="menu"] [class*="max-w-[400px]"].truncate';
   var MENU_EMAIL_LABEL = '[role="menu"] :has(> [class*="max-w-[400px]"].truncate)';
   var MENU_EMAIL_ROW = '[role="menu"] > :has([class*="max-w-[400px]"].truncate):not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]))';
@@ -30801,6 +30886,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     const rules = [];
     if (settings28.store.hideUsername) {
       rules.push(`${STACK}>:first-child{display:none!important}`);
+      rules.push(`${ACCOUNT_NAME}{display:none!important}`);
       rules.push(`${FOOTER2} .void-sidebar-name{display:none!important}`);
     }
     if (settings28.store.hideEmail) {
@@ -34745,7 +34831,11 @@ html.void-rt-open [data-sidebar="gap"] {
     },
     patches: [
       {
-        find: "transformPastedHTML:",
+        find: [
+          "transformPastedHTML:",
+          /(\i)=\[(\i),(\i)\](?=,\i\[\d+\]=\2,\i\[\d+\]=\3,\i\[\d+\]=\1\))/
+        ],
+        all: true,
         replacement: [
           {
             match: /(transformPastedHTML:\i\}\},)\[(\i),(\i)\]\)/,
@@ -36696,7 +36786,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794563342000;
-  settings_default.updatedAt = 1794584397000;
+  settings_default.updatedAt = 1794669091000;
   chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794563342000;
   autoCollapse_default.updatedAt = 1794563342000;
@@ -36714,7 +36804,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   chatListStatus_default.updatedAt = 1794563342000;
   chatStateFavicons_default.updatedAt = 1794563342000;
   cleaner_default.updatedAt = 1794563342000;
-  cloneChats_default.updatedAt = 1794584397000;
+  cloneChats_default.updatedAt = 1794669091000;
   collapseThoughts_default.updatedAt = 1794563342000;
   completeToast_default.updatedAt = 1794563342000;
   composerOpacity_default.updatedAt = 1794563342000;
@@ -36724,7 +36814,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   customSidebarIdentity_default.updatedAt = 1794563342000;
   downloadTTS_default.updatedAt = 1794563342000;
   experiments_default.updatedAt = 1794563342000;
-  exportChat_default.updatedAt = 1794584397000;
+  exportChat_default.updatedAt = 1794669091000;
   incognito_default.updatedAt = 1794563342000;
   inputHistory_default.updatedAt = 1794563342000;
   messageStars_default.updatedAt = 1794563342000;
@@ -36738,7 +36828,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   pluginsFlyout_default.updatedAt = 1794563342000;
   recentTopics_default.updatedAt = 1794563342000;
   responseNotification_default.updatedAt = 1794563342000;
-  settingsFlyout_default.updatedAt = 1794584397000;
+  settingsFlyout_default.updatedAt = 1794669091000;
   skillBlocker_default.updatedAt = 1794563342000;
   stableComposer_default.updatedAt = 1794563342000;
   starry_default.updatedAt = 1794563342000;

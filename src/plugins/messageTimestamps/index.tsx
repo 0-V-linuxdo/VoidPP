@@ -510,5 +510,48 @@ export default definePlugin({
                 replace: "$self._renderTimestamp({response:$2,isUser:$1}),$&",
             },
         },
+        {
+            // Desktop rows ignore the family bubble's children. The mounted row is
+            // `jsxs("div",{id:\`response-${response.responseId}\`,children:[...]})`.
+            find: "TurnTail",
+            all: true,
+            replacement: [
+                {
+                    match: /(\i)=`response-\$\{(\i)\.responseId\}`([\s\S]{0,3500}?)(\(0,\i\.jsxs?\)\("div",\{ref:\i,id:\1,className:"[^"]*",children:)\[(\i),(\i),(\i),(\i),(\i),(\i)\]/g,
+                    replace: "$1=`response-${$2.responseId}`$3$4[$self._renderTimestamp({response:$2,isUser:!1}),$5,$6,$7,$8,$9,$10]",
+                },
+                {
+                    match: /let (\i)=(\i)\.responseId\?\?"";return ([\s\S]{0,500}?)(\(0,\i\.jsxs?\)\("div",\{className:"[^"]*",children:)\[(\i),(\i),(\i)\]/g,
+                    replace: "let $1=$2.responseId??\"\";return $3$4[$self._renderTimestamp({response:$2,isUser:!1}),$5,$6,$7]",
+                },
+            ],
+        },
+        {
+            find: '"data-user-message-row":""',
+            all: true,
+            replacement: [
+                {
+                    match: /(\(0,\i\.jsxs?\)\("div",\{ref:\i,id:(\i),"data-row-lifted":\i,"data-user-message-row":"",(?:\.\.\.\i,)?children:)\[(\i),(\i)\]/g,
+                    replace(match: string, ...rest: Array<string | number>) {
+                        const prefix = rest[0] as string;
+                        const idVar = rest[1] as string;
+                        const a = rest[2] as string;
+                        const b = rest[3] as string;
+                        const offset = rest[4] as number;
+                        const full = rest[5] as string;
+                        if (typeof full !== "string" || typeof idVar !== "string") return match;
+                        const before = full.slice(0, offset);
+                        const re = new RegExp(`${idVar}=\`response-\\$\\{([A-Za-z_$][\\w$]*)\\.responseId\\}\``, "g");
+                        const resp = [...before.matchAll(re)].at(-1)?.[1];
+                        if (!resp) return match;
+                        return `${prefix}[$self._renderTimestamp({response:${resp},isUser:!0}),${a},${b}]`;
+                    },
+                },
+                {
+                    match: /(\{response:(\i)[\s\S]{0,800}?"data-user-message-row":"",className:"[^"]*",children:)\[/g,
+                    replace: "$1[$self._renderTimestamp({response:$2,isUser:!0}),",
+                },
+            ],
+        },
     ],
 });

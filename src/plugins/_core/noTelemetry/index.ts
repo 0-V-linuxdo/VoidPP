@@ -70,20 +70,16 @@ export default definePlugin({
             all: true,
             replacement: [
                 {
-                    match: /"\/api\/log_metric",\i\)/,
-                    replace: '"/api/log_metric",[])',
-                    noWarn: true,
+                    match: /\i\("\/api\/log_metric",\i\)/g,
+                    replace: "false",
                 },
                 {
-                    // The match already consumes stringify's closing paren. The call's own paren stays.
-                    match: /"\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)/,
-                    replace: '"/api/log_metric",[]',
-                    noWarn: true,
+                    match: /\i\("\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)\)/g,
+                    replace: "false",
                 },
                 {
-                    match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/,
+                    match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/g,
                     replace: "void 0",
-                    noWarn: true,
                 },
             ],
         },

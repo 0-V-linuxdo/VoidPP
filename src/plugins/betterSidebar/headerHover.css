@@ -14,7 +14,17 @@
     [data-sidebar="sidebar"] .void-chats-plus,
     [data-sidebar="sidebar"] button[aria-label="Add project"],
     [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ) {
         opacity: 0 !important;
         transition: opacity 0.15s ease;
     }
@@ -34,7 +44,27 @@
     [data-sidebar="sidebar"] [data-void-chats-plus]:is(:hover, :focus-visible, [data-state="open"]),
     [data-sidebar="sidebar"] .void-chats-plus:is(:hover, :focus-visible, [data-state="open"]),
     [data-sidebar="sidebar"] button[aria-label="Add project"]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]) {
+    [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]),
+    #app-sidebar div:has(> button[aria-expanded]):is(:hover, :focus-within) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ),
+    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ):is(:hover, :focus-visible, [data-state="open"]) {
         opacity: 1 !important;
     }
 }
@@ -47,7 +77,17 @@
     [data-sidebar="sidebar"] .void-chats-plus,
     [data-sidebar="sidebar"] button[aria-label="Add project"],
     [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]) {
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ) {
         transition: none;
     }
 }

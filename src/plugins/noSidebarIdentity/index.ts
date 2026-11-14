@@ -12,9 +12,10 @@ import definePlugin, { OptionType } from "@utils/types";
 
 const STYLE_NAME = "noSidebarIdentity";
 
-const FOOTER = '[data-sidebar="footer"]';
+const FOOTER = '[data-sidebar="footer"], #app-sidebar footer';
 const STACK = `${FOOTER} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
 const TEXT_WRAP = `${FOOTER} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
+const ACCOUNT_NAME = '#app-sidebar button[data-account-trigger] :has(> img) + span';
 const MENU_EMAIL = '[role="menu"] [class*="max-w-[400px]"].truncate';
 // The label (and the group that only wraps it) keeps pt-2/pb-1 after the span is display:none.
 const MENU_EMAIL_LABEL = '[role="menu"] :has(> [class*="max-w-[400px]"].truncate)';
@@ -37,6 +38,7 @@ function apply() {
     const rules: string[] = [];
     if (settings.store.hideUsername) {
         rules.push(`${STACK}>:first-child{display:none!important}`);
+        rules.push(`${ACCOUNT_NAME}{display:none!important}`);
         rules.push(`${FOOTER} .void-sidebar-name{display:none!important}`);
     }
     if (settings.store.hideEmail) {

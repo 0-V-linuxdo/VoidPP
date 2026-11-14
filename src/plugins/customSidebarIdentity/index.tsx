@@ -15,9 +15,10 @@ import { classNameFactory } from "@utils/css";
 import { clamp } from "@utils/misc";
 import definePlugin, { OptionType } from "@utils/types";
 
-const FOOTER = '[data-sidebar="footer"]';
+const FOOTER = '[data-sidebar="footer"], #app-sidebar footer';
 const MENU = '[role="menu"]';
 const PFP = 'img[alt="pfp"]';
+const ACCOUNT_BTN = "button[data-account-trigger]";
 const NAME_CLASS = "void-csi-name";
 const HIDE_CLASS = "void-csi-hide";
 const MARK = "data-void-csi";
@@ -441,7 +442,7 @@ function avatarSrc(): string | null {
 }
 
 function footerBtn(footer: Element): HTMLElement | null {
-    return footer.querySelector('button[data-slot="button"], button[data-state]');
+    return footer.querySelector(`${ACCOUNT_BTN}, button[data-slot="button"], button[data-state]`);
 }
 
 function restoreImg(img: HTMLImageElement) {
@@ -484,7 +485,10 @@ function paintImg(img: HTMLImageElement, url: string | null) {
 function pfps(scope: ParentNode, fallbackRoot?: Element | null): HTMLImageElement[] {
     const tagged = [...scope.querySelectorAll<HTMLImageElement>(PFP)];
     if (tagged.length) return tagged;
-    const img = fallbackRoot?.querySelector("img");
+    const btn = scope instanceof Element
+        ? (scope.matches(ACCOUNT_BTN) ? scope : scope.querySelector(ACCOUNT_BTN))
+        : null;
+    const img = btn?.querySelector("img") ?? fallbackRoot?.querySelector("img");
     return img instanceof HTMLImageElement ? [img] : [];
 }
 

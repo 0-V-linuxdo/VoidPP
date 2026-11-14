@@ -35,7 +35,11 @@ export default definePlugin({
 
     patches: [
         {
-            find: "transformPastedHTML:",
+            find: [
+                "transformPastedHTML:",
+                /(\i)=\[(\i),(\i)\](?=,\i\[\d+\]=\2,\i\[\d+\]=\3,\i\[\d+\]=\1\))/,
+            ],
+            all: true,
             replacement: [
                 {
                     match: /(transformPastedHTML:\i\}\},)\[(\i),(\i)\]\)/,

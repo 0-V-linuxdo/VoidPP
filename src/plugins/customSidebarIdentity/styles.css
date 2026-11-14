@@ -51,7 +51,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     background: var(--surface-l2);
 }
 
-[data-sidebar="footer"] img[alt="pfp"] {
+[data-sidebar="footer"] img[alt="pfp"],
+#app-sidebar footer button[data-account-trigger] img {
     width: var(--void-csi-avatar-size, 2rem) !important;
     height: var(--void-csi-avatar-size, 2rem) !important;
     min-width: var(--void-csi-avatar-size, 2rem) !important;
@@ -62,7 +63,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     flex-shrink: 0 !important;
 }
 
-[data-sidebar="footer"] :has(> img[alt="pfp"]):not(button, .void-sidebar-card) {
+[data-sidebar="footer"] :has(> img[alt="pfp"]):not(button, .void-sidebar-card),
+#app-sidebar footer button[data-account-trigger] :has(> img) {
     width: var(--void-csi-avatar-size, 2rem) !important;
     height: var(--void-csi-avatar-size, 2rem) !important;
     min-width: var(--void-csi-avatar-size, 2rem) !important;
