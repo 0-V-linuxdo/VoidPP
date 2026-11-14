@@ -16,8 +16,10 @@ const REFINEMENT_MARK = "void-no-dictation-refinement";
 const BUTTON_CSS = `
 button[aria-label="Dictation"]:not([role="dialog"] *),
 button[aria-label^="Dictation ("]:not([role="dialog"] *),
+button[aria-label="Dictate"]:not([role="dialog"] *),
 button[aria-label^="Enter voice mode"]:not([role="dialog"] *),
 button[aria-label^="Exit voice mode"]:not([role="dialog"] *),
+button[aria-label="Voice mode"]:not([role="dialog"] *),
 div:has(> button[aria-label="Dictation"]):not([role="dialog"] *),
 div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *),
 div:has(> button[aria-label^="Enter voice mode"]):not([role="dialog"] *),

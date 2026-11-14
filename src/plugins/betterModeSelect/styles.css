@@ -97,6 +97,8 @@ form[data-composer][data-composer-layout="inline"] {
     grid-template-columns: auto minmax(0, 1fr) auto auto !important;
     grid-template-areas: "leading field mode actions" !important;
     overflow-clip-margin: 0px !important;
+    /* Pins live in the mode column; Grok still sets --composer-chip-reserve for overlay. */
+    --composer-chip-reserve: 0px !important;
 }
 
 form[data-composer][data-composer-layout="inline"] [data-query-bar-mode-select] {

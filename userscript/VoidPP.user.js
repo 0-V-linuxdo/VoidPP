@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.8
+// @version      20261114.9
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.8] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.9] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9898,9 +9898,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d9f75a7"}`
-    }, `(${"d9f75a7"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"702c8ee"}`
+    }, `(${"702c8ee"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -11549,6 +11549,8 @@ form[data-composer][data-composer-layout="inline"] {
     grid-template-columns: auto minmax(0, 1fr) auto auto !important;
     grid-template-areas: "leading field mode actions" !important;
     overflow-clip-margin: 0px !important;
+    /* Pins live in the mode column; Grok still sets --composer-chip-reserve for overlay. */
+    --composer-chip-reserve: 0px !important;
 }
 
 form[data-composer][data-composer-layout="inline"] [data-query-bar-mode-select] {
@@ -30574,8 +30576,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var BUTTON_CSS = `
 button[aria-label="Dictation"]:not([role="dialog"] *),
 button[aria-label^="Dictation ("]:not([role="dialog"] *),
+button[aria-label="Dictate"]:not([role="dialog"] *),
 button[aria-label^="Enter voice mode"]:not([role="dialog"] *),
 button[aria-label^="Exit voice mode"]:not([role="dialog"] *),
+button[aria-label="Voice mode"]:not([role="dialog"] *),
 div:has(> button[aria-label="Dictation"]):not([role="dialog"] *),
 div:has(> button[aria-label^="Dictation ("]):not([role="dialog"] *),
 div:has(> button[aria-label^="Enter voice mode"]):not([role="dialog"] *),
@@ -30690,8 +30694,9 @@ span:has(> [aria-label*="Grok Bot"]) {
     const rules = [];
     if (settings27.store.hideShareProject) {
       rules.push('button[aria-label="Share Project"]{display:none!important}');
-      rules.push('[role="menuitem"]:has(use[href="#icon-md-share"]){display:none!important}');
-      rules.push('[role="menuitem"]:has(use[href="#icon-md-share"]) + [role="separator"]{display:none!important}');
+      rules.push('[role="menuitem"]:has(use[href="#icon-md-share"],use[href="#icon-sm-share"],use[href="#icon-xs-share"]){display:none!important}');
+      rules.push('[role="menuitem"]:has(use[href="#icon-md-share"],use[href="#icon-sm-share"],use[href="#icon-xs-share"]) + [role="separator"]{display:none!important}');
+      rules.push('[role="separator"]:has(+ [role="menuitem"]:has(use[href="#icon-md-share"],use[href="#icon-sm-share"],use[href="#icon-xs-share"])){display:none!important}');
     }
     if (settings27.store.hideCreateShareLink) {
       rules.push('button[aria-label="Create share link"]{display:none!important}');
@@ -36687,7 +36692,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noDictation_default.updatedAt = 1793874044000;
   noGrokBot_default.updatedAt = 1790943206000;
   noShareLink_default.updatedAt = 1794677892000;
-  noSidebarIdentity_default.updatedAt = 1794677892000;
+  noSidebarIdentity_default.updatedAt = 1794678267000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;
   recentTopics_default.updatedAt = 1794560326000;

@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.9]` Same leftover-slot family as the collapsed account pill: inline composer still sets `--composer-chip-reserve` (76px) after BetterModeSelect moves pins into their own grid column, so the field keeps an 88px empty end pad. Zero the reserve on `data-composer-layout=inline` only (stacked still overlays). Share Project sprites are `icon-xs-share` too; hide preceding separators. Desktop dictation control is `aria-label="Dictate"` — hide the button, not the actions row (Usage + Send live there).
+
 `[20261114.8]` Collapsing the desktop account trigger packs the following footer button (Connect apps) against the avatar. `button[data-account-trigger] ~ button { margin-inline-start: auto }` keeps it on the trailing edge. Do not grow the account pill back.
 
 `[20261114.7]` Hiding the desktop identity `[role=group]` leaves the following `[role=separator]` as a hairline above Settings. Hide that sibling. Same for a hidden Share Project menuitem and a following separator.
