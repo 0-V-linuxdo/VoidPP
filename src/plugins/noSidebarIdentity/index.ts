@@ -60,6 +60,7 @@ function apply() {
         rules.push(`${TEXT_WRAP}{display:none!important}`);
         rules.push(`${FOOTER} .void-sidebar-info{display:none!important}`);
         rules.push(`${MENU_IDENTITY_GROUP}{display:none!important}`);
+        rules.push(`${MENU_IDENTITY_GROUP} + [role="separator"]{display:none!important}`);
     }
     registerStyle(STYLE_NAME, rules.join("\n"));
 }

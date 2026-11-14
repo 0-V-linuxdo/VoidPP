@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.7]` Hiding the desktop identity `[role=group]` leaves the following `[role=separator]` as a hairline above Settings. Hide that sibling. Same for a hidden Share Project menuitem and a following separator.
+
 `[20261114.6]` Hiding the desktop account-menu name/email spans leaves an empty `[role=group]` (padding) and a flex:1 hole beside the sidebar avatar. Collapse `#app-sidebar footer button[data-account-trigger]` to the avatar, and hide the whole identity group when both switches are on.
 
 `[20261114.5]` Desktop account-menu name is the first span in that same `[role=group]` text column. NoSidebarIdentity `hideUsername` must hide `span > span:first-child` (and `.void-csi-name` in the menu). Do not hide menuitem labels.

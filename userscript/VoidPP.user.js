@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.6
+// @version      20261114.7
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.6] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.7] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9898,9 +9898,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b710b79"}`
-    }, `(${"b710b79"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f707354"}`
+    }, `(${"f707354"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -30691,6 +30691,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     if (settings27.store.hideShareProject) {
       rules.push('button[aria-label="Share Project"]{display:none!important}');
       rules.push('[role="menuitem"]:has(use[href="#icon-md-share"]){display:none!important}');
+      rules.push('[role="menuitem"]:has(use[href="#icon-md-share"]) + [role="separator"]{display:none!important}');
     }
     if (settings27.store.hideCreateShareLink) {
       rules.push('button[aria-label="Create share link"]{display:none!important}');
@@ -30757,6 +30758,7 @@ span:has(> [aria-label*="Grok Bot"]) {
       rules.push(`${TEXT_WRAP}{display:none!important}`);
       rules.push(`${FOOTER2} .void-sidebar-info{display:none!important}`);
       rules.push(`${MENU_IDENTITY_GROUP}{display:none!important}`);
+      rules.push(`${MENU_IDENTITY_GROUP} + [role="separator"]{display:none!important}`);
     }
     registerStyle(STYLE_NAME7, rules.join(`
 `));
@@ -36684,7 +36686,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noDictation_default.updatedAt = 1793874044000;
   noGrokBot_default.updatedAt = 1790943206000;
   noShareLink_default.updatedAt = 1794676445000;
-  noSidebarIdentity_default.updatedAt = 1794677196000;
+  noSidebarIdentity_default.updatedAt = 1794677438000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;
   recentTopics_default.updatedAt = 1794560326000;
