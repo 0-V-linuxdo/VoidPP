@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.15
+// @version      20261114.16
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.15] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.16] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -6322,6 +6322,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     min-height: 32px;
     max-width: 32px;
     padding: 0 !important;
+    margin: 0 !important;
     justify-content: center !important;
     gap: 0 !important;
     border-radius: 8px;
@@ -9972,9 +9973,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.15] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"804584d"}`
-    }, `(${"804584d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"452d0f6"}`
+    }, `(${"452d0f6"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36046,7 +36047,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1794560326000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1794676705000;
-  betterSidebar_default.updatedAt = 1794682336000;
+  betterSidebar_default.updatedAt = 1794682682000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1794560326000;
   cloneChats_default.updatedAt = 1794669091000;
