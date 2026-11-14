@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.5
+// @version      20261114.6
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.5] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.6] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9898,9 +9898,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1fa8494"}`
-    }, `(${"1fa8494"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.6] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b710b79"}`
+    }, `(${"b710b79"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -30718,12 +30718,15 @@ span:has(> [aria-label*="Grok Bot"]) {
   var FOOTER2 = '[data-sidebar="footer"], #app-sidebar footer';
   var STACK = `${FOOTER2} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
   var TEXT_WRAP = `${FOOTER2} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER2} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
-  var ACCOUNT_NAME = "#app-sidebar button[data-account-trigger] :has(> img) + span";
+  var ACCOUNT_BTN2 = "#app-sidebar footer button[data-account-trigger]";
+  var ACCOUNT_CLUSTER = `${ACCOUNT_BTN2} > span`;
+  var ACCOUNT_NAME = `${ACCOUNT_BTN2} :has(> img) + span`;
   var MENU_EMAIL = '[role="menu"] [class*="max-w-[400px]"].truncate';
   var MENU_EMAIL_LABEL = '[role="menu"] :has(> [class*="max-w-[400px]"].truncate)';
   var MENU_EMAIL_ROW = '[role="menu"] > :has([class*="max-w-[400px]"].truncate):not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]))';
-  var MENU_EMAIL_DESKTOP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"])) span + span';
-  var MENU_NAME_DESKTOP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"])) span > span:first-child';
+  var MENU_IDENTITY_GROUP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]))';
+  var MENU_EMAIL_DESKTOP = `${MENU_IDENTITY_GROUP} span + span`;
+  var MENU_NAME_DESKTOP = `${MENU_IDENTITY_GROUP} span > span:first-child`;
   var MENU_CSI_NAME = '[role="menu"] .void-csi-name';
   var settings28 = definePluginSettings({
     hideUsername: {
@@ -30743,6 +30746,8 @@ span:has(> [aria-label*="Grok Bot"]) {
       rules.push(`${STACK}>:first-child{display:none!important}`);
       rules.push(`${ACCOUNT_NAME}{display:none!important}`);
       rules.push(`${FOOTER2} .void-sidebar-name,${MENU_NAME_DESKTOP},${MENU_CSI_NAME}{display:none!important}`);
+      rules.push(`${ACCOUNT_BTN2}{width:auto!important;min-width:0!important;flex:0 0 auto!important}`);
+      rules.push(`${ACCOUNT_CLUSTER}{width:auto!important;flex:none!important;min-width:0!important}`);
     }
     if (settings28.store.hideEmail) {
       rules.push(`${STACK}>:nth-child(2){display:none!important}`);
@@ -30751,6 +30756,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     if (settings28.store.hideUsername && settings28.store.hideEmail) {
       rules.push(`${TEXT_WRAP}{display:none!important}`);
       rules.push(`${FOOTER2} .void-sidebar-info{display:none!important}`);
+      rules.push(`${MENU_IDENTITY_GROUP}{display:none!important}`);
     }
     registerStyle(STYLE_NAME7, rules.join(`
 `));
@@ -36678,7 +36684,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noDictation_default.updatedAt = 1793874044000;
   noGrokBot_default.updatedAt = 1790943206000;
   noShareLink_default.updatedAt = 1794676445000;
-  noSidebarIdentity_default.updatedAt = 1794675722000;
+  noSidebarIdentity_default.updatedAt = 1794677196000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;
   recentTopics_default.updatedAt = 1794560326000;

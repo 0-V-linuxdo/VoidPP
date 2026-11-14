@@ -15,16 +15,18 @@ const STYLE_NAME = "noSidebarIdentity";
 const FOOTER = '[data-sidebar="footer"], #app-sidebar footer';
 const STACK = `${FOOTER} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
 const TEXT_WRAP = `${FOOTER} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
-const ACCOUNT_NAME = '#app-sidebar button[data-account-trigger] :has(> img) + span';
+const ACCOUNT_BTN = '#app-sidebar footer button[data-account-trigger]';
+const ACCOUNT_CLUSTER = `${ACCOUNT_BTN} > span`;
+const ACCOUNT_NAME = `${ACCOUNT_BTN} :has(> img) + span`;
 const MENU_EMAIL = '[role="menu"] [class*="max-w-[400px]"].truncate';
 // The label (and the group that only wraps it) keeps pt-2/pb-1 after the span is display:none.
 const MENU_EMAIL_LABEL = '[role="menu"] :has(> [class*="max-w-[400px]"].truncate)';
 const MENU_EMAIL_ROW = '[role="menu"] > :has([class*="max-w-[400px]"].truncate):not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]))';
+const MENU_IDENTITY_GROUP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]))';
 // Desktop Base UI menu: identity is a [role=group] with no menuitems. Email is the
 // second span (name + email). That header has no max-w-[400px] truncate class.
-const MENU_EMAIL_DESKTOP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"])) span + span';
-// Same group: name is the first span inside the text column (email is span+span).
-const MENU_NAME_DESKTOP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"])) span > span:first-child';
+const MENU_EMAIL_DESKTOP = `${MENU_IDENTITY_GROUP} span + span`;
+const MENU_NAME_DESKTOP = `${MENU_IDENTITY_GROUP} span > span:first-child`;
 const MENU_CSI_NAME = '[role="menu"] .void-csi-name';
 
 const settings = definePluginSettings({
@@ -46,6 +48,9 @@ function apply() {
         rules.push(`${STACK}>:first-child{display:none!important}`);
         rules.push(`${ACCOUNT_NAME}{display:none!important}`);
         rules.push(`${FOOTER} .void-sidebar-name,${MENU_NAME_DESKTOP},${MENU_CSI_NAME}{display:none!important}`);
+        // Desktop trigger stays flex:1 after the name span is gone — collapse it to the avatar.
+        rules.push(`${ACCOUNT_BTN}{width:auto!important;min-width:0!important;flex:0 0 auto!important}`);
+        rules.push(`${ACCOUNT_CLUSTER}{width:auto!important;flex:none!important;min-width:0!important}`);
     }
     if (settings.store.hideEmail) {
         rules.push(`${STACK}>:nth-child(2){display:none!important}`);
@@ -54,6 +59,7 @@ function apply() {
     if (settings.store.hideUsername && settings.store.hideEmail) {
         rules.push(`${TEXT_WRAP}{display:none!important}`);
         rules.push(`${FOOTER} .void-sidebar-info{display:none!important}`);
+        rules.push(`${MENU_IDENTITY_GROUP}{display:none!important}`);
     }
     registerStyle(STYLE_NAME, rules.join("\n"));
 }
