@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.16
+// @version      20261114.17
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.16] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.17] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -6309,8 +6309,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#app-sidebar button[aria-keyshortcuts="Meta+J"],
-#app-sidebar button[aria-keyshortcuts="Control+J"] {
+#app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]) {
     position: absolute;
     top: -44px;
     inset-inline-end: 12px;
@@ -6326,18 +6325,32 @@ ${root}::-webkit-scrollbar-thumb:hover {
     justify-content: center !important;
     gap: 0 !important;
     border-radius: 8px;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--fg-secondary, var(--grok-text-secondary)) !important;
 }
 
-#app-sidebar button[aria-keyshortcuts="Meta+J"] svg,
-#app-sidebar button[aria-keyshortcuts="Control+J"] svg {
+#app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]) svg {
     width: 20px !important;
     height: 20px !important;
+    opacity: 0 !important;
 }
 
-#app-sidebar button[aria-keyshortcuts="Meta+J"] [data-sidebar-item-label],
-#app-sidebar button[aria-keyshortcuts="Meta+J"] [data-slot="sidebar-item-shortcut"],
-#app-sidebar button[aria-keyshortcuts="Control+J"] [data-sidebar-item-label],
-#app-sidebar button[aria-keyshortcuts="Control+J"] [data-slot="sidebar-item-shortcut"] {
+#app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"])::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 20px;
+    height: 20px;
+    margin: auto;
+    pointer-events: none;
+    background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' d='M10 3.5C10.2 3.5 10.3 3.6 10.5 3.7C10.6 3.9 10.6 3.9 10.6 4.1V9.4H15.9C16.1 9.4 16.1 9.4 16.3 9.5C16.4 9.7 16.5 9.8 16.5 10C16.5 10.2 16.4 10.3 16.3 10.5C16.1 10.6 16.1 10.6 15.9 10.6H10.6V15.8C10.6 16 10.6 16.1 10.5 16.3C10.3 16.4 10.2 16.5 10 16.5C9.8 16.5 9.7 16.4 9.5 16.3C9.4 16.1 9.4 16 9.4 15.8V10.6H4.2C4 10.6 3.9 10.6 3.7 10.5C3.6 10.3 3.5 10.2 3.5 10C3.5 9.8 3.6 9.7 3.7 9.5C3.9 9.4 4 9.4 4.2 9.4H9.4V4.1C9.4 3.9 9.4 3.9 9.5 3.7C9.7 3.6 9.8 3.5 10 3.5Z'/%3E%3C/svg%3E") center / 20px 20px no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' d='M10 3.5C10.2 3.5 10.3 3.6 10.5 3.7C10.6 3.9 10.6 3.9 10.6 4.1V9.4H15.9C16.1 9.4 16.1 9.4 16.3 9.5C16.4 9.7 16.5 9.8 16.5 10C16.5 10.2 16.4 10.3 16.3 10.5C16.1 10.6 16.1 10.6 15.9 10.6H10.6V15.8C10.6 16 10.6 16.1 10.5 16.3C10.3 16.4 10.2 16.5 10 16.5C9.8 16.5 9.7 16.4 9.5 16.3C9.4 16.1 9.4 16 9.4 15.8V10.6H4.2C4 10.6 3.9 10.6 3.7 10.5C3.6 10.3 3.5 10.2 3.5 10C3.5 9.8 3.6 9.7 3.7 9.5C3.9 9.4 4 9.4 4.2 9.4H9.4V4.1C9.4 3.9 9.4 3.9 9.5 3.7C9.7 3.6 9.8 3.5 10 3.5Z'/%3E%3C/svg%3E") center / 20px 20px no-repeat;
+}
+
+#app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]) [data-sidebar-item-label],
+#app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]) [data-slot="sidebar-item-shortcut"] {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -6349,8 +6362,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     border: 0;
 }
 
-#app-sidebar div:has(> button[aria-keyshortcuts="Meta+J"]),
-#app-sidebar div:has(> button[aria-keyshortcuts="Control+J"]) {
+#app-sidebar div:has(> button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"])) {
     position: relative !important;
     height: 0 !important;
     min-height: 0 !important;
@@ -9973,9 +9985,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.16] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"452d0f6"}`
-    }, `(${"452d0f6"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.17] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1f35e18"}`
+    }, `(${"1f35e18"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36047,7 +36059,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1794560326000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1794676705000;
-  betterSidebar_default.updatedAt = 1794682682000;
+  betterSidebar_default.updatedAt = 1794682801000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1794560326000;
   cloneChats_default.updatedAt = 1794669091000;

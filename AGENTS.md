@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.17]` Compact New chat used `plus-circle-filled` (accent-blue disc on `rgb(25,25,25)`). That is not the Grok Bot / Search header plus. Hide the filled sprite, paint `#icon-md-plus` via mask at `--fg-secondary`, transparent 32px ghost like Toggle/Search.
+
 `[20261114.16]` Compact New chat kept Grok's `margin:4px 2px`, so the 32px icon sat at y=16 instead of Toggle/Search y=12. Zero the margin.
 
 `[20261114.15]` Compact New chat `top:12px` was relative to the chats column (`position:relative` at y=56), so the icon sat on Library. Do not `position:static` that column — Expand / row-hover actions are also `absolute` there. Make the Meta+J row `position:relative; height:0; overflow:visible` and `top:-44px` (56px overlay minus 12px inset) so the 32px icon lines up with Toggle/Search. Also match `Control+J`.
