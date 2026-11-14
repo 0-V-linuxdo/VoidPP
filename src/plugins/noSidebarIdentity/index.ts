@@ -51,6 +51,8 @@ function apply() {
         // Desktop trigger stays flex:1 after the name span is gone — collapse it to the avatar.
         rules.push(`${ACCOUNT_BTN}{width:auto!important;min-width:0!important;flex:0 0 auto!important}`);
         rules.push(`${ACCOUNT_CLUSTER}{width:auto!important;flex:none!important;min-width:0!important}`);
+        // Native row is [wide account pill][Connect apps]. Collapsing the pill packs Connect against the avatar; park it on the trailing edge.
+        rules.push(`${ACCOUNT_BTN} ~ button{margin-inline-start:auto!important}`);
     }
     if (settings.store.hideEmail) {
         rules.push(`${STACK}>:nth-child(2){display:none!important}`);

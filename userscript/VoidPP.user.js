@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.7
+// @version      20261114.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.7] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.8] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9898,9 +9898,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.7] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f707354"}`
-    }, `(${"f707354"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.8] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d9f75a7"}`
+    }, `(${"d9f75a7"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -30749,6 +30749,7 @@ span:has(> [aria-label*="Grok Bot"]) {
       rules.push(`${FOOTER2} .void-sidebar-name,${MENU_NAME_DESKTOP},${MENU_CSI_NAME}{display:none!important}`);
       rules.push(`${ACCOUNT_BTN2}{width:auto!important;min-width:0!important;flex:0 0 auto!important}`);
       rules.push(`${ACCOUNT_CLUSTER}{width:auto!important;flex:none!important;min-width:0!important}`);
+      rules.push(`${ACCOUNT_BTN2} ~ button{margin-inline-start:auto!important}`);
     }
     if (settings28.store.hideEmail) {
       rules.push(`${STACK}>:nth-child(2){display:none!important}`);
@@ -36685,8 +36686,8 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noBuildStarters_default.updatedAt = 1794560326000;
   noDictation_default.updatedAt = 1793874044000;
   noGrokBot_default.updatedAt = 1790943206000;
-  noShareLink_default.updatedAt = 1794676445000;
-  noSidebarIdentity_default.updatedAt = 1794677438000;
+  noShareLink_default.updatedAt = 1794677892000;
+  noSidebarIdentity_default.updatedAt = 1794677892000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;
   recentTopics_default.updatedAt = 1794560326000;
