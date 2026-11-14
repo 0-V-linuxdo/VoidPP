@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.14]` Compact the desktop New chat pill (`button[aria-keyshortcuts="Meta+J"]`, no aria-label) to a 32px icon at `#app-sidebar` top-right, aligned with Toggle/Search. Hide the label and ⌘J via clip (keep the accessible name). Collapse the leftover 48px row with `overflow:visible` so the absolute icon still paints. Overlay chrome is `pointer-events:none` and transparent — do not click-steal. Do not hide section `aria-label="New chat"` plus buttons. Setting `compactNewChat` (default on).
+
 `[20261114.13]` Remove ChatListStatus. Grok now paints conversation status to the right of sidebar chat titles; the plugin's spinner/dot/error is leftover. Keep ChatStateFavicons (tab icon, not the rail). RecentTopics `ICON_SKIP` no longer mentions `.void-cls`.
 
 `[20261114.12]` ErrorPageRetry: Grok's crash screen (`h1` "Something went wrong" + Reload) is a dead tree with `<a href="/">Reload page</a>`. Clicking that dumps `/` and drops the chat. Detect the bare crash (no `form[data-composer]` / `#app-sidebar`), `location.reload()` the current URL, cap with sessionStorage per path (default 5, 1s delay). Start at Init — Turbopack never comes up on that page. Do not fold into AutoRetry (that's stream errors).

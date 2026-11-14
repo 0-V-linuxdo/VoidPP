@@ -1,0 +1,50 @@
+/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+#app-sidebar button[aria-keyshortcuts="Meta+J"] {
+    position: absolute;
+    top: 12px;
+    inset-inline-end: 12px;
+    z-index: 3;
+    box-sizing: border-box;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    max-width: 32px;
+    padding: 0 !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    border-radius: 8px;
+}
+
+#app-sidebar button[aria-keyshortcuts="Meta+J"] svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+#app-sidebar button[aria-keyshortcuts="Meta+J"] [data-sidebar-item-label],
+#app-sidebar button[aria-keyshortcuts="Meta+J"] [data-slot="sidebar-item-shortcut"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+#app-sidebar div:has(> button[aria-keyshortcuts="Meta+J"]) {
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+}

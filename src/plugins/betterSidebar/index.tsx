@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import "./compactNewChat.css";
 import "./headerHover.css";
 import "./styles.css";
 
@@ -71,6 +72,11 @@ const settings = definePluginSettings({
         description: "Show a plus on the Chats header that starts a new chat.",
         default: true,
     },
+    compactNewChat: {
+        type: OptionType.BOOLEAN,
+        description: "Shrink the New chat pill to an icon in the top-right of the sidebar header.",
+        default: true,
+    },
 });
 
 migrateSettingsToPlugin("BetterSidebar", "SidebarHeaderHover", "titleRowHover", "chatsPlus");
@@ -131,6 +137,8 @@ function releaseRosterGate() {
 function applyHeaderHover() {
     if (settings.store.titleRowHover) enableStyle("headerHover");
     else disableStyle("headerHover");
+    if (settings.store.compactNewChat) enableStyle("compactNewChat");
+    else disableStyle("compactNewChat");
 }
 
 let botsUserOverride = false;
@@ -472,7 +480,7 @@ const WrappedCheckbox = ErrorBoundary.wrap(SelectCheckbox, null);
 export default definePlugin({
     name: "BetterSidebar",
     icon: PanelLeftIcon,
-    description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
+    description: "Sidebar improvements, including a compact New chat icon in the header, header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
     authors: [Devs.Prism, Devs.p],
     tags: ["navigation"],
     enabledByDefault: true,
@@ -546,6 +554,7 @@ export default definePlugin({
     stop() {
         selection.clear();
         disableStyle("headerHover");
+        disableStyle("compactNewChat");
         stopBotsCollapse();
         stopChatsExpand();
         stopProjectsCollapse();

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.13
+// @version      20261114.14
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.13] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -6302,6 +6302,59 @@ ${root}::-webkit-scrollbar-thumb:hover {
     ]
   });
 
+  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/compactNewChat.css
+  registerStyle("compactNewChat", `/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+#app-sidebar button[aria-keyshortcuts="Meta+J"] {
+    position: absolute;
+    top: 12px;
+    inset-inline-end: 12px;
+    z-index: 3;
+    box-sizing: border-box;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    max-width: 32px;
+    padding: 0 !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    border-radius: 8px;
+}
+
+#app-sidebar button[aria-keyshortcuts="Meta+J"] svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+#app-sidebar button[aria-keyshortcuts="Meta+J"] [data-sidebar-item-label],
+#app-sidebar button[aria-keyshortcuts="Meta+J"] [data-slot="sidebar-item-shortcut"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+#app-sidebar div:has(> button[aria-keyshortcuts="Meta+J"]) {
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+}
+`);
+
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/headerHover.css
   registerStyle("headerHover", `/*
  * Void++, a modification for grok.com
@@ -6577,6 +6630,11 @@ ${root}::-webkit-scrollbar-thumb:hover {
       type: 3 /* BOOLEAN */,
       description: "Show a plus on the Chats header that starts a new chat.",
       default: true
+    },
+    compactNewChat: {
+      type: 3 /* BOOLEAN */,
+      description: "Shrink the New chat pill to an icon in the top-right of the sidebar header.",
+      default: true
     }
   });
   migrateSettingsToPlugin("BetterSidebar", "SidebarHeaderHover", "titleRowHover", "chatsPlus");
@@ -6631,6 +6689,10 @@ ${root}::-webkit-scrollbar-thumb:hover {
       enableStyle("headerHover");
     else
       disableStyle("headerHover");
+    if (settings4.store.compactNewChat)
+      enableStyle("compactNewChat");
+    else
+      disableStyle("compactNewChat");
   }
   var botsUserOverride = false;
   var botsClickAttempts = 0;
@@ -6970,7 +7032,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var betterSidebar_default = definePlugin({
     name: "BetterSidebar",
     icon: PanelLeftIcon,
-    description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
+    description: "Sidebar improvements, including a compact New chat icon in the header, header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
     authors: [Devs.Prism, Devs.p],
     tags: ["navigation"],
     enabledByDefault: true,
@@ -7037,6 +7099,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     stop() {
       selection.clear();
       disableStyle("headerHover");
+      disableStyle("compactNewChat");
       stopBotsCollapse();
       stopChatsExpand();
       stopProjectsCollapse();
@@ -9903,9 +9966,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f9de3f1"}`
-    }, `(${"f9de3f1"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8dbad20"}`
+    }, `(${"8dbad20"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36003,7 +36066,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1794678267000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;
-  recentTopics_default.updatedAt = 1794560326000;
+  recentTopics_default.updatedAt = 1794681716000;
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1794669091000;
   skillBlocker_default.updatedAt = 1791758395000;
