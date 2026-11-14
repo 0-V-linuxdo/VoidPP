@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261113.13
+// @version      20261113.14
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261113.13] v1.0.0 — A modification for grok.com
+ * Void++ [20261113.14] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4619,8 +4619,12 @@ ${root}::-webkit-scrollbar-thumb:hover {
     const Icon = props.icon;
     if (!createElement || !Icon)
       return null;
-    const className = [props.className, props.desktop === false ? "void-menu-glyph-gap" : ""].filter(Boolean).join(" ");
-    return createElement(Icon, className ? { className } : {});
+    const desktop = props.desktop !== false;
+    const className = [props.className, desktop ? "" : "void-menu-glyph-gap"].filter(Boolean).join(" ");
+    return createElement(Icon, {
+      ...className ? { className } : {},
+      ...desktop ? { width: 16, height: 16 } : {}
+    });
   }
   MenuGlyphIcon.displayName = "MenuGlyphIcon";
   var LEGACY_BUTTON_VARIANT = {
@@ -7477,6 +7481,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
 }
 
 .void-settings-menu-icon {
+    width: var(--grok-icon-size, 16px);
+    height: var(--grok-icon-size, 16px);
     color: var(--fg-secondary, var(--grok-text-secondary));
     flex-shrink: 0;
 }
@@ -10006,9 +10012,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261113.13] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f08a844"}`
-    }, `(${"f08a844"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261113.14] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"08259b3"}`
+    }, `(${"08259b3"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -23327,6 +23333,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/cloneChats/styles.css
   registerStyle("cloneChats", `.void-clone-icon {
+    width: var(--grok-icon-size, 16px);
+    height: var(--grok-icon-size, 16px);
     color: var(--fg-secondary, var(--grok-text-secondary));
     flex-shrink: 0;
 }
@@ -26597,6 +26605,8 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 
   // voidpp-css:/workspace/artifacts/Void-src/src/plugins/exportChat/styles.css
   registerStyle("exportChat", `.void-export-icon {
+    width: var(--grok-icon-size, 16px);
+    height: var(--grok-icon-size, 16px);
     color: var(--fg-secondary, var(--grok-text-secondary));
     flex-shrink: 0;
 }
@@ -34045,6 +34055,8 @@ html.void-rt-open [data-sidebar="gap"] {
  */
 
 .void-sf-menu-icon {
+    width: var(--grok-icon-size, 16px);
+    height: var(--grok-icon-size, 16px);
     color: var(--fg-secondary);
     flex-shrink: 0;
 }
@@ -36684,12 +36696,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794563342000;
-  settings_default.updatedAt = 1794583222000;
+  settings_default.updatedAt = 1794584397000;
   chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794563342000;
   autoCollapse_default.updatedAt = 1794563342000;
   autoRetry_default.updatedAt = 1794563342000;
-  avatarPluginsFlyout_default.updatedAt = 1794583222000;
+  avatarPluginsFlyout_default.updatedAt = 1794584397000;
   betterCanvas_default.updatedAt = 1794563342000;
   betterFiles_default.updatedAt = 1794563342000;
   betterImagine_default.updatedAt = 1794563342000;
@@ -36702,17 +36714,17 @@ button:has(.void-ud-trigger > .void-ud-label) {
   chatListStatus_default.updatedAt = 1794563342000;
   chatStateFavicons_default.updatedAt = 1794563342000;
   cleaner_default.updatedAt = 1794563342000;
-  cloneChats_default.updatedAt = 1794563342000;
+  cloneChats_default.updatedAt = 1794584397000;
   collapseThoughts_default.updatedAt = 1794563342000;
   completeToast_default.updatedAt = 1794563342000;
   composerOpacity_default.updatedAt = 1794563342000;
   consoleJanitor_default.updatedAt = 1794563342000;
   customGreeting_default.updatedAt = 1794581758000;
-  customInstructions_default.updatedAt = 1794563342000;
+  customInstructions_default.updatedAt = 1794584397000;
   customSidebarIdentity_default.updatedAt = 1794563342000;
   downloadTTS_default.updatedAt = 1794563342000;
   experiments_default.updatedAt = 1794563342000;
-  exportChat_default.updatedAt = 1794563342000;
+  exportChat_default.updatedAt = 1794584397000;
   incognito_default.updatedAt = 1794563342000;
   inputHistory_default.updatedAt = 1794563342000;
   messageStars_default.updatedAt = 1794563342000;
@@ -36726,7 +36738,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   pluginsFlyout_default.updatedAt = 1794563342000;
   recentTopics_default.updatedAt = 1794563342000;
   responseNotification_default.updatedAt = 1794563342000;
-  settingsFlyout_default.updatedAt = 1794583222000;
+  settingsFlyout_default.updatedAt = 1794584397000;
   skillBlocker_default.updatedAt = 1794563342000;
   stableComposer_default.updatedAt = 1794563342000;
   starry_default.updatedAt = 1794563342000;

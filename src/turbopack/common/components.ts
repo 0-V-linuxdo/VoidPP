@@ -194,12 +194,16 @@ export function accountMenuSelect(desktop: boolean, run: (event?: unknown) => vo
     return desktop ? { onClick: run } : { onSelect: run };
 }
 
-/** First child of a desktop menu row. `displayName` must end in `Icon` or Grok will not mount it in the Glyph slot (`--grok-icon-size`, no extra margin). */
-export function MenuGlyphIcon(props: { icon: ComponentType<{ className?: string }>; className?: string; desktop?: boolean }) {
+/** First child of a desktop menu row. `displayName` must end in `Icon` or Grok will not mount it in the Glyph slot. Desktop icons are 16px, the same as `--grok-icon-size`; `1em` is 14px in that row and shifts the label. */
+export function MenuGlyphIcon(props: { icon: ComponentType<{ className?: string; width?: number | string; height?: number | string }>; className?: string; desktop?: boolean }) {
     const Icon = props.icon;
     if (!createElement || !Icon) return null;
-    const className = [props.className, props.desktop === false ? "void-menu-glyph-gap" : ""].filter(Boolean).join(" ");
-    return createElement(Icon, className ? { className } : {});
+    const desktop = props.desktop !== false;
+    const className = [props.className, desktop ? "" : "void-menu-glyph-gap"].filter(Boolean).join(" ");
+    return createElement(Icon, {
+        ...(className ? { className } : {}),
+        ...(desktop ? { width: 16, height: 16 } : {}),
+    });
 }
 MenuGlyphIcon.displayName = "MenuGlyphIcon";
 

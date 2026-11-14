@@ -5,6 +5,8 @@
  */
 
 .void-sf-menu-icon {
+    width: var(--grok-icon-size, 16px);
+    height: var(--grok-icon-size, 16px);
     color: var(--fg-secondary);
     flex-shrink: 0;
 }
