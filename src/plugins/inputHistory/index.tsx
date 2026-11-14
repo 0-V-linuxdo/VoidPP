@@ -25,7 +25,9 @@ import definePlugin, { type IPluginOptionComponentProps, OptionType } from "@uti
 const logger = new Logger("InputHistory");
 const cl = classNameFactory("void-ih-");
 
-const EDITOR_SEL = ".query-bar .tiptap.ProseMirror[contenteditable=\"true\"]";
+const COMPOSER = ":is(.query-bar, form[data-composer])";
+const EDITOR_INNER = ".tiptap.ProseMirror[contenteditable=\"true\"]";
+const EDITOR_SEL = `${COMPOSER} ${EDITOR_INNER}`;
 const ZWSP = /\u200B/g;
 const MAX_MIN = 10;
 const MAX_MAX = 500;
@@ -777,7 +779,7 @@ function hideHud() {
 
 function showHud(label: string, editor: HTMLElement) {
     if (historyOpen) return;
-    const bar = editor.closest(".query-bar");
+    const bar = editor.closest(COMPOSER);
     if (!bar) return;
     hudEditor = editor;
     const el = hudEl();
@@ -976,7 +978,7 @@ function onInput(e: Event) {
 function onSubmit(e: Event) {
     const form = e.target;
     if (!(form instanceof HTMLFormElement)) return;
-    const editor = form.querySelector(EDITOR_SEL);
+    const editor = form.querySelector(EDITOR_INNER);
     if (editor instanceof HTMLElement) pushEntry(editorText(editor));
 }
 
@@ -985,12 +987,12 @@ function onClick(e: MouseEvent) {
     if (!(t instanceof Element)) return;
     const ctrl = t.closest("button, [role='button']");
     if (!ctrl) return;
-    const bar = ctrl.closest(".query-bar");
+    const bar = ctrl.closest(COMPOSER);
     if (!bar || ctrl.closest("[data-query-bar-mode-select]") || ctrl.closest("[role='radiogroup']")) return;
     const label = (ctrl.getAttribute("aria-label") ?? "").toLowerCase();
     const submit = ctrl instanceof HTMLButtonElement && ctrl.type === "submit";
     if (!submit && !label.includes("send") && !label.includes("submit")) return;
-    const editor = bar.querySelector(EDITOR_SEL);
+    const editor = bar.querySelector(EDITOR_INNER);
     if (editor instanceof HTMLElement) pushEntry(editorText(editor));
 }
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.3
+// @version      20261114.4
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.3] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.4] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9898,9 +9898,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"48039f6"}`
-    }, `(${"48039f6"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1edb838"}`
+    }, `(${"1edb838"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -18224,7 +18224,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/betterQuotes/shared.ts
-  var QUERY = ".query-bar";
+  var QUERY = ":is(.query-bar, form[data-composer])";
   var DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
   var KEEP = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
   function onImaginePage2() {
@@ -26947,7 +26947,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   // src/plugins/inputHistory/index.tsx
   var logger37 = new Logger("InputHistory");
   var cl28 = classNameFactory("void-ih-");
-  var EDITOR_SEL3 = '.query-bar .tiptap.ProseMirror[contenteditable="true"]';
+  var COMPOSER = ":is(.query-bar, form[data-composer])";
+  var EDITOR_INNER = '.tiptap.ProseMirror[contenteditable="true"]';
+  var EDITOR_SEL3 = `${COMPOSER} ${EDITOR_INNER}`;
   var ZWSP = /\u200B/g;
   var MAX_MIN = 10;
   var MAX_MAX = 500;
@@ -27698,7 +27700,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function showHud(label, editor) {
     if (historyOpen)
       return;
-    const bar = editor.closest(".query-bar");
+    const bar = editor.closest(COMPOSER);
     if (!bar)
       return;
     hudEditor = editor;
@@ -27920,7 +27922,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const form = e.target;
     if (!(form instanceof HTMLFormElement))
       return;
-    const editor = form.querySelector(EDITOR_SEL3);
+    const editor = form.querySelector(EDITOR_INNER);
     if (editor instanceof HTMLElement)
       pushEntry(editorText(editor));
   }
@@ -27931,14 +27933,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const ctrl = t.closest("button, [role='button']");
     if (!ctrl)
       return;
-    const bar = ctrl.closest(".query-bar");
+    const bar = ctrl.closest(COMPOSER);
     if (!bar || ctrl.closest("[data-query-bar-mode-select]") || ctrl.closest("[role='radiogroup']"))
       return;
     const label = (ctrl.getAttribute("aria-label") ?? "").toLowerCase();
     const submit = ctrl instanceof HTMLButtonElement && ctrl.type === "submit";
     if (!submit && !label.includes("send") && !label.includes("submit"))
       return;
-    const editor = bar.querySelector(EDITOR_SEL3);
+    const editor = bar.querySelector(EDITOR_INNER);
     if (editor instanceof HTMLElement)
       pushEntry(editorText(editor));
   }
@@ -36673,7 +36675,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noBuildStarters_default.updatedAt = 1794560326000;
   noDictation_default.updatedAt = 1793874044000;
   noGrokBot_default.updatedAt = 1790943206000;
-  noShareLink_default.updatedAt = 1787789817000;
+  noShareLink_default.updatedAt = 1794676445000;
   noSidebarIdentity_default.updatedAt = 1794675722000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;

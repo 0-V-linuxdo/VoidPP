@@ -6,7 +6,7 @@
 
 import { RoutingStore } from "@turbopack/common/stores";
 
-export const QUERY = ".query-bar";
+export const QUERY = ":is(.query-bar, form[data-composer])";
 export const DISMISS = /close|remove|dismiss|clear|delete|取消|关闭|删除/i;
 export const KEEP = /submit|send|attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i;
 
