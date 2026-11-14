@@ -184,7 +184,7 @@ function InstructionsMenu({ conversationId }: ContextMenuLocationMap["conversati
     return (
         <MenuSub>
             <MenuSubTrigger>
-                <MenuGlyphIcon icon={BookIcon} /> Instructions
+                <MenuGlyphIcon icon={BookIcon} className="void-settings-menu-icon" /> Instructions
             </MenuSubTrigger>
             <MenuSubContent>
                 <MenuItem onSelect={() => assign()}>

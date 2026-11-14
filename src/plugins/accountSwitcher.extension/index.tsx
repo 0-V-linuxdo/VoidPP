@@ -9,10 +9,11 @@ import "./styles.css";
 import { addContextMenuItem, removeContextMenuItem } from "@api/ContextMenus";
 import { showToast, ToastType } from "@api/Notifications";
 import { definePluginSettings } from "@api/Settings";
-import { Button, ConfirmDialog, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, Text } from "@components";
+import { Button, ConfirmDialog, Text } from "@components";
 import { ErrorBoundary } from "@components/ErrorBoundary";
-import { TrashIcon, UsersRoundIcon } from "@components/icons";
+import { PlusIcon, TrashIcon, UsersRoundIcon } from "@components/icons";
 import type { GrokUser } from "@grok-types/common/User";
+import { accountMenuParts, accountMenuSelect, MenuGlyphIcon } from "@turbopack/common/components";
 import { getPlanName } from "@turbopack/common/plan";
 import { readSubscriptionSnapshot, subscriptionIsCommerce } from "@turbopack/common/subscriptions";
 import { React, useState } from "@turbopack/common/react";
@@ -30,9 +31,7 @@ import { decryptForAccount, type EncryptedBlob, encryptForAccount, isEncryptedBl
 const logger = new Logger("AccountSwitcher");
 const cl = classNameFactory("void-as-");
 
-const UsersIcon = findExportedComponentLazy("UsersIcon");
 const CheckIcon = findExportedComponentLazy("CheckIcon");
-const PlusIcon = findExportedComponentLazy("PlusIcon");
 const RefreshCwIcon = findExportedComponentLazy("RefreshCwIcon");
 
 const AVATAR_FETCH_TIMEOUT_MS = 4000;
@@ -224,18 +223,20 @@ function deleteAccount(id: string) {
     settings.store.accounts = (settings.plain.accounts ?? []).filter(a => a.id !== id);
 }
 
-function AccountRow({ account, isActive, onSwitch, onDelete }: {
+function AccountRow({ account, isActive, onSwitch, onDelete, Item, desktop }: {
     account: SavedAccount;
     isActive: boolean;
     onSwitch: () => void;
     onDelete: () => void;
+    Item: any;
+    desktop: boolean;
 }) {
     const fallbackInitial = (account.label || account.givenName || account.email || "?").charAt(0).toUpperCase();
     const avatarSrc = account.profileImageData ?? account.profileImageUrl;
 
     return (
         <div className={classes(cl("row-wrap"), isActive ? cl("row-active") : "")}>
-            <DropdownMenuItem onSelect={onSwitch} data-void-as="row">
+            <Item {...accountMenuSelect(desktop, onSwitch)} data-void-as="row">
                 {avatarSrc
                     ? <img src={avatarSrc} alt="" className={cl("avatar")} loading="lazy" referrerPolicy="no-referrer" />
                     : <div className={cl("avatar", "avatar-fallback")}>{fallbackInitial}</div>}
@@ -244,7 +245,7 @@ function AccountRow({ account, isActive, onSwitch, onDelete }: {
                     <Text as="span" size="xs" color="secondary" className={cl("row-plan")}>{account.plan || "Free"}</Text>
                 </div>
                 {isActive && <CheckIcon className={cl("icon-check")} />}
-            </DropdownMenuItem>
+            </Item>
             <Button
                 variant="tertiary"
                 size="xs"
@@ -267,15 +268,16 @@ function AccountMenu() {
 
     const pending = accounts.find(a => a.id === pendingDeleteId);
     const hasCurrent = accounts.some(a => a.userId === user?.userId);
+    const { Sub, Trigger, Content, Item, Separator, desktop } = accountMenuParts();
 
     return (
         <>
-            <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                    <UsersIcon className={cl("icon-lead")} />
-                    <Text as="span" size="sm">Accounts</Text>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent data-void-as="content">
+            <Sub>
+                <Trigger>
+                    <MenuGlyphIcon icon={UsersRoundIcon} className={cl("icon-lead")} desktop={desktop} />
+                    Accounts
+                </Trigger>
+                <Content {...(desktop ? {} : { maxHeight: "lg" })} data-void-as="content">
                     {accounts.length > 0 && (
                         <div className={cl("heading")}>
                             <Text as="span" size="xs" color="secondary">Saved Accounts</Text>
@@ -288,15 +290,17 @@ function AccountMenu() {
                             isActive={user?.userId === a.userId}
                             onSwitch={() => void switchTo(a)}
                             onDelete={() => setPendingDeleteId(a.id)}
+                            Item={Item}
+                            desktop={desktop}
                         />
                     ))}
-                    {accounts.length > 0 && <DropdownMenuSeparator />}
-                    <DropdownMenuItem onSelect={() => user && void saveCurrent(user)} disabled={!user}>
-                        {hasCurrent ? <RefreshCwIcon className={cl("icon-lead")} /> : <PlusIcon className={cl("icon-lead")} />}
-                        <Text as="span" size="sm">{hasCurrent ? "Update current account" : "Save current account"}</Text>
-                    </DropdownMenuItem>
-                </DropdownMenuSubContent>
-            </DropdownMenuSub>
+                    {accounts.length > 0 && <Separator />}
+                    <Item {...accountMenuSelect(desktop, () => user && void saveCurrent(user))} disabled={!user}>
+                        <MenuGlyphIcon icon={hasCurrent ? RefreshCwIcon : PlusIcon} className={cl("icon-lead")} desktop={desktop} />
+                        {hasCurrent ? "Update current account" : "Save current account"}
+                    </Item>
+                </Content>
+            </Sub>
             <ConfirmDialog
                 open={pendingDeleteId != null}
                 onOpenChange={open => { if (!open) setPendingDeleteId(null); }}

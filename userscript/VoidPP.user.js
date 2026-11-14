@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.10
+// @version      20261114.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.10] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.11] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7376,8 +7376,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
 /* Desktop Glyph dropped the old \`text-fg-secondary\` wrapper, so Help / Sign out
    inherit the row's primary (~90%). Void++ icons stay \`--fg-secondary\` and look
    unaligned. Mute the leading glyph only — not the 14px chevron in the trailing span. */
-[role="menu"] [role="menuitem"] > span:first-child > svg,
-[role="menu"] [role="menuitem"] > svg {
+[role="menu"] :is([role="menuitem"], [role="menuitemradio"]) > span:first-child svg,
+[role="menu"] :is([role="menuitem"], [role="menuitemradio"]) > svg {
     color: var(--fg-secondary, var(--grok-text-secondary)) !important;
 }
 
@@ -9906,9 +9906,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6e903c0"}`
-    }, `(${"6e903c0"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d604276"}`
+    }, `(${"d604276"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -25533,7 +25533,8 @@ Neon rain in a quiet city`
     if (!presets.length)
       return null;
     return /* @__PURE__ */ React.createElement(MenuSub, null, /* @__PURE__ */ React.createElement(MenuSubTrigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
-      icon: BookIcon
+      icon: BookIcon,
+      className: "void-settings-menu-icon"
     }), " Instructions"), /* @__PURE__ */ React.createElement(MenuSubContent, null, /* @__PURE__ */ React.createElement(MenuItem, {
       onSelect: () => assign()
     }, /* @__PURE__ */ React.createElement("span", {
@@ -36663,7 +36664,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794672837000;
-  settings_default.updatedAt = 1794669091000;
+  settings_default.updatedAt = 1794679405000;
   chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794560326000;
   autoCollapse_default.updatedAt = 1794557302000;

@@ -36,8 +36,8 @@
 /* Desktop Glyph dropped the old `text-fg-secondary` wrapper, so Help / Sign out
    inherit the row's primary (~90%). Void++ icons stay `--fg-secondary` and look
    unaligned. Mute the leading glyph only — not the 14px chevron in the trailing span. */
-[role="menu"] [role="menuitem"] > span:first-child > svg,
-[role="menu"] [role="menuitem"] > svg {
+[role="menu"] :is([role="menuitem"], [role="menuitemradio"]) > span:first-child svg,
+[role="menu"] :is([role="menuitem"], [role="menuitemradio"]) > svg {
     color: var(--fg-secondary, var(--grok-text-secondary)) !important;
 }
 

@@ -10,10 +10,9 @@
 }
 
 .void-as-icon-lead {
-    width: 1rem;
-    height: 1rem;
-    margin-inline-end: 0.5rem;
-    color: var(--fg-secondary);
+    width: var(--grok-icon-size, 16px);
+    height: var(--grok-icon-size, 16px);
+    color: var(--fg-secondary, var(--grok-text-secondary));
     flex-shrink: 0;
 }
 
