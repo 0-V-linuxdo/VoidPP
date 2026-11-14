@@ -23,11 +23,14 @@ const MENU_EMAIL_ROW = '[role="menu"] > :has([class*="max-w-[400px]"].truncate):
 // Desktop Base UI menu: identity is a [role=group] with no menuitems. Email is the
 // second span (name + email). That header has no max-w-[400px] truncate class.
 const MENU_EMAIL_DESKTOP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"])) span + span';
+// Same group: name is the first span inside the text column (email is span+span).
+const MENU_NAME_DESKTOP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"])) span > span:first-child';
+const MENU_CSI_NAME = '[role="menu"] .void-csi-name';
 
 const settings = definePluginSettings({
     hideUsername: {
         type: OptionType.BOOLEAN,
-        description: "Hide the username next to the sidebar avatar.",
+        description: "Hide the username next to the sidebar avatar and at the top of the account menu.",
         default: true,
     },
     hideEmail: {
@@ -42,7 +45,7 @@ function apply() {
     if (settings.store.hideUsername) {
         rules.push(`${STACK}>:first-child{display:none!important}`);
         rules.push(`${ACCOUNT_NAME}{display:none!important}`);
-        rules.push(`${FOOTER} .void-sidebar-name{display:none!important}`);
+        rules.push(`${FOOTER} .void-sidebar-name,${MENU_NAME_DESKTOP},${MENU_CSI_NAME}{display:none!important}`);
     }
     if (settings.store.hideEmail) {
         rules.push(`${STACK}>:nth-child(2){display:none!important}`);

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.4
+// @version      20261114.5
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.4] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.5] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9898,9 +9898,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.4] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1edb838"}`
-    }, `(${"1edb838"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.5] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1fa8494"}`
+    }, `(${"1fa8494"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -30723,10 +30723,12 @@ span:has(> [aria-label*="Grok Bot"]) {
   var MENU_EMAIL_LABEL = '[role="menu"] :has(> [class*="max-w-[400px]"].truncate)';
   var MENU_EMAIL_ROW = '[role="menu"] > :has([class*="max-w-[400px]"].truncate):not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]))';
   var MENU_EMAIL_DESKTOP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"])) span + span';
+  var MENU_NAME_DESKTOP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"])) span > span:first-child';
+  var MENU_CSI_NAME = '[role="menu"] .void-csi-name';
   var settings28 = definePluginSettings({
     hideUsername: {
       type: 3 /* BOOLEAN */,
-      description: "Hide the username next to the sidebar avatar.",
+      description: "Hide the username next to the sidebar avatar and at the top of the account menu.",
       default: true
     },
     hideEmail: {
@@ -30740,7 +30742,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     if (settings28.store.hideUsername) {
       rules.push(`${STACK}>:first-child{display:none!important}`);
       rules.push(`${ACCOUNT_NAME}{display:none!important}`);
-      rules.push(`${FOOTER2} .void-sidebar-name{display:none!important}`);
+      rules.push(`${FOOTER2} .void-sidebar-name,${MENU_NAME_DESKTOP},${MENU_CSI_NAME}{display:none!important}`);
     }
     if (settings28.store.hideEmail) {
       rules.push(`${STACK}>:nth-child(2){display:none!important}`);
@@ -36652,7 +36654,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterModeSelect_default.updatedAt = 1794581758000;
   betterNavigator_default.updatedAt = 1794560326000;
   betterQueue_default.updatedAt = 1793180938000;
-  betterQuotes_default.updatedAt = 1794560326000;
+  betterQuotes_default.updatedAt = 1794676705000;
   betterSidebar_default.updatedAt = 1794672837000;
   chatListStatus_default.updatedAt = 1794560326000;
   chatStateFavicons_default.updatedAt = 1789921507000;
@@ -36669,7 +36671,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   experiments_default.updatedAt = 1794557302000;
   exportChat_default.updatedAt = 1794669091000;
   incognito_default.updatedAt = 1787870966000;
-  inputHistory_default.updatedAt = 1791226275000;
+  inputHistory_default.updatedAt = 1794676705000;
   messageStars_default.updatedAt = 1794560326000;
   messageTimestamps_default.updatedAt = 1794672837000;
   noBuildStarters_default.updatedAt = 1794560326000;
