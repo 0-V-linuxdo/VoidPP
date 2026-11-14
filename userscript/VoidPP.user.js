@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.11
+// @version      20261114.12
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.11] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.12] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4345,7 +4345,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       if (src.includes("__scopeDropdownMenu") || src.includes("__scopeMenu"))
         continue;
       const fromCall = /name:"(DropdownMenu[A-Za-z]*)",Legacy:/.exec(src)?.[1];
-      const displayName = value.displayName;
+      const { displayName } = value;
       const fromName = typeof displayName === "string" && /^DropdownMenu[A-Za-z]*$/.test(displayName) && (src.includes("keepLegacy") || src.includes("menu:")) ? displayName : "";
       const name = fromCall || fromName;
       if (!name || mapped[name])
@@ -4384,7 +4384,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       } catch {}
     }
     legacyDropdown = legacy;
-    const size = getModuleCache().size;
+    const { size } = getModuleCache();
     if (legacy && size === dropdownCacheSize)
       return legacy;
     dropdownCacheSize = size;
@@ -5636,7 +5636,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
               logger12.warn(`${plugin.name}: selector subscribe failed for ${storeName}`, e);
               const select = sub.selector;
               let prev;
-              const getState = store2.getState;
+              const { getState } = store2;
               if (typeof getState === "function") {
                 try {
                   prev = select(getState.call(store2));
@@ -5925,1314 +5925,6 @@ ${root}::-webkit-scrollbar-thumb:hover {
     });
   }
 
-  // src/plugins/avatarPluginsFlyout/index.tsx
-  var logger13 = new Logger("AvatarPluginsFlyout");
-  var settings3 = definePluginSettings({});
-  var NEW_NAME = "AvatarPluginsFlyout";
-  var OLD_NAMES = ["BetterAvatarPlugins", "NoSidebarPlugins"];
-  function isOldName(item) {
-    return typeof item === "string" && OLD_NAMES.includes(item);
-  }
-  function renameList(list) {
-    if (!Array.isArray(list) || !list.some(isOldName))
-      return;
-    const seen = new Set;
-    const next = [];
-    for (const item of list) {
-      if (typeof item !== "string")
-        continue;
-      const name = isOldName(item) ? NEW_NAME : item;
-      if (seen.has(name))
-        continue;
-      seen.add(name);
-      next.push(name);
-    }
-    return next;
-  }
-  function migrateLegacy2() {
-    const bag = PlainSettings.plugins;
-    const meta = bag.Settings;
-    const menu = bag.PluginsFlyout?.menuPlugins;
-    const known = meta?.knownPlugins;
-    const pinned = renameList(meta?.pinnedPlugins);
-    const starred = renameList(meta?.starredPlugins);
-    const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu : undefined;
-    const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
-    let moved = false;
-    for (const oldName of OLD_NAMES) {
-      const old = bag[oldName];
-      if (old && typeof old === "object") {
-        const target = bag[NEW_NAME] ??= {};
-        const keys = Object.keys(target);
-        const stub = keys.length === 0 || keys.length === 1 && keys[0] === "enabled";
-        for (const key of Object.keys(old)) {
-          if (stub || !(key in target))
-            target[key] = old[key];
-        }
-        delete bag[oldName];
-        moved = true;
-      }
-      if (knownRec && oldName in knownRec) {
-        if (!(NEW_NAME in knownRec))
-          knownRec[NEW_NAME] = knownRec[oldName];
-        delete knownRec[oldName];
-        moved = true;
-      }
-      if (menuRec && oldName in menuRec) {
-        if (!(NEW_NAME in menuRec))
-          menuRec[NEW_NAME] = menuRec[oldName];
-        delete menuRec[oldName];
-        moved = true;
-      }
-    }
-    if (meta) {
-      if (pinned) {
-        meta.pinnedPlugins = pinned;
-        moved = true;
-      }
-      if (starred) {
-        meta.starredPlugins = starred;
-        moved = true;
-      }
-    }
-    if (!moved)
-      return;
-    SettingsStore3.markAsChanged();
-    logger13.info("Migrated NoSidebarPlugins and BetterAvatarPlugins into AvatarPluginsFlyout");
-  }
-  var pluginName = Object.getOwnPropertyDescriptor(settings3, "pluginName");
-  if (pluginName?.set && pluginName.get) {
-    Object.defineProperty(settings3, "pluginName", {
-      configurable: true,
-      enumerable: true,
-      get: pluginName.get,
-      set(name) {
-        if (name === NEW_NAME)
-          migrateLegacy2();
-        pluginName.set.call(settings3, name);
-      }
-    });
-  }
-  function menuSvg(className, filled, ...children) {
-    return /* @__PURE__ */ React.createElement("svg", {
-      width: "1rem",
-      height: "1rem",
-      viewBox: "0 0 24 24",
-      fill: filled ? "currentColor" : "none",
-      stroke: filled ? "none" : "currentColor",
-      strokeWidth: filled ? undefined : 2,
-      strokeLinecap: "round",
-      strokeLinejoin: "round",
-      className: className ?? "void-settings-menu-icon",
-      "aria-hidden": "true"
-    }, children);
-  }
-  function PluginsIcon(props = {}) {
-    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
-      ...props
-    });
-  }
-  function ConnectorsMenuIcon({ className } = {}) {
-    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
-      width: "1rem",
-      height: "1rem",
-      className: className ?? "void-settings-menu-icon"
-    });
-  }
-  function SkillsMenuIcon({ className } = {}) {
-    return menuSvg(className, false, /* @__PURE__ */ React.createElement("path", {
-      d: "M10 7C10 8.79493 8.54493 10.25 6.75 10.25C4.95507 10.25 3.5 8.79493 3.5 7C3.5 5.20507 4.95507 3.75 6.75 3.75C8.54493 3.75 10 5.20507 10 7Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M16.3732 4.34855C16.7528 3.65641 17.7472 3.65641 18.1268 4.34855L20.5514 8.7691C20.9169 9.43553 20.4347 10.25 19.6746 10.25H14.8254C14.0653 10.25 13.5831 9.43553 13.9486 8.7691L16.3732 4.34855Z"
-    }), /* @__PURE__ */ React.createElement("rect", {
-      x: "3.64844",
-      y: "13.75",
-      width: "6.2",
-      height: "6.2",
-      rx: "2"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M20.5 17C20.5 18.7949 19.0449 20.25 17.25 20.25C15.4551 20.25 14 18.7949 14 17C14 15.2051 15.4551 13.75 17.25 13.75C19.0449 13.75 20.5 15.2051 20.5 17Z"
-    }));
-  }
-  function BotsMenuIcon({ className } = {}) {
-    return menuSvg(className, true, /* @__PURE__ */ React.createElement("path", {
-      d: "M15 13H13V9H15V13Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M19 13H17V9H19V13Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      fillRule: "evenodd",
-      clipRule: "evenodd",
-      d: "M15 4C19.4183 4 23 7.58172 23 12C23 16.4183 19.4183 20 15 20C10.5817 20 7 16.4183 7 12C7 7.58172 10.5817 4 15 4ZM15 6C11.6863 6 9 8.68629 9 12C9 15.3137 11.6863 18 15 18C18.3137 18 21 15.3137 21 12C21 8.68629 18.3137 6 15 6Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M8.99902 4C8.08913 4.68362 7.3005 5.51941 6.66895 6.46875C4.51293 7.37847 3 9.5129 3 12C3 14.487 4.51312 16.6205 6.66895 17.5303C7.30047 18.4797 8.08911 19.3153 8.99902 19.999C4.58119 19.9985 1 16.418 1 12C1 7.58205 4.58119 4.00053 8.99902 4Z"
-    }));
-  }
-  var PLUGIN_TABS = [
-    { id: "connectors", name: "Connectors", icon: ConnectorsMenuIcon },
-    { id: "skills", name: "Skills", icon: SkillsMenuIcon },
-    { id: "bots", name: "Bots", icon: BotsMenuIcon }
-  ];
-  var pendingTab = null;
-  var latchedTab = "";
-  function peekTab() {
-    return pendingTab;
-  }
-  function shellKey(local) {
-    if (pendingTab)
-      latchedTab = pendingTab;
-    return `${local ? 1 : 0}:${latchedTab}`;
-  }
-  function clearPending(tab) {
-    if (typeof tab === "string" && tab === pendingTab)
-      return;
-    pendingTab = null;
-  }
-  function pluginsDialog() {
-    return [...document.querySelectorAll('[role="dialog"]')].find((dialog) => dialog.getAttribute("data-state") === "open" && [...dialog.querySelectorAll("h1, h2")].some((heading) => heading.textContent?.trim() === "Plugins"));
-  }
-  function pillButton(tab) {
-    const name = PLUGIN_TABS.find((item) => item.id === tab)?.name;
-    if (!name)
-      return null;
-    const lists = pluginsDialog()?.querySelectorAll("[role=tablist]");
-    if (!lists)
-      return null;
-    for (const list of lists) {
-      const tabs = [...list.querySelectorAll('[role="tab"]')];
-      const labels = new Set(tabs.map((button2) => button2.textContent?.trim()));
-      if (!labels.has("Connectors") || !labels.has("Skills") || !labels.has("Bots"))
-        continue;
-      const button = tabs.find((item) => item.textContent?.trim() === name);
-      if (button instanceof HTMLElement)
-        return button;
-    }
-    return null;
-  }
-  function syncTabDom(tab, attempt = 0) {
-    if (pendingTab !== tab || attempt > 12)
-      return;
-    const button = pillButton(tab);
-    if (!button) {
-      requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
-      return;
-    }
-    if (button.getAttribute("aria-selected") === "true") {
-      pendingTab = null;
-      return;
-    }
-    button.click();
-    requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
-  }
-  function openPlugins(tab) {
-    pendingTab = tab;
-    latchedTab = tab;
-    const hook = PluginsDialogStore.usePluginsDialogStore;
-    const store = hook && typeof hook.getState === "function" ? hook.getState() : null;
-    store?.setOpen(true);
-    requestAnimationFrame(() => syncTabDom(tab));
-  }
-  function applyTab(local, state, setState) {
-    if (!local || !pendingTab)
-      return null;
-    if (pendingTab !== state)
-      setState(pendingTab);
-    return pendingTab;
-  }
-  function PluginsMenu() {
-    const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
-    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
-      icon: PluginsIcon,
-      className: "void-settings-menu-icon",
-      desktop
-    }), "Plugins"), /* @__PURE__ */ React.createElement(Content, null, PLUGIN_TABS.map((tab) => {
-      const Icon = tab.icon;
-      return /* @__PURE__ */ React.createElement(Item, {
-        key: tab.id,
-        ...accountMenuSelect(desktop, () => openPlugins(tab.id))
-      }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
-        icon: Icon,
-        className: "void-settings-menu-icon",
-        desktop
-      }), tab.name);
-    })));
-  }
-  var PLUGIN_LABELS = new Set(["Plugins", "Skills and Connectors"]);
-  var PLUGINS_HIDE_ATTR = "data-void-plugins-hide";
-  var pluginsHideObserver = null;
-  var pluginsHideRaf = 0;
-  function pluginControlLabel(el) {
-    const text = (el.innerText || "").replaceAll(/\s+/g, " ").trim();
-    if (text)
-      return text;
-    return (el.getAttribute("aria-label") || "").trim();
-  }
-  function hideSidebarPlugins() {
-    const sidebar = document.querySelector("#app-sidebar, [data-sidebar=sidebar]");
-    if (!sidebar)
-      return;
-    for (const el of sidebar.querySelectorAll("a, button")) {
-      if (el.closest("[role=menu], [role=menuitem], [data-radix-popper-content-wrapper]"))
-        continue;
-      if (!PLUGIN_LABELS.has(pluginControlLabel(el)))
-        continue;
-      const row = el.closest("[data-sidebar=menu-item]") ?? el;
-      row.setAttribute(PLUGINS_HIDE_ATTR, "1");
-      row.style.setProperty("display", "none", "important");
-    }
-  }
-  function scheduleSidebarPluginsHide() {
-    if (pluginsHideRaf)
-      return;
-    pluginsHideRaf = requestAnimationFrame(() => {
-      pluginsHideRaf = 0;
-      hideSidebarPlugins();
-    });
-  }
-  function armSidebarPluginsHide() {
-    hideSidebarPlugins();
-    if (pluginsHideObserver)
-      return;
-    pluginsHideObserver = new MutationObserver(scheduleSidebarPluginsHide);
-    pluginsHideObserver.observe(document.documentElement, { childList: true, subtree: true });
-  }
-  function stopSidebarPluginsHide() {
-    pluginsHideObserver?.disconnect();
-    pluginsHideObserver = null;
-    if (pluginsHideRaf)
-      cancelAnimationFrame(pluginsHideRaf);
-    pluginsHideRaf = 0;
-    for (const el of document.querySelectorAll(`[${PLUGINS_HIDE_ATTR}]`)) {
-      el.style.removeProperty("display");
-      el.removeAttribute(PLUGINS_HIDE_ATTR);
-    }
-  }
-  var WrappedPluginsMenu = ErrorBoundary.wrap(PluginsMenu);
-  var avatarPluginsFlyout_default = definePlugin({
-    name: NEW_NAME,
-    icon: PluginsIcon,
-    description: "Move the sidebar Plugins button into the avatar menu and expand it into Connectors, Skills, and Bots.",
-    authors: [Devs.p],
-    tags: ["navigation"],
-    enabledByDefault: true,
-    settings: settings3,
-    _renderItem: () => createElement(WrappedPluginsMenu),
-    _peekTab: () => peekTab(),
-    _shellKey: (local) => shellKey(local),
-    _clearPending: (tab) => clearPending(tab),
-    _applyTab(local, state, setState) {
-      return applyTab(local, state, setState);
-    },
-    start() {
-      armSidebarPluginsHide();
-    },
-    stop() {
-      stopSidebarPluginsHide();
-    },
-    patches: [
-      {
-        find: '"skills-and-connectors"!==',
-        replacement: {
-          match: /(\(0,\i\.jsx\)\(\i(?:\.\i)?,\{icon:.{0,180}?onClick:\(\)=>\{"skills-and-connectors")/,
-          replace: "false&&$1"
-        }
-      },
-      {
-        find: "usePluginsDialogStore.getState().setOpen(!0)",
-        noWarn: true,
-        replacement: {
-          match: /(\(0,\i\.jsx\)\(\i\.AppSidebarItem,\{icon:.{0,80}?onClick:\(\)=>\{"skills-and-connectors")/,
-          replace: "false&&$1"
-        }
-      },
-      {
-        find: 'WD_REFRESH&&{id:"skills-and-connectors"',
-        noWarn: true,
-        replacement: {
-          match: /WD_REFRESH&&\{id:"skills-and-connectors"/,
-          replace: 'WD_REFRESH&&!1&&{id:"skills-and-connectors"'
-        }
-      },
-      {
-        find: "avatar_menu_click",
-        all: true,
-        replacement: [
-          {
-            match: /(?=\(0,\i\.jsxs\)\(\i\.W,\{children:\[\(0,\i\.jsxs\)\(\i\.f,\{ref:\i,children:\[.{0,260}"user-dropdown\.help")/,
-            replace: "$self._renderItem(),"
-          },
-          {
-            match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,240}"user-dropdown\.help")/,
-            replace: "$self._renderItem(),",
-            noWarn: true
-          }
-        ]
-      },
-      {
-        find: "SkillsAndConnectorsPage:handleTabChange",
-        replacement: [
-          {
-            match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(null\),(\i)=(\i)\?\1:"skills-and-connectors"===(\i)\.page\?\6\.tab:null/,
-            replace: '[$1,$2]=(0,$3.useState)($self._peekTab()),$4=($self._applyTab($5,$1,$2)??($5?$1:"skills-and-connectors"===$6.page?$6.tab:null))'
-          },
-          {
-            match: /(\i)\)return void (\i)\((\i)\);(\i)\.replace\(\{page:"skills-and-connectors",tab:\3\}\)\}/,
-            replace: '$1)return ($self._clearPending($3),void $2($3));$4.replace({page:"skills-and-connectors",tab:$3})}'
-          },
-          {
-            match: /(\i)\[0\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\((\i),\{inDialog:!0,localTabs:\2\}\),\1\[0\]=\2,\1\[1\]=\3\):\3=\1\[1\]/,
-            replace: "$1[0]!==$self._shellKey($2)?($3=(0,$4.jsx)($5,{inDialog:!0,localTabs:$2,key:$self._shellKey($2)}),$1[0]=$self._shellKey($2),$1[1]=$3):$3=$1[1]",
-            noWarn: true
-          }
-        ]
-      },
-      {
-        find: "SkillsAndConnectorsPageContent",
-        all: true,
-        noWarn: true,
-        replacement: {
-          match: /(\i)\[(\d+)\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\(([A-Za-z_$][\w$.]*),\{inDialog:!0,localTabs:\3\}\),\1\[\2\]=\3,\1\[(\d+)\]=\4\):\4=\1\[\7\]/g,
-          replace: "$1[$2]!==$self._shellKey($3)?($4=(0,$5.jsx)($6,{inDialog:!0,localTabs:$3,key:$self._shellKey($3)}),$1[$2]=$self._shellKey($3),$1[$7]=$4):$4=$1[$7]"
-        }
-      },
-      {
-        find: '"user-dropdown.help","Help"',
-        all: true,
-        replacement: {
-          match: /(children:\[)(\i,\i,\i,\i,)(\i,\i,\i,\i\])([\s\S]{0,220}?function \i\(e\)\{return e\.toggleOpen\})/,
-          replace: "$1$2$self._renderItem(),$3$4"
-        }
-      }
-    ]
-  });
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/headerHover.css
-  registerStyle("headerHover", `/*
- * Void++, a modification for grok.com
- * Copyright (c) 2026 Void++ Contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-/* stylelint-disable no-descending-specificity */
-
-@media (width >= 48rem) {
-    [data-sidebar="sidebar"] [data-void-bots-plus],
-    [data-sidebar="sidebar"] .void-bots-plus,
-    [data-sidebar="sidebar"] button[aria-label="New bot"],
-    [data-sidebar="sidebar"] [data-void-chats-plus],
-    [data-sidebar="sidebar"] .void-chats-plus,
-    [data-sidebar="sidebar"] button[aria-label="Add project"],
-    [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]),
-    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
-        button[aria-label="New bot"],
-        button[aria-label="Group by section"],
-        button[aria-label="New project"],
-        button[aria-label="Projects options"],
-        button[aria-label="Add project"],
-        button[aria-label="All projects"],
-        button[aria-label="Chats options"],
-        button[aria-label="New chat"]
-    ) {
-        opacity: 0 !important;
-        transition: opacity 0.15s ease;
-    }
-
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-bots-plus],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-bots-plus,
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="New bot"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-chats-plus],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-chats-plus,
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="Add project"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]):is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
-    [data-sidebar="sidebar"] :has(> :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus)):is(:hover, :focus-within) > :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus),
-    [data-sidebar="sidebar"] [data-void-bots-plus]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] .void-bots-plus:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="New bot"]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] [data-void-chats-plus]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] .void-chats-plus:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="Add project"]:is(:hover, :focus-visible, [data-state="open"]),
-    [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]),
-    #app-sidebar div:has(> button[aria-expanded]):is(:hover, :focus-within) > button[aria-expanded] + span :is(
-        button[aria-label="New bot"],
-        button[aria-label="Group by section"],
-        button[aria-label="New project"],
-        button[aria-label="Projects options"],
-        button[aria-label="Add project"],
-        button[aria-label="All projects"],
-        button[aria-label="Chats options"],
-        button[aria-label="New chat"]
-    ),
-    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
-        button[aria-label="New bot"],
-        button[aria-label="Group by section"],
-        button[aria-label="New project"],
-        button[aria-label="Projects options"],
-        button[aria-label="Add project"],
-        button[aria-label="All projects"],
-        button[aria-label="Chats options"],
-        button[aria-label="New chat"]
-    ):is(:hover, :focus-visible, [data-state="open"]) {
-        opacity: 1 !important;
-    }
-}
-
-@media (width >= 48rem) and (prefers-reduced-motion: reduce) {
-    [data-sidebar="sidebar"] [data-void-bots-plus],
-    [data-sidebar="sidebar"] .void-bots-plus,
-    [data-sidebar="sidebar"] button[aria-label="New bot"],
-    [data-sidebar="sidebar"] [data-void-chats-plus],
-    [data-sidebar="sidebar"] .void-chats-plus,
-    [data-sidebar="sidebar"] button[aria-label="Add project"],
-    [data-sidebar="sidebar"] button[aria-label="All projects"],
-    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]),
-    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
-        button[aria-label="New bot"],
-        button[aria-label="Group by section"],
-        button[aria-label="New project"],
-        button[aria-label="Projects options"],
-        button[aria-label="Add project"],
-        button[aria-label="All projects"],
-        button[aria-label="Chats options"],
-        button[aria-label="New chat"]
-    ) {
-        transition: none;
-    }
-}
-`);
-
-  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/styles.css
-  registerStyle("betterSidebar", `.group.peer [data-sidebar="sidebar"] + div,
-.group.peer [data-sidebar="content"] > .grow {
-    cursor: default !important;
-}
-
-.group.peer [data-sidebar="sidebar"] + div::after {
-    background-color: transparent !important;
-}
-
-.void-sidebar-card {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.375rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-    min-width: 0;
-    flex: 1;
-}
-
-.void-sidebar-card:hover {
-    background-color: var(--surface-l2);
-}
-
-.void-sidebar-card button[data-state] {
-    pointer-events: none;
-    background-color: transparent !important;
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-.void-sidebar-info {
-    min-width: 0;
-    overflow: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .void-sidebar-card { transition: none; }
-}
-
-.void-sidebar-name,
-.void-sidebar-plan {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    user-select: none;
-}
-
-/* stylelint-disable-next-line selector-class-pattern */
-.group\\/sidebar-menu-item:hover .void-sel-wrap {
-    display: inline-flex;
-}
-`);
-
-  // src/turbopack/common/plan.ts
-  var PLAN_NAMES = {
-    SUBSCRIPTION_TIER_X_BASIC: "X Basic",
-    SUBSCRIPTION_TIER_X_PREMIUM: "X Premium",
-    SUBSCRIPTION_TIER_X_PREMIUM_PLUS: "X Premium+",
-    SUBSCRIPTION_TIER_SUPER_GROK_LITE: "SuperGrok Lite",
-    SUBSCRIPTION_TIER_GROK_PRO: "SuperGrok",
-    SUBSCRIPTION_TIER_SUPER_GROK_PLUS: "SuperGrok Plus",
-    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "SuperGrok Heavy"
-  };
-  var COMMERCE_PLAN_NAMES = {
-    SUBSCRIPTION_TIER_SUPER_GROK_LITE: "Plus",
-    SUBSCRIPTION_TIER_GROK_PRO: "Premium",
-    SUBSCRIPTION_TIER_SUPER_GROK_PLUS: "Super",
-    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "Ultra"
-  };
-  var X_SUB_NAMES = {
-    PremiumPlus: "SuperGrok",
-    Premium: "X Premium",
-    Basic: "X Basic"
-  };
-  function getPlanName(bestSubscription, xSubscriptionType, commerce = false) {
-    if (commerce && bestSubscription) {
-      const unified = COMMERCE_PLAN_NAMES[bestSubscription];
-      if (unified)
-        return unified;
-    }
-    return (bestSubscription ? PLAN_NAMES[bestSubscription] : undefined) ?? (xSubscriptionType ? X_SUB_NAMES[xSubscriptionType] : undefined) ?? "Free";
-  }
-
-  // src/turbopack/common/subscriptions.ts
-  var COMMERCE_BILLING = "BILLING_SYSTEM_COMMERCE";
-  var SubscriptionsApi = findByPropsLazy("useSubscriptions", "getSubscriptionTierName");
-  var QueryClientApi = findByPropsLazy("getQueryClient");
-  function legacyHook() {
-    const store = SubscriptionsStore.useSubscriptionsStore;
-    if (typeof store === "function" && typeof store.getState === "function") {
-      return store;
-    }
-    return null;
-  }
-  function modernHook() {
-    const hook = SubscriptionsApi.useSubscriptions;
-    return typeof hook === "function" ? hook : null;
-  }
-  function cachedSnapshot() {
-    try {
-      const client = QueryClientApi.getQueryClient?.();
-      const data = client?.getQueryCache?.().find?.({ queryKey: ["subscriptions"] })?.state?.data;
-      if (data && typeof data === "object")
-        return data;
-    } catch {}
-    return {};
-  }
-  function useSubscriptionSnapshot() {
-    const modern = modernHook();
-    if (modern)
-      return modern() ?? {};
-    const legacy = legacyHook();
-    if (legacy)
-      return legacy((state) => state) ?? {};
-    return cachedSnapshot();
-  }
-  function subscriptionIsCommerce(snapshot) {
-    const tier = snapshot?.bestSubscription;
-    if (!tier)
-      return false;
-    return !!snapshot.activeSubscriptions?.some((sub) => sub?.tier === tier && sub.billingSystem === COMMERCE_BILLING);
-  }
-  function subscriptionIsPaid(snapshot) {
-    if (!snapshot)
-      return false;
-    if (snapshot.isSubscribed)
-      return true;
-    if (snapshot.isSuperGrokUser || snapshot.isSuperGrokLiteUser || snapshot.isSuperGrokPlusUser || snapshot.isSuperGrokProUser || snapshot.isEnterpriseUser || snapshot.hasXSubscription || snapshot.isXPremiumUser)
-      return true;
-    const tier = snapshot.bestSubscription;
-    return !!tier && tier !== "SUBSCRIPTION_TIER_INVALID";
-  }
-
-  // src/plugins/betterSidebar/index.tsx
-  var logger14 = new Logger("BetterSidebar");
-  var cl5 = classNameFactory("void-sidebar-");
-  var settings4 = definePluginSettings({
-    clickToToggle: {
-      type: 3 /* BOOLEAN */,
-      description: "Click anywhere on the sidebar to toggle it.",
-      default: false
-    },
-    defaultCollapsed: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the sidebar collapsed on page load.",
-      default: false
-    },
-    botsDefaultCollapsed: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the Bots section collapsed on page load.",
-      default: true
-    },
-    chatsDefaultExpanded: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the Chats section expanded on page load.",
-      default: false
-    },
-    projectsDefaultCollapsed: {
-      type: 3 /* BOOLEAN */,
-      description: "Start with the Projects section collapsed on page load.",
-      default: false
-    },
-    batchSelect: {
-      type: 3 /* BOOLEAN */,
-      description: "Show checkboxes on conversations for bulk selection and deletion.",
-      default: true
-    },
-    titleRowHover: {
-      type: 3 /* BOOLEAN */,
-      description: "Show Bots, Chats, and Projects header actions only when hovering that section, like the expand chevron.",
-      default: true
-    },
-    chatsPlus: {
-      type: 3 /* BOOLEAN */,
-      description: "Show a plus on the Chats header that starts a new chat.",
-      default: true
-    }
-  });
-  migrateSettingsToPlugin("BetterSidebar", "SidebarHeaderHover", "titleRowHover", "chatsPlus");
-  migrateSettingsToPlugin("BetterSidebar", "BotsPlusHover", "titleRowHover", "chatsPlus");
-  var BTN_CLASS = "void-chats-plus flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary hover:bg-button-ghost-hover hover:text-fg-primary focus:outline-none focus-visible:bg-button-ghost-hover";
-  var BOTS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-bots-plus], .void-bots-plus)";
-  var CHATS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-chats-plus], .void-chats-plus)";
-  var CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
-  var PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
-  var PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
-  var botsCollapsed = null;
-  var botsCollapseObserver = null;
-  var botsCollapseTimer = null;
-  var chatsExpandObserver = null;
-  var chatsExpandTimer = null;
-  var projectsCollapseObserver = null;
-  var projectsCollapseTimer = null;
-  function releaseRosterGate() {
-    try {
-      const gates = findByProps("useBotsSectionSettled", "useBotsSectionEnabled");
-      for (const name of ["useBotsSectionSettled", "useBotsSectionEnabled"]) {
-        const fn = gates?.[name];
-        if (typeof fn !== "function" || fn.voidRoster)
-          continue;
-        const wrapped = function() {
-          return true;
-        };
-        wrapped.voidRoster = true;
-        gates[name] = wrapped;
-      }
-      const paintMod = findByProps("shouldPaintBotsSidebar");
-      const paint = paintMod?.shouldPaintBotsSidebar;
-      if (typeof paint === "function" && !paint.voidRoster) {
-        const wrapped = function() {
-          return true;
-        };
-        wrapped.voidRoster = true;
-        paintMod.shouldPaintBotsSidebar = wrapped;
-      }
-      const bots = findByProps("useBotsStore")?.useBotsStore;
-      const state = bots?.getState?.();
-      if (bots && state && !state.rosterLoaded && !(state.agents?.length > 0)) {
-        bots.setState({ rosterLoaded: true });
-        bots.setState({ rosterLoaded: false });
-      }
-    } catch (e) {
-      logger14.warn("Roster gate", e);
-    }
-  }
-  function applyHeaderHover() {
-    if (settings4.store.titleRowHover)
-      enableStyle("headerHover");
-    else
-      disableStyle("headerHover");
-  }
-  var botsUserOverride = false;
-  var botsClickAttempts = 0;
-  var lastBotsClick = 0;
-  var botsCollapseDeadline = null;
-  var botsCollapseRaf = 0;
-  function scheduleBotsCollapse() {
-    if (botsCollapseRaf)
-      return;
-    botsCollapseRaf = requestAnimationFrame(() => {
-      botsCollapseRaf = 0;
-      collapseBotsSection();
-    });
-  }
-  function wantBotsCollapsed() {
-    try {
-      return settings4.store.botsDefaultCollapsed !== false;
-    } catch {
-      return true;
-    }
-  }
-  function botsHeader() {
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!sidebar)
-      return null;
-    return [...sidebar.querySelectorAll("button[aria-expanded]")].find((btn) => (btn.innerText || "").replaceAll(/\s+/g, " ").trim() === "Bots") ?? null;
-  }
-  function onBotsPointerDown(event) {
-    if (!event.isTrusted)
-      return;
-    const header = botsHeader();
-    const target = event.target;
-    if (!header || !(target instanceof Node) || !header.contains(target))
-      return;
-    botsUserOverride = true;
-    stopBotsCollapse();
-  }
-  function collapseBotsSection() {
-    if (botsUserOverride || !wantBotsCollapsed())
-      return true;
-    const header = botsHeader();
-    if (!header)
-      return false;
-    if (header.getAttribute("aria-expanded") !== "true")
-      return false;
-    if (botsClickAttempts >= 8)
-      return false;
-    const now = Date.now();
-    if (now - lastBotsClick < 350)
-      return false;
-    botsClickAttempts++;
-    lastBotsClick = now;
-    header.click();
-    return false;
-  }
-  function useBotsCollapsed() {
-    const state = useState(() => typeof botsCollapsed === "boolean" ? botsCollapsed : wantBotsCollapsed());
-    if (typeof state[0] === "boolean")
-      botsCollapsed = state[0];
-    return state;
-  }
-  function stopBotsCollapse() {
-    botsCollapseObserver?.disconnect();
-    botsCollapseObserver = null;
-    document.removeEventListener("pointerdown", onBotsPointerDown, true);
-    if (botsCollapseTimer != null) {
-      clearInterval(botsCollapseTimer);
-      botsCollapseTimer = null;
-    }
-    if (botsCollapseDeadline != null) {
-      clearTimeout(botsCollapseDeadline);
-      botsCollapseDeadline = null;
-    }
-    if (botsCollapseRaf) {
-      cancelAnimationFrame(botsCollapseRaf);
-      botsCollapseRaf = 0;
-    }
-  }
-  function startBotsCollapse() {
-    stopBotsCollapse();
-    if (botsUserOverride || !wantBotsCollapsed())
-      return;
-    botsClickAttempts = 0;
-    lastBotsClick = 0;
-    document.addEventListener("pointerdown", onBotsPointerDown, true);
-    collapseBotsSection();
-    botsCollapseObserver = new MutationObserver(scheduleBotsCollapse);
-    botsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
-    botsCollapseTimer = setInterval(collapseBotsSection, 400);
-    botsCollapseDeadline = setTimeout(stopBotsCollapse, 12000);
-  }
-  function armBotsCollapse() {
-    startBotsCollapse();
-  }
-  function stopBotsCollapseGuard() {
-    stopBotsCollapse();
-  }
-  function resetChatsCollapsedStorage() {
-    if (!settings4.store.chatsDefaultExpanded)
-      return;
-    try {
-      localStorage.removeItem(CHATS_COLLAPSED_KEY);
-    } catch {}
-  }
-  function chatsGroup() {
-    const plus = document.querySelector(CHATS_PLUS_SEL);
-    if (plus)
-      return plus.closest("[data-sidebar=group]");
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!sidebar)
-      return null;
-    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
-      const label = (btn.getAttribute("aria-label") ?? "").trim();
-      if (label === "Chats" || label === "History")
-        return btn.closest("[data-sidebar=group]");
-    }
-    const bots = document.querySelector(BOTS_PLUS_SEL)?.closest("[data-sidebar=group]");
-    const next = bots?.nextElementSibling;
-    return next?.matches("[data-sidebar=group]") ? next : null;
-  }
-  function expandChatsSection() {
-    const group = chatsGroup();
-    if (!group)
-      return false;
-    const collapsed = group.querySelector("button[aria-expanded=false]");
-    if (!collapsed)
-      return true;
-    collapsed.click();
-    return true;
-  }
-  function stopChatsExpand() {
-    chatsExpandObserver?.disconnect();
-    chatsExpandObserver = null;
-    if (chatsExpandTimer != null) {
-      clearTimeout(chatsExpandTimer);
-      chatsExpandTimer = null;
-    }
-  }
-  function startChatsExpand() {
-    stopChatsExpand();
-    if (!settings4.store.chatsDefaultExpanded)
-      return;
-    resetChatsCollapsedStorage();
-    let done = false;
-    const tick = () => {
-      if (done)
-        return;
-      if (expandChatsSection()) {
-        done = true;
-        stopChatsExpand();
-      }
-    };
-    tick();
-    if (done)
-      return;
-    chatsExpandObserver = new MutationObserver(tick);
-    chatsExpandObserver.observe(document.documentElement, { childList: true, subtree: true });
-    chatsExpandTimer = setTimeout(() => {
-      done = true;
-      stopChatsExpand();
-    }, 1e4);
-  }
-  function resetProjectsCollapsedStorage() {
-    if (!settings4.store.projectsDefaultCollapsed)
-      return;
-    try {
-      localStorage.setItem(PROJECTS_COLLAPSED_KEY, "true");
-    } catch {}
-  }
-  function projectsGroup() {
-    const action = document.querySelector(PROJECTS_ACTION_SEL);
-    if (action)
-      return action.closest("[data-sidebar=group]");
-    const sidebar = document.querySelector("[data-sidebar=sidebar]");
-    if (!sidebar)
-      return null;
-    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
-      const label = (btn.getAttribute("aria-label") ?? "").trim();
-      if (label === "Projects")
-        return btn.closest("[data-sidebar=group]");
-    }
-    return null;
-  }
-  function collapseProjectsSection() {
-    const group = projectsGroup();
-    if (!group)
-      return false;
-    const expanded = group.querySelector("button[aria-expanded=true]");
-    if (!expanded)
-      return true;
-    expanded.click();
-    return true;
-  }
-  function stopProjectsCollapse() {
-    projectsCollapseObserver?.disconnect();
-    projectsCollapseObserver = null;
-    if (projectsCollapseTimer != null) {
-      clearTimeout(projectsCollapseTimer);
-      projectsCollapseTimer = null;
-    }
-  }
-  function startProjectsCollapse() {
-    stopProjectsCollapse();
-    if (!settings4.store.projectsDefaultCollapsed)
-      return;
-    resetProjectsCollapsedStorage();
-    let done = false;
-    const tick = () => {
-      if (done)
-        return;
-      if (collapseProjectsSection()) {
-        done = true;
-        stopProjectsCollapse();
-      }
-    };
-    tick();
-    if (done)
-      return;
-    projectsCollapseObserver = new MutationObserver(tick);
-    projectsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
-    projectsCollapseTimer = setTimeout(() => {
-      done = true;
-      stopProjectsCollapse();
-    }, 1e4);
-  }
-  function newChat(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    const native = document.querySelector('[data-testid="new-chat"]');
-    if (native) {
-      native.click();
-      return;
-    }
-    const { route, push } = RoutingStore.useRoutingStore.getState();
-    const teamId = route.teamId ?? null;
-    const { workspaceId } = route;
-    if (workspaceId) {
-      push({ page: "workspace", workspaceId, tab: "conversations", teamId });
-      const chat = ChatPageStore.useChatPageStore.getState();
-      chat.setProjectId(workspaceId);
-      chat.setConversationId(undefined);
-      return;
-    }
-    ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
-    push({ page: "main", teamId });
-  }
-  var ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
-    if (!settings4.use(["chatsPlus"]).chatsPlus)
-      return null;
-    return /* @__PURE__ */ React.createElement("button", {
-      type: "button",
-      className: BTN_CLASS,
-      "aria-label": "New chat",
-      "data-void-chats-plus": "",
-      onClick: newChat
-    }, /* @__PURE__ */ React.createElement(PlusIcon, {
-      size: 14
-    }));
-  }, null);
-  function UserCard(props) {
-    const ready = typeof SessionStore.useSession === "function";
-    const [, bump] = useState(0);
-    useEffect(() => {
-      if (ready)
-        return;
-      return onModuleLoad(() => bump((n) => n + 1));
-    }, [ready]);
-    if (!ready) {
-      const { AvatarMenu, ...rest } = props;
-      return /* @__PURE__ */ React.createElement(AvatarMenu, {
-        ...rest
-      });
-    }
-    return /* @__PURE__ */ React.createElement(UserCardBody, {
-      ...props
-    });
-  }
-  function UserCardBody({ AvatarMenu, ...rest }) {
-    const { open: open2 } = SidebarComponents.useSidebar();
-    const { user } = SessionStore.useSession();
-    const snapshot = useSubscriptionSnapshot();
-    const cardRef = useRef(null);
-    if (!open2 || !user)
-      return /* @__PURE__ */ React.createElement(AvatarMenu, {
-        ...rest
-      });
-    const forward = (e, type) => {
-      if (!e.isTrusted)
-        return;
-      cardRef.current?.querySelector("button[data-state]")?.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, button: 0, pointerId: 1, pointerType: "mouse" }));
-    };
-    return /* @__PURE__ */ React.createElement("div", {
-      ref: cardRef,
-      className: cl5("card"),
-      onPointerDown: (e) => forward(e, "pointerdown"),
-      onPointerUp: (e) => forward(e, "pointerup")
-    }, /* @__PURE__ */ React.createElement(AvatarMenu, {
-      ...rest
-    }), /* @__PURE__ */ React.createElement(Flex, {
-      flexDirection: "column",
-      justifyContent: "center",
-      gap: "0",
-      className: cl5("info")
-    }, /* @__PURE__ */ React.createElement(Text2, {
-      as: "span",
-      size: "sm",
-      weight: "medium",
-      className: cl5("name")
-    }, user.givenName ?? user.email?.split("@")[0] ?? "User"), /* @__PURE__ */ React.createElement(Text2, {
-      as: "span",
-      size: "xs",
-      color: "secondary",
-      className: cl5("plan")
-    }, getPlanName(snapshot.bestSubscription, user.xSubscriptionType, subscriptionIsCommerce(snapshot)))));
-  }
-  var selection = createSelectionStore();
-  var CONVERSATION_PAGE = "chat";
-  var isConversationRoute = (route) => route?.page === CONVERSATION_PAGE;
-  async function deleteConversations(ids) {
-    const currentConvId = ChatPageStore.useChatPageStore.getState().conversationId;
-    if (currentConvId && ids.includes(currentConvId)) {
-      ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
-    }
-    const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
-    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger14.error("Failed to delete", id, e))));
-  }
-  function SelectCheckbox({ id, route }) {
-    const enabled = settings4.use(["batchSelect"]).batchSelect;
-    if (!enabled || !id || !isConversationRoute(route))
-      return null;
-    return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
-      selection,
-      id
-    });
-  }
-  var WrappedCheckbox = ErrorBoundary.wrap(SelectCheckbox, null);
-  var betterSidebar_default = definePlugin({
-    name: "BetterSidebar",
-    icon: PanelLeftIcon,
-    description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
-    authors: [Devs.Prism, Devs.p],
-    tags: ["navigation"],
-    enabledByDefault: true,
-    settings: settings4,
-    managedStyle: "betterSidebar",
-    _ChatsPlus: () => createElement(ChatsPlus),
-    _UserCard: ErrorBoundary.wrap(UserCard),
-    _renderActionBar: ErrorBoundary.wrap(() => /* @__PURE__ */ React.createElement(SelectionActionBar, {
-      selection,
-      noun: "conversation",
-      title: "Delete conversations",
-      onDelete: deleteConversations
-    }), null),
-    _wrapCheckbox(item, id, route) {
-      return createElement(Fragment, null, createElement(WrappedCheckbox, { id, route }), item);
-    },
-    _wrapSidebarClick(onClick, id, route) {
-      return (e) => {
-        if (id && settings4.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
-          e.preventDefault();
-          e.stopPropagation();
-          selection.toggle(id);
-          return;
-        }
-        onClick?.(e);
-      };
-    },
-    _defaultOpen() {
-      return !settings4.store.defaultCollapsed;
-    },
-    _useBotsCollapsed: useBotsCollapsed,
-    _chatsCollapsedInit() {
-      resetChatsCollapsedStorage();
-      return false;
-    },
-    _projectsCollapsedInit() {
-      resetProjectsCollapsedStorage();
-      return true;
-    },
-    _projectsAutoExpand() {
-      return !settings4.store.projectsDefaultCollapsed;
-    },
-    _onSidebarClick() {
-      if (!settings4.store.clickToToggle)
-        return;
-      return (e) => {
-        const target = e.target;
-        if (target.closest("button,a,input,[role=button],[data-sidebar=trigger],[data-sidebar=footer]"))
-          return;
-        e.currentTarget.closest("[data-state]")?.querySelector("[data-sidebar=trigger]")?.click();
-      };
-    },
-    start() {
-      selection.clear();
-      applyHeaderHover();
-      releaseRosterGate();
-      resetChatsCollapsedStorage();
-      resetProjectsCollapsedStorage();
-      startBotsCollapse();
-      startChatsExpand();
-      startProjectsCollapse();
-    },
-    onSettingsChange: applyHeaderHover,
-    stop() {
-      selection.clear();
-      disableStyle("headerHover");
-      stopBotsCollapse();
-      stopChatsExpand();
-      stopProjectsCollapse();
-    },
-    patches: [
-      {
-        find: 'avatarSize:"md",accountInfoSlot:',
-        replacement: {
-          match: /\(0,(\i)\.jsx\)\((\i)\.Z,\{expanded:!0,/,
-          replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.Z,expanded:!0,"
-        }
-      },
-      {
-        find: "AvatarDropdownMenu,{expanded:",
-        noWarn: true,
-        replacement: {
-          match: /\(0,(\i)\.jsx\)\((\i)\.AvatarDropdownMenu,\{/,
-          replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.AvatarDropdownMenu,"
-        }
-      },
-      {
-        find: "useSidebar must be used within a SidebarProvider",
-        all: true,
-        group: true,
-        replacement: [
-          {
-            match: /\{defaultOpen:(\i),open:/,
-            replace: "{defaultOpen:$1=$self._defaultOpen(),open:"
-          },
-          {
-            match: /data-sidebar":"sidebar",(?!onClick:)/,
-            replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),'
-          }
-        ]
-      },
-      {
-        find: '"Editing actions","Editing actions"',
-        all: true,
-        replacement: [
-          {
-            match: /=(\(0,\i\.jsx\)\(\i,\{title:\i,editing:\i,[^}]{0,80}?validationErrorMessage:\i[^}]{0,40}?\}\))/,
-            replace: "=$self._wrapCheckbox($1,arguments[0].id,arguments[0].route)"
-          },
-          {
-            match: /onClick:(\i),onDoubleClick:/g,
-            replace: "onClick:$self._wrapSidebarClick($1,arguments[0].id,arguments[0].route),onDoubleClick:"
-          },
-          {
-            match: /\(0,(\i)\.handleIsolateClick\)\((\i)\),(\i)\?\.\(\2\)/,
-            replace: "(0,$1.handleIsolateClick)($2),$self._wrapSidebarClick($3,arguments[0].id,arguments[0].route)?.($2)",
-            noWarn: true
-          }
-        ]
-      },
-      {
-        find: '"Editing actions","Editing actions"',
-        all: true,
-        noWarn: true,
-        replacement: {
-          match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
-          replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4"
-        }
-      },
-      {
-        find: '"sidebar-expand","Expand"',
-        replacement: [
-          {
-            match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
-            replace: "$self._renderActionBar(),$&",
-            noWarn: true
-          },
-          {
-            match: /\(0,\i\.jsx\)\(\i,\{title:\i\("sidebar-chats","Chats"\)/,
-            replace: "$self._renderActionBar(),$&"
-          }
-        ]
-      },
-      {
-        find: '"sidebar.new-bot-btn.aria-label","New bot"',
-        replacement: [
-          {
-            match: /\(0,(\i)\.(\i)\)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","(hover:bg-button-ghost-hover hover:text-(?:fg-)?primary)","(focus:outline-none focus-visible:bg-button-ghost-hover)"\)/,
-            replace: '(0,$1.$2)("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","$3","$4")'
-          },
-          {
-            match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
-            replace: '$&,"data-void-bots-plus":""'
-          }
-        ]
-      },
-      {
-        find: '"sidebar-chats","Chats"',
-        all: true,
-        replacement: [
-          {
-            match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-            replace: "$1,action:$self._ChatsPlus()",
-            noWarn: true
-          },
-          {
-            match: /(\i\("sidebar-chats","Chats"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-            replace: "$1,action:$self._ChatsPlus()"
-          }
-        ]
-      },
-      {
-        find: '"sidebar.section-title","Bots"',
-        all: true,
-        replacement: {
-          match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,(?:\i\.useLocalStorage|\i\.\i)\)\("sidebar-bots-unassigned-collapsed")/,
-          replace: "$self._useBotsCollapsed()"
-        }
-      },
-      {
-        find: "sidebar-history-collapsed",
-        replacement: {
-          match: /((?:useLocalStorage\)|\(0,\i\.\i\)))\("sidebar-history-collapsed",!1,!1\)/,
-          replace: '$1("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)'
-        }
-      },
-      {
-        find: "sidebar-projects-collapsed",
-        group: true,
-        replacement: [
-          {
-            match: /((?:useLocalStorage\)|\(0,\i\.\i\)))\("sidebar-projects-collapsed",!1,!1\)/,
-            replace: '$1("sidebar-projects-collapsed",$self._projectsCollapsedInit(),!1)'
-          },
-          {
-            match: /!(\i)\.current&&(\i)&&\((\i)\.length>0\|\|(\i)\.length>0\)&&\(\1\.current=!0,(\i)\(!1\)\)/,
-            replace: "!$1.current&&$2&&($3.length>0||$4.length>0)&&($1.current=!0,$self._projectsAutoExpand()&&$5(!1))"
-          }
-        ]
-      },
-      {
-        find: "enterDistance:8,collapsed:",
-        noWarn: true,
-        replacement: {
-          match: /\i\?\(0,(\i)\.jsx\)\((\i),\{enterDistance:8,collapsed:(\i),onToggleCollapsed:(\i),activeProjectId:(\i),expandedProjectIds:(\i),onToggleProjectExpanded:(\i)\}\):null/,
-          replace: "(0,$1.jsx)($2,{enterDistance:8,collapsed:$3,onToggleCollapsed:$4,activeProjectId:$5,expandedProjectIds:$6,onToggleProjectExpanded:$7})"
-        }
-      },
-      {
-        find: "useBotsSectionEnabled)();return",
-        noWarn: true,
-        replacement: {
-          match: /useBotsSectionEnabled\)\(\);return\(\(0,(\i)\.useBotsBootstrap\)\((\i)\),\2\)\?/,
-          replace: "useBotsSectionEnabled)();return((0,$1.useBotsBootstrap)($2),!0)?"
-        }
-      },
-      {
-        find: "shouldPaintBotsSidebar)({hasBots:",
-        noWarn: true,
-        replacement: {
-          match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
-          replace: ""
-        }
-      },
-      {
-        find: "teamSeatEntitled:",
-        all: true,
-        replacement: {
-          match: /if\(!\(0,\i(?:\.\i)?\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
-          replace: ""
-        }
-      },
-      {
-        find: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
-        noWarn: true,
-        replacement: {
-          match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
-          replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null"
-        }
-      },
-      {
-        find: "file-tree.row-actions",
-        all: true,
-        replacement: {
-          match: /\{type:(\i(?:\.\i)?),data:(\i)\}:void 0,onClick:(\i),onDoubleClick:([\s\S]{0,2500}?children:\[)(\(0,\i\.jsx\)\(\i\.\$\.ItemLabel)/,
-          replace: '{type:$1,data:$2}:void 0,onClick:$self._wrapSidebarClick($3,$2,{page:"chat"}),onDoubleClick:$4$self._wrapCheckbox(null,$2,{page:"chat"}),$5'
-        }
-      },
-      {
-        find: 'sectionId:"recent"',
-        all: true,
-        replacement: {
-          match: /sectionId:"recent",children:\[/,
-          replace: 'sectionId:"recent",children:[$self._renderActionBar(),'
-        }
-      }
-    ]
-  });
-
   // src/plugins/_core/fixChrome.chrome/index.ts
   var fixChrome_default = definePlugin({
     name: "FixChrome",
@@ -7450,7 +6142,7 @@ button .void-info-hint {
 `);
 
   // src/api/Themes.ts
-  var logger15 = new Logger("Themes", "#c6a0f6");
+  var logger13 = new Logger("Themes", "#c6a0f6");
   function themeStyleId(url) {
     let hash = 0;
     for (let i = 0;i < url.length; i++) {
@@ -7540,7 +6232,7 @@ button .void-info-hint {
     };
     registerDisabledStyle(themeStyleId(url), css);
     setThemes([...getThemes(), theme]);
-    logger15.info(`Added theme "${theme.name}" from ${url}`);
+    logger13.info(`Added theme "${theme.name}" from ${url}`);
     return theme;
   }
   function addLocalTheme(name, css) {
@@ -7561,7 +6253,7 @@ button .void-info-hint {
     };
     registerDisabledStyle(themeStyleId(id), css);
     setThemes([...getThemes(), theme]);
-    logger15.info(`Added local theme "${theme.name}"`);
+    logger13.info(`Added local theme "${theme.name}"`);
     return theme;
   }
   function updateLocalTheme(url, data) {
@@ -7608,14 +6300,14 @@ button .void-info-hint {
     try {
       const resp = await fetchExternal(url);
       if (!resp.ok) {
-        logger15.warn(`Failed to fetch theme CSS (${resp.status}):`, url);
+        logger13.warn(`Failed to fetch theme CSS (${resp.status}):`, url);
         return;
       }
       if (!isThemeStillActive(url))
         return;
       css = await resp.text();
     } catch (e) {
-      logger15.warn("Failed to fetch theme CSS:", url, e);
+      logger13.warn("Failed to fetch theme CSS:", url, e);
       return;
     }
     if (!isThemeStillActive(url))
@@ -7647,7 +6339,7 @@ button .void-info-hint {
     }));
     for (const [i, result] of results.entries()) {
       if (result.status === "rejected") {
-        logger15.warn(`Failed to load theme "${remote[i].name}":`, result.reason);
+        logger13.warn(`Failed to load theme "${remote[i].name}":`, result.reason);
       }
     }
   }
@@ -7754,10 +6446,10 @@ button .void-info-hint {
 `);
 
   // src/components/settings/CssEditor.tsx
-  var cl6 = classNameFactory("void-css-");
+  var cl5 = classNameFactory("void-css-");
   var TOKEN = /\/\*[\s\S]*?\*\/|@[\w-]+|"[^"]*"|'[^']*'|#[\da-fA-F]{3,8}|[\d.]+(?:px|em|rem|%|vh|vw|s|ms|deg|fr|ch)?|[\w-]+|[{}:;,()!]/g;
   function span(cls, text) {
-    return `<span class="${cl6(cls)}">${escapeHtml(text)}</span>`;
+    return `<span class="${cl5(cls)}">${escapeHtml(text)}</span>`;
   }
   function highlightCss(css) {
     let inBlock = 0;
@@ -7867,13 +6559,13 @@ button .void-info-hint {
       });
     }, [onChange]);
     return /* @__PURE__ */ React.createElement("div", {
-      className: classes(cl6("wrap"), className)
+      className: classes(cl5("wrap"), className)
     }, /* @__PURE__ */ React.createElement("pre", {
       ref: highlightRef,
-      className: cl6("highlight"),
+      className: cl5("highlight"),
       "aria-hidden": "true"
     }), /* @__PURE__ */ React.createElement("textarea", {
-      className: cl6("input"),
+      className: cl5("input"),
       value,
       placeholder,
       onChange: (e) => onChange(e.target.value),
@@ -7887,7 +6579,7 @@ button .void-info-hint {
   }
 
   // src/components/settings/tabs/CustomCSSTab.tsx
-  var cl7 = classNameFactory("void-css-");
+  var cl6 = classNameFactory("void-css-");
   var STYLE_ID = "void-custom-css";
   function setCustomCSSEnabled(enabled) {
     updateSettingsPluginData({ customCSSEnabled: enabled });
@@ -7922,7 +6614,7 @@ button .void-info-hint {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "1rem",
-      className: classes(cl7("root"), "void-tab-root")
+      className: classes(cl6("root"), "void-tab-root")
     }, /* @__PURE__ */ React.createElement(SettingsRow, {
       action: /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: enabled,
@@ -8227,34 +6919,34 @@ button .void-info-hint {
 `);
 
   // src/components/settings/BaseCard.tsx
-  var cl8 = classNameFactory("void-card-");
+  var cl7 = classNameFactory("void-card-");
   function BaseCard({ className, name, nameClassName, icon, badges, description, controls, footer }) {
     return /* @__PURE__ */ React.createElement(Card, {
-      className: classes(cl8("root"), className)
+      className: classes(cl7("root"), className)
     }, /* @__PURE__ */ React.createElement("div", {
-      className: cl8("body")
+      className: cl7("body")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       justifyContent: "space-between",
       gap: "0.5rem"
     }, /* @__PURE__ */ React.createElement("div", {
-      className: classes(cl8("name"), nameClassName)
+      className: classes(cl7("name"), nameClassName)
     }, icon != null && /* @__PURE__ */ React.createElement("span", {
-      className: cl8("icon")
+      className: cl7("icon")
     }, icon), /* @__PURE__ */ React.createElement(Tooltip, null, /* @__PURE__ */ React.createElement(TooltipTrigger, {
       asChild: true
     }, /* @__PURE__ */ React.createElement("span", {
-      className: cl8("title")
+      className: cl7("title")
     }, name)), /* @__PURE__ */ React.createElement(TooltipContent, null, name)), badges), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.375rem",
-      className: cl8("controls")
+      className: cl7("controls")
     }, controls)), description && /* @__PURE__ */ React.createElement("div", {
-      className: cl8("desc")
+      className: cl7("desc")
     }, description)), /* @__PURE__ */ React.createElement("div", {
-      className: cl8("separator")
+      className: cl7("separator")
     }), /* @__PURE__ */ React.createElement("div", {
-      className: cl8("footer")
+      className: cl7("footer")
     }, footer));
   }
 
@@ -8329,7 +7021,7 @@ button .void-info-hint {
   }
 
   // src/components/settings/PluginCard.tsx
-  var cl9 = classNameFactory("void-plugin-card-");
+  var cl8 = classNameFactory("void-plugin-card-");
   function PluginCard({ name, onSettings, onReload }) {
     const plugin = plugins[name];
     const { icon: Icon } = plugin;
@@ -8355,7 +7047,7 @@ button .void-info-hint {
       dispatch("pluginStar");
     };
     return /* @__PURE__ */ React.createElement(BaseCard, {
-      className: classes(plugin.required && cl9("required"), crashed && cl9("crashed")),
+      className: classes(plugin.required && cl8("required"), crashed && cl8("crashed")),
       name,
       icon: Icon ? /* @__PURE__ */ React.createElement(Icon, {
         size: 14
@@ -8365,14 +7057,14 @@ button .void-info-hint {
       badges: /* @__PURE__ */ React.createElement(React.Fragment, null, crashed && /* @__PURE__ */ React.createElement(TooltipIcon, {
         icon: TriangleAlert,
         tooltip: "This plugin failed to start",
-        className: cl9("crashed-icon")
+        className: cl8("crashed-icon")
       }), plugin.required && /* @__PURE__ */ React.createElement(TooltipIcon, {
         icon: CircleAlertIcon,
         tooltip: "This plugin is required for Void++ to work",
-        className: cl9("required-icon")
+        className: cl8("required-icon")
       }), /* @__PURE__ */ React.createElement(PluginBadges, {
         plugin,
-        className: cl9("badge")
+        className: cl8("badge")
       }), isNewPlugin(name) && /* @__PURE__ */ React.createElement(Badge, {
         variant: "accent"
       }, "New")),
@@ -8380,19 +7072,19 @@ button .void-info-hint {
       controls: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(IconButton, {
         icon: starred ? StarFilledIcon : StarIcon,
         label: starred ? "Remove from favorites" : "Add to favorites",
-        className: classes(cl9("star"), starred && cl9("star-active")),
+        className: classes(cl8("star"), starred && cl8("star-active")),
         onClick: handleStar
       }), !plugin.required && /* @__PURE__ */ React.createElement(IconButton, {
         icon: pinned ? PinFilledIcon : PinIcon,
         label: pinned ? "Unpin from top" : "Pin to top",
-        className: classes(cl9("pin"), pinned && cl9("pin-active")),
+        className: classes(cl8("pin"), pinned && cl8("pin-active")),
         onClick: handlePin
       }), hasVisibleSettings(plugin) && /* @__PURE__ */ React.createElement(Tooltip, null, /* @__PURE__ */ React.createElement(TooltipTrigger, {
         asChild: true
       }, /* @__PURE__ */ React.createElement(IconButton, {
         icon: Settings2Icon,
         label: "config",
-        className: cl9("settings"),
+        className: cl8("settings"),
         onClick: () => onSettings(name)
       })), /* @__PURE__ */ React.createElement(TooltipContent, null, "config")), /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: enabled,
@@ -8515,23 +7207,23 @@ button .void-info-hint {
 `);
 
   // src/components/settings/SettingField.tsx
-  var cl10 = classNameFactory("void-setting-");
-  function usePluginSetting(pluginName2, id, setting) {
-    const resolve = () => (Settings.plugins[pluginName2] ?? {})[id] ?? resolveDefault(setting);
+  var cl9 = classNameFactory("void-setting-");
+  function usePluginSetting(pluginName, id, setting) {
+    const resolve = () => (Settings.plugins[pluginName] ?? {})[id] ?? resolveDefault(setting);
     const [value, setValue] = useState(resolve);
     useEffect(() => {
-      const path = pluginPath(pluginName2, id);
+      const path = pluginPath(pluginName, id);
       const listener = () => setValue(resolve());
       SettingsStore3.addChangeListener(path, listener);
       return () => SettingsStore3.removeChangeListener(path, listener);
-    }, [pluginName2, id]);
+    }, [pluginName, id]);
     const update = useCallback((val) => {
       setValue(val);
-      mergePluginSettings(pluginName2, { [id]: val });
+      mergePluginSettings(pluginName, { [id]: val });
       setting.onChange?.(val);
       if (setting.restartNeeded)
         dispatch("reloadNeeded");
-    }, [id, pluginName2, setting]);
+    }, [id, pluginName, setting]);
     return [value, update];
   }
   function SettingLabel({ id, setting }) {
@@ -8549,8 +7241,8 @@ button .void-info-hint {
       setting
     }), children);
   }
-  var BooleanField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var BooleanField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     return /* @__PURE__ */ React.createElement(SettingsRow, {
       action: /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: !!value,
@@ -8561,8 +7253,8 @@ button .void-info-hint {
       setting
     }));
   };
-  var SelectField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var SelectField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     const { options } = setting;
     const valueMap = useMemo(() => new Map(options.map((o) => [String(o.value), o.value])), [options]);
     return /* @__PURE__ */ React.createElement(SettingsRow, {
@@ -8570,7 +7262,7 @@ button .void-info-hint {
         value: String(value ?? ""),
         onValueChange: (v) => update(valueMap.get(v) ?? v)
       }, /* @__PURE__ */ React.createElement(SelectTrigger, null, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, {
-        className: cl10("select-content")
+        className: cl9("select-content")
       }, options.map((o) => /* @__PURE__ */ React.createElement(SelectItem, {
         key: String(o.value),
         value: String(o.value)
@@ -8580,8 +7272,8 @@ button .void-info-hint {
       setting
     }));
   };
-  var SliderField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var SliderField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     const { min, max } = setting;
     const n = typeof value === "number" ? value : min;
     const pct = max === min ? 100 : (n - min) / (max - min) * 100;
@@ -8590,17 +7282,17 @@ button .void-info-hint {
       setting
     }, /* @__PURE__ */ React.createElement(Flex, {
       gap: "0.75rem",
-      className: cl10("slider-row")
+      className: cl9("slider-row")
     }, /* @__PURE__ */ React.createElement("div", {
-      className: cl10("slider-wrap")
+      className: cl9("slider-wrap")
     }, /* @__PURE__ */ React.createElement("div", {
-      className: cl10("slider-rail"),
+      className: cl9("slider-rail"),
       "aria-hidden": "true"
     }, /* @__PURE__ */ React.createElement("div", {
-      className: cl10("slider-fill"),
+      className: cl9("slider-fill"),
       style: { width: `${pct}%` }
     }), /* @__PURE__ */ React.createElement("div", {
-      className: cl10("slider-thumb"),
+      className: cl9("slider-thumb"),
       style: { left: `${pct}%` }
     })), /* @__PURE__ */ React.createElement("input", {
       type: "range",
@@ -8613,26 +7305,26 @@ button .void-info-hint {
         if (!Number.isNaN(v))
           update(v);
       },
-      className: cl10("slider"),
+      className: cl9("slider"),
       "aria-valuemin": min,
       "aria-valuemax": max,
       "aria-valuenow": n
     })), /* @__PURE__ */ React.createElement(Text2, {
       size: "sm",
       color: "secondary",
-      className: cl10("slider-value")
+      className: cl9("slider-value")
     }, n)));
   };
-  var ComponentField = ({ setting, pluginName: pluginName2 }) => {
-    const [, update] = usePluginSetting(pluginName2, "component", setting);
+  var ComponentField = ({ setting, pluginName }) => {
+    const [, update] = usePluginSetting(pluginName, "component", setting);
     const Comp = setting.component;
     return /* @__PURE__ */ React.createElement(Comp, {
       setValue: update,
       option: setting
     });
   };
-  var NumberField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var NumberField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     return /* @__PURE__ */ React.createElement(LabeledField, {
       id,
       setting
@@ -8644,11 +7336,11 @@ button .void-info-hint {
         if (!isNaN(n))
           update(n);
       },
-      className: cl10("number-input")
+      className: cl9("number-input")
     }));
   };
-  var BigIntField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var BigIntField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     return /* @__PURE__ */ React.createElement(LabeledField, {
       id,
       setting
@@ -8664,11 +7356,11 @@ button .void-info-hint {
           update(BigInt(raw));
         } catch {}
       },
-      className: cl10("number-input")
+      className: cl9("number-input")
     }));
   };
-  var StringField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var StringField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     return /* @__PURE__ */ React.createElement(LabeledField, {
       id,
       setting
@@ -8677,7 +7369,7 @@ button .void-info-hint {
       value: String(value ?? ""),
       onChange: (e) => update(e.target.value),
       placeholder: setting.placeholder,
-      className: cl10("string-input")
+      className: cl9("string-input")
     }));
   };
   var FIELD_MAP = {
@@ -8690,14 +7382,14 @@ button .void-info-hint {
     [0 /* STRING */]: StringField,
     [7 /* CUSTOM */]: null
   };
-  function SettingField({ id, setting, pluginName: pluginName2 }) {
+  function SettingField({ id, setting, pluginName }) {
     const Field = FIELD_MAP[setting.type];
     if (!Field)
       return null;
     return /* @__PURE__ */ React.createElement(Field, {
       id,
       setting,
-      pluginName: pluginName2
+      pluginName
     });
   }
 
@@ -8751,7 +7443,7 @@ button .void-info-hint {
   }
 
   // src/components/settings/tabs/PluginDialog.tsx
-  var cl11 = classNameFactory("void-plugin-dialog-");
+  var cl10 = classNameFactory("void-plugin-dialog-");
   function PluginDialog({ plugin, onClose }) {
     const entries = useMemo(() => Object.entries(plugin.settings?.def ?? {}).filter(isVisibleSetting), [plugin.settings?.def]);
     const [resetOpen, setResetOpen] = useState(false);
@@ -8771,18 +7463,18 @@ button .void-info-hint {
       label: "Authors"
     }, /* @__PURE__ */ React.createElement(Paragraph, null, plugin.authors.join(", "))), /* @__PURE__ */ React.createElement(DialogField, {
       label: "Settings",
-      className: cl11("settings")
+      className: cl10("settings")
     }, entries.length ? /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.75rem",
-      className: cl11("settings-list")
+      className: cl10("settings-list")
     }, entries.map(([key, setting]) => /* @__PURE__ */ React.createElement(SettingField, {
       key,
       id: key,
       setting,
       pluginName: plugin.name
     }))) : /* @__PURE__ */ React.createElement(Paragraph, null, "No configurable settings.")), !!entries.length && /* @__PURE__ */ React.createElement(DialogFooter, {
-      className: cl11("footer")
+      className: cl10("footer")
     }, /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
       size: "sm",
@@ -8821,7 +7513,7 @@ button .void-info-hint {
   }
 
   // src/components/settings/tabs/PluginsTab.tsx
-  var cl12 = classNameFactory("void-plugins-");
+  var cl11 = classNameFactory("void-plugins-");
   var FILTER_OPTIONS = [
     { value: "all", label: "All" },
     { value: "enabled", label: "Enabled" },
@@ -8954,15 +7646,15 @@ button .void-info-hint {
     const filteredRequired = useFiltered(tabRequired, search2, getPluginKey);
     const dialogPlugin = dialogName ? plugins[dialogName] : null;
     const hasResults = filteredUser.length > 0 || filteredRequired.length > 0;
-    const onReload = useCallback((pluginName2) => {
+    const onReload = useCallback((pluginName) => {
       const initialStates = initialStatesRef.current;
       if (!initialStates)
         return;
       const changed = changedPluginsRef.current;
-      if (isPluginEnabled(pluginName2) === initialStates.get(pluginName2))
-        changed.delete(pluginName2);
+      if (isPluginEnabled(pluginName) === initialStates.get(pluginName))
+        changed.delete(pluginName);
       else
-        changed.add(pluginName2);
+        changed.add(pluginName);
       if (!changed.size) {
         setNeedsReload(false);
         setShowReload(false);
@@ -8980,26 +7672,26 @@ button .void-info-hint {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "1rem",
-      className: classes(cl12("root"), "void-tab-root")
+      className: classes(cl11("root"), "void-tab-root")
     }, needsReload && !showReload && /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
-      className: cl12("reload-banner")
+      className: cl11("reload-banner")
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
-      className: cl12("reload-text")
+      className: cl11("reload-text")
     }, "Reload the page to apply plugin changes."), /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       onClick: () => location.reload()
     }, "Reload")), /* @__PURE__ */ React.createElement(Flex, {
-      className: cl12("tabs"),
+      className: cl11("tabs"),
       gap: "0.125rem",
       flexWrap: "wrap"
     }, visibleTabs.map((t) => /* @__PURE__ */ React.createElement(Button, {
       key: t.id,
       variant: "tertiary",
       size: "sm",
-      className: classes(cl12("tab"), category === t.id && cl12("tab-active")),
+      className: classes(cl11("tab"), category === t.id && cl11("tab-active")),
       onClick: () => setCategory(t.id)
     }, t.label))), /* @__PURE__ */ React.createElement(SearchFilterBar, {
       placeholder: `Search ${tabUser.length + tabRequired.length} plugins...`,
@@ -9011,7 +7703,7 @@ button .void-info-hint {
     }), /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "1rem",
-      className: classes(cl12("list"), "alpha-mask-y")
+      className: classes(cl11("list"), "alpha-mask-y")
     }, filteredUser.length > 0 && /* @__PURE__ */ React.createElement(Grid, {
       columns: "repeat(2, 1fr)"
     }, filteredUser.map((n) => /* @__PURE__ */ React.createElement(ErrorBoundary, {
@@ -9089,20 +7781,20 @@ button .void-info-hint {
 `);
 
   // src/components/settings/ThemeCard.tsx
-  var logger16 = new Logger("ThemeCard");
-  var cl13 = classNameFactory("void-theme-card-");
+  var logger14 = new Logger("ThemeCard");
+  var cl12 = classNameFactory("void-theme-card-");
   function ThemeCard({ theme, onRemove, onToggle, onEdit }) {
     const handleToggle = () => {
       if (theme.enabled)
         disableTheme(theme.url);
       else
-        enableTheme(theme.url).catch((e) => logger16.error("Failed to enable theme:", e));
+        enableTheme(theme.url).catch((e) => logger14.error("Failed to enable theme:", e));
       onToggle();
     };
     const SourceIcon = theme.local ? FolderIcon : GlobeIcon;
     return /* @__PURE__ */ React.createElement(BaseCard, {
       name: theme.name ?? theme.url,
-      nameClassName: cl13("name"),
+      nameClassName: cl12("name"),
       icon: /* @__PURE__ */ React.createElement(PaletteIcon, {
         size: 14
       }),
@@ -9115,7 +7807,7 @@ button .void-info-hint {
         icon: CopyIcon,
         label: "Copy URL",
         onClick: () => {
-          copyToClipboard(theme.url).catch((e) => logger16.error("Failed to copy URL:", e));
+          copyToClipboard(theme.url).catch((e) => logger14.error("Failed to copy URL:", e));
         }
       }), /* @__PURE__ */ React.createElement(IconButton, {
         icon: Trash2Icon,
@@ -9127,7 +7819,7 @@ button .void-info-hint {
       })),
       footer: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SourceIcon, {
         size: 12,
-        className: cl13("footer-icon")
+        className: cl12("footer-icon")
       }), /* @__PURE__ */ React.createElement("div", {
         className: "void-card-author"
       }, theme.author ?? " "))
@@ -9135,7 +7827,7 @@ button .void-info-hint {
   }
 
   // src/components/settings/tabs/ThemesTab.tsx
-  var cl14 = classNameFactory("void-themes-");
+  var cl13 = classNameFactory("void-themes-");
   var FILTER_OPTIONS2 = [
     { value: "all", label: "All" },
     { value: "enabled", label: "Enabled" },
@@ -9185,9 +7877,9 @@ button .void-info-hint {
       }
     })), error && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
-      className: cl14("add-error")
+      className: cl13("add-error")
     }, error), /* @__PURE__ */ React.createElement(DialogActions, {
-      className: cl14("local-footer"),
+      className: cl13("local-footer"),
       onCancel: onClose,
       confirmLabel: loading ? "Importing..." : "Import",
       onConfirm: handleImport,
@@ -9226,17 +7918,17 @@ button .void-info-hint {
       onChange: (e) => setName(e.target.value)
     })), /* @__PURE__ */ React.createElement(DialogField, {
       label: "CSS",
-      className: cl14("local-css-field")
+      className: cl13("local-css-field")
     }, /* @__PURE__ */ React.createElement(CssEditor, {
-      className: cl14("local-editor"),
+      className: cl13("local-editor"),
       value: css,
       onChange: setCss,
       placeholder: "Paste your CSS here..."
     })), error && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
-      className: cl14("add-error")
+      className: cl13("add-error")
     }, error), /* @__PURE__ */ React.createElement(DialogActions, {
-      className: cl14("local-footer"),
+      className: cl13("local-footer"),
       onCancel: onClose,
       confirmLabel: theme ? "Save" : "Create",
       onConfirm: handleSave,
@@ -9419,10 +8111,10 @@ button .void-info-hint {
     [4 /* WARNING */]: "warning",
     [5 /* LOADING */]: "loading"
   };
-  var logger17 = new Logger("Notifications");
+  var logger15 = new Logger("Notifications");
   function showToast(message, type = 0 /* MESSAGE */, options) {
     if (!Toaster.toast) {
-      logger17.warn("showToast called before Toaster initialized, discarding:", message);
+      logger15.warn("showToast called before Toaster initialized, discarding:", message);
       return -1;
     }
     const { toast } = Toaster;
@@ -9434,9 +8126,9 @@ button .void-info-hint {
   }
 
   // src/plugins/experiments/index.tsx
-  var cl15 = classNameFactory("void-experiments-");
+  var cl14 = classNameFactory("void-experiments-");
   var NEW_FLAG_TTL = 24 * 60 * 60 * 1000;
-  var settings5 = definePluginSettings({
+  var settings3 = definePluginSettings({
     toastNotifications: {
       type: 3 /* BOOLEAN */,
       description: "Show a toast when experiment flags change.",
@@ -9468,16 +8160,16 @@ button .void-info-hint {
       return;
     const message = parts.join(`
 `);
-    if (settings5.store.toastNotifications)
+    if (settings3.store.toastNotifications)
       showToast(message, 3 /* INFO */);
-    if (settings5.store.browserNotifications)
+    if (settings3.store.browserNotifications)
       sendBrowserNotification("Grok Experiments", message);
   }
   function syncKnownFlags(config) {
     const booleanKeys = getBooleanKeys(config);
     if (!booleanKeys.length)
       return;
-    const existing = settings5.plain.knownFlags;
+    const existing = settings3.plain.knownFlags;
     const firstRun = existing == null;
     const known = { ...existing };
     const now = Date.now();
@@ -9509,13 +8201,13 @@ button .void-info-hint {
     }
     lastConfigSnapshot = Object.fromEntries(booleanKeys.map((k) => [k, !!config[k]]));
     if (changed) {
-      settings5.store.knownFlags = { ...known };
+      settings3.store.knownFlags = { ...known };
     }
     if (!firstRun)
       notifyChanges(newFlags, removedFlags, flipped);
   }
   function isNewFlag(key) {
-    const seen = settings5.plain.knownFlags?.[key];
+    const seen = settings3.plain.knownFlags?.[key];
     if (seen == null)
       return false;
     return Date.now() - seen < NEW_FLAG_TTL;
@@ -9568,13 +8260,13 @@ button .void-info-hint {
       })
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, prettifyKey(flagKey), isNew && /* @__PURE__ */ React.createElement(Badge, {
       variant: "accent",
-      className: cl15("badge")
+      className: cl14("badge")
     }, "New"), decodedKey && /* @__PURE__ */ React.createElement(Badge, {
-      className: cl15("badge")
+      className: cl14("badge")
     }, "Encrypted"), isOverridden && /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
       as: "span",
-      className: cl15("modified")
+      className: cl14("modified")
     }, "(modified)")), /* @__PURE__ */ React.createElement(SettingsDescription, null, decodedKey ?? flagKey));
   }
   function ExperimentsTab() {
@@ -9611,36 +8303,36 @@ button .void-info-hint {
     }, /* @__PURE__ */ React.createElement(SectionHeader, {
       title: "Experiments",
       description: "Toggle unreleased Grok features. These are experimental and may break. New flags are marked when they appear.",
-      className: cl15("section")
+      className: cl14("section")
     }), /* @__PURE__ */ React.createElement(Card, {
       variant: "ghost",
-      className: cl15("warning")
+      className: cl14("warning")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       justifyContent: "space-between",
       gap: "0.75rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
       size: "xs",
-      className: cl15("warning-text")
+      className: cl14("warning-text")
     }, "Only enable flags you understand. Changing the wrong setting can break Grok or cause unexpected behavior."), overrideCount > 0 && /* @__PURE__ */ React.createElement(Button, {
       variant: "secondary",
       size: "sm",
-      className: cl15("clear-btn"),
+      className: cl14("clear-btn"),
       onClick: () => FeatureStore.useFeatureStore.getState().clearAllOverrides()
     }, "Clear ", pluralize(overrideCount, "override")))), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.5rem",
-      className: cl15("section")
+      className: cl14("section")
     }, /* @__PURE__ */ React.createElement(Input, {
       placeholder: `Search ${prefiltered.length} flags...`,
       value: search2,
       onChange: (e) => setSearch(e.target.value),
-      className: cl15("search-input")
+      className: cl14("search-input")
     }), /* @__PURE__ */ React.createElement(Select, {
       value: filter,
       onValueChange: (v) => setFilter(v)
     }, /* @__PURE__ */ React.createElement(SelectTrigger, {
-      className: cl15("filter-select")
+      className: cl14("filter-select")
     }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, /* @__PURE__ */ React.createElement(SelectItem, {
       value: "all"
     }, "All"), /* @__PURE__ */ React.createElement(SelectItem, {
@@ -9661,7 +8353,7 @@ button .void-info-hint {
       isNew: isNewFlag(key)
     }))), !filtered.length && /* @__PURE__ */ React.createElement(Paragraph, {
       color: "muted",
-      className: cl15("empty")
+      className: cl14("empty")
     }, search2 ? `No flags matching "${search2}"` : `No ${filter} flags`));
   }
   var Tab = ErrorBoundary.wrap(ExperimentsTab);
@@ -9679,11 +8371,11 @@ button .void-info-hint {
     description: "Unlock and toggle unreleased Grok features.",
     authors: [Devs.Prism],
     tags: ["developer"],
-    settings: settings5,
+    settings: settings3,
     startAt: "TurbopackReady" /* TurbopackReady */,
     _proxy: overrideProxy,
     start() {
-      if (settings5.store.browserNotifications && Notification.permission === "default")
+      if (settings3.store.browserNotifications && Notification.permission === "default")
         Notification.requestPermission().catch(() => {});
       const state = FeatureStore.useFeatureStore.getState();
       if (state.status === "ready")
@@ -9770,8 +8462,8 @@ button .void-info-hint {
 
   // src/plugins/pluginsFlyout/index.tsx
   var PLUGIN_NAME = "PluginsFlyout";
-  var cl16 = classNameFactory("void-pf-");
-  var settings6 = definePluginSettings({
+  var cl15 = classNameFactory("void-pf-");
+  var settings4 = definePluginSettings({
     menuPlugins: {
       type: 6 /* COMPONENT */,
       description: "Plugins shown under Void++ → Plugins.",
@@ -9783,7 +8475,7 @@ button .void-info-hint {
     return Object.keys(plugins).filter((n) => !plugins[n].hidden).toSorted((a, b) => a.localeCompare(b));
   }
   function menuPluginMap() {
-    const raw = settings6.store.menuPlugins;
+    const raw = settings4.store.menuPlugins;
     return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   }
   function isShownInPluginMenu(name) {
@@ -9793,7 +8485,7 @@ button .void-info-hint {
     return hasVisibleSettings(plugins[name]);
   }
   function setShownInPluginMenu(name, shown) {
-    settings6.store.menuPlugins = { ...menuPluginMap(), [name]: shown };
+    settings4.store.menuPlugins = { ...menuPluginMap(), [name]: shown };
   }
   function getVisibleMenuPlugins() {
     const names = listedPlugins();
@@ -9802,20 +8494,20 @@ button .void-info-hint {
     return names.filter(isShownInPluginMenu);
   }
   function usePluginMenu() {
-    settings6.use(["menuPlugins"]);
+    settings4.use(["menuPlugins"]);
     return getVisibleMenuPlugins();
   }
   function MenuPluginsEditor() {
-    settings6.use(["menuPlugins"]);
+    settings4.use(["menuPlugins"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl16("root")
+      className: cl15("root")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Plugin menu"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Choose which plugins appear under Void++ → Plugins.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl16("list")
+      className: cl15("list")
     }, listedPlugins().map((name) => {
       const Icon = plugins[name].icon ?? UnplugIcon;
       return /* @__PURE__ */ React.createElement(SettingsRow, {
@@ -9828,7 +8520,7 @@ button .void-info-hint {
         alignItems: "center",
         gap: "0.5rem"
       }, /* @__PURE__ */ React.createElement(Icon, {
-        className: cl16("icon")
+        className: cl15("icon")
       }), /* @__PURE__ */ React.createElement(SettingsTitle, null, name)));
     })));
   }
@@ -9839,13 +8531,13 @@ button .void-info-hint {
     authors: [Devs.p],
     tags: ["navigation"],
     enabledByDefault: true,
-    settings: settings6
+    settings: settings4
   });
 
   // src/plugins/_core/settings/index.tsx
-  var logger18 = new Logger("Settings");
-  var cl17 = classNameFactory("void-settings-");
-  var settings7 = definePluginSettings({
+  var logger16 = new Logger("Settings");
+  var cl16 = classNameFactory("void-settings-");
+  var settings5 = definePluginSettings({
     showVoidPPMenu: {
       type: 3 /* BOOLEAN */,
       description: "Show the Void++ sub-menu in the avatar dropdown.",
@@ -9887,7 +8579,7 @@ button .void-info-hint {
       href,
       target: "_blank",
       rel: "noreferrer",
-      className: cl17("version-link")
+      className: cl16("version-link")
     }, /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
@@ -9897,7 +8589,7 @@ button .void-info-hint {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0",
-      className: cl17("version")
+      className: cl16("version")
     }, /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
@@ -9906,9 +8598,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.11] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d604276"}`
-    }, `(${"d604276"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.12] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d9a1194"}`
+    }, `(${"d9a1194"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -9921,7 +8613,7 @@ button .void-info-hint {
   }
   function TabLabel({ text, description }) {
     return /* @__PURE__ */ React.createElement("span", {
-      className: cl17("tab-label")
+      className: cl16("tab-label")
     }, text, /* @__PURE__ */ React.createElement(InfoHint, null, description));
   }
   function openSettingsTab(tab) {
@@ -9939,7 +8631,7 @@ button .void-info-hint {
   function VoidPPMenu() {
     const forceUpdate = useForceUpdater();
     useEventSubscription("pluginToggle", forceUpdate);
-    const { showVoidPPMenu } = settings7.use(["showVoidPPMenu"]);
+    const { showVoidPPMenu } = settings5.use(["showVoidPPMenu"]);
     const menuPlugins = usePluginMenu();
     const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
     if (!showVoidPPMenu)
@@ -9947,11 +8639,11 @@ button .void-info-hint {
     const scroll = desktop ? {} : { maxHeight: "lg" };
     return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
       icon: VoidPPIcon,
-      className: cl17("menu-icon"),
+      className: cl16("menu-icon"),
       desktop
     }), "Void++"), /* @__PURE__ */ React.createElement(Content, null, menuPlugins.length > 0 && /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
       icon: UnplugIcon,
-      className: cl17("menu-icon"),
+      className: cl16("menu-icon"),
       desktop
     }), "Plugins"), /* @__PURE__ */ React.createElement(Content, {
       ...scroll
@@ -9962,7 +8654,7 @@ button .void-info-hint {
         ...accountMenuSelect(desktop, () => openPluginSettings(name))
       }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
         icon: Icon,
-        className: cl17("menu-icon"),
+        className: cl16("menu-icon"),
         desktop
       }), name);
     }))), getVisibleTabs().filter((t) => t.id !== PLUGINS_TAB_ID).map((t) => {
@@ -9972,7 +8664,7 @@ button .void-info-hint {
         ...accountMenuSelect(desktop, () => openSettingsTab(t.id))
       }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
         icon: Icon,
-        className: cl17("menu-icon"),
+        className: cl16("menu-icon"),
         desktop
       }), t.name);
     })));
@@ -9984,7 +8676,7 @@ button .void-info-hint {
     description: "Adds Void++ settings UI.",
     authors: [Devs.Prism, Devs.p],
     required: true,
-    settings: settings7,
+    settings: settings5,
     _renderVoidPPMenu: () => createElement(WrappedVoidPPMenu),
     _setPrimitive(name, component) {
       setSettingsPrimitive(name, component);
@@ -10025,9 +8717,9 @@ button .void-info-hint {
         else
           document.addEventListener("DOMContentLoaded", loadSavedCSS, { once: true });
       } catch (e) {
-        logger18.error("Failed to load saved CSS:", e);
+        logger16.error("Failed to load saved CSS:", e);
       }
-      loadSavedThemes().catch((e) => logger18.error("Failed to load saved themes:", e));
+      loadSavedThemes().catch((e) => logger16.error("Failed to load saved themes:", e));
     },
     patches: [
       {
@@ -10351,10 +9043,10 @@ button .void-info-hint {
   });
 
   // src/plugins/autoRetry/index.ts
-  var logger19 = new Logger("AutoRetry");
+  var logger17 = new Logger("AutoRetry");
   var CONTENT_MODERATED = "grok:content-moderated";
   var USER_INTERRUPT = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
-  var settings8 = definePluginSettings({
+  var settings6 = definePluginSettings({
     retryModeration: {
       type: 3 /* BOOLEAN */,
       description: "Retry content moderation errors.",
@@ -10378,7 +9070,7 @@ button .void-info-hint {
   });
   var retryCounts = new Map;
   var pendingTimer = null;
-  function clearPending2() {
+  function clearPending() {
     if (pendingTimer != null) {
       clearTimeout(pendingTimer);
       pendingTimer = null;
@@ -10407,22 +9099,22 @@ button .void-info-hint {
     if (isUserInterrupt(response))
       return false;
     if (isModeration(response))
-      return settings8.store.retryModeration;
-    return settings8.store.retryNetwork;
+      return settings6.store.retryModeration;
+    return settings6.store.retryNetwork;
   }
   function retry(responseId, conversationId2, response) {
     const count = (retryCounts.get(conversationId2) ?? 0) + 1;
-    const max = settings8.store.maxRetries;
+    const max = settings6.store.maxRetries;
     if (count > max) {
       showToast("Max retries reached.", 2 /* ERROR */);
       retryCounts.delete(conversationId2);
       return;
     }
     retryCounts.set(conversationId2, count);
-    const delaySec = settings8.store.delay;
+    const delaySec = settings6.store.delay;
     showToast(`Retrying... (${count}/${max})`, 0 /* MESSAGE */);
-    logger19.info(`Retry ${count}/${max} for ${conversationId2} in ${delaySec}s`);
-    clearPending2();
+    logger17.info(`Retry ${count}/${max} for ${conversationId2} in ${delaySec}s`);
+    clearPending();
     pendingTimer = setTimeout(() => {
       pendingTimer = null;
       const state = ChatPageStore.useChatPageStore.getState();
@@ -10460,19 +9152,399 @@ button .void-info-hint {
     description: "Automatically retry failed messages on moderation or network errors.",
     authors: [Devs.Prism],
     tags: ["messages"],
-    settings: settings8,
+    settings: settings6,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
       retryCounts.clear();
-      clearPending2();
+      clearPending();
     },
     stop() {
-      clearPending2();
+      clearPending();
       retryCounts.clear();
     },
     events: {
       streamEnd: onStreamEnd
     }
+  });
+
+  // src/plugins/avatarPluginsFlyout/index.tsx
+  var logger18 = new Logger("AvatarPluginsFlyout");
+  var settings7 = definePluginSettings({});
+  var NEW_NAME = "AvatarPluginsFlyout";
+  var OLD_NAMES = ["BetterAvatarPlugins", "NoSidebarPlugins"];
+  function isOldName(item) {
+    return typeof item === "string" && OLD_NAMES.includes(item);
+  }
+  function renameList(list) {
+    if (!Array.isArray(list) || !list.some(isOldName))
+      return;
+    const seen = new Set;
+    const next = [];
+    for (const item of list) {
+      if (typeof item !== "string")
+        continue;
+      const name = isOldName(item) ? NEW_NAME : item;
+      if (seen.has(name))
+        continue;
+      seen.add(name);
+      next.push(name);
+    }
+    return next;
+  }
+  function migrateLegacy2() {
+    const bag = PlainSettings.plugins;
+    const meta = bag.Settings;
+    const menu = bag.PluginsFlyout?.menuPlugins;
+    const known = meta?.knownPlugins;
+    const pinned = renameList(meta?.pinnedPlugins);
+    const starred = renameList(meta?.starredPlugins);
+    const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu : undefined;
+    const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
+    let moved = false;
+    for (const oldName of OLD_NAMES) {
+      const old = bag[oldName];
+      if (old && typeof old === "object") {
+        const target = bag[NEW_NAME] ??= {};
+        const keys = Object.keys(target);
+        const stub = keys.length === 0 || keys.length === 1 && keys[0] === "enabled";
+        for (const key of Object.keys(old)) {
+          if (stub || !(key in target))
+            target[key] = old[key];
+        }
+        delete bag[oldName];
+        moved = true;
+      }
+      if (knownRec && oldName in knownRec) {
+        if (!(NEW_NAME in knownRec))
+          knownRec[NEW_NAME] = knownRec[oldName];
+        delete knownRec[oldName];
+        moved = true;
+      }
+      if (menuRec && oldName in menuRec) {
+        if (!(NEW_NAME in menuRec))
+          menuRec[NEW_NAME] = menuRec[oldName];
+        delete menuRec[oldName];
+        moved = true;
+      }
+    }
+    if (meta) {
+      if (pinned) {
+        meta.pinnedPlugins = pinned;
+        moved = true;
+      }
+      if (starred) {
+        meta.starredPlugins = starred;
+        moved = true;
+      }
+    }
+    if (!moved)
+      return;
+    SettingsStore3.markAsChanged();
+    logger18.info("Migrated NoSidebarPlugins and BetterAvatarPlugins into AvatarPluginsFlyout");
+  }
+  var pluginName = Object.getOwnPropertyDescriptor(settings7, "pluginName");
+  if (pluginName?.set && pluginName.get) {
+    Object.defineProperty(settings7, "pluginName", {
+      configurable: true,
+      enumerable: true,
+      get: pluginName.get,
+      set(name) {
+        if (name === NEW_NAME)
+          migrateLegacy2();
+        pluginName.set.call(settings7, name);
+      }
+    });
+  }
+  function menuSvg(className, filled, ...children) {
+    return /* @__PURE__ */ React.createElement("svg", {
+      width: "1rem",
+      height: "1rem",
+      viewBox: "0 0 24 24",
+      fill: filled ? "currentColor" : "none",
+      stroke: filled ? "none" : "currentColor",
+      strokeWidth: filled ? undefined : 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      className: className ?? "void-settings-menu-icon",
+      "aria-hidden": "true"
+    }, children);
+  }
+  function PluginsIcon(props = {}) {
+    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
+      ...props
+    });
+  }
+  function ConnectorsMenuIcon({ className } = {}) {
+    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
+      width: "1rem",
+      height: "1rem",
+      className: className ?? "void-settings-menu-icon"
+    });
+  }
+  function SkillsMenuIcon({ className } = {}) {
+    return menuSvg(className, false, /* @__PURE__ */ React.createElement("path", {
+      d: "M10 7C10 8.79493 8.54493 10.25 6.75 10.25C4.95507 10.25 3.5 8.79493 3.5 7C3.5 5.20507 4.95507 3.75 6.75 3.75C8.54493 3.75 10 5.20507 10 7Z"
+    }), /* @__PURE__ */ React.createElement("path", {
+      d: "M16.3732 4.34855C16.7528 3.65641 17.7472 3.65641 18.1268 4.34855L20.5514 8.7691C20.9169 9.43553 20.4347 10.25 19.6746 10.25H14.8254C14.0653 10.25 13.5831 9.43553 13.9486 8.7691L16.3732 4.34855Z"
+    }), /* @__PURE__ */ React.createElement("rect", {
+      x: "3.64844",
+      y: "13.75",
+      width: "6.2",
+      height: "6.2",
+      rx: "2"
+    }), /* @__PURE__ */ React.createElement("path", {
+      d: "M20.5 17C20.5 18.7949 19.0449 20.25 17.25 20.25C15.4551 20.25 14 18.7949 14 17C14 15.2051 15.4551 13.75 17.25 13.75C19.0449 13.75 20.5 15.2051 20.5 17Z"
+    }));
+  }
+  function BotsMenuIcon({ className } = {}) {
+    return menuSvg(className, true, /* @__PURE__ */ React.createElement("path", {
+      d: "M15 13H13V9H15V13Z"
+    }), /* @__PURE__ */ React.createElement("path", {
+      d: "M19 13H17V9H19V13Z"
+    }), /* @__PURE__ */ React.createElement("path", {
+      fillRule: "evenodd",
+      clipRule: "evenodd",
+      d: "M15 4C19.4183 4 23 7.58172 23 12C23 16.4183 19.4183 20 15 20C10.5817 20 7 16.4183 7 12C7 7.58172 10.5817 4 15 4ZM15 6C11.6863 6 9 8.68629 9 12C9 15.3137 11.6863 18 15 18C18.3137 18 21 15.3137 21 12C21 8.68629 18.3137 6 15 6Z"
+    }), /* @__PURE__ */ React.createElement("path", {
+      d: "M8.99902 4C8.08913 4.68362 7.3005 5.51941 6.66895 6.46875C4.51293 7.37847 3 9.5129 3 12C3 14.487 4.51312 16.6205 6.66895 17.5303C7.30047 18.4797 8.08911 19.3153 8.99902 19.999C4.58119 19.9985 1 16.418 1 12C1 7.58205 4.58119 4.00053 8.99902 4Z"
+    }));
+  }
+  var PLUGIN_TABS = [
+    { id: "connectors", name: "Connectors", icon: ConnectorsMenuIcon },
+    { id: "skills", name: "Skills", icon: SkillsMenuIcon },
+    { id: "bots", name: "Bots", icon: BotsMenuIcon }
+  ];
+  var pendingTab = null;
+  var latchedTab = "";
+  function peekTab() {
+    return pendingTab;
+  }
+  function shellKey(local) {
+    if (pendingTab)
+      latchedTab = pendingTab;
+    return `${local ? 1 : 0}:${latchedTab}`;
+  }
+  function clearPending2(tab) {
+    if (typeof tab === "string" && tab === pendingTab)
+      return;
+    pendingTab = null;
+  }
+  function pluginsDialog() {
+    return [...document.querySelectorAll('[role="dialog"]')].find((dialog) => dialog.getAttribute("data-state") === "open" && [...dialog.querySelectorAll("h1, h2")].some((heading) => heading.textContent?.trim() === "Plugins"));
+  }
+  function pillButton(tab) {
+    const name = PLUGIN_TABS.find((item) => item.id === tab)?.name;
+    if (!name)
+      return null;
+    const lists = pluginsDialog()?.querySelectorAll("[role=tablist]");
+    if (!lists)
+      return null;
+    for (const list of lists) {
+      const tabs = [...list.querySelectorAll('[role="tab"]')];
+      const labels = new Set(tabs.map((button2) => button2.textContent?.trim()));
+      if (!labels.has("Connectors") || !labels.has("Skills") || !labels.has("Bots"))
+        continue;
+      const button = tabs.find((item) => item.textContent?.trim() === name);
+      if (button instanceof HTMLElement)
+        return button;
+    }
+    return null;
+  }
+  function syncTabDom(tab, attempt = 0) {
+    if (pendingTab !== tab || attempt > 12)
+      return;
+    const button = pillButton(tab);
+    if (!button) {
+      requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
+      return;
+    }
+    if (button.getAttribute("aria-selected") === "true") {
+      pendingTab = null;
+      return;
+    }
+    button.click();
+    requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
+  }
+  function openPlugins(tab) {
+    pendingTab = tab;
+    latchedTab = tab;
+    const hook = PluginsDialogStore.usePluginsDialogStore;
+    const store2 = hook && typeof hook.getState === "function" ? hook.getState() : null;
+    store2?.setOpen(true);
+    requestAnimationFrame(() => syncTabDom(tab));
+  }
+  function applyTab(local, state, setState) {
+    if (!local || !pendingTab)
+      return null;
+    if (pendingTab !== state)
+      setState(pendingTab);
+    return pendingTab;
+  }
+  function PluginsMenu() {
+    const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
+    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+      icon: PluginsIcon,
+      className: "void-settings-menu-icon",
+      desktop
+    }), "Plugins"), /* @__PURE__ */ React.createElement(Content, null, PLUGIN_TABS.map((tab) => {
+      const Icon = tab.icon;
+      return /* @__PURE__ */ React.createElement(Item, {
+        key: tab.id,
+        ...accountMenuSelect(desktop, () => openPlugins(tab.id))
+      }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
+        icon: Icon,
+        className: "void-settings-menu-icon",
+        desktop
+      }), tab.name);
+    })));
+  }
+  var PLUGIN_LABELS = new Set(["Plugins", "Skills and Connectors"]);
+  var PLUGINS_HIDE_ATTR = "data-void-plugins-hide";
+  var pluginsHideObserver = null;
+  var pluginsHideRaf = 0;
+  function pluginControlLabel(el) {
+    const text = (el.innerText || "").replaceAll(/\s+/g, " ").trim();
+    if (text)
+      return text;
+    return (el.getAttribute("aria-label") || "").trim();
+  }
+  function hideSidebarPlugins() {
+    const sidebar = document.querySelector("#app-sidebar, [data-sidebar=sidebar]");
+    if (!sidebar)
+      return;
+    for (const el of sidebar.querySelectorAll("a, button")) {
+      if (el.closest("[role=menu], [role=menuitem], [data-radix-popper-content-wrapper]"))
+        continue;
+      if (!PLUGIN_LABELS.has(pluginControlLabel(el)))
+        continue;
+      const row = el.closest("[data-sidebar=menu-item]") ?? el;
+      row.setAttribute(PLUGINS_HIDE_ATTR, "1");
+      row.style.setProperty("display", "none", "important");
+    }
+  }
+  function scheduleSidebarPluginsHide() {
+    if (pluginsHideRaf)
+      return;
+    pluginsHideRaf = requestAnimationFrame(() => {
+      pluginsHideRaf = 0;
+      hideSidebarPlugins();
+    });
+  }
+  function armSidebarPluginsHide() {
+    hideSidebarPlugins();
+    if (pluginsHideObserver)
+      return;
+    pluginsHideObserver = new MutationObserver(scheduleSidebarPluginsHide);
+    pluginsHideObserver.observe(document.documentElement, { childList: true, subtree: true });
+  }
+  function stopSidebarPluginsHide() {
+    pluginsHideObserver?.disconnect();
+    pluginsHideObserver = null;
+    if (pluginsHideRaf)
+      cancelAnimationFrame(pluginsHideRaf);
+    pluginsHideRaf = 0;
+    for (const el of document.querySelectorAll(`[${PLUGINS_HIDE_ATTR}]`)) {
+      el.style.removeProperty("display");
+      el.removeAttribute(PLUGINS_HIDE_ATTR);
+    }
+  }
+  var WrappedPluginsMenu = ErrorBoundary.wrap(PluginsMenu);
+  var avatarPluginsFlyout_default = definePlugin({
+    name: NEW_NAME,
+    icon: PluginsIcon,
+    description: "Move the sidebar Plugins button into the avatar menu and expand it into Connectors, Skills, and Bots.",
+    authors: [Devs.p],
+    tags: ["navigation"],
+    enabledByDefault: true,
+    settings: settings7,
+    _renderItem: () => createElement(WrappedPluginsMenu),
+    _peekTab: () => peekTab(),
+    _shellKey: (local) => shellKey(local),
+    _clearPending: (tab) => clearPending2(tab),
+    _applyTab(local, state, setState) {
+      return applyTab(local, state, setState);
+    },
+    start() {
+      armSidebarPluginsHide();
+    },
+    stop() {
+      stopSidebarPluginsHide();
+    },
+    patches: [
+      {
+        find: '"skills-and-connectors"!==',
+        replacement: {
+          match: /(\(0,\i\.jsx\)\(\i(?:\.\i)?,\{icon:.{0,180}?onClick:\(\)=>\{"skills-and-connectors")/,
+          replace: "false&&$1"
+        }
+      },
+      {
+        find: "usePluginsDialogStore.getState().setOpen(!0)",
+        noWarn: true,
+        replacement: {
+          match: /(\(0,\i\.jsx\)\(\i\.AppSidebarItem,\{icon:.{0,80}?onClick:\(\)=>\{"skills-and-connectors")/,
+          replace: "false&&$1"
+        }
+      },
+      {
+        find: 'WD_REFRESH&&{id:"skills-and-connectors"',
+        noWarn: true,
+        replacement: {
+          match: /WD_REFRESH&&\{id:"skills-and-connectors"/,
+          replace: 'WD_REFRESH&&!1&&{id:"skills-and-connectors"'
+        }
+      },
+      {
+        find: "avatar_menu_click",
+        all: true,
+        replacement: [
+          {
+            match: /(?=\(0,\i\.jsxs\)\(\i\.W,\{children:\[\(0,\i\.jsxs\)\(\i\.f,\{ref:\i,children:\[.{0,260}"user-dropdown\.help")/,
+            replace: "$self._renderItem(),"
+          },
+          {
+            match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,240}"user-dropdown\.help")/,
+            replace: "$self._renderItem(),",
+            noWarn: true
+          }
+        ]
+      },
+      {
+        find: "SkillsAndConnectorsPage:handleTabChange",
+        replacement: [
+          {
+            match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(null\),(\i)=(\i)\?\1:"skills-and-connectors"===(\i)\.page\?\6\.tab:null/,
+            replace: '[$1,$2]=(0,$3.useState)($self._peekTab()),$4=($self._applyTab($5,$1,$2)??($5?$1:"skills-and-connectors"===$6.page?$6.tab:null))'
+          },
+          {
+            match: /(\i)\)return void (\i)\((\i)\);(\i)\.replace\(\{page:"skills-and-connectors",tab:\3\}\)\}/,
+            replace: '$1)return ($self._clearPending($3),void $2($3));$4.replace({page:"skills-and-connectors",tab:$3})}'
+          },
+          {
+            match: /(\i)\[0\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\((\i),\{inDialog:!0,localTabs:\2\}\),\1\[0\]=\2,\1\[1\]=\3\):\3=\1\[1\]/,
+            replace: "$1[0]!==$self._shellKey($2)?($3=(0,$4.jsx)($5,{inDialog:!0,localTabs:$2,key:$self._shellKey($2)}),$1[0]=$self._shellKey($2),$1[1]=$3):$3=$1[1]",
+            noWarn: true
+          }
+        ]
+      },
+      {
+        find: "SkillsAndConnectorsPageContent",
+        all: true,
+        noWarn: true,
+        replacement: {
+          match: /(\i)\[(\d+)\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\(([A-Za-z_$][\w$.]*),\{inDialog:!0,localTabs:\3\}\),\1\[\2\]=\3,\1\[(\d+)\]=\4\):\4=\1\[\7\]/g,
+          replace: "$1[$2]!==$self._shellKey($3)?($4=(0,$5.jsx)($6,{inDialog:!0,localTabs:$3,key:$self._shellKey($3)}),$1[$2]=$self._shellKey($3),$1[$7]=$4):$4=$1[$7]"
+        }
+      },
+      {
+        find: '"user-dropdown.help","Help"',
+        all: true,
+        replacement: {
+          match: /(children:\[)(\i,\i,\i,\i,)(\i,\i,\i,\i\])([\s\S]{0,220}?function \i\(e\)\{return e\.toggleOpen\})/,
+          replace: "$1$2$self._renderItem(),$3$4"
+        }
+      }
+    ]
   });
 
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterFiles/styles.css
@@ -10498,8 +9570,8 @@ button .void-info-hint {
 `);
 
   // src/plugins/betterFiles/index.tsx
-  var logger20 = new Logger("BetterFiles");
-  var selection2 = createSelectionStore();
+  var logger19 = new Logger("BetterFiles");
+  var selection = createSelectionStore();
   var assetsById = new Map;
   function fileId(item) {
     if (item?.kind !== "file")
@@ -10512,7 +9584,7 @@ button .void-info-hint {
       return null;
     assetsById.set(id, item.asset);
     return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
-      selection: selection2,
+      selection,
       id
     });
   }
@@ -10523,9 +9595,9 @@ button .void-info-hint {
       try {
         const ok = await deleteAsset(id, asset);
         if (ok === false)
-          logger20.error("Failed to delete asset", id);
+          logger19.error("Failed to delete asset", id);
       } catch (e) {
-        logger20.error("Failed to delete asset", id, e);
+        logger19.error("Failed to delete asset", id, e);
       }
       assetsById.delete(id);
     }));
@@ -10536,12 +9608,12 @@ button .void-info-hint {
       if (id && item.asset && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         e.stopPropagation();
-        if (selection2.has(id)) {
-          selection2.toggle(id);
+        if (selection.has(id)) {
+          selection.toggle(id);
           assetsById.delete(id);
         } else {
           assetsById.set(id, item.asset);
-          selection2.toggle(id);
+          selection.toggle(id);
         }
         return;
       }
@@ -10556,16 +9628,16 @@ button .void-info-hint {
     tags: ["media"],
     managedStyle: "betterFiles",
     start() {
-      selection2.clear();
+      selection.clear();
       assetsById.clear();
     },
     stop() {
-      selection2.clear();
+      selection.clear();
       assetsById.clear();
     },
     _renderFileCheckbox: ErrorBoundary.wrap(FileCheckbox, null),
     _renderFileActionBar: ErrorBoundary.wrap(() => /* @__PURE__ */ React.createElement(SelectionActionBar, {
-      selection: selection2,
+      selection,
       noun: "file",
       title: "Delete files",
       onDelete: deleteAssets
@@ -10638,9 +9710,9 @@ button .void-info-hint {
 `);
 
   // src/plugins/betterImagine/index.tsx
-  var logger21 = new Logger("BetterImagine");
-  var cl18 = classNameFactory("void-imagine-");
-  var settings9 = definePluginSettings({
+  var logger20 = new Logger("BetterImagine");
+  var cl17 = classNameFactory("void-imagine-");
+  var settings8 = definePluginSettings({
     hideDefaultPreviews: {
       type: 3 /* BOOLEAN */,
       description: "Hide the community image grid and templates on the Imagine home page.",
@@ -10688,7 +9760,7 @@ button .void-info-hint {
     }
   });
   function buildFilename(post, isVideo) {
-    if (!settings9.store.smartFilenames || !post)
+    if (!settings8.store.smartFilenames || !post)
       return null;
     const prompt = (post.prompt ?? post.originalPrompt ?? "").trim();
     const slug = sanitizeFilename(prompt.slice(0, 60), "").slice(0, 60);
@@ -10751,7 +9823,7 @@ button .void-info-hint {
   var randomSeed = Date.now();
   var filterStore = createExternalStore();
   function persist() {
-    if (!settings9.store.persistFilters)
+    if (!settings8.store.persistFilters)
       return;
     try {
       sessionStorage.setItem(STORAGE_KEY2, JSON.stringify({ filter: currentFilter, search: currentSearch, date: currentDate, sort: currentSort }));
@@ -10830,7 +9902,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var cacheList = null;
   var cacheResult = [];
   function filterItems(items) {
-    const { hideModerated } = settings9.store;
+    const { hideModerated } = settings8.store;
     const key = `${items.length}|${currentFilter}|${currentSearch}|${currentDate}|${currentSort}|${hideModerated ? 1 : 0}|${randomSeed}`;
     if (cacheList === items && cacheKey === key)
       return cacheResult;
@@ -10890,7 +9962,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           return;
         video.pause();
         video.currentTime = 0;
-      }).catch((e) => logger21.warn("Failed to pause video:", e));
+      }).catch((e) => logger20.warn("Failed to pause video:", e));
     } else {
       video.pause();
       video.currentTime = 0;
@@ -10899,7 +9971,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var onMouseEnter = (e) => {
     const video = e.currentTarget.querySelector("video");
     if (video)
-      pending.set(video, video.play().catch((e2) => logger21.error("Failed to play video", e2)));
+      pending.set(video, video.play().catch((e2) => logger20.error("Failed to play video", e2)));
   };
   var onMouseLeave = (e) => {
     const video = e.currentTarget.querySelector("video");
@@ -10942,7 +10014,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
 `));
       Toaster.toast.success(`Copied ${pluralize(lines.length, label)} to clipboard.`);
     } catch (e) {
-      logger21.error(`Failed to copy ${label}s`, e);
+      logger20.error(`Failed to copy ${label}s`, e);
       Toaster.toast.error(`Failed to copy ${label}s.`);
     }
   }
@@ -10987,7 +10059,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           await state.upscaleVideo(id, video.id);
           upscaled++;
         } catch (e) {
-          logger21.error("Failed to upscale video:", id, video.id, e);
+          logger20.error("Failed to upscale video:", id, video.id, e);
         }
       }
     }
@@ -11014,7 +10086,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       value: currentDate,
       onValueChange: (v) => setDate(v)
     }, /* @__PURE__ */ React.createElement(SelectTrigger, {
-      className: cl18("date-select")
+      className: cl17("date-select")
     }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, Object.keys(DATE_LABELS).map((d) => /* @__PURE__ */ React.createElement(SelectItem, {
       key: d,
       value: d
@@ -11022,7 +10094,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       value: currentSort,
       onValueChange: (v) => setSort(v)
     }, /* @__PURE__ */ React.createElement(SelectTrigger, {
-      className: sortActive ? cl18("sort-select", "sort-active") : cl18("sort-select")
+      className: sortActive ? cl17("sort-select", "sort-active") : cl17("sort-select")
     }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, SORT_KEYS.map((s) => /* @__PURE__ */ React.createElement(SelectItem, {
       key: s,
       value: s
@@ -11034,19 +10106,19 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
         setSearchInput(e.target.value);
         setSearch(e.target.value);
       },
-      className: cl18("search")
+      className: cl17("search")
     }), ["image", "video"].map((f) => /* @__PURE__ */ React.createElement(Button, {
       key: f,
       variant: currentFilter === f ? "primary" : "tertiary",
       size: "sm",
       shape: "pill",
-      className: currentFilter !== f ? cl18("chip") : undefined,
+      className: currentFilter !== f ? cl17("chip") : undefined,
       onClick: () => setFilter(currentFilter === f ? "all" : f)
     }, f === "image" ? "Images" : "Videos")), showClear && /* @__PURE__ */ React.createElement(Button, {
       variant: "tertiary",
       size: "sm",
       shape: "pill",
-      className: cl18("chip"),
+      className: cl17("chip"),
       onClick: resetFilters
     }, "Clear"));
   }
@@ -11148,7 +10220,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   }
   function onVisibilityChange() {
-    if (!settings9.store.pauseWhenHidden)
+    if (!settings8.store.pauseWhenHidden)
       return;
     if (document.visibilityState !== "hidden")
       return;
@@ -11164,22 +10236,22 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     description: "Imagine polish: filter, sort, shortcuts on Favorites, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
     authors: [Devs.Prism],
     tags: ["media"],
-    settings: settings9,
-    _hideDefault: () => settings9.store.hideDefaultPreviews,
+    settings: settings8,
+    _hideDefault: () => settings8.store.hideDefaultPreviews,
     _NullGrid: () => null,
-    _autoPlay: () => !settings9.store.noAutoplay,
-    _bypassPaywall: () => settings9.store.bypassPaywall,
-    _ctrlClickSelect: () => settings9.store.ctrlClickSelect,
+    _autoPlay: () => !settings8.store.noAutoplay,
+    _bypassPaywall: () => settings8.store.bypassPaywall,
+    _ctrlClickSelect: () => settings8.store.ctrlClickSelect,
     _playCard: (e) => {
-      if (settings9.store.playOnHover)
+      if (settings8.store.playOnHover)
         onMouseEnter(e);
     },
     _pauseCard: (e) => {
-      if (settings9.store.playOnHover)
+      if (settings8.store.playOnHover)
         onMouseLeave(e);
     },
     _postById: (id) => MediaStore.useMediaStore.getState().byId?.[id],
-    _hoverProps: () => settings9.store.playOnHover ? { onMouseEnter, onMouseLeave } : {},
+    _hoverProps: () => settings8.store.playOnHover ? { onMouseEnter, onMouseLeave } : {},
     _useFilteredFavorites: useFilteredFavorites,
     _renderFilterButtons: ErrorBoundary.wrap(FilterButtons, null),
     _renderUpscaleItem: ErrorBoundary.wrap(UpscaleItem, null),
@@ -11314,31 +10386,31 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     return /^#[0-9a-fA-F]{6}$/.test(c);
   }
   function getColor(key, fallback) {
-    const val = settings10.store[key];
+    const val = settings9.store[key];
     return val && isValidHex(val) ? val : fallback;
   }
   function applyColors() {
     const link = getColor("linkColor", DEFAULT_LINK);
     let css = `.void-colored-link{color:${link}!important;text-decoration-color:${link}!important}`;
-    if (settings10.store.enableVisitedColor) {
+    if (settings9.store.enableVisitedColor) {
       const visited = getColor("visitedColor", DEFAULT_VISITED);
       css += `.void-colored-link:visited{color:${visited}!important;text-decoration-color:${visited}!important}`;
     }
     registerStyle(STYLE_NAME2, css);
   }
   function ColorRow({ settingKey, title, description, fallback }) {
-    settings10.use([settingKey]);
+    settings9.use([settingKey]);
     return /* @__PURE__ */ React.createElement(ColorSettingRow, {
       value: getColor(settingKey, fallback),
       onChange: (v) => {
-        settings10.store[settingKey] = v;
+        settings9.store[settingKey] = v;
         applyColors();
       },
       title,
       description
     });
   }
-  var settings10 = definePluginSettings({
+  var settings9 = definePluginSettings({
     linkifyDomains: {
       type: 3 /* BOOLEAN */,
       description: "Detect bare domains in messages and make them clickable.",
@@ -11375,7 +10447,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     description: "Colorize links and detect bare domains in chat messages.",
     authors: [Devs.Prism],
     tags: ["messages"],
-    settings: settings10,
+    settings: settings9,
     patches: [
       {
         find: "chat-markdown:a:link",
@@ -11403,7 +10475,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       }
     ],
     _remarkLinkify() {
-      const { store: store2 } = settings10;
+      const { store: store2 } = settings9;
       return (tree) => {
         try {
           if (!store2.linkifyDomains)
@@ -11447,8 +10519,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       };
     },
     start() {
-      settings10.store.linkColor ??= DEFAULT_LINK;
-      settings10.store.visitedColor ??= DEFAULT_VISITED;
+      settings9.store.linkColor ??= DEFAULT_LINK;
+      settings9.store.visitedColor ??= DEFAULT_VISITED;
       applyColors();
       enableStyle(STYLE_NAME2);
     },
@@ -11709,8 +10781,8 @@ html.void-cms-picked .void-cms-ghost {
   }
 
   // src/plugins/betterModeSelect/index.tsx
-  var logger22 = new Logger("BetterModeSelect");
-  var cl19 = classNameFactory("void-cms-");
+  var logger21 = new Logger("BetterModeSelect");
+  var cl18 = classNameFactory("void-cms-");
   var MODES = [
     { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
     { id: "fast", pin: "pinFast", label: "Fast", Icon: FastModeIcon },
@@ -11737,7 +10809,7 @@ html.void-cms-picked .void-cms-ghost {
   var PICK_MS = 900;
   var POINTER = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
   var GHOST_STYLE = { opacity: "0", visibility: "hidden" };
-  var settings11 = definePluginSettings({
+  var settings10 = definePluginSettings({
     pinList: {
       type: 6 /* COMPONENT */,
       description: "Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.",
@@ -11849,18 +10921,18 @@ html.void-cms-picked .void-cms-ghost {
       delete menuRec[OLD_NAME];
     }
     SettingsStore3.markAsChanged();
-    logger22.info("Migrated CompactModeSelect into BetterModeSelect");
+    logger21.info("Migrated CompactModeSelect into BetterModeSelect");
   }
-  var pluginName2 = Object.getOwnPropertyDescriptor(settings11, "pluginName");
+  var pluginName2 = Object.getOwnPropertyDescriptor(settings10, "pluginName");
   if (pluginName2?.set && pluginName2.get) {
-    Object.defineProperty(settings11, "pluginName", {
+    Object.defineProperty(settings10, "pluginName", {
       configurable: true,
       enumerable: true,
       get: pluginName2.get,
       set(name) {
         if (name === NEW_NAME2)
           migrateLegacy3();
-        pluginName2.set.call(settings11, name);
+        pluginName2.set.call(settings10, name);
       }
     });
   }
@@ -11873,7 +10945,7 @@ html.void-cms-picked .void-cms-ghost {
   var cloakWatch = null;
   function uncloak() {
     for (const host of ghosts) {
-      host.classList.remove(cl19("ghost"));
+      host.classList.remove(cl18("ghost"));
       host.style.removeProperty("opacity");
       host.style.removeProperty("visibility");
       host.style.removeProperty("pointer-events");
@@ -11923,10 +10995,10 @@ html.void-cms-picked .void-cms-ghost {
     return next;
   }
   function setOrder(ids) {
-    settings11.store.pinOrder = ids.join(",");
+    settings10.store.pinOrder = ids.join(",");
   }
   function setPinned(pin, on) {
-    settings11.store[pin] = on;
+    settings10.store[pin] = on;
   }
   function pinnedIdsFrom(pinOrder, pins, catalog) {
     const known = catalog.filter((c) => KNOWN_IDS.has(c.id));
@@ -11949,7 +11021,7 @@ html.void-cms-picked .void-cms-ghost {
     if (inIncognito())
       return true;
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       if (route?.temporary)
         return true;
       let cid = String(route?.conversationId || "");
@@ -11985,7 +11057,7 @@ html.void-cms-picked .void-cms-ghost {
     return ["auto", ...ids];
   }
   function pinnedIds() {
-    const cfg = settings11.store;
+    const cfg = settings10.store;
     return withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, ModesStore.useModesStore.getState().modes ?? [])));
   }
   var incognitoObs = null;
@@ -11997,7 +11069,7 @@ html.void-cms-picked .void-cms-ghost {
     for (const el of document.querySelectorAll(ITEM_SEL)) {
       if (!matchItem(el, "build"))
         continue;
-      el.classList.toggle(cl19("incognito-hide"), hide);
+      el.classList.toggle(cl18("incognito-hide"), hide);
     }
   }
   function watchIncognitoMenu() {
@@ -12052,7 +11124,7 @@ html.void-cms-picked .void-cms-ghost {
     const host = ghostHost(menu.root);
     if (ghosts.has(host))
       return;
-    host.classList.add(cl19("ghost"));
+    host.classList.add(cl18("ghost"));
     host.style.setProperty("opacity", GHOST_STYLE.opacity, "important");
     host.style.setProperty("visibility", GHOST_STYLE.visibility, "important");
     ghosts.add(host);
@@ -12240,7 +11312,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger22.warn("Failed to harvest mode icons:", e);
+      logger21.warn("Failed to harvest mode icons:", e);
     } finally {
       setPicking(false);
       harvesting = false;
@@ -12270,7 +11342,7 @@ html.void-cms-picked .void-cms-ghost {
   function PinGlyph({ id, Icon, label, showLabels }) {
     const html = useNativeGlyph(id);
     const glyph = html ? /* @__PURE__ */ React.createElement("span", {
-      className: cl19("glyph"),
+      className: cl18("glyph"),
       dangerouslySetInnerHTML: { __html: html }
     }) : /* @__PURE__ */ React.createElement(Icon, {
       size: 18
@@ -12278,7 +11350,7 @@ html.void-cms-picked .void-cms-ghost {
     if (!showLabels)
       return glyph;
     return /* @__PURE__ */ React.createElement(React.Fragment, null, glyph, /* @__PURE__ */ React.createElement("span", {
-      className: cl19("label")
+      className: cl18("label")
     }, label));
   }
   function preventDragOver(e) {
@@ -12286,7 +11358,7 @@ html.void-cms-picked .void-cms-ghost {
     e.dataTransfer.dropEffect = "move";
   }
   function PinOrderEditor() {
-    const cfg = settings11.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
+    const cfg = settings10.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
     const ids = parseOrder(cfg.pinOrder);
     const [dragId, setDragId] = React.useState(null);
     const onDragStart = (id) => (e) => {
@@ -12303,27 +11375,27 @@ html.void-cms-picked .void-cms-ghost {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
-      className: cl19("order")
+      className: cl18("order")
     }, /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0"
     }, /* @__PURE__ */ React.createElement(SettingsTitle, null, "Pinned modes"), /* @__PURE__ */ React.createElement(SettingsDescription, null, "Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.")), /* @__PURE__ */ React.createElement("div", {
-      className: cl19("order-list"),
+      className: cl18("order-list"),
       role: "list"
     }, ids.map((id, i) => {
       const m = MODE_BY_ID[id];
       return /* @__PURE__ */ React.createElement("div", {
         key: m.id,
         role: "listitem",
-        className: classes(cl19("order-row"), dragId === m.id && cl19("dragging")),
+        className: classes(cl18("order-row"), dragId === m.id && cl18("dragging")),
         onDragOver: preventDragOver,
         onDrop: onDrop(m.id)
       }, /* @__PURE__ */ React.createElement(Flex, {
         alignItems: "center",
         gap: "0.5rem",
-        className: cl19("order-main")
+        className: cl18("order-main")
       }, /* @__PURE__ */ React.createElement("span", {
-        className: cl19("grip"),
+        className: cl18("grip"),
         draggable: true,
         onDragStart: onDragStart(m.id),
         onDragEnd: () => setDragId(null),
@@ -12332,7 +11404,7 @@ html.void-cms-picked .void-cms-ghost {
         size: 16
       })), /* @__PURE__ */ React.createElement(m.Icon, {
         size: 16,
-        className: cl19("order-icon")
+        className: cl18("order-icon")
       }), /* @__PURE__ */ React.createElement(SettingsTitle, null, m.label)), /* @__PURE__ */ React.createElement(Flex, {
         alignItems: "center",
         gap: "0.25rem"
@@ -12372,7 +11444,7 @@ html.void-cms-picked .void-cms-ghost {
     return typeof ModesStore.useModesStore === "function" && typeof RoutingStore.useRoutingStore === "function" && typeof MessageStore.useMessageStore === "function" && typeof SettingsStore.useSettingsStore === "function";
   }
   function PinnedModes() {
-    const cfg = settings11.use([...SETTING_KEYS]);
+    const cfg = settings10.use([...SETTING_KEYS]);
     const page = RoutingStore.useRoutingStore((s) => s.route?.page);
     const selectedModeId = String(ModesStore.useModesStore((s) => s.selectedModeId) || "");
     const listed = ModesStore.useModesStore((s) => s.modes);
@@ -12396,12 +11468,12 @@ html.void-cms-picked .void-cms-ghost {
       selectMode(id);
     };
     return /* @__PURE__ */ React.createElement("div", {
-      className: classes(cl19("pins"), hideNative && cl19("hide-native"))
+      className: classes(cl18("pins"), hideNative && cl18("hide-native"))
     }, items.map((m) => {
       const on = chipOn(selectedModeId, m.id);
       return /* @__PURE__ */ React.createElement("span", {
         key: m.id,
-        className: cl19("pin-host"),
+        className: cl18("pin-host"),
         "data-void-mode-id": m.id
       }, /* @__PURE__ */ React.createElement(ChatBarButton, {
         size: "xl",
@@ -12414,7 +11486,7 @@ html.void-cms-picked .void-cms-ghost {
         }),
         tooltip: m.label,
         onClick: onPin(m.id),
-        className: classes(cl19("pin"), on && cl19("on"), showLabels && cl19("labeled")),
+        className: classes(cl18("pin"), on && cl18("on"), showLabels && cl18("labeled")),
         "aria-label": m.label
       }));
     }));
@@ -12441,7 +11513,7 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
-    settings: settings11,
+    settings: settings10,
     managedStyle: "betterModeSelect",
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
@@ -12450,7 +11522,7 @@ html.void-cms-picked .void-cms-ghost {
         if (typeof hook === "function")
           hook.getState().ensureLoaded();
       } catch (e) {
-        logger22.debug("modes not ready", e);
+        logger21.debug("modes not ready", e);
       }
       bindModelHotkey();
       watchIncognitoMenu();
@@ -12458,7 +11530,7 @@ html.void-cms-picked .void-cms-ghost {
         offIncognitoWatch = SettingsStore.useSettingsStore.subscribe(() => watchIncognitoMenu());
         offRouteWatch = RoutingStore.useRoutingStore.subscribe(() => watchIncognitoMenu());
       } catch (e) {
-        logger22.debug("incognito watch failed", e);
+        logger21.debug("incognito watch failed", e);
       }
     },
     stop() {
@@ -12470,8 +11542,8 @@ html.void-cms-picked .void-cms-ghost {
       incognitoObs?.disconnect();
       incognitoObs = null;
       document.documentElement.removeAttribute("data-void-cms-incognito");
-      for (const el of document.querySelectorAll(`.${cl19("incognito-hide")}`))
-        el.classList.remove(cl19("incognito-hide"));
+      for (const el of document.querySelectorAll(`.${cl18("incognito-hide")}`))
+        el.classList.remove(cl18("incognito-hide"));
       setPicking(false);
       harvested.clear();
       harvestListeners.clear();
@@ -12854,8 +11926,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/betterNavigator/index.ts
-  var logger23 = new Logger("BetterNavigator");
-  var cl20 = classNameFactory("void-bn-");
+  var logger22 = new Logger("BetterNavigator");
+  var cl19 = classNameFactory("void-bn-");
   var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
   var ASST_SEL = "[data-testid='assistant-message']";
   var CHAT_PANE_SEL = "[data-testid='chat-transcript-scroller']";
@@ -12933,7 +12005,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
   var LIVE_PHASE = new Set(["sending", "streaming"]);
   var JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
-  var settings12 = definePluginSettings({
+  var settings11 = definePluginSettings({
     showAssistant: {
       type: 3 /* BOOLEAN */,
       description: "List assistant replies in the navigator, not only your messages.",
@@ -13115,13 +12187,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     for (const n of [...clone.querySelectorAll("span, div, a, p")]) {
       if (!n.isConnected)
         continue;
-      const chip = (n.textContent ?? "").replace(/\s+/g, " ").trim();
+      const chip = (n.textContent ?? "").replaceAll(/\s+/g, " ").trim();
       if (chip && chip.length <= 24 && CHIP_RE.test(chip))
         n.remove();
     }
     const media = hasMedia(clone);
     clone.querySelectorAll(MEDIA_SEL).forEach((n) => n.remove());
-    const text = (clone.textContent ?? "").replace(/\b\d+\s+sources?\b/gi, " ").replace(/\s+/g, " ").trim();
+    const text = (clone.textContent ?? "").replaceAll(/\b\d+\s+sources?\b/gi, " ").replaceAll(/\s+/g, " ").trim();
     if (NOISE_TEXT.test(text))
       return "";
     if (!text) {
@@ -13209,7 +12281,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return false;
     } catch (e) {
-      logger23.debug("stream stores unavailable:", e);
+      logger22.debug("stream stores unavailable:", e);
       return null;
     }
   }
@@ -13265,7 +12337,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const page = ChatPageStore.useChatPageStore.getState();
       return page.conversationId || page.optimisticConversationId || "";
     } catch (e) {
-      logger23.debug("chat page unavailable:", e);
+      logger22.debug("chat page unavailable:", e);
       return "";
     }
   }
@@ -13275,7 +12347,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid];
     } catch (e) {
-      logger23.debug("message store unavailable:", e);
+      logger22.debug("message store unavailable:", e);
       return;
     }
   }
@@ -13379,7 +12451,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return null;
   }
   function plain(text) {
-    const t = text.replace(/\s+/g, " ").trim();
+    const t = text.replaceAll(/\s+/g, " ").trim();
     if (!t || NOISE_TEXT.test(t))
       return "";
     return t.length > SUMMARY_MAX ? `${t.slice(0, SUMMARY_MAX)}…` : t;
@@ -13401,7 +12473,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       return MessageStore.nodeToResponse?.(cid, node) ?? node.content;
     } catch (e) {
-      logger23.debug("nodeToResponse failed:", e);
+      logger22.debug("nodeToResponse failed:", e);
       return node.content;
     }
   }
@@ -13415,7 +12487,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function collectDom() {
     const root = chatPane() ?? document;
-    const showAsst = settings12.store.showAssistant;
+    const showAsst = settings11.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const out = [];
     for (const el of messageNodes(root)) {
@@ -13436,8 +12508,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function itemFromNode(cid, node, liveId, liveEl) {
     if (node.role !== "user" && node.role !== "assistant")
       return null;
-    const role = node.role;
-    if (!settings12.store.showAssistant && role === "assistant")
+    const { role } = node;
+    if (!settings11.store.showAssistant && role === "assistant")
       return null;
     const rec = contentOf(cid, node);
     if (rec?.isControl)
@@ -13469,7 +12541,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length)
       return [];
-    const showAsst = settings12.store.showAssistant;
+    const showAsst = settings11.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const liveId = showAsst ? liveAssistantId(gw, path) : "";
     const out = [];
@@ -13598,7 +12670,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     el.classList.add("void-bn-flash");
   }
   function armFlash(id, fallback) {
-    if (settings12.store.jumpEffect !== "border")
+    if (settings11.store.jumpEffect !== "border")
       return;
     if (!id && !fallback)
       return;
@@ -13732,7 +12804,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
       return true;
     } catch (e) {
-      logger23.debug("loadOlderHistory failed:", e);
+      logger22.debug("loadOlderHistory failed:", e);
       return false;
     }
   }
@@ -14109,7 +13181,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const positive = scores.filter((s) => s > 0);
     if (positive.length < 2)
       return -1;
-    const sorted = [...positive].sort((a, b) => a - b);
+    const sorted = [...positive].toSorted((a, b) => a - b);
     const median = sorted[Math.floor((sorted.length - 1) / 2)];
     let best = -1;
     let bestS = 0;
@@ -14126,7 +13198,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return best;
   }
   function nativeCurrentIndex() {
-    if (!settings12.store.showAssistant)
+    if (!settings11.store.showAssistant)
       return null;
     const ticks = nativeTicks();
     if (!ticks.length)
@@ -14356,7 +13428,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function syncNativeDash(nav) {
     clearNativeDash();
-    if (!settings12.store.showAssistant)
+    if (!settings11.store.showAssistant)
       return;
     let liveI = -1;
     for (let i = nav.length - 1;i >= 0; i--) {
@@ -14382,7 +13454,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function menuEl(nav) {
     const menu = document.createElement("div");
-    menu.className = cl20("menu");
+    menu.className = cl19("menu");
     menu.addEventListener("pointerenter", () => {
       overMenu = true;
       markAim(-1);
@@ -14392,23 +13464,23 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       markAim(-1);
     });
     const meta = document.createElement("div");
-    meta.className = cl20("meta");
+    meta.className = cl19("meta");
     meta.textContent = metaLabel(0);
     const ul = document.createElement("ul");
-    ul.className = cl20("list");
+    ul.className = cl19("list");
     nav.forEach((item, i) => {
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = cl20("item");
+      btn.className = cl19("item");
       btn.dataset.voidBnI = String(i);
       if (item.id)
         btn.dataset.responseId = item.id;
       const emoji = document.createElement("span");
-      emoji.className = cl20("emoji");
+      emoji.className = cl19("emoji");
       emoji.textContent = item.role === "user" ? "❓" : "\uD83E\uDD16";
       const label = document.createElement("span");
-      label.className = cl20("label");
+      label.className = cl19("label");
       label.textContent = item.text;
       btn.append(emoji, label);
       btn.addEventListener("click", (e) => {
@@ -14424,11 +13496,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function tickRail(nav) {
     const wrap = document.createElement("div");
-    wrap.className = cl20("ticks", { dense: nav.length > DENSE_N });
+    wrap.className = cl19("ticks", { dense: nav.length > DENSE_N });
     nav.forEach((item, i) => {
       const tick = document.createElement("button");
       tick.type = "button";
-      tick.className = cl20("tick", item.role === "user" ? "tick-user" : "tick-asst", { "tick-live": item.live });
+      tick.className = cl19("tick", item.role === "user" ? "tick-user" : "tick-asst", { "tick-live": item.live });
       tick.dataset.voidBnI = String(i);
       if (item.id)
         tick.dataset.responseId = item.id;
@@ -14454,7 +13526,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     document.documentElement.classList.remove("void-bn-fullticks");
   }
   function syncHideTip() {
-    document.documentElement.classList.toggle(HIDE_CLASS, !!settings12.store.hideNativeHover);
+    document.documentElement.classList.toggle(HIDE_CLASS, !!settings11.store.hideNativeHover);
   }
   function setOpen(on) {
     host?.classList.toggle("void-bn-open", on);
@@ -14664,7 +13736,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!frame2)
       return;
     const box = document.createElement("div");
-    box.className = cl20("host", "self");
+    box.className = cl19("host", "self");
     box.classList.add(SLOT_CLASS);
     box.append(tickRail(nav), menuEl(nav));
     document.body.append(box);
@@ -14701,12 +13773,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const gen = gw.activeGeneration;
       const genNode = gen?.assistantId ? gw.nodes?.[gen.assistantId] : undefined;
       const phase = generationPhase(gw);
-      const lastAsst = [...path].reverse().find((n) => n.role === "assistant");
+      const lastAsst = [...path].toReversed().find((n) => n.role === "assistant");
       const lastKey = lastAsst ? `${lastAsst.id}:${lastAsst.status}:${lastAsst.content?.state ?? ""}` : "";
       const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
       return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.map((n) => `${n.id}:${n.status}`).join(",")}`;
     } catch (e) {
-      logger23.debug("message key failed:", e);
+      logger22.debug("message key failed:", e);
       return "";
     }
   }
@@ -14767,7 +13839,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["navigation"],
     enabledByDefault: true,
     startAt: "DOMContentLoaded" /* DOMContentLoaded */,
-    settings: settings12,
+    settings: settings11,
     managedStyle: "betterNavigator",
     cleanupSelectors: [".void-bn-host"],
     start,
@@ -14895,6 +13967,52 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 }
 `);
 
+  // src/plugins/betterQueue/modeSend.ts
+  function modeSlug(s) {
+    return s.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
+  }
+  function gatewaySendMode(input) {
+    const selected = modeSlug(input.selected);
+    const model = modeSlug(input.modelMode);
+    if (input.incognito)
+      return selected === "build" ? "auto" : selected;
+    if (selected === "build")
+      return "build";
+    const inflight = modeSlug(input.inflight);
+    if (inflight === "build")
+      return "build";
+    const last = input.lastModel === undefined ? undefined : modeSlug(input.lastModel);
+    const adjusted = modeSlug(input.adjusted);
+    const userChanged = !!adjusted && adjusted !== (last ?? "");
+    if (userChanged)
+      return selected || adjusted;
+    if (!input.conversationId)
+      return selected || model;
+    if (last !== undefined)
+      return last === "build" ? "build" : selected || model;
+    if (input.buildTurn || input.markedBuild)
+      return "build";
+    return selected || model;
+  }
+  function keepBuildPreference(privateChat, substituted, settled, stored) {
+    return privateChat && substituted && settled === "auto" && stored === "build";
+  }
+  function sessionModelMatches(acked, want) {
+    const need = modeSlug(want);
+    if (!need)
+      return true;
+    const have = modeSlug(acked ?? "");
+    if (have === need)
+      return true;
+    return need === "build" && have.includes("build");
+  }
+  function sessionNeedsUpdate(acked, chip, hasSession) {
+    const want = modeSlug(chip);
+    if (!want)
+      return false;
+    return !sessionModelMatches(acked, chip);
+  }
+
   // src/plugins/betterQueue/sync.ts
   var TTL_MS = 24 * 60 * 60 * 1000;
   var MAX_ITEMS = 30;
@@ -14978,7 +14096,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     const byId = new Map(bound.saved.map((item) => [item.id, item]));
     const next = [];
-    const ordered = official.slice().sort((a, b) => a.position - b.position || a.id.localeCompare(b.id));
+    const ordered = official.slice().toSorted((a, b) => a.position - b.position || a.id.localeCompare(b.id));
     for (const off of ordered) {
       if (!off.id)
         continue;
@@ -15047,7 +14165,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/persist.ts
-  var logger24 = new Logger("QueuePersist");
+  var logger23 = new Logger("QueuePersist");
   var ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
   var DB_KEY = "queue-persist:v1";
   var LOCAL_ACCOUNT = "local";
@@ -15159,7 +14277,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (intent.activeModelId && prevActive !== intent.activeModelId)
         chat.setActiveModelId(intent.activeModelId);
     } catch (e) {
-      logger24.debug("intent apply failed", e);
+      logger23.debug("intent apply failed", e);
     }
     try {
       if (intent?.modeId)
@@ -15175,7 +14293,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         if (chat && prevActive && String(chat.activeModelId || "") !== prevActive)
           chat.setActiveModelId(prevActive);
       } catch (e) {
-        logger24.debug("intent restore failed", e);
+        logger23.debug("intent restore failed", e);
       }
     }
   }
@@ -15378,7 +14496,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       await idbSet(DB_KEY, doc);
     } catch (e) {
-      logger24.debug("persist failed", e);
+      logger23.debug("persist failed", e);
     }
   }
   async function load() {
@@ -15389,7 +14507,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       else
         doc = emptyDoc();
     } catch (e) {
-      logger24.debug("load failed", e);
+      logger23.debug("load failed", e);
       doc = emptyDoc();
     }
     bucketsToMemory(accountId());
@@ -15429,7 +14547,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   async function replay(cid, saved) {
     const placed = [];
-    const ordered = freshSnaps(saved, Date.now()).slice().sort((a, b) => a.position - b.position);
+    const ordered = freshSnaps(saved, Date.now()).slice().toSorted((a, b) => a.position - b.position);
     for (const item of ordered) {
       const before = idSet(cid);
       suppress = true;
@@ -15445,7 +14563,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           });
         });
       } catch (e) {
-        logger24.debug("replay failed", e);
+        logger23.debug("replay failed", e);
       } finally {
         suppress = false;
       }
@@ -15512,7 +14630,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         decided.add(cid);
       }
     } catch (e) {
-      logger24.debug("restore failed", e);
+      logger23.debug("restore failed", e);
       retry2 = true;
     } finally {
       replaying = false;
@@ -15679,9 +14797,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function persistQueueKey(s) {
     return Object.entries(s.conversations ?? {}).map(([cid, conv]) => {
-      const items = [...conv.queue ?? []].sort((a, b) => a.position - b.position);
+      const items = [...conv.queue ?? []].toSorted((a, b) => a.position - b.position);
       return `${cid}=${items.map((item) => `${qid(item)}:${item.position}:${nodeFields(conv, qid(item)).text.length}`).join(",")}`;
-    }).sort().join("|");
+    }).toSorted().join("|");
   }
   var lastQueueKey = "";
   var lastNavKey = "";
@@ -15723,54 +14841,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     onPersistPage();
   }
 
-  // src/plugins/betterQueue/modeSend.ts
-  function modeSlug(s) {
-    return s.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
-  }
-  function gatewaySendMode(input) {
-    const selected = modeSlug(input.selected);
-    const model = modeSlug(input.modelMode);
-    if (input.incognito)
-      return selected === "build" ? "auto" : selected;
-    if (selected === "build")
-      return "build";
-    const inflight = modeSlug(input.inflight);
-    if (inflight === "build")
-      return "build";
-    const last = input.lastModel === undefined ? undefined : modeSlug(input.lastModel);
-    const adjusted = modeSlug(input.adjusted);
-    const userChanged = !!adjusted && adjusted !== (last ?? "");
-    if (userChanged)
-      return selected || adjusted;
-    if (!input.conversationId)
-      return selected || model;
-    if (last !== undefined)
-      return last === "build" ? "build" : selected || model;
-    if (input.buildTurn || input.markedBuild)
-      return "build";
-    return selected || model;
-  }
-  function keepBuildPreference(privateChat, substituted, settled, stored) {
-    return privateChat && substituted && settled === "auto" && stored === "build";
-  }
-  function sessionModelMatches(acked, want) {
-    const need = modeSlug(want);
-    if (!need)
-      return true;
-    const have = modeSlug(acked ?? "");
-    if (have === need)
-      return true;
-    return need === "build" && have.includes("build");
-  }
-  function sessionNeedsUpdate(acked, chip, hasSession) {
-    const want = modeSlug(chip);
-    if (!want)
-      return false;
-    return !sessionModelMatches(acked, chip);
-  }
-
   // src/plugins/betterQueue/settings.ts
-  var settings13 = definePluginSettings({
+  var settings12 = definePluginSettings({
     showQueueMode: {
       type: 3 /* BOOLEAN */,
       description: "Show a mode chip on each queued message.",
@@ -15789,7 +14861,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   });
 
   // src/plugins/betterQueue/mode.ts
-  var logger25 = new Logger("ModeSync");
+  var logger24 = new Logger("ModeSync");
   var CHAT_POST = /\/rest\/app-chat\/conversations/;
   var STOP_URL = /stop|abort|cancel/i;
   var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
@@ -16002,7 +15074,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function syncRestoreFlag() {
-    if (!settings13.store.stickyOnNavigate) {
+    if (!settings12.store.stickyOnNavigate) {
       setRestoreFlag(false);
       return;
     }
@@ -16045,7 +15117,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (settled !== slug && modeSlug2(intent.modeId) === slug)
         setIntent(captureIntent(settled, snapshot()));
     } catch (e) {
-      logger25.debug("apply failed", e);
+      logger24.debug("apply failed", e);
     } finally {
       applying = false;
     }
@@ -16092,7 +15164,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
       } catch (e) {
-        logger25.debug("incognito build hide failed", e);
+        logger24.debug("incognito build hide failed", e);
       } finally {
         applying = false;
       }
@@ -16103,7 +15175,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     userPicking = false;
     awaitingMenu = false;
     applyIntent(intent);
-    logger25.info("intent", intent.modeId);
+    logger24.info("intent", intent.modeId);
   }
   function rememberSnapshot() {
     const next = snapshot();
@@ -16113,7 +15185,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     userPicking = false;
     awaitingMenu = false;
     syncModelMode(modeSlug2(intent.modeId));
-    logger25.info("intent", intent.modeId);
+    logger24.info("intent", intent.modeId);
   }
   function syncModelMode(slug) {
     if (!slug || applying)
@@ -16133,7 +15205,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     } catch (e) {
       applying = false;
-      logger25.debug("model sync failed", e);
+      logger24.debug("model sync failed", e);
     }
   }
   var MODE_IDS = new Set(CATALOG.map((m) => m.id));
@@ -16152,7 +15224,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (inIncognito2())
       return true;
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       if (route?.temporary)
         return true;
       const cid = String(route?.conversationId || currentCid3() || "");
@@ -16181,7 +15253,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         try {
           ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
         } catch (e) {
-          logger25.debug("incognito build hide failed", e);
+          logger24.debug("incognito build hide failed", e);
         } finally {
           applying = false;
         }
@@ -16206,7 +15278,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           try {
             ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
           } catch (e) {
-            logger25.debug("incognito build hide failed", e);
+            logger24.debug("incognito build hide failed", e);
           } finally {
             applying = false;
           }
@@ -16223,7 +15295,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       ModesStore.useModesStore.getState().setSelectedModeId("build", { source: "sync" });
     } catch (e) {
-      logger25.debug("incognito build restore failed", e);
+      logger24.debug("incognito build restore failed", e);
     } finally {
       applying = false;
     }
@@ -16259,7 +15331,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       wrapped.voidPicker = true;
       store2.setState({ setSelectedModeId: wrapped });
     } catch (e) {
-      logger25.debug("picker hook failed", e);
+      logger24.debug("picker hook failed", e);
     }
   }
   function markedBuild(cid) {
@@ -16330,7 +15402,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         modes.setSelectedModeId(slug, { source: "sync" });
       } catch (e) {
-        logger25.debug("picker sync failed", e);
+        logger24.debug("picker sync failed", e);
       } finally {
         applying = false;
       }
@@ -16340,7 +15412,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     const snap = snapshot();
     setIntent(captureIntent(snap.modeId || slug, snap));
-    logger25.info("intent", intent.modeId, "from send", slug);
+    logger24.info("intent", intent.modeId, "from send", slug);
   }
   var alignTimer = null;
   var alignN = 0;
@@ -16368,11 +15440,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       alignOff.push(ModesStore.useModesStore.subscribe(kick));
       alignOff.push(MessageStore.useMessageStore.subscribe(kick));
     } catch (e) {
-      logger25.debug("align subscribe failed", e);
+      logger24.debug("align subscribe failed", e);
     }
   }
   function fightHydrate() {
-    if (sendOverride || !settings13.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
+    if (sendOverride || !settings12.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
       return;
     if (!loadPending())
       return;
@@ -16384,7 +15456,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const cid = currentCid3();
     if (modeSlug2(cur.modeId) === slug && (!cid || sessionAdjusted(cid) === slug) && (!intent.modelMode || modeSlug2(cur.modelMode) === slug) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
       return;
-    logger25.info("hydrate fought", cur.modeId, "->", intent.modeId);
+    logger24.info("hydrate fought", cur.modeId, "->", intent.modeId);
     applyIntent(intent);
   }
   function navKey() {
@@ -16415,7 +15487,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (!intent.modeId)
       setIntent(snapshot());
-    if (!settings13.store.stickyOnNavigate || !intent.modeId) {
+    if (!settings12.store.stickyOnNavigate || !intent.modeId) {
       followModelMode();
       return;
     }
@@ -16576,7 +15648,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (diverting) {
         mapGetOrCreate(held, cid, () => []).push({ id, args: diverting, intent: { ...saved2 } });
         diverting = null;
-        logger25.info("held", id, "for", saved2.modeId);
+        logger24.info("held", id, "for", saved2.modeId);
         return true;
       }
       return false;
@@ -16656,7 +15728,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
     state.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued.item), parentId });
     forgetItem(turn.id);
-    logger25.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
+    logger24.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
   }
   function visibleChip() {
     try {
@@ -16775,7 +15847,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       modes.setSelectedModeId(other, { source: "user" });
       modes.setSelectedModeId(slug, { source: "user" });
     } catch (e) {
-      logger25.debug("session align failed", e);
+      logger24.debug("session align failed", e);
     }
   }
   var MAX_NUDGE = 2;
@@ -16787,7 +15859,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return Promise.resolve(true);
     const gen = alignGen;
     pokeSession(cid, slug, 0);
-    logger25.info("session align", key, ackedModel.get(key) ?? "?", "->", slug);
+    logger24.info("session align", key, ackedModel.get(key) ?? "?", "->", slug);
     const arm = (pass, pending3) => {
       if (gen !== alignGen)
         return Promise.resolve(false);
@@ -16797,13 +15869,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         if (ok || sessionModelMatches(ackedModel.get(key), slug))
           return true;
         if (updateInFlight(key, slug) && pending3 < MAX_PENDING) {
-          logger25.info("session update pending", key, slug);
+          logger24.info("session update pending", key, slug);
           return arm(pass, pending3 + 1);
         }
         if (pass + 1 >= MAX_NUDGE)
           return false;
         pokeSession(cid, slug, pass + 1);
-        logger25.info("session align retry", key, slug);
+        logger24.info("session align retry", key, slug);
         return arm(pass + 1, 0);
       });
     };
@@ -16852,11 +15924,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           if (needsSessionAlign(cid, slug)) {
             alignSessionToChip(cid, slug).then((ok) => {
               if (!ok)
-                logger25.info("session align gave up", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
+                logger24.info("session align gave up", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
               try {
                 orig.call(this, data);
               } catch (e) {
-                logger25.debug("held send failed", e);
+                logger24.debug("held send failed", e);
               }
             });
             return;
@@ -17078,7 +16150,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       wrappedGwSend = wrapped;
       mgr.send = wrapped;
     } catch (e) {
-      logger25.debug("gateway wrap failed", e);
+      logger24.debug("gateway wrap failed", e);
     }
   }
   function unwrapGatewaySend() {
@@ -17089,7 +16161,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (gwHost && origGwSend && gwHost.send === wrappedGwSend)
         gwHost.send = origGwSend;
     } catch (e) {
-      logger25.debug("gateway unwrap failed", e);
+      logger24.debug("gateway unwrap failed", e);
     }
     origGwSend = null;
     wrappedGwSend = null;
@@ -17219,7 +16291,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!next || next === text)
       return null;
     applyIntent(live);
-    logger25.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
+    logger24.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
     return next;
   }
   function patchFetchArgs(input, init) {
@@ -17266,7 +16338,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           return origFetch.call(pageWindow, i, n);
         }
       } catch (e) {
-        logger25.debug("fetch patch failed", e);
+        logger24.debug("fetch patch failed", e);
       }
       return origFetch.call(pageWindow, input, init);
     };
@@ -17287,7 +16359,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         xhrMeta.set(this, `${String(method).toUpperCase()} ${requestUrl(url)}`);
       } catch (e) {
-        logger25.debug("xhr open failed", e);
+        logger24.debug("xhr open failed", e);
       }
       return origXhrOpen.call(this, method, url, ...rest);
     };
@@ -17381,7 +16453,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (turn)
         turn.intent = next;
     }
-    logger25.info("queue item", id, "->", next.modeId);
+    logger24.info("queue item", id, "->", next.modeId);
     schedulePaint();
   }
   function menuCurrent(chip, id) {
@@ -17608,7 +16680,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function paint2() {
     paintRaf = 0;
-    if (!settings13.store.showQueueMode || onImaginePage()) {
+    if (!settings12.store.showQueueMode || onImaginePage()) {
       unpaint();
       return;
     }
@@ -17726,7 +16798,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
       } catch (e) {
-        logger25.debug("incognito build hide failed", e);
+        logger24.debug("incognito build hide failed", e);
       } finally {
         applying = false;
       }
@@ -17798,7 +16870,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       hookSocket();
       hookSelectedMode();
     } catch (e) {
-      logger25.warn("Failed to hook send path", e);
+      logger24.warn("Failed to hook send path", e);
     }
     try {
       offIncognito?.();
@@ -17812,7 +16884,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         schedulePaint();
       });
     } catch (e) {
-      logger25.debug("incognito subscribe failed", e);
+      logger24.debug("incognito subscribe failed", e);
     }
     if (!onImaginePage())
       followModelMode();
@@ -17923,7 +16995,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/index.ts
-  var logger26 = new Logger("BetterQueue");
+  var logger25 = new Logger("BetterQueue");
   function dropName(list) {
     if (!Array.isArray(list))
       return;
@@ -17931,7 +17003,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return next.length === list.length ? undefined : next;
   }
   function migrateLegacy4() {
-    const plugins2 = PlainSettings.plugins;
+    const { plugins: plugins2 } = PlainSettings;
     const mode = plugins2.ModeSync;
     const persist3 = plugins2.QueuePersist;
     if (!mode && !persist3)
@@ -17964,23 +17036,23 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     }
     SettingsStore3.markAsChanged();
-    logger26.info("Migrated ModeSync / QueuePersist into BetterQueue");
+    logger25.info("Migrated ModeSync / QueuePersist into BetterQueue");
   }
-  var pluginName3 = Object.getOwnPropertyDescriptor(settings13, "pluginName");
+  var pluginName3 = Object.getOwnPropertyDescriptor(settings12, "pluginName");
   if (pluginName3?.set && pluginName3.get) {
-    Object.defineProperty(settings13, "pluginName", {
+    Object.defineProperty(settings12, "pluginName", {
       configurable: true,
       enumerable: true,
       get: pluginName3.get,
       set(name) {
         if (name === "BetterQueue")
           migrateLegacy4();
-        pluginName3.set.call(settings13, name);
+        pluginName3.set.call(settings12, name);
       }
     });
   }
   function applyPersist() {
-    if (settings13.store.persistAcrossRefresh)
+    if (settings12.store.persistAcrossRefresh)
       startPersist();
     else
       stopPersist();
@@ -17993,7 +17065,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["composer"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
-    settings: settings13,
+    settings: settings12,
     managedStyle: "betterQueue",
     cleanupSelectors: [".void-ms-qchip", ".void-ms-qmenu"],
     start() {
@@ -18265,7 +17337,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function isToolbarPopup(popup) {
     if (!popup || typeof popup !== "object")
       return false;
-    const range = popup.range;
+    const { range } = popup;
     return !!range && typeof range.cloneRange === "function";
   }
   function cloneToolbarPopup(popup) {
@@ -18304,7 +17376,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function pathData(svg2) {
-    return [...svg2.querySelectorAll("path")].map((p) => (p.getAttribute("d") || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" ");
+    return [...svg2.querySelectorAll("path")].map((p) => (p.getAttribute("d") || "").replaceAll(/\s+/g, " ").trim()).filter(Boolean).join(" ");
   }
   function isCloseSvg(svg2) {
     const d = pathData(svg2);
@@ -18325,7 +17397,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (horiz2.length >= 2)
         return true;
     }
-    const paths = [...svg2.querySelectorAll("path")].map((p) => (p.getAttribute("d") || "").replace(/\s+/g, " ").trim()).filter(Boolean);
+    const paths = [...svg2.querySelectorAll("path")].map((p) => (p.getAttribute("d") || "").replaceAll(/\s+/g, " ").trim()).filter(Boolean);
     const horiz = paths.filter((d) => /^[Mm]\s*-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*[Hh]/.test(d) && !/[VvAaCcQq]/.test(d) && d.length < 28);
     if (horiz.length >= 2)
       return true;
@@ -18544,8 +17616,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/jump.ts
-  var logger27 = new Logger("QuoteJump");
-  var cl21 = classNameFactory("void-qj-");
+  var logger26 = new Logger("QuoteJump");
+  var cl20 = classNameFactory("void-qj-");
   var HL = "void-qj";
   var EDITOR = ".tiptap, [contenteditable='true']";
   var MSG2 = "[data-testid='user-message'], [data-testid='assistant-message']";
@@ -19328,7 +18400,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (flashTimer2)
       window.clearTimeout(flashTimer2);
     flashTimer2 = 0;
-    flashing2?.classList.remove(cl21("hit"));
+    flashing2?.classList.remove(cl20("hit"));
     flashing2 = null;
     const { highlights } = CSS;
     highlights?.delete(HL);
@@ -19342,7 +18414,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       highlights.set(HL, new HighlightCtor(...list));
     } else if (list.length || flashHost || !el.closest("[id^='response-']")) {
       flashing2 = el;
-      el.classList.add(cl21("hit"));
+      el.classList.add(cl20("hit"));
     }
     flashTimer2 = window.setTimeout(clearHighlight, FLASH_MS2);
   }
@@ -19376,7 +18448,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const shot = read();
       if (!shot)
         return null;
-      let el = shot.el;
+      let { el } = shot;
       if (!el.isConnected && pin) {
         const fresh = messageById(pin);
         if (fresh?.isConnected)
@@ -19488,11 +18560,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
     } catch (e) {
-      logger27.debug("loadResponses failed", e);
+      logger26.debug("loadResponses failed", e);
       try {
         await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
       } catch (err) {
-        logger27.debug("loadMoreResponses failed", err);
+        logger26.debug("loadMoreResponses failed", err);
       }
     }
     try {
@@ -19501,7 +18573,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
       }
     } catch (e) {
-      logger27.debug("loadOlderHistory failed", e);
+      logger26.debug("loadOlderHistory failed", e);
     }
   }
   function resolveNeedle(origin) {
@@ -19670,7 +18742,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (mine !== gen || !el) {
       if (!el)
-        logger27.debug("no source message");
+        logger26.debug("no source message");
       return;
     }
     await land(el, needle, mine, pinned);
@@ -19713,7 +18785,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         }
       }
     } catch (e) {
-      logger27.debug("message nodes failed", e);
+      logger26.debug("message nodes failed", e);
     }
     try {
       const store2 = ResponseStore.useResponseStore.getState();
@@ -19761,10 +18833,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function closeMenu2() {
     openSrc = "";
     menuCites = [];
-    document.querySelector(`.${cl21("menu")}`)?.remove();
+    document.querySelector(`.${cl20("menu")}`)?.remove();
   }
   function placeMenu(anchor) {
-    const menu2 = document.querySelector(`.${cl21("menu")}`);
+    const menu2 = document.querySelector(`.${cl20("menu")}`);
     if (!menu2)
       return;
     const r = anchor.getBoundingClientRect();
@@ -19777,11 +18849,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     openSrc = anchor.dataset.voidQjSrc || "";
     menuCites = cites;
     const menu2 = document.createElement("div");
-    menu2.className = cl21("menu");
+    menu2.className = cl20("menu");
     cites.forEach((cite, i) => {
       const item = document.createElement("button");
       item.type = "button";
-      item.className = cl21("item");
+      item.className = cl20("item");
       item.dataset.voidQjI = String(i);
       const where = cite.live ? "Composer" : "Quote";
       item.textContent = `${where}: ${norm2(cite.quoted).slice(0, 72)}`;
@@ -19792,7 +18864,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function clearBadges() {
     closeMenu2();
-    for (const n of document.querySelectorAll(`.${cl21("back")}`))
+    for (const n of document.querySelectorAll(`.${cl20("back")}`))
       n.remove();
     for (const n of document.querySelectorAll("[data-void-qj-preview]"))
       n.removeAttribute("data-void-qj-preview");
@@ -19814,9 +18886,9 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return svg2;
   }
   function ensureGlyph(btn) {
-    if (!btn.querySelector(`.${cl21("mark")}`)) {
+    if (!btn.querySelector(`.${cl20("mark")}`)) {
       const mark = document.createElement("span");
-      mark.className = cl21("mark");
+      mark.className = cl20("mark");
       mark.setAttribute("aria-hidden", "true");
       mark.append(quoteSvg());
       btn.prepend(mark);
@@ -19827,7 +18899,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function paintCount(btn, n) {
-    const cur = btn.querySelector(`.${cl21("count")}`);
+    const cur = btn.querySelector(`.${cl20("count")}`);
     if (n <= 1) {
       cur?.remove();
       return;
@@ -19836,7 +18908,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     let el = cur;
     if (!el) {
       el = document.createElement("span");
-      el.className = cl21("count");
+      el.className = cl20("count");
       el.setAttribute("aria-hidden", "true");
       btn.append(el);
     }
@@ -19945,11 +19017,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (box.width < 40 || box.bottom < 24 || box.top > window.innerHeight - 8)
         continue;
       seen.add(source);
-      let btn = document.querySelector(`.${cl21("back")}[data-void-qj-src="${source}"]`);
+      let btn = document.querySelector(`.${cl20("back")}[data-void-qj-src="${source}"]`);
       if (!btn) {
         btn = document.createElement("button");
         btn.type = "button";
-        btn.className = cl21("back");
+        btn.className = cl20("back");
         btn.dataset.voidQjSrc = source;
       }
       ensureGlyph(btn);
@@ -19977,7 +19049,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (openSrc === source)
         placeMenu(btn);
     }
-    for (const n of document.querySelectorAll(`.${cl21("back")}`)) {
+    for (const n of document.querySelectorAll(`.${cl20("back")}`)) {
       const id = n.dataset.voidQjSrc || "";
       if (seen.has(id))
         continue;
@@ -20033,7 +19105,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const root = host2();
     const card = root?.querySelector(JUMP_BTN) ?? el;
     if (!card) {
-      logger27.debug("no citing message", cite.id);
+      logger26.debug("no citing message", cite.id);
       return;
     }
     openAncestors(card, cite.quoted);
@@ -20051,7 +19123,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }, mine, cite.id);
   }
   function onBackClick(t) {
-    const badge = t.closest(`.${cl21("back")}`);
+    const badge = t.closest(`.${cl20("back")}`);
     if (badge instanceof HTMLElement) {
       const src = badge.dataset.voidQjSrc || "";
       const cites = citesBySource().get(src) ?? [];
@@ -20065,14 +19137,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return true;
     }
-    const item = t.closest(`.${cl21("item")}`);
+    const item = t.closest(`.${cl20("item")}`);
     if (item instanceof HTMLElement) {
       const cite = menuCites[Number(item.dataset.voidQjI)];
       closeMenu2();
       jumpToCite(cite);
       return true;
     }
-    if (!t.closest(`.${cl21("menu")}`))
+    if (!t.closest(`.${cl20("menu")}`))
       closeMenu2();
     return false;
   }
@@ -20085,7 +19157,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return;
       if (nativeQuoteButton(t))
         return;
-      if (t.closest(`.${cl21("back")}, .${cl21("menu")}`)) {
+      if (t.closest(`.${cl20("back")}, .${cl20("menu")}`)) {
         e.preventDefault();
         e.stopPropagation();
         onBackClick(t);
@@ -20102,7 +19174,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       e.stopPropagation();
       jump2(origin);
     } catch (err) {
-      logger27.debug("click", err);
+      logger26.debug("click", err);
     }
   }
   function startJump() {
@@ -20135,8 +19207,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/sticky.ts
-  var logger28 = new Logger("QuoteSticky");
-  var cl22 = classNameFactory("void-qs-");
+  var logger27 = new Logger("QuoteSticky");
+  var cl21 = classNameFactory("void-qs-");
   var KEEP2 = 40;
   var RESTORE_GAP_MS = 80;
   var COLLAPSE_PX = 80;
@@ -20387,7 +19459,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         applying2 = false;
       }
     } catch (e) {
-      logger28.debug("clear failed", e);
+      logger27.debug("clear failed", e);
     }
   }
   function applyQuote(key, text, popup) {
@@ -20401,7 +19473,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(popup))
         chat.setQuotePopupData(popup);
     } catch (e) {
-      logger28.debug("apply failed", e);
+      logger27.debug("apply failed", e);
     } finally {
       applying2 = false;
     }
@@ -20414,7 +19486,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!clip)
       return false;
     for (const n of bar.querySelectorAll("div, span, button")) {
-      if (!(n instanceof HTMLElement) || n.closest(`.${cl22("chip")}`))
+      if (!(n instanceof HTMLElement) || n.closest(`.${cl21("chip")}`))
         continue;
       if (n.closest(".tiptap, [contenteditable='true']"))
         continue;
@@ -20431,7 +19503,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return false;
   }
   function removeFallback() {
-    for (const n of document.querySelectorAll(`.${cl22("chip")}`))
+    for (const n of document.querySelectorAll(`.${cl21("chip")}`))
       n.remove();
   }
   function onFallbackDismiss(e) {
@@ -20440,17 +19512,17 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function makeChip() {
     const el = document.createElement("div");
-    el.className = cl22("chip");
+    el.className = cl21("chip");
     el.dataset.voidQs = "";
     const mark = document.createElement("span");
-    mark.className = cl22("mark");
+    mark.className = cl21("mark");
     mark.setAttribute("aria-hidden", "true");
     mountQuoteMark(mark);
     const text = document.createElement("span");
-    text.className = cl22("text");
+    text.className = cl21("text");
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = cl22("x");
+    btn.className = cl21("x");
     btn.setAttribute("aria-label", "Remove quote");
     btn.innerHTML = X_SVG;
     btn.addEventListener("pointerdown", onFallbackDismiss);
@@ -20483,7 +19555,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       removeFallback();
       return;
     }
-    let el = document.querySelector(`.${cl22("chip")}`);
+    let el = document.querySelector(`.${cl21("chip")}`);
     if (el instanceof HTMLElement && el.dataset.voidQsKey !== key) {
       el.remove();
       el = null;
@@ -20494,7 +19566,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       document.body.append(el);
     }
     el.dataset.voidQsKey = key;
-    const label = el.querySelector(`.${cl22("text")}`);
+    const label = el.querySelector(`.${cl21("text")}`);
     const shown = snap.text.replaceAll(/\s+/g, " ").trim();
     if (label && label.textContent !== shown)
       label.textContent = shown;
@@ -20523,11 +19595,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
         lastRestoreAt = now;
         applyQuote(key, snap.text, popupFor(snap));
-        logger28.info("restored", key);
+        logger27.info("restored", key);
       }
       paintFallback(key, snap);
     } catch (e) {
-      logger28.debug("restore failed", e);
+      logger27.debug("restore failed", e);
       paintFallback(key, snap);
     }
   }
@@ -20571,7 +19643,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
         chat.setQuotePopupData(null);
     } catch (e) {
-      logger28.debug("dismiss failed", e);
+      logger27.debug("dismiss failed", e);
     } finally {
       applying2 = false;
     }
@@ -20664,10 +19736,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return btn instanceof HTMLElement ? btn : null;
   }
   function isQuoteDismiss(el) {
-    if (el.closest(`.${cl22("x")}`))
+    if (el.closest(`.${cl21("x")}`))
       return true;
     const btn = barButton(el);
-    if (!btn || btn.closest(`.${cl22("chip")}`))
+    if (!btn || btn.closest(`.${cl21("chip")}`))
       return false;
     const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
     if (KEEP.test(label))
@@ -20717,12 +19789,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         applying2 = false;
       }
     } catch (e) {
-      logger28.debug("consume clear failed", e);
+      logger27.debug("consume clear failed", e);
     }
   }
   function isComposerSend(el) {
     const btn = el.closest(`${QUERY} button, ${QUERY} [role='button']`);
-    if (!(btn instanceof HTMLElement) || btn.closest(`.${cl22("chip")}`))
+    if (!(btn instanceof HTMLElement) || btn.closest(`.${cl21("chip")}`))
       return false;
     const label = `${btn.getAttribute("aria-label") || ""} ${btn.getAttribute("title") || ""}`;
     if (DISMISS.test(label) || /attach|dictat|mode|file|stop|abort|cancel|暂停|停止/i.test(label))
@@ -21075,7 +20147,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         chat.setQuotePopupData(undefined);
       window.getSelection()?.removeAllRanges();
     } catch (e) {
-      logger28.debug("native quote", e);
+      logger27.debug("native quote", e);
     }
   }
   function onQuotePointerDown(e) {
@@ -21193,8 +20265,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/index.ts
-  var logger29 = new Logger("BetterQuotes");
-  var settings14 = definePluginSettings({
+  var logger28 = new Logger("BetterQuotes");
+  var settings13 = definePluginSettings({
     jumpToPassage: {
       type: 3 /* BOOLEAN */,
       description: "Click a quote chip to jump to the passage, or the badge on that passage to jump back to the quotes.",
@@ -21213,7 +20285,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return next.length === list.length ? undefined : next;
   }
   function migrateLegacy5() {
-    const plugins2 = PlainSettings.plugins;
+    const { plugins: plugins2 } = PlainSettings;
     const jump3 = plugins2.QuoteJump;
     const sticky = plugins2.QuoteSticky;
     if (!jump3 && !sticky)
@@ -21242,27 +20314,27 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     }
     SettingsStore3.markAsChanged();
-    logger29.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
+    logger28.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
   }
-  var pluginName4 = Object.getOwnPropertyDescriptor(settings14, "pluginName");
+  var pluginName4 = Object.getOwnPropertyDescriptor(settings13, "pluginName");
   if (pluginName4?.set && pluginName4.get) {
-    Object.defineProperty(settings14, "pluginName", {
+    Object.defineProperty(settings13, "pluginName", {
       configurable: true,
       enumerable: true,
       get: pluginName4.get,
       set(name) {
         if (name === "BetterQuotes")
           migrateLegacy5();
-        pluginName4.set.call(settings14, name);
+        pluginName4.set.call(settings13, name);
       }
     });
   }
   function apply2() {
-    if (settings14.store.jumpToPassage)
+    if (settings13.store.jumpToPassage)
       startJump();
     else
       stopJump();
-    if (settings14.store.persistAcrossChats)
+    if (settings13.store.persistAcrossChats)
       startSticky();
     else
       stopSticky();
@@ -21275,7 +20347,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["messages", "composer"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
-    settings: settings14,
+    settings: settings13,
     managedStyle: "betterQuotes",
     cleanupSelectors: [".void-qs-chip", ".void-qj-back", ".void-qj-menu", "[data-void-bq-icon]"],
     start() {
@@ -21304,6 +20376,934 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         handler: onNav
       }
     }
+  });
+
+  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/headerHover.css
+  registerStyle("headerHover", `/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/* stylelint-disable no-descending-specificity */
+
+@media (width >= 48rem) {
+    [data-sidebar="sidebar"] [data-void-bots-plus],
+    [data-sidebar="sidebar"] .void-bots-plus,
+    [data-sidebar="sidebar"] button[aria-label="New bot"],
+    [data-sidebar="sidebar"] [data-void-chats-plus],
+    [data-sidebar="sidebar"] .void-chats-plus,
+    [data-sidebar="sidebar"] button[aria-label="Add project"],
+    [data-sidebar="sidebar"] button[aria-label="All projects"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ) {
+        opacity: 0 !important;
+        transition: opacity 0.15s ease;
+    }
+
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-bots-plus],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-bots-plus,
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="New bot"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-chats-plus],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-chats-plus,
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="Add project"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="All projects"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]):is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    [data-sidebar="sidebar"] :has(> :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus)):is(:hover, :focus-within) > :is([data-void-bots-plus], [data-void-chats-plus], .void-bots-plus, .void-chats-plus),
+    [data-sidebar="sidebar"] [data-void-bots-plus]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] .void-bots-plus:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="New bot"]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] [data-void-chats-plus]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] .void-chats-plus:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="Add project"]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]),
+    #app-sidebar div:has(> button[aria-expanded]):is(:hover, :focus-within) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ),
+    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ):is(:hover, :focus-visible, [data-state="open"]) {
+        opacity: 1 !important;
+    }
+}
+
+@media (width >= 48rem) and (prefers-reduced-motion: reduce) {
+    [data-sidebar="sidebar"] [data-void-bots-plus],
+    [data-sidebar="sidebar"] .void-bots-plus,
+    [data-sidebar="sidebar"] button[aria-label="New bot"],
+    [data-sidebar="sidebar"] [data-void-chats-plus],
+    [data-sidebar="sidebar"] .void-chats-plus,
+    [data-sidebar="sidebar"] button[aria-label="Add project"],
+    [data-sidebar="sidebar"] button[aria-label="All projects"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]),
+    #app-sidebar div:has(> button[aria-expanded]) > button[aria-expanded] + span :is(
+        button[aria-label="New bot"],
+        button[aria-label="Group by section"],
+        button[aria-label="New project"],
+        button[aria-label="Projects options"],
+        button[aria-label="Add project"],
+        button[aria-label="All projects"],
+        button[aria-label="Chats options"],
+        button[aria-label="New chat"]
+    ) {
+        transition: none;
+    }
+}
+`);
+
+  // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/styles.css
+  registerStyle("betterSidebar", `.group.peer [data-sidebar="sidebar"] + div,
+.group.peer [data-sidebar="content"] > .grow {
+    cursor: default !important;
+}
+
+.group.peer [data-sidebar="sidebar"] + div::after {
+    background-color: transparent !important;
+}
+
+.void-sidebar-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    min-width: 0;
+    flex: 1;
+}
+
+.void-sidebar-card:hover {
+    background-color: var(--surface-l2);
+}
+
+.void-sidebar-card button[data-state] {
+    pointer-events: none;
+    background-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.void-sidebar-info {
+    min-width: 0;
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .void-sidebar-card { transition: none; }
+}
+
+.void-sidebar-name,
+.void-sidebar-plan {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* stylelint-disable-next-line selector-class-pattern */
+.group\\/sidebar-menu-item:hover .void-sel-wrap {
+    display: inline-flex;
+}
+`);
+
+  // src/turbopack/common/plan.ts
+  var PLAN_NAMES = {
+    SUBSCRIPTION_TIER_X_BASIC: "X Basic",
+    SUBSCRIPTION_TIER_X_PREMIUM: "X Premium",
+    SUBSCRIPTION_TIER_X_PREMIUM_PLUS: "X Premium+",
+    SUBSCRIPTION_TIER_SUPER_GROK_LITE: "SuperGrok Lite",
+    SUBSCRIPTION_TIER_GROK_PRO: "SuperGrok",
+    SUBSCRIPTION_TIER_SUPER_GROK_PLUS: "SuperGrok Plus",
+    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "SuperGrok Heavy"
+  };
+  var COMMERCE_PLAN_NAMES = {
+    SUBSCRIPTION_TIER_SUPER_GROK_LITE: "Plus",
+    SUBSCRIPTION_TIER_GROK_PRO: "Premium",
+    SUBSCRIPTION_TIER_SUPER_GROK_PLUS: "Super",
+    SUBSCRIPTION_TIER_SUPER_GROK_PRO: "Ultra"
+  };
+  var X_SUB_NAMES = {
+    PremiumPlus: "SuperGrok",
+    Premium: "X Premium",
+    Basic: "X Basic"
+  };
+  function getPlanName(bestSubscription, xSubscriptionType, commerce = false) {
+    if (commerce && bestSubscription) {
+      const unified = COMMERCE_PLAN_NAMES[bestSubscription];
+      if (unified)
+        return unified;
+    }
+    return (bestSubscription ? PLAN_NAMES[bestSubscription] : undefined) ?? (xSubscriptionType ? X_SUB_NAMES[xSubscriptionType] : undefined) ?? "Free";
+  }
+
+  // src/turbopack/common/subscriptions.ts
+  var COMMERCE_BILLING = "BILLING_SYSTEM_COMMERCE";
+  var SubscriptionsApi = findByPropsLazy("useSubscriptions", "getSubscriptionTierName");
+  var QueryClientApi = findByPropsLazy("getQueryClient");
+  function legacyHook() {
+    const store2 = SubscriptionsStore.useSubscriptionsStore;
+    if (typeof store2 === "function" && typeof store2.getState === "function") {
+      return store2;
+    }
+    return null;
+  }
+  function modernHook() {
+    const hook = SubscriptionsApi.useSubscriptions;
+    return typeof hook === "function" ? hook : null;
+  }
+  function cachedSnapshot() {
+    try {
+      const client = QueryClientApi.getQueryClient?.();
+      const data = client?.getQueryCache?.().find?.({ queryKey: ["subscriptions"] })?.state?.data;
+      if (data && typeof data === "object")
+        return data;
+    } catch {}
+    return {};
+  }
+  function useSubscriptionSnapshot() {
+    const modern = modernHook();
+    if (modern)
+      return modern() ?? {};
+    const legacy = legacyHook();
+    if (legacy)
+      return legacy((state) => state) ?? {};
+    return cachedSnapshot();
+  }
+  function subscriptionIsCommerce(snapshot2) {
+    const tier = snapshot2?.bestSubscription;
+    if (!tier)
+      return false;
+    return !!snapshot2.activeSubscriptions?.some((sub) => sub?.tier === tier && sub.billingSystem === COMMERCE_BILLING);
+  }
+  function subscriptionIsPaid(snapshot2) {
+    if (!snapshot2)
+      return false;
+    if (snapshot2.isSubscribed)
+      return true;
+    if (snapshot2.isSuperGrokUser || snapshot2.isSuperGrokLiteUser || snapshot2.isSuperGrokPlusUser || snapshot2.isSuperGrokProUser || snapshot2.isEnterpriseUser || snapshot2.hasXSubscription || snapshot2.isXPremiumUser)
+      return true;
+    const tier = snapshot2.bestSubscription;
+    return !!tier && tier !== "SUBSCRIPTION_TIER_INVALID";
+  }
+
+  // src/plugins/betterSidebar/index.tsx
+  var logger29 = new Logger("BetterSidebar");
+  var cl22 = classNameFactory("void-sidebar-");
+  var settings14 = definePluginSettings({
+    clickToToggle: {
+      type: 3 /* BOOLEAN */,
+      description: "Click anywhere on the sidebar to toggle it.",
+      default: false
+    },
+    defaultCollapsed: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the sidebar collapsed on page load.",
+      default: false
+    },
+    botsDefaultCollapsed: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the Bots section collapsed on page load.",
+      default: true
+    },
+    chatsDefaultExpanded: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the Chats section expanded on page load.",
+      default: false
+    },
+    projectsDefaultCollapsed: {
+      type: 3 /* BOOLEAN */,
+      description: "Start with the Projects section collapsed on page load.",
+      default: false
+    },
+    batchSelect: {
+      type: 3 /* BOOLEAN */,
+      description: "Show checkboxes on conversations for bulk selection and deletion.",
+      default: true
+    },
+    titleRowHover: {
+      type: 3 /* BOOLEAN */,
+      description: "Show Bots, Chats, and Projects header actions only when hovering that section, like the expand chevron.",
+      default: true
+    },
+    chatsPlus: {
+      type: 3 /* BOOLEAN */,
+      description: "Show a plus on the Chats header that starts a new chat.",
+      default: true
+    }
+  });
+  migrateSettingsToPlugin("BetterSidebar", "SidebarHeaderHover", "titleRowHover", "chatsPlus");
+  migrateSettingsToPlugin("BetterSidebar", "BotsPlusHover", "titleRowHover", "chatsPlus");
+  var BTN_CLASS = "void-chats-plus flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary hover:bg-button-ghost-hover hover:text-fg-primary focus:outline-none focus-visible:bg-button-ghost-hover";
+  var BOTS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-bots-plus], .void-bots-plus)";
+  var CHATS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-chats-plus], .void-chats-plus)";
+  var CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
+  var PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
+  var PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
+  var botsCollapsed = null;
+  var botsCollapseObserver = null;
+  var botsCollapseTimer = null;
+  var chatsExpandObserver = null;
+  var chatsExpandTimer = null;
+  var projectsCollapseObserver = null;
+  var projectsCollapseTimer = null;
+  function releaseRosterGate() {
+    try {
+      const gates = findByProps("useBotsSectionSettled", "useBotsSectionEnabled");
+      for (const name of ["useBotsSectionSettled", "useBotsSectionEnabled"]) {
+        const fn = gates?.[name];
+        if (typeof fn !== "function" || fn.voidRoster)
+          continue;
+        const wrapped = function() {
+          return true;
+        };
+        wrapped.voidRoster = true;
+        gates[name] = wrapped;
+      }
+      const paintMod = findByProps("shouldPaintBotsSidebar");
+      const paint4 = paintMod?.shouldPaintBotsSidebar;
+      if (typeof paint4 === "function" && !paint4.voidRoster) {
+        const wrapped = function() {
+          return true;
+        };
+        wrapped.voidRoster = true;
+        paintMod.shouldPaintBotsSidebar = wrapped;
+      }
+      const bots = findByProps("useBotsStore")?.useBotsStore;
+      const state = bots?.getState?.();
+      if (bots && state && !state.rosterLoaded && !(state.agents?.length > 0)) {
+        bots.setState({ rosterLoaded: true });
+        bots.setState({ rosterLoaded: false });
+      }
+    } catch (e) {
+      logger29.warn("Roster gate", e);
+    }
+  }
+  function applyHeaderHover() {
+    if (settings14.store.titleRowHover)
+      enableStyle("headerHover");
+    else
+      disableStyle("headerHover");
+  }
+  var botsUserOverride = false;
+  var botsClickAttempts = 0;
+  var lastBotsClick = 0;
+  var botsCollapseDeadline = null;
+  var botsCollapseRaf = 0;
+  function scheduleBotsCollapse() {
+    if (botsCollapseRaf)
+      return;
+    botsCollapseRaf = requestAnimationFrame(() => {
+      botsCollapseRaf = 0;
+      collapseBotsSection();
+    });
+  }
+  function wantBotsCollapsed() {
+    try {
+      return settings14.store.botsDefaultCollapsed !== false;
+    } catch {
+      return true;
+    }
+  }
+  function botsHeader() {
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar)
+      return null;
+    return [...sidebar.querySelectorAll("button[aria-expanded]")].find((btn) => (btn.innerText || "").replaceAll(/\s+/g, " ").trim() === "Bots") ?? null;
+  }
+  function onBotsPointerDown(event) {
+    if (!event.isTrusted)
+      return;
+    const header = botsHeader();
+    const { target } = event;
+    if (!header || !(target instanceof Node) || !header.contains(target))
+      return;
+    botsUserOverride = true;
+    stopBotsCollapse();
+  }
+  function collapseBotsSection() {
+    if (botsUserOverride || !wantBotsCollapsed())
+      return true;
+    const header = botsHeader();
+    if (!header)
+      return false;
+    if (header.getAttribute("aria-expanded") !== "true")
+      return false;
+    if (botsClickAttempts >= 8)
+      return false;
+    const now = Date.now();
+    if (now - lastBotsClick < 350)
+      return false;
+    botsClickAttempts++;
+    lastBotsClick = now;
+    header.click();
+    return false;
+  }
+  function useBotsCollapsed() {
+    const state = useState(() => typeof botsCollapsed === "boolean" ? botsCollapsed : wantBotsCollapsed());
+    if (typeof state[0] === "boolean")
+      botsCollapsed = state[0];
+    return state;
+  }
+  function stopBotsCollapse() {
+    botsCollapseObserver?.disconnect();
+    botsCollapseObserver = null;
+    document.removeEventListener("pointerdown", onBotsPointerDown, true);
+    if (botsCollapseTimer != null) {
+      clearInterval(botsCollapseTimer);
+      botsCollapseTimer = null;
+    }
+    if (botsCollapseDeadline != null) {
+      clearTimeout(botsCollapseDeadline);
+      botsCollapseDeadline = null;
+    }
+    if (botsCollapseRaf) {
+      cancelAnimationFrame(botsCollapseRaf);
+      botsCollapseRaf = 0;
+    }
+  }
+  function startBotsCollapse() {
+    stopBotsCollapse();
+    if (botsUserOverride || !wantBotsCollapsed())
+      return;
+    botsClickAttempts = 0;
+    lastBotsClick = 0;
+    document.addEventListener("pointerdown", onBotsPointerDown, true);
+    collapseBotsSection();
+    botsCollapseObserver = new MutationObserver(scheduleBotsCollapse);
+    botsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
+    botsCollapseTimer = setInterval(collapseBotsSection, 400);
+    botsCollapseDeadline = setTimeout(stopBotsCollapse, 12000);
+  }
+  function armBotsCollapse() {
+    startBotsCollapse();
+  }
+  function stopBotsCollapseGuard() {
+    stopBotsCollapse();
+  }
+  function resetChatsCollapsedStorage() {
+    if (!settings14.store.chatsDefaultExpanded)
+      return;
+    try {
+      localStorage.removeItem(CHATS_COLLAPSED_KEY);
+    } catch {}
+  }
+  function chatsGroup() {
+    const plus = document.querySelector(CHATS_PLUS_SEL);
+    if (plus)
+      return plus.closest("[data-sidebar=group]");
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar)
+      return null;
+    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
+      const label = (btn.getAttribute("aria-label") ?? "").trim();
+      if (label === "Chats" || label === "History")
+        return btn.closest("[data-sidebar=group]");
+    }
+    const bots = document.querySelector(BOTS_PLUS_SEL)?.closest("[data-sidebar=group]");
+    const next = bots?.nextElementSibling;
+    return next?.matches("[data-sidebar=group]") ? next : null;
+  }
+  function expandChatsSection() {
+    const group = chatsGroup();
+    if (!group)
+      return false;
+    const collapsed = group.querySelector("button[aria-expanded=false]");
+    if (!collapsed)
+      return true;
+    collapsed.click();
+    return true;
+  }
+  function stopChatsExpand() {
+    chatsExpandObserver?.disconnect();
+    chatsExpandObserver = null;
+    if (chatsExpandTimer != null) {
+      clearTimeout(chatsExpandTimer);
+      chatsExpandTimer = null;
+    }
+  }
+  function startChatsExpand() {
+    stopChatsExpand();
+    if (!settings14.store.chatsDefaultExpanded)
+      return;
+    resetChatsCollapsedStorage();
+    let done = false;
+    const tick = () => {
+      if (done)
+        return;
+      if (expandChatsSection()) {
+        done = true;
+        stopChatsExpand();
+      }
+    };
+    tick();
+    if (done)
+      return;
+    chatsExpandObserver = new MutationObserver(tick);
+    chatsExpandObserver.observe(document.documentElement, { childList: true, subtree: true });
+    chatsExpandTimer = setTimeout(() => {
+      done = true;
+      stopChatsExpand();
+    }, 1e4);
+  }
+  function resetProjectsCollapsedStorage() {
+    if (!settings14.store.projectsDefaultCollapsed)
+      return;
+    try {
+      localStorage.setItem(PROJECTS_COLLAPSED_KEY, "true");
+    } catch {}
+  }
+  function projectsGroup() {
+    const action = document.querySelector(PROJECTS_ACTION_SEL);
+    if (action)
+      return action.closest("[data-sidebar=group]");
+    const sidebar = document.querySelector("[data-sidebar=sidebar]");
+    if (!sidebar)
+      return null;
+    for (const btn of sidebar.querySelectorAll("button[aria-expanded]")) {
+      const label = (btn.getAttribute("aria-label") ?? "").trim();
+      if (label === "Projects")
+        return btn.closest("[data-sidebar=group]");
+    }
+    return null;
+  }
+  function collapseProjectsSection() {
+    const group = projectsGroup();
+    if (!group)
+      return false;
+    const expanded = group.querySelector("button[aria-expanded=true]");
+    if (!expanded)
+      return true;
+    expanded.click();
+    return true;
+  }
+  function stopProjectsCollapse() {
+    projectsCollapseObserver?.disconnect();
+    projectsCollapseObserver = null;
+    if (projectsCollapseTimer != null) {
+      clearTimeout(projectsCollapseTimer);
+      projectsCollapseTimer = null;
+    }
+  }
+  function startProjectsCollapse() {
+    stopProjectsCollapse();
+    if (!settings14.store.projectsDefaultCollapsed)
+      return;
+    resetProjectsCollapsedStorage();
+    let done = false;
+    const tick = () => {
+      if (done)
+        return;
+      if (collapseProjectsSection()) {
+        done = true;
+        stopProjectsCollapse();
+      }
+    };
+    tick();
+    if (done)
+      return;
+    projectsCollapseObserver = new MutationObserver(tick);
+    projectsCollapseObserver.observe(document.documentElement, { childList: true, subtree: true });
+    projectsCollapseTimer = setTimeout(() => {
+      done = true;
+      stopProjectsCollapse();
+    }, 1e4);
+  }
+  function newChat(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const native = document.querySelector('[data-testid="new-chat"]');
+    if (native) {
+      native.click();
+      return;
+    }
+    const { route, push } = RoutingStore.useRoutingStore.getState();
+    const teamId = route.teamId ?? null;
+    const { workspaceId } = route;
+    if (workspaceId) {
+      push({ page: "workspace", workspaceId, tab: "conversations", teamId });
+      const chat = ChatPageStore.useChatPageStore.getState();
+      chat.setProjectId(workspaceId);
+      chat.setConversationId(undefined);
+      return;
+    }
+    ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
+    push({ page: "main", teamId });
+  }
+  var ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
+    if (!settings14.use(["chatsPlus"]).chatsPlus)
+      return null;
+    return /* @__PURE__ */ React.createElement("button", {
+      type: "button",
+      className: BTN_CLASS,
+      "aria-label": "New chat",
+      "data-void-chats-plus": "",
+      onClick: newChat
+    }, /* @__PURE__ */ React.createElement(PlusIcon, {
+      size: 14
+    }));
+  }, null);
+  function UserCard(props) {
+    const ready2 = typeof SessionStore.useSession === "function";
+    const [, bump] = useState(0);
+    useEffect(() => {
+      if (ready2)
+        return;
+      return onModuleLoad(() => bump((n) => n + 1));
+    }, [ready2]);
+    if (!ready2) {
+      const { AvatarMenu, ...rest } = props;
+      return /* @__PURE__ */ React.createElement(AvatarMenu, {
+        ...rest
+      });
+    }
+    return /* @__PURE__ */ React.createElement(UserCardBody, {
+      ...props
+    });
+  }
+  function UserCardBody({ AvatarMenu, ...rest }) {
+    const { open: open2 } = SidebarComponents.useSidebar();
+    const { user } = SessionStore.useSession();
+    const snapshot2 = useSubscriptionSnapshot();
+    const cardRef = useRef(null);
+    if (!open2 || !user)
+      return /* @__PURE__ */ React.createElement(AvatarMenu, {
+        ...rest
+      });
+    const forward = (e, type) => {
+      if (!e.isTrusted)
+        return;
+      cardRef.current?.querySelector("button[data-state]")?.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, button: 0, pointerId: 1, pointerType: "mouse" }));
+    };
+    return /* @__PURE__ */ React.createElement("div", {
+      ref: cardRef,
+      className: cl22("card"),
+      onPointerDown: (e) => forward(e, "pointerdown"),
+      onPointerUp: (e) => forward(e, "pointerup")
+    }, /* @__PURE__ */ React.createElement(AvatarMenu, {
+      ...rest
+    }), /* @__PURE__ */ React.createElement(Flex, {
+      flexDirection: "column",
+      justifyContent: "center",
+      gap: "0",
+      className: cl22("info")
+    }, /* @__PURE__ */ React.createElement(Text2, {
+      as: "span",
+      size: "sm",
+      weight: "medium",
+      className: cl22("name")
+    }, user.givenName ?? user.email?.split("@")[0] ?? "User"), /* @__PURE__ */ React.createElement(Text2, {
+      as: "span",
+      size: "xs",
+      color: "secondary",
+      className: cl22("plan")
+    }, getPlanName(snapshot2.bestSubscription, user.xSubscriptionType, subscriptionIsCommerce(snapshot2)))));
+  }
+  var selection2 = createSelectionStore();
+  var CONVERSATION_PAGE = "chat";
+  var isConversationRoute = (route) => route?.page === CONVERSATION_PAGE;
+  async function deleteConversations(ids) {
+    const currentConvId = ChatPageStore.useChatPageStore.getState().conversationId;
+    if (currentConvId && ids.includes(currentConvId)) {
+      ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
+    }
+    const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
+    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger29.error("Failed to delete", id, e))));
+  }
+  function SelectCheckbox({ id, route }) {
+    const enabled = settings14.use(["batchSelect"]).batchSelect;
+    if (!enabled || !id || !isConversationRoute(route))
+      return null;
+    return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
+      selection: selection2,
+      id
+    });
+  }
+  var WrappedCheckbox = ErrorBoundary.wrap(SelectCheckbox, null);
+  var betterSidebar_default = definePlugin({
+    name: "BetterSidebar",
+    icon: PanelLeftIcon,
+    description: "Sidebar improvements, including header-action hover, Bots/Projects default collapsed, and Chats default expanded.",
+    authors: [Devs.Prism, Devs.p],
+    tags: ["navigation"],
+    enabledByDefault: true,
+    settings: settings14,
+    managedStyle: "betterSidebar",
+    _ChatsPlus: () => createElement(ChatsPlus),
+    _UserCard: ErrorBoundary.wrap(UserCard),
+    _renderActionBar: ErrorBoundary.wrap(() => /* @__PURE__ */ React.createElement(SelectionActionBar, {
+      selection: selection2,
+      noun: "conversation",
+      title: "Delete conversations",
+      onDelete: deleteConversations
+    }), null),
+    _wrapCheckbox(item, id, route) {
+      return createElement(Fragment, null, createElement(WrappedCheckbox, { id, route }), item);
+    },
+    _wrapSidebarClick(onClick2, id, route) {
+      return (e) => {
+        if (id && settings14.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          e.stopPropagation();
+          selection2.toggle(id);
+          return;
+        }
+        onClick2?.(e);
+      };
+    },
+    _defaultOpen() {
+      return !settings14.store.defaultCollapsed;
+    },
+    _useBotsCollapsed: useBotsCollapsed,
+    _chatsCollapsedInit() {
+      resetChatsCollapsedStorage();
+      return false;
+    },
+    _projectsCollapsedInit() {
+      resetProjectsCollapsedStorage();
+      return true;
+    },
+    _projectsAutoExpand() {
+      return !settings14.store.projectsDefaultCollapsed;
+    },
+    _onSidebarClick() {
+      if (!settings14.store.clickToToggle)
+        return;
+      return (e) => {
+        const target = e.target;
+        if (target.closest("button,a,input,[role=button],[data-sidebar=trigger],[data-sidebar=footer]"))
+          return;
+        e.currentTarget.closest("[data-state]")?.querySelector("[data-sidebar=trigger]")?.click();
+      };
+    },
+    start() {
+      selection2.clear();
+      applyHeaderHover();
+      releaseRosterGate();
+      resetChatsCollapsedStorage();
+      resetProjectsCollapsedStorage();
+      startBotsCollapse();
+      startChatsExpand();
+      startProjectsCollapse();
+    },
+    onSettingsChange: applyHeaderHover,
+    stop() {
+      selection2.clear();
+      disableStyle("headerHover");
+      stopBotsCollapse();
+      stopChatsExpand();
+      stopProjectsCollapse();
+    },
+    patches: [
+      {
+        find: 'avatarSize:"md",accountInfoSlot:',
+        replacement: {
+          match: /\(0,(\i)\.jsx\)\((\i)\.Z,\{expanded:!0,/,
+          replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.Z,expanded:!0,"
+        }
+      },
+      {
+        find: "AvatarDropdownMenu,{expanded:",
+        noWarn: true,
+        replacement: {
+          match: /\(0,(\i)\.jsx\)\((\i)\.AvatarDropdownMenu,\{/,
+          replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.AvatarDropdownMenu,"
+        }
+      },
+      {
+        find: "useSidebar must be used within a SidebarProvider",
+        all: true,
+        group: true,
+        replacement: [
+          {
+            match: /\{defaultOpen:(\i),open:/,
+            replace: "{defaultOpen:$1=$self._defaultOpen(),open:"
+          },
+          {
+            match: /data-sidebar":"sidebar",(?!onClick:)/,
+            replace: 'data-sidebar":"sidebar",onClick:$self._onSidebarClick(),'
+          }
+        ]
+      },
+      {
+        find: '"Editing actions","Editing actions"',
+        all: true,
+        replacement: [
+          {
+            match: /=(\(0,\i\.jsx\)\(\i,\{title:\i,editing:\i,[^}]{0,80}?validationErrorMessage:\i[^}]{0,40}?\}\))/,
+            replace: "=$self._wrapCheckbox($1,arguments[0].id,arguments[0].route)"
+          },
+          {
+            match: /onClick:(\i),onDoubleClick:/g,
+            replace: "onClick:$self._wrapSidebarClick($1,arguments[0].id,arguments[0].route),onDoubleClick:"
+          },
+          {
+            match: /\(0,(\i)\.handleIsolateClick\)\((\i)\),(\i)\?\.\(\2\)/,
+            replace: "(0,$1.handleIsolateClick)($2),$self._wrapSidebarClick($3,arguments[0].id,arguments[0].route)?.($2)",
+            noWarn: true
+          }
+        ]
+      },
+      {
+        find: '"Editing actions","Editing actions"',
+        all: true,
+        noWarn: true,
+        replacement: {
+          match: /\((\i),\{route:(\i),onClick:(\i),(.{0,40}?className:)/,
+          replace: "($1,{route:$2,onClick:$self._wrapSidebarClick($3,arguments[0].id,$2),$4"
+        }
+      },
+      {
+        find: '"sidebar-expand","Expand"',
+        replacement: [
+          {
+            match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
+            replace: "$self._renderActionBar(),$&",
+            noWarn: true
+          },
+          {
+            match: /\(0,\i\.jsx\)\(\i,\{title:\i\("sidebar-chats","Chats"\)/,
+            replace: "$self._renderActionBar(),$&"
+          }
+        ]
+      },
+      {
+        find: '"sidebar.new-bot-btn.aria-label","New bot"',
+        replacement: [
+          {
+            match: /\(0,(\i)\.(\i)\)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","(hover:bg-button-ghost-hover hover:text-(?:fg-)?primary)","(focus:outline-none focus-visible:bg-button-ghost-hover)"\)/,
+            replace: '(0,$1.$2)("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","$3","$4")'
+          },
+          {
+            match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
+            replace: '$&,"data-void-bots-plus":""'
+          }
+        ]
+      },
+      {
+        find: '"sidebar-chats","Chats"',
+        all: true,
+        replacement: [
+          {
+            match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
+            replace: "$1,action:$self._ChatsPlus()",
+            noWarn: true
+          },
+          {
+            match: /(\i\("sidebar-chats","Chats"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
+            replace: "$1,action:$self._ChatsPlus()"
+          }
+        ]
+      },
+      {
+        find: '"sidebar.section-title","Bots"',
+        all: true,
+        replacement: {
+          match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,(?:\i\.useLocalStorage|\i\.\i)\)\("sidebar-bots-unassigned-collapsed")/,
+          replace: "$self._useBotsCollapsed()"
+        }
+      },
+      {
+        find: "sidebar-history-collapsed",
+        replacement: {
+          match: /((?:useLocalStorage\)|\(0,\i\.\i\)))\("sidebar-history-collapsed",!1,!1\)/,
+          replace: '$1("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)'
+        }
+      },
+      {
+        find: "sidebar-projects-collapsed",
+        group: true,
+        replacement: [
+          {
+            match: /((?:useLocalStorage\)|\(0,\i\.\i\)))\("sidebar-projects-collapsed",!1,!1\)/,
+            replace: '$1("sidebar-projects-collapsed",$self._projectsCollapsedInit(),!1)'
+          },
+          {
+            match: /!(\i)\.current&&(\i)&&\((\i)\.length>0\|\|(\i)\.length>0\)&&\(\1\.current=!0,(\i)\(!1\)\)/,
+            replace: "!$1.current&&$2&&($3.length>0||$4.length>0)&&($1.current=!0,$self._projectsAutoExpand()&&$5(!1))"
+          }
+        ]
+      },
+      {
+        find: "enterDistance:8,collapsed:",
+        noWarn: true,
+        replacement: {
+          match: /\i\?\(0,(\i)\.jsx\)\((\i),\{enterDistance:8,collapsed:(\i),onToggleCollapsed:(\i),activeProjectId:(\i),expandedProjectIds:(\i),onToggleProjectExpanded:(\i)\}\):null/,
+          replace: "(0,$1.jsx)($2,{enterDistance:8,collapsed:$3,onToggleCollapsed:$4,activeProjectId:$5,expandedProjectIds:$6,onToggleProjectExpanded:$7})"
+        }
+      },
+      {
+        find: "useBotsSectionEnabled)();return",
+        noWarn: true,
+        replacement: {
+          match: /useBotsSectionEnabled\)\(\);return\(\(0,(\i)\.useBotsBootstrap\)\((\i)\),\2\)\?/,
+          replace: "useBotsSectionEnabled)();return((0,$1.useBotsBootstrap)($2),!0)?"
+        }
+      },
+      {
+        find: "shouldPaintBotsSidebar)({hasBots:",
+        noWarn: true,
+        replacement: {
+          match: /if\(!\(0,\i\.shouldPaintBotsSidebar\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
+          replace: ""
+        }
+      },
+      {
+        find: "teamSeatEntitled:",
+        all: true,
+        replacement: {
+          match: /if\(!\(0,\i(?:\.\i)?\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
+          replace: ""
+        }
+      },
+      {
+        find: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+        noWarn: true,
+        replacement: {
+          match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+          replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null"
+        }
+      },
+      {
+        find: "file-tree.row-actions",
+        all: true,
+        replacement: {
+          match: /\{type:(\i(?:\.\i)?),data:(\i)\}:void 0,onClick:(\i),onDoubleClick:([\s\S]{0,2500}?children:\[)(\(0,\i\.jsx\)\(\i\.\$\.ItemLabel)/,
+          replace: '{type:$1,data:$2}:void 0,onClick:$self._wrapSidebarClick($3,$2,{page:"chat"}),onDoubleClick:$4$self._wrapCheckbox(null,$2,{page:"chat"}),$5'
+        }
+      },
+      {
+        find: 'sectionId:"recent"',
+        all: true,
+        replacement: {
+          match: /sectionId:"recent",children:\[/,
+          replace: 'sectionId:"recent",children:[$self._renderActionBar(),'
+        }
+      }
+    ]
   });
 
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/chatListStatus/styles.css
@@ -21874,7 +21874,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         const fromConv = props.conversation?.conversationId;
         if (typeof fromConv === "string" && isConvId(fromConv))
           return fromConv;
-        const drag = props.drag;
+        const { drag } = props;
         if (drag?.type === "application/x-grok-conversation-id" && isConvId(drag.data))
           return drag.data;
       }
@@ -24422,7 +24422,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const blur = clamp(settings19.store.blur, 0, 40);
     const alpha = pct / 100;
     const frost = pct < 100 && blur > 0 ? `-webkit-backdrop-filter:blur(${blur}px)!important;backdrop-filter:blur(${blur}px)!important;` : "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;";
-    registerStyle(STYLE_NAME3, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + "pointer-events:auto!important;" + `background-color:hsl(from var(--surface-l1) h s l / ${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}" + `${SHELL}:has([data-wd-toolbar]){overflow:visible!important;clip-path:none!important}` + `form[data-composer][data-composer-layout="inline"]{height:auto!important;min-height:calc(var(--grok-control-height-lg) + 2*var(--grok-space-3) + 2px)}`);
+    registerStyle(STYLE_NAME3, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + "pointer-events:auto!important;" + `background-color:hsl(from var(--surface-l1) h s l / ${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}" + `${SHELL}:has([data-wd-toolbar]){overflow:visible!important;clip-path:none!important}` + 'form[data-composer][data-composer-layout="inline"]{height:auto!important;min-height:calc(var(--grok-control-height-lg) + 2*var(--grok-space-3) + 2px)}');
   }
   var composerOpacity_default = definePlugin({
     name: "ComposerOpacity",
@@ -26504,6 +26504,151 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     _renderDownloadButton: ErrorBoundary.wrap(DownloadButton)
   });
 
+  // src/plugins/errorPageRetry/index.ts
+  var logger36 = new Logger("ErrorPageRetry");
+  var STORE = "void-epr";
+  var STALE_MS = 5 * 60 * 1000;
+  var TITLE = /^(something went wrong|出错了|出了点问题)$/i;
+  var RELOAD = /reload page|^reload$|重新加载页面|^重新加载$/i;
+  var settings23 = definePluginSettings({
+    maxRetries: {
+      type: 1 /* NUMBER */,
+      description: "Maximum reloads of the crash screen for this URL.",
+      default: 5
+    },
+    delay: {
+      type: 1 /* NUMBER */,
+      description: "Seconds to wait before reloading.",
+      default: 1
+    }
+  });
+  var timer2 = null;
+  var observer3 = null;
+  var raf7 = 0;
+  function slotKey() {
+    return `${STORE}:${location.pathname}${location.search}`;
+  }
+  function readSlot() {
+    try {
+      const raw = sessionStorage.getItem(slotKey());
+      if (!raw)
+        return { n: 0, t: 0 };
+      const parsed = JSON.parse(raw);
+      if (typeof parsed?.n !== "number" || typeof parsed?.t !== "number")
+        return { n: 0, t: 0 };
+      if (Date.now() - parsed.t > STALE_MS)
+        return { n: 0, t: 0 };
+      return parsed;
+    } catch (e) {
+      logger36.warn(e);
+      return { n: 0, t: 0 };
+    }
+  }
+  function writeSlot(slot) {
+    try {
+      sessionStorage.setItem(slotKey(), JSON.stringify(slot));
+    } catch (e) {
+      logger36.warn(e);
+    }
+  }
+  function clearSlot() {
+    try {
+      sessionStorage.removeItem(slotKey());
+    } catch (e) {
+      logger36.warn(e);
+    }
+  }
+  function isCrashScreen() {
+    if (document.querySelector("form[data-composer], #app-sidebar"))
+      return false;
+    const titles = document.querySelectorAll("h1");
+    let hit = false;
+    for (const h of titles) {
+      if (TITLE.test((h.textContent ?? "").trim())) {
+        hit = true;
+        break;
+      }
+    }
+    if (!hit)
+      return false;
+    for (const el of document.querySelectorAll("a, button")) {
+      if (RELOAD.test((el.textContent ?? "").replaceAll(/\s+/g, " ").trim()))
+        return true;
+    }
+    return false;
+  }
+  function clearTimer2() {
+    if (timer2 != null) {
+      clearTimeout(timer2);
+      timer2 = null;
+    }
+  }
+  function schedule4() {
+    if (timer2 != null)
+      return;
+    const max = settings23.store.maxRetries;
+    const slot = readSlot();
+    if (slot.n >= max) {
+      logger36.warn(`max retries (${max}) for ${location.pathname}`);
+      return;
+    }
+    const delaySec = settings23.store.delay;
+    logger36.info(`reload ${slot.n + 1}/${max} in ${delaySec}s`);
+    timer2 = setTimeout(() => {
+      timer2 = null;
+      const next = readSlot();
+      if (next.n >= settings23.store.maxRetries)
+        return;
+      writeSlot({ n: next.n + 1, t: Date.now() });
+      location.reload();
+    }, Math.max(0, delaySec) * 1000);
+  }
+  function tick() {
+    if (!isCrashScreen()) {
+      clearSlot();
+      return;
+    }
+    schedule4();
+  }
+  function onMut2() {
+    if (raf7)
+      return;
+    raf7 = requestAnimationFrame(() => {
+      raf7 = 0;
+      tick();
+    });
+  }
+  var errorPageRetry_default = definePlugin({
+    name: "ErrorPageRetry",
+    icon: RotateCcwIcon,
+    description: "Reload Grok's crash screen automatically, keeping the current URL. Does not follow the native Reload link to /.",
+    authors: [Devs.p],
+    tags: ["navigation"],
+    enabledByDefault: true,
+    settings: settings23,
+    start() {
+      observer3 = new MutationObserver(onMut2);
+      observer3.observe(document.documentElement, { childList: true, subtree: true });
+      tick();
+      if (document.readyState === "loading")
+        document.addEventListener("DOMContentLoaded", tick, { once: true });
+    },
+    stop() {
+      observer3?.disconnect();
+      observer3 = null;
+      if (raf7)
+        cancelAnimationFrame(raf7);
+      raf7 = 0;
+      clearTimer2();
+    },
+    onSettingsChange() {
+      if (!isCrashScreen())
+        return;
+      clearTimer2();
+      tick();
+    }
+  });
+
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/exportChat/styles.css
   registerStyle("exportChat", `.void-export-icon {
     width: var(--grok-icon-size, 16px);
@@ -26514,7 +26659,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/exportChat/index.tsx
-  var logger36 = new Logger("ExportChat");
+  var logger37 = new Logger("ExportChat");
   function buildExportMessage(r) {
     return {
       id: r.responseId,
@@ -26689,7 +26834,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       className: "void-export-icon"
     }), "Export"), /* @__PURE__ */ React.createElement(MenuSubContent, null, FORMATS.map(({ fmt, label }) => /* @__PURE__ */ React.createElement(MenuItem, {
       key: fmt,
-      onSelect: () => exportChat(conversationId3, fmt).catch((e) => logger36.error("Failed to export chat", e))
+      onSelect: () => exportChat(conversationId3, fmt).catch((e) => logger37.error("Failed to export chat", e))
     }, label))));
   }
   var exportChat_default = definePlugin({
@@ -26956,7 +27101,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/inputHistory/index.tsx
-  var logger37 = new Logger("InputHistory");
+  var logger38 = new Logger("InputHistory");
   var cl28 = classNameFactory("void-ih-");
   var COMPOSER = ":is(.query-bar, form[data-composer])";
   var EDITOR_INNER = '.tiptap.ProseMirror[contenteditable="true"]';
@@ -26969,7 +27114,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var APPLY_QUIET_MS = 120;
   var CAPTURE_DEDUPE_MS = 2000;
   var HISTORY_MODAL_KEY = "void-ih-history";
-  var settings23 = definePluginSettings({
+  var settings24 = definePluginSettings({
     maxEntries: {
       type: 5 /* SLIDER */,
       description: "Maximum stored prompts.",
@@ -27016,30 +27161,30 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   }
   function useImagineBucket() {
-    return !!settings23.store.separateImagine && isImaginePage3();
+    return !!settings24.store.separateImagine && isImaginePage3();
   }
   function listOf(raw) {
     return Array.isArray(raw) ? raw.filter((x) => typeof x === "string") : [];
   }
   function getEntries() {
-    return listOf(useImagineBucket() ? settings23.plain.imagineEntries : settings23.plain.entries);
+    return listOf(useImagineBucket() ? settings24.plain.imagineEntries : settings24.plain.entries);
   }
   function cap(entries) {
-    const max = clamp(settings23.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
+    const max = clamp(settings24.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
     return entries.length > max ? entries.slice(entries.length - max) : entries;
   }
   function setEntries(entries) {
     if (useImagineBucket())
-      settings23.store.imagineEntries = entries;
+      settings24.store.imagineEntries = entries;
     else
-      settings23.store.entries = entries;
+      settings24.store.entries = entries;
   }
   function normalize(text) {
-    return text.replaceAll(ZWSP, "").replace(/\r\n?/g, `
+    return text.replaceAll(ZWSP, "").replaceAll(/\r\n?/g, `
 `);
   }
   function hasContent(text) {
-    return text.replace(/[\s\u00a0]/g, "") !== "";
+    return text.replaceAll(/[\s\u00a0]/g, "") !== "";
   }
   function imeEvent(e) {
     if (composing)
@@ -27143,7 +27288,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return normalize(serializePmDoc(view.state.doc, br));
       }
     } catch (err) {
-      logger37.debug("editorText pm failed:", err);
+      logger38.debug("editorText pm failed:", err);
     }
     const blocks = el.querySelectorAll(":scope > *");
     const raw = blocks.length ? Array.from(blocks, blockText).join(`
@@ -27245,7 +27390,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const pos = view.posAtDOM(range.startContainer, range.startOffset);
       if (typeof pos !== "number" || pos < 0)
         return;
-      const near = view.state.selection.constructor.near;
+      const { near } = view.state.selection.constructor;
       if (!near)
         return;
       const pmSel = near(view.state.doc.resolve(pos));
@@ -27253,7 +27398,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       view.dispatch(view.state.tr.setSelection(pmSel).scrollIntoView());
     } catch (err) {
-      logger37.debug("syncPm failed:", err);
+      logger38.debug("syncPm failed:", err);
     }
   }
   function applyRange(el, range) {
@@ -27524,7 +27669,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       }
     } catch (err) {
-      logger37.debug("placeCaret pm failed:", err);
+      logger38.debug("placeCaret pm failed:", err);
     }
     const native = window.getSelection();
     if (!native)
@@ -27565,7 +27710,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return null;
   }
   function escapeHtml2(text) {
-    return text.replace(/[&<>"]/g, (ch) => {
+    return text.replaceAll(/[&<>"]/g, (ch) => {
       if (ch === "&")
         return "&" + "amp;";
       if (ch === "<")
@@ -27604,7 +27749,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       view.dispatch(tr.scrollIntoView());
       return true;
     } catch (err) {
-      logger37.debug("insertLinesPm failed:", err);
+      logger38.debug("insertLinesPm failed:", err);
       return false;
     }
   }
@@ -27618,7 +27763,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       return document.execCommand("insertHTML", false, linesToHtml(text));
     } catch (err) {
-      logger37.debug("insertLinesHtml failed:", err);
+      logger38.debug("insertLinesHtml failed:", err);
       return false;
     }
   }
@@ -27663,7 +27808,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (text && !insertLinesPm(el, text) && !insertLinesHtml(text))
         insertLinesDom(text);
     } catch (err) {
-      logger37.debug("insertText failed:", err);
+      logger38.debug("insertText failed:", err);
     }
     placeCaret(el, atStart);
     requestAnimationFrame(() => {
@@ -27956,19 +28101,19 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       pushEntry(editorText(editor));
   }
   function removeEntry(index, imagine) {
-    const list = listOf(imagine ? settings23.plain.imagineEntries : settings23.plain.entries);
+    const list = listOf(imagine ? settings24.plain.imagineEntries : settings24.plain.entries);
     if (index < 0 || index >= list.length)
       return;
     const next = list.filter((_, i) => i !== index);
     if (imagine)
-      settings23.store.imagineEntries = next;
+      settings24.store.imagineEntries = next;
     else
-      settings23.store.entries = next;
+      settings24.store.entries = next;
     if (imagine === useImagineBucket())
       resetBrowse(next.length);
   }
   function HistoryPanel({ picker, onUse } = {}) {
-    const { entries, imagineEntries, separateImagine } = settings23.use(["entries", "imagineEntries", "separateImagine"]);
+    const { entries, imagineEntries, separateImagine } = settings24.use(["entries", "imagineEntries", "separateImagine"]);
     const [bucket, setBucket] = useState(useImagineBucket() ? "imagine" : "chat");
     const imagine = !!separateImagine && bucket === "imagine";
     const list = imagine ? imagineEntries ?? [] : entries ?? [];
@@ -28067,7 +28212,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         tooltipContent: "Copy",
         "aria-label": "Copy",
         onClick: () => {
-          copyToClipboard(row.text).catch((err) => logger37.error("copy failed:", err));
+          copyToClipboard(row.text).catch((err) => logger38.error("copy failed:", err));
         }
       }, /* @__PURE__ */ React.createElement(CopyIcon, {
         size: 16
@@ -28094,9 +28239,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       danger: true,
       onConfirm: () => {
         if (imagine)
-          settings23.store.imagineEntries = [];
+          settings24.store.imagineEntries = [];
         else
-          settings23.store.entries = [];
+          settings24.store.entries = [];
         if (imagine === useImagineBucket())
           resetBrowse(0);
         setOpenId(null);
@@ -28146,7 +28291,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
-    settings: settings23,
+    settings: settings24,
     managedStyle: "inputHistory",
     cleanupSelectors: [".void-ih-hud"],
     start() {
@@ -28191,10 +28336,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         cursor = next.length;
       if (lastShown >= next.length)
         lastShown = -1;
-      const imagine = listOf(settings23.plain.imagineEntries);
+      const imagine = listOf(settings24.plain.imagineEntries);
       const imagineNext = cap(imagine);
       if (imagineNext.length !== imagine.length)
-        settings23.store.imagineEntries = imagineNext;
+        settings24.store.imagineEntries = imagineNext;
     },
     zustand: {
       RoutingStore: {
@@ -28503,7 +28648,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return `${conversationId3}:${messageId}`;
   }
   function clipSnippet(raw) {
-    const text = raw.replace(/\s+/g, " ").trim();
+    const text = raw.replaceAll(/\s+/g, " ").trim();
     if (!text)
       return "";
     return text.length > SNIPPET_MAX ? `${text.slice(0, SNIPPET_MAX)}…` : text;
@@ -28525,7 +28670,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const groups = [];
     for (const [cid, items] of byCid) {
       const current = !!currentCid4 && cid === currentCid4;
-      const sorted = items.slice().sort((a, b) => {
+      const sorted = items.slice().toSorted((a, b) => {
         if (current) {
           const ai = leafIndex.get(a.messageId);
           const bi = leafIndex.get(b.messageId);
@@ -28600,7 +28745,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
 
   // src/plugins/messageStars/store.ts
-  var logger38 = new Logger("MessageStars");
+  var logger39 = new Logger("MessageStars");
   var DB_KEY2 = "message-stars:v1";
   var LOCAL_ACCOUNT2 = "local";
   var CHANNEL = "voidpp.message-stars";
@@ -28651,10 +28796,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       try {
         bc?.postMessage({ tab: tabId, account });
       } catch (e) {
-        logger38.debug("star broadcast failed:", e);
+        logger39.debug("star broadcast failed:", e);
       }
     } catch (e) {
-      logger38.error("Failed to save stars:", e);
+      logger39.error("Failed to save stars:", e);
     }
   }
   async function readIntoMemory() {
@@ -28663,7 +28808,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       next = normalize2(await idbGet(DB_KEY2));
     } catch (e) {
-      logger38.error("Failed to read stars:", e);
+      logger39.error("Failed to read stars:", e);
     }
     if (!alive2 || mine !== gen2)
       return;
@@ -28740,7 +28885,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         readIntoMemory();
       };
     } catch (e) {
-      logger38.debug("BroadcastChannel unavailable:", e);
+      logger39.debug("BroadcastChannel unavailable:", e);
     }
     readIntoMemory();
   }
@@ -28768,7 +28913,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
 
   // src/plugins/messageStars/index.tsx
-  var logger39 = new Logger("MessageStars");
+  var logger40 = new Logger("MessageStars");
   var JUMP_SYM2 = Symbol.for("voidpp.betterNavigator.jump");
   var PENDING_MS2 = 8000;
   var NS2 = "http://www.w3.org/2000/svg";
@@ -28779,7 +28924,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var LIKE_RE = /^(like|good response|thumbs[- ]?up|upvote|喜欢|点赞)\b/i;
   var NOT_LIKE_RE = /dislike|bad response|thumbs[- ]?down|downvote|不喜欢|点踩|^踩\b/i;
   var NOT_COPY_RE = /\b(code|link|table|source)\b|代码|表格|链接|来源/i;
-  var settings24 = definePluginSettings({
+  var settings25 = definePluginSettings({
     showInSidebar: {
       type: 3 /* BOOLEAN */,
       description: "Show this chat's starred list to the left of the chat More button. Hover the star to open it.",
@@ -28831,7 +28976,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     hoverTimer = window.setTimeout(() => {
       hoverTimer = 0;
       hoverOpen = true;
-      schedule4();
+      schedule5();
     }, HOVER_OPEN_MS);
   }
   function wantHoverClose() {
@@ -28871,11 +29016,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     let routeId = "";
     let routePage = "";
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       routeId = String(route?.conversationId ?? "");
       routePage = String(route?.page ?? "");
     } catch (e) {
-      logger39.debug("route unavailable:", e);
+      logger40.debug("route unavailable:", e);
     }
     let pageId = "";
     let optimisticId = "";
@@ -28884,13 +29029,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       pageId = page.conversationId || "";
       optimisticId = page.optimisticConversationId || "";
     } catch (e) {
-      logger39.debug("chat page unavailable:", e);
+      logger40.debug("chat page unavailable:", e);
     }
     let href = "";
     try {
       href = location.href;
     } catch (e) {
-      logger39.debug("location unavailable:", e);
+      logger40.debug("location unavailable:", e);
     }
     return resolveConversationId({ routeId, routePage, href, pageId, optimisticId });
   }
@@ -28899,7 +29044,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const { byId, byIdWithWorkspaces } = ConversationStore.useConversationStore.getState();
       return byId[cid] ?? byIdWithWorkspaces[cid];
     } catch (e) {
-      logger39.debug("conversation lookup failed:", e);
+      logger40.debug("conversation lookup failed:", e);
       return;
     }
   }
@@ -28960,7 +29105,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       out.reverse();
       return out;
     } catch (e) {
-      logger39.debug("leaf walk failed:", e);
+      logger40.debug("leaf walk failed:", e);
       return [];
     }
   }
@@ -29000,7 +29145,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const rec = node?.content;
       fromNode = role === "user" ? rec?.query || rec?.message || "" : rec?.message || "";
     } catch (e) {
-      logger39.debug("node lookup failed:", e);
+      logger40.debug("node lookup failed:", e);
     }
     const snippet = clipSnippet(fromNode) || clipSnippet(hint?.snippet || "") || domSnippet(messageId) || "Starred";
     const title = titleOf2(cid) || hint?.conversationTitle || "";
@@ -29084,11 +29229,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       chat.setConversationId(cid);
       chat.setProjectId(ws || undefined);
     } catch (e) {
-      logger39.error("Failed to open starred message:", e);
+      logger40.error("Failed to open starred message:", e);
       try {
         location.assign(ws ? `/project/${encodeURIComponent(ws)}?chat=${encodeURIComponent(cid)}` : `/c/${encodeURIComponent(cid)}`);
       } catch (navErr) {
-        logger39.error("Fallback navigation failed:", navErr);
+        logger40.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -29207,7 +29352,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (PAGER_RE.test(label))
         return true;
     }
-    const text = (el.textContent || "").replace(/\s+/g, "");
+    const text = (el.textContent || "").replaceAll(/\s+/g, "");
     return /^\d+\/\d+$/.test(text);
   }
   function starHost(row) {
@@ -29415,7 +29560,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     for (const el of nodes) {
       if (headerSkipped(el) || !isRightPanelToggle(el))
         continue;
-      const top = el.getBoundingClientRect().top;
+      const { top } = el.getBoundingClientRect();
       if (top > 160 || top >= panelTop)
         continue;
       panelNode = el;
@@ -29493,7 +29638,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       clearHoverTimer();
       if (!listOpen)
         closePanel();
-      schedule4();
+      schedule5();
     });
     toggleBtn = btn;
   }
@@ -29556,7 +29701,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     panel.style.top = `${Math.round(Math.max(8, top))}px`;
   }
   function paintRail() {
-    if (!settings24.store.showInSidebar) {
+    if (!settings25.store.showInSidebar) {
       hideList();
       removeToggle();
       toldRail = false;
@@ -29570,7 +29715,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       toldRail = false;
     } else if (list.length && rail2) {
       if (!toldRail)
-        logger39.debug("chat More missing; star stays on the navigator");
+        logger40.debug("chat More missing; star stays on the navigator");
       toldRail = true;
       floatToggle(rail2);
     } else {
@@ -29636,10 +29781,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     settlePending();
   }
   function routeSlice(state) {
-    const route = state.route;
+    const { route } = state;
     return `${route?.page ?? ""}|${route?.conversationId ?? ""}`;
   }
-  var schedule4 = debounce(paintAll, 80);
+  var schedule5 = debounce(paintAll, 80);
   function pageSlice(state) {
     return `${state.conversationId ?? ""}|${state.optimisticConversationId ?? ""}`;
   }
@@ -29659,14 +29804,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     alive3 = true;
     ac2 = new AbortController;
     const { signal } = ac2;
-    startStore(schedule4);
+    startStore(schedule5);
     document.addEventListener("pointerdown", onPointerDown5, { capture: true, signal });
     document.addEventListener("keydown", onKeyDown5, { capture: true, signal });
-    document.addEventListener("scroll", schedule4, { capture: true, signal });
-    window.addEventListener("resize", schedule4, { signal });
-    mo = new MutationObserver(schedule4);
+    document.addEventListener("scroll", schedule5, { capture: true, signal });
+    window.addEventListener("resize", schedule5, { signal });
+    mo = new MutationObserver(schedule5);
     mo.observe(document.documentElement, { childList: true, subtree: true });
-    schedule4();
+    schedule5();
   }
   function stop2() {
     alive3 = false;
@@ -29693,22 +29838,22 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     tags: ["messages"],
     enabledByDefault: false,
     startAt: "DOMContentLoaded" /* DOMContentLoaded */,
-    settings: settings24,
+    settings: settings25,
     managedStyle: "messageStars",
     cleanupSelectors: [".void-stars-bubble", ".void-stars-toggle", ".void-stars-panel", ".void-stars-host", ".void-stars-pop"],
     start: start2,
     stop: stop2,
     onSettingsChange() {
       panelKey = "";
-      if (!settings24.store.showInSidebar)
+      if (!settings25.store.showInSidebar)
         hideList();
-      schedule4();
+      schedule5();
     },
     zustand: {
-      ChatPageStore: { selector: pageSlice, handler: schedule4 },
-      RoutingStore: { selector: routeSlice, handler: schedule4 },
-      MessageStore: { selector: messageSlice, handler: schedule4 },
-      ConversationStore: { selector: convSlice, handler: schedule4 }
+      ChatPageStore: { selector: pageSlice, handler: schedule5 },
+      RoutingStore: { selector: routeSlice, handler: schedule5 },
+      MessageStore: { selector: messageSlice, handler: schedule5 },
+      ConversationStore: { selector: convSlice, handler: schedule5 }
     }
   });
 
@@ -30021,10 +30166,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
 
   // src/plugins/messageTimestamps/index.tsx
-  var logger40 = new Logger("MessageTimestamps");
+  var logger41 = new Logger("MessageTimestamps");
   var STAMP_MAX = 5000;
   var RESPONSE_URL = /\/(?:load-responses|share_links|response-node)(?:\/|\?|$)/i;
-  var settings25 = definePluginSettings({
+  var settings26 = definePluginSettings({
     showDate: {
       type: 3 /* BOOLEAN */,
       description: "Show the full date for messages older than today.",
@@ -30036,7 +30181,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       description: "Hide timestamps on your own messages."
     }
   }).withPrivateSettings();
-  var tick = createExternalStore();
+  var tick2 = createExternalStore();
   var cache = null;
   var origFetch2 = null;
   var origXhrOpen2 = null;
@@ -30047,7 +30192,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (cache)
       return cache;
     cache = new Map;
-    const raw = settings25.plain.stamps;
+    const raw = settings26.plain.stamps;
     if (raw && typeof raw === "object") {
       for (const [id, ms] of Object.entries(raw)) {
         if (typeof ms === "number" && Number.isFinite(ms))
@@ -30060,7 +30205,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const next = {};
     for (const [id, ms] of stamps())
       next[id] = ms;
-    settings25.store.stamps = next;
+    settings26.store.stamps = next;
   }
   var persist3 = debounce(persistNow, 400);
   function remember3(id, ms, sender2, state, force = false) {
@@ -30096,7 +30241,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           return cid;
       }
     } catch (e) {
-      logger40.debug("conversation id lookup failed", e);
+      logger41.debug("conversation id lookup failed", e);
     }
     return "";
   }
@@ -30136,7 +30281,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         }
       }
     } catch (e) {
-      logger40.debug("message store unavailable", e);
+      logger41.debug("message store unavailable", e);
     }
     return out;
   }
@@ -30146,7 +30291,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id]?.status === "complete";
     } catch (e) {
-      logger40.debug("message store unavailable", e);
+      logger41.debug("message store unavailable", e);
       return false;
     }
   }
@@ -30167,7 +30312,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         break;
       }
     } catch (e) {
-      logger40.debug("stable key lookup failed", e);
+      logger41.debug("stable key lookup failed", e);
     }
     return keys3;
   }
@@ -30208,7 +30353,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       }
       return Object.values(byId ?? {});
     } catch (e) {
-      logger40.debug("response store unavailable", e);
+      logger41.debug("response store unavailable", e);
       return [];
     }
   }
@@ -30232,7 +30377,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       ];
       return neighborTime(id, records) ?? conversationCreateTime(id);
     } catch (e) {
-      logger40.debug("node neighbor lookup failed", e);
+      logger41.debug("node neighbor lookup failed", e);
     }
     return neighborTime(id, storeRecords(id)) ?? conversationCreateTime(id);
   }
@@ -30248,7 +30393,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return ms != null && !isFresh(ms) ? ms : null;
       }
     } catch (e) {
-      logger40.debug("conversation time lookup failed", e);
+      logger41.debug("conversation time lookup failed", e);
     }
     return null;
   }
@@ -30260,7 +30405,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (hit)
         return { ...rec, ...hit };
     } catch (e) {
-      logger40.debug("byId lookup failed", e);
+      logger41.debug("byId lookup failed", e);
     }
     return rec;
   }
@@ -30301,7 +30446,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         changed = true;
     }
     if (changed)
-      tick.notify();
+      tick2.notify();
   }
   function requestUrl2(input) {
     if (typeof input === "string")
@@ -30327,7 +30472,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         try {
           res.clone().json().then(ingest, () => {});
         } catch (e) {
-          logger40.debug("fetch ingest failed", e);
+          logger41.debug("fetch ingest failed", e);
         }
         return res;
       });
@@ -30364,7 +30509,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       try {
         xhrMeta2.set(this, requestUrl2(url));
       } catch (e) {
-        logger40.debug("xhr open failed", e);
+        logger41.debug("xhr open failed", e);
       }
       return origXhrOpen2.call(this, method, url, ...rest);
     };
@@ -30375,7 +30520,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           try {
             ingestXhr(this);
           } catch (e) {
-            logger40.debug("xhr ingest failed", e);
+            logger41.debug("xhr ingest failed", e);
           }
         }, { once: true });
       }
@@ -30405,7 +30550,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       };
     } catch (e) {
       origList = null;
-      logger40.debug("chatListResponses wrap skipped", e);
+      logger41.debug("chatListResponses wrap skipped", e);
     }
   }
   function unhookListResponses() {
@@ -30414,7 +30559,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       ApiClients.chatApi.chatListResponses = origList;
     } catch (e) {
-      logger40.debug("chatListResponses unwrap skipped", e);
+      logger41.debug("chatListResponses unwrap skipped", e);
     }
     origList = null;
   }
@@ -30433,14 +30578,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     description: "Shows timestamps on chat messages.",
     authors: [Devs.Prism, Devs.p],
     tags: ["messages"],
-    settings: settings25,
+    settings: settings26,
     start() {
       try {
         hookFetch2();
         hookXhr2();
         hookListResponses();
       } catch (e) {
-        logger40.warn("Failed to hook network", e);
+        logger41.warn("Failed to hook network", e);
       }
     },
     stop() {
@@ -30465,7 +30610,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
               nodes: Object.values(nodesByConversationId ?? {}).flat()
             });
           } catch (e) {
-            logger40.debug("store ingest failed", e);
+            logger41.debug("store ingest failed", e);
           }
         }
       },
@@ -30482,9 +30627,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       }
     },
     _renderTimestamp: ErrorBoundary.wrap(({ response, isUser }) => {
-      useExternalStore(tick);
+      useExternalStore(tick2);
       const human = isUser === true || isHumanSender(response.sender);
-      if (settings25.store.hideOwnMessages && human)
+      if (settings26.store.hideOwnMessages && human)
         return null;
       const ms = resolveMs(response, isUser);
       if (ms == null)
@@ -30494,7 +30639,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         size: "xs",
         color: "muted",
         className: "void-timestamp"
-      }, formatTimestamp(ms, settings25.store.showDate));
+      }, formatTimestamp(ms, settings26.store.showDate));
     }),
     patches: [
       {
@@ -30607,7 +30752,7 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
 }
 `;
   var REFINEMENT_CSS = `.${REFINEMENT_MARK}{display:none!important}`;
-  var settings26 = definePluginSettings({
+  var settings27 = definePluginSettings({
     hideDictationRefinement: {
       type: 3 /* BOOLEAN */,
       description: 'Hide "Dictation Refinement" in the Grok Settings dialog (Behavior tab).',
@@ -30616,7 +30761,7 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
   });
   function apply5() {
     const rules = [BUTTON_CSS];
-    if (settings26.store.hideDictationRefinement)
+    if (settings27.store.hideDictationRefinement)
       rules.push(REFINEMENT_CSS);
     registerStyle(STYLE_NAME4, rules.join(`
 `));
@@ -30628,7 +30773,7 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
     authors: [Devs.p],
     tags: ["declutter"],
     enabledByDefault: true,
-    settings: settings26,
+    settings: settings27,
     patches: [
       {
         find: 'settings.behavior.dictation-refinement.description","How much Grok refines your speech-to-text transcriptions',
@@ -30687,7 +30832,7 @@ span:has(> [aria-label*="Grok Bot"]) {
 
   // src/plugins/noShareLink/index.ts
   var STYLE_NAME6 = "noShareLink";
-  var settings27 = definePluginSettings({
+  var settings28 = definePluginSettings({
     hideShareProject: {
       type: 3 /* BOOLEAN */,
       description: "Inside a project: hide the top-right Share Project button.",
@@ -30701,13 +30846,13 @@ span:has(> [aria-label*="Grok Bot"]) {
   });
   function apply6() {
     const rules = [];
-    if (settings27.store.hideShareProject) {
+    if (settings28.store.hideShareProject) {
       rules.push('button[aria-label="Share Project"]{display:none!important}');
       rules.push('[role="menuitem"]:has(use[href="#icon-md-share"],use[href="#icon-sm-share"],use[href="#icon-xs-share"]){display:none!important}');
       rules.push('[role="menuitem"]:has(use[href="#icon-md-share"],use[href="#icon-sm-share"],use[href="#icon-xs-share"]) + [role="separator"]{display:none!important}');
       rules.push('[role="separator"]:has(+ [role="menuitem"]:has(use[href="#icon-md-share"],use[href="#icon-sm-share"],use[href="#icon-xs-share"])){display:none!important}');
     }
-    if (settings27.store.hideCreateShareLink) {
+    if (settings28.store.hideCreateShareLink) {
       rules.push('button[aria-label="Create share link"]{display:none!important}');
     }
     registerStyle(STYLE_NAME6, rules.join(`
@@ -30720,7 +30865,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     authors: [Devs.p],
     tags: ["declutter", "privacy"],
     enabledByDefault: true,
-    settings: settings27,
+    settings: settings28,
     start: apply6,
     onSettingsChange: apply6,
     stop() {
@@ -30743,7 +30888,7 @@ span:has(> [aria-label*="Grok Bot"]) {
   var MENU_EMAIL_DESKTOP = `${MENU_IDENTITY_GROUP} span + span`;
   var MENU_NAME_DESKTOP = `${MENU_IDENTITY_GROUP} span > span:first-child`;
   var MENU_CSI_NAME = '[role="menu"] .void-csi-name';
-  var settings28 = definePluginSettings({
+  var settings29 = definePluginSettings({
     hideUsername: {
       type: 3 /* BOOLEAN */,
       description: "Hide the username next to the sidebar avatar and at the top of the account menu.",
@@ -30757,7 +30902,7 @@ span:has(> [aria-label*="Grok Bot"]) {
   });
   function apply7() {
     const rules = [];
-    if (settings28.store.hideUsername) {
+    if (settings29.store.hideUsername) {
       rules.push(`${STACK}>:first-child{display:none!important}`);
       rules.push(`${ACCOUNT_NAME}{display:none!important}`);
       rules.push(`${FOOTER2} .void-sidebar-name,${MENU_NAME_DESKTOP},${MENU_CSI_NAME}{display:none!important}`);
@@ -30765,11 +30910,11 @@ span:has(> [aria-label*="Grok Bot"]) {
       rules.push(`${ACCOUNT_CLUSTER}{width:auto!important;flex:none!important;min-width:0!important}`);
       rules.push(`${ACCOUNT_BTN2} ~ button{margin-inline-start:auto!important}`);
     }
-    if (settings28.store.hideEmail) {
+    if (settings29.store.hideEmail) {
       rules.push(`${STACK}>:nth-child(2){display:none!important}`);
       rules.push(`${MENU_EMAIL},${MENU_EMAIL_LABEL},${MENU_EMAIL_ROW},${MENU_EMAIL_DESKTOP}{display:none!important}`);
     }
-    if (settings28.store.hideUsername && settings28.store.hideEmail) {
+    if (settings29.store.hideUsername && settings29.store.hideEmail) {
       rules.push(`${TEXT_WRAP}{display:none!important}`);
       rules.push(`${FOOTER2} .void-sidebar-info{display:none!important}`);
       rules.push(`${MENU_IDENTITY_GROUP}{display:none!important}`);
@@ -30785,7 +30930,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     authors: [Devs.p],
     tags: ["privacy"],
     enabledByDefault: true,
-    settings: settings28,
+    settings: settings29,
     patches: [
       {
         find: "max-w-[400px] truncate",
@@ -31174,7 +31319,7 @@ html.void-rt-open [data-sidebar="gap"] {
 `);
 
   // src/plugins/recentTopics/index.tsx
-  var logger41 = new Logger("RecentTopics");
+  var logger42 = new Logger("RecentTopics");
   var cl29 = classNameFactory("void-rt-");
   var HOME_KEY = "home";
   var HOME_SEP = "home:";
@@ -31205,7 +31350,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var HOVER_ARM_PX = 4;
   var EFFECT_GM_KEY = "VoidPP.rt.effect";
   var EFFECT_LS_KEY = "voidpp.rt.v1";
-  var settings29 = definePluginSettings({
+  var settings30 = definePluginSettings({
     maxRecent: {
       type: 4 /* SELECT */,
       description: "How many recently opened conversations to show.",
@@ -31273,13 +31418,13 @@ html.void-rt-open [data-sidebar="gap"] {
     return effect.visits;
   }
   function maxCount() {
-    const n = Number(settings29.store.maxRecent);
+    const n = Number(settings30.store.maxRecent);
     return Number.isFinite(n) && n > 0 ? n : 5;
   }
   function capVisits(ids) {
-    const allowHome = settings29.store.includeHome;
+    const allowHome = settings30.store.includeHome;
     const current = currentVisit();
-    const dirtyGlobalWs = asWorkspaceId2(settings29.plain.workspaceByConv?.[HOME_KEY]);
+    const dirtyGlobalWs = asWorkspaceId2(settings30.plain.workspaceByConv?.[HOME_KEY]);
     const seen = new Set;
     const out = [];
     for (const raw of ids) {
@@ -31326,9 +31471,9 @@ html.void-rt-open [data-sidebar="gap"] {
     return keys4.every((k) => src[k] === b[k]);
   }
   function assignRecord(key, next) {
-    if (sameRecord(settings29.plain[key], next))
+    if (sameRecord(settings30.plain[key], next))
       return false;
-    settings29.store[key] = next;
+    settings30.store[key] = next;
     return true;
   }
   function emptyEffect() {
@@ -31520,9 +31665,9 @@ html.void-rt-open [data-sidebar="gap"] {
       effect = disk2;
     } else {
       const fromSettings = {
-        visits: asStringList(settings29.plain.visits),
-        deniedIds: asStringList(settings29.plain.deniedIds),
-        deniedAt: asStringRecord(settings29.plain.deniedAt)
+        visits: asStringList(settings30.plain.visits),
+        deniedIds: asStringList(settings30.plain.deniedIds),
+        deniedAt: asStringRecord(settings30.plain.deniedAt)
       };
       effect = {
         v: 1,
@@ -31564,7 +31709,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function commitVisits(next) {
     const changedVisits = persistEffect(next);
     const visits = readVisits();
-    const rawWs = pruneRecord(settings29.plain.workspaceByConv, visits);
+    const rawWs = pruneRecord(settings30.plain.workspaceByConv, visits);
     const workspaceByConv = {};
     for (const [id, value] of Object.entries(rawWs)) {
       if (id === HOME_KEY)
@@ -31573,7 +31718,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (ws)
         workspaceByConv[id] = ws;
     }
-    const pages = pruneRecord(settings29.plain.pages, visits);
+    const pages = pruneRecord(settings30.plain.pages, visits);
     const usedWs = new Set(Object.values(workspaceByConv));
     for (const id of visits) {
       const ws = workspaceFromHomeId(id);
@@ -31585,7 +31730,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const keepProjects = {};
     const keepIcons = {};
     const idx = sidebarIndex();
-    for (const [id, name] of Object.entries(settings29.plain.projectNames ?? {})) {
+    for (const [id, name] of Object.entries(settings30.plain.projectNames ?? {})) {
       const n = usableName(name);
       if (!usedWs.has(id) || !n)
         continue;
@@ -31594,14 +31739,14 @@ html.void-rt-open [data-sidebar="gap"] {
         continue;
       keepProjects[id] = n;
     }
-    for (const [id, snap] of Object.entries(settings29.plain.projectIcons ?? {})) {
+    for (const [id, snap] of Object.entries(settings30.plain.projectIcons ?? {})) {
       if (!usedWs.has(id) || !snap || isChromeSnap(snap))
         continue;
       keepIcons[id] = snap;
     }
     let changed = changedVisits;
     const titles = {};
-    for (const [id, name] of Object.entries(pruneRecord(settings29.plain.titles, visits))) {
+    for (const [id, name] of Object.entries(pruneRecord(settings30.plain.titles, visits))) {
       const t = usableTitle(name);
       if (t)
         titles[id] = t;
@@ -31628,10 +31773,10 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     if (id === chatIdFromUrl() && isAccessDeniedPage())
       return;
-    const prev = settings29.plain.titles ?? {};
+    const prev = settings30.plain.titles ?? {};
     if (prev[id] === t)
       return;
-    settings29.store.titles = { ...prev, [id]: t };
+    settings30.store.titles = { ...prev, [id]: t };
   }
   function isHomeId(id) {
     return id === HOME_KEY || id.startsWith(HOME_SEP);
@@ -31732,7 +31877,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (fromRoute != null && isHomeId(fromRoute))
         return fromRoute;
     } catch (e) {
-      logger41.debug("RoutingStore unavailable:", e);
+      logger42.debug("RoutingStore unavailable:", e);
     }
     return null;
   }
@@ -31751,7 +31896,7 @@ html.void-rt-open [data-sidebar="gap"] {
         add(historyStack[i]);
       return unique(ids);
     } catch (e) {
-      logger41.debug("historyStack unavailable:", e);
+      logger42.debug("historyStack unavailable:", e);
       return [];
     }
   }
@@ -31827,7 +31972,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
       return byId[id] ?? byIdWithWorkspaces[id] ?? list.find((c) => c.conversationId === id);
     } catch (e) {
-      logger41.debug("Conversation lookup failed:", e);
+      logger42.debug("Conversation lookup failed:", e);
       return;
     }
   }
@@ -31835,9 +31980,9 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!id || isHomeId(id))
       return "New chat";
     if (isDenied(id))
-      return usableTitle(settings29.plain.titles?.[id]) || "Untitled";
+      return usableTitle(settings30.plain.titles?.[id]) || "Untitled";
     const conv = lookup(id);
-    return usableTitle(conv?.title) || usableTitle(settings29.plain.titles?.[id]) || titleFromPage(id) || "Untitled";
+    return usableTitle(conv?.title) || usableTitle(settings30.plain.titles?.[id]) || titleFromPage(id) || "Untitled";
   }
   function liveWorkspaceId() {
     const fromUrl = asWorkspaceId2(projectIdFromUrl());
@@ -31885,7 +32030,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const conv = byId[id] ?? byIdWithWorkspaces[id];
       return asWorkspaceId2(conv?.workspaceId) || asWorkspaceId2(conv?.workspaces);
     } catch (e) {
-      logger41.debug("convWorkspaceId failed:", e);
+      logger42.debug("convWorkspaceId failed:", e);
       return asWorkspaceId2(lookup(id)?.workspaceId) || asWorkspaceId2(lookup(id)?.workspaces);
     }
   }
@@ -32069,18 +32214,18 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!ws)
       return;
     const snap = liveIconSnap(ws);
-    const prev = settings29.plain.projectIcons ?? {};
+    const prev = settings30.plain.projectIcons ?? {};
     if (snap) {
       wsIcons[ws] = snap;
       if (prev[ws] !== snap)
-        settings29.store.projectIcons = { ...prev, [ws]: snap };
+        settings30.store.projectIcons = { ...prev, [ws]: snap };
       return;
     }
     if (prev[ws] && isChromeSnap(prev[ws])) {
       const next = { ...prev };
       delete next[ws];
       delete wsIcons[ws];
-      settings29.store.projectIcons = next;
+      settings30.store.projectIcons = next;
     }
   }
   function projectNameFromAncestors(el) {
@@ -32192,12 +32337,12 @@ html.void-rt-open [data-sidebar="gap"] {
     return "";
   }
   function dropWorkspace(id) {
-    const prev = settings29.plain.workspaceByConv ?? {};
+    const prev = settings30.plain.workspaceByConv ?? {};
     if (!prev[id])
       return;
     const next = { ...prev };
     delete next[id];
-    settings29.store.workspaceByConv = next;
+    settings30.store.workspaceByConv = next;
   }
   function workspaceOf3(id) {
     if (!id)
@@ -32212,7 +32357,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const fromSidebar = sidebarIndex().wsByConv[id] || workspaceFromDom(id);
     if (fromSidebar)
       return fromSidebar;
-    const cached = asWorkspaceId2(settings29.plain.workspaceByConv?.[id]);
+    const cached = asWorkspaceId2(settings30.plain.workspaceByConv?.[id]);
     if (cached)
       return cached;
     const fromHist = workspaceFromHistory(id);
@@ -32243,7 +32388,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!ws)
       return "";
     const idx = sidebarIndex();
-    const named = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || wsNames[ws] || settings29.plain.projectNames?.[ws] || "");
+    const named = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || wsNames[ws] || settings30.plain.projectNames?.[ws] || "");
     if (!named)
       return "";
     const live2 = liveWorkspaceId();
@@ -32258,28 +32403,28 @@ html.void-rt-open [data-sidebar="gap"] {
     const ws = workspaceOf3(id);
     if (!ws)
       return;
-    const prevWs = settings29.plain.workspaceByConv ?? {};
+    const prevWs = settings30.plain.workspaceByConv ?? {};
     if (prevWs[id] !== ws)
-      settings29.store.workspaceByConv = { ...prevWs, [id]: ws };
+      settings30.store.workspaceByConv = { ...prevWs, [id]: ws };
     const idx = sidebarIndex();
     const sidebarName = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || "");
     const liveName = ws === liveWorkspaceId() ? readOpenProjectName() : "";
-    const cached = usableName(wsNames[ws] || settings29.plain.projectNames?.[ws] || "");
+    const cached = usableName(wsNames[ws] || settings30.plain.projectNames?.[ws] || "");
     const fallback = !isBrandLabel(liveName) ? usableName(liveName) : "";
     const name = sidebarName || fallback || cached;
     rememberProjectIcon(ws);
     if (!name)
       return;
     wsNames[ws] = name;
-    const prevNames = settings29.plain.projectNames ?? {};
+    const prevNames = settings30.plain.projectNames ?? {};
     if (prevNames[ws] !== name)
-      settings29.store.projectNames = { ...prevNames, [ws]: name };
+      settings30.store.projectNames = { ...prevNames, [ws]: name };
   }
   function reconcileSidebarCache() {
     const idx = sidebarIndex();
-    const prevWs = { ...settings29.plain.workspaceByConv };
-    const prevNames = { ...settings29.plain.projectNames };
-    const prevIcons = { ...settings29.plain.projectIcons };
+    const prevWs = { ...settings30.plain.workspaceByConv };
+    const prevNames = { ...settings30.plain.projectNames };
+    const prevIcons = { ...settings30.plain.projectIcons };
     let wsChanged = false;
     let namesChanged = false;
     let iconsChanged = false;
@@ -32323,11 +32468,11 @@ html.void-rt-open [data-sidebar="gap"] {
       namesChanged = true;
     }
     if (wsChanged)
-      settings29.store.workspaceByConv = prevWs;
+      settings30.store.workspaceByConv = prevWs;
     if (namesChanged)
-      settings29.store.projectNames = prevNames;
+      settings30.store.projectNames = prevNames;
     if (iconsChanged)
-      settings29.store.projectIcons = prevIcons;
+      settings30.store.projectIcons = prevIcons;
   }
   function requestWorkspace(id) {
     if (!id || isHomeId(id) || pendingWs.has(id))
@@ -32355,20 +32500,20 @@ html.void-rt-open [data-sidebar="gap"] {
           maybePaint();
           return;
         }
-        const prev = settings29.plain.workspaceByConv ?? {};
+        const prev = settings30.plain.workspaceByConv ?? {};
         if (prev[id] !== ws)
-          settings29.store.workspaceByConv = { ...prev, [id]: ws };
+          settings30.store.workspaceByConv = { ...prev, [id]: ws };
         const live2 = liveWorkspaceId();
         const liveName = usableName(readOpenProjectName());
-        const names = settings29.plain.projectNames ?? {};
+        const names = settings30.plain.projectNames ?? {};
         if (live2 && ws !== live2 && liveName && names[ws] === liveName) {
           const next = { ...names };
           delete next[ws];
-          settings29.store.projectNames = next;
+          settings30.store.projectNames = next;
           delete wsNames[ws];
         }
         maybePaint();
-      }).catch((e) => logger41.debug("workspace fetch failed:", e)).finally(() => {
+      }).catch((e) => logger42.debug("workspace fetch failed:", e)).finally(() => {
         pendingWs.delete(id);
       });
     } catch {
@@ -32642,7 +32787,7 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       return responsesToLines(responsesOf(id));
     } catch (e) {
-      logger41.debug("ResponseStore snapshot failed:", e);
+      logger42.debug("ResponseStore snapshot failed:", e);
       return [];
     }
   }
@@ -32685,7 +32830,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function snapOf(id) {
     if (!id || isHomeId(id))
       return null;
-    const snap = thumbs.get(id) ?? parseSnap(settings29.plain.pages?.[id]);
+    const snap = thumbs.get(id) ?? parseSnap(settings30.plain.pages?.[id]);
     if (!snap)
       return null;
     const lines = lastRound(snap.lines);
@@ -32697,22 +32842,22 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function rememberPage(id, snap) {
     const json = JSON.stringify(snap);
-    const prev = settings29.plain.pages ?? {};
+    const prev = settings30.plain.pages ?? {};
     if (prev[id] === json)
       return;
-    settings29.store.pages = { ...prev, [id]: json };
+    settings30.store.pages = { ...prev, [id]: json };
   }
   function forgetPage(id) {
     thumbs.delete(id);
-    const prev = settings29.plain.pages ?? {};
+    const prev = settings30.plain.pages ?? {};
     if (!(id in prev))
       return;
     const next = { ...prev };
     delete next[id];
-    settings29.store.pages = next;
+    settings30.store.pages = next;
   }
   function prunePages() {
-    const prev = settings29.plain.pages ?? {};
+    const prev = settings30.plain.pages ?? {};
     const next = {};
     let changed = false;
     for (const [id, raw] of Object.entries(prev)) {
@@ -32724,7 +32869,7 @@ html.void-rt-open [data-sidebar="gap"] {
       next[id] = raw;
     }
     if (changed)
-      settings29.store.pages = next;
+      settings30.store.pages = next;
   }
   function applyLineStyle(el, role, theme) {
     el.style.display = "-webkit-box";
@@ -32784,7 +32929,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const lines = lastRound(betterLines(fromStore, fromDom));
     if (!lines.length)
       return;
-    const prev = thumbs.get(id) ?? parseSnap(settings29.plain.pages?.[id]);
+    const prev = thumbs.get(id) ?? parseSnap(settings30.plain.pages?.[id]);
     const prevLines = prev ? lastRound(prev.lines) : [];
     const nextRank = linesRank(lines);
     const prevRank = linesRank(prevLines);
@@ -32814,7 +32959,7 @@ html.void-rt-open [data-sidebar="gap"] {
           captureId(id);
       }
     } catch (e) {
-      logger41.debug("snapshot failed:", e);
+      logger42.debug("snapshot failed:", e);
     } finally {
       capturing = false;
     }
@@ -32894,7 +33039,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function bump(id) {
     if (!id)
       return;
-    if (isHomeId(id) && !settings29.store.includeHome)
+    if (isHomeId(id) && !settings30.store.includeHome)
       return;
     if (!isHomeId(id) && id === chatIdFromUrl() && isAccessDeniedPage()) {
       dropVisit(id);
@@ -32953,7 +33098,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (parsed?.page && parsed.page !== "unknown")
         return parsed;
     } catch (e) {
-      logger41.debug("urlToRoute failed:", e);
+      logger42.debug("urlToRoute failed:", e);
     }
     return null;
   }
@@ -32965,7 +33110,7 @@ html.void-rt-open [data-sidebar="gap"] {
         chat.setOptimisticConversationId(undefined);
       chat.setProjectId(asWorkspaceId2(workspaceId) || undefined);
     } catch (e) {
-      logger41.debug("ChatPageStore update failed:", e);
+      logger42.debug("ChatPageStore update failed:", e);
     }
   }
   function navigateTo2(id) {
@@ -33059,17 +33204,17 @@ html.void-rt-open [data-sidebar="gap"] {
             });
             applyChatPage2(id, ws);
             rememberProject(id);
-          }).catch((e) => logger41.debug("workspace resolve failed:", e));
+          }).catch((e) => logger42.debug("workspace resolve failed:", e));
         } catch (e) {
-          logger41.debug("workspace fetch skipped:", e);
+          logger42.debug("workspace fetch skipped:", e);
         }
       }
     } catch (e) {
-      logger41.error("Failed to navigate:", e);
+      logger42.error("Failed to navigate:", e);
       try {
         location.assign(hrefFor2(id, workspaceOf3(id) || undefined));
       } catch (navErr) {
-        logger41.error("Fallback navigation failed:", navErr);
+        logger42.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -33098,7 +33243,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (topics().length > 1)
         selected = reverse ? topics().length - 1 : 1;
     } catch (e) {
-      logger41.error("Failed to open switcher:", e);
+      logger42.error("Failed to open switcher:", e);
     } finally {
       suspendPaint = false;
     }
@@ -33143,7 +33288,7 @@ html.void-rt-open [data-sidebar="gap"] {
         else
           begin(e.shiftKey, true);
       } catch (err) {
-        logger41.error("Hotkey failed:", err);
+        logger42.error("Hotkey failed:", err);
       }
       return;
     }
@@ -33348,7 +33493,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return svg2;
   }
   function projectIconOf(ws) {
-    const raw = ws ? wsIcons[ws] || settings29.plain.projectIcons?.[ws] || liveIconSnap(ws) || "" : "";
+    const raw = ws ? wsIcons[ws] || settings30.plain.projectIcons?.[ws] || liveIconSnap(ws) || "" : "";
     const snap = raw && !isChromeSnap(raw) ? raw : "";
     if (snap) {
       wsIcons[ws] = snap;
@@ -33583,7 +33728,7 @@ html.void-rt-open [data-sidebar="gap"] {
     authors: [Devs.p],
     tags: ["navigation"],
     enabledByDefault: true,
-    settings: settings29,
+    settings: settings30,
     managedStyle: "recentTopics",
     _mark({ response }) {
       try {
@@ -33626,7 +33771,7 @@ html.void-rt-open [data-sidebar="gap"] {
           bump(current);
         scheduleCapture();
       } catch (e) {
-        logger41.error("Hydrate failed:", e);
+        logger42.error("Hydrate failed:", e);
       }
       if (!keys3) {
         keys3 = new AbortController;
@@ -33656,7 +33801,7 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         writeVisits(capVisits(readVisits()));
       } catch (e) {
-        logger41.error("Settings update failed:", e);
+        logger42.error("Settings update failed:", e);
       }
     },
     zustand: {
@@ -33709,7 +33854,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var DEFAULT_CHIME = "data:audio/mpeg;base64,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";
 
   // src/plugins/responseNotification/index.ts
-  var logger42 = new Logger("ResponseNotification");
+  var logger43 = new Logger("ResponseNotification");
   var LIVE_STATES = new Set(["streaming", "optimistic", "reconnecting"]);
   var RETRY_MS3 = 80;
   var SAMPLE_VOLUME = 0.5;
@@ -33723,7 +33868,7 @@ html.void-rt-open [data-sidebar="gap"] {
       }
     }, "Play preview"));
   }
-  var settings30 = definePluginSettings({
+  var settings31 = definePluginSettings({
     sound: {
       type: 3 /* BOOLEAN */,
       description: "Play a notification sound.",
@@ -33769,14 +33914,14 @@ html.void-rt-open [data-sidebar="gap"] {
       audioCtx = new AudioContext;
       return audioCtx;
     } catch (e) {
-      logger42.debug("AudioContext unavailable:", e);
+      logger43.debug("AudioContext unavailable:", e);
       audioCtx = null;
       return null;
     }
   }
   function onUserGesture() {
     userGestured = true;
-    if (settings30.store.browserNotification && Notification.permission === "default")
+    if (settings31.store.browserNotification && Notification.permission === "default")
       Notification.requestPermission();
     const ctx = getCtx();
     if (!ctx)
@@ -33816,22 +33961,22 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function playUrl(ctx, url) {
     loadBuffer(ctx, url).then((buf) => playBuffer(ctx, buf), (err) => {
-      logger42.info("sample play failed:", err);
+      logger43.info("sample play failed:", err);
       if (url !== DEFAULT_CHIME)
-        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger42.info("default chime failed:", e));
+        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger43.info("default chime failed:", e));
     });
   }
   function playSound() {
     if (!userGestured) {
-      logger42.info("sound skipped, no user gesture yet");
+      logger43.info("sound skipped, no user gesture yet");
       return;
     }
     const ctx = getCtx();
     if (!ctx)
       return;
-    const url = settings30.store.soundUrl?.trim() || DEFAULT_CHIME;
+    const url = settings31.store.soundUrl?.trim() || DEFAULT_CHIME;
     if (ctx.state === "suspended")
-      ctx.resume().then(() => playUrl(ctx, url), () => logger42.info("AudioContext resume failed"));
+      ctx.resume().then(() => playUrl(ctx, url), () => logger43.info("AudioContext resume failed"));
     else
       playUrl(ctx, url);
   }
@@ -33845,12 +33990,12 @@ html.void-rt-open [data-sidebar="gap"] {
     return !isErrorResponse3(response) && !isLiveResponse3(response);
   }
   function notify(responseId, state) {
-    logger42.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
-    if (settings30.store.onlyWhenHidden && document.visibilityState === "visible")
+    logger43.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
+    if (settings31.store.onlyWhenHidden && document.visibilityState === "visible")
       return;
-    if (settings30.store.sound)
+    if (settings31.store.sound)
       playSound();
-    if (settings30.store.browserNotification) {
+    if (settings31.store.browserNotification) {
       sendBrowserNotification("Grok", state === "imagine" ? "Imagine generation complete." : "Response complete.");
     }
   }
@@ -33873,7 +34018,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function onStreamEnd7({ responseId }) {
-    logger42.info("streamEnd", responseId);
+    logger43.info("streamEnd", responseId);
     if (retryTimer2)
       clearTimeout(retryTimer2);
     const attempt = (retried2) => {
@@ -33881,21 +34026,21 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         response = ResponseStore.useResponseStore.getState().byId[responseId];
       } catch (e) {
-        logger42.info("ResponseStore unavailable:", e);
+        logger43.info("ResponseStore unavailable:", e);
       }
       if (shouldNotify(response)) {
         notifyOnce(responseId, response?.state ?? "gateway");
         return;
       }
       if (isErrorResponse3(response)) {
-        logger42.info("skip error", responseId);
+        logger43.info("skip error", responseId);
         return;
       }
       if (!retried2) {
         retryTimer2 = setTimeout(() => attempt(true), RETRY_MS3);
         return;
       }
-      logger42.info("skip", responseId, response?.state ?? "unset");
+      logger43.info("skip", responseId, response?.state ?? "unset");
     };
     attempt(false);
   }
@@ -33945,7 +34090,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function syncImagine2(current, prev) {
-    if (!settings30.store.imagineGeneration || !prev)
+    if (!settings31.store.imagineGeneration || !prev)
       return;
     if (onImaginePage4())
       return;
@@ -33974,7 +34119,7 @@ html.void-rt-open [data-sidebar="gap"] {
     description: "Notify when Grok finishes responding. Optional Imagine generation notify is off by default.",
     authors: [Devs.Prism, Devs.p],
     tags: ["notifications"],
-    settings: settings30,
+    settings: settings31,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
       if (gestureCtrl)
@@ -34107,7 +34252,7 @@ html.void-rt-open [data-sidebar="gap"] {
 
   // src/plugins/settingsFlyout/index.tsx
   var cl30 = classNameFactory("void-sf-");
-  var settings31 = definePluginSettings({
+  var settings32 = definePluginSettings({
     showOpenSettings: {
       type: 3 /* BOOLEAN */,
       description: 'Show "Open Settings" (last used tab).',
@@ -34224,7 +34369,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }, "Void++"), tabItems(tabs, menu2));
   }
   function SettingsMenu({ onOpen }) {
-    const cfg = settings31.use([
+    const cfg = settings32.use([
       "showOpenSettings",
       "voidppPosition",
       "plugins",
@@ -34274,7 +34419,7 @@ html.void-rt-open [data-sidebar="gap"] {
     tags: ["navigation"],
     enabledByDefault: true,
     requiresRestart: true,
-    settings: settings31,
+    settings: settings32,
     start() {
       migratePluginSetting("SettingsFlyout", "voidppPosition", "voidPosition");
     },
@@ -34306,8 +34451,8 @@ html.void-rt-open [data-sidebar="gap"] {
   var SKILLS_PATH = "/rest/user-skills";
   var MIN_POLL_SEC = 5;
   var MENU_ROOTS = '[role="dialog"], [role="menu"], [role="listbox"]';
-  var logger43 = new Logger("SkillBlocker");
-  var settings32 = definePluginSettings({
+  var logger44 = new Logger("SkillBlocker");
+  var settings33 = definePluginSettings({
     blockedSkills: {
       type: 0 /* STRING */,
       description: "Private skill names to hide. Separate names with commas or new lines.",
@@ -34329,9 +34474,9 @@ html.void-rt-open [data-sidebar="gap"] {
       default: true
     }
   });
-  var timer2 = null;
+  var timer3 = null;
   var scrubTimer = null;
-  var observer3 = null;
+  var observer4 = null;
   var sweeping = false;
   var active = false;
   var origFetch3 = null;
@@ -34339,13 +34484,13 @@ html.void-rt-open [data-sidebar="gap"] {
   var origXhrSend3 = null;
   var xhrMeta3 = new WeakMap;
   function blockedNames() {
-    return settings32.store.blockedSkills.split(/[\n,]/).map((name) => name.trim()).filter(Boolean);
+    return settings33.store.blockedSkills.split(/[\n,]/).map((name) => name.trim()).filter(Boolean);
   }
   function blockedSet() {
     return new Set(blockedNames());
   }
   function pollMs() {
-    const sec = settings32.store.pollInterval;
+    const sec = settings33.store.pollInterval;
     const n = typeof sec === "number" && Number.isFinite(sec) ? sec : MIN_POLL_SEC;
     return Math.max(MIN_POLL_SEC, n) * 1000;
   }
@@ -34414,13 +34559,13 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       data = await res.clone().json();
     } catch (e) {
-      logger43.warn("Skill list was not JSON", e);
+      logger44.warn("Skill list was not JSON", e);
       return res;
     }
     const stripped = stripSkills(data, blocked);
     if (!stripped)
       return res;
-    logger43.info(`Hid ${stripped.removed.join(", ")}`);
+    logger44.info(`Hid ${stripped.removed.join(", ")}`);
     const headers = new Headers(res.headers);
     headers.delete("content-length");
     headers.delete("content-encoding");
@@ -34439,16 +34584,16 @@ html.void-rt-open [data-sidebar="gap"] {
       credentials: "include"
     });
     if (!res.ok) {
-      logger43.warn(`Delete ${name} failed`, res.status);
+      logger44.warn(`Delete ${name} failed`, res.status);
       return;
     }
-    logger43.info(`Removed ${name}`);
-    if (settings32.store.notify)
+    logger44.info(`Removed ${name}`);
+    if (settings33.store.notify)
       showToast(`Removed skill ${name}.`, 1 /* SUCCESS */);
     scheduleScrub();
   }
   async function sweep() {
-    if (!active || sweeping || !origFetch3 || settings32.store.hideOnly)
+    if (!active || sweeping || !origFetch3 || settings33.store.hideOnly)
       return;
     const names = blockedNames();
     if (!names.length)
@@ -34462,7 +34607,7 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         data = await res.json();
       } catch (e) {
-        logger43.warn("Skill list was not JSON", e);
+        logger44.warn("Skill list was not JSON", e);
         return;
       }
       const blocked = new Set(names);
@@ -34474,7 +34619,7 @@ html.void-rt-open [data-sidebar="gap"] {
         return;
       await Promise.all(hits.map((name) => removeSkill(name)));
     } catch (e) {
-      logger43.error("Skill sweep failed", e);
+      logger44.error("Skill sweep failed", e);
     } finally {
       sweeping = false;
     }
@@ -34505,13 +34650,13 @@ html.void-rt-open [data-sidebar="gap"] {
       else
         return;
     } catch (e) {
-      logger43.warn("xhr skill list was not JSON", e);
+      logger44.warn("xhr skill list was not JSON", e);
       return;
     }
     const stripped = stripSkills(data, blocked);
     if (!stripped)
       return;
-    logger43.info(`Hid ${stripped.removed.join(", ")}`);
+    logger44.info(`Hid ${stripped.removed.join(", ")}`);
     const parsed = JSON.parse(stripped.body);
     try {
       Object.defineProperty(xhr, "responseText", { configurable: true, get: () => stripped.body });
@@ -34520,7 +34665,7 @@ html.void-rt-open [data-sidebar="gap"] {
         get: () => type === "json" ? parsed : stripped.body
       });
     } catch (e) {
-      logger43.warn("xhr skill list patch failed", e);
+      logger44.warn("xhr skill list patch failed", e);
     }
     scheduleScrub();
   }
@@ -34534,7 +34679,7 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         xhrMeta3.set(this, { method: String(method).toUpperCase(), url: requestUrl3(url) });
       } catch (e) {
-        logger43.debug("xhr open failed", e);
+        logger44.debug("xhr open failed", e);
       }
       return origXhrOpen3.call(this, method, url, ...rest);
     };
@@ -34617,30 +34762,30 @@ html.void-rt-open [data-sidebar="gap"] {
     }, 32);
   }
   function watchDom() {
-    if (observer3)
+    if (observer4)
       return;
     const doc3 = pageWindow.document;
     if (!doc3.body)
       return;
-    observer3 = new MutationObserver(() => scheduleScrub());
-    observer3.observe(doc3.body, { childList: true, subtree: true });
+    observer4 = new MutationObserver(() => scheduleScrub());
+    observer4.observe(doc3.body, { childList: true, subtree: true });
     scheduleScrub();
   }
   function unwatchDom() {
-    observer3?.disconnect();
-    observer3 = null;
+    observer4?.disconnect();
+    observer4 = null;
     if (scrubTimer != null) {
       clearTimeout(scrubTimer);
       scrubTimer = null;
     }
   }
   function arm() {
-    if (timer2 != null)
-      clearInterval(timer2);
-    timer2 = null;
-    if (settings32.store.hideOnly)
+    if (timer3 != null)
+      clearInterval(timer3);
+    timer3 = null;
+    if (settings33.store.hideOnly)
       return;
-    timer2 = setInterval(() => {
+    timer3 = setInterval(() => {
       sweep();
     }, pollMs());
     sweep();
@@ -34657,9 +34802,9 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function stop3() {
     active = false;
-    if (timer2 != null) {
-      clearInterval(timer2);
-      timer2 = null;
+    if (timer3 != null) {
+      clearInterval(timer3);
+      timer3 = null;
     }
     unwatchDom();
     unhookXhr3();
@@ -34675,7 +34820,7 @@ html.void-rt-open [data-sidebar="gap"] {
     authors: [Devs.p],
     tags: ["privacy"],
     enabledByDefault: true,
-    settings: settings32,
+    settings: settings33,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start: start3,
     stop: stop3,
@@ -34740,18 +34885,18 @@ html.void-rt-open [data-sidebar="gap"] {
     return [n >> 16 & 255, n >> 8 & 255, n & 255];
   }
   function ColorRow2() {
-    const { starColor } = settings33.use(["starColor"]);
+    const { starColor } = settings34.use(["starColor"]);
     return /* @__PURE__ */ React.createElement(ColorSettingRow, {
       value: starColor,
       onChange: (v) => {
-        settings33.store.starColor = v;
+        settings34.store.starColor = v;
       },
       title: "Star color",
       description: "Color of the twinkling stars."
     });
   }
   function StarryBackground() {
-    const { starColor } = settings33.use(["starColor"]);
+    const { starColor } = settings34.use(["starColor"]);
     return /* @__PURE__ */ React.createElement("div", {
       "aria-hidden": true,
       className: "fixed inset-0 -z-10 pointer-events-none"
@@ -34760,7 +34905,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }));
   }
   var WrappedStarry = ErrorBoundary.wrap(StarryBackground);
-  var settings33 = definePluginSettings({
+  var settings34 = definePluginSettings({
     starColor: {
       type: 6 /* COMPONENT */,
       default: DEFAULT_COLOR,
@@ -34773,7 +34918,7 @@ html.void-rt-open [data-sidebar="gap"] {
     description: "Adds Grok's native twinkling starry background to the main page.",
     authors: [Devs.Prism],
     tags: ["appearance"],
-    settings: settings33,
+    settings: settings34,
     _StarryBg() {
       return /* @__PURE__ */ React.createElement(WrappedStarry, {
         key: "void-starry-bg"
@@ -34897,7 +35042,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     projects: "void-streamer-projects",
     conversations: "void-streamer-conversations"
   };
-  var settings34 = definePluginSettings({
+  var settings35 = definePluginSettings({
     sidebarAvatar: {
       type: 3 /* BOOLEAN */,
       description: "Blur your avatar in the sidebar.",
@@ -34942,7 +35087,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   function syncClasses() {
     const { classList } = document.documentElement;
     for (const [key, cls] of Object.entries(CSS_CLASSES)) {
-      classList.toggle(cls, !!settings34.store[key]);
+      classList.toggle(cls, !!settings35.store[key]);
     }
   }
   var streamerMode_default = definePlugin({
@@ -34951,7 +35096,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     description: "Blurs personal information for privacy while streaming.",
     authors: [Devs.Prism],
     tags: ["privacy"],
-    settings: settings34,
+    settings: settings35,
     start: syncClasses,
     onSettingsChange: syncClasses,
     stop() {
@@ -35588,7 +35733,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var CHART_SCALE_MIN = 20;
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   var DAY_MS2 = 86400000;
-  var logger44 = new Logger("UsageDisplay");
+  var logger45 = new Logger("UsageDisplay");
   function isRecord2(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
@@ -35644,7 +35789,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      logger44.debug("Failed to read usage stats", error);
+      logger45.debug("Failed to read usage stats", error);
       return memory3.get(key) ?? null;
     }
   }
@@ -35656,7 +35801,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      logger44.debug("Failed to persist usage stats", error);
+      logger45.debug("Failed to persist usage stats", error);
       memory3.set(key, value);
     }
   }
@@ -35668,7 +35813,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      logger44.debug("Failed to clear usage stats", error);
+      logger45.debug("Failed to clear usage stats", error);
       memory3.delete(key);
     }
   }
@@ -35688,7 +35833,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }
       return { version: STATS_VERSION, userId, days };
     } catch (error) {
-      logger44.debug("Failed to read usage stats", error);
+      logger45.debug("Failed to read usage stats", error);
       return emptyStore(userId);
     }
   }
@@ -35872,9 +36017,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
 
   // src/plugins/usageDisplay/index.tsx
-  var logger45 = new Logger("UsageDisplay");
+  var logger46 = new Logger("UsageDisplay");
   var cl31 = classNameFactory("void-ud-");
-  var settings35 = definePluginSettings({
+  var settings36 = definePluginSettings({
     usageStats: {
       type: 3 /* BOOLEAN */,
       description: "Record daily usage. Hover shows today after a delay; click opens history.",
@@ -35905,7 +36050,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
   var AUTO_REFRESH_MS = 60 * 1000;
-  var STALE_MS = 30 * 1000;
+  var STALE_MS2 = 30 * 1000;
   var DAY_SECONDS = 86400;
   var RING_SIZE = 18;
   var RING_RADIUS = 7;
@@ -35975,7 +36120,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       await hook.getState().refreshUsage();
       return normalizeBotUsage(hook.getState().usage);
     } catch (error) {
-      logger45.warn("Failed to fetch Grok Bot usage", error);
+      logger46.warn("Failed to fetch Grok Bot usage", error);
       return null;
     }
   }
@@ -35989,17 +36134,17 @@ button:has(.void-ud-trigger > .void-ud-label) {
     SettingsStore3.markAsChanged();
   }
   function snapshotToday() {
-    if (!settings35.store.usageStats)
+    if (!settings36.store.usageStats)
       return;
     syncAccount();
     if (!state.userId)
       return;
-    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings35.store.retainDays));
+    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings36.store.retainDays));
   }
   async function refresh(reason = "manual") {
     if (refreshPromise)
       return refreshPromise;
-    if (reason === "poll" && Date.now() - state.lastFetchAt < STALE_MS)
+    if (reason === "poll" && Date.now() - state.lastFetchAt < STALE_MS2)
       return false;
     syncAccount();
     const poolId = currentPoolId();
@@ -36023,7 +36168,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
         const pageUsage = readNativeUsage();
         const remote = await fetchOfficialUsage().then((usage) => ({ ok: true, usage })).catch((error) => {
-          logger45.warn("Failed to fetch official usage", error);
+          logger46.warn("Failed to fetch official usage", error);
           return { ok: false };
         });
         if (currentPoolId() !== poolId)
@@ -36048,7 +36193,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     return refreshPromise;
   }
   function onVisibility2() {
-    if (!document.hidden && Date.now() - state.lastFetchAt > STALE_MS)
+    if (!document.hidden && Date.now() - state.lastFetchAt > STALE_MS2)
       refresh("visible");
   }
   function onStreamEnd8() {
@@ -36109,7 +36254,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function ButtonIcon() {
     useExternalStore(store3);
-    const { showPercent } = settings35.use(["showPercent"]);
+    const { showPercent } = settings36.use(["showPercent"]);
     const weekly = state.usage?.weekly;
     const percent = weekly?.usedPercent ?? null;
     const tone = usageTone(percent);
@@ -36179,7 +36324,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function UsagePanel() {
     useExternalStore(store3);
-    const { usageStats, hoverStatsDelay } = settings35.use(["usageStats", "hoverStatsDelay"]);
+    const { usageStats, hoverStatsDelay } = settings36.use(["usageStats", "hoverStatsDelay"]);
     const delay = hoverDelayOf(hoverStatsDelay);
     const [showToday, setShowToday] = useState(usageStats && delay <= 0);
     const weekly = state.usage?.weekly;
@@ -36221,7 +36366,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }));
   }
   function StatsToggle() {
-    const { usageStats } = settings35.use(["usageStats"]);
+    const { usageStats } = settings36.use(["usageStats"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       justifyContent: "space-between",
@@ -36239,7 +36384,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }, "Record local daily usage on this device.")), /* @__PURE__ */ React.createElement(Switch, {
       checked: !!usageStats,
       onCheckedChange: (value) => {
-        settings35.store.usageStats = value;
+        settings36.store.usageStats = value;
         store3.notify();
         if (value)
           refresh("manual");
@@ -36348,7 +36493,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       onClick: () => {
         if (pre == null)
           return;
-        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings35.store.retainDays));
+        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings36.store.retainDays));
         store3.notify();
       }
     }, "Repair")));
@@ -36374,7 +36519,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function StatsModal({ onClose }) {
     useExternalStore(store3);
-    const { usageStats } = settings35.use(["usageStats"]);
+    const { usageStats } = settings36.use(["usageStats"]);
     const days = usageStats && state.userId ? listDays(state.userId) : [];
     const todayKey = localDateKey(Date.now());
     const bars = days.length ? fillChartDays(days) : [];
@@ -36551,7 +36696,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
-    settings: settings35,
+    settings: settings36,
     start() {
       migrateUsageStats();
       try {
@@ -36562,7 +36707,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
           refresh("route");
         });
       } catch (error) {
-        logger45.warn("RoutingStore subscribe failed", error);
+        logger46.warn("RoutingStore subscribe failed", error);
       }
     },
     stop() {
@@ -36574,7 +36719,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       streamEnd: onStreamEnd8
     },
     onSettingsChange() {
-      if (settings35.store.usageStats)
+      if (settings36.store.usageStats)
         refresh("manual");
     }
   });
@@ -36582,7 +36727,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   // src/plugins/userQuotes/index.ts
   var STYLE_NAME8 = "userQuotes";
   var SEL = '[data-testid="user-message"] blockquote:not(.twitter-tweet)';
-  var settings36 = definePluginSettings({
+  var settings37 = definePluginSettings({
     italic: {
       type: 3 /* BOOLEAN */,
       description: "Render quoted lines in italic.",
@@ -36599,9 +36744,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
       `${SEL}{margin:0!important;border-inline-start-color:var(--fg-secondary)!important;border-inline-start-width:0.25rem!important;border-inline-start-style:solid!important;padding-inline-start:0.75rem!important}`,
       `${SEL}>*{margin-block:0!important}`
     ];
-    if (!settings36.store.italic)
+    if (!settings37.store.italic)
       rules.push(`${SEL}{font-style:inherit!important}`);
-    if (!settings36.store.quotes) {
+    if (!settings37.store.quotes) {
       rules.push(`${SEL}{quotes:none!important}`);
       rules.push(`${SEL}::before,${SEL}::after,${SEL} p::before,${SEL} p::after{content:none!important}`);
     }
@@ -36615,7 +36760,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["messages"],
     enabledByDefault: true,
-    settings: settings36,
+    settings: settings37,
     patches: [
       {
         find: '["###### ",',
@@ -36634,7 +36779,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
   // src/plugins/widerChat/index.ts
   var STYLE_NAME9 = "widerChat";
-  var settings37 = definePluginSettings({
+  var settings38 = definePluginSettings({
     width: {
       type: 1 /* NUMBER */,
       description: "Maximum chat width in rem.",
@@ -36642,7 +36787,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
   function applyWidth() {
-    const w = settings37.store.width;
+    const w = settings38.store.width;
     registerStyle(STYLE_NAME9, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
   var widerChat_default = definePlugin({
@@ -36651,7 +36796,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     description: "Adjustable chat width for big monitors.",
     authors: [Devs.Prism],
     tags: ["appearance"],
-    settings: settings37,
+    settings: settings38,
     start: applyWidth,
     onSettingsChange: applyWidth,
     stop() {
@@ -36664,7 +36809,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794672837000;
-  settings_default.updatedAt = 1794679405000;
+  settings_default.updatedAt = 1794679943000;
   chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794560326000;
   autoCollapse_default.updatedAt = 1794557302000;
@@ -36688,9 +36833,10 @@ button:has(.void-ud-trigger > .void-ud-label) {
   composerOpacity_default.updatedAt = 1794562645000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customGreeting_default.updatedAt = 1794581758000;
-  customInstructions_default.updatedAt = 1794584397000;
+  customInstructions_default.updatedAt = 1794679943000;
   customSidebarIdentity_default.updatedAt = 1794672837000;
   downloadTTS_default.updatedAt = 1787870966000;
+  errorPageRetry_default.updatedAt = 0;
   experiments_default.updatedAt = 1794557302000;
   exportChat_default.updatedAt = 1794669091000;
   incognito_default.updatedAt = 1787870966000;
@@ -36714,7 +36860,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   usageDisplay_default.updatedAt = 1793258018000;
   userQuotes_default.updatedAt = 1791226275000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatListStatus_default.name]: chatListStatus_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [errorPageRetry_default.name]: errorPageRetry_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
@@ -36993,14 +37139,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // src/VoidPP.ts
-  var logger46 = new Logger("TurbopackPatcher", "#e78284");
+  var logger47 = new Logger("TurbopackPatcher", "#e78284");
   var FALLBACK_MS = 15000;
   var ORPHAN_REPORT_DELAY_MS = 5000;
   function safely(name, fn) {
     try {
       fn();
     } catch (e) {
-      logger46.error(`${name} failed:`, e);
+      logger47.error(`${name} failed:`, e);
     }
   }
   function deferOrphanReport() {
@@ -37021,7 +37167,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       safely("initStreamEvents", initStreamEvents);
       safely("_resolveReady", _resolveReady);
       safely("startAllPlugins", () => startAllPlugins("TurbopackReady" /* TurbopackReady */));
-      logger46.info(`${getModuleCache().size} modules loaded, ready`);
+      logger47.info(`${getModuleCache().size} modules loaded, ready`);
       safely("retryFailedPlugins", retryFailedPlugins);
       safely("deferOrphanReport", deferOrphanReport);
       safely("checkBuildFingerprint", checkBuildFingerprint);

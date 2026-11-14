@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.12]` ErrorPageRetry: Grok's crash screen (`h1` "Something went wrong" + Reload) is a dead tree with `<a href="/">Reload page</a>`. Clicking that dumps `/` and drops the chat. Detect the bare crash (no `form[data-composer]` / `#app-sidebar`), `location.reload()` the current URL, cap with sessionStorage per path (default 5, 1s delay). Start at Init — Turbopack never comes up on that page. Do not fold into AutoRetry (that's stream errors).
+
 `[20261114.11]` Same Glyph/color family as Help: mute `[role=menuitemradio]` leading svgs too (not trailing checks). AccountSwitcher still used Radix `DropdownMenuSub` + `1rem`/`me-2` (the 13.12/13.13 hole); use `accountMenuParts` + `MenuGlyphIcon` at 16px with no extra margin. CustomInstructions `BookIcon` gets `void-settings-menu-icon`. Do not recolor file-type fills or the mode-menu check.
 
 `[20261114.10]` Desktop Glyph no longer wraps icons in `text-fg-secondary`, so Help / Sign out (and Help submenu) inherit the row's primary (~90% white). Void++ / Settings / Plugins stay `--fg-secondary` (rgb 158) and look unaligned. Color the leading menuitem svg only (`> span:first-child > svg` / `> svg`). Do not recolor the trailing chevron.
