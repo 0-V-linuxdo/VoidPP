@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.2
+// @version      20261114.3
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.2] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.3] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9898,9 +9898,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.2] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5b3711d"}`
-    }, `(${"5b3711d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.3] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"48039f6"}`
+    }, `(${"48039f6"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -30688,6 +30688,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     const rules = [];
     if (settings27.store.hideShareProject) {
       rules.push('button[aria-label="Share Project"]{display:none!important}');
+      rules.push('[role="menuitem"]:has(use[href="#icon-md-share"]){display:none!important}');
     }
     if (settings27.store.hideCreateShareLink) {
       rules.push('button[aria-label="Create share link"]{display:none!important}');
@@ -36673,7 +36674,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noDictation_default.updatedAt = 1793874044000;
   noGrokBot_default.updatedAt = 1790943206000;
   noShareLink_default.updatedAt = 1787789817000;
-  noSidebarIdentity_default.updatedAt = 1794672837000;
+  noSidebarIdentity_default.updatedAt = 1794675722000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;
   recentTopics_default.updatedAt = 1794560326000;

@@ -29,6 +29,8 @@ function apply() {
     const rules: string[] = [];
     if (settings.store.hideShareProject) {
         rules.push('button[aria-label="Share Project"]{display:none!important}');
+        // Desktop conversation ⋮ menu: Share Project is a menuitem with the share glyph, no aria-label.
+        rules.push('[role="menuitem"]:has(use[href="#icon-md-share"]){display:none!important}');
     }
     if (settings.store.hideCreateShareLink) {
         rules.push('button[aria-label="Create share link"]{display:none!important}');
