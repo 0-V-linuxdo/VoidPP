@@ -22,7 +22,7 @@
     border-radius: 8px;
     background: transparent !important;
     box-shadow: none !important;
-    color: var(--fg-secondary, var(--grok-text-secondary)) !important;
+    color: var(--grok-text-secondary, var(--fg-secondary)) !important;
 }
 
 #app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]) svg {
