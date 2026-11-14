@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.9
+// @version      20261114.10
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.9] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.10] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7373,6 +7373,14 @@ ${root}::-webkit-scrollbar-thumb:hover {
     flex-shrink: 0;
 }
 
+/* Desktop Glyph dropped the old \`text-fg-secondary\` wrapper, so Help / Sign out
+   inherit the row's primary (~90%). Void++ icons stay \`--fg-secondary\` and look
+   unaligned. Mute the leading glyph only — not the 14px chevron in the trailing span. */
+[role="menu"] [role="menuitem"] > span:first-child > svg,
+[role="menu"] [role="menuitem"] > svg {
+    color: var(--fg-secondary, var(--grok-text-secondary)) !important;
+}
+
 /* Legacy dropdown only. Desktop Glyph already insets the icon; this margin pushes the label past Help. */
 .void-menu-glyph-gap {
     width: 1rem;
@@ -9898,9 +9906,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.9] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"702c8ee"}`
-    }, `(${"702c8ee"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.10] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6e903c0"}`
+    }, `(${"6e903c0"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36665,7 +36673,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1794560326000;
   betterImagine_default.updatedAt = 1794557302000;
   betterLinks_default.updatedAt = 1794557302000;
-  betterModeSelect_default.updatedAt = 1794581758000;
+  betterModeSelect_default.updatedAt = 1794678823000;
   betterNavigator_default.updatedAt = 1794560326000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1794676705000;
@@ -36689,9 +36697,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
   messageStars_default.updatedAt = 1794560326000;
   messageTimestamps_default.updatedAt = 1794672837000;
   noBuildStarters_default.updatedAt = 1794560326000;
-  noDictation_default.updatedAt = 1793874044000;
+  noDictation_default.updatedAt = 1794678823000;
   noGrokBot_default.updatedAt = 1790943206000;
-  noShareLink_default.updatedAt = 1794677892000;
+  noShareLink_default.updatedAt = 1794678823000;
   noSidebarIdentity_default.updatedAt = 1794678267000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;
