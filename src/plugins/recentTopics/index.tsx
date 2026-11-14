@@ -44,7 +44,7 @@ const COUNT_OPTIONS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => ({ label: Strin
 const FOLDER_D = "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z";
 const SPIN_D = "M21 12a9 9 0 1 1-6.219-8.56";
 const PATH_OK = /^[MmLlHhVvCcSsQqTtAaZzeE0-9.,+\s-]+$/;
-const ICON_SKIP = ".void-cls,[data-sidebar='menu-action'],[data-sidebar='menu-badge']";
+const ICON_SKIP = "[data-sidebar='menu-action'],[data-sidebar='menu-badge']";
 const DENIED_MAX = 40;
 const DENIED_HOLD_MS = 60_000;
 const SETTLE_MS = 200;
