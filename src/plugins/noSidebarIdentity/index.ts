@@ -20,6 +20,9 @@ const MENU_EMAIL = '[role="menu"] [class*="max-w-[400px]"].truncate';
 // The label (and the group that only wraps it) keeps pt-2/pb-1 after the span is display:none.
 const MENU_EMAIL_LABEL = '[role="menu"] :has(> [class*="max-w-[400px]"].truncate)';
 const MENU_EMAIL_ROW = '[role="menu"] > :has([class*="max-w-[400px]"].truncate):not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]))';
+// Desktop Base UI menu: identity is a [role=group] with no menuitems. Email is the
+// second span (name + email). That header has no max-w-[400px] truncate class.
+const MENU_EMAIL_DESKTOP = '[role="menu"] [role="group"]:not(:has([role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"])) span + span';
 
 const settings = definePluginSettings({
     hideUsername: {
@@ -43,7 +46,7 @@ function apply() {
     }
     if (settings.store.hideEmail) {
         rules.push(`${STACK}>:nth-child(2){display:none!important}`);
-        rules.push(`${MENU_EMAIL},${MENU_EMAIL_LABEL},${MENU_EMAIL_ROW}{display:none!important}`);
+        rules.push(`${MENU_EMAIL},${MENU_EMAIL_LABEL},${MENU_EMAIL_ROW},${MENU_EMAIL_DESKTOP}{display:none!important}`);
     }
     if (settings.store.hideUsername && settings.store.hideEmail) {
         rules.push(`${TEXT_WRAP}{display:none!important}`);
