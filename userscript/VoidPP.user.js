@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.21
+// @version      20261114.22
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.21] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.22] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9999,9 +9999,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1d96cd8"}`
-    }, `(${"1d96cd8"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.22] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"446ba52"}`
+    }, `(${"446ba52"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -30090,8 +30090,46 @@ span:has(> [aria-label*="Grok Bot"]) {
     }
   });
 
+  // src/plugins/noMergeSubscription/index.ts
+  var STYLE_NAME6 = "noMergeSubscription";
+  var CARD = [
+    '[role="region"][data-slot="card"][aria-label*="ultimate AI subscription"]',
+    '[role="region"][data-slot="card"][aria-label*="合并订阅"]',
+    '[role="region"][data-slot="card"][aria-label*="终极 AI 订阅"]',
+    '[role="region"][data-slot="card"][aria-label*="终极AI订阅"]',
+    '[data-slot="card"]:has(> [data-slot="card-body"] [data-slot="card-title"][title="Unlock the ultimate AI subscription"])',
+    '[data-slot="card"]:has(> [data-slot="card-body"] [data-slot="card-description"][title*="under a single account"])'
+  ].join(",");
+  var CSS3 = `
+${CARD},
+div:has(> ${CARD.split(",")[0]}),
+div:has(> div > ${CARD.split(",")[0]}),
+div:has(> [role="region"][data-slot="card"][aria-label*="合并订阅"]),
+div:has(> div > [role="region"][data-slot="card"][aria-label*="合并订阅"]),
+div:has(> [role="region"][data-slot="card"][aria-label*="终极 AI 订阅"]),
+div:has(> div > [role="region"][data-slot="card"][aria-label*="终极 AI 订阅"]),
+div:has(> [role="region"][data-slot="card"][aria-label*="终极AI订阅"]),
+div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"]) {
+    display: none !important;
+}
+`;
+  var noMergeSubscription_default = definePlugin({
+    name: "NoMergeSubscription",
+    icon: CircleXIcon,
+    description: "Hide the bottom-right unified-subscription card (Grok / Grok Bot / Cursor / X under one account).",
+    authors: [Devs.p],
+    tags: ["declutter"],
+    enabledByDefault: true,
+    start() {
+      registerStyle(STYLE_NAME6, CSS3);
+    },
+    stop() {
+      unregisterStyle(STYLE_NAME6);
+    }
+  });
+
   // src/plugins/noShareLink/index.ts
-  var STYLE_NAME6 = "noShareLink";
+  var STYLE_NAME7 = "noShareLink";
   var settings28 = definePluginSettings({
     hideShareProject: {
       type: 3 /* BOOLEAN */,
@@ -30115,7 +30153,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     if (settings28.store.hideCreateShareLink) {
       rules.push('button[aria-label="Create share link"]{display:none!important}');
     }
-    registerStyle(STYLE_NAME6, rules.join(`
+    registerStyle(STYLE_NAME7, rules.join(`
 `));
   }
   var noShareLink_default = definePlugin({
@@ -30129,12 +30167,12 @@ span:has(> [aria-label*="Grok Bot"]) {
     start: apply6,
     onSettingsChange: apply6,
     stop() {
-      unregisterStyle(STYLE_NAME6);
+      unregisterStyle(STYLE_NAME7);
     }
   });
 
   // src/plugins/noSidebarIdentity/index.ts
-  var STYLE_NAME7 = "noSidebarIdentity";
+  var STYLE_NAME8 = "noSidebarIdentity";
   var FOOTER2 = '[data-sidebar="footer"], #app-sidebar footer';
   var STACK = `${FOOTER2} button[data-slot="button"] div.flex.flex-col.items-start.min-w-0.text-left`;
   var TEXT_WRAP = `${FOOTER2} button[data-slot="button"]>div.min-w-0.flex-1.overflow-hidden,${FOOTER2} button[data-state]>div.min-w-0.flex-1.overflow-hidden`;
@@ -30180,7 +30218,7 @@ span:has(> [aria-label*="Grok Bot"]) {
       rules.push(`${MENU_IDENTITY_GROUP}{display:none!important}`);
       rules.push(`${MENU_IDENTITY_GROUP} + [role="separator"]{display:none!important}`);
     }
-    registerStyle(STYLE_NAME7, rules.join(`
+    registerStyle(STYLE_NAME8, rules.join(`
 `));
   }
   var noSidebarIdentity_default = definePlugin({
@@ -30211,7 +30249,7 @@ span:has(> [aria-label*="Grok Bot"]) {
     start: apply7,
     onSettingsChange: apply7,
     stop() {
-      unregisterStyle(STYLE_NAME7);
+      unregisterStyle(STYLE_NAME8);
     }
   });
 
@@ -35985,7 +36023,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // src/plugins/userQuotes/index.ts
-  var STYLE_NAME8 = "userQuotes";
+  var STYLE_NAME9 = "userQuotes";
   var SEL = '[data-testid="user-message"] blockquote:not(.twitter-tweet)';
   var settings37 = definePluginSettings({
     italic: {
@@ -36010,7 +36048,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       rules.push(`${SEL}{quotes:none!important}`);
       rules.push(`${SEL}::before,${SEL}::after,${SEL} p::before,${SEL} p::after{content:none!important}`);
     }
-    registerStyle(STYLE_NAME8, rules.join(`
+    registerStyle(STYLE_NAME9, rules.join(`
 `));
   }
   var userQuotes_default = definePlugin({
@@ -36033,12 +36071,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
     start: apply8,
     onSettingsChange: apply8,
     stop() {
-      unregisterStyle(STYLE_NAME8);
+      unregisterStyle(STYLE_NAME9);
     }
   });
 
   // src/plugins/widerChat/index.ts
-  var STYLE_NAME9 = "widerChat";
+  var STYLE_NAME10 = "widerChat";
   var settings38 = definePluginSettings({
     width: {
       type: 1 /* NUMBER */,
@@ -36048,7 +36086,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
   function applyWidth() {
     const w = settings38.store.width;
-    registerStyle(STYLE_NAME9, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
+    registerStyle(STYLE_NAME10, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
   var widerChat_default = definePlugin({
     name: "WiderChat",
@@ -36060,7 +36098,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     start: applyWidth,
     onSettingsChange: applyWidth,
     stop() {
-      unregisterStyle(STYLE_NAME9);
+      unregisterStyle(STYLE_NAME10);
     }
   });
 
@@ -36083,7 +36121,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterNavigator_default.updatedAt = 1794560326000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1794676705000;
-  betterSidebar_default.updatedAt = 1794735995000;
+  betterSidebar_default.updatedAt = 1794736181000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1794560326000;
   cloneChats_default.updatedAt = 1794669091000;
@@ -36105,6 +36143,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noBuildStarters_default.updatedAt = 1794560326000;
   noDictation_default.updatedAt = 1794678823000;
   noGrokBot_default.updatedAt = 1790943206000;
+  noMergeSubscription_default.updatedAt = 0;
   noShareLink_default.updatedAt = 1794678823000;
   noSidebarIdentity_default.updatedAt = 1794678267000;
   oneko_default.updatedAt = 1787870966000;
@@ -36119,7 +36158,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   usageDisplay_default.updatedAt = 1793258018000;
   userQuotes_default.updatedAt = 1791226275000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [errorPageRetry_default.name]: errorPageRetry_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [errorPageRetry_default.name]: errorPageRetry_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noMergeSubscription_default.name]: noMergeSubscription_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
