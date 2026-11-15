@@ -23,6 +23,16 @@
     background: transparent !important;
     box-shadow: none !important;
     color: var(--grok-text-secondary, var(--fg-secondary)) !important;
+    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);
+}
+
+#app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]):is(:hover, :focus-visible) {
+    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;
+    color: var(--grok-text-primary, var(--fg-primary)) !important;
+}
+
+#app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]):active {
+    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;
 }
 
 #app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]) svg {
