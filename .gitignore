@@ -15,3 +15,8 @@ assets/logos/app-icon/*
 .voidpp-cache
 .void-cache
 .env
+sites/grok/plugins/*
+!sites/grok/plugins/GrokChatBar
+!sites/grok/plugins/GrokMenus
+!sites/grok/plugins/GrokMessages
+sites/grok/settings-host.uspp.js

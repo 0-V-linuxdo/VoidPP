@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.37]` Rebuild Void++ on Userscript++ (`sites/grok`, `U => definePlugin`, settings host keeps DesktopSettingsDialog lucide tabs). Migrate `VoidPPSettings`. Do not register Void++ `Settings` / `pluginsFlyout` / chat-bar / context-menu core plugins (framework already has them).
+
 `[20261114.36]` Same Grok label rename as 14.35: `isRightPanelToggle` still required `right panel` (now `Toggle right pane`); preview chrome is Show files / New tab / Hide pane; Projects header is `New project` / `Projects options` not Add project / All projects; BetterCanvas manual-open must match `pane` not only `panel`; native rail ticks if they return are `Go to message N`, not `Go to response` (exclude `.void-bn-tick`).
 
 `[20261114.35]` MessageStars header star: chat More is `Conversation Actions` (`#icon-xs-ellipsis`) and the panel control is `Toggle right pane` / `Hide pane`, not `More` / `Toggle Right Panel`. `pickHeaderMore` matches those labels (and 对话操作 / 会话操作). Do not leave the star on the navigator when that pair is in the top row.

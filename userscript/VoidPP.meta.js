@@ -1,34 +1,36 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.36
+// @version      20261114.37
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
-// @homepageURL  https://github.com/0-V-linuxdo/VoidPP
+// @license      GPL-3.0-or-later
 // @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/assets/logos/app-icon/voidpp-icon.svg
+// @homepageURL  https://github.com/0-V-linuxdo/VoidPP
+// @supportURL   https://github.com/0-V-linuxdo/VoidPP/issues
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.meta.js
+// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
 // @match        *://artifacts.grokusercontent.com/*
 // @match        *://*.grokusercontent.com/*
 // @run-at       document-start
+// @inject-into  auto
+// @sandbox      JavaScript
 // @grant        unsafeWindow
-// @grant        GM_xmlhttpRequest
-// @grant        GM_getValue
-// @grant        GM_setValue
-// @grant        GM_deleteValue
 // @grant        GM_addValueChangeListener
+// @grant        GM_deleteValue
+// @grant        GM_getValue
+// @grant        GM_info
+// @grant        GM_notification
+// @grant        GM_registerMenuCommand
 // @grant        GM_removeValueChangeListener
 // @grant        GM_setClipboard
-// @connect      raw.githubusercontent.com
-// @connect      cdn.jsdelivr.net
+// @grant        GM_setValue
+// @grant        GM_unregisterMenuCommand
+// @grant        GM_xmlhttpRequest
+// @grant        GM.setClipboard
+// @grant        GM.notification
 // @connect      *
-// @compatible   chrome
-// @compatible   firefox
-// @compatible   edge
-// @compatible   opera
-// @license      GPL-3.0-or-later
-// @supportURL   https://github.com/0-V-linuxdo/VoidPP
-// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
 // ==/UserScript==

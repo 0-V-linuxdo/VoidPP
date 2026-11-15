@@ -266,6 +266,7 @@ export default definePlugin({
     tags: ["developer"],
     settings,
     startAt: StartAt.TurbopackReady,
+    settingsPages: [{ id: "experiments", label: "Experiments", icon: TestTubeIcon, component: Tab }],
 
     _proxy: overrideProxy,
 
