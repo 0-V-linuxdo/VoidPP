@@ -284,6 +284,7 @@ export default definePlugin({
     description: "Notify when Grok finishes responding. Optional Imagine generation notify is off by default.",
     authors: [Devs.Prism, Devs.p],
     tags: ["notifications"],
+    enabledByDefault: true,
     settings,
     startAt: StartAt.TurbopackReady,
 

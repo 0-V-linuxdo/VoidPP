@@ -1,3 +1,8 @@
+## 20261114.42
+
+- Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.
+- CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state.
+
 ## 20261114.41
 
 - MessageStars is on by default so the header star survives a clean Userscript++ settings store.

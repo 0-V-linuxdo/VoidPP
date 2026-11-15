@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.41
+// @version      20261114.42
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.41" : "0.0.0";
+  var VERSION = true ? "20261114.42" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -2374,6 +2374,13 @@ try {
   var OLD_KEY = "VoidPPSettings";
   var LEGACY_KEY = "VoidSettings";
   var FLAG = "voidppMigrated";
+  var ENABLE_FLAG = "voidppEnabledBackfill";
+  var RENAME = {
+    AvatarPluginsFlyout: "ConnectorsFlyout",
+    BetterAvatarPlugins: "ConnectorsFlyout",
+    NoSidebarPlugins: "ConnectorsFlyout"
+  };
+  var SKIP = /* @__PURE__ */ new Set(["ChatBarButtonAPI", "ContextMenuAPI", "Settings", "Plugins"]);
   function parseBag(raw2) {
     try {
       let v3 = raw2;
@@ -2387,46 +2394,119 @@ try {
     try {
       if (typeof GM_getValue !== "function") return null;
       const v3 = GM_getValue(key, null);
-      if (v3 && typeof v3.then === "function") return null;
+      if (v3 && typeof v3.then === "function") return v3.then(parseBag).catch(() => null);
       return parseBag(v3);
     } catch {
       return null;
     }
   }
+  function readLocal(key) {
+    try {
+      return parseBag(localStorage.getItem(key));
+    } catch {
+      return null;
+    }
+  }
+  function idbGet(dbName, key) {
+    return new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(dbName);
+        req.onerror = () => resolve(null);
+        req.onsuccess = () => {
+          const db2 = req.result;
+          if (!db2.objectStoreNames.contains("kv")) {
+            resolve(null);
+            return;
+          }
+          const g5 = db2.transaction("kv", "readonly").objectStore("kv").get(key);
+          g5.onsuccess = () => resolve(g5.result ?? null);
+          g5.onerror = () => resolve(null);
+        };
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+  function applyEnabled(oldPlugins) {
+    if (!oldPlugins || !U3?.PlainSettings?.plugins) return 0;
+    let n2 = 0;
+    for (const [name, bag] of Object.entries(oldPlugins)) {
+      if (!bag || typeof bag !== "object" || bag.enabled !== true) continue;
+      const dest = RENAME[name] || name;
+      if (SKIP.has(dest) || dest === "Settings") continue;
+      const cur = U3.PlainSettings.plugins[dest] ??= {};
+      if (cur.enabled === false || cur.enabled === true) continue;
+      cur.enabled = true;
+      n2++;
+      U3.SettingsStore.markAsChanged?.(`plugins.${dest}`);
+      try {
+        U3.setPluginEnabled?.(dest, true);
+      } catch {
+      }
+    }
+    return n2;
+  }
+  function backfillEnabled() {
+    const sys4 = U3.PlainSettings.plugins.Settings ??= {};
+    if (sys4[ENABLE_FLAG]) return;
+    const mark = () => {
+      sys4[ENABLE_FLAG] = true;
+      U3.SettingsStore.markAsChanged?.("plugins.Settings");
+    };
+    const fromSync = parseBag(readLocal(OLD_KEY)) || parseBag(readLocal(LEGACY_KEY));
+    if (fromSync) applyEnabled(fromSync.plugins);
+    const gm = readGm(OLD_KEY) || readGm(LEGACY_KEY);
+    const gmWait = gm && typeof gm.then === "function" ? gm.then((bag) => {
+      if (bag) applyEnabled(bag.plugins);
+    }) : (gm && applyEnabled(gm.plugins), Promise.resolve());
+    Promise.all([
+      gmWait,
+      idbGet("VoidPP", OLD_KEY).then(parseBag).then((bag) => {
+        if (bag) applyEnabled(bag.plugins);
+      }),
+      idbGet("Void", LEGACY_KEY).then(parseBag).then((bag) => {
+        if (bag) applyEnabled(bag.plugins);
+      })
+    ]).then(mark).catch(mark);
+  }
   function migrateVoidSettings() {
     if (!U3 || !U3.PlainSettings || typeof U3.PlainSettings !== "object" || !U3.PlainSettings.plugins) return;
     const sys4 = U3.PlainSettings.plugins.Settings ??= {};
-    if (sys4[FLAG]) return;
-    const current3 = U3.PlainSettings.plugins;
-    const already = Object.keys(current3).some((k4) => k4 !== "Settings" && current3[k4] && typeof current3[k4] === "object");
-    const old = readGm(OLD_KEY) || readGm(LEGACY_KEY);
-    if (!old) {
-      sys4[FLAG] = true;
-      return;
-    }
-    const oldPlugins = old.plugins || {};
-    if (!already) {
-      for (const [name, bag] of Object.entries(oldPlugins)) {
-        if (name === "Settings" || !bag || typeof bag !== "object") continue;
-        U3.PlainSettings.plugins[name] ??= { ...bag };
-        U3.SettingsStore.markAsChanged?.(`plugins.${name}`);
+    if (!sys4[FLAG]) {
+      const current3 = U3.PlainSettings.plugins;
+      const already = Object.keys(current3).some((k4) => k4 !== "Settings" && current3[k4] && typeof current3[k4] === "object");
+      const old = (() => {
+        const g5 = readGm(OLD_KEY) || readGm(LEGACY_KEY);
+        if (g5 && typeof g5.then === "function") return null;
+        return g5 || readLocal(OLD_KEY) || readLocal(LEGACY_KEY);
+      })();
+      if (old) {
+        const oldPlugins = old.plugins || {};
+        if (!already) {
+          for (const [name, bag] of Object.entries(oldPlugins)) {
+            if (name === "Settings" || !bag || typeof bag !== "object") continue;
+            U3.PlainSettings.plugins[name] ??= { ...bag };
+            U3.SettingsStore.markAsChanged?.(`plugins.${name}`);
+          }
+        }
+        const oldSys = oldPlugins.Settings || {};
+        if (typeof oldSys.showVoidPPMenu === "boolean" && sys4.showSiteEntry == null) {
+          sys4.showSiteEntry = oldSys.showVoidPPMenu;
+        }
+        for (const key of ["pinnedPlugins", "starredPlugins", "knownPlugins"]) {
+          if (sys4[key] == null && oldSys[key] != null) sys4[key] = oldSys[key];
+        }
+        const sites = sys4.sites && typeof sys4.sites === "object" ? sys4.sites : sys4.sites = {};
+        const grok = sites.grok && typeof sites.grok === "object" ? sites.grok : sites.grok = {};
+        if (!Array.isArray(grok.themes) && Array.isArray(oldSys.themes)) grok.themes = oldSys.themes;
+        if (grok.quickCss == null && typeof oldSys.customCSS === "string") grok.quickCss = oldSys.customCSS;
+        if (grok.quickCssEnabled == null && typeof oldSys.customCSSEnabled === "boolean") grok.quickCssEnabled = oldSys.customCSSEnabled;
+        if (sys4.themesEnabled == null && typeof oldSys.themesEnabled === "boolean") sys4.themesEnabled = oldSys.themesEnabled;
       }
+      sys4[FLAG] = true;
+      U3.SettingsStore.markAsChanged?.("plugins.Settings");
     }
-    const oldSys = oldPlugins.Settings || {};
-    if (typeof oldSys.showVoidPPMenu === "boolean" && sys4.showSiteEntry == null) {
-      sys4.showSiteEntry = oldSys.showVoidPPMenu;
-    }
-    for (const key of ["pinnedPlugins", "starredPlugins", "knownPlugins"]) {
-      if (sys4[key] == null && oldSys[key] != null) sys4[key] = oldSys[key];
-    }
-    const sites = sys4.sites && typeof sys4.sites === "object" ? sys4.sites : sys4.sites = {};
-    const grok = sites.grok && typeof sites.grok === "object" ? sites.grok : sites.grok = {};
-    if (!Array.isArray(grok.themes) && Array.isArray(oldSys.themes)) grok.themes = oldSys.themes;
-    if (grok.quickCss == null && typeof oldSys.customCSS === "string") grok.quickCss = oldSys.customCSS;
-    if (grok.quickCssEnabled == null && typeof oldSys.customCSSEnabled === "boolean") grok.quickCssEnabled = oldSys.customCSSEnabled;
-    if (sys4.themesEnabled == null && typeof oldSys.themesEnabled === "boolean") sys4.themesEnabled = oldSys.themesEnabled;
-    sys4[FLAG] = true;
-    U3.SettingsStore.markAsChanged?.("plugins.Settings");
+    backfillEnabled();
   }
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/sites/grok/index.js
@@ -9138,7 +9218,7 @@ html.void-cms-picked .void-cms-ghost {
       tx2.onerror = () => reject(tx2.error);
     });
   }
-  function idbGet(key) {
+  function idbGet2(key) {
     return withStore("readonly", (store3, resolve) => {
       const req = store3.get(key);
       req.onsuccess = () => resolve(req.result);
@@ -9583,7 +9663,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   async function load() {
     try {
-      const raw2 = await idbGet(DB_KEY);
+      const raw2 = await idbGet2(DB_KEY);
       if (raw2 && raw2.version === 1 && raw2.buckets && typeof raw2.buckets === "object") doc = raw2;
       else doc = emptyDoc();
     } catch (e3) {
@@ -18170,6 +18250,7 @@ html.void-cms-picked .void-cms-ghost {
     description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
     authors: [Devs.p],
     tags: ["appearance"],
+    enabledByDefault: true,
     settings: settings16,
     _phrases() {
       if (isImaginePage2() || !replaceChatInput()) return null;
@@ -20946,7 +21027,7 @@ html.void-cms-picked .void-cms-ghost {
     const mine = gen2;
     let next = emptyDoc2();
     try {
-      next = normalize2(await idbGet(DB_KEY2));
+      next = normalize2(await idbGet2(DB_KEY2));
     } catch (e3) {
       logger30.error("Failed to read stars:", e3);
     }
@@ -25544,6 +25625,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     description: "Notify when Grok finishes responding. Optional Imagine generation notify is off by default.",
     authors: [Devs.Prism, Devs.p],
     tags: ["notifications"],
+    enabledByDefault: true,
     settings: settings28,
     startAt: StartAt.TurbopackReady,
     start() {
@@ -28189,7 +28271,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
       req.onerror = () => reject(req.error);
     });
   }
-  async function idbGet2(key) {
+  async function idbGet3(key) {
     const db2 = await idbOpen();
     try {
       return await new Promise((resolve, reject) => {
@@ -28366,7 +28448,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     } else {
       const found = legacy ? [{ name: "GM", data: legacy, rev: revOf(legacy), at: savedAtOf(legacy), score: richness(legacy) }] : [];
       if (useSiteStorage()) {
-        for (const [name, read2] of [["IndexedDB", () => idbGet2(SITE_STORAGE_KEY)], ["localStorage", lsGet]]) {
+        for (const [name, read2] of [["IndexedDB", () => idbGet3(SITE_STORAGE_KEY)], ["localStorage", lsGet]]) {
           try {
             const data = parseStored(await read2());
             if (data) found.push({ name, data, rev: revOf(data), at: savedAtOf(data), score: richness(data) });
@@ -31980,7 +32062,7 @@ ${orphaned.join("\n")}`);
     r3.onsuccess = () => resolve(r3.result);
     r3.onerror = () => reject(r3.error);
   });
-  async function idbGet3(k4) {
+  async function idbGet4(k4) {
     const d3 = await db();
     if (!d3) return memory4.get(k4);
     return reqValue(d3.transaction(STORE2, "readonly").objectStore(STORE2).get(k4));
@@ -32050,7 +32132,7 @@ ${orphaned.join("\n")}`);
     const store3 = Object.freeze({
       async get(key, fallback) {
         try {
-          const v3 = await idbGet3(k4(key));
+          const v3 = await idbGet4(k4(key));
           return v3 === void 0 ? fallback : v3;
         } catch (e3) {
           logger49.error(`${plugin} 读取数据失败`, e3);
