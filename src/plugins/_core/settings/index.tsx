@@ -198,14 +198,10 @@ export default definePlugin({
         return component;
     },
 
-    _navGlyph(id: string) {
-        switch (id) {
-            case "voidpp_plugins_tab": return "grid-plus";
-            case "voidpp_themes_tab": return "easel";
-            case "voidpp_css_tab": return "file-text";
-            case "voidpp_experiments_tab": return "wrench";
-            default: return;
-        }
+    _navLeading(id: string) {
+        const tab = allTabs.find(t => t.id === id);
+        if (!tab) return null;
+        return createElement(tab.icon, { width: 18, height: 18, className: cl("nav-icon") });
     },
 
     _tabEntries() {
@@ -300,8 +296,8 @@ export default definePlugin({
             find: "desktop-shell.settings.search-label",
             all: true,
             replacement: {
-                match: /name:(\i)\.X\[(\i)\.id\]/g,
-                replace: "name:$1.X[$2.id]||$self._navGlyph($2.id)",
+                match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.X\[(\i)\.id\]\}\)/g,
+                replace: "leading:$self._navLeading($4.id)||(0,$1.jsx)($2.f,{name:$3.X[$4.id]})",
             },
         },
         {

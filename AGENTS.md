@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.26]` Settings nav icons must be the original lucide tabs (`UnplugIcon` / `PaletteIcon` / `BracesIcon` / `TestTubeIcon`), not Grok sprites (`grid-plus` / `easel` / `file-text`). Desktop `leading` is `Glyph name:sL.X[id]`; Void++ ids miss that map. `_navLeading(id)` returns the 18px lucide node, else the native Glyph. Keep the Usage→Plugins hairline.
+
 `[20261114.25]` Desktop settings nav (`desktop-shell.settings.search-label`) paints `Glyph name:sL.X[tab.id]`. Void++ ids miss that map (`#icon-xs-undefined`) and sit in the same Section as Usage (no hairline). `_navGlyph`: plugins `grid-plus`, themes `easel`, css `file-text`, experiments `wrench`. Hairline: first `voidpp_` tab after a native tab, `margin-top:8px` + `::before` at `top:-8px` (do not padding-top). Do not hide Suggested.
 
 `[20261114.24]` ProjectHubRecent: ProjectHubPage `useState("suggested")` (`desktop-shell.project-hub.suggested` + `data-project-hub`). Default the hub tab to `"recent"`. Existing `z[v]?v:oE.find` still falls through when Recent is empty. Do not click the tab. Do not hide Suggested.

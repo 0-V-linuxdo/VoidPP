@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.25
+// @version      20261114.26
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.25] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.26] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7541,6 +7541,14 @@ button .void-info-hint {
     border-color: var(--border-l2, var(--fg-secondary));
 }
 
+.void-settings-nav-icon {
+    width: 18px;
+    height: 18px;
+    display: block;
+    flex-shrink: 0;
+    color: inherit;
+}
+
 button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-settings-tab^="voidpp_"] {
     position: relative;
     margin-top: 8px;
@@ -10014,9 +10022,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.25] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9c3fd03"}`
-    }, `(${"9c3fd03"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.26] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a580090"}`
+    }, `(${"a580090"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10098,19 +10106,11 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       setSettingsPrimitive(name, component);
       return component;
     },
-    _navGlyph(id) {
-      switch (id) {
-        case "voidpp_plugins_tab":
-          return "grid-plus";
-        case "voidpp_themes_tab":
-          return "easel";
-        case "voidpp_css_tab":
-          return "file-text";
-        case "voidpp_experiments_tab":
-          return "wrench";
-        default:
-          return;
-      }
+    _navLeading(id) {
+      const tab = allTabs.find((t) => t.id === id);
+      if (!tab)
+        return null;
+      return createElement(tab.icon, { width: 18, height: 18, className: cl17("nav-icon") });
     },
     _tabEntries() {
       return getVisibleTabs().map((t) => ({
@@ -10206,8 +10206,8 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
         find: "desktop-shell.settings.search-label",
         all: true,
         replacement: {
-          match: /name:(\i)\.X\[(\i)\.id\]/g,
-          replace: "name:$1.X[$2.id]||$self._navGlyph($2.id)"
+          match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.X\[(\i)\.id\]\}\)/g,
+          replace: "leading:$self._navLeading($4.id)||(0,$1.jsx)($2.f,{name:$3.X[$4.id]})"
         }
       },
       {
@@ -36188,7 +36188,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794672837000;
-  settings_default.updatedAt = 1794679943000;
+  settings_default.updatedAt = 1794741224000;
   chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794560326000;
   autoCollapse_default.updatedAt = 1794557302000;
