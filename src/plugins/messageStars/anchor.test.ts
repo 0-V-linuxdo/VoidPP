@@ -21,6 +21,14 @@ function btn(partial: Partial<AnchorButton> & Pick<AnchorButton, "label" | "left
 }
 
 describe("header star anchor", () => {
+    test("closed panel docks on Conversation Actions beside Toggle right pane", () => {
+        const buttons = [
+            btn({ label: "Conversation Actions", left: 1453, right: 1481 }),
+            btn({ label: "Toggle right pane", left: 1485, right: 1513 }),
+        ];
+        expect(buttons[pickHeaderMore(buttons)].label).toBe("Conversation Actions");
+    });
+
     test("closed panel docks on the labeled More beside the right panel", () => {
         const buttons = [
             btn({ label: "More", left: 1324, right: 1356 }),

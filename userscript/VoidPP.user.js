@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.34
+// @version      20261114.35
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.34] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.35] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9993,9 +9993,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.34] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b224aed"}`
-    }, `(${"b224aed"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.35] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"831cb04"}`
+    }, `(${"831cb04"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -27904,9 +27904,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/messageStars/anchor.ts
-  var MORE_RE = /^(more|更多)$/i;
+  var MORE_RE = /^(more|更多|conversation actions|对话操作|会话操作)$/i;
   var SHARE_RE = /^(create share link|share project)$/i;
-  var PANEL_RE = /\bright panel\b/i;
+  var PANEL_RE = /\bright pane(?:l)?\b|\bhide pane\b|右侧(面板|栏)|隐藏(面板|栏|窗格)/i;
   function pickHeaderMore(buttons2) {
     const visible = buttons2.map((button, index) => ({ button, index })).filter(({ button }) => !button.skipped && button.width >= 16 && button.width <= 64 && button.height >= 16 && button.height <= 64 && button.top <= 160);
     let panel = null;

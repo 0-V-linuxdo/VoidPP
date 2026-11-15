@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-const MORE_RE = /^(more|更多)$/i;
+const MORE_RE = /^(more|更多|conversation actions|对话操作|会话操作)$/i;
 const SHARE_RE = /^(create share link|share project)$/i;
-const PANEL_RE = /\bright panel\b/i;
+const PANEL_RE = /\bright pane(?:l)?\b|\bhide pane\b|右侧(面板|栏)|隐藏(面板|栏|窗格)/i;
 
 export type AnchorButton = {
     label: string;
