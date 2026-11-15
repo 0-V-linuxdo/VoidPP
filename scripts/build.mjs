@@ -174,9 +174,9 @@ const PREVIEW_BOOT = `(function(){
 `;
 
 function postProcess(userJs, metaJs, environment) {
-    const stripNoframes = s => s.split("\n").filter(l => !/^\/\/ @noframes\b/.test(l)).join("\n");
-    let user = stripNoframes(userJs);
-    let meta = stripNoframes(metaJs);
+    const drop = s => s.split("\n").filter(l => !/^\/\/ @(noframes|inject-into|sandbox)\b/.test(l)).join("\n");
+    let user = drop(userJs);
+    let meta = drop(metaJs);
     const envLine = `// @environment  ${environment}`;
     const injectEnv = s => s.replace("// @license", `${envLine}\n// @license`);
     user = injectEnv(user);

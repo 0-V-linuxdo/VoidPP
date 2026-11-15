@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.37
+// @version      20261114.38
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -16,8 +16,6 @@
 // @match        *://artifacts.grokusercontent.com/*
 // @match        *://*.grokusercontent.com/*
 // @run-at       document-start
-// @inject-into  auto
-// @sandbox      JavaScript
 // @grant        unsafeWindow
 // @grant        GM_addValueChangeListener
 // @grant        GM_deleteValue
