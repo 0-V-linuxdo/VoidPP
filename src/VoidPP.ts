@@ -15,6 +15,7 @@ import { Logger } from "@utils/Logger";
 import { onlyOnce } from "@utils/misc";
 import { type Plugin, StartAt } from "@utils/types";
 
+import { armSidebarPluginsHide, stopSidebarPluginsHide } from "./plugins/connectorsFlyout";
 import { armBotsCollapse, stopBotsCollapseGuard } from "./plugins/betterSidebar";
 import Plugins from "~plugins";
 
@@ -90,6 +91,8 @@ let _armed = false;
 function syncEarlyGuards() {
     if (isPluginEnabled("BetterSidebar")) armBotsCollapse();
     else stopBotsCollapseGuard();
+    if (isPluginEnabled("ConnectorsFlyout")) armSidebarPluginsHide();
+    else stopSidebarPluginsHide();
 }
 
 export function armRuntime() {

@@ -43,6 +43,7 @@
 | <img src="https://api.iconify.design/lucide/list-ordered.svg?color=%238b949e" width="16" height="16" alt=""> BetterQueue | 开 | 队列每条记住入队时的模型（`showQueueMode`）。切会话保持 picker（`stickyOnNavigate`）。刷新后把未发送的排队消息灌回（`persistAcrossRefresh`）。 |
 | <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 6H8'/%3E%3Cpath d='M21 12H8'/%3E%3Cpath d='M3 6v6'/%3E%3Cpath d='M21 18H3'/%3E%3C/svg%3E" width="16" height="16" alt=""> UserQuotes | 开 | 自己气泡里的引用行画出可见左竖条，避免 `>` 被 markdown 吃掉后看起来像消失。 |
 | <img src="https://api.iconify.design/lucide/message-square-quote.svg?color=%238b949e" width="16" height="16" alt=""> BetterQuotes | 开 | 点输入框引用芯片，或已发送消息上的「Jump to quoted message」，滚到被引原文（`jumpToPassage`）。切会话再回来时保留引用条（`persistAcrossChats`）。 |
+| <img src="https://api.iconify.design/lucide/blocks.svg?color=%238b949e" width="16" height="16" alt=""> ConnectorsFlyout | 开 | 把头像菜单里的 Connect Apps / Skills / Bots 做成展开项（原 AvatarPluginsFlyout）。 |
 | <img src="https://api.iconify.design/lucide/lightbulb.svg?color=%238b949e" width="16" height="16" alt=""> NoBuildStarters | 开 | 隐藏 Build 模式输入框上方的 Ideas 胶囊栏。 |
 | <img src="https://api.iconify.design/lucide/circle-check.svg?color=%238b949e" width="16" height="16" alt=""> CompleteToast | 开 | 后台会话完成后弹出 toast，点击打开。可选 `keepUntilDismissed`：一直留到点 X 或打开该会话。可选 `imagineGeneration`（默认关）在离开 Imagine 时提示生成完成。 |
 | <img src="https://api.iconify.design/lucide/panel-left.svg?color=%238b949e" width="16" height="16" alt=""> BetterSidebar | 开 | 侧栏增强：分组标题按钮仅在悬停该分组时显示，Chats 标题增加 New chat 加号，Bots/Projects 分区默认折叠，Chats 分区默认展开（`titleRowHover`、`chatsPlus`、`botsDefaultCollapsed`、`chatsDefaultExpanded`、`projectsDefaultCollapsed`）。 |
@@ -78,7 +79,6 @@
 
 | 功能 | 默认 | 说明 |
 | --- | --- | --- |
-| <img src="https://api.iconify.design/lucide/blocks.svg?color=%238b949e" width="16" height="16" alt=""> AvatarPluginsFlyout | — | 桌面 grok.com 设置里已有 Connect Apps / Skills / Bots；侧栏 Plugins 行已不存在。SettingsFlyout 仍可跳这些页。 |
 | <img src="https://api.iconify.design/lucide/gauge.svg?color=%238b949e" width="16" height="16" alt=""> RateLimitDisplay | — | Grok 积分规则变更后，旧的按模式速率读数失效，已移除。周用量改由 UsageDisplay 承担。 |
 | <img src="https://api.iconify.design/lucide/plus.svg?color=%238b949e" width="16" height="16" alt=""> SidebarHeaderHover | — | 已并入 BetterSidebar（`titleRowHover`、`chatsPlus`）。 |
 | <img src="https://api.iconify.design/lucide/scroll-text.svg?color=%238b949e" width="16" height="16" alt=""> ThemedScrollbar | — | 已并入 BetterCanvas。 |
