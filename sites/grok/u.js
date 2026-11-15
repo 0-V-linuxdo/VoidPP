@@ -1,6 +1,17 @@
 // 本适配接触框架的唯一途径:工厂参数 U(本脚本自己的框架实例,站点工厂被调用时填入)
 export let U = null;
-export const bindApi = api => { U = api; };
+const queued = [];
+export const whenApi = fn => {
+    if (U) fn(U);
+    else queued.push(fn);
+};
+export const bindApi = api => {
+    U = api;
+    const jobs = queued.splice(0);
+    for (const fn of jobs) {
+        try { fn(U); } catch (e) { console.error("[Void++] deferred init", e); }
+    }
+};
 
 // 界面直接用 Grok 自己的 React:补丁在 Grok 渲染期间调用这些函数,那时它一定可用
 const R = () => U.findReact();

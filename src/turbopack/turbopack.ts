@@ -21,10 +21,21 @@ function call(name, ...args) {
     return u[name](...args);
 }
 
+// Always return a callable. `waitFor(filters.byProps("x"), …)` runs at module
+// eval, before bindApi(U). A missing method threw TypeError and aborted the IIFE.
 export const filters = new Proxy({}, {
     get(_, key) {
-        const u = api();
-        return u?.filters?.[key];
+        if (typeof key === "symbol") return undefined;
+        return (...args) => {
+            const impl = api()?.filters?.[key];
+            if (typeof impl === "function") return impl(...args);
+            return mod => {
+                const impl2 = api()?.filters?.[key];
+                if (typeof impl2 !== "function") return false;
+                const f = impl2(...args);
+                return typeof f === "function" ? !!f(mod) : !!f;
+            };
+        };
     },
 });
 
@@ -65,7 +76,8 @@ export function waitFor(filter, callback, timeoutMs) {
             setTimeout(start, 0);
             return;
         }
-        off = u.waitFor(filter, callback, timeoutMs) || (() => {});
+        const f = typeof filter === "function" ? filter : () => false;
+        off = u.waitFor(f, callback, timeoutMs) || (() => {});
     };
     start();
     return () => off();

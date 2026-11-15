@@ -174,21 +174,46 @@ const PREVIEW_BOOT = `(function(){
 `;
 
 function postProcess(userJs, metaJs, environment) {
-    const drop = s => s.split("\n").filter(l => !/^\/\/ @(noframes|inject-into|sandbox)\b/.test(l)).join("\n");
+    const drop = s => s.split("\n").filter(l =>
+        !/^\/\/ @(noframes|inject-into|sandbox)\b/.test(l)
+        && !/^\/\/ @grant\s+GM\.(setClipboard|notification)\s*$/.test(l)
+    ).join("\n");
     let user = drop(userJs);
     let meta = drop(metaJs);
     const envLine = `// @environment  ${environment}`;
     const injectEnv = s => s.replace("// @license", `${envLine}\n// @license`);
     user = injectEnv(user);
     meta = injectEnv(meta);
+    const fixUpdate = s => s.replace(/^(\/\/ @updateURL\s+)(\S+)$/m, (_, p, url) => p + url.replace(/VoidPP\.meta\.js$/, "VoidPP.user.js"));
+    user = fixUpdate(user);
+    meta = fixUpdate(meta);
     const headerEnd = user.indexOf("// ==/UserScript==");
     if (headerEnd < 0) throw new Error("missing userscript header");
     const after = user.indexOf("\n", headerEnd) + 1;
-    user = user.slice(0, after) + PREVIEW_BOOT + "\n" + user.slice(after);
+    const body = user.slice(after);
+    const trap = `try {\n${body}\n} catch (__voidppE) { try { (typeof unsafeWindow !== "undefined" && unsafeWindow ? unsafeWindow : window).__VOIDPP_ERR = String(__voidppE && __voidppE.stack || __voidppE); } catch (e2) {} throw __voidppE; }\n`;
+    user = user.slice(0, after) + PREVIEW_BOOT + "\n" + trap;
     return { user, meta };
 }
 
 function main() {
+    if (args.includes("--postprocess-only")) {
+        const userPath = join(root, "userscript/VoidPP.user.js");
+        const metaPath = join(root, "userscript/VoidPP.meta.js");
+        if (!existsSync(userPath)) throw new Error(`missing ${userPath}`);
+        const raw = readFileSync(userPath, "utf8");
+        if (raw.includes("void-better-canvas") && raw.includes("__VOIDPP_ERR") && !/^\/\/ @sandbox\b/m.test(raw)) {
+            console.log(`postprocessed ${userPath}  already done, skip`);
+            return;
+        }
+        const { user, meta } = postProcess(raw, existsSync(metaPath) ? readFileSync(metaPath, "utf8") : "", "Development");
+        writeFileSync(userPath, user);
+        if (existsSync(metaPath)) writeFileSync(metaPath, meta);
+        mkdirSync(join(root, "dist"), { recursive: true });
+        writeFileSync(join(root, "dist/VoidPP.user.js"), user);
+        console.log(`postprocessed ${userPath}  ${(user.length / 1024).toFixed(1)} KB`);
+        return;
+    }
     const stamp = stagePlugins();
     console.log(`staged ${stamp.length} dated plugins + live symlinks in ${PLUGIN_DST}`);
 
@@ -246,7 +271,6 @@ function main() {
         console.log(`Void++ ${base}.user.js  ${(user.length / 1024).toFixed(1)} KB  ${environment}`);
     } finally {
         try { rmSync(join(tmp, "node_modules"), { force: true }); } catch { /* symlink */ }
-        try { rmSync(tmp, { recursive: true, force: true }); } catch { /* tmp cleanup */ }
     }
 }
 

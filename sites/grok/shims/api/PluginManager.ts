@@ -1,7 +1,7 @@
+// @ts-nocheck
 import { U } from "../../u.js";
 
 function api() {
-    if (!U) throw new Error("Userscript++ API is not bound yet");
     return U;
 }
 

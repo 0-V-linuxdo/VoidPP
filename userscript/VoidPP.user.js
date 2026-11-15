@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.38
+// @version      20261114.40
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -9,7 +9,7 @@
 // @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/assets/logos/app-icon/voidpp-icon.svg
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP/issues
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.meta.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
 // @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
@@ -28,8 +28,6 @@
 // @grant        GM_setValue
 // @grant        GM_unregisterMenuCommand
 // @grant        GM_xmlhttpRequest
-// @grant        GM.setClipboard
-// @grant        GM.notification
 // @connect      *
 // ==/UserScript==
 (function(){
@@ -72,6 +70,7 @@
   try { new MutationObserver(function(){ tree(dark()); }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["srcdoc"] }); } catch (e) {}
 })();
 
+try {
 
 (() => {
   var __defProp = Object.defineProperty;
@@ -81,7 +80,7 @@
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.37", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -980,7 +979,7 @@
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.37" : "0.0.0";
+  var VERSION = true ? "20261114.40" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -1309,8 +1308,21 @@
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/sites/grok/u.js
   var U3 = null;
+  var queued = [];
+  var whenApi = (fn2) => {
+    if (U3) fn2(U3);
+    else queued.push(fn2);
+  };
   var bindApi = (api4) => {
     U3 = api4;
+    const jobs = queued.splice(0);
+    for (const fn2 of jobs) {
+      try {
+        fn2(U3);
+      } catch (e3) {
+        console.error("[Void++] deferred init", e3);
+      }
+    }
   };
   var R3 = () => U3.findReact();
   var Fragment2 = Symbol.for("react.fragment");
@@ -2922,8 +2934,17 @@
   }
   var filters = new Proxy({}, {
     get(_3, key) {
-      const u3 = api();
-      return u3?.filters?.[key];
+      if (typeof key === "symbol") return void 0;
+      return (...args) => {
+        const impl = api()?.filters?.[key];
+        if (typeof impl === "function") return impl(...args);
+        return (mod) => {
+          const impl2 = api()?.filters?.[key];
+          if (typeof impl2 !== "function") return false;
+          const f3 = impl2(...args);
+          return typeof f3 === "function" ? !!f3(mod) : !!f3;
+        };
+      };
     }
   });
   var find2 = (filter, ...rest) => call("find", filter, ...rest);
@@ -2946,7 +2967,8 @@
         setTimeout(start4, 0);
         return;
       }
-      off = u3.waitFor(filter, callback, timeoutMs) || (() => {
+      const f3 = typeof filter === "function" ? filter : () => false;
+      off = u3.waitFor(f3, callback, timeoutMs) || (() => {
       });
     };
     start4();
@@ -3487,7 +3509,6 @@
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/sites/grok/shims/api/Settings.ts
   function api2() {
-    if (!U3) throw new Error("Userscript++ API is not bound yet");
     return U3;
   }
   function definePluginSettings(def2, checks) {
@@ -3569,16 +3590,24 @@
     return api2().migratePluginSetting(pluginName6, newKey, oldKey);
   }
   function migrateSettingsToPlugin(targetPlugin, sourcePlugin, ...settingKeys) {
-    const source = api2().PlainSettings.plugins[sourcePlugin];
-    if (!source) return;
-    const target2 = api2().PlainSettings.plugins[targetPlugin] ??= { enabled: false };
-    for (const key of settingKeys) {
-      if (key in source && !(key in target2)) {
-        target2[key] = source[key];
-        delete source[key];
+    const run2 = () => {
+      if (!U3) return;
+      const source = U3.PlainSettings.plugins[sourcePlugin];
+      if (!source) return;
+      const target2 = U3.PlainSettings.plugins[targetPlugin] ??= { enabled: false };
+      for (const key of settingKeys) {
+        if (key in source && !(key in target2)) {
+          target2[key] = source[key];
+          delete source[key];
+        }
       }
+      U3.SettingsStore.markAsChanged?.(`plugins.${targetPlugin}`);
+    };
+    if (!U3) {
+      whenApi(run2);
+      return;
     }
-    api2().SettingsStore.markAsChanged?.(`plugins.${targetPlugin}`);
+    run2();
   }
   function mergePluginSettings(name, patch) {
     Object.assign(api2().Settings.plugins[name] ??= {}, patch);
@@ -10545,8 +10574,8 @@ html.void-cms-picked .void-cms-ghost {
     } catch {
       return liveIntent2();
     }
-    const queued = intentFromPayload(parsed);
-    return queued?.modeId ? queued : liveIntent2();
+    const queued2 = intentFromPayload(parsed);
+    return queued2?.modeId ? queued2 : liveIntent2();
   }
   function requestUrl(input) {
     if (typeof input === "string") return input;
@@ -10650,14 +10679,14 @@ html.void-cms-picked .void-cms-ghost {
     const conv = conversation(cid);
     const list2 = held.get(cid);
     if (!conv || !list2) return;
-    const queued = list2.filter((h5) => conv.queue.some((q4) => qid2(q4) === h5.id));
-    if (!queued.length) return;
-    held.set(cid, queued);
+    const queued2 = list2.filter((h5) => conv.queue.some((q4) => qid2(q4) === h5.id));
+    if (!queued2.length) return;
+    held.set(cid, queued2);
     if (conv.queue.some((q4) => {
       const id = qid2(q4);
-      return !!id && !queued.some((h5) => h5.id === id);
+      return !!id && !queued2.some((h5) => h5.id === id);
     })) return;
-    const turn = queued.find((h5) => h5.id === qid2(conv.queue[0]));
+    const turn = queued2.find((h5) => h5.id === qid2(conv.queue[0]));
     if (!turn) return;
     const prev = flushing.get(cid);
     if (prev) clearTimeout(prev.timer);
@@ -10680,8 +10709,8 @@ html.void-cms-picked .void-cms-ghost {
     const conv = conversation(cid);
     if (conv?.activeGeneration) return;
     const { turn, parentId, item } = next;
-    const queued = conv?.queue.find((q4) => qid2(q4) === turn.id);
-    if (!queued) {
+    const queued2 = conv?.queue.find((q4) => qid2(q4) === turn.id);
+    if (!queued2) {
       forgetItem(turn.id);
       flushNext(cid, parentId);
       return;
@@ -10689,7 +10718,7 @@ html.void-cms-picked .void-cms-ghost {
     const state4 = MessageStore.useMessageStore.getState();
     armOverride(item, cid);
     state4.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
-    state4.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued.item), parentId });
+    state4.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued2.item), parentId });
     forgetItem(turn.id);
     logger15.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
   }
@@ -11025,10 +11054,10 @@ html.void-cms-picked .void-cms-ghost {
           if (saved2?.modeId) patchGwEvent(event, saved2);
           return orig.apply(mgr, args);
         }
-        const queued = typeof cid === "string" ? eventItemIntent(event, cid) : void 0;
-        if (queued?.modeId && !sendOverride) {
-          armOverride(queued, String(cid));
-          patchGwEvent(event, queued);
+        const queued2 = typeof cid === "string" ? eventItemIntent(event, cid) : void 0;
+        if (queued2?.modeId && !sendOverride) {
+          armOverride(queued2, String(cid));
+          patchGwEvent(event, queued2);
           return orig.apply(mgr, args);
         }
         if (!GW_TYPES.has(type)) return orig.apply(mgr, args);
@@ -11068,10 +11097,10 @@ html.void-cms-picked .void-cms-ghost {
       const id = qid2(first);
       const text = isTurnArgs(first) ? first.text : "";
       const cid = isTurnArgs(first) ? first.convId : currentCid3();
-      const queued = queuedIntent(cid, text, id);
-      if (queued?.modeId) {
-        armOverride(queued, cid);
-        patchSendArgs(args, queued);
+      const queued2 = queuedIntent(cid, text, id);
+      if (queued2?.modeId) {
+        armOverride(queued2, cid);
+        patchSendArgs(args, queued2);
         return orig.apply(this, args);
       }
       const slug = visibleChip();
@@ -36049,12 +36078,12 @@ uspp-voidpp-root > *, .uspp-voidpp-shadow-mount > * { pointer-events: auto; }
       }
       applyQuickCss();
       if (isThemesEnabled()) applyAllThemes();
-      let queued = false;
+      let queued2 = false;
       this._apply = () => {
-        if (queued) return;
-        queued = true;
+        if (queued2) return;
+        queued2 = true;
         queueMicrotask(() => {
-          queued = false;
+          queued2 = false;
           applyQuickCss();
           applyAllThemes();
         });
@@ -37090,12 +37119,12 @@ uspp-voidpp-root > *, .uspp-voidpp-shadow-mount > * { pointer-events: auto; }
   var mo3 = null;
   function watchDetach() {
     if (mo3 || typeof MutationObserver === "undefined") return;
-    let queued = false;
+    let queued2 = false;
     mo3 = new MutationObserver(() => {
-      if (queued) return;
-      queued = true;
+      if (queued2) return;
+      queued2 = true;
       setTimeout(() => {
-        queued = false;
+        queued2 = false;
         for (const x4 of [...hosts]) if (!x4.container.isConnected) x4.unmount();
         if (!hosts.size) {
           mo3?.disconnect();
@@ -38129,3 +38158,5 @@ uspp-voidpp-root > *, .uspp-voidpp-shadow-mount > * { pointer-events: auto; }
     console.error(`[${SCRIPT_NAME}] 启动失败`, e3);
   }
 })();
+
+} catch (__voidppE) { try { (typeof unsafeWindow !== "undefined" && unsafeWindow ? unsafeWindow : window).__VOIDPP_ERR = String(__voidppE && __voidppE.stack || __voidppE); } catch (e2) {} throw __voidppE; }

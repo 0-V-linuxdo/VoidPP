@@ -1,8 +1,8 @@
-import { U } from "../../u.js";
+// @ts-nocheck
+import { U, whenApi } from "../../u.js";
 import { OptionType } from "../utils/types.ts";
 
 function api() {
-    if (!U) throw new Error("Userscript++ API is not bound yet");
     return U;
 }
 
@@ -77,16 +77,21 @@ export function migratePluginSetting(pluginName, newKey, oldKey) {
     return api().migratePluginSetting(pluginName, newKey, oldKey);
 }
 export function migrateSettingsToPlugin(targetPlugin, sourcePlugin, ...settingKeys) {
-    const source = api().PlainSettings.plugins[sourcePlugin];
-    if (!source) return;
-    const target = api().PlainSettings.plugins[targetPlugin] ??= { enabled: false };
-    for (const key of settingKeys) {
-        if (key in source && !(key in target)) {
-            target[key] = source[key];
-            delete source[key];
+    const run = () => {
+        if (!U) return;
+        const source = U.PlainSettings.plugins[sourcePlugin];
+        if (!source) return;
+        const target = U.PlainSettings.plugins[targetPlugin] ??= { enabled: false };
+        for (const key of settingKeys) {
+            if (key in source && !(key in target)) {
+                target[key] = source[key];
+                delete source[key];
+            }
         }
-    }
-    api().SettingsStore.markAsChanged?.(`plugins.${targetPlugin}`);
+        U.SettingsStore.markAsChanged?.(`plugins.${targetPlugin}`);
+    };
+    if (!U) { whenApi(run); return; }
+    run();
 }
 
 export function getSettingsPluginData() {
