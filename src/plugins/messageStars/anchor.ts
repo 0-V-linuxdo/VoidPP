@@ -7,6 +7,15 @@
 const MORE_RE = /^(more|更多|conversation actions|对话操作|会话操作)$/i;
 const SHARE_RE = /^(create share link|share project)$/i;
 const PANEL_RE = /\bright pane(?:l)?\b|\bhide pane\b|右侧(面板|栏)|隐藏(面板|栏|窗格)/i;
+const PREVIEW_RE = /^(expand|preview|files|show files|new tab|hide pane|pane actions)$/i;
+
+export function isPanelLabel(label: string): boolean {
+    return PANEL_RE.test(label);
+}
+
+export function isPreviewChromeLabel(label: string): boolean {
+    return PREVIEW_RE.test(label.trim());
+}
 
 export type AnchorButton = {
     label: string;
@@ -18,7 +27,7 @@ export type AnchorButton = {
     height: number;
     /** Sidebar, dialog, message chrome, hidden, or our own star. */
     skipped: boolean;
-    /** Sits in the open preview overlay, beside Expand / Preview / Files. */
+    /** Sits in the open preview overlay, beside Expand / Preview / Files / Show files / New tab. */
     previewCluster: boolean;
 };
 

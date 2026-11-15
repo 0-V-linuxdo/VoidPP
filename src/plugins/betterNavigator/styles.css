@@ -272,11 +272,14 @@ button.void-bn-native-edge::before {
 }
 
 html.void-bn-hidetip:has(button[aria-label^="Go to response "][data-state]:not([data-state="closed"])) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])),
-html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-label^="Go to response "]) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])) {
+html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-label^="Go to response "]) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])),
+html.void-bn-hidetip:has(button[aria-label^="Go to message "]:not(.void-bn-tick)[data-state]:not([data-state="closed"])) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])),
+html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-label^="Go to message "]:not(.void-bn-tick)) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])) {
     display: none !important;
 }
 
-html.void-bn-fullticks button[aria-label^="Go to response "] {
+html.void-bn-fullticks button[aria-label^="Go to response "],
+html.void-bn-fullticks button[aria-label^="Go to message "]:not(.void-bn-tick) {
     position: absolute !important;
     width: 0 !important;
     height: 0 !important;

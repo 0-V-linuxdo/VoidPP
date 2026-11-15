@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.35
+// @version      20261114.36
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.35] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.36] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3864,7 +3864,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     const group = node.closest("[data-sidebar='group']");
     if (!group)
       return false;
-    if (group.querySelector("button[aria-label='Add project'], button[aria-label='All projects'], button[aria-label='添加项目'], button[aria-label='全部项目']"))
+    if (group.querySelector("button[aria-label='New project'], button[aria-label='Projects options'], button[aria-label='Add project'], button[aria-label='All projects'], button[aria-label='添加项目'], button[aria-label='全部项目'], button[aria-label='新项目'], button[aria-label='项目选项']"))
       return true;
     for (const btn of group.querySelectorAll("button[aria-label]")) {
       const label = (btn.getAttribute("aria-label") ?? "").trim();
@@ -3882,7 +3882,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     const blob = `${aria} ${text}`;
     const inPane = !!node.closest("[class*='pane-card']");
     const project = inProjectsGroup(target);
-    const named = /^(options|options for )/.test(blob) || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob) || /\btoggle\b/.test(blob) && /\bpanel\b/.test(blob);
+    const named = /^(options|options for )/.test(blob) || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob) || /\btoggle\b/.test(blob) && /\bpane(?:l)?\b/.test(blob) || /\bhide pane\b/.test(blob);
     if (!project && !inPane && !named)
       return false;
     manualUntil = Date.now() + MANUAL_HOLD_MS;
@@ -6363,6 +6363,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
     [data-sidebar="sidebar"] button[aria-label="New bot"],
     [data-sidebar="sidebar"] [data-void-chats-plus],
     [data-sidebar="sidebar"] .void-chats-plus,
+    [data-sidebar="sidebar"] button[aria-label="New project"],
+    [data-sidebar="sidebar"] button[aria-label="Projects options"],
     [data-sidebar="sidebar"] button[aria-label="Add project"],
     [data-sidebar="sidebar"] button[aria-label="All projects"],
     [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]),
@@ -6385,6 +6387,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="New bot"],
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) [data-void-chats-plus],
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) .void-chats-plus,
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="New project"],
+    [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="Projects options"],
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="Add project"],
     [data-sidebar="sidebar"] [data-sidebar="group"]:is(:hover, :focus-within) button[aria-label="All projects"],
     [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]):is(:hover, :focus-within) > :first-child :is(button, [role="button"]):not([aria-expanded]),
@@ -6394,6 +6398,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
     [data-sidebar="sidebar"] button[aria-label="New bot"]:is(:hover, :focus-visible, [data-state="open"]),
     [data-sidebar="sidebar"] [data-void-chats-plus]:is(:hover, :focus-visible, [data-state="open"]),
     [data-sidebar="sidebar"] .void-chats-plus:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="New project"]:is(:hover, :focus-visible, [data-state="open"]),
+    [data-sidebar="sidebar"] button[aria-label="Projects options"]:is(:hover, :focus-visible, [data-state="open"]),
     [data-sidebar="sidebar"] button[aria-label="Add project"]:is(:hover, :focus-visible, [data-state="open"]),
     [data-sidebar="sidebar"] button[aria-label="All projects"]:is(:hover, :focus-visible, [data-state="open"]),
     #app-sidebar div:has(> button[aria-expanded]):is(:hover, :focus-within) > button[aria-expanded] + span :is(
@@ -6426,6 +6432,8 @@ ${root}::-webkit-scrollbar-thumb:hover {
     [data-sidebar="sidebar"] button[aria-label="New bot"],
     [data-sidebar="sidebar"] [data-void-chats-plus],
     [data-sidebar="sidebar"] .void-chats-plus,
+    [data-sidebar="sidebar"] button[aria-label="New project"],
+    [data-sidebar="sidebar"] button[aria-label="Projects options"],
     [data-sidebar="sidebar"] button[aria-label="Add project"],
     [data-sidebar="sidebar"] button[aria-label="All projects"],
     [data-sidebar="sidebar"] [data-sidebar="group"]:has([aria-expanded]) > :first-child :is(button, [role="button"]):not([aria-expanded]),
@@ -6637,7 +6645,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var CHATS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-chats-plus], .void-chats-plus)";
   var CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
   var PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
-  var PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
+  var PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='New project'], button[aria-label='Projects options'], button[aria-label='Add project'], button[aria-label='All projects'])";
   var botsCollapsed = null;
   var botsCollapseObserver = null;
   var botsCollapseTimer = null;
@@ -9993,9 +10001,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.35] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"831cb04"}`
-    }, `(${"831cb04"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.36] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"8b5a0f2"}`
+    }, `(${"8b5a0f2"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -12973,11 +12981,14 @@ button.void-bn-native-edge::before {
 }
 
 html.void-bn-hidetip:has(button[aria-label^="Go to response "][data-state]:not([data-state="closed"])) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])),
-html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-label^="Go to response "]) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])) {
+html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-label^="Go to response "]) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])),
+html.void-bn-hidetip:has(button[aria-label^="Go to message "]:not(.void-bn-tick)[data-state]:not([data-state="closed"])) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])),
+html.void-bn-hidetip:has([data-state]:not([data-state="closed"]) button[aria-label^="Go to message "]:not(.void-bn-tick)) [data-radix-popper-content-wrapper]:is(:has([data-radix-hover-card-content]), :has([role="tooltip"])) {
     display: none !important;
 }
 
-html.void-bn-fullticks button[aria-label^="Go to response "] {
+html.void-bn-fullticks button[aria-label^="Go to response "],
+html.void-bn-fullticks button[aria-label^="Go to message "]:not(.void-bn-tick) {
     position: absolute !important;
     width: 0 !important;
     height: 0 !important;
@@ -13010,7 +13021,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var BOT_PANE_SEL = "[data-testid='bot-transcript-scroller']";
   var BOT_ENTRY_SEL = "[data-bot-entry-id]";
   var BOT_TEXT_SEL = "[data-bot-message-text='true']";
-  var TICK_SEL = "button[aria-label^='Go to response ']";
+  var TICK_SEL = "button[aria-label^='Go to response '], button[aria-label^='Go to message ']:not(.void-bn-tick)";
   var PREV_SEL = "button[aria-label='Navigate to previous message']";
   var NEXT_SEL = "button[aria-label='Navigate to next message']";
   var PANE_SKIP = "#app-sidebar, [data-sidebar], [class*='pane-card']";
@@ -13704,7 +13715,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return out;
   }
   function labelOrdinal(btn) {
-    const m = btn.getAttribute("aria-label")?.match(/Go to response (\d+)/i);
+    const m = btn.getAttribute("aria-label")?.match(/Go to (?:response|message) (\d+)/i);
     if (!m)
       return null;
     const n = Number(m[1]);
@@ -27907,6 +27918,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var MORE_RE = /^(more|更多|conversation actions|对话操作|会话操作)$/i;
   var SHARE_RE = /^(create share link|share project)$/i;
   var PANEL_RE = /\bright pane(?:l)?\b|\bhide pane\b|右侧(面板|栏)|隐藏(面板|栏|窗格)/i;
+  var PREVIEW_RE = /^(expand|preview|files|show files|new tab|hide pane|pane actions)$/i;
+  function isPanelLabel(label) {
+    return PANEL_RE.test(label);
+  }
+  function isPreviewChromeLabel(label) {
+    return PREVIEW_RE.test(label.trim());
+  }
   function pickHeaderMore(buttons2) {
     const visible = buttons2.map((button, index) => ({ button, index })).filter(({ button }) => !button.skipped && button.width >= 16 && button.width <= 64 && button.height >= 16 && button.height <= 64 && button.top <= 160);
     let panel = null;
@@ -28856,7 +28874,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return box.width < 16 || box.height < 16 || box.width > 64 || box.height > 64;
   }
   function isRightPanelToggle(el) {
-    return /\bright panel\b/i.test(controlLabel(el));
+    return isPanelLabel(controlLabel(el));
   }
   function headerMore() {
     const nodes = [...document.querySelectorAll("button")];
@@ -28872,7 +28890,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       panelTop = top;
     }
     const host3 = panelNode?.parentElement ?? null;
-    const previewHost = !!host3 && [...host3.children].some((node) => node instanceof HTMLElement && /^(expand|preview|files)$/i.test(controlLabel(node)));
+    const previewHost = !!host3 && [...host3.children].some((node) => node instanceof HTMLElement && isPreviewChromeLabel(controlLabel(node)));
     const index = pickHeaderMore(nodes.map((el) => {
       const box = el.getBoundingClientRect();
       return {
@@ -28893,7 +28911,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const ticks = document.querySelector(".void-bn-ticks");
     if (ticks)
       return ticks.getBoundingClientRect();
-    const native = document.querySelector("button[aria-label^='Go to response ']");
+    const native = document.querySelector("button[aria-label^='Go to response '], button[aria-label^='Go to message ']:not(.void-bn-tick)");
     const box = native?.parentElement ?? native;
     if (!box)
       return null;
@@ -36176,7 +36194,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   exportChat_default.updatedAt = 1794669091000;
   incognito_default.updatedAt = 1787870966000;
   inputHistory_default.updatedAt = 1794676705000;
-  messageStars_default.updatedAt = 1794560326000;
+  messageStars_default.updatedAt = 1794749186000;
   messageTimestamps_default.updatedAt = 1794672837000;
   noBuildStarters_default.updatedAt = 1794560326000;
   noComposerSuggestions_default.updatedAt = 1794738781000;

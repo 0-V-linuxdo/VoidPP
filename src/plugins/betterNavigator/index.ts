@@ -26,7 +26,7 @@ const CHAT_PANE_SEL = "[data-testid='chat-transcript-scroller']";
 const BOT_PANE_SEL = "[data-testid='bot-transcript-scroller']";
 const BOT_ENTRY_SEL = "[data-bot-entry-id]";
 const BOT_TEXT_SEL = "[data-bot-message-text='true']";
-const TICK_SEL = "button[aria-label^='Go to response ']";
+const TICK_SEL = "button[aria-label^='Go to response '], button[aria-label^='Go to message ']:not(.void-bn-tick)";
 const PREV_SEL = "button[aria-label='Navigate to previous message']";
 const NEXT_SEL = "button[aria-label='Navigate to next message']";
 const PANE_SKIP = "#app-sidebar, [data-sidebar], [class*='pane-card']";
@@ -677,7 +677,7 @@ function responseIdxs(): number[] {
 }
 
 function labelOrdinal(btn: HTMLButtonElement): number | null {
-    const m = btn.getAttribute("aria-label")?.match(/Go to response (\d+)/i);
+    const m = btn.getAttribute("aria-label")?.match(/Go to (?:response|message) (\d+)/i);
     if (!m) return null;
     const n = Number(m[1]);
     return Number.isFinite(n) && n > 0 ? n : null;

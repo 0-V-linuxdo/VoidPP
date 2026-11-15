@@ -88,7 +88,7 @@ const BOTS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-bots-plus], .void-b
 const CHATS_PLUS_SEL = "[data-sidebar=sidebar] :is([data-void-chats-plus], .void-chats-plus)";
 const CHATS_COLLAPSED_KEY = "sidebar-history-collapsed";
 const PROJECTS_COLLAPSED_KEY = "sidebar-projects-collapsed";
-const PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='Add project'], button[aria-label='All projects'])";
+const PROJECTS_ACTION_SEL = "[data-sidebar=sidebar] :is(button[aria-label='New project'], button[aria-label='Projects options'], button[aria-label='Add project'], button[aria-label='All projects'])";
 
 let botsCollapsed: boolean | null = null;
 let botsCollapseObserver: MutationObserver | null = null;

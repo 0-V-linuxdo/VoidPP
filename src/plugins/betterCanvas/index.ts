@@ -353,7 +353,7 @@ function inProjectsGroup(node: Element) {
     if (node.closest("#app-sidebar [data-reorder-item='projects'], #app-sidebar [data-project-row]")) return true;
     const group = node.closest("[data-sidebar='group']");
     if (!group) return false;
-    if (group.querySelector("button[aria-label='Add project'], button[aria-label='All projects'], button[aria-label='添加项目'], button[aria-label='全部项目']")) return true;
+    if (group.querySelector("button[aria-label='New project'], button[aria-label='Projects options'], button[aria-label='Add project'], button[aria-label='All projects'], button[aria-label='添加项目'], button[aria-label='全部项目'], button[aria-label='新项目'], button[aria-label='项目选项']")) return true;
     for (const btn of group.querySelectorAll("button[aria-label]")) {
         const label = (btn.getAttribute("aria-label") ?? "").trim();
         if (label === "Projects" || label === "项目") return true;
@@ -371,7 +371,8 @@ function markManual(target: EventTarget | null): boolean {
     const project = inProjectsGroup(target);
     const named = /^(options|options for )/.test(blob)
         || /\b(settings|files|preview|canvas)\b|设置|文件/.test(blob)
-        || (/\btoggle\b/.test(blob) && /\bpanel\b/.test(blob));
+        || (/\btoggle\b/.test(blob) && /\bpane(?:l)?\b/.test(blob))
+        || /\bhide pane\b/.test(blob);
     if (!project && !inPane && !named) return false;
     manualUntil = Date.now() + MANUAL_HOLD_MS;
     return true;

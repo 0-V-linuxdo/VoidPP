@@ -6,7 +6,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { type AnchorButton, pickHeaderMore } from "./anchor";
+import { type AnchorButton, isPanelLabel, isPreviewChromeLabel, pickHeaderMore } from "./anchor";
 
 function btn(partial: Partial<AnchorButton> & Pick<AnchorButton, "label" | "left" | "right">): AnchorButton {
     return {
@@ -19,6 +19,22 @@ function btn(partial: Partial<AnchorButton> & Pick<AnchorButton, "label" | "left
         ...partial,
     };
 }
+
+describe("header star labels", () => {
+    test("panel labels include pane and hide pane", () => {
+        expect(isPanelLabel("Toggle right pane")).toBe(true);
+        expect(isPanelLabel("Toggle Right Panel")).toBe(true);
+        expect(isPanelLabel("Hide pane")).toBe(true);
+        expect(isPanelLabel("Conversation Actions")).toBe(false);
+    });
+
+    test("preview chrome includes Show files / New tab", () => {
+        expect(isPreviewChromeLabel("Show files")).toBe(true);
+        expect(isPreviewChromeLabel("New tab")).toBe(true);
+        expect(isPreviewChromeLabel("Hide pane")).toBe(true);
+        expect(isPreviewChromeLabel("Conversation Actions")).toBe(false);
+    });
+});
 
 describe("header star anchor", () => {
     test("closed panel docks on Conversation Actions beside Toggle right pane", () => {
@@ -35,6 +51,17 @@ describe("header star anchor", () => {
             btn({ label: "Toggle Right Panel", left: 1362, right: 1394 }),
         ];
         expect(buttons[pickHeaderMore(buttons)].label).toBe("More");
+    });
+
+    test("open preview does not dock on Show files in the preview cluster", () => {
+        const buttons = [
+            btn({ label: "Conversation Actions", left: 659, right: 691 }),
+            btn({ label: "Show files", left: 2218, right: 2246, previewCluster: true }),
+            btn({ label: "New tab", left: 2188, right: 2216, previewCluster: true }),
+            btn({ label: "Hide pane", left: 2248, right: 2276, previewCluster: true }),
+            btn({ label: "Toggle right pane", left: 1485, right: 1513 }),
+        ];
+        expect(buttons[pickHeaderMore(buttons)].label).toBe("Conversation Actions");
     });
 
     test("open preview does not dock on Expand in the preview cluster", () => {

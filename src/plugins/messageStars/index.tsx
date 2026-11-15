@@ -18,7 +18,7 @@ import { Logger } from "@utils/Logger";
 import { debounce, pageWindow } from "@utils/misc";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 
-import { pickHeaderMore } from "./anchor";
+import { isPanelLabel, isPreviewChromeLabel, pickHeaderMore } from "./anchor";
 import { clipSnippet, groupStars, resolveConversationId, type StarGroup, type StarredMessage, starsForConversation } from "./model";
 import { dropStar, hasStar, putStar, reloadIfAccountChanged, stars, startStore, stopStore } from "./store";
 
@@ -676,7 +676,7 @@ function headerSkipped(el: HTMLElement): boolean {
 }
 
 function isRightPanelToggle(el: HTMLElement): boolean {
-    return /\bright panel\b/i.test(controlLabel(el));
+    return isPanelLabel(controlLabel(el));
 }
 
 function headerMore(): HTMLElement | null {
@@ -692,7 +692,7 @@ function headerMore(): HTMLElement | null {
     }
     const host = panelNode?.parentElement ?? null;
     const previewHost = !!host && [...host.children].some(node =>
-        node instanceof HTMLElement && /^(expand|preview|files)$/i.test(controlLabel(node)),
+        node instanceof HTMLElement && isPreviewChromeLabel(controlLabel(node)),
     );
     const index = pickHeaderMore(nodes.map(el => {
         const box = el.getBoundingClientRect();
@@ -714,7 +714,7 @@ function headerMore(): HTMLElement | null {
 function railBox(): DOMRect | null {
     const ticks = document.querySelector<HTMLElement>(".void-bn-ticks");
     if (ticks) return ticks.getBoundingClientRect();
-    const native = document.querySelector<HTMLElement>("button[aria-label^='Go to response ']");
+    const native = document.querySelector<HTMLElement>("button[aria-label^='Go to response '], button[aria-label^='Go to message ']:not(.void-bn-tick)");
     const box = native?.parentElement ?? native;
     if (!box) return null;
     const rect = box.getBoundingClientRect();
