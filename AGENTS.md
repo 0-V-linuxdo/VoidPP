@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.21]` Compact New chat rest `box-shadow:none` is required — dropping it in 14.20 brought back the pill's `0 12px 32px` drop shadow on the 32px icon. Keep none at rest/hover; `:focus-visible` is a 1px `--fg-accent` ring only.
+
 `[20261114.20]` Same hover-kill as compact New chat: `background`/`box-shadow` `!important` without a `:hover`. Drop compact New chat `box-shadow:none!important` (it blanks `focus-visible:ring`). Active mode pin `.void-cms-on` locked the orange fill — add hover 28% / active 36%. Inactive pins already have Grok `hover:bg-button-secondary-fill-hover`. chatsPlus already has `hover:bg-button-ghost-hover`. NSI / usage / Connect apps do not force a transparent fill.
 
 `[20261114.19]` Compact New chat `background:transparent!important` killed native hover. Ghost hover `--button-ghost-hover` / `--grok-text-primary` (plus follows `currentColor`); active `--button-ghost-active`.

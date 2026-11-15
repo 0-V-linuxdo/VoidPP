@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.20
+// @version      20261114.21
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.20] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.21] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -6326,6 +6326,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     gap: 0 !important;
     border-radius: 8px;
     background: transparent !important;
+    box-shadow: none !important;
     color: var(--grok-text-secondary, var(--fg-secondary)) !important;
     transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);
 }
@@ -6333,6 +6334,10 @@ ${root}::-webkit-scrollbar-thumb:hover {
 #app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]):is(:hover, :focus-visible) {
     background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;
     color: var(--grok-text-primary, var(--fg-primary)) !important;
+}
+
+#app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]):focus-visible {
+    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 0.8)) !important;
 }
 
 #app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]):active {
@@ -9994,9 +9999,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.20] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"95410b2"}`
-    }, `(${"95410b2"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.21] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"1d96cd8"}`
+    }, `(${"1d96cd8"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36074,11 +36079,11 @@ button:has(.void-ud-trigger > .void-ud-label) {
   betterFiles_default.updatedAt = 1794560326000;
   betterImagine_default.updatedAt = 1794557302000;
   betterLinks_default.updatedAt = 1794557302000;
-  betterModeSelect_default.updatedAt = 1794678823000;
+  betterModeSelect_default.updatedAt = 1794735995000;
   betterNavigator_default.updatedAt = 1794560326000;
   betterQueue_default.updatedAt = 1793180938000;
   betterQuotes_default.updatedAt = 1794676705000;
-  betterSidebar_default.updatedAt = 1794735638000;
+  betterSidebar_default.updatedAt = 1794735995000;
   chatStateFavicons_default.updatedAt = 1789921507000;
   cleaner_default.updatedAt = 1794560326000;
   cloneChats_default.updatedAt = 1794669091000;
