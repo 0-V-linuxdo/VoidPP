@@ -8,7 +8,7 @@ import "./styles.css";
 
 import { definePluginSettings, migratePluginSetting } from "@api/Settings";
 import { ErrorBoundary, Text } from "@components";
-import { BracesIcon, PaletteIcon, Settings2Icon, UnplugIcon } from "@components/icons";
+import { BracesIcon, grokSprite, PaletteIcon, Settings2Icon, UnplugIcon } from "@components/icons";
 import { accountMenuParts, accountMenuSelect, MenuGlyphIcon, type AccountMenuParts } from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
 import { SettingsDialogStore } from "@turbopack/common/stores";
@@ -17,7 +17,7 @@ import { classNameFactory } from "@utils/css";
 import definePlugin, { OptionType } from "@utils/types";
 import type { ComponentType } from "react";
 
-import { CogIcon, DatabaseIcon, LightningIcon, PaintIcon, PaymentsIcon, PersonIcon, SlidersIcon, VisitIcon } from "./icons";
+import { CogIcon } from "./icons";
 
 const cl = classNameFactory("void-sf-");
 
@@ -105,13 +105,13 @@ interface VoidPPFlyoutTab extends FlyoutTab {
 }
 
 const GROK_TABS: GrokFlyoutTab[] = [
-    { id: "account", name: "Account", setting: "account", icon: PersonIcon },
-    { id: "appearance", name: "Appearance", setting: "appearance", icon: PaintIcon },
-    { id: "behavior", name: "Behavior", setting: "behavior", icon: VisitIcon },
-    { id: "personality", name: "Customize", setting: "customize", icon: SlidersIcon },
-    { id: "billing", name: "Billing", setting: "billing", icon: PaymentsIcon },
-    { id: "usage", name: "Usage", setting: "usage", icon: LightningIcon },
-    { id: "data", name: "Data Controls", setting: "data", icon: DatabaseIcon },
+    { id: "account", name: "Account", setting: "account", icon: grokSprite("account") },
+    { id: "appearance", name: "Appearance", setting: "appearance", icon: grokSprite("color-mode") },
+    { id: "behavior", name: "Behavior", setting: "behavior", icon: grokSprite("sliders") },
+    { id: "personality", name: "Customize", setting: "customize", icon: grokSprite("agent") },
+    { id: "billing", name: "Billing", setting: "billing", icon: grokSprite("credit-card") },
+    { id: "usage", name: "Usage", setting: "usage", icon: grokSprite("chart-bars") },
+    { id: "data", name: "Data Controls", setting: "data", icon: grokSprite("shield") },
 ];
 
 const VOIDPP_TABS: VoidPPFlyoutTab[] = [

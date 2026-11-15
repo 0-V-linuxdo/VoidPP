@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.32
+// @version      20261114.33
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.32] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.33] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -2737,6 +2737,28 @@ ${sourceUrl}`;
     className: props.className,
     "aria-hidden": "true"
   }, children);
+  function GrokSpriteIcon({ name, className, width, height, size }) {
+    const dim = width ?? height ?? size ?? 16;
+    return /* @__PURE__ */ React.createElement("svg", {
+      "aria-hidden": "true",
+      fill: "currentColor",
+      width: dim,
+      height: dim,
+      viewBox: "0 0 14 14",
+      className
+    }, /* @__PURE__ */ React.createElement("use", {
+      href: `#icon-xs-${name}`
+    }));
+  }
+  GrokSpriteIcon.displayName = "GrokSpriteIcon";
+  function grokSprite(name) {
+    const Icon = (props = {}) => /* @__PURE__ */ React.createElement(GrokSpriteIcon, {
+      name,
+      ...props
+    });
+    Icon.displayName = "GrokSpriteIcon";
+    return Icon;
+  }
   var BracesIcon = (props = {}) => svg(props, /* @__PURE__ */ React.createElement("path", {
     d: "M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1"
   }), /* @__PURE__ */ React.createElement("path", {
@@ -3273,15 +3295,6 @@ ${sourceUrl}`;
     x: "3",
     y: "14",
     rx: "1"
-  }));
-  var GrokConnectorsIcon = (props = {}) => filledSvg(props, "0 0 24 24", /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M12 12H19V16C19 16.6836 19.0011 17.2566 18.9629 17.7236C18.9238 18.2023 18.8382 18.6571 18.6182 19.0889C18.2826 19.7474 17.7474 20.2826 17.0889 20.6182C16.6571 20.8382 16.2023 20.9238 15.7236 20.9629C15.2566 21.0011 14.6836 21 14 21H8C7.31644 21 6.74342 21.0011 6.27637 20.9629C5.79772 20.9238 5.34294 20.8382 4.91114 20.6182C4.25262 20.2826 3.71739 19.7474 3.38184 19.0889C3.16183 18.6571 3.07623 18.2023 3.03711 17.7236C2.99895 17.2566 3 16.6836 3 16V10C3 9.31644 2.99895 8.74342 3.03711 8.27637C3.07623 7.79772 3.16182 7.34294 3.38184 6.91114C3.71739 6.25262 4.25262 5.71739 4.91114 5.38184C5.34294 5.16182 5.79772 5.07623 6.27637 5.03711C6.74342 4.99895 7.31644 5 8 5H12V12ZM5 16C5 16.7165 5.00032 17.1938 5.03028 17.5605C5.05924 17.9151 5.11072 18.0777 5.16309 18.1807C5.3069 18.4629 5.5371 18.6931 5.81934 18.8369C5.92228 18.8893 6.0849 18.9408 6.43946 18.9697C6.80616 18.9997 7.28347 19 8 19H10V14H5V16ZM12 19H14C14.7165 19 15.1938 18.9997 15.5605 18.9697C15.9151 18.9408 16.0777 18.8893 16.1807 18.8369C16.4629 18.6931 16.6931 18.4629 16.8369 18.1807C16.8893 18.0777 16.9408 17.9151 16.9697 17.5605C16.9997 17.1938 17 16.7165 17 16V14H12V19ZM8 7C7.28347 7 6.80616 7.00032 6.43946 7.03028C6.0849 7.05924 5.92228 7.11072 5.81934 7.16309C5.5371 7.3069 5.3069 7.5371 5.16309 7.81934C5.11072 7.92228 5.05924 8.0849 5.03028 8.43946C5.00032 8.80616 5 9.28347 5 10V12H10V7H8Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M17 2C17.6836 2 18.2566 1.99895 18.7236 2.03711C19.2023 2.07623 19.6571 2.16183 20.0889 2.38184C20.7474 2.71739 21.2826 3.25262 21.6182 3.91114C21.8382 4.34294 21.9238 4.79772 21.9629 5.27637C22.0011 5.74342 22 6.31644 22 7V10H14V2H17ZM16 8H20V7C20 6.28347 19.9997 5.80616 19.9697 5.43946C19.9408 5.0849 19.8893 4.92228 19.8369 4.81934C19.6931 4.5371 19.4629 4.3069 19.1807 4.16309C19.0777 4.11072 18.9151 4.05924 18.5605 4.03028C18.1938 4.00032 17.7165 4 17 4H16V8Z"
   }));
   var ConnectedAppsIcon = (props = {}) => svg(props, /* @__PURE__ */ React.createElement("rect", {
     x: "4",
@@ -5998,64 +6011,13 @@ ${root}::-webkit-scrollbar-thumb:hover {
       }
     });
   }
-  function menuSvg(className, filled, ...children) {
-    return /* @__PURE__ */ React.createElement("svg", {
-      width: "1rem",
-      height: "1rem",
-      viewBox: "0 0 24 24",
-      fill: filled ? "currentColor" : "none",
-      stroke: filled ? "none" : "currentColor",
-      strokeWidth: filled ? undefined : 2,
-      strokeLinecap: "round",
-      strokeLinejoin: "round",
-      className: className ?? "void-settings-menu-icon",
-      "aria-hidden": "true"
-    }, children);
-  }
-  function PluginsIcon(props = {}) {
-    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
-      ...props
-    });
-  }
-  function ConnectorsMenuIcon({ className } = {}) {
-    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
-      width: "1rem",
-      height: "1rem",
-      className: className ?? "void-settings-menu-icon"
-    });
-  }
-  function SkillsMenuIcon({ className } = {}) {
-    return menuSvg(className, false, /* @__PURE__ */ React.createElement("path", {
-      d: "M10 7C10 8.79493 8.54493 10.25 6.75 10.25C4.95507 10.25 3.5 8.79493 3.5 7C3.5 5.20507 4.95507 3.75 6.75 3.75C8.54493 3.75 10 5.20507 10 7Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M16.3732 4.34855C16.7528 3.65641 17.7472 3.65641 18.1268 4.34855L20.5514 8.7691C20.9169 9.43553 20.4347 10.25 19.6746 10.25H14.8254C14.0653 10.25 13.5831 9.43553 13.9486 8.7691L16.3732 4.34855Z"
-    }), /* @__PURE__ */ React.createElement("rect", {
-      x: "3.64844",
-      y: "13.75",
-      width: "6.2",
-      height: "6.2",
-      rx: "2"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M20.5 17C20.5 18.7949 19.0449 20.25 17.25 20.25C15.4551 20.25 14 18.7949 14 17C14 15.2051 15.4551 13.75 17.25 13.75C19.0449 13.75 20.5 15.2051 20.5 17Z"
-    }));
-  }
-  function BotsMenuIcon({ className } = {}) {
-    return menuSvg(className, true, /* @__PURE__ */ React.createElement("path", {
-      d: "M15 13H13V9H15V13Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M19 13H17V9H19V13Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      fillRule: "evenodd",
-      clipRule: "evenodd",
-      d: "M15 4C19.4183 4 23 7.58172 23 12C23 16.4183 19.4183 20 15 20C10.5817 20 7 16.4183 7 12C7 7.58172 10.5817 4 15 4ZM15 6C11.6863 6 9 8.68629 9 12C9 15.3137 11.6863 18 15 18C18.3137 18 21 15.3137 21 12C21 8.68629 18.3137 6 15 6Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M8.99902 4C8.08913 4.68362 7.3005 5.51941 6.66895 6.46875C4.51293 7.37847 3 9.5129 3 12C3 14.487 4.51312 16.6205 6.66895 17.5303C7.30047 18.4797 8.08911 19.3153 8.99902 19.999C4.58119 19.9985 1 16.418 1 12C1 7.58205 4.58119 4.00053 8.99902 4Z"
-    }));
-  }
+  var PlugIcon = grokSprite("plug");
+  var SkillsIcon = grokSprite("library");
+  var BotsIcon = grokSprite("grok-bot");
   var PLUGIN_TABS = [
-    { id: "connectors", name: "Connectors", icon: ConnectorsMenuIcon },
-    { id: "skills", name: "Skills", icon: SkillsMenuIcon },
-    { id: "bots", name: "Bots", icon: BotsMenuIcon }
+    { id: "connectors", name: "Connectors", icon: PlugIcon },
+    { id: "skills", name: "Skills", icon: SkillsIcon },
+    { id: "bots", name: "Bots", icon: BotsIcon }
   ];
   var pendingTab = null;
   var latchedTab = "";
@@ -6126,7 +6088,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
   function PluginsMenu() {
     const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
     return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
-      icon: PluginsIcon,
+      icon: PlugIcon,
       className: "void-settings-menu-icon",
       desktop
     }), "Connect Apps"), /* @__PURE__ */ React.createElement(Content, null, PLUGIN_TABS.map((tab) => {
@@ -6194,7 +6156,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var WrappedPluginsMenu = ErrorBoundary.wrap(PluginsMenu);
   var connectorsFlyout_default = definePlugin({
     name: NEW_NAME,
-    icon: PluginsIcon,
+    icon: PlugIcon,
     description: "Put Connect Apps, Skills, and Bots in the avatar menu.",
     authors: [Devs.p],
     tags: ["navigation"],
@@ -10021,9 +9983,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.32] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"c434f4f"}`
-    }, `(${"c434f4f"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.33] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5106f07"}`
+    }, `(${"5106f07"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -33607,63 +33569,6 @@ html.void-rt-open [data-sidebar="gap"] {
     fill: "currentColor",
     d: "m13.456 1.75.296.445c.832 1.247 1.198 1.654 1.558 1.818.321.146.82.172 2.242-.157l.54-.124 2.171 2.171-.124.54c-.328 1.423-.302 1.921-.156 2.243.164.36.57.726 1.817 1.557l.446.297v2.92l-.446.297c-1.247.831-1.653 1.198-1.817 1.558-.146.32-.172.82.156 2.242l.124.54-2.17 2.17-.54-.123c-1.423-.329-1.922-.303-2.243-.157-.36.164-.726.57-1.558 1.818l-.296.445h-2.92l-.297-.445c-.832-1.247-1.198-1.654-1.558-1.818-.321-.146-.82-.172-2.242.157l-.54.124-2.171-2.171.124-.54c.328-1.423.303-1.921.156-2.242-.164-.36-.57-.727-1.817-1.558l-.445-.297v-2.92l.445-.297c1.247-.831 1.653-1.198 1.817-1.557.147-.322.172-.82-.156-2.243l-.124-.54 2.17-2.17.541.123c1.422.329 1.92.303 2.242.157.36-.164.727-.57 1.558-1.818l.297-.445zm-1.853 2c-.637.93-1.249 1.699-2.092 2.083-.875.4-1.845.324-2.977.092l-.614.613c.232 1.132.308 2.102-.091 2.978-.385.842-1.153 1.454-2.083 2.09v.787c.93.636 1.698 1.248 2.083 2.091.399.876.323 1.845.091 2.977l.614.613c1.132-.232 2.102-.306 2.977.093.843.384 1.455 1.153 2.092 2.083h.785c.637-.93 1.249-1.699 2.092-2.083.875-.399 1.845-.325 2.976-.093l.614-.613c-.232-1.132-.306-2.101.093-2.977.384-.843 1.152-1.455 2.083-2.091v-.787c-.93-.636-1.7-1.248-2.083-2.09-.4-.876-.325-1.846-.093-2.978l-.614-.613c-1.131.232-2.1.307-2.976-.092-.843-.384-1.455-1.153-2.092-2.083zM14.001 12A2 2 0 1 0 10 12a2 2 0 0 0 4 0m2 0A4 4 0 1 1 8 12a4 4 0 0 1 8 0"
   }));
-  var PersonIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M12 12.25C16.4183 12.25 20 15.8317 20 20.25V22H4V20.25C4 15.8317 7.58172 12.25 12 12.25ZM12 14.25C8.77005 14.25 6.13694 16.8022 6.00586 20H17.9941C17.8631 16.8022 15.23 14.25 12 14.25Z",
-    fill: "currentColor"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M12 2C14.4853 2 16.5 4.01472 16.5 6.5C16.5 8.98528 14.4853 11 12 11C9.51472 11 7.5 8.98528 7.5 6.5C7.5 4.01472 9.51472 2 12 2ZM12 4C10.6193 4 9.5 5.11929 9.5 6.5C9.5 7.88071 10.6193 9 12 9C13.3807 9 14.5 7.88071 14.5 6.5C14.5 5.11929 13.3807 4 12 4Z",
-    fill: "currentColor"
-  }));
-  var PaintIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M16.2637 3.19188C17.5328 2.03183 19.4908 2.07547 20.707 3.29149C21.9244 4.50883 21.967 6.46969 20.8037 7.73876L20.8027 7.73778L12.4814 16.9038C12.2753 19.4758 10.1251 21.4985 7.5 21.4985H2.5V16.4985C2.50025 13.8741 4.52251 11.7229 7.09375 11.5161L16.2637 3.19188ZM19.293 4.70653C18.8329 4.24643 18.0921 4.2299 17.6123 4.66942L17.6084 4.67333L9.58594 11.9546C10.67 12.453 11.5441 13.3277 12.043 14.4116L19.3262 6.39012L19.3291 6.3872C19.7688 5.90754 19.7529 5.16673 19.293 4.70653ZM4.5 19.4985H7.5C9.15685 19.4985 10.5 18.1554 10.5 16.4985C10.4997 14.8419 9.15669 13.4985 7.5 13.4985C5.84331 13.4985 4.50026 14.8419 4.5 16.4985V19.4985Z"
-  }));
-  var VisitIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M21.5 14.5L19.2402 16.1201L22.0596 18.9404L19.9404 21.0596L17.1201 18.2402L15.5 20.5L13 12L21.5 14.5Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M18.5 2C20.433 2 22 3.567 22 5.5V11H20V5.5C20 4.67157 19.3284 4 18.5 4H5.5C4.67157 4 4 4.67157 4 5.5V16.5C4 17.3284 4.67157 18 5.5 18H12V20H5.5C3.567 20 2 18.433 2 16.5V5.5C2 3.567 3.567 2 5.5 2H18.5Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M10.4941 5.52441C10.7365 5.57269 10.9591 5.69148 11.1338 5.86621C11.3085 6.04094 11.4273 6.26352 11.4756 6.50586C11.5238 6.74833 11.4999 7.00011 11.4053 7.22852C11.3107 7.45691 11.1499 7.65171 10.9443 7.78906C10.7388 7.92641 10.4972 8 10.25 8C9.91848 8 9.60063 7.86821 9.36621 7.63379C9.13179 7.39937 9 7.08152 9 6.75C9 6.50277 9.07359 6.26123 9.21094 6.05566C9.34829 5.85012 9.54309 5.68933 9.77148 5.59473C9.99989 5.50012 10.2517 5.47618 10.4941 5.52441Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M6.75 5.5C7.08152 5.5 7.39937 5.63179 7.63379 5.86621C7.86821 6.10063 8 6.41848 8 6.75C8 6.99723 7.92641 7.23877 7.78906 7.44434C7.65171 7.64988 7.45691 7.81067 7.22852 7.90527C7.00011 7.99988 6.74833 8.02382 6.50586 7.97559C6.26352 7.92731 6.04094 7.80852 5.86621 7.63379C5.69148 7.45906 5.57269 7.23648 5.52441 6.99414C5.47618 6.75167 5.50012 6.49989 5.59473 6.27148C5.68933 6.04309 5.85012 5.84829 6.05566 5.71094C6.26123 5.57359 6.50277 5.5 6.75 5.5Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M13.75 5.5C14.0815 5.5 14.3994 5.63179 14.6338 5.86621C14.8682 6.10063 15 6.41848 15 6.75C15 6.99723 14.9264 7.23877 14.7891 7.44434C14.6517 7.64988 14.4569 7.81067 14.2285 7.90527C14.0001 7.99988 13.7483 8.02382 13.5059 7.97559C13.2635 7.92731 13.0409 7.80852 12.8662 7.63379C12.6915 7.45906 12.5727 7.23648 12.5244 6.99414C12.4762 6.75167 12.5001 6.49989 12.5947 6.27148C12.6893 6.04309 12.8501 5.84829 13.0557 5.71094C13.2612 5.57359 13.5028 5.5 13.75 5.5Z"
-  }));
-  var SlidersIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    d: "M21 7H10M14 17H3M20.25 17C20.25 18.6569 18.9069 20 17.25 20C15.5931 20 14.25 18.6569 14.25 17C14.25 15.3431 15.5931 14 17.25 14C18.9069 14 20.25 15.3431 20.25 17ZM9.75 7C9.75 8.65685 8.40685 10 6.75 10C5.09315 10 3.75 8.65685 3.75 7C3.75 5.34315 5.09315 4 6.75 4C8.40685 4 9.75 5.34315 9.75 7Z",
-    stroke: "currentColor",
-    strokeLinejoin: "round",
-    strokeWidth: "2"
-  }));
-  var PaymentsIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M12.9004 7.83984C13.0629 7.87413 13.2225 7.91676 13.376 7.96777C13.9053 8.14378 14.4688 8.45248 14.8301 8.95215L13.3711 10.0068C13.3148 9.92902 13.1447 9.78764 12.8086 9.67578C12.4889 9.56951 12.1071 9.52104 11.75 9.5459C11.3842 9.57147 11.1204 9.6686 10.9727 9.77734C10.6672 10.0025 10.7901 10.4692 11.0615 10.6533C11.3259 10.8325 11.7135 10.964 12.2734 11.1426C12.7633 11.2988 13.4271 11.5024 13.9502 11.8574C14.5404 12.2581 15.0008 12.8825 15.001 13.8027C15.001 14.6074 14.6157 15.2292 14.0645 15.6318C13.716 15.8862 13.3104 16.0473 12.9004 16.1426V17.5H11.1006V16.1924C10.8876 16.158 10.6783 16.1108 10.4785 16.0488C9.92674 15.8775 9.3358 15.5675 8.95996 15.0479L10.4189 13.9932C10.4778 14.0743 10.6555 14.2195 11.0117 14.3301C11.3503 14.4351 11.7577 14.4787 12.1426 14.4453C12.5359 14.411 12.8313 14.303 13.0029 14.1777C13.3128 13.9513 13.2321 13.5454 12.9395 13.3467C12.6751 13.1673 12.2868 13.0361 11.7266 12.8574C11.2368 12.7012 10.5739 12.4974 10.0508 12.1426C9.46027 11.7419 9.00013 11.1178 9 10.1973V10.1328C9 9.34586 9.36032 8.72911 9.9043 8.32812C10.2629 8.06395 10.6821 7.90612 11.1006 7.82129V6.5H12.9004V7.83984Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4Z",
-    fill: "currentColor"
-  }));
-  var LightningIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    d: "M5 14.25L14 4L13 9.75H19L10 20L11 14.25H5Z",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  }));
-  var DatabaseIcon = (props = {}) => grokSvg(props, /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M20.5 18C20.5 18.7778 20.1017 19.4178 19.5977 19.8945C19.0957 20.3692 18.423 20.7505 17.6748 21.0498C16.1726 21.6507 14.1657 22 12 22C9.83428 22 7.82743 21.6507 6.3252 21.0498C5.57697 20.7505 4.90428 20.3692 4.40234 19.8945C3.89825 19.4178 3.5 18.7778 3.5 18V5.5C3.5 4.71709 3.97721 4.13013 4.4707 3.74121C4.97543 3.34352 5.64416 3.02877 6.38086 2.7832C7.86497 2.28858 9.85158 2 12 2C14.1484 2 16.135 2.28858 17.6191 2.7832C18.3558 3.02877 19.0246 3.34352 19.5293 3.74121C20.0228 4.13013 20.5 4.71709 20.5 5.5V18ZM18.5 14.166C18.2396 14.3063 17.963 14.4345 17.6748 14.5498C16.1726 15.1507 14.1657 15.5 12 15.5C9.83428 15.5 7.82743 15.1507 6.3252 14.5498C6.03697 14.4345 5.76036 14.3063 5.5 14.166V18C5.5 18.0506 5.52142 18.2003 5.77637 18.4414C6.03343 18.6845 6.4595 18.9488 7.06836 19.1924C8.28059 19.6773 10.0236 20 12 20C13.9764 20 15.7194 19.6773 16.9316 19.1924C17.5405 18.9488 17.9666 18.6845 18.2236 18.4414C18.4786 18.2003 18.5 18.0506 18.5 18V14.166ZM5.5 11.5C5.5 11.5506 5.52142 11.7003 5.77637 11.9414C6.03343 12.1845 6.4595 12.4488 7.06836 12.6924C8.28059 13.1773 10.0236 13.5 12 13.5C13.9764 13.5 15.7194 13.1773 16.9316 12.6924C17.5405 12.4488 17.9666 12.1845 18.2236 11.9414C18.4786 11.7003 18.5 11.5506 18.5 11.5V7.86914C18.2226 7.99709 17.9273 8.11407 17.6191 8.2168C16.135 8.71142 14.1484 9 12 9C9.85158 9 7.86497 8.71142 6.38086 8.2168C6.07267 8.11407 5.77737 7.99709 5.5 7.86914V11.5ZM12 4C10.0065 4 8.24301 4.27056 7.0127 4.68066C6.39238 4.88745 5.96226 5.11212 5.70801 5.3125C5.59875 5.39864 5.5459 5.46254 5.51953 5.5C5.5459 5.53746 5.59875 5.60136 5.70801 5.6875C5.96226 5.88788 6.39238 6.11255 7.0127 6.31934C8.24301 6.72944 10.0065 7 12 7C13.9935 7 15.757 6.72944 16.9873 6.31934C17.6076 6.11255 18.0377 5.88788 18.292 5.6875C18.4008 5.60171 18.453 5.53752 18.4795 5.5C18.453 5.46248 18.4008 5.39829 18.292 5.3125C18.0377 5.11212 17.6076 4.88745 16.9873 4.68066C15.757 4.27056 13.9935 4 12 4Z",
-    fill: "currentColor"
-  }));
 
   // src/plugins/settingsFlyout/index.tsx
   var cl30 = classNameFactory("void-sf-");
@@ -33733,13 +33638,13 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   });
   var GROK_TABS = [
-    { id: "account", name: "Account", setting: "account", icon: PersonIcon },
-    { id: "appearance", name: "Appearance", setting: "appearance", icon: PaintIcon },
-    { id: "behavior", name: "Behavior", setting: "behavior", icon: VisitIcon },
-    { id: "personality", name: "Customize", setting: "customize", icon: SlidersIcon },
-    { id: "billing", name: "Billing", setting: "billing", icon: PaymentsIcon },
-    { id: "usage", name: "Usage", setting: "usage", icon: LightningIcon },
-    { id: "data", name: "Data Controls", setting: "data", icon: DatabaseIcon }
+    { id: "account", name: "Account", setting: "account", icon: grokSprite("account") },
+    { id: "appearance", name: "Appearance", setting: "appearance", icon: grokSprite("color-mode") },
+    { id: "behavior", name: "Behavior", setting: "behavior", icon: grokSprite("sliders") },
+    { id: "personality", name: "Customize", setting: "customize", icon: grokSprite("agent") },
+    { id: "billing", name: "Billing", setting: "billing", icon: grokSprite("credit-card") },
+    { id: "usage", name: "Usage", setting: "usage", icon: grokSprite("chart-bars") },
+    { id: "data", name: "Data Controls", setting: "data", icon: grokSprite("shield") }
   ];
   var VOIDPP_TABS = [
     { id: "voidpp_plugins_tab", name: "Plugins", setting: "plugins", icon: UnplugIcon },
@@ -36250,7 +36155,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   collapseThoughts_default.updatedAt = 1793175588000;
   completeToast_default.updatedAt = 1791666004000;
   composerOpacity_default.updatedAt = 1794562645000;
-  connectorsFlyout_default.updatedAt = 0;
+  connectorsFlyout_default.updatedAt = 1794745760000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customGreeting_default.updatedAt = 1794581758000;
   customInstructions_default.updatedAt = 1794679943000;

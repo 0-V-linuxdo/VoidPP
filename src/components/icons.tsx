@@ -45,6 +45,30 @@ const filledSvg = (props: IconProps, viewBox: string, ...children: React.ReactNo
     </svg>
 );
 
+/** Grok desktop sprite (`symbol#icon-xs-*`, viewBox 0 0 14 14). Same marks as settings nav Glyph. */
+export function GrokSpriteIcon({ name, className, width, height, size }: IconProps & { name: string }) {
+    const dim = width ?? height ?? size ?? 16;
+    return (
+        <svg
+            aria-hidden="true"
+            fill="currentColor"
+            width={dim}
+            height={dim}
+            viewBox="0 0 14 14"
+            className={className}
+        >
+            <use href={`#icon-xs-${name}`} />
+        </svg>
+    );
+}
+GrokSpriteIcon.displayName = "GrokSpriteIcon";
+
+export function grokSprite(name: string) {
+    const Icon = (props: IconProps = {}) => <GrokSpriteIcon name={name} {...props} />;
+    Icon.displayName = "GrokSpriteIcon";
+    return Icon;
+}
+
 export const BracesIcon = (props: IconProps = {}) =>
     svg(props,
         <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1" />,
