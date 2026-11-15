@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.23
+// @version      20261114.24
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.23] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.24] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -9999,9 +9999,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.23] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9a6471d"}`
-    }, `(${"9a6471d"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.24] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f1dcb54"}`
+    }, `(${"f1dcb54"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -30298,6 +30298,27 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     }
   });
 
+  // src/plugins/projectHubRecent/index.ts
+  var projectHubRecent_default = definePlugin({
+    name: "ProjectHubRecent",
+    icon: HistoryIcon,
+    description: "On a project's new-chat page, open the Recent tab instead of Suggested.",
+    authors: [Devs.p],
+    tags: ["navigation"],
+    enabledByDefault: true,
+    patches: [
+      {
+        find: ["desktop-shell.project-hub.suggested", "data-project-hub"],
+        group: true,
+        all: true,
+        replacement: {
+          match: /\(0,(\i)\.useState\)\("suggested"\)/,
+          replace: '(0,$1.useState)("recent")'
+        }
+      }
+    ]
+  });
+
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/recentTopics/styles.css
   registerStyle("recentTopics", `.void-rt-root,
 .void-rt-root:popover-open {
@@ -36164,7 +36185,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   messageStars_default.updatedAt = 1794560326000;
   messageTimestamps_default.updatedAt = 1794672837000;
   noBuildStarters_default.updatedAt = 1794560326000;
-  noComposerSuggestions_default.updatedAt = 0;
+  noComposerSuggestions_default.updatedAt = 1794738781000;
   noDictation_default.updatedAt = 1794678823000;
   noGrokBot_default.updatedAt = 1790943206000;
   noMergeSubscription_default.updatedAt = 1794737416000;
@@ -36172,6 +36193,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1794678267000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;
+  projectHubRecent_default.updatedAt = 0;
   recentTopics_default.updatedAt = 1794681716000;
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1794669091000;
@@ -36182,7 +36204,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   usageDisplay_default.updatedAt = 1793258018000;
   userQuotes_default.updatedAt = 1791226275000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [errorPageRetry_default.name]: errorPageRetry_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noComposerSuggestions_default.name]: noComposerSuggestions_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noMergeSubscription_default.name]: noMergeSubscription_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [errorPageRetry_default.name]: errorPageRetry_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noComposerSuggestions_default.name]: noComposerSuggestions_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noMergeSubscription_default.name]: noMergeSubscription_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [projectHubRecent_default.name]: projectHubRecent_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;

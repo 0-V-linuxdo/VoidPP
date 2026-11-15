@@ -27,6 +27,7 @@
 | <img src="https://api.iconify.design/lucide/bot-off.svg?color=%238b949e" width="16" height="16" alt=""> NoGrokBot | 开 | 隐藏右上角 Grok Bot 推广按钮。 |
 | <img src="https://api.iconify.design/lucide/circle-x.svg?color=%238b949e" width="16" height="16" alt=""> NoMergeSubscription | 开 | 隐藏右下角合并订阅卡片（Grok / Grok Bot / Cursor / X 统一账号）。 |
 | <img src="https://api.iconify.design/lucide/sparkles.svg?color=%238b949e" width="16" height="16" alt=""> NoComposerSuggestions | 开 | 隐藏首页输入框下方的推荐（创建图像、查邮件等）。 |
+| <img src="https://api.iconify.design/lucide/history.svg?color=%238b949e" width="16" height="16" alt=""> ProjectHubRecent | 开 | 项目 New chat 页默认打开 Recent，而不是 Suggested。 |
 | <img src="https://api.iconify.design/lucide/user-round-x.svg?color=%238b949e" width="16" height="16" alt=""> NoSidebarIdentity | 开 | 分开开关，隐藏侧栏和账号菜单里的用户名 / 邮箱。头像保留，账号菜单仍可打开。 |
 | <img src="https://api.iconify.design/lucide/user-round-pen.svg?color=%238b949e" width="16" height="16" alt=""> CustomSidebarIdentity | 关 | 替换侧栏头像和显示名。留空则保持官方。Avatar Url 支持粘贴图片或填 `https://` / `data:image`，圆形台可拖拽/缩放裁切。`avatarSize` 可调展开侧栏头像直径（24–64px，默认 40）。折叠轨仍为 32。可选 `applyToMenu` 同时改账号下拉顶栏。 |
 | <img src="https://api.iconify.design/lucide/app-window.svg?color=%238b949e" width="16" height="16" alt=""> ChatStateFavicons | 开 | 标签页图标反映会话状态（streaming / done / ready / error），五种叠层样式。 |
