@@ -96,19 +96,34 @@ export default () => U.definePlugin({
     selfFallback: { renderChatBar: () => null },
     patches: [
         {
-            find: '"data-query-bar-mode-select":!0',
-            replacement: {
-                match: /("data-query-bar-mode-select":!0,[^]{0,900}?\},"mode-select"\),)/,
-                replace: '$1$self.renderChatBar("chat"),',
-            },
+            find: "data-query-bar-mode-select",
+            all: true,
+            replacement: [
+                {
+                    // Desktop inline row: trailing cell is dictate+send. Same module as
+                    // BetterModeSelect. The old `"data-query-bar-mode-select":!0` find is gone
+                    // (`:""` + compiler temps); a comma after mode-select is discarded.
+                    match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\(\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
+                    replace: "$1[$self.renderChatBar(\"chat\"),$2]$3",
+                },
+                {
+                    match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
+                    replace: "[$&,$self.renderChatBar(\"chat\")]",
+                    noWarn: true,
+                },
+                {
+                    match: /style:\i(?:\|\|\i)*\?void 0:(\{paddingInlineEnd:\i\})/,
+                    replace: "style:$1",
+                    noWarn: true,
+                },
+            ],
         },
         {
-            // Imagine 页面的分块只在进入 Imagine 时加载,其他页面找不到属正常
-            find: '"ImagineToolbar",0,',
+            find: "data-unified-toolbar",
             noWarn: true,
             replacement: {
-                match: /(\(0,\i\.jsxs\)\(\i,\{collapsed:\i,children:\[(?:\i,){3,15}\i)\]\}\)/,
-                replace: '$1,$self.renderChatBar("imagine")]})',
+                match: /(trailingGutterPx:\i,tight:\i,children:\[[^\]]{0,120})\]/,
+                replace: "$1,$self.renderChatBar(\"imagine\")]",
             },
         },
     ],
