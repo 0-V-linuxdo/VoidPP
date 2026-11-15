@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { React } from "@turbopack/common/react";
+import { createElement, React } from "@turbopack/common/react";
+import { findComponentByCode } from "@turbopack/turbopack";
 
 export interface IconProps {
     size?: number | string;
@@ -45,21 +46,32 @@ const filledSvg = (props: IconProps, viewBox: string, ...children: React.ReactNo
     </svg>
 );
 
-/** Grok desktop sprite (`symbol#icon-xs-*`, viewBox 0 0 14 14). Same marks as settings nav Glyph. */
+/** Grok desktop Glyph (`name` → `#icon-xs-*`). Do not `<use href>` those ids — the sprite sheet is lazy and the symbol is missing until that glyph has mounted. */
+let grokGlyph: ((props: { name: string; size?: number; className?: string }) => React.ReactNode) | null = null;
+
+function grokGlyphComponent() {
+    if (grokGlyph) return grokGlyph;
+    try {
+        const hit = findComponentByCode("mirrorInRtl");
+        if (typeof hit === "function") grokGlyph = hit as typeof grokGlyph;
+    } catch {}
+    return grokGlyph;
+}
+
 export function GrokSpriteIcon({ name, className, width, height, size }: IconProps & { name: string }) {
-    const dim = width ?? height ?? size ?? 16;
-    return (
-        <svg
-            aria-hidden="true"
-            fill="currentColor"
-            width={dim}
-            height={dim}
-            viewBox="0 0 14 14"
-            className={className}
-        >
-            <use href={`#icon-xs-${name}`} />
-        </svg>
-    );
+    const Glyph = grokGlyphComponent();
+    if (!Glyph || !createElement) return null;
+    const px = typeof width === "number" ? width
+        : typeof height === "number" ? height
+            : typeof size === "number" ? size
+                : null;
+    // Glyph `size` is 0.25rem steps (`4` → 16px). PluginCard passes 14px; MenuGlyphIcon passes 16px.
+    const glyphSize = px == null ? undefined : px <= 8 ? px : px / 4;
+    return createElement(Glyph, {
+        name,
+        ...(className ? { className } : {}),
+        ...(glyphSize != null ? { size: glyphSize } : {}),
+    });
 }
 GrokSpriteIcon.displayName = "GrokSpriteIcon";
 

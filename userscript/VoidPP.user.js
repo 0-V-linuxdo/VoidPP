@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.33
+// @version      20261114.34
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.33] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.34] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -2737,18 +2737,28 @@ ${sourceUrl}`;
     className: props.className,
     "aria-hidden": "true"
   }, children);
+  var grokGlyph = null;
+  function grokGlyphComponent() {
+    if (grokGlyph)
+      return grokGlyph;
+    try {
+      const hit = findComponentByCode("mirrorInRtl");
+      if (typeof hit === "function")
+        grokGlyph = hit;
+    } catch {}
+    return grokGlyph;
+  }
   function GrokSpriteIcon({ name, className, width, height, size }) {
-    const dim = width ?? height ?? size ?? 16;
-    return /* @__PURE__ */ React.createElement("svg", {
-      "aria-hidden": "true",
-      fill: "currentColor",
-      width: dim,
-      height: dim,
-      viewBox: "0 0 14 14",
-      className
-    }, /* @__PURE__ */ React.createElement("use", {
-      href: `#icon-xs-${name}`
-    }));
+    const Glyph = grokGlyphComponent();
+    if (!Glyph || !createElement)
+      return null;
+    const px = typeof width === "number" ? width : typeof height === "number" ? height : typeof size === "number" ? size : null;
+    const glyphSize = px == null ? undefined : px <= 8 ? px : px / 4;
+    return createElement(Glyph, {
+      name,
+      ...className ? { className } : {},
+      ...glyphSize != null ? { size: glyphSize } : {}
+    });
   }
   GrokSpriteIcon.displayName = "GrokSpriteIcon";
   function grokSprite(name) {
@@ -9983,9 +9993,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.33] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"5106f07"}`
-    }, `(${"5106f07"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.34] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"b224aed"}`
+    }, `(${"b224aed"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36155,7 +36165,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   collapseThoughts_default.updatedAt = 1793175588000;
   completeToast_default.updatedAt = 1791666004000;
   composerOpacity_default.updatedAt = 1794562645000;
-  connectorsFlyout_default.updatedAt = 1794745760000;
+  connectorsFlyout_default.updatedAt = 1794747301000;
   consoleJanitor_default.updatedAt = 1787789817000;
   customGreeting_default.updatedAt = 1794581758000;
   customInstructions_default.updatedAt = 1794679943000;
@@ -36180,7 +36190,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   projectHubRecent_default.updatedAt = 1794740506000;
   recentTopics_default.updatedAt = 1794681716000;
   responseNotification_default.updatedAt = 1790093417000;
-  settingsFlyout_default.updatedAt = 1794744374000;
+  settingsFlyout_default.updatedAt = 1794747301000;
   skillBlocker_default.updatedAt = 1791758395000;
   stableComposer_default.updatedAt = 1794672837000;
   starry_default.updatedAt = 1787870966000;
