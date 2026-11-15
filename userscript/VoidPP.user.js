@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.26
+// @version      20261114.27
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.26] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.27] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7547,6 +7547,7 @@ button .void-info-hint {
     display: block;
     flex-shrink: 0;
     color: inherit;
+    pointer-events: none;
 }
 
 button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-settings-tab^="voidpp_"] {
@@ -10022,9 +10023,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.26] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"a580090"}`
-    }, `(${"a580090"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"838980c"}`
+    }, `(${"838980c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10111,6 +10112,30 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       if (!tab)
         return null;
       return createElement(tab.icon, { width: 18, height: 18, className: cl17("nav-icon") });
+    },
+    _selectNavTab(id, setTab) {
+      if (String(id).startsWith("voidpp_")) {
+        const hook = SettingsDialogStore.useSettingsDialogStore;
+        const openTab = hook && typeof hook.getState === "function" ? hook.getState().openTab : undefined;
+        if (typeof openTab === "function") {
+          openTab(id);
+          return;
+        }
+      }
+      setTab(id);
+    },
+    _resolveShownTab(opts) {
+      const hook = SettingsDialogStore.useSettingsDialogStore;
+      const tab = hook && typeof hook.getState === "function" ? hook.getState().tab : undefined;
+      if (String(tab || "").startsWith("voidpp_"))
+        return tab;
+      if (String(opts.requestedTab || "").startsWith("voidpp_"))
+        return opts.requestedTab;
+      if (opts.open && opts.isHosted(opts.normalized))
+        return opts.normalized;
+      if (opts.open || opts.hostedSection == null)
+        return opts.activeTab;
+      return opts.hostedSection;
     },
     _tabEntries() {
       return getVisibleTabs().map((t) => ({
@@ -10208,6 +10233,26 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
         replacement: {
           match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.X\[(\i)\.id\]\}\)/g,
           replace: "leading:$self._navLeading($4.id)||(0,$1.jsx)($2.f,{name:$3.X[$4.id]})"
+        }
+      },
+      {
+        find: "desktop-shell.settings.title",
+        replacement: [
+          {
+            match: /let (\i)=\(0,(\i)\.z\)\((\i)\);return (\i)&&\(0,(\i)\.K\)\(\1\)\?\1:\4\|\|null===(\i)\?(\i):\6/,
+            replace: "let $1=(0,$2.z)($3);return $self._resolveShownTab({activeTab:$7,open:$4,requestedTab:$3,hostedSection:$6,normalized:$1,isHosted:$5.K})"
+          },
+          {
+            match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\((\i)\);(\i)&&\1!==\4&&\2\(\4\)([\s\S]{0,2200}"desktop-shell\.settings\.title","Settings"[\s\S]{0,500}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\8\)\)([\s\S]{0,250}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\13\)\)/,
+            replace: "[$1,$2]=(0,$3.useState)($4);$5&&$1!==$4&&$2($4)$6$7=$8=>$9(()=>$10($8))$11$12=$13=>$14(()=>{$self._selectNavTab($13,$15);$2($13);})"
+          }
+        ]
+      },
+      {
+        find: "team-plugin-marketplaces",
+        replacement: {
+          match: /(\["home","account","appearance","notifications","personality","grok-bot","data","billing","dev","dev-flags","behavior","usage")/,
+          replace: '$1,"voidpp_plugins_tab","voidpp_themes_tab","voidpp_css_tab","voidpp_experiments_tab"'
         }
       },
       {
@@ -36188,7 +36233,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794672837000;
-  settings_default.updatedAt = 1794741224000;
+  settings_default.updatedAt = 1794741474000;
   chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794560326000;
   autoCollapse_default.updatedAt = 1794557302000;

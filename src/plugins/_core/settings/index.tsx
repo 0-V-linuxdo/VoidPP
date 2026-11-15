@@ -204,6 +204,37 @@ export default definePlugin({
         return createElement(tab.icon, { width: 18, height: 18, className: cl("nav-icon") });
     },
 
+    _selectNavTab(id: string, setTab: (id: string) => void) {
+        if (String(id).startsWith("voidpp_")) {
+            const hook = SettingsDialogStore.useSettingsDialogStore;
+            const openTab = hook && typeof hook.getState === "function"
+                ? (hook.getState() as { openTab?: (tab: string) => void }).openTab
+                : undefined;
+            if (typeof openTab === "function") {
+                openTab(id);
+                return;
+            }
+        }
+        setTab(id);
+    },
+
+    _resolveShownTab(opts: {
+        activeTab: string;
+        open: boolean;
+        requestedTab: string;
+        hostedSection: string | null;
+        normalized: string;
+        isHosted: (id: string) => boolean;
+    }) {
+        const hook = SettingsDialogStore.useSettingsDialogStore;
+        const tab = hook && typeof hook.getState === "function" ? hook.getState().tab : undefined;
+        if (String(tab || "").startsWith("voidpp_")) return tab;
+        if (String(opts.requestedTab || "").startsWith("voidpp_")) return opts.requestedTab;
+        if (opts.open && opts.isHosted(opts.normalized)) return opts.normalized;
+        if (opts.open || opts.hostedSection == null) return opts.activeTab;
+        return opts.hostedSection;
+    },
+
     _tabEntries() {
         return getVisibleTabs().map(t => ({
             id: t.id,
@@ -298,6 +329,26 @@ export default definePlugin({
             replacement: {
                 match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.X\[(\i)\.id\]\}\)/g,
                 replace: "leading:$self._navLeading($4.id)||(0,$1.jsx)($2.f,{name:$3.X[$4.id]})",
+            },
+        },
+        {
+            find: "desktop-shell.settings.title",
+            replacement: [
+                {
+                    match: /let (\i)=\(0,(\i)\.z\)\((\i)\);return (\i)&&\(0,(\i)\.K\)\(\1\)\?\1:\4\|\|null===(\i)\?(\i):\6/,
+                    replace: "let $1=(0,$2.z)($3);return $self._resolveShownTab({activeTab:$7,open:$4,requestedTab:$3,hostedSection:$6,normalized:$1,isHosted:$5.K})",
+                },
+                {
+                    match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\((\i)\);(\i)&&\1!==\4&&\2\(\4\)([\s\S]{0,2200}"desktop-shell\.settings\.title","Settings"[\s\S]{0,500}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\8\)\)([\s\S]{0,250}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\13\)\)/,
+                    replace: "[$1,$2]=(0,$3.useState)($4);$5&&$1!==$4&&$2($4)$6$7=$8=>$9(()=>$10($8))$11$12=$13=>$14(()=>{$self._selectNavTab($13,$15);$2($13);})",
+                },
+            ],
+        },
+        {
+            find: "team-plugin-marketplaces",
+            replacement: {
+                match: /(\["home","account","appearance","notifications","personality","grok-bot","data","billing","dev","dev-flags","behavior","usage")/,
+                replace: '$1,"voidpp_plugins_tab","voidpp_themes_tab","voidpp_css_tab","voidpp_experiments_tab"',
             },
         },
         {
