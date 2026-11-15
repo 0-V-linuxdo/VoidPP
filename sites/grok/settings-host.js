@@ -1,6 +1,7 @@
 // Inject Void++ settings pages into Grok's desktop dialog. Patches match 20261114.29–.30.
 import { U, h, Fragment, ErrorBoundary, useSubscription } from "./u.js";
 import { common, whenCommon } from "./common.js";
+import { accountMenuParts, accountMenuSelect } from "./menu-kit.js";
 import { UnplugIcon, PaletteIcon, BracesIcon, TestTubeIcon, BellIcon, Settings2Icon, FileDownIcon, RotateCcwIcon, VoidPPIcon } from "./lucide.js";
 
 const GROUP_ID = "voidpp";
@@ -146,25 +147,29 @@ const subscribeMenu = fn => {
     return () => { off(); U.SettingsStore.removeChangeListener?.(ENTRY_PATH, fn); };
 };
 
+function glyph(Icon) {
+    return Icon ? h(Icon, { width: 16, height: 16 }) : null;
+}
+
 function VoidPPMenu() {
     useSubscription(subscribeMenu);
     if (!entryShown()) return null;
-    const { DropdownMenuSub: Sub, DropdownMenuSubTrigger: Trigger, DropdownMenuSubContent: Content, DropdownMenuItem: Item } = common;
+    const menu = accountMenuParts();
+    const { Sub, Trigger, Content, Item } = menu;
     if (!Sub || !Trigger || !Content || !Item) return null;
     const list = pluginsWithSettings();
-    const icon = Icon => h("span", { className: "inline-flex me-2 text-fg-secondary" }, h(Icon, { size: 16, width: 16, height: 16 }));
     const pageItem = key => {
         const p = pages().find(x => x.key === key);
-        return p && h(Item, { key, onClick: () => open({ tab: key }), "data-uspp-menu": key }, icon(lucideFor(p)), p.label);
+        return p && h(Item, { key, ...accountMenuSelect(menu.desktop, () => open({ tab: key })), "data-uspp-menu": key }, glyph(lucideFor(p)), p.label);
     };
     return h(Sub, { "data-uspp-avatar-menu": "" },
-        h(Trigger, { "data-uspp-menu": "root" }, icon(VoidPPIcon), groupLabel()),
+        h(Trigger, { "data-uspp-menu": "root" }, glyph(VoidPPIcon), groupLabel()),
         h(Content, null,
             list.length > 0 && h(Sub, null,
-                h(Trigger, { "data-uspp-menu": "plugins" }, icon(UnplugIcon), "Plugins"),
+                h(Trigger, { "data-uspp-menu": "plugins" }, glyph(UnplugIcon), "Plugins"),
                 h(Content, { "data-uspp-menu-list": "plugins", style: { maxHeight: "min(60vh, 420px)", overflowY: "auto" } },
-                    list.map(p => h(Item, { key: p.name, onClick: () => open({ plugin: p }), "data-uspp-menu-plugin": p.name },
-                        h(ErrorBoundary, { fallback: icon(UnplugIcon) }, icon(p.icon || UnplugIcon)), p.name)))),
+                    list.map(p => h(Item, { key: p.name, ...accountMenuSelect(menu.desktop, () => open({ plugin: p })), "data-uspp-menu-plugin": p.name },
+                        h(ErrorBoundary, { fallback: glyph(UnplugIcon) }, glyph(p.icon || UnplugIcon)), p.name)))),
             pageItem("themes"),
             pageItem("quickCss"),
             pageItem("experiments"),

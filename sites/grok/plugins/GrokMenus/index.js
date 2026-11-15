@@ -1,6 +1,7 @@
 // 三个菜单注入点:conversationMenu(侧栏会话)、messageMenu(消息更多操作)、userMenu(头像菜单)
 import { U, h, Fragment, useRef, useState, useLayoutEffect, useSubscription, ErrorBoundary } from "../../u.js";
 import { common, whenCommon } from "../../common.js";
+import { accountMenuParts, accountMenuSelect } from "../../menu-kit.js";
 
 const NAME = "GrokMenus";
 export const MENU_SLOTS = { conversation: "conversationMenu", message: "messageMenu", user: "userMenu" };
@@ -19,18 +20,25 @@ function run(def, ctx) {
 }
 
 /** 渲染成 Grok 下拉菜单项 */
-function DropdownItems({ location, ctx, getCtx }) {
+function DropdownItems({ location, ctx, getCtx, menu }) {
     useSubscription(subscribeContextMenu);
     const items = getContextMenuItems(location);
     if (!items.length) return null;
-    const Item = common.DropdownMenuItem;
+    const parts = menu || accountMenuParts();
+    const Item = parts.Item || common.DropdownMenuItem;
+    const desktop = menu ? false : !!parts.desktop;
+    const runProps = run => (menu ? { onSelect: run, onClick: run } : accountMenuSelect(desktop, run));
     return h(Fragment, null, items.map(def => {
         const c = () => (getCtx ? getCtx() : ctx) ?? {};
         let el;
         if (def.render) el = h(def.render, c());
-        else if (Item) el = h(Item, { onClick: () => run(def, c()), "data-uspp-menu-item": def.id },
-            def.icon != null && h("span", { className: "inline-flex me-2 text-fg-secondary" }, iconNode(def.icon)), def.label);
-        else el = h("div", { role: "menuitem", tabIndex: -1, className: "uspp-btn uspp-btn-ghost", onClick: () => run(def, c()) }, iconNode(def.icon), def.label);
+        else if (Item) {
+            const Icon = typeof def.icon === "function" ? def.icon : null;
+            const leading = Icon
+                ? (desktop ? h(Icon, { width: 16, height: 16 }) : h("span", { className: "inline-flex me-2 text-fg-secondary" }, iconNode(def.icon)))
+                : iconNode(def.icon);
+            el = h(Item, { ...runProps(() => run(def, c())), "data-uspp-menu-item": def.id }, leading, def.label);
+        } else el = h("div", { role: "menuitem", tabIndex: -1, className: "uspp-btn uspp-btn-ghost", onClick: () => run(def, c()) }, iconNode(def.icon), def.label);
         return h(ErrorBoundary, { key: def.id, fallback: null, label: `menu:${def.id}` }, el);
     }));
 }
@@ -151,36 +159,56 @@ export default () => U.definePlugin({
     },
     patches: [
         {
-            // 头像菜单:Sign Out 之前
-            // 翻译词典模块里也有这个字符串,用第二个特征排除
-            find: ['"user-dropdown.sign-out"', ".SignoutIcon"],
-            replacement: {
-                match: /(\(0,\i\.jsxs\)\(\i\.DropdownMenuItem,\{onClick:\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
-                replace: "$self.renderUserItems(),$1",
-            },
+            // Desktop account menu: kit Item, label `Sign out`. Radix SignoutIcon is gone.
+            find: '"user-dropdown.upgrade","Upgrade plan"',
+            all: true,
+            replacement: [
+                {
+                    match: /(?=\(0,\i\.jsxs?\)\(\i\.r,\{on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i(?:\.\i)?,\{size:4\}\)\}\),\i\("user-dropdown\.sign-out","Sign Out"\)\))/,
+                    replace: "$self.renderUserItems(),",
+                    noWarn: true,
+                },
+                {
+                    match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
+                    replace: "$self.renderUserItems(),$1",
+                    noWarn: true,
+                },
+                {
+                    match: /(?<=\("Sign out","Sign out"\)[\s\S]{0,250})(\(0,(\i)\.jsxs\)\(\i(?:\.\i)?\.Item,\{onClick:\i,children:\[[^\]]+\]\}\))/,
+                    replace: "(0,$2.jsx)($2.Fragment,{children:[$self.renderUserItems(),$1]})",
+                },
+            ],
         },
         {
-            // 侧栏会话的"更多"菜单和右键菜单共用 menuExtras
             find: '"ConversationItem",0,',
+            noWarn: true,
             replacement: {
                 match: /(\.AppSidebarRow,\{\.\.\.(\i),)(extraRight:)/,
                 replace: "$1menuExtras:$self.conversationExtras($2.id,$2.menuExtras),$3",
             },
         },
         {
-            // 消息的"更多操作"下拉菜单末尾
+            // Desktop message ⋮: kit Menu children [actions, extra, extra, hash].
+            find: '"more-actions-dropdown"',
+            all: true,
+            replacement: [
+                {
+                    match: /(\(0,\i\.jsx\)\(\i,\{response:(\i)\}\)[\s\S]{0,800}?SHOW_MODEL_HASH_DEBUG[\s\S]{0,800}?children:\[)(\i,\i,\i,\i)(\]\})/,
+                    replace: "$1$3,$self.renderMessageItems($2)$4",
+                },
+                {
+                    match: /"more-action\.copy-model-hash".{0,80}slice\(0,5\)\}\}\)\}\)/,
+                    replace: "$&,$self.renderMessageItems(arguments[0].response)",
+                    noWarn: true,
+                },
+            ],
+        },
+        {
             find: ['"response-action.more-actions"', "openReportDialog"],
+            noWarn: true,
             replacement: {
                 match: /(\(0,\i\.jsx\)\(\i\.DropdownMenuContent,\{align:"end",children:)(\(0,\i\.jsx\)\(\i\.DropdownMenuItem,\{onClick:\(\)=>\{\i\.useReportStore\.getState\(\)\.openReportDialog\(\{responseId:(\i)\.responseId[^]*?\("response-action\.report","Report"\)\}\))\}\)/,
                 replace: "$1$self.messageMenuChildren($2,$3)})",
-            },
-        },
-        {
-            // 列表版"更多操作"菜单(举报、导出 PDF、朗读等按配置生成)
-            find: ['"response-action.more-actions"', '"more-actions-dropdown"'],
-            replacement: {
-                match: /(\(0,\i\.jsxs\)\(\i\.DropdownMenuContent,\{side:"bottom",align:"end",[^]{0,300}?children:\[)(\i\.map\(\((\i),\i\)=>[^]{0,600}?responseId:(\i)\.responseId)/,
-                replace: "$1$self.renderMessageItems($4),$2",
             },
         },
     ],
@@ -200,7 +228,7 @@ export default () => U.definePlugin({
     start() {
         offLost = U.onPatchBypassed(NAME, results => {
             for (const r of results) {
-                if (r.find.includes("sign-out")) enableFallback("user");
+                if (r.find.includes("sign-out") || r.find.includes("upgrade") || r.find.includes("Upgrade plan")) enableFallback("user");
                 else if (r.find.includes("ConversationItem")) enableFallback("conversation");
                 else if (r.find.includes("more-actions")) enableFallback("message");
             }

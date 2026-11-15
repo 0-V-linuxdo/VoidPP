@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.43
+// @version      20261114.44
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.43" : "0.0.0";
+  var VERSION = true ? "20261114.44" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -1732,6 +1732,75 @@ try {
     attach2("Message", watchMessages);
   }
 
+  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/sites/grok/menu-kit.js
+  function asMenuFn(v3) {
+    if (typeof v3 === "function") return v3;
+    if (v3 && typeof v3 === "object" && ("render" in v3 || "$$typeof" in v3)) return v3;
+    return null;
+  }
+  function fnSrc(fn2) {
+    try {
+      return Function.prototype.toString.call(fn2);
+    } catch {
+      return "";
+    }
+  }
+  function readAccountMenuKit(mod) {
+    if (!mod || typeof mod !== "object") return null;
+    const buckets = [mod];
+    for (const key of Object.getOwnPropertyNames(mod)) {
+      try {
+        buckets.push(mod[key]);
+      } catch {
+      }
+    }
+    for (const obj of buckets) {
+      if (!obj || typeof obj !== "object" || !("SubmenuTrigger" in obj)) continue;
+      const trigger = asMenuFn(obj.SubmenuTrigger);
+      if (!trigger) continue;
+      const src = fnSrc(trigger);
+      if (!src.includes("Menu.SubmenuTrigger") || src.includes("__scope")) continue;
+      const item = asMenuFn(obj.Item);
+      const content = asMenuFn(obj.SubmenuContent);
+      const root2 = asMenuFn(obj.SubmenuRoot);
+      if (!item || !content || !root2 || !fnSrc(item).includes("Menu.Item")) continue;
+      const mapped = { Sub: root2, Trigger: trigger, Content: content, Item: item, desktop: true };
+      const sep = asMenuFn(obj.Separator);
+      if (sep) mapped.Separator = sep;
+      return mapped;
+    }
+    return null;
+  }
+  function accountMenuParts() {
+    try {
+      const cache3 = typeof U3.getModuleCache === "function" ? U3.getModuleCache() : null;
+      if (cache3) {
+        for (const [, exp] of cache3) {
+          const hit = readAccountMenuKit(exp);
+          if (hit) return hit;
+        }
+      }
+      const ids = Object.keys(U3.search?.("Menu.SubmenuTrigger") || {});
+      for (const id of ids) {
+        const mod = typeof U3.requireModule === "function" ? U3.requireModule(Number(id)) : null;
+        const hit = readAccountMenuKit(mod);
+        if (hit) return hit;
+      }
+    } catch {
+    }
+    return {
+      Sub: common.DropdownMenuSub,
+      Trigger: common.DropdownMenuSubTrigger,
+      Content: common.DropdownMenuSubContent,
+      Item: common.DropdownMenuItem,
+      Separator: common.DropdownMenuSeparator,
+      desktop: false
+    };
+  }
+  function accountMenuSelect(desktop, run2) {
+    return desktop ? { onClick: run2 } : { onSelect: run2 };
+  }
+
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/sites/grok/lucide.js
   function svg(props = {}, ...children) {
     return h4("svg", {
@@ -1804,6 +1873,15 @@ try {
     { ...props, strokeWidth: props.strokeWidth ?? 2.15 },
     path("M2.2 7.4 L8.4 20.2 L13.03 11.30")
   );
+  UnplugIcon.displayName = "UnplugIcon";
+  PaletteIcon.displayName = "PaletteIcon";
+  BracesIcon.displayName = "BracesIcon";
+  TestTubeIcon.displayName = "TestTubeIcon";
+  BellIcon.displayName = "BellIcon";
+  Settings2Icon.displayName = "Settings2Icon";
+  FileDownIcon.displayName = "FileDownIcon";
+  RotateCcwIcon.displayName = "RotateCcwIcon";
+  VoidPPIcon.displayName = "VoidPPIcon";
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/sites/grok/settings-host.js
   var GROUP_ID = "voidpp";
@@ -1926,35 +2004,38 @@ try {
       U3.SettingsStore.removeChangeListener?.(ENTRY_PATH, fn2);
     };
   };
+  function glyph(Icon) {
+    return Icon ? h4(Icon, { width: 16, height: 16 }) : null;
+  }
   function VoidPPMenu() {
     useSubscription2(subscribeMenu);
     if (!entryShown()) return null;
-    const { DropdownMenuSub: Sub, DropdownMenuSubTrigger: Trigger, DropdownMenuSubContent: Content, DropdownMenuItem: Item } = common;
+    const menu2 = accountMenuParts();
+    const { Sub, Trigger, Content, Item } = menu2;
     if (!Sub || !Trigger || !Content || !Item) return null;
     const list2 = pluginsWithSettings();
-    const icon = (Icon) => h4("span", { className: "inline-flex me-2 text-fg-secondary" }, h4(Icon, { size: 16, width: 16, height: 16 }));
     const pageItem = (key) => {
       const p3 = pages().find((x4) => x4.key === key);
-      return p3 && h4(Item, { key, onClick: () => open({ tab: key }), "data-uspp-voidpp-menu": key }, icon(lucideFor(p3)), p3.label);
+      return p3 && h4(Item, { key, ...accountMenuSelect(menu2.desktop, () => open({ tab: key })), "data-uspp-voidpp-menu": key }, glyph(lucideFor(p3)), p3.label);
     };
     return h4(
       Sub,
       { "data-uspp-voidpp-avatar-menu": "" },
-      h4(Trigger, { "data-uspp-voidpp-menu": "root" }, icon(VoidPPIcon), groupLabel()),
+      h4(Trigger, { "data-uspp-voidpp-menu": "root" }, glyph(VoidPPIcon), groupLabel()),
       h4(
         Content,
         null,
         list2.length > 0 && h4(
           Sub,
           null,
-          h4(Trigger, { "data-uspp-voidpp-menu": "plugins" }, icon(UnplugIcon), "Plugins"),
+          h4(Trigger, { "data-uspp-voidpp-menu": "plugins" }, glyph(UnplugIcon), "Plugins"),
           h4(
             Content,
             { "data-uspp-voidpp-menu-list": "plugins", style: { maxHeight: "min(60vh, 420px)", overflowY: "auto" } },
             list2.map((p3) => h4(
               Item,
-              { key: p3.name, onClick: () => open({ plugin: p3 }), "data-uspp-voidpp-menu-plugin": p3.name },
-              h4(ErrorBoundary2, { fallback: icon(UnplugIcon) }, icon(p3.icon || UnplugIcon)),
+              { key: p3.name, ...accountMenuSelect(menu2.desktop, () => open({ plugin: p3 })), "data-uspp-voidpp-menu-plugin": p3.name },
+              h4(ErrorBoundary2, { fallback: glyph(UnplugIcon) }, glyph(p3.icon || UnplugIcon)),
               p3.name
             ))
           )
@@ -2175,22 +2256,23 @@ try {
       log2().error(`菜单项 ${def2.id} 出错`, e3);
     }
   }
-  function DropdownItems({ location: location2, ctx, getCtx: getCtx2 }) {
+  function DropdownItems({ location: location2, ctx, getCtx: getCtx2, menu: menu2 }) {
     useSubscription2(subscribeContextMenu);
     const items = getContextMenuItems(location2);
     if (!items.length) return null;
-    const Item = common.DropdownMenuItem;
+    const parts = menu2 || accountMenuParts();
+    const Item = parts.Item || common.DropdownMenuItem;
+    const desktop = menu2 ? false : !!parts.desktop;
+    const runProps = (run2) => menu2 ? { onSelect: run2, onClick: run2 } : accountMenuSelect(desktop, run2);
     return h4(Fragment2, null, items.map((def2) => {
       const c3 = () => (getCtx2 ? getCtx2() : ctx) ?? {};
       let el;
       if (def2.render) el = h4(def2.render, c3());
-      else if (Item) el = h4(
-        Item,
-        { onClick: () => run(def2, c3()), "data-uspp-voidpp-menu-item": def2.id },
-        def2.icon != null && h4("span", { className: "inline-flex me-2 text-fg-secondary" }, iconNode(def2.icon)),
-        def2.label
-      );
-      else el = h4("div", { role: "menuitem", tabIndex: -1, className: "uspp-voidpp-btn uspp-voidpp-btn-ghost", onClick: () => run(def2, c3()) }, iconNode(def2.icon), def2.label);
+      else if (Item) {
+        const Icon = typeof def2.icon === "function" ? def2.icon : null;
+        const leading = Icon ? desktop ? h4(Icon, { width: 16, height: 16 }) : h4("span", { className: "inline-flex me-2 text-fg-secondary" }, iconNode(def2.icon)) : iconNode(def2.icon);
+        el = h4(Item, { ...runProps(() => run(def2, c3())), "data-uspp-voidpp-menu-item": def2.id }, leading, def2.label);
+      } else el = h4("div", { role: "menuitem", tabIndex: -1, className: "uspp-voidpp-btn uspp-voidpp-btn-ghost", onClick: () => run(def2, c3()) }, iconNode(def2.icon), def2.label);
       return h4(ErrorBoundary2, { key: def2.id, fallback: null, label: `menu:${def2.id}` }, el);
     }));
   }
@@ -2301,36 +2383,56 @@ try {
     },
     patches: [
       {
-        // 头像菜单:Sign Out 之前
-        // 翻译词典模块里也有这个字符串,用第二个特征排除
-        find: ['"user-dropdown.sign-out"', ".SignoutIcon"],
-        replacement: {
-          match: /(\(0,\i\.jsxs\)\(\i\.DropdownMenuItem,\{onClick:\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
-          replace: "$self.renderUserItems(),$1"
-        }
+        // Desktop account menu: kit Item, label `Sign out`. Radix SignoutIcon is gone.
+        find: '"user-dropdown.upgrade","Upgrade plan"',
+        all: true,
+        replacement: [
+          {
+            match: /(?=\(0,\i\.jsxs?\)\(\i\.r,\{on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i(?:\.\i)?,\{size:4\}\)\}\),\i\("user-dropdown\.sign-out","Sign Out"\)\))/,
+            replace: "$self.renderUserItems(),",
+            noWarn: true
+          },
+          {
+            match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
+            replace: "$self.renderUserItems(),$1",
+            noWarn: true
+          },
+          {
+            match: /(?<=\("Sign out","Sign out"\)[\s\S]{0,250})(\(0,(\i)\.jsxs\)\(\i(?:\.\i)?\.Item,\{onClick:\i,children:\[[^\]]+\]\}\))/,
+            replace: "(0,$2.jsx)($2.Fragment,{children:[$self.renderUserItems(),$1]})"
+          }
+        ]
       },
       {
-        // 侧栏会话的"更多"菜单和右键菜单共用 menuExtras
         find: '"ConversationItem",0,',
+        noWarn: true,
         replacement: {
           match: /(\.AppSidebarRow,\{\.\.\.(\i),)(extraRight:)/,
           replace: "$1menuExtras:$self.conversationExtras($2.id,$2.menuExtras),$3"
         }
       },
       {
-        // 消息的"更多操作"下拉菜单末尾
+        // Desktop message ⋮: kit Menu children [actions, extra, extra, hash].
+        find: '"more-actions-dropdown"',
+        all: true,
+        replacement: [
+          {
+            match: /(\(0,\i\.jsx\)\(\i,\{response:(\i)\}\)[\s\S]{0,800}?SHOW_MODEL_HASH_DEBUG[\s\S]{0,800}?children:\[)(\i,\i,\i,\i)(\]\})/,
+            replace: "$1$3,$self.renderMessageItems($2)$4"
+          },
+          {
+            match: /"more-action\.copy-model-hash".{0,80}slice\(0,5\)\}\}\)\}\)/,
+            replace: "$&,$self.renderMessageItems(arguments[0].response)",
+            noWarn: true
+          }
+        ]
+      },
+      {
         find: ['"response-action.more-actions"', "openReportDialog"],
+        noWarn: true,
         replacement: {
           match: /(\(0,\i\.jsx\)\(\i\.DropdownMenuContent,\{align:"end",children:)(\(0,\i\.jsx\)\(\i\.DropdownMenuItem,\{onClick:\(\)=>\{\i\.useReportStore\.getState\(\)\.openReportDialog\(\{responseId:(\i)\.responseId[^]*?\("response-action\.report","Report"\)\}\))\}\)/,
           replace: "$1$self.messageMenuChildren($2,$3)})"
-        }
-      },
-      {
-        // 列表版"更多操作"菜单(举报、导出 PDF、朗读等按配置生成)
-        find: ['"response-action.more-actions"', '"more-actions-dropdown"'],
-        replacement: {
-          match: /(\(0,\i\.jsxs\)\(\i\.DropdownMenuContent,\{side:"bottom",align:"end",[^]{0,300}?children:\[)(\i\.map\(\((\i),\i\)=>[^]{0,600}?responseId:(\i)\.responseId)/,
-          replace: "$1$self.renderMessageItems($4),$2"
         }
       }
     ],
@@ -2348,7 +2450,7 @@ try {
     start() {
       offLost = U3.onPatchBypassed(NAME, (results) => {
         for (const r3 of results) {
-          if (r3.find.includes("sign-out")) enableFallback2("user");
+          if (r3.find.includes("sign-out") || r3.find.includes("upgrade") || r3.find.includes("Upgrade plan")) enableFallback2("user");
           else if (r3.find.includes("ConversationItem")) enableFallback2("conversation");
           else if (r3.find.includes("more-actions")) enableFallback2("message");
         }
@@ -4700,7 +4802,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
     if (value && typeof value === "object" && ("render" in value || "$$typeof" in value)) return value;
     return null;
   }
-  function readAccountMenuKit(mod) {
+  function readAccountMenuKit2(mod) {
     const buckets = [];
     const push = (obj) => {
       if (!obj || typeof obj !== "object" || !("SubmenuTrigger" in obj)) return;
@@ -4739,7 +4841,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
     syncLazyModules();
     const consider = (exp) => {
       if (accountMenuKitCache || exp == null || typeof exp !== "object") return;
-      const read2 = readAccountMenuKit(exp);
+      const read2 = readAccountMenuKit2(exp);
       if (read2) accountMenuKitCache = read2;
     };
     for (const [, exp] of getModuleCache()) consider(exp);
@@ -4750,7 +4852,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
     }
     return null;
   }
-  function accountMenuSelect(desktop, run2) {
+  function accountMenuSelect2(desktop, run2) {
     return desktop ? { onClick: run2 } : { onSelect: run2 };
   }
   function MenuGlyphIcon(props) {
@@ -4956,7 +5058,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
   var DropdownMenuSubTrigger = dropdownLazy("DropdownMenuSubTrigger");
   var DropdownMenuSubContent = dropdownLazy("DropdownMenuSubContent");
   var DropdownMenuPortal = dropdownLazy("DropdownMenuPortal");
-  function accountMenuParts() {
+  function accountMenuParts2() {
     const kit = accountMenuKit();
     if (kit) {
       return {
@@ -7158,9 +7260,9 @@ html.void-cms-picked .void-cms-ghost {
   }
   function PinGlyph({ id, Icon, label, showLabels }) {
     const html = useNativeGlyph(id);
-    const glyph = html ? /* @__PURE__ */ h("span", { className: cl6("glyph"), dangerouslySetInnerHTML: { __html: html } }) : /* @__PURE__ */ h(Icon, { size: 18 });
-    if (!showLabels) return glyph;
-    return /* @__PURE__ */ h(Fragment, null, glyph, /* @__PURE__ */ h("span", { className: cl6("label") }, label));
+    const glyph2 = html ? /* @__PURE__ */ h("span", { className: cl6("glyph"), dangerouslySetInnerHTML: { __html: html } }) : /* @__PURE__ */ h(Icon, { size: 18 });
+    if (!showLabels) return glyph2;
+    return /* @__PURE__ */ h(Fragment, null, glyph2, /* @__PURE__ */ h("span", { className: cl6("label") }, label));
   }
   function preventDragOver(e3) {
     e3.preventDefault();
@@ -17655,10 +17757,10 @@ html.void-cms-picked .void-cms-ghost {
     return pendingTab;
   }
   function PluginsMenu() {
-    const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
+    const { Sub, Trigger, Content, Item, desktop } = accountMenuParts2();
     return /* @__PURE__ */ h(Sub, null, /* @__PURE__ */ h(Trigger, null, /* @__PURE__ */ h(MenuGlyphIcon, { icon: PlugIcon, className: "void-settings-menu-icon", desktop }), "Connect Apps"), /* @__PURE__ */ h(Content, null, PLUGIN_TABS.map((tab) => {
       const Icon = tab.icon;
-      return /* @__PURE__ */ h(Item, { key: tab.id, ...accountMenuSelect(desktop, () => openPlugins(tab.id)) }, /* @__PURE__ */ h(MenuGlyphIcon, { icon: Icon, className: "void-settings-menu-icon", desktop }), tab.name);
+      return /* @__PURE__ */ h(Item, { key: tab.id, ...accountMenuSelect2(desktop, () => openPlugins(tab.id)) }, /* @__PURE__ */ h(MenuGlyphIcon, { icon: Icon, className: "void-settings-menu-icon", desktop }), tab.name);
     })));
   }
   var PLUGIN_LABELS = /* @__PURE__ */ new Set(["Plugins", "Skills and Connectors"]);
@@ -25804,7 +25906,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     const { Item, desktop } = menu2;
     return tabs.map((t3) => {
       const Icon = t3.icon;
-      return /* @__PURE__ */ h(Item, { key: t3.id, ...accountMenuSelect(desktop, () => openTab(t3.id)) }, /* @__PURE__ */ h(MenuGlyphIcon, { icon: Icon, className: cl19("menu-icon"), desktop }), t3.name);
+      return /* @__PURE__ */ h(Item, { key: t3.id, ...accountMenuSelect2(desktop, () => openTab(t3.id)) }, /* @__PURE__ */ h(MenuGlyphIcon, { icon: Icon, className: cl19("menu-icon"), desktop }), t3.name);
     });
   }
   function VoidPPSection({ tabs, menu: menu2 }) {
@@ -25826,14 +25928,14 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
       "usage",
       "data"
     ]);
-    const menu2 = accountMenuParts();
+    const menu2 = accountMenuParts2();
     const { Sub, Trigger, Content, Item, Separator, desktop } = menu2;
     const grokTabs = GROK_TABS.filter((t3) => cfg2[t3.setting]);
     const voidppTabs = VOIDPP_TABS.filter((t3) => cfg2[t3.setting]);
     const showOpen = cfg2.showOpenSettings || grokTabs.length === 0 && voidppTabs.length === 0;
     const voidppFirst = cfg2.voidppPosition !== "below";
     const hasBoth = grokTabs.length > 0 && voidppTabs.length > 0;
-    return /* @__PURE__ */ h(Sub, null, /* @__PURE__ */ h(Trigger, null, /* @__PURE__ */ h(MenuGlyphIcon, { icon: CogIcon, className: cl19("menu-icon"), desktop }), "Settings"), /* @__PURE__ */ h(Content, { ...desktop ? {} : { maxHeight: "lg" } }, showOpen && /* @__PURE__ */ h(Item, { ...accountMenuSelect(desktop, (event) => openTab(void 0, onOpen, event)) }, /* @__PURE__ */ h(MenuGlyphIcon, { icon: CogIcon, className: cl19("menu-icon"), desktop }), "Open Settings"), showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && /* @__PURE__ */ h(Separator, null), voidppFirst && /* @__PURE__ */ h(VoidPPSection, { tabs: voidppTabs, menu: menu2 }), voidppFirst && hasBoth && /* @__PURE__ */ h(Separator, null), tabItems(grokTabs, menu2), !voidppFirst && hasBoth && /* @__PURE__ */ h(Separator, null), !voidppFirst && /* @__PURE__ */ h(VoidPPSection, { tabs: voidppTabs, menu: menu2 })));
+    return /* @__PURE__ */ h(Sub, null, /* @__PURE__ */ h(Trigger, null, /* @__PURE__ */ h(MenuGlyphIcon, { icon: CogIcon, className: cl19("menu-icon"), desktop }), "Settings"), /* @__PURE__ */ h(Content, { ...desktop ? {} : { maxHeight: "lg" } }, showOpen && /* @__PURE__ */ h(Item, { ...accountMenuSelect2(desktop, (event) => openTab(void 0, onOpen, event)) }, /* @__PURE__ */ h(MenuGlyphIcon, { icon: CogIcon, className: cl19("menu-icon"), desktop }), "Open Settings"), showOpen && (voidppTabs.length > 0 || grokTabs.length > 0) && /* @__PURE__ */ h(Separator, null), voidppFirst && /* @__PURE__ */ h(VoidPPSection, { tabs: voidppTabs, menu: menu2 }), voidppFirst && hasBoth && /* @__PURE__ */ h(Separator, null), tabItems(grokTabs, menu2), !voidppFirst && hasBoth && /* @__PURE__ */ h(Separator, null), !voidppFirst && /* @__PURE__ */ h(VoidPPSection, { tabs: voidppTabs, menu: menu2 })));
   }
   var WrappedSettingsMenu = ErrorBoundary3.wrap(SettingsMenu);
   var settingsFlyout_default = definePlugin({

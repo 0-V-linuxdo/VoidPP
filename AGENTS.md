@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.44]` Desktop account Void++ row + GrokMenus user/message slots: kit `accountMenuParts` / `Sign out` Item / `more-actions-dropdown` children, not Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay (host patched, renderer/find stale).
+
 `[20261114.43]` GrokChatBar: desktop chat-bar slot is the dictate/send cell (`[!!(a&&!b)|!!c<<1]` + `children:Y`), not `"data-query-bar-mode-select":!0`. UsageDisplay mounts left of Send.
 
 `[20261114.42]` Backfill Void++ IDB `enabled:true` into the USPP store (`voidppEnabledBackfill`). CustomGreeting / ResponseNotification `enabledByDefault: true`. CustomSidebarIdentity stays default-off; this profile had it on.

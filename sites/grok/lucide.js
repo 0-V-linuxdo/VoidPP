@@ -58,3 +58,12 @@ export const RotateCcwIcon = (props = {}) => svg(props,
 export const VoidPPIcon = (props = {}) => svg({ ...props, strokeWidth: props.strokeWidth ?? 2.15 },
     path("M2.2 7.4 L8.4 20.2 L13.03 11.30"),
 );
+UnplugIcon.displayName = "UnplugIcon";
+PaletteIcon.displayName = "PaletteIcon";
+BracesIcon.displayName = "BracesIcon";
+TestTubeIcon.displayName = "TestTubeIcon";
+BellIcon.displayName = "BellIcon";
+Settings2Icon.displayName = "Settings2Icon";
+FileDownIcon.displayName = "FileDownIcon";
+RotateCcwIcon.displayName = "RotateCcwIcon";
+VoidPPIcon.displayName = "VoidPPIcon";
