@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.28
+// @version      20261114.29
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.28] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.29] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -5176,20 +5176,6 @@ ${root}::-webkit-scrollbar-thumb:hover {
       ...props
     }, children);
   }
-  function InfoHint({ children }) {
-    return /* @__PURE__ */ React.createElement(Tooltip, null, /* @__PURE__ */ React.createElement(TooltipTrigger, {
-      asChild: true
-    }, /* @__PURE__ */ React.createElement("span", {
-      className: "void-info-hint",
-      "aria-label": typeof children === "string" ? children : undefined
-    }, /* @__PURE__ */ React.createElement(InfoIcon, {
-      size: 16
-    }))), /* @__PURE__ */ React.createElement(TooltipContent, {
-      side: "right",
-      sideOffset: 8,
-      className: "void-info-hint-content"
-    }, children));
-  }
   function SectionHeader({ title, description, className }) {
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
@@ -8553,6 +8539,18 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     z-index: 1000 !important;
 }
 
+.void-setting-select {
+    box-sizing: border-box;
+    height: 2rem;
+    max-width: 12rem;
+    padding: 0 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-l1, var(--grok-border-l1, var(--border)));
+    background: transparent;
+    color: var(--fg-primary, var(--grok-text-primary));
+    font: inherit;
+}
+
 .void-setting-slider-row {
     align-items: center;
     width: 100%;
@@ -8683,15 +8681,14 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     const { options } = setting;
     const valueMap = useMemo(() => new Map(options.map((o) => [String(o.value), o.value])), [options]);
     return /* @__PURE__ */ React.createElement(SettingsRow, {
-      action: /* @__PURE__ */ React.createElement(Select, {
+      action: /* @__PURE__ */ React.createElement("select", {
+        className: cl10("select"),
         value: String(value ?? ""),
-        onValueChange: (v) => update(valueMap.get(v) ?? v)
-      }, /* @__PURE__ */ React.createElement(SelectTrigger, null, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, {
-        className: cl10("select-content")
-      }, options.map((o) => /* @__PURE__ */ React.createElement(SelectItem, {
+        onChange: (e) => update(valueMap.get(e.target.value) ?? e.target.value)
+      }, options.map((o) => /* @__PURE__ */ React.createElement("option", {
         key: String(o.value),
         value: String(o.value)
-      }, o.label))))
+      }, o.label)))
     }, /* @__PURE__ */ React.createElement(SettingLabel, {
       id,
       setting
@@ -8926,15 +8923,14 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       value: search2,
       onChange: (e) => onSearchChange(e.target.value),
       className: "void-search-bar-input"
-    }), /* @__PURE__ */ React.createElement(Select, {
+    }), /* @__PURE__ */ React.createElement("select", {
+      className: "void-native-input void-search-bar-select",
       value: filter,
-      onValueChange: (v) => onFilterChange(v)
-    }, /* @__PURE__ */ React.createElement(SelectTrigger, {
-      className: "void-search-bar-select"
-    }, /* @__PURE__ */ React.createElement(SelectValue, null)), /* @__PURE__ */ React.createElement(SelectContent, null, options.map((o) => /* @__PURE__ */ React.createElement(SelectItem, {
+      onChange: (e) => onFilterChange(e.target.value)
+    }, options.map((o) => /* @__PURE__ */ React.createElement("option", {
       key: o.value,
       value: o.value
-    }, o.label)))));
+    }, o.label))));
   }
 
   // src/components/settings/tabs/PluginsTab.tsx
@@ -10023,9 +10019,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"eb1640c"}`
-    }, `(${"eb1640c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.29] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d273cf7"}`
+    }, `(${"d273cf7"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10036,16 +10032,15 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       color: "secondary"
     }, "Userscript")));
   }
-  function TabLabel({ text, description }) {
-    return /* @__PURE__ */ React.createElement("span", {
-      className: cl17("tab-label")
-    }, text, /* @__PURE__ */ React.createElement(InfoHint, null, description));
-  }
   function openSettingsTab(tab) {
     const hook = SettingsDialogStore.useSettingsDialogStore;
     if (!hook || typeof hook.getState !== "function")
       return;
     const store = hook.getState();
+    if (typeof store.openTab === "function") {
+      store.openTab(tab);
+      return;
+    }
     store.setTab(tab);
     store.setOpen(true);
   }
@@ -10150,13 +10145,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       }));
     },
     _tabLabel(tab) {
-      const label = tab.defaultLabel || tab.i18nKey || tab.id;
-      if (!tab.description)
-        return label;
-      return /* @__PURE__ */ React.createElement(TabLabel, {
-        text: label,
-        description: tab.description
-      });
+      return tab.defaultLabel || tab.i18nKey || tab.id;
     },
     _renderVersion() {
       return /* @__PURE__ */ React.createElement(VersionInfo, {
@@ -10236,15 +10225,15 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
         }
       },
       {
-        find: "DesktopSettingsDialog",
+        find: '"DesktopSettingsDialog",0,function',
         replacement: [
           {
             match: /let (\i)=\(0,(\i)\.z\)\((\i)\);return (\i)&&\(0,(\i)\.K\)\(\1\)\?\1:\4\|\|null===(\i)\?(\i):\6/,
             replace: "let $1=(0,$2.z)($3);return $self._resolveShownTab({activeTab:$7,open:$4,requestedTab:$3,hostedSection:$6,normalized:$1,isHosted:$5.K})"
           },
           {
-            match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\((\i)\);(\i)&&\1!==\4&&\2\(\4\)([\s\S]{0,2200}"desktop-shell\.settings\.title","Settings"[\s\S]{0,500}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\8\)\)([\s\S]{0,250}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\13\)\)/,
-            replace: "[$1,$2]=(0,$3.useState)($4);$5&&$1!==$4&&$2($4)$6$7=$8=>$9(()=>$10($8))$11$12=$13=>$14(()=>{$self._selectNavTab($13,$15);$2($13);})"
+            match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\((\i)\);(\i)&&\1!==\4&&\2\(\4\)([\s\S]{0,1200}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\8\)\),(\i)\[34\]=\9,(\i)\[35\]=\10,(\i)\[36\]=\7/,
+            replace: "[$1,$2]=(0,$3.useState)($4);$5&&$1!==$4&&$2($4)$6$7=$8=>$9(()=>{$self._selectNavTab($8,$10);$2($8);}),$11[34]=$9,$12[35]=$10,$13[36]=$7"
           }
         ]
       },
@@ -33765,8 +33754,14 @@ html.void-rt-open [data-sidebar="gap"] {
     const store3 = hook && typeof hook.getState === "function" ? hook.getState() : null;
     if (!store3)
       return;
-    if (tab)
+    if (tab) {
+      const openTab2 = store3.openTab;
+      if (typeof openTab2 === "function") {
+        openTab2(tab);
+        return;
+      }
       store3.setTab(tab);
+    }
     store3.setOpen(true);
   }
   function tabItems(tabs, menu2) {
@@ -36233,7 +36228,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794672837000;
-  settings_default.updatedAt = 1794743375000;
+  settings_default.updatedAt = 1794743526000;
   chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794560326000;
   autoCollapse_default.updatedAt = 1794557302000;

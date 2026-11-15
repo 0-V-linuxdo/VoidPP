@@ -9,7 +9,7 @@ import "./styles.css";
 import { isPluginEnabled, plugins } from "@api/PluginManager";
 import { definePluginSettings, migratePluginSetting } from "@api/Settings";
 import { loadSavedThemes } from "@api/Themes";
-import { ErrorBoundary, Flex, InfoHint, Text } from "@components";
+import { ErrorBoundary, Flex, Text } from "@components";
 import { BracesIcon, PaletteIcon, SettingsIcon, TestTubeIcon, UnplugIcon, VoidPPIcon, type IconProps } from "@components/icons";
 import { CustomCSSTab, loadSavedCSS, PluginsTab, setPendingPluginDialog, ThemesTab } from "@components/settings/tabs";
 import { Tab as ExperimentsTab } from "@plugins/experiments";
@@ -108,19 +108,14 @@ function VersionInfo() {
     );
 }
 
-function TabLabel({ text, description }: { text: string; description: string }) {
-    return (
-        <span className={cl("tab-label")}>
-            {text}
-            <InfoHint>{description}</InfoHint>
-        </span>
-    );
-}
-
 function openSettingsTab(tab: string) {
     const hook = SettingsDialogStore.useSettingsDialogStore;
     if (!hook || typeof hook.getState !== "function") return;
-    const store = hook.getState();
+    const store = hook.getState() as { openTab?: (id: string) => void; setTab: (id: string) => void; setOpen: (open: boolean) => void };
+    if (typeof store.openTab === "function") {
+        store.openTab(tab);
+        return;
+    }
     store.setTab(tab);
     store.setOpen(true);
 }
@@ -249,9 +244,7 @@ export default definePlugin({
     },
 
     _tabLabel(tab: { defaultLabel?: string; i18nKey?: string; id: string; description?: string }) {
-        const label = tab.defaultLabel || tab.i18nKey || tab.id;
-        if (!tab.description) return label;
-        return <TabLabel text={label} description={tab.description} />;
+        return tab.defaultLabel || tab.i18nKey || tab.id;
     },
 
     _renderVersion() {
@@ -332,15 +325,15 @@ export default definePlugin({
             },
         },
         {
-            find: "DesktopSettingsDialog",
+            find: '"DesktopSettingsDialog",0,function',
             replacement: [
                 {
                     match: /let (\i)=\(0,(\i)\.z\)\((\i)\);return (\i)&&\(0,(\i)\.K\)\(\1\)\?\1:\4\|\|null===(\i)\?(\i):\6/,
                     replace: "let $1=(0,$2.z)($3);return $self._resolveShownTab({activeTab:$7,open:$4,requestedTab:$3,hostedSection:$6,normalized:$1,isHosted:$5.K})",
                 },
                 {
-                    match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\((\i)\);(\i)&&\1!==\4&&\2\(\4\)([\s\S]{0,2200}"desktop-shell\.settings\.title","Settings"[\s\S]{0,500}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\8\)\)([\s\S]{0,250}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\13\)\)/,
-                    replace: "[$1,$2]=(0,$3.useState)($4);$5&&$1!==$4&&$2($4)$6$7=$8=>$9(()=>$10($8))$11$12=$13=>$14(()=>{$self._selectNavTab($13,$15);$2($13);})",
+                    match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\((\i)\);(\i)&&\1!==\4&&\2\(\4\)([\s\S]{0,1200}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\8\)\),(\i)\[34\]=\9,(\i)\[35\]=\10,(\i)\[36\]=\7/,
+                    replace: "[$1,$2]=(0,$3.useState)($4);$5&&$1!==$4&&$2($4)$6$7=$8=>$9(()=>{$self._selectNavTab($8,$10);$2($8);}),$11[34]=$9,$12[35]=$10,$13[36]=$7",
                 },
             ],
         },

@@ -8,7 +8,7 @@ import "./SettingField.css";
 
 import { dispatch } from "@api/Events";
 import { mergePluginSettings, pluginPath, resolveDefault, Settings, SettingsStore } from "@api/Settings";
-import { Flex, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle, Text } from "@components";
+import { Flex, Input, SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle, Text } from "@components";
 import { React, useCallback, useEffect, useMemo, useState } from "@turbopack/common/react";
 import { classNameFactory } from "@utils/css";
 import { humanizeKey } from "@utils/text";
@@ -84,18 +84,17 @@ const SelectField: Field<PluginSettingSelectDef & PluginSettingCommon> = ({ id, 
 
     return (
         <SettingsRow action={
-            <Select value={String(value ?? "")} onValueChange={(v: string) => update(valueMap.get(v) ?? v)}>
-                <SelectTrigger>
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent className={cl("select-content")}>
-                    {options.map(o => (
-                        <SelectItem key={String(o.value)} value={String(o.value)}>
-                            {o.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+            <select
+                className={cl("select")}
+                value={String(value ?? "")}
+                onChange={(e: InputChangeEvent) => update(valueMap.get(e.target.value) ?? e.target.value)}
+            >
+                {options.map(o => (
+                    <option key={String(o.value)} value={String(o.value)}>
+                        {o.label}
+                    </option>
+                ))}
+            </select>
         }>
             <SettingLabel id={id} setting={setting} />
         </SettingsRow>

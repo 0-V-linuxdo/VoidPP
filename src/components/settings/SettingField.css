@@ -2,6 +2,18 @@
     z-index: 1000 !important;
 }
 
+.void-setting-select {
+    box-sizing: border-box;
+    height: 2rem;
+    max-width: 12rem;
+    padding: 0 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-l1, var(--grok-border-l1, var(--border)));
+    background: transparent;
+    color: var(--fg-primary, var(--grok-text-primary));
+    font: inherit;
+}
+
 .void-setting-slider-row {
     align-items: center;
     width: 100%;

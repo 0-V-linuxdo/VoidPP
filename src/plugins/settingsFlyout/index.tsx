@@ -127,7 +127,14 @@ function openTab(tab: string | undefined, onOpen?: (event?: Event) => void, even
     const hook = SettingsDialogStore.useSettingsDialogStore;
     const store = hook && typeof hook.getState === "function" ? hook.getState() : null;
     if (!store) return;
-    if (tab) store.setTab(tab);
+    if (tab) {
+        const openTab = (store as { openTab?: (id: string) => void }).openTab;
+        if (typeof openTab === "function") {
+            openTab(tab);
+            return;
+        }
+        store.setTab(tab);
+    }
     store.setOpen(true);
 }
 

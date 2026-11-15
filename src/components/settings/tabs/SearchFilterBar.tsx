@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Flex, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components";
+import { Flex, Input } from "@components";
 import { React } from "@turbopack/common/react";
 
 import { type InputChangeEvent } from "../utils";
@@ -28,16 +28,15 @@ export function SearchFilterBar<F extends string>({ placeholder, search, onSearc
                 onChange={(e: InputChangeEvent) => onSearchChange(e.target.value)}
                 className="void-search-bar-input"
             />
-            <Select value={filter} onValueChange={(v: string) => onFilterChange(v as F)}>
-                <SelectTrigger className="void-search-bar-select">
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    {options.map(o => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+            <select
+                className="void-native-input void-search-bar-select"
+                value={filter}
+                onChange={(e: InputChangeEvent) => onFilterChange(e.target.value as F)}
+            >
+                {options.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+            </select>
         </Flex>
     );
 }
