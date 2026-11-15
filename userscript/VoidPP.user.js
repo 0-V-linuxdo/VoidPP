@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.30
+// @version      20261114.31
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.30] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.31] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -3274,15 +3274,6 @@ ${sourceUrl}`;
     y: "14",
     rx: "1"
   }));
-  var GrokConnectorsIcon = (props = {}) => filledSvg(props, "0 0 24 24", /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M12 12H19V16C19 16.6836 19.0011 17.2566 18.9629 17.7236C18.9238 18.2023 18.8382 18.6571 18.6182 19.0889C18.2826 19.7474 17.7474 20.2826 17.0889 20.6182C16.6571 20.8382 16.2023 20.9238 15.7236 20.9629C15.2566 21.0011 14.6836 21 14 21H8C7.31644 21 6.74342 21.0011 6.27637 20.9629C5.79772 20.9238 5.34294 20.8382 4.91114 20.6182C4.25262 20.2826 3.71739 19.7474 3.38184 19.0889C3.16183 18.6571 3.07623 18.2023 3.03711 17.7236C2.99895 17.2566 3 16.6836 3 16V10C3 9.31644 2.99895 8.74342 3.03711 8.27637C3.07623 7.79772 3.16182 7.34294 3.38184 6.91114C3.71739 6.25262 4.25262 5.71739 4.91114 5.38184C5.34294 5.16182 5.79772 5.07623 6.27637 5.03711C6.74342 4.99895 7.31644 5 8 5H12V12ZM5 16C5 16.7165 5.00032 17.1938 5.03028 17.5605C5.05924 17.9151 5.11072 18.0777 5.16309 18.1807C5.3069 18.4629 5.5371 18.6931 5.81934 18.8369C5.92228 18.8893 6.0849 18.9408 6.43946 18.9697C6.80616 18.9997 7.28347 19 8 19H10V14H5V16ZM12 19H14C14.7165 19 15.1938 18.9997 15.5605 18.9697C15.9151 18.9408 16.0777 18.8893 16.1807 18.8369C16.4629 18.6931 16.6931 18.4629 16.8369 18.1807C16.8893 18.0777 16.9408 17.9151 16.9697 17.5605C16.9997 17.1938 17 16.7165 17 16V14H12V19ZM8 7C7.28347 7 6.80616 7.00032 6.43946 7.03028C6.0849 7.05924 5.92228 7.11072 5.81934 7.16309C5.5371 7.3069 5.3069 7.5371 5.16309 7.81934C5.11072 7.92228 5.05924 8.0849 5.03028 8.43946C5.00032 8.80616 5 9.28347 5 10V12H10V7H8Z"
-  }), /* @__PURE__ */ React.createElement("path", {
-    fillRule: "evenodd",
-    clipRule: "evenodd",
-    d: "M17 2C17.6836 2 18.2566 1.99895 18.7236 2.03711C19.2023 2.07623 19.6571 2.16183 20.0889 2.38184C20.7474 2.71739 21.2826 3.25262 21.6182 3.91114C21.8382 4.34294 21.9238 4.79772 21.9629 5.27637C22.0011 5.74342 22 6.31644 22 7V10H14V2H17ZM16 8H20V7C20 6.28347 19.9997 5.80616 19.9697 5.43946C19.9408 5.0849 19.8893 4.92228 19.8369 4.81934C19.6931 4.5371 19.4629 4.3069 19.1807 4.16309C19.0777 4.11072 18.9151 4.05924 18.5605 4.03028C18.1938 4.00032 17.7165 4 17 4H16V8Z"
-  }));
   var ConnectedAppsIcon = (props = {}) => svg(props, /* @__PURE__ */ React.createElement("rect", {
     x: "4",
     y: "4",
@@ -5910,386 +5901,6 @@ ${root}::-webkit-scrollbar-thumb:hover {
     });
   }
 
-  // src/plugins/avatarPluginsFlyout/index.tsx
-  var logger13 = new Logger("AvatarPluginsFlyout");
-  var settings3 = definePluginSettings({});
-  var NEW_NAME = "AvatarPluginsFlyout";
-  var OLD_NAMES = ["BetterAvatarPlugins", "NoSidebarPlugins"];
-  function isOldName(item) {
-    return typeof item === "string" && OLD_NAMES.includes(item);
-  }
-  function renameList(list) {
-    if (!Array.isArray(list) || !list.some(isOldName))
-      return;
-    const seen = new Set;
-    const next = [];
-    for (const item of list) {
-      if (typeof item !== "string")
-        continue;
-      const name = isOldName(item) ? NEW_NAME : item;
-      if (seen.has(name))
-        continue;
-      seen.add(name);
-      next.push(name);
-    }
-    return next;
-  }
-  function migrateLegacy2() {
-    const bag = PlainSettings.plugins;
-    const meta = bag.Settings;
-    const menu = bag.PluginsFlyout?.menuPlugins;
-    const known = meta?.knownPlugins;
-    const pinned = renameList(meta?.pinnedPlugins);
-    const starred = renameList(meta?.starredPlugins);
-    const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu : undefined;
-    const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
-    let moved = false;
-    for (const oldName of OLD_NAMES) {
-      const old = bag[oldName];
-      if (old && typeof old === "object") {
-        const target = bag[NEW_NAME] ??= {};
-        const keys = Object.keys(target);
-        const stub = keys.length === 0 || keys.length === 1 && keys[0] === "enabled";
-        for (const key of Object.keys(old)) {
-          if (stub || !(key in target))
-            target[key] = old[key];
-        }
-        delete bag[oldName];
-        moved = true;
-      }
-      if (knownRec && oldName in knownRec) {
-        if (!(NEW_NAME in knownRec))
-          knownRec[NEW_NAME] = knownRec[oldName];
-        delete knownRec[oldName];
-        moved = true;
-      }
-      if (menuRec && oldName in menuRec) {
-        if (!(NEW_NAME in menuRec))
-          menuRec[NEW_NAME] = menuRec[oldName];
-        delete menuRec[oldName];
-        moved = true;
-      }
-    }
-    if (meta) {
-      if (pinned) {
-        meta.pinnedPlugins = pinned;
-        moved = true;
-      }
-      if (starred) {
-        meta.starredPlugins = starred;
-        moved = true;
-      }
-    }
-    if (!moved)
-      return;
-    SettingsStore3.markAsChanged();
-    logger13.info("Migrated NoSidebarPlugins and BetterAvatarPlugins into AvatarPluginsFlyout");
-  }
-  var pluginName = Object.getOwnPropertyDescriptor(settings3, "pluginName");
-  if (pluginName?.set && pluginName.get) {
-    Object.defineProperty(settings3, "pluginName", {
-      configurable: true,
-      enumerable: true,
-      get: pluginName.get,
-      set(name) {
-        if (name === NEW_NAME)
-          migrateLegacy2();
-        pluginName.set.call(settings3, name);
-      }
-    });
-  }
-  function menuSvg(className, filled, ...children) {
-    return /* @__PURE__ */ React.createElement("svg", {
-      width: "1rem",
-      height: "1rem",
-      viewBox: "0 0 24 24",
-      fill: filled ? "currentColor" : "none",
-      stroke: filled ? "none" : "currentColor",
-      strokeWidth: filled ? undefined : 2,
-      strokeLinecap: "round",
-      strokeLinejoin: "round",
-      className: className ?? "void-settings-menu-icon",
-      "aria-hidden": "true"
-    }, children);
-  }
-  function PluginsIcon(props = {}) {
-    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
-      ...props
-    });
-  }
-  function ConnectorsMenuIcon({ className } = {}) {
-    return /* @__PURE__ */ React.createElement(GrokConnectorsIcon, {
-      width: "1rem",
-      height: "1rem",
-      className: className ?? "void-settings-menu-icon"
-    });
-  }
-  function SkillsMenuIcon({ className } = {}) {
-    return menuSvg(className, false, /* @__PURE__ */ React.createElement("path", {
-      d: "M10 7C10 8.79493 8.54493 10.25 6.75 10.25C4.95507 10.25 3.5 8.79493 3.5 7C3.5 5.20507 4.95507 3.75 6.75 3.75C8.54493 3.75 10 5.20507 10 7Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M16.3732 4.34855C16.7528 3.65641 17.7472 3.65641 18.1268 4.34855L20.5514 8.7691C20.9169 9.43553 20.4347 10.25 19.6746 10.25H14.8254C14.0653 10.25 13.5831 9.43553 13.9486 8.7691L16.3732 4.34855Z"
-    }), /* @__PURE__ */ React.createElement("rect", {
-      x: "3.64844",
-      y: "13.75",
-      width: "6.2",
-      height: "6.2",
-      rx: "2"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M20.5 17C20.5 18.7949 19.0449 20.25 17.25 20.25C15.4551 20.25 14 18.7949 14 17C14 15.2051 15.4551 13.75 17.25 13.75C19.0449 13.75 20.5 15.2051 20.5 17Z"
-    }));
-  }
-  function BotsMenuIcon({ className } = {}) {
-    return menuSvg(className, true, /* @__PURE__ */ React.createElement("path", {
-      d: "M15 13H13V9H15V13Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M19 13H17V9H19V13Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      fillRule: "evenodd",
-      clipRule: "evenodd",
-      d: "M15 4C19.4183 4 23 7.58172 23 12C23 16.4183 19.4183 20 15 20C10.5817 20 7 16.4183 7 12C7 7.58172 10.5817 4 15 4ZM15 6C11.6863 6 9 8.68629 9 12C9 15.3137 11.6863 18 15 18C18.3137 18 21 15.3137 21 12C21 8.68629 18.3137 6 15 6Z"
-    }), /* @__PURE__ */ React.createElement("path", {
-      d: "M8.99902 4C8.08913 4.68362 7.3005 5.51941 6.66895 6.46875C4.51293 7.37847 3 9.5129 3 12C3 14.487 4.51312 16.6205 6.66895 17.5303C7.30047 18.4797 8.08911 19.3153 8.99902 19.999C4.58119 19.9985 1 16.418 1 12C1 7.58205 4.58119 4.00053 8.99902 4Z"
-    }));
-  }
-  var PLUGIN_TABS = [
-    { id: "connectors", name: "Connectors", icon: ConnectorsMenuIcon },
-    { id: "skills", name: "Skills", icon: SkillsMenuIcon },
-    { id: "bots", name: "Bots", icon: BotsMenuIcon }
-  ];
-  var pendingTab = null;
-  var latchedTab = "";
-  function peekTab() {
-    return pendingTab;
-  }
-  function shellKey(local) {
-    if (pendingTab)
-      latchedTab = pendingTab;
-    return `${local ? 1 : 0}:${latchedTab}`;
-  }
-  function clearPending(tab) {
-    if (typeof tab === "string" && tab === pendingTab)
-      return;
-    pendingTab = null;
-  }
-  function pluginsDialog() {
-    return [...document.querySelectorAll('[role="dialog"]')].find((dialog) => dialog.getAttribute("data-state") === "open" && [...dialog.querySelectorAll("h1, h2")].some((heading) => heading.textContent?.trim() === "Plugins"));
-  }
-  function pillButton(tab) {
-    const name = PLUGIN_TABS.find((item) => item.id === tab)?.name;
-    if (!name)
-      return null;
-    const lists = pluginsDialog()?.querySelectorAll("[role=tablist]");
-    if (!lists)
-      return null;
-    for (const list of lists) {
-      const tabs = [...list.querySelectorAll('[role="tab"]')];
-      const labels = new Set(tabs.map((button2) => button2.textContent?.trim()));
-      if (!labels.has("Connectors") || !labels.has("Skills") || !labels.has("Bots"))
-        continue;
-      const button = tabs.find((item) => item.textContent?.trim() === name);
-      if (button instanceof HTMLElement)
-        return button;
-    }
-    return null;
-  }
-  function syncTabDom(tab, attempt = 0) {
-    if (pendingTab !== tab || attempt > 12)
-      return;
-    const button = pillButton(tab);
-    if (!button) {
-      requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
-      return;
-    }
-    if (button.getAttribute("aria-selected") === "true") {
-      pendingTab = null;
-      return;
-    }
-    button.click();
-    requestAnimationFrame(() => syncTabDom(tab, attempt + 1));
-  }
-  function openPlugins(tab) {
-    pendingTab = tab;
-    latchedTab = tab;
-    const hook = PluginsDialogStore.usePluginsDialogStore;
-    const store = hook && typeof hook.getState === "function" ? hook.getState() : null;
-    store?.setOpen(true);
-    requestAnimationFrame(() => syncTabDom(tab));
-  }
-  function applyTab(local, state, setState) {
-    if (!local || !pendingTab)
-      return null;
-    if (pendingTab !== state)
-      setState(pendingTab);
-    return pendingTab;
-  }
-  function PluginsMenu() {
-    const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
-    return /* @__PURE__ */ React.createElement(Sub, null, /* @__PURE__ */ React.createElement(Trigger, null, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
-      icon: PluginsIcon,
-      className: "void-settings-menu-icon",
-      desktop
-    }), "Plugins"), /* @__PURE__ */ React.createElement(Content, null, PLUGIN_TABS.map((tab) => {
-      const Icon = tab.icon;
-      return /* @__PURE__ */ React.createElement(Item, {
-        key: tab.id,
-        ...accountMenuSelect(desktop, () => openPlugins(tab.id))
-      }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
-        icon: Icon,
-        className: "void-settings-menu-icon",
-        desktop
-      }), tab.name);
-    })));
-  }
-  var PLUGIN_LABELS = new Set(["Plugins", "Skills and Connectors"]);
-  var PLUGINS_HIDE_ATTR = "data-void-plugins-hide";
-  var pluginsHideObserver = null;
-  var pluginsHideRaf = 0;
-  function pluginControlLabel(el) {
-    const text = (el.innerText || "").replaceAll(/\s+/g, " ").trim();
-    if (text)
-      return text;
-    return (el.getAttribute("aria-label") || "").trim();
-  }
-  function hideSidebarPlugins() {
-    const sidebar = document.querySelector("#app-sidebar, [data-sidebar=sidebar]");
-    if (!sidebar)
-      return;
-    for (const el of sidebar.querySelectorAll("a, button")) {
-      if (el.closest("[role=menu], [role=menuitem], [data-radix-popper-content-wrapper]"))
-        continue;
-      if (!PLUGIN_LABELS.has(pluginControlLabel(el)))
-        continue;
-      const row = el.closest("[data-sidebar=menu-item]") ?? el;
-      row.setAttribute(PLUGINS_HIDE_ATTR, "1");
-      row.style.setProperty("display", "none", "important");
-    }
-  }
-  function scheduleSidebarPluginsHide() {
-    if (pluginsHideRaf)
-      return;
-    pluginsHideRaf = requestAnimationFrame(() => {
-      pluginsHideRaf = 0;
-      hideSidebarPlugins();
-    });
-  }
-  function armSidebarPluginsHide() {
-    hideSidebarPlugins();
-    if (pluginsHideObserver)
-      return;
-    pluginsHideObserver = new MutationObserver(scheduleSidebarPluginsHide);
-    pluginsHideObserver.observe(document.documentElement, { childList: true, subtree: true });
-  }
-  function stopSidebarPluginsHide() {
-    pluginsHideObserver?.disconnect();
-    pluginsHideObserver = null;
-    if (pluginsHideRaf)
-      cancelAnimationFrame(pluginsHideRaf);
-    pluginsHideRaf = 0;
-    for (const el of document.querySelectorAll(`[${PLUGINS_HIDE_ATTR}]`)) {
-      el.style.removeProperty("display");
-      el.removeAttribute(PLUGINS_HIDE_ATTR);
-    }
-  }
-  var WrappedPluginsMenu = ErrorBoundary.wrap(PluginsMenu);
-  var avatarPluginsFlyout_default = definePlugin({
-    name: NEW_NAME,
-    icon: PluginsIcon,
-    description: "Move the sidebar Plugins button into the avatar menu and expand it into Connectors, Skills, and Bots.",
-    authors: [Devs.p],
-    tags: ["navigation"],
-    enabledByDefault: true,
-    settings: settings3,
-    _renderItem: () => createElement(WrappedPluginsMenu),
-    _peekTab: () => peekTab(),
-    _shellKey: (local) => shellKey(local),
-    _clearPending: (tab) => clearPending(tab),
-    _applyTab(local, state, setState) {
-      return applyTab(local, state, setState);
-    },
-    start() {
-      armSidebarPluginsHide();
-    },
-    stop() {
-      stopSidebarPluginsHide();
-    },
-    patches: [
-      {
-        find: '"skills-and-connectors"!==',
-        replacement: {
-          match: /(\(0,\i\.jsx\)\(\i(?:\.\i)?,\{icon:.{0,180}?onClick:\(\)=>\{"skills-and-connectors")/,
-          replace: "false&&$1"
-        }
-      },
-      {
-        find: "usePluginsDialogStore.getState().setOpen(!0)",
-        noWarn: true,
-        replacement: {
-          match: /(\(0,\i\.jsx\)\(\i\.AppSidebarItem,\{icon:.{0,80}?onClick:\(\)=>\{"skills-and-connectors")/,
-          replace: "false&&$1"
-        }
-      },
-      {
-        find: 'WD_REFRESH&&{id:"skills-and-connectors"',
-        noWarn: true,
-        replacement: {
-          match: /WD_REFRESH&&\{id:"skills-and-connectors"/,
-          replace: 'WD_REFRESH&&!1&&{id:"skills-and-connectors"'
-        }
-      },
-      {
-        find: "avatar_menu_click",
-        all: true,
-        replacement: [
-          {
-            match: /(?=\(0,\i\.jsxs\)\(\i\.W,\{children:\[\(0,\i\.jsxs\)\(\i\.f,\{ref:\i,children:\[.{0,260}"user-dropdown\.help")/,
-            replace: "$self._renderItem(),"
-          },
-          {
-            match: /(?=\(0,\i\.jsxs\)\(\i\.DropdownMenuSub,\{children:\[\(0,\i\.jsxs\)\(\i\.DropdownMenuSubTrigger,\{(?:\i:\i,)*children:\[.{0,240}"user-dropdown\.help")/,
-            replace: "$self._renderItem(),",
-            noWarn: true
-          }
-        ]
-      },
-      {
-        find: "SkillsAndConnectorsPage:handleTabChange",
-        replacement: [
-          {
-            match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(null\),(\i)=(\i)\?\1:"skills-and-connectors"===(\i)\.page\?\6\.tab:null/,
-            replace: '[$1,$2]=(0,$3.useState)($self._peekTab()),$4=($self._applyTab($5,$1,$2)??($5?$1:"skills-and-connectors"===$6.page?$6.tab:null))'
-          },
-          {
-            match: /(\i)\)return void (\i)\((\i)\);(\i)\.replace\(\{page:"skills-and-connectors",tab:\3\}\)\}/,
-            replace: '$1)return ($self._clearPending($3),void $2($3));$4.replace({page:"skills-and-connectors",tab:$3})}'
-          },
-          {
-            match: /(\i)\[0\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\((\i),\{inDialog:!0,localTabs:\2\}\),\1\[0\]=\2,\1\[1\]=\3\):\3=\1\[1\]/,
-            replace: "$1[0]!==$self._shellKey($2)?($3=(0,$4.jsx)($5,{inDialog:!0,localTabs:$2,key:$self._shellKey($2)}),$1[0]=$self._shellKey($2),$1[1]=$3):$3=$1[1]",
-            noWarn: true
-          }
-        ]
-      },
-      {
-        find: "SkillsAndConnectorsPageContent",
-        all: true,
-        noWarn: true,
-        replacement: {
-          match: /(\i)\[(\d+)\]!==(\i)\?\((\i)=\(0,(\i)\.jsx\)\(([A-Za-z_$][\w$.]*),\{inDialog:!0,localTabs:\3\}\),\1\[\2\]=\3,\1\[(\d+)\]=\4\):\4=\1\[\7\]/g,
-          replace: "$1[$2]!==$self._shellKey($3)?($4=(0,$5.jsx)($6,{inDialog:!0,localTabs:$3,key:$self._shellKey($3)}),$1[$2]=$self._shellKey($3),$1[$7]=$4):$4=$1[$7]"
-        }
-      },
-      {
-        find: '"user-dropdown.help","Help"',
-        all: true,
-        replacement: {
-          match: /(children:\[)(\i,\i,\i,\i,)(\i,\i,\i,\i\])([\s\S]{0,220}?function \i\(e\)\{return e\.toggleOpen\})/,
-          replace: "$1$2$self._renderItem(),$3$4"
-        }
-      }
-    ]
-  });
-
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/compactNewChat.css
   registerStyle("compactNewChat", `/*
  * Void++, a modification for grok.com
@@ -6609,9 +6220,9 @@ ${root}::-webkit-scrollbar-thumb:hover {
   }
 
   // src/plugins/betterSidebar/index.tsx
-  var logger14 = new Logger("BetterSidebar");
+  var logger13 = new Logger("BetterSidebar");
   var cl5 = classNameFactory("void-sidebar-");
-  var settings4 = definePluginSettings({
+  var settings3 = definePluginSettings({
     clickToToggle: {
       type: 3 /* BOOLEAN */,
       description: "Click anywhere on the sidebar to toggle it.",
@@ -6702,15 +6313,15 @@ ${root}::-webkit-scrollbar-thumb:hover {
         bots.setState({ rosterLoaded: false });
       }
     } catch (e) {
-      logger14.warn("Roster gate", e);
+      logger13.warn("Roster gate", e);
     }
   }
   function applyHeaderHover() {
-    if (settings4.store.titleRowHover)
+    if (settings3.store.titleRowHover)
       enableStyle("headerHover");
     else
       disableStyle("headerHover");
-    if (settings4.store.compactNewChat)
+    if (settings3.store.compactNewChat)
       enableStyle("compactNewChat");
     else
       disableStyle("compactNewChat");
@@ -6730,7 +6341,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
   }
   function wantBotsCollapsed() {
     try {
-      return settings4.store.botsDefaultCollapsed !== false;
+      return settings3.store.botsDefaultCollapsed !== false;
     } catch {
       return true;
     }
@@ -6812,7 +6423,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     stopBotsCollapse();
   }
   function resetChatsCollapsedStorage() {
-    if (!settings4.store.chatsDefaultExpanded)
+    if (!settings3.store.chatsDefaultExpanded)
       return;
     try {
       localStorage.removeItem(CHATS_COLLAPSED_KEY);
@@ -6854,7 +6465,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
   }
   function startChatsExpand() {
     stopChatsExpand();
-    if (!settings4.store.chatsDefaultExpanded)
+    if (!settings3.store.chatsDefaultExpanded)
       return;
     resetChatsCollapsedStorage();
     let done = false;
@@ -6877,7 +6488,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     }, 1e4);
   }
   function resetProjectsCollapsedStorage() {
-    if (!settings4.store.projectsDefaultCollapsed)
+    if (!settings3.store.projectsDefaultCollapsed)
       return;
     try {
       localStorage.setItem(PROJECTS_COLLAPSED_KEY, "true");
@@ -6917,7 +6528,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
   }
   function startProjectsCollapse() {
     stopProjectsCollapse();
-    if (!settings4.store.projectsDefaultCollapsed)
+    if (!settings3.store.projectsDefaultCollapsed)
       return;
     resetProjectsCollapsedStorage();
     let done = false;
@@ -6961,7 +6572,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     push({ page: "main", teamId });
   }
   var ChatsPlus = ErrorBoundary.wrap(function ChatsPlusButton() {
-    if (!settings4.use(["chatsPlus"]).chatsPlus)
+    if (!settings3.use(["chatsPlus"]).chatsPlus)
       return null;
     return /* @__PURE__ */ React.createElement("button", {
       type: "button",
@@ -7038,10 +6649,10 @@ ${root}::-webkit-scrollbar-thumb:hover {
       ChatPageStore.useChatPageStore.getState().setConversationId(undefined);
     }
     const { fetchSoftDeleteConversation } = ConversationStore.useConversationStore.getState();
-    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger14.error("Failed to delete", id, e))));
+    await Promise.allSettled(ids.map((id) => fetchSoftDeleteConversation(id).catch((e) => logger13.error("Failed to delete", id, e))));
   }
   function SelectCheckbox({ id, route }) {
-    const enabled = settings4.use(["batchSelect"]).batchSelect;
+    const enabled = settings3.use(["batchSelect"]).batchSelect;
     if (!enabled || !id || !isConversationRoute(route))
       return null;
     return /* @__PURE__ */ React.createElement(SelectionCheckbox, {
@@ -7057,7 +6668,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     authors: [Devs.Prism, Devs.p],
     tags: ["navigation"],
     enabledByDefault: true,
-    settings: settings4,
+    settings: settings3,
     managedStyle: "betterSidebar",
     _ChatsPlus: () => createElement(ChatsPlus),
     _UserCard: ErrorBoundary.wrap(UserCard),
@@ -7072,7 +6683,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
     },
     _wrapSidebarClick(onClick, id, route) {
       return (e) => {
-        if (id && settings4.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
+        if (id && settings3.store.batchSelect && isConversationRoute(route) && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           e.stopPropagation();
           selection.toggle(id);
@@ -7082,7 +6693,7 @@ ${root}::-webkit-scrollbar-thumb:hover {
       };
     },
     _defaultOpen() {
-      return !settings4.store.defaultCollapsed;
+      return !settings3.store.defaultCollapsed;
     },
     _useBotsCollapsed: useBotsCollapsed,
     _chatsCollapsedInit() {
@@ -7094,10 +6705,10 @@ ${root}::-webkit-scrollbar-thumb:hover {
       return true;
     },
     _projectsAutoExpand() {
-      return !settings4.store.projectsDefaultCollapsed;
+      return !settings3.store.projectsDefaultCollapsed;
     },
     _onSidebarClick() {
-      if (!settings4.store.clickToToggle)
+      if (!settings3.store.clickToToggle)
         return;
       return (e) => {
         const target = e.target;
@@ -7555,7 +7166,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
 `);
 
   // src/api/Themes.ts
-  var logger15 = new Logger("Themes", "#c6a0f6");
+  var logger14 = new Logger("Themes", "#c6a0f6");
   function themeStyleId(url) {
     let hash = 0;
     for (let i = 0;i < url.length; i++) {
@@ -7645,7 +7256,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     };
     registerDisabledStyle(themeStyleId(url), css);
     setThemes([...getThemes(), theme]);
-    logger15.info(`Added theme "${theme.name}" from ${url}`);
+    logger14.info(`Added theme "${theme.name}" from ${url}`);
     return theme;
   }
   function addLocalTheme(name, css) {
@@ -7666,7 +7277,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     };
     registerDisabledStyle(themeStyleId(id), css);
     setThemes([...getThemes(), theme]);
-    logger15.info(`Added local theme "${theme.name}"`);
+    logger14.info(`Added local theme "${theme.name}"`);
     return theme;
   }
   function updateLocalTheme(url, data) {
@@ -7713,14 +7324,14 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     try {
       const resp = await fetchExternal(url);
       if (!resp.ok) {
-        logger15.warn(`Failed to fetch theme CSS (${resp.status}):`, url);
+        logger14.warn(`Failed to fetch theme CSS (${resp.status}):`, url);
         return;
       }
       if (!isThemeStillActive(url))
         return;
       css = await resp.text();
     } catch (e) {
-      logger15.warn("Failed to fetch theme CSS:", url, e);
+      logger14.warn("Failed to fetch theme CSS:", url, e);
       return;
     }
     if (!isThemeStillActive(url))
@@ -7752,7 +7363,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }));
     for (const [i, result] of results.entries()) {
       if (result.status === "rejected") {
-        logger15.warn(`Failed to load theme "${remote[i].name}":`, result.reason);
+        logger14.warn(`Failed to load theme "${remote[i].name}":`, result.reason);
       }
     }
   }
@@ -8633,22 +8244,22 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
 
   // src/components/settings/SettingField.tsx
   var cl10 = classNameFactory("void-setting-");
-  function usePluginSetting(pluginName2, id, setting) {
-    const resolve = () => (Settings.plugins[pluginName2] ?? {})[id] ?? resolveDefault(setting);
+  function usePluginSetting(pluginName, id, setting) {
+    const resolve = () => (Settings.plugins[pluginName] ?? {})[id] ?? resolveDefault(setting);
     const [value, setValue] = useState(resolve);
     useEffect(() => {
-      const path = pluginPath(pluginName2, id);
+      const path = pluginPath(pluginName, id);
       const listener = () => setValue(resolve());
       SettingsStore3.addChangeListener(path, listener);
       return () => SettingsStore3.removeChangeListener(path, listener);
-    }, [pluginName2, id]);
+    }, [pluginName, id]);
     const update = useCallback((val) => {
       setValue(val);
-      mergePluginSettings(pluginName2, { [id]: val });
+      mergePluginSettings(pluginName, { [id]: val });
       setting.onChange?.(val);
       if (setting.restartNeeded)
         dispatch("reloadNeeded");
-    }, [id, pluginName2, setting]);
+    }, [id, pluginName, setting]);
     return [value, update];
   }
   function SettingLabel({ id, setting }) {
@@ -8666,8 +8277,8 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       setting
     }), children);
   }
-  var BooleanField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var BooleanField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     return /* @__PURE__ */ React.createElement(SettingsRow, {
       action: /* @__PURE__ */ React.createElement(SettingsSwitch, {
         checked: !!value,
@@ -8678,8 +8289,8 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       setting
     }));
   };
-  var SelectField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var SelectField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     const { options } = setting;
     const valueMap = useMemo(() => new Map(options.map((o) => [String(o.value), o.value])), [options]);
     return /* @__PURE__ */ React.createElement(SettingsRow, {
@@ -8696,8 +8307,8 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       setting
     }));
   };
-  var SliderField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var SliderField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     const { min, max } = setting;
     const n = typeof value === "number" ? value : min;
     const pct = max === min ? 100 : (n - min) / (max - min) * 100;
@@ -8739,16 +8350,16 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       className: cl10("slider-value")
     }, n)));
   };
-  var ComponentField = ({ setting, pluginName: pluginName2 }) => {
-    const [, update] = usePluginSetting(pluginName2, "component", setting);
+  var ComponentField = ({ setting, pluginName }) => {
+    const [, update] = usePluginSetting(pluginName, "component", setting);
     const Comp = setting.component;
     return /* @__PURE__ */ React.createElement(Comp, {
       setValue: update,
       option: setting
     });
   };
-  var NumberField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var NumberField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     return /* @__PURE__ */ React.createElement(LabeledField, {
       id,
       setting
@@ -8763,8 +8374,8 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       className: cl10("number-input")
     }));
   };
-  var BigIntField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var BigIntField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     return /* @__PURE__ */ React.createElement(LabeledField, {
       id,
       setting
@@ -8783,8 +8394,8 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       className: cl10("number-input")
     }));
   };
-  var StringField = ({ id, setting, pluginName: pluginName2 }) => {
-    const [value, update] = usePluginSetting(pluginName2, id, setting);
+  var StringField = ({ id, setting, pluginName }) => {
+    const [value, update] = usePluginSetting(pluginName, id, setting);
     return /* @__PURE__ */ React.createElement(LabeledField, {
       id,
       setting
@@ -8806,14 +8417,14 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     [0 /* STRING */]: StringField,
     [7 /* CUSTOM */]: null
   };
-  function SettingField({ id, setting, pluginName: pluginName2 }) {
+  function SettingField({ id, setting, pluginName }) {
     const Field = FIELD_MAP[setting.type];
     if (!Field)
       return null;
     return /* @__PURE__ */ React.createElement(Field, {
       id,
       setting,
-      pluginName: pluginName2
+      pluginName
     });
   }
 
@@ -9069,15 +8680,15 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     const filteredRequired = useFiltered(tabRequired, search2, getPluginKey);
     const dialogPlugin = dialogName ? plugins[dialogName] : null;
     const hasResults = filteredUser.length > 0 || filteredRequired.length > 0;
-    const onReload = useCallback((pluginName2) => {
+    const onReload = useCallback((pluginName) => {
       const initialStates = initialStatesRef.current;
       if (!initialStates)
         return;
       const changed = changedPluginsRef.current;
-      if (isPluginEnabled(pluginName2) === initialStates.get(pluginName2))
-        changed.delete(pluginName2);
+      if (isPluginEnabled(pluginName) === initialStates.get(pluginName))
+        changed.delete(pluginName);
       else
-        changed.add(pluginName2);
+        changed.add(pluginName);
       if (!changed.size) {
         setNeedsReload(false);
         setShowReload(false);
@@ -9204,14 +8815,14 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
 `);
 
   // src/components/settings/ThemeCard.tsx
-  var logger16 = new Logger("ThemeCard");
+  var logger15 = new Logger("ThemeCard");
   var cl13 = classNameFactory("void-theme-card-");
   function ThemeCard({ theme, onRemove, onToggle, onEdit }) {
     const handleToggle = () => {
       if (theme.enabled)
         disableTheme(theme.url);
       else
-        enableTheme(theme.url).catch((e) => logger16.error("Failed to enable theme:", e));
+        enableTheme(theme.url).catch((e) => logger15.error("Failed to enable theme:", e));
       onToggle();
     };
     const SourceIcon = theme.local ? FolderIcon : GlobeIcon;
@@ -9230,7 +8841,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
         icon: CopyIcon,
         label: "Copy URL",
         onClick: () => {
-          copyToClipboard(theme.url).catch((e) => logger16.error("Failed to copy URL:", e));
+          copyToClipboard(theme.url).catch((e) => logger15.error("Failed to copy URL:", e));
         }
       }), /* @__PURE__ */ React.createElement(IconButton, {
         icon: Trash2Icon,
@@ -9534,10 +9145,10 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     [4 /* WARNING */]: "warning",
     [5 /* LOADING */]: "loading"
   };
-  var logger17 = new Logger("Notifications");
+  var logger16 = new Logger("Notifications");
   function showToast(message, type = 0 /* MESSAGE */, options) {
     if (!Toaster.toast) {
-      logger17.warn("showToast called before Toaster initialized, discarding:", message);
+      logger16.warn("showToast called before Toaster initialized, discarding:", message);
       return -1;
     }
     const { toast } = Toaster;
@@ -9551,7 +9162,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
   // src/plugins/experiments/index.tsx
   var cl15 = classNameFactory("void-experiments-");
   var NEW_FLAG_TTL = 24 * 60 * 60 * 1000;
-  var settings5 = definePluginSettings({
+  var settings4 = definePluginSettings({
     toastNotifications: {
       type: 3 /* BOOLEAN */,
       description: "Show a toast when experiment flags change.",
@@ -9583,16 +9194,16 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       return;
     const message = parts.join(`
 `);
-    if (settings5.store.toastNotifications)
+    if (settings4.store.toastNotifications)
       showToast(message, 3 /* INFO */);
-    if (settings5.store.browserNotifications)
+    if (settings4.store.browserNotifications)
       sendBrowserNotification("Grok Experiments", message);
   }
   function syncKnownFlags(config) {
     const booleanKeys = getBooleanKeys(config);
     if (!booleanKeys.length)
       return;
-    const existing = settings5.plain.knownFlags;
+    const existing = settings4.plain.knownFlags;
     const firstRun = existing == null;
     const known = { ...existing };
     const now = Date.now();
@@ -9624,13 +9235,13 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }
     lastConfigSnapshot = Object.fromEntries(booleanKeys.map((k) => [k, !!config[k]]));
     if (changed) {
-      settings5.store.knownFlags = { ...known };
+      settings4.store.knownFlags = { ...known };
     }
     if (!firstRun)
       notifyChanges(newFlags, removedFlags, flipped);
   }
   function isNewFlag(key) {
-    const seen = settings5.plain.knownFlags?.[key];
+    const seen = settings4.plain.knownFlags?.[key];
     if (seen == null)
       return false;
     return Date.now() - seen < NEW_FLAG_TTL;
@@ -9794,11 +9405,11 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     description: "Unlock and toggle unreleased Grok features.",
     authors: [Devs.Prism],
     tags: ["developer"],
-    settings: settings5,
+    settings: settings4,
     startAt: "TurbopackReady" /* TurbopackReady */,
     _proxy: overrideProxy,
     start() {
-      if (settings5.store.browserNotifications && Notification.permission === "default")
+      if (settings4.store.browserNotifications && Notification.permission === "default")
         Notification.requestPermission().catch(() => {});
       const state = FeatureStore.useFeatureStore.getState();
       if (state.status === "ready")
@@ -9886,7 +9497,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
   // src/plugins/pluginsFlyout/index.tsx
   var PLUGIN_NAME = "PluginsFlyout";
   var cl16 = classNameFactory("void-pf-");
-  var settings6 = definePluginSettings({
+  var settings5 = definePluginSettings({
     menuPlugins: {
       type: 6 /* COMPONENT */,
       description: "Plugins shown under Void++ → Plugins.",
@@ -9898,7 +9509,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     return Object.keys(plugins).filter((n) => !plugins[n].hidden).toSorted((a, b) => a.localeCompare(b));
   }
   function menuPluginMap() {
-    const raw = settings6.store.menuPlugins;
+    const raw = settings5.store.menuPlugins;
     return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   }
   function isShownInPluginMenu(name) {
@@ -9908,7 +9519,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     return hasVisibleSettings(plugins[name]);
   }
   function setShownInPluginMenu(name, shown) {
-    settings6.store.menuPlugins = { ...menuPluginMap(), [name]: shown };
+    settings5.store.menuPlugins = { ...menuPluginMap(), [name]: shown };
   }
   function getVisibleMenuPlugins() {
     const names = listedPlugins();
@@ -9917,11 +9528,11 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     return names.filter(isShownInPluginMenu);
   }
   function usePluginMenu() {
-    settings6.use(["menuPlugins"]);
+    settings5.use(["menuPlugins"]);
     return getVisibleMenuPlugins();
   }
   function MenuPluginsEditor() {
-    settings6.use(["menuPlugins"]);
+    settings5.use(["menuPlugins"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
       gap: "0.5rem",
@@ -9954,13 +9565,13 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     authors: [Devs.p],
     tags: ["navigation"],
     enabledByDefault: true,
-    settings: settings6
+    settings: settings5
   });
 
   // src/plugins/_core/settings/index.tsx
-  var logger18 = new Logger("Settings");
+  var logger17 = new Logger("Settings");
   var cl17 = classNameFactory("void-settings-");
-  var settings7 = definePluginSettings({
+  var settings6 = definePluginSettings({
     showVoidPPMenu: {
       type: 3 /* BOOLEAN */,
       description: "Show the Void++ sub-menu in the avatar dropdown.",
@@ -10021,9 +9632,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.30] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6dee770"}`
-    }, `(${"6dee770"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.31] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"fef1c38"}`
+    }, `(${"fef1c38"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10053,7 +9664,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
   function VoidPPMenu() {
     const forceUpdate = useForceUpdater();
     useEventSubscription("pluginToggle", forceUpdate);
-    const { showVoidPPMenu } = settings7.use(["showVoidPPMenu"]);
+    const { showVoidPPMenu } = settings6.use(["showVoidPPMenu"]);
     const menuPlugins = usePluginMenu();
     const { Sub, Trigger, Content, Item, desktop } = accountMenuParts();
     if (!showVoidPPMenu)
@@ -10098,7 +9709,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     description: "Adds Void++ settings UI.",
     authors: [Devs.Prism, Devs.p],
     required: true,
-    settings: settings7,
+    settings: settings6,
     _renderVoidPPMenu: () => createElement(WrappedVoidPPMenu),
     _setPrimitive(name, component) {
       setSettingsPrimitive(name, component);
@@ -10163,9 +9774,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
         else
           document.addEventListener("DOMContentLoaded", loadSavedCSS, { once: true });
       } catch (e) {
-        logger18.error("Failed to load saved CSS:", e);
+        logger17.error("Failed to load saved CSS:", e);
       }
-      loadSavedThemes().catch((e) => logger18.error("Failed to load saved themes:", e));
+      loadSavedThemes().catch((e) => logger17.error("Failed to load saved themes:", e));
     },
     patches: [
       {
@@ -10517,10 +10128,10 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
   });
 
   // src/plugins/autoRetry/index.ts
-  var logger19 = new Logger("AutoRetry");
+  var logger18 = new Logger("AutoRetry");
   var CONTENT_MODERATED = "grok:content-moderated";
   var USER_INTERRUPT = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
-  var settings8 = definePluginSettings({
+  var settings7 = definePluginSettings({
     retryModeration: {
       type: 3 /* BOOLEAN */,
       description: "Retry content moderation errors.",
@@ -10544,7 +10155,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
   });
   var retryCounts = new Map;
   var pendingTimer = null;
-  function clearPending2() {
+  function clearPending() {
     if (pendingTimer != null) {
       clearTimeout(pendingTimer);
       pendingTimer = null;
@@ -10573,22 +10184,22 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     if (isUserInterrupt(response))
       return false;
     if (isModeration(response))
-      return settings8.store.retryModeration;
-    return settings8.store.retryNetwork;
+      return settings7.store.retryModeration;
+    return settings7.store.retryNetwork;
   }
   function retry(responseId, conversationId2, response) {
     const count = (retryCounts.get(conversationId2) ?? 0) + 1;
-    const max = settings8.store.maxRetries;
+    const max = settings7.store.maxRetries;
     if (count > max) {
       showToast("Max retries reached.", 2 /* ERROR */);
       retryCounts.delete(conversationId2);
       return;
     }
     retryCounts.set(conversationId2, count);
-    const delaySec = settings8.store.delay;
+    const delaySec = settings7.store.delay;
     showToast(`Retrying... (${count}/${max})`, 0 /* MESSAGE */);
-    logger19.info(`Retry ${count}/${max} for ${conversationId2} in ${delaySec}s`);
-    clearPending2();
+    logger18.info(`Retry ${count}/${max} for ${conversationId2} in ${delaySec}s`);
+    clearPending();
     pendingTimer = setTimeout(() => {
       pendingTimer = null;
       const state = ChatPageStore.useChatPageStore.getState();
@@ -10626,14 +10237,14 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     description: "Automatically retry failed messages on moderation or network errors.",
     authors: [Devs.Prism],
     tags: ["messages"],
-    settings: settings8,
+    settings: settings7,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
       retryCounts.clear();
-      clearPending2();
+      clearPending();
     },
     stop() {
-      clearPending2();
+      clearPending();
       retryCounts.clear();
     },
     events: {
@@ -10664,7 +10275,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
 `);
 
   // src/plugins/betterFiles/index.tsx
-  var logger20 = new Logger("BetterFiles");
+  var logger19 = new Logger("BetterFiles");
   var selection2 = createSelectionStore();
   var assetsById = new Map;
   function fileId(item) {
@@ -10689,9 +10300,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
       try {
         const ok = await deleteAsset(id, asset);
         if (ok === false)
-          logger20.error("Failed to delete asset", id);
+          logger19.error("Failed to delete asset", id);
       } catch (e) {
-        logger20.error("Failed to delete asset", id, e);
+        logger19.error("Failed to delete asset", id, e);
       }
       assetsById.delete(id);
     }));
@@ -10804,9 +10415,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
 `);
 
   // src/plugins/betterImagine/index.tsx
-  var logger21 = new Logger("BetterImagine");
+  var logger20 = new Logger("BetterImagine");
   var cl18 = classNameFactory("void-imagine-");
-  var settings9 = definePluginSettings({
+  var settings8 = definePluginSettings({
     hideDefaultPreviews: {
       type: 3 /* BOOLEAN */,
       description: "Hide the community image grid and templates on the Imagine home page.",
@@ -10854,7 +10465,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }
   });
   function buildFilename(post, isVideo) {
-    if (!settings9.store.smartFilenames || !post)
+    if (!settings8.store.smartFilenames || !post)
       return null;
     const prompt = (post.prompt ?? post.originalPrompt ?? "").trim();
     const slug = sanitizeFilename(prompt.slice(0, 60), "").slice(0, 60);
@@ -10917,7 +10528,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
   var randomSeed = Date.now();
   var filterStore = createExternalStore();
   function persist() {
-    if (!settings9.store.persistFilters)
+    if (!settings8.store.persistFilters)
       return;
     try {
       sessionStorage.setItem(STORAGE_KEY2, JSON.stringify({ filter: currentFilter, search: currentSearch, date: currentDate, sort: currentSort }));
@@ -10996,7 +10607,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var cacheList = null;
   var cacheResult = [];
   function filterItems(items) {
-    const { hideModerated } = settings9.store;
+    const { hideModerated } = settings8.store;
     const key = `${items.length}|${currentFilter}|${currentSearch}|${currentDate}|${currentSort}|${hideModerated ? 1 : 0}|${randomSeed}`;
     if (cacheList === items && cacheKey === key)
       return cacheResult;
@@ -11056,7 +10667,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           return;
         video.pause();
         video.currentTime = 0;
-      }).catch((e) => logger21.warn("Failed to pause video:", e));
+      }).catch((e) => logger20.warn("Failed to pause video:", e));
     } else {
       video.pause();
       video.currentTime = 0;
@@ -11065,7 +10676,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
   var onMouseEnter = (e) => {
     const video = e.currentTarget.querySelector("video");
     if (video)
-      pending.set(video, video.play().catch((e2) => logger21.error("Failed to play video", e2)));
+      pending.set(video, video.play().catch((e2) => logger20.error("Failed to play video", e2)));
   };
   var onMouseLeave = (e) => {
     const video = e.currentTarget.querySelector("video");
@@ -11108,7 +10719,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
 `));
       Toaster.toast.success(`Copied ${pluralize(lines.length, label)} to clipboard.`);
     } catch (e) {
-      logger21.error(`Failed to copy ${label}s`, e);
+      logger20.error(`Failed to copy ${label}s`, e);
       Toaster.toast.error(`Failed to copy ${label}s.`);
     }
   }
@@ -11153,7 +10764,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
           await state.upscaleVideo(id, video.id);
           upscaled++;
         } catch (e) {
-          logger21.error("Failed to upscale video:", id, video.id, e);
+          logger20.error("Failed to upscale video:", id, video.id, e);
         }
       }
     }
@@ -11314,7 +10925,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     }
   }
   function onVisibilityChange() {
-    if (!settings9.store.pauseWhenHidden)
+    if (!settings8.store.pauseWhenHidden)
       return;
     if (document.visibilityState !== "hidden")
       return;
@@ -11330,22 +10941,22 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     description: "Imagine polish: filter, sort, shortcuts on Favorites, autoplay control, hide moderated, bulk upscale + copy-prompts, smart filenames, pause-on-hidden.",
     authors: [Devs.Prism],
     tags: ["media"],
-    settings: settings9,
-    _hideDefault: () => settings9.store.hideDefaultPreviews,
+    settings: settings8,
+    _hideDefault: () => settings8.store.hideDefaultPreviews,
     _NullGrid: () => null,
-    _autoPlay: () => !settings9.store.noAutoplay,
-    _bypassPaywall: () => settings9.store.bypassPaywall,
-    _ctrlClickSelect: () => settings9.store.ctrlClickSelect,
+    _autoPlay: () => !settings8.store.noAutoplay,
+    _bypassPaywall: () => settings8.store.bypassPaywall,
+    _ctrlClickSelect: () => settings8.store.ctrlClickSelect,
     _playCard: (e) => {
-      if (settings9.store.playOnHover)
+      if (settings8.store.playOnHover)
         onMouseEnter(e);
     },
     _pauseCard: (e) => {
-      if (settings9.store.playOnHover)
+      if (settings8.store.playOnHover)
         onMouseLeave(e);
     },
     _postById: (id) => MediaStore.useMediaStore.getState().byId?.[id],
-    _hoverProps: () => settings9.store.playOnHover ? { onMouseEnter, onMouseLeave } : {},
+    _hoverProps: () => settings8.store.playOnHover ? { onMouseEnter, onMouseLeave } : {},
     _useFilteredFavorites: useFilteredFavorites,
     _renderFilterButtons: ErrorBoundary.wrap(FilterButtons, null),
     _renderUpscaleItem: ErrorBoundary.wrap(UpscaleItem, null),
@@ -11480,31 +11091,31 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     return /^#[0-9a-fA-F]{6}$/.test(c);
   }
   function getColor(key, fallback) {
-    const val = settings10.store[key];
+    const val = settings9.store[key];
     return val && isValidHex(val) ? val : fallback;
   }
   function applyColors() {
     const link = getColor("linkColor", DEFAULT_LINK);
     let css = `.void-colored-link{color:${link}!important;text-decoration-color:${link}!important}`;
-    if (settings10.store.enableVisitedColor) {
+    if (settings9.store.enableVisitedColor) {
       const visited = getColor("visitedColor", DEFAULT_VISITED);
       css += `.void-colored-link:visited{color:${visited}!important;text-decoration-color:${visited}!important}`;
     }
     registerStyle(STYLE_NAME2, css);
   }
   function ColorRow({ settingKey, title, description, fallback }) {
-    settings10.use([settingKey]);
+    settings9.use([settingKey]);
     return /* @__PURE__ */ React.createElement(ColorSettingRow, {
       value: getColor(settingKey, fallback),
       onChange: (v) => {
-        settings10.store[settingKey] = v;
+        settings9.store[settingKey] = v;
         applyColors();
       },
       title,
       description
     });
   }
-  var settings10 = definePluginSettings({
+  var settings9 = definePluginSettings({
     linkifyDomains: {
       type: 3 /* BOOLEAN */,
       description: "Detect bare domains in messages and make them clickable.",
@@ -11541,7 +11152,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
     description: "Colorize links and detect bare domains in chat messages.",
     authors: [Devs.Prism],
     tags: ["messages"],
-    settings: settings10,
+    settings: settings9,
     patches: [
       {
         find: "chat-markdown:a:link",
@@ -11569,7 +11180,7 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       }
     ],
     _remarkLinkify() {
-      const { store: store2 } = settings10;
+      const { store: store2 } = settings9;
       return (tree) => {
         try {
           if (!store2.linkifyDomains)
@@ -11613,8 +11224,8 @@ ${p.originalPrompt ?? ""}`.toLowerCase();
       };
     },
     start() {
-      settings10.store.linkColor ??= DEFAULT_LINK;
-      settings10.store.visitedColor ??= DEFAULT_VISITED;
+      settings9.store.linkColor ??= DEFAULT_LINK;
+      settings9.store.visitedColor ??= DEFAULT_VISITED;
       applyColors();
       enableStyle(STYLE_NAME2);
     },
@@ -11885,7 +11496,7 @@ html.void-cms-picked .void-cms-ghost {
   }
 
   // src/plugins/betterModeSelect/index.tsx
-  var logger22 = new Logger("BetterModeSelect");
+  var logger21 = new Logger("BetterModeSelect");
   var cl19 = classNameFactory("void-cms-");
   var MODES = [
     { id: "auto", pin: "pinAuto", label: "Auto", Icon: AutoModeIcon },
@@ -11913,7 +11524,7 @@ html.void-cms-picked .void-cms-ghost {
   var PICK_MS = 900;
   var POINTER = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
   var GHOST_STYLE = { opacity: "0", visibility: "hidden" };
-  var settings11 = definePluginSettings({
+  var settings10 = definePluginSettings({
     pinList: {
       type: 6 /* COMPONENT */,
       description: "Toggle pins and drag to set chip order. Ctrl+M cycles only the pinned models.",
@@ -11967,8 +11578,8 @@ html.void-cms-picked .void-cms-ghost {
     }
   });
   var OLD_NAME = "CompactModeSelect";
-  var NEW_NAME2 = "BetterModeSelect";
-  function renameList2(list) {
+  var NEW_NAME = "BetterModeSelect";
+  function renameList(list) {
     if (!Array.isArray(list) || !list.includes(OLD_NAME))
       return;
     const seen = new Set;
@@ -11976,7 +11587,7 @@ html.void-cms-picked .void-cms-ghost {
     for (const item of list) {
       if (typeof item !== "string")
         continue;
-      const name = item === OLD_NAME ? NEW_NAME2 : item;
+      const name = item === OLD_NAME ? NEW_NAME : item;
       if (seen.has(name))
         continue;
       seen.add(name);
@@ -11984,14 +11595,14 @@ html.void-cms-picked .void-cms-ghost {
     }
     return next;
   }
-  function migrateLegacy3() {
+  function migrateLegacy2() {
     const bag = PlainSettings.plugins;
     const old = bag[OLD_NAME];
     const meta = bag.Settings;
     const menu = bag.PluginsFlyout?.menuPlugins;
     const known = meta?.knownPlugins;
-    const pinned = renameList2(meta?.pinnedPlugins);
-    const starred = renameList2(meta?.starredPlugins);
+    const pinned = renameList(meta?.pinnedPlugins);
+    const starred = renameList(meta?.starredPlugins);
     const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu : undefined;
     const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
     const menuHas = !!menuRec && OLD_NAME in menuRec;
@@ -11999,7 +11610,7 @@ html.void-cms-picked .void-cms-ghost {
     if (!old && !menuHas && !knownHas && !pinned && !starred)
       return;
     if (old) {
-      const target = bag[NEW_NAME2] ??= {};
+      const target = bag[NEW_NAME] ??= {};
       const keys = Object.keys(target);
       const stub = keys.length === 0 || keys.length === 1 && keys[0] === "enabled";
       for (const key of Object.keys(old)) {
@@ -12014,29 +11625,29 @@ html.void-cms-picked .void-cms-ghost {
       if (starred)
         meta.starredPlugins = starred;
       if (knownHas && knownRec) {
-        if (!(NEW_NAME2 in knownRec))
-          knownRec[NEW_NAME2] = knownRec[OLD_NAME];
+        if (!(NEW_NAME in knownRec))
+          knownRec[NEW_NAME] = knownRec[OLD_NAME];
         delete knownRec[OLD_NAME];
       }
     }
     if (menuHas && menuRec) {
-      if (!(NEW_NAME2 in menuRec))
-        menuRec[NEW_NAME2] = menuRec[OLD_NAME];
+      if (!(NEW_NAME in menuRec))
+        menuRec[NEW_NAME] = menuRec[OLD_NAME];
       delete menuRec[OLD_NAME];
     }
     SettingsStore3.markAsChanged();
-    logger22.info("Migrated CompactModeSelect into BetterModeSelect");
+    logger21.info("Migrated CompactModeSelect into BetterModeSelect");
   }
-  var pluginName2 = Object.getOwnPropertyDescriptor(settings11, "pluginName");
-  if (pluginName2?.set && pluginName2.get) {
-    Object.defineProperty(settings11, "pluginName", {
+  var pluginName = Object.getOwnPropertyDescriptor(settings10, "pluginName");
+  if (pluginName?.set && pluginName.get) {
+    Object.defineProperty(settings10, "pluginName", {
       configurable: true,
       enumerable: true,
-      get: pluginName2.get,
+      get: pluginName.get,
       set(name) {
-        if (name === NEW_NAME2)
-          migrateLegacy3();
-        pluginName2.set.call(settings11, name);
+        if (name === NEW_NAME)
+          migrateLegacy2();
+        pluginName.set.call(settings10, name);
       }
     });
   }
@@ -12099,10 +11710,10 @@ html.void-cms-picked .void-cms-ghost {
     return next;
   }
   function setOrder(ids) {
-    settings11.store.pinOrder = ids.join(",");
+    settings10.store.pinOrder = ids.join(",");
   }
   function setPinned(pin, on) {
-    settings11.store[pin] = on;
+    settings10.store[pin] = on;
   }
   function pinnedIdsFrom(pinOrder, pins, catalog) {
     const known = catalog.filter((c) => KNOWN_IDS.has(c.id));
@@ -12161,7 +11772,7 @@ html.void-cms-picked .void-cms-ghost {
     return ["auto", ...ids];
   }
   function pinnedIds() {
-    const cfg = settings11.store;
+    const cfg = settings10.store;
     return withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, ModesStore.useModesStore.getState().modes ?? [])));
   }
   var incognitoObs = null;
@@ -12416,7 +12027,7 @@ html.void-cms-picked .void-cms-ghost {
       lockGhosts();
       await waitForGone();
     } catch (e) {
-      logger22.warn("Failed to harvest mode icons:", e);
+      logger21.warn("Failed to harvest mode icons:", e);
     } finally {
       setPicking(false);
       harvesting = false;
@@ -12462,7 +12073,7 @@ html.void-cms-picked .void-cms-ghost {
     e.dataTransfer.dropEffect = "move";
   }
   function PinOrderEditor() {
-    const cfg = settings11.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
+    const cfg = settings10.use(["pinAuto", "pinFast", "pinExpert", "pinHeavy", "pinBuild", "pinOrder"]);
     const ids = parseOrder(cfg.pinOrder);
     const [dragId, setDragId] = React.useState(null);
     const onDragStart = (id) => (e) => {
@@ -12548,7 +12159,7 @@ html.void-cms-picked .void-cms-ghost {
     return typeof ModesStore.useModesStore === "function" && typeof RoutingStore.useRoutingStore === "function" && typeof MessageStore.useMessageStore === "function" && typeof SettingsStore.useSettingsStore === "function";
   }
   function PinnedModes() {
-    const cfg = settings11.use([...SETTING_KEYS]);
+    const cfg = settings10.use([...SETTING_KEYS]);
     const page = RoutingStore.useRoutingStore((s) => s.route?.page);
     const selectedModeId = String(ModesStore.useModesStore((s) => s.selectedModeId) || "");
     const listed = ModesStore.useModesStore((s) => s.modes);
@@ -12617,7 +12228,7 @@ html.void-cms-picked .void-cms-ghost {
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
-    settings: settings11,
+    settings: settings10,
     managedStyle: "betterModeSelect",
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
@@ -12626,7 +12237,7 @@ html.void-cms-picked .void-cms-ghost {
         if (typeof hook === "function")
           hook.getState().ensureLoaded();
       } catch (e) {
-        logger22.debug("modes not ready", e);
+        logger21.debug("modes not ready", e);
       }
       bindModelHotkey();
       watchIncognitoMenu();
@@ -12634,7 +12245,7 @@ html.void-cms-picked .void-cms-ghost {
         offIncognitoWatch = SettingsStore.useSettingsStore.subscribe(() => watchIncognitoMenu());
         offRouteWatch = RoutingStore.useRoutingStore.subscribe(() => watchIncognitoMenu());
       } catch (e) {
-        logger22.debug("incognito watch failed", e);
+        logger21.debug("incognito watch failed", e);
       }
     },
     stop() {
@@ -13030,7 +12641,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/betterNavigator/index.ts
-  var logger23 = new Logger("BetterNavigator");
+  var logger22 = new Logger("BetterNavigator");
   var cl20 = classNameFactory("void-bn-");
   var MSG_SEL = "[data-testid='user-message'], [data-testid='assistant-message']";
   var ASST_SEL = "[data-testid='assistant-message']";
@@ -13109,7 +12720,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var LIVE_NODE = new Set(["streaming", "optimistic", "reconnecting", "send-sent", "ack-pending", "send-queued", "skeleton"]);
   var LIVE_PHASE = new Set(["sending", "streaming"]);
   var JUMP_SYM = Symbol.for("voidpp.betterNavigator.jump");
-  var settings12 = definePluginSettings({
+  var settings11 = definePluginSettings({
     showAssistant: {
       type: 3 /* BOOLEAN */,
       description: "List assistant replies in the navigator, not only your messages.",
@@ -13385,7 +12996,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return false;
     } catch (e) {
-      logger23.debug("stream stores unavailable:", e);
+      logger22.debug("stream stores unavailable:", e);
       return null;
     }
   }
@@ -13441,7 +13052,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const page = ChatPageStore.useChatPageStore.getState();
       return page.conversationId || page.optimisticConversationId || "";
     } catch (e) {
-      logger23.debug("chat page unavailable:", e);
+      logger22.debug("chat page unavailable:", e);
       return "";
     }
   }
@@ -13451,7 +13062,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid];
     } catch (e) {
-      logger23.debug("message store unavailable:", e);
+      logger22.debug("message store unavailable:", e);
       return;
     }
   }
@@ -13577,7 +13188,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       return MessageStore.nodeToResponse?.(cid, node) ?? node.content;
     } catch (e) {
-      logger23.debug("nodeToResponse failed:", e);
+      logger22.debug("nodeToResponse failed:", e);
       return node.content;
     }
   }
@@ -13591,7 +13202,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function collectDom() {
     const root = chatPane() ?? document;
-    const showAsst = settings12.store.showAssistant;
+    const showAsst = settings11.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const out = [];
     for (const el of messageNodes(root)) {
@@ -13613,7 +13224,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (node.role !== "user" && node.role !== "assistant")
       return null;
     const role = node.role;
-    if (!settings12.store.showAssistant && role === "assistant")
+    if (!settings11.store.showAssistant && role === "assistant")
       return null;
     const rec = contentOf(cid, node);
     if (rec?.isControl)
@@ -13645,7 +13256,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const path = extendPath(gw, pathToLeaf(gw));
     if (!path.length)
       return [];
-    const showAsst = settings12.store.showAssistant;
+    const showAsst = settings11.store.showAssistant;
     const liveEl = showAsst ? liveAssistantEl() : null;
     const liveId = showAsst ? liveAssistantId(gw, path) : "";
     const out = [];
@@ -13774,7 +13385,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     el.classList.add("void-bn-flash");
   }
   function armFlash(id, fallback) {
-    if (settings12.store.jumpEffect !== "border")
+    if (settings11.store.jumpEffect !== "border")
       return;
     if (!id && !fallback)
       return;
@@ -13908,7 +13519,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
       return true;
     } catch (e) {
-      logger23.debug("loadOlderHistory failed:", e);
+      logger22.debug("loadOlderHistory failed:", e);
       return false;
     }
   }
@@ -14302,7 +13913,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return best;
   }
   function nativeCurrentIndex() {
-    if (!settings12.store.showAssistant)
+    if (!settings11.store.showAssistant)
       return null;
     const ticks = nativeTicks();
     if (!ticks.length)
@@ -14532,7 +14143,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function syncNativeDash(nav) {
     clearNativeDash();
-    if (!settings12.store.showAssistant)
+    if (!settings11.store.showAssistant)
       return;
     let liveI = -1;
     for (let i = nav.length - 1;i >= 0; i--) {
@@ -14630,7 +14241,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     document.documentElement.classList.remove("void-bn-fullticks");
   }
   function syncHideTip() {
-    document.documentElement.classList.toggle(HIDE_CLASS, !!settings12.store.hideNativeHover);
+    document.documentElement.classList.toggle(HIDE_CLASS, !!settings11.store.hideNativeHover);
   }
   function setOpen(on) {
     host?.classList.toggle("void-bn-open", on);
@@ -14882,7 +14493,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const genKey = gen ? `${gen.userId}:${gen.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
       return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey}|${path.map((n) => `${n.id}:${n.status}`).join(",")}`;
     } catch (e) {
-      logger23.debug("message key failed:", e);
+      logger22.debug("message key failed:", e);
       return "";
     }
   }
@@ -14943,7 +14554,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["navigation"],
     enabledByDefault: true,
     startAt: "DOMContentLoaded" /* DOMContentLoaded */,
-    settings: settings12,
+    settings: settings11,
     managedStyle: "betterNavigator",
     cleanupSelectors: [".void-bn-host"],
     start,
@@ -15223,7 +14834,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/persist.ts
-  var logger24 = new Logger("QueuePersist");
+  var logger23 = new Logger("QueuePersist");
   var ENQUEUE_FORCE = Symbol.for("voidpp.modeSync.enqueueIntent");
   var DB_KEY = "queue-persist:v1";
   var LOCAL_ACCOUNT = "local";
@@ -15335,7 +14946,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (intent.activeModelId && prevActive !== intent.activeModelId)
         chat.setActiveModelId(intent.activeModelId);
     } catch (e) {
-      logger24.debug("intent apply failed", e);
+      logger23.debug("intent apply failed", e);
     }
     try {
       if (intent?.modeId)
@@ -15351,7 +14962,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         if (chat && prevActive && String(chat.activeModelId || "") !== prevActive)
           chat.setActiveModelId(prevActive);
       } catch (e) {
-        logger24.debug("intent restore failed", e);
+        logger23.debug("intent restore failed", e);
       }
     }
   }
@@ -15554,7 +15165,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       await idbSet(DB_KEY, doc);
     } catch (e) {
-      logger24.debug("persist failed", e);
+      logger23.debug("persist failed", e);
     }
   }
   async function load() {
@@ -15565,7 +15176,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       else
         doc = emptyDoc();
     } catch (e) {
-      logger24.debug("load failed", e);
+      logger23.debug("load failed", e);
       doc = emptyDoc();
     }
     bucketsToMemory(accountId());
@@ -15621,7 +15232,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           });
         });
       } catch (e) {
-        logger24.debug("replay failed", e);
+        logger23.debug("replay failed", e);
       } finally {
         suppress = false;
       }
@@ -15688,7 +15299,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         decided.add(cid);
       }
     } catch (e) {
-      logger24.debug("restore failed", e);
+      logger23.debug("restore failed", e);
       retry2 = true;
     } finally {
       replaying = false;
@@ -15946,7 +15557,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/settings.ts
-  var settings13 = definePluginSettings({
+  var settings12 = definePluginSettings({
     showQueueMode: {
       type: 3 /* BOOLEAN */,
       description: "Show a mode chip on each queued message.",
@@ -15965,7 +15576,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   });
 
   // src/plugins/betterQueue/mode.ts
-  var logger25 = new Logger("ModeSync");
+  var logger24 = new Logger("ModeSync");
   var CHAT_POST = /\/rest\/app-chat\/conversations/;
   var STOP_URL = /stop|abort|cancel/i;
   var MENU_SEL = "[role='menuitem'], [role='option'], [data-radix-collection-item]";
@@ -16178,7 +15789,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function syncRestoreFlag() {
-    if (!settings13.store.stickyOnNavigate) {
+    if (!settings12.store.stickyOnNavigate) {
       setRestoreFlag(false);
       return;
     }
@@ -16221,7 +15832,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (settled !== slug && modeSlug2(intent.modeId) === slug)
         setIntent(captureIntent(settled, snapshot()));
     } catch (e) {
-      logger25.debug("apply failed", e);
+      logger24.debug("apply failed", e);
     } finally {
       applying = false;
     }
@@ -16268,7 +15879,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
       } catch (e) {
-        logger25.debug("incognito build hide failed", e);
+        logger24.debug("incognito build hide failed", e);
       } finally {
         applying = false;
       }
@@ -16279,7 +15890,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     userPicking = false;
     awaitingMenu = false;
     applyIntent(intent);
-    logger25.info("intent", intent.modeId);
+    logger24.info("intent", intent.modeId);
   }
   function rememberSnapshot() {
     const next = snapshot();
@@ -16289,7 +15900,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     userPicking = false;
     awaitingMenu = false;
     syncModelMode(modeSlug2(intent.modeId));
-    logger25.info("intent", intent.modeId);
+    logger24.info("intent", intent.modeId);
   }
   function syncModelMode(slug) {
     if (!slug || applying)
@@ -16309,7 +15920,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     } catch (e) {
       applying = false;
-      logger25.debug("model sync failed", e);
+      logger24.debug("model sync failed", e);
     }
   }
   var MODE_IDS = new Set(CATALOG.map((m) => m.id));
@@ -16357,7 +15968,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         try {
           ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
         } catch (e) {
-          logger25.debug("incognito build hide failed", e);
+          logger24.debug("incognito build hide failed", e);
         } finally {
           applying = false;
         }
@@ -16382,7 +15993,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           try {
             ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
           } catch (e) {
-            logger25.debug("incognito build hide failed", e);
+            logger24.debug("incognito build hide failed", e);
           } finally {
             applying = false;
           }
@@ -16399,7 +16010,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       ModesStore.useModesStore.getState().setSelectedModeId("build", { source: "sync" });
     } catch (e) {
-      logger25.debug("incognito build restore failed", e);
+      logger24.debug("incognito build restore failed", e);
     } finally {
       applying = false;
     }
@@ -16435,7 +16046,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       wrapped.voidPicker = true;
       store2.setState({ setSelectedModeId: wrapped });
     } catch (e) {
-      logger25.debug("picker hook failed", e);
+      logger24.debug("picker hook failed", e);
     }
   }
   function markedBuild(cid) {
@@ -16506,7 +16117,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         modes.setSelectedModeId(slug, { source: "sync" });
       } catch (e) {
-        logger25.debug("picker sync failed", e);
+        logger24.debug("picker sync failed", e);
       } finally {
         applying = false;
       }
@@ -16516,7 +16127,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     const snap = snapshot();
     setIntent(captureIntent(snap.modeId || slug, snap));
-    logger25.info("intent", intent.modeId, "from send", slug);
+    logger24.info("intent", intent.modeId, "from send", slug);
   }
   var alignTimer = null;
   var alignN = 0;
@@ -16544,11 +16155,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       alignOff.push(ModesStore.useModesStore.subscribe(kick));
       alignOff.push(MessageStore.useMessageStore.subscribe(kick));
     } catch (e) {
-      logger25.debug("align subscribe failed", e);
+      logger24.debug("align subscribe failed", e);
     }
   }
   function fightHydrate() {
-    if (sendOverride || !settings13.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
+    if (sendOverride || !settings12.store.stickyOnNavigate || applying || userPicking || awaitingMenu || !intent.modeId)
       return;
     if (!loadPending())
       return;
@@ -16560,7 +16171,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const cid = currentCid3();
     if (modeSlug2(cur.modeId) === slug && (!cid || sessionAdjusted(cid) === slug) && (!intent.modelMode || modeSlug2(cur.modelMode) === slug) && (!intent.activeModelId || cur.activeModelId === intent.activeModelId))
       return;
-    logger25.info("hydrate fought", cur.modeId, "->", intent.modeId);
+    logger24.info("hydrate fought", cur.modeId, "->", intent.modeId);
     applyIntent(intent);
   }
   function navKey() {
@@ -16591,7 +16202,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (!intent.modeId)
       setIntent(snapshot());
-    if (!settings13.store.stickyOnNavigate || !intent.modeId) {
+    if (!settings12.store.stickyOnNavigate || !intent.modeId) {
       followModelMode();
       return;
     }
@@ -16752,7 +16363,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (diverting) {
         mapGetOrCreate(held, cid, () => []).push({ id, args: diverting, intent: { ...saved2 } });
         diverting = null;
-        logger25.info("held", id, "for", saved2.modeId);
+        logger24.info("held", id, "for", saved2.modeId);
         return true;
       }
       return false;
@@ -16832,7 +16443,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     state.removeQueuedMessage({ convId: cid, queueItemId: turn.id });
     state.sendMessage({ ...turn.args, text: QueueItems.queueItemText(queued.item), parentId });
     forgetItem(turn.id);
-    logger25.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
+    logger24.info("flushed", turn.id, "as", item.modeId, "session", ackedModel.get(cid) ?? "?", busy.has(cid) ? "busy" : "idle");
   }
   function visibleChip() {
     try {
@@ -16951,7 +16562,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       modes.setSelectedModeId(other, { source: "user" });
       modes.setSelectedModeId(slug, { source: "user" });
     } catch (e) {
-      logger25.debug("session align failed", e);
+      logger24.debug("session align failed", e);
     }
   }
   var MAX_NUDGE = 2;
@@ -16963,7 +16574,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return Promise.resolve(true);
     const gen = alignGen;
     pokeSession(cid, slug, 0);
-    logger25.info("session align", key, ackedModel.get(key) ?? "?", "->", slug);
+    logger24.info("session align", key, ackedModel.get(key) ?? "?", "->", slug);
     const arm = (pass, pending3) => {
       if (gen !== alignGen)
         return Promise.resolve(false);
@@ -16973,13 +16584,13 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         if (ok || sessionModelMatches(ackedModel.get(key), slug))
           return true;
         if (updateInFlight(key, slug) && pending3 < MAX_PENDING) {
-          logger25.info("session update pending", key, slug);
+          logger24.info("session update pending", key, slug);
           return arm(pass, pending3 + 1);
         }
         if (pass + 1 >= MAX_NUDGE)
           return false;
         pokeSession(cid, slug, pass + 1);
-        logger25.info("session align retry", key, slug);
+        logger24.info("session align retry", key, slug);
         return arm(pass + 1, 0);
       });
     };
@@ -17028,11 +16639,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           if (needsSessionAlign(cid, slug)) {
             alignSessionToChip(cid, slug).then((ok) => {
               if (!ok)
-                logger25.info("session align gave up", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
+                logger24.info("session align gave up", cid || "?", "want", slug, "acked", ackedModel.get(cid) ?? "?");
               try {
                 orig.call(this, data);
               } catch (e) {
-                logger25.debug("held send failed", e);
+                logger24.debug("held send failed", e);
               }
             });
             return;
@@ -17254,7 +16865,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       wrappedGwSend = wrapped;
       mgr.send = wrapped;
     } catch (e) {
-      logger25.debug("gateway wrap failed", e);
+      logger24.debug("gateway wrap failed", e);
     }
   }
   function unwrapGatewaySend() {
@@ -17265,7 +16876,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (gwHost && origGwSend && gwHost.send === wrappedGwSend)
         gwHost.send = origGwSend;
     } catch (e) {
-      logger25.debug("gateway unwrap failed", e);
+      logger24.debug("gateway unwrap failed", e);
     }
     origGwSend = null;
     wrappedGwSend = null;
@@ -17395,7 +17006,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     if (!next || next === text)
       return null;
     applyIntent(live);
-    logger25.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
+    logger24.info("rewrite", live.modeId, url.replace(/^https?:\/\/[^/]+/, ""));
     return next;
   }
   function patchFetchArgs(input, init) {
@@ -17442,7 +17053,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           return origFetch.call(pageWindow, i, n);
         }
       } catch (e) {
-        logger25.debug("fetch patch failed", e);
+        logger24.debug("fetch patch failed", e);
       }
       return origFetch.call(pageWindow, input, init);
     };
@@ -17463,7 +17074,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         xhrMeta.set(this, `${String(method).toUpperCase()} ${requestUrl(url)}`);
       } catch (e) {
-        logger25.debug("xhr open failed", e);
+        logger24.debug("xhr open failed", e);
       }
       return origXhrOpen.call(this, method, url, ...rest);
     };
@@ -17557,7 +17168,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (turn)
         turn.intent = next;
     }
-    logger25.info("queue item", id, "->", next.modeId);
+    logger24.info("queue item", id, "->", next.modeId);
     schedulePaint();
   }
   function menuCurrent(chip, id) {
@@ -17784,7 +17395,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
   function paint2() {
     paintRaf = 0;
-    if (!settings13.store.showQueueMode || onImaginePage()) {
+    if (!settings12.store.showQueueMode || onImaginePage()) {
       unpaint();
       return;
     }
@@ -17902,7 +17513,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       try {
         ModesStore.useModesStore.getState().setSelectedModeId("auto", { source: "sync" });
       } catch (e) {
-        logger25.debug("incognito build hide failed", e);
+        logger24.debug("incognito build hide failed", e);
       } finally {
         applying = false;
       }
@@ -17974,7 +17585,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       hookSocket();
       hookSelectedMode();
     } catch (e) {
-      logger25.warn("Failed to hook send path", e);
+      logger24.warn("Failed to hook send path", e);
     }
     try {
       offIncognito?.();
@@ -17988,7 +17599,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         schedulePaint();
       });
     } catch (e) {
-      logger25.debug("incognito subscribe failed", e);
+      logger24.debug("incognito subscribe failed", e);
     }
     if (!onImaginePage())
       followModelMode();
@@ -18099,14 +17710,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQueue/index.ts
-  var logger26 = new Logger("BetterQueue");
+  var logger25 = new Logger("BetterQueue");
   function dropName(list) {
     if (!Array.isArray(list))
       return;
     const next = list.filter((n) => typeof n === "string" && n !== "ModeSync" && n !== "QueuePersist");
     return next.length === list.length ? undefined : next;
   }
-  function migrateLegacy4() {
+  function migrateLegacy3() {
     const plugins2 = PlainSettings.plugins;
     const mode = plugins2.ModeSync;
     const persist3 = plugins2.QueuePersist;
@@ -18140,23 +17751,23 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     }
     SettingsStore3.markAsChanged();
-    logger26.info("Migrated ModeSync / QueuePersist into BetterQueue");
+    logger25.info("Migrated ModeSync / QueuePersist into BetterQueue");
   }
-  var pluginName3 = Object.getOwnPropertyDescriptor(settings13, "pluginName");
-  if (pluginName3?.set && pluginName3.get) {
-    Object.defineProperty(settings13, "pluginName", {
+  var pluginName2 = Object.getOwnPropertyDescriptor(settings12, "pluginName");
+  if (pluginName2?.set && pluginName2.get) {
+    Object.defineProperty(settings12, "pluginName", {
       configurable: true,
       enumerable: true,
-      get: pluginName3.get,
+      get: pluginName2.get,
       set(name) {
         if (name === "BetterQueue")
-          migrateLegacy4();
-        pluginName3.set.call(settings13, name);
+          migrateLegacy3();
+        pluginName2.set.call(settings12, name);
       }
     });
   }
   function applyPersist() {
-    if (settings13.store.persistAcrossRefresh)
+    if (settings12.store.persistAcrossRefresh)
       startPersist();
     else
       stopPersist();
@@ -18169,7 +17780,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["composer"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
-    settings: settings13,
+    settings: settings12,
     managedStyle: "betterQueue",
     cleanupSelectors: [".void-ms-qchip", ".void-ms-qmenu"],
     start() {
@@ -18720,7 +18331,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/jump.ts
-  var logger27 = new Logger("QuoteJump");
+  var logger26 = new Logger("QuoteJump");
   var cl21 = classNameFactory("void-qj-");
   var HL = "void-qj";
   var EDITOR = ".tiptap, [contenteditable='true']";
@@ -19664,11 +19275,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       await ResponseStore.useResponseStore.getState().loadResponses?.(cid);
     } catch (e) {
-      logger27.debug("loadResponses failed", e);
+      logger26.debug("loadResponses failed", e);
       try {
         await ResponseStore.useResponseStore.getState().loadMoreResponses?.(cid);
       } catch (err) {
-        logger27.debug("loadMoreResponses failed", err);
+        logger26.debug("loadMoreResponses failed", err);
       }
     }
     try {
@@ -19677,7 +19288,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         MessageStore.useMessageStore.getState().loadOlderHistory?.({ convId: cid, leafId: gw.defaultLeafId });
       }
     } catch (e) {
-      logger27.debug("loadOlderHistory failed", e);
+      logger26.debug("loadOlderHistory failed", e);
     }
   }
   function resolveNeedle(origin) {
@@ -19846,7 +19457,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
     if (mine !== gen || !el) {
       if (!el)
-        logger27.debug("no source message");
+        logger26.debug("no source message");
       return;
     }
     await land(el, needle, mine, pinned);
@@ -19889,7 +19500,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         }
       }
     } catch (e) {
-      logger27.debug("message nodes failed", e);
+      logger26.debug("message nodes failed", e);
     }
     try {
       const store2 = ResponseStore.useResponseStore.getState();
@@ -20209,7 +19820,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const root = host2();
     const card = root?.querySelector(JUMP_BTN) ?? el;
     if (!card) {
-      logger27.debug("no citing message", cite.id);
+      logger26.debug("no citing message", cite.id);
       return;
     }
     openAncestors(card, cite.quoted);
@@ -20278,7 +19889,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       e.stopPropagation();
       jump2(origin);
     } catch (err) {
-      logger27.debug("click", err);
+      logger26.debug("click", err);
     }
   }
   function startJump() {
@@ -20311,7 +19922,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/sticky.ts
-  var logger28 = new Logger("QuoteSticky");
+  var logger27 = new Logger("QuoteSticky");
   var cl22 = classNameFactory("void-qs-");
   var KEEP2 = 40;
   var RESTORE_GAP_MS = 80;
@@ -20563,7 +20174,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         applying2 = false;
       }
     } catch (e) {
-      logger28.debug("clear failed", e);
+      logger27.debug("clear failed", e);
     }
   }
   function applyQuote(key, text, popup) {
@@ -20577,7 +20188,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (typeof chat.setQuotePopupData === "function" && popupSig(chat.quotePopupData) !== popupSig(popup))
         chat.setQuotePopupData(popup);
     } catch (e) {
-      logger28.debug("apply failed", e);
+      logger27.debug("apply failed", e);
     } finally {
       applying2 = false;
     }
@@ -20699,11 +20310,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (!same && now - lastRestoreAt >= RESTORE_GAP_MS) {
         lastRestoreAt = now;
         applyQuote(key, snap.text, popupFor(snap));
-        logger28.info("restored", key);
+        logger27.info("restored", key);
       }
       paintFallback(key, snap);
     } catch (e) {
-      logger28.debug("restore failed", e);
+      logger27.debug("restore failed", e);
       paintFallback(key, snap);
     }
   }
@@ -20747,7 +20358,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (typeof chat.setQuotePopupData === "function" && chat.quotePopupData != null)
         chat.setQuotePopupData(null);
     } catch (e) {
-      logger28.debug("dismiss failed", e);
+      logger27.debug("dismiss failed", e);
     } finally {
       applying2 = false;
     }
@@ -20893,7 +20504,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         applying2 = false;
       }
     } catch (e) {
-      logger28.debug("consume clear failed", e);
+      logger27.debug("consume clear failed", e);
     }
   }
   function isComposerSend(el) {
@@ -21251,7 +20862,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         chat.setQuotePopupData(undefined);
       window.getSelection()?.removeAllRanges();
     } catch (e) {
-      logger28.debug("native quote", e);
+      logger27.debug("native quote", e);
     }
   }
   function onQuotePointerDown(e) {
@@ -21369,8 +20980,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/betterQuotes/index.ts
-  var logger29 = new Logger("BetterQuotes");
-  var settings14 = definePluginSettings({
+  var logger28 = new Logger("BetterQuotes");
+  var settings13 = definePluginSettings({
     jumpToPassage: {
       type: 3 /* BOOLEAN */,
       description: "Click a quote chip to jump to the passage, or the badge on that passage to jump back to the quotes.",
@@ -21388,7 +20999,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     const next = list.filter((n) => typeof n === "string" && n !== "QuoteJump" && n !== "QuoteSticky");
     return next.length === list.length ? undefined : next;
   }
-  function migrateLegacy5() {
+  function migrateLegacy4() {
     const plugins2 = PlainSettings.plugins;
     const jump3 = plugins2.QuoteJump;
     const sticky = plugins2.QuoteSticky;
@@ -21418,27 +21029,27 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
     }
     SettingsStore3.markAsChanged();
-    logger29.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
+    logger28.info("Migrated QuoteJump / QuoteSticky into BetterQuotes");
   }
-  var pluginName4 = Object.getOwnPropertyDescriptor(settings14, "pluginName");
-  if (pluginName4?.set && pluginName4.get) {
-    Object.defineProperty(settings14, "pluginName", {
+  var pluginName3 = Object.getOwnPropertyDescriptor(settings13, "pluginName");
+  if (pluginName3?.set && pluginName3.get) {
+    Object.defineProperty(settings13, "pluginName", {
       configurable: true,
       enumerable: true,
-      get: pluginName4.get,
+      get: pluginName3.get,
       set(name) {
         if (name === "BetterQuotes")
-          migrateLegacy5();
-        pluginName4.set.call(settings14, name);
+          migrateLegacy4();
+        pluginName3.set.call(settings13, name);
       }
     });
   }
   function apply2() {
-    if (settings14.store.jumpToPassage)
+    if (settings13.store.jumpToPassage)
       startJump();
     else
       stopJump();
-    if (settings14.store.persistAcrossChats)
+    if (settings13.store.persistAcrossChats)
       startSticky();
     else
       stopSticky();
@@ -21451,7 +21062,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     tags: ["messages", "composer"],
     enabledByDefault: true,
     startAt: "TurbopackReady" /* TurbopackReady */,
-    settings: settings14,
+    settings: settings13,
     managedStyle: "betterQuotes",
     cleanupSelectors: [".void-qs-chip", ".void-qj-back", ".void-qj-menu", "[data-void-bq-icon]"],
     start() {
@@ -21725,12 +21336,12 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   }
 
   // src/plugins/chatStateFavicons/index.ts
-  var logger30 = new Logger("ChatStateFavicons");
+  var logger29 = new Logger("ChatStateFavicons");
   var ICON_ID = "void-chat-state-favicon";
   var LIVE_RESPONSE = new Set(["streaming", "optimistic", "reconnecting", "in_progress", "in-progress"]);
   var DEAD_RESPONSE = new Set(["closed", "error", "done", "completed", "complete", "cancelled", "canceled", "aborted", "idle", "success", "worked", "failed", "interrupted", "stopped", "stream-error", "send-error"]);
   var USER_INTERRUPT3 = /interrupted by the user|user[- ]interrupt|aborted by the user|cancelled by the user|canceled by the user|请求被用户中断|被用户打断/i;
-  var settings15 = definePluginSettings({
+  var settings14 = definePluginSettings({
     style: {
       type: 4 /* SELECT */,
       description: "How the Grok mark is overlaid with chat state.",
@@ -21761,7 +21372,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var started2 = false;
   var watching = false;
   function currentStyle() {
-    const value = settings15.store.style;
+    const value = settings14.store.style;
     return isIconStyle(value) ? value : DEFAULT_STYLE;
   }
   function captureOfficial() {
@@ -21856,7 +21467,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return false;
       return !isDeadResponse2(byId[page.streamedMessageId ?? ""]) && !isDeadResponse2(byId[page.lastMessageId ?? ""]);
     } catch (e) {
-      logger30.debug("stream stores unavailable:", e);
+      logger29.debug("stream stores unavailable:", e);
       return false;
     }
   }
@@ -21870,7 +21481,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       }
       return false;
     } catch (e) {
-      logger30.debug("interrupt DOM unavailable:", e);
+      logger29.debug("interrupt DOM unavailable:", e);
       return false;
     }
   }
@@ -21881,7 +21492,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (isUserInterrupt3(byId[page.streamedMessageId ?? ""]) || isUserInterrupt3(byId[page.lastMessageId ?? ""]))
         return true;
     } catch (e) {
-      logger30.debug("interrupt lookup failed:", e);
+      logger29.debug("interrupt lookup failed:", e);
     }
     return officialInterruptedDom();
   }
@@ -21898,14 +21509,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (route.conversationId)
         return String(route.conversationId);
     } catch (e) {
-      logger30.debug("RoutingStore unavailable:", e);
+      logger29.debug("RoutingStore unavailable:", e);
     }
     try {
       const id = ChatPageStore.useChatPageStore.getState().conversationId;
       if (id)
         return id;
     } catch (e) {
-      logger30.debug("ChatPageStore unavailable:", e);
+      logger29.debug("ChatPageStore unavailable:", e);
     }
     return conversationToken();
   }
@@ -21954,7 +21565,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         return false;
       return response.state === "error" || response.error != null;
     } catch (e) {
-      logger30.debug("ResponseStore unavailable:", e);
+      logger29.debug("ResponseStore unavailable:", e);
       return false;
     }
   }
@@ -22128,7 +21739,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const response = ResponseStore.useResponseStore.getState().byId[responseId];
       lastWasError = !!response && !isUserInterrupt3(response) && (response.state === "error" || response.error != null);
     } catch (e) {
-      logger30.debug("ResponseStore unavailable:", e);
+      logger29.debug("ResponseStore unavailable:", e);
     }
     scheduleEvaluate();
   }
@@ -22263,11 +21874,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger30.debug("RoutingStore subscribe failed:", e);
+      logger29.debug("RoutingStore subscribe failed:", e);
       try {
         unsubRoute = RoutingStore.useRoutingStore.subscribe(() => scheduleEvaluate());
       } catch (err) {
-        logger30.debug("RoutingStore full subscribe failed:", err);
+        logger29.debug("RoutingStore full subscribe failed:", err);
       }
     }
     try {
@@ -22285,7 +21896,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger30.debug("ChatPageStore subscribe failed:", e);
+      logger29.debug("ChatPageStore subscribe failed:", e);
     }
     try {
       const responseStore = ResponseStore.useResponseStore;
@@ -22297,7 +21908,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         });
       }
     } catch (e) {
-      logger30.debug("ResponseStore subscribe failed:", e);
+      logger29.debug("ResponseStore subscribe failed:", e);
     }
   }
   function restoreOfficial() {
@@ -22320,7 +21931,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.p],
     tags: ["notifications"],
     enabledByDefault: true,
-    settings: settings15,
+    settings: settings14,
     startAt: "TurbopackReady" /* TurbopackReady */,
     cleanupSelectors: [`#${ICON_ID}`],
     start() {
@@ -22375,7 +21986,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   });
 
   // src/plugins/cleaner/index.ts
-  var settings16 = definePluginSettings({
+  var settings15 = definePluginSettings({
     hideUpgradePlan: {
       type: 3 /* BOOLEAN */,
       description: "Hide the upgrade plan button in the user menu.",
@@ -22428,7 +22039,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var IMAGINE_UPGRADE_STYLE = "cleanerImagineUpgrade";
   var IMAGINE_UPGRADE_CSS = 'form:has([aria-label="Generation mode"]) a[href*="upgrade"],form:has([aria-label="Generation mode"]) button[aria-label="Upgrade"],form:has([aria-label="Generation mode"]) button[aria-label*="Upgrade plan"],[data-wd-toolbar] a[href*="upgrade"],[data-wd-toolbar] button[aria-label="Upgrade"]{display:none!important}';
   function applyImagineUpgrade() {
-    if (settings16.store.hideImagineUpgrade)
+    if (settings15.store.hideImagineUpgrade)
       registerStyle(IMAGINE_UPGRADE_STYLE, IMAGINE_UPGRADE_CSS);
     else
       unregisterStyle(IMAGINE_UPGRADE_STYLE);
@@ -22440,7 +22051,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.Prism, Devs.p],
     tags: ["declutter"],
     enabledByDefault: true,
-    settings: settings16,
+    settings: settings15,
     start: applyImagineUpgrade,
     onSettingsChange: applyImagineUpgrade,
     stop() {
@@ -22570,7 +22181,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/cloneChats/index.tsx
-  var logger31 = new Logger("CloneChats");
+  var logger30 = new Logger("CloneChats");
   async function cloneChat(conversationId3) {
     const lastResponseId = ResponseStore.useResponseStore.getState().nodesByConversationId[conversationId3]?.at(-1)?.responseId;
     if (!lastResponseId)
@@ -22593,7 +22204,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   function CloneItem({ conversationId: conversationId3 }) {
     const streaming = useIsStreaming(conversationId3);
     return /* @__PURE__ */ React.createElement(MenuItem, {
-      onSelect: () => cloneChat(conversationId3).catch((e) => logger31.error("Failed to clone chat:", e)),
+      onSelect: () => cloneChat(conversationId3).catch((e) => logger30.error("Failed to clone chat:", e)),
       disabled: streaming
     }, /* @__PURE__ */ React.createElement(MenuGlyphIcon, {
       icon: CopyIcon,
@@ -22615,7 +22226,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   });
 
   // src/plugins/collapseThoughts/index.ts
-  var settings17 = definePluginSettings({
+  var settings16 = definePluginSettings({
     collapseSingle: {
       type: 3 /* BOOLEAN */,
       description: "Also collapse a thought that has only one note.",
@@ -22629,7 +22240,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.p],
     tags: ["messages"],
     enabledByDefault: true,
-    settings: settings17,
+    settings: settings16,
     patches: [
       {
         find: 'thoughts-sidepanel.more-notes","+{{count}} more"',
@@ -22767,7 +22378,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
 `);
 
   // src/plugins/completeToast/index.ts
-  var logger32 = new Logger("CompleteToast");
+  var logger31 = new Logger("CompleteToast");
   var cl23 = classNameFactory("void-ct-");
   var HOST = "void-ct-host";
   var NS = "http://www.w3.org/2000/svg";
@@ -22786,7 +22397,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var PREVIEW_MAX = 120;
   var TOASTED_MAX = 80;
   var DURATION_MAX = 20;
-  var settings18 = definePluginSettings({
+  var settings17 = definePluginSettings({
     keepUntilDismissed: {
       type: 3 /* BOOLEAN */,
       description: "Don't auto-close the toast. Dismiss with X, or by opening the chat.",
@@ -22882,14 +22493,14 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       add(page.conversationId);
       add(page.optimisticConversationId);
     } catch (e) {
-      logger32.debug("page ids unavailable:", e);
+      logger31.debug("page ids unavailable:", e);
     }
     try {
       const { route } = RoutingStore.useRoutingStore.getState();
       add(route.conversationId);
       add(route.chat);
     } catch (e) {
-      logger32.debug("route ids unavailable:", e);
+      logger31.debug("route ids unavailable:", e);
     }
     try {
       const url = new URL(location.href);
@@ -22897,7 +22508,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       add(url.searchParams.get("conversationId"));
       add(url.pathname.match(/^\/(?:c|chat)\/([^/?#]+)/i)?.[1]);
     } catch (e) {
-      logger32.debug("url ids unavailable:", e);
+      logger31.debug("url ids unavailable:", e);
     }
     return ids;
   }
@@ -22969,7 +22580,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid];
     } catch (e) {
-      logger32.debug("MessageStore unavailable:", e);
+      logger31.debug("MessageStore unavailable:", e);
       return;
     }
   }
@@ -22990,7 +22601,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       if (isLiveResponse(lastAssistant(cid, byConversationId)))
         return true;
     } catch (e) {
-      logger32.debug("ResponseStore live lookup failed:", e);
+      logger31.debug("ResponseStore live lookup failed:", e);
     }
     return false;
   }
@@ -23023,7 +22634,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           return id;
       }
     } catch (e) {
-      logger32.debug("gateway cid lookup failed:", e);
+      logger31.debug("gateway cid lookup failed:", e);
     }
     try {
       const { byConversationId } = ResponseStore.useResponseStore.getState();
@@ -23032,7 +22643,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           return id;
       }
     } catch (e) {
-      logger32.debug("response cid lookup failed:", e);
+      logger31.debug("response cid lookup failed:", e);
     }
     return "";
   }
@@ -23041,7 +22652,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const { byId, byIdWithWorkspaces } = ConversationStore.useConversationStore.getState();
       return byId[cid] ?? byIdWithWorkspaces[cid];
     } catch (e) {
-      logger32.debug("conversation lookup failed:", e);
+      logger31.debug("conversation lookup failed:", e);
       return;
     }
   }
@@ -23055,7 +22666,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const conv = byId[cid] ?? byIdWithWorkspaces[cid];
       return asWorkspaceId(conv?.workspaceId) || asWorkspaceId(conv?.workspaces);
     } catch (e) {
-      logger32.debug("workspace lookup failed:", e);
+      logger31.debug("workspace lookup failed:", e);
       return "";
     }
   }
@@ -23078,7 +22689,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     return clean.length > PREVIEW_MAX ? `${clean.slice(0, PREVIEW_MAX - 1)}…` : clean;
   }
   function previewOf(cid, rid) {
-    if (!settings18.store.showPreview)
+    if (!settings17.store.showPreview)
       return "";
     try {
       const { byId, byConversationId } = ResponseStore.useResponseStore.getState();
@@ -23121,7 +22732,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         chat.setOptimisticConversationId(undefined);
       chat.setProjectId(ws || undefined);
     } catch (e) {
-      logger32.debug("ChatPageStore update failed:", e);
+      logger31.debug("ChatPageStore update failed:", e);
     }
   }
   function navigateTo(id) {
@@ -23136,11 +22747,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       routing.push(dest);
       applyChatPage(cid, ws);
     } catch (e) {
-      logger32.error("Failed to navigate:", e);
+      logger31.error("Failed to navigate:", e);
       try {
         location.assign(hrefFor(cid, ws));
       } catch (navErr) {
-        logger32.error("Fallback navigation failed:", navErr);
+        logger31.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -23215,18 +22826,18 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       hide();
   }
   function shouldPersist() {
-    return !!settings18.store.keepUntilDismissed || clamp(settings18.store.duration, 0, DURATION_MAX) <= 0;
+    return !!settings17.store.keepUntilDismissed || clamp(settings17.store.duration, 0, DURATION_MAX) <= 0;
   }
   function armTimer() {
     clearTimer();
     if (shouldPersist())
       return;
-    const ms = clamp(settings18.store.duration, 0, DURATION_MAX) * 1000;
+    const ms = clamp(settings17.store.duration, 0, DURATION_MAX) * 1000;
     hideAt = Date.now() + ms;
     hideTimer = setTimeout(hide, ms);
   }
   function migratePersist() {
-    if (settings18.store.duration !== 0 || settings18.store.keepUntilDismissed)
+    if (settings17.store.duration !== 0 || settings17.store.keepUntilDismissed)
       return;
     mergePluginSettings("CompleteToast", {
       keepUntilDismissed: true,
@@ -23330,11 +22941,11 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       const dest = id ? { page: "imagine-post", postId: id, teamId: routing.route.teamId ?? null } : { page: "imagine", teamId: routing.route.teamId ?? null };
       routing.push(dest);
     } catch (e) {
-      logger32.error("Failed to navigate to Imagine:", e);
+      logger31.error("Failed to navigate to Imagine:", e);
       try {
         location.assign(id ? `/imagine/post/${encodeURIComponent(id)}` : "/imagine");
       } catch (navErr) {
-        logger32.error("Fallback Imagine navigation failed:", navErr);
+        logger31.error("Fallback Imagine navigation failed:", navErr);
       }
     }
   }
@@ -23375,7 +22986,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   }
   function maybeFinishImagine(id) {
-    if (!started3 || !settings18.store.imagineGeneration || !id)
+    if (!started3 || !settings17.store.imagineGeneration || !id)
       return;
     if (onImaginePage3())
       return;
@@ -23386,7 +22997,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     try {
       item = MediaStore.useMediaStore.getState().byId[id];
     } catch (e) {
-      logger32.debug("Imagine item unavailable:", e);
+      logger31.debug("Imagine item unavailable:", e);
       return;
     }
     if (!item)
@@ -23397,10 +23008,10 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
       return;
     markToasted(key);
     const prompt = (item.prompt ?? item.originalPrompt ?? "").trim();
-    show(id, "", "imagine", settings18.store.showPreview ? prompt.slice(0, PREVIEW_MAX) : "");
+    show(id, "", "imagine", settings17.store.showPreview ? prompt.slice(0, PREVIEW_MAX) : "");
   }
   function syncImagine(current, prev) {
-    if (!started3 || !settings18.store.imagineGeneration)
+    if (!started3 || !settings17.store.imagineGeneration)
       return;
     if (!prev)
       return;
@@ -23502,7 +23113,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           ids.add(id);
       }
     } catch (e) {
-      logger32.debug("gateway live scan failed:", e);
+      logger31.debug("gateway live scan failed:", e);
     }
     try {
       const { byConversationId } = ResponseStore.useResponseStore.getState();
@@ -23511,7 +23122,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
           ids.add(id);
       }
     } catch (e) {
-      logger32.debug("response live scan failed:", e);
+      logger31.debug("response live scan failed:", e);
     }
     return ids;
   }
@@ -23526,7 +23137,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         }
       }
     } catch (e) {
-      logger32.debug("seed responses failed:", e);
+      logger31.debug("seed responses failed:", e);
     }
     try {
       for (const [id, gw] of Object.entries(MessageStore.useMessageStore.getState().conversations ?? {})) {
@@ -23538,7 +23149,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         watched.add(id);
       }
     } catch (e) {
-      logger32.debug("seed gateway failed:", e);
+      logger31.debug("seed gateway failed:", e);
     }
   }
   function finishClosed() {
@@ -23554,7 +23165,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
         absorbFinish(id, last.responseId);
       }
     } catch (e) {
-      logger32.debug("closed scan failed:", e);
+      logger31.debug("closed scan failed:", e);
     }
   }
   function liveGenIds(cid) {
@@ -23671,7 +23282,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.p],
     tags: ["notifications"],
     enabledByDefault: true,
-    settings: settings18,
+    settings: settings17,
     startAt: "TurbopackReady" /* TurbopackReady */,
     managedStyle: "completeToast",
     cleanupSelectors: [`.${HOST}`, `#${HOST}`],
@@ -23734,7 +23345,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
   var FRAME_KIDS = "form:not([data-composer]):has(.query-bar)>:first-child>*";
   var BACKDROP = ".chat-input-backdrop,.pointer-events-none.absolute.bottom-0.z-0[class*=bg-gradient-to-t]";
   var RADIUS = "var(--border-t-radius,10rem) var(--border-t-radius,10rem) var(--border-b-radius,10rem) var(--border-b-radius,10rem)";
-  var settings19 = definePluginSettings({
+  var settings18 = definePluginSettings({
     opacity: {
       type: 5 /* SLIDER */,
       description: "Background opacity of the chat input. 100 is fully opaque.",
@@ -23751,8 +23362,8 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     }
   });
   function apply3() {
-    const pct = clamp(settings19.store.opacity, 0, 100);
-    const blur = clamp(settings19.store.blur, 0, 40);
+    const pct = clamp(settings18.store.opacity, 0, 100);
+    const blur = clamp(settings18.store.blur, 0, 40);
     const alpha = pct / 100;
     const frost = pct < 100 && blur > 0 ? `-webkit-backdrop-filter:blur(${blur}px)!important;backdrop-filter:blur(${blur}px)!important;` : "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;";
     registerStyle(STYLE_NAME3, `${FRAME}{background:transparent!important;background-image:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;pointer-events:none!important}` + `${FRAME_KIDS}{pointer-events:auto!important}` + `${BACKDROP}{display:none!important}` + `${SHELL}{` + "pointer-events:auto!important;" + `background-color:hsl(from var(--surface-l1) h s l / ${alpha})!important;` + "background-image:none!important;" + `border-radius:${RADIUS}!important;` + "overflow:hidden!important;" + `clip-path:inset(0 round ${RADIUS})!important;` + frost + "}" + `${SHELL}:has([data-wd-toolbar]){overflow:visible!important;clip-path:none!important}` + `form[data-composer][data-composer-layout="inline"]{height:auto!important;min-height:calc(var(--grok-control-height-lg) + 2*var(--grok-space-3) + 2px)}`);
@@ -23764,7 +23375,7 @@ html.void-bn-fullticks button[aria-label^="Go to response "] {
     authors: [Devs.p],
     tags: ["composer", "appearance"],
     enabledByDefault: true,
-    settings: settings19,
+    settings: settings18,
     start: apply3,
     onSettingsChange: apply3,
     stop() {
@@ -23928,7 +23539,7 @@ form[data-composer] .tiptap p.is-empty:only-child::before {
   }
 
   // src/plugins/customGreeting/index.tsx
-  var logger33 = new Logger("CustomGreeting");
+  var logger32 = new Logger("CustomGreeting");
   var cl24 = classNameFactory("void-ph-");
   var HERO_STYLE = "placeholderHero";
   var INPUT_STYLE = "placeholderInput";
@@ -23955,7 +23566,7 @@ form[data-composer] .tiptap p.is-empty:only-child::before {
     return text.replaceAll("\\", "\\\\").replaceAll('"', "\\\"").replaceAll(`
 `, "\\A ");
   }
-  var settings20 = definePluginSettings({
+  var settings19 = definePluginSettings({
     mode: {
       type: 4 /* SELECT */,
       description: "When to rotate the home greeting.",
@@ -23997,8 +23608,8 @@ form[data-composer] .tiptap p.is-empty:only-child::before {
     }
   }).withPrivateSettings();
   var OLD_NAME2 = "Placeholder";
-  var NEW_NAME3 = "CustomGreeting";
-  function renameList3(list) {
+  var NEW_NAME2 = "CustomGreeting";
+  function renameList2(list) {
     if (!Array.isArray(list) || !list.includes(OLD_NAME2))
       return;
     const seen = new Set;
@@ -24006,7 +23617,7 @@ form[data-composer] .tiptap p.is-empty:only-child::before {
     for (const item of list) {
       if (typeof item !== "string")
         continue;
-      const name = item === OLD_NAME2 ? NEW_NAME3 : item;
+      const name = item === OLD_NAME2 ? NEW_NAME2 : item;
       if (seen.has(name))
         continue;
       seen.add(name);
@@ -24014,14 +23625,14 @@ form[data-composer] .tiptap p.is-empty:only-child::before {
     }
     return next;
   }
-  function migrateLegacy6() {
+  function migrateLegacy5() {
     const bag = PlainSettings.plugins;
     const old = bag[OLD_NAME2];
     const meta = bag.Settings;
     const menu2 = bag.PluginsFlyout?.menuPlugins;
     const known = meta?.knownPlugins;
-    const pinned = renameList3(meta?.pinnedPlugins);
-    const starred = renameList3(meta?.starredPlugins);
+    const pinned = renameList2(meta?.pinnedPlugins);
+    const starred = renameList2(meta?.starredPlugins);
     const menuRec = menu2 && typeof menu2 === "object" && !Array.isArray(menu2) ? menu2 : undefined;
     const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known : undefined;
     const menuHas = !!menuRec && OLD_NAME2 in menuRec;
@@ -24029,7 +23640,7 @@ form[data-composer] .tiptap p.is-empty:only-child::before {
     if (!old && !menuHas && !knownHas && !pinned && !starred)
       return;
     if (old) {
-      const target = bag[NEW_NAME3] ??= {};
+      const target = bag[NEW_NAME2] ??= {};
       const keys2 = Object.keys(target);
       const stub = keys2.length === 0 || keys2.length === 1 && keys2[0] === "enabled";
       for (const key of Object.keys(old)) {
@@ -24044,29 +23655,29 @@ form[data-composer] .tiptap p.is-empty:only-child::before {
       if (starred)
         meta.starredPlugins = starred;
       if (knownHas && knownRec) {
-        if (!(NEW_NAME3 in knownRec))
-          knownRec[NEW_NAME3] = knownRec[OLD_NAME2];
+        if (!(NEW_NAME2 in knownRec))
+          knownRec[NEW_NAME2] = knownRec[OLD_NAME2];
         delete knownRec[OLD_NAME2];
       }
     }
     if (menuHas && menuRec) {
-      if (!(NEW_NAME3 in menuRec))
-        menuRec[NEW_NAME3] = menuRec[OLD_NAME2];
+      if (!(NEW_NAME2 in menuRec))
+        menuRec[NEW_NAME2] = menuRec[OLD_NAME2];
       delete menuRec[OLD_NAME2];
     }
     SettingsStore3.markAsChanged();
-    logger33.info("Migrated Placeholder into CustomGreeting");
+    logger32.info("Migrated Placeholder into CustomGreeting");
   }
-  var pluginName5 = Object.getOwnPropertyDescriptor(settings20, "pluginName");
-  if (pluginName5?.set && pluginName5.get) {
-    Object.defineProperty(settings20, "pluginName", {
+  var pluginName4 = Object.getOwnPropertyDescriptor(settings19, "pluginName");
+  if (pluginName4?.set && pluginName4.get) {
+    Object.defineProperty(settings19, "pluginName", {
       configurable: true,
       enumerable: true,
-      get: pluginName5.get,
+      get: pluginName4.get,
       set(name) {
-        if (name === NEW_NAME3)
-          migrateLegacy6();
-        pluginName5.set.call(settings20, name);
+        if (name === NEW_NAME2)
+          migrateLegacy5();
+        pluginName4.set.call(settings19, name);
       }
     });
   }
@@ -24087,7 +23698,7 @@ form[data-composer] .tiptap p.is-empty:only-child::before {
   }
   function PhraseListsEditor() {
     const [tab, setTab] = useState("phrases");
-    const { phrases, imaginePhrases } = settings20.use(["phrases", "imaginePhrases"]);
+    const { phrases, imaginePhrases } = settings19.use(["phrases", "imaginePhrases"]);
     const home = tab === "phrases";
     const hint = home ? "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults." : `One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's "Type to imagine".`;
     return /* @__PURE__ */ React.createElement(Flex, {
@@ -24118,14 +23729,14 @@ form[data-composer] .tiptap p.is-empty:only-child::before {
       className: cl24("textarea"),
       value: phrases ?? DEFAULT_PHRASES,
       onChange: (e) => {
-        settings20.store.phrases = e.target.value;
+        settings19.store.phrases = e.target.value;
       },
       placeholder: DEFAULT_PHRASES
     }) : /* @__PURE__ */ React.createElement(Textarea, {
       className: cl24("textarea"),
       value: imaginePhrases ?? "",
       onChange: (e) => {
-        settings20.store.imaginePhrases = e.target.value;
+        settings19.store.imaginePhrases = e.target.value;
       },
       placeholder: `A cat astronaut on the moon
 Neon rain in a quiet city`
@@ -24150,7 +23761,7 @@ Neon rain in a quiet city`
   function replaceChatInput() {
     if (isProjectChat())
       return true;
-    return settings20.store.heroOnlyOutsideProject === false;
+    return settings19.store.heroOnlyOutsideProject === false;
   }
   function isImaginePage2() {
     try {
@@ -24166,7 +23777,7 @@ Neon rain in a quiet city`
   }
   function phrases() {
     try {
-      const lines = parsePhrases(settings20.store.phrases ?? DEFAULT_PHRASES);
+      const lines = parsePhrases(settings19.store.phrases ?? DEFAULT_PHRASES);
       return lines.length ? lines : null;
     } catch {
       return null;
@@ -24174,23 +23785,23 @@ Neon rain in a quiet city`
   }
   function imaginePhrases() {
     try {
-      const lines = parsePhrases(settings20.store.imaginePhrases);
+      const lines = parsePhrases(settings19.store.imaginePhrases);
       return lines.length ? lines : null;
     } catch {
       return null;
     }
   }
   function rotateMode() {
-    const value = String(settings20.store.mode ?? "refresh");
+    const value = String(settings19.store.mode ?? "refresh");
     if (value === "interval" || value === "manual")
       return value;
     return "refresh";
   }
   function rotateOrder() {
-    return settings20.store.order === "random" ? "random" : "sequential";
+    return settings19.store.order === "random" ? "random" : "sequential";
   }
   function intervalMs() {
-    return clamp(Number(settings20.store.intervalSec ?? 10), 1, 3600) * 1000;
+    return clamp(Number(settings19.store.intervalSec ?? 10), 1, 3600) * 1000;
   }
   function routeKey2(s) {
     return `${s.route.page ?? ""}|${s.route.workspaceId ?? ""}`;
@@ -24208,13 +23819,13 @@ Neon rain in a quiet city`
   function pickNextIndex(listLen, advance) {
     if (listLen <= 0)
       return 0;
-    const current = Number(settings20.store.greetIndex ?? -1);
-    const last = Number(settings20.store.lastRandom ?? -1);
+    const current = Number(settings19.store.greetIndex ?? -1);
+    const last = Number(settings19.store.lastRandom ?? -1);
     if (listLen === 1) {
       if (current !== 0)
-        settings20.store.greetIndex = 0;
+        settings19.store.greetIndex = 0;
       if (last !== 0)
-        settings20.store.lastRandom = 0;
+        settings19.store.lastRandom = 0;
       return 0;
     }
     if (!advance)
@@ -24225,13 +23836,13 @@ Neon rain in a quiet city`
       let guard = 0;
       while (next2 === prev2 && guard++ < 10)
         next2 = Math.floor(Math.random() * listLen);
-      settings20.store.greetIndex = next2;
-      settings20.store.lastRandom = next2;
+      settings19.store.greetIndex = next2;
+      settings19.store.lastRandom = next2;
       return next2;
     }
     const prev = current >= -1 && current < listLen ? current : -1;
     const next = (prev + 1) % listLen;
-    settings20.store.greetIndex = next;
+    settings19.store.greetIndex = next;
     return next;
   }
   function paintHero(advance) {
@@ -24399,7 +24010,7 @@ Neon rain in a quiet city`
     description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
     authors: [Devs.p],
     tags: ["appearance"],
-    settings: settings20,
+    settings: settings19,
     _phrases() {
       if (isImaginePage2() || !replaceChatInput())
         return null;
@@ -24709,20 +24320,20 @@ Neon rain in a quiet city`
   var TrashIcon = findExportedComponentLazy("TrashIcon");
   var PlusIcon2 = findExportedComponentLazy("PlusIcon");
   var MAX_LENGTH = 4000;
-  var settings21 = definePluginSettings({
+  var settings20 = definePluginSettings({
     editor: {
       type: 6 /* COMPONENT */,
       component: () => /* @__PURE__ */ React.createElement(PresetsEditor, null)
     }
   }).withPrivateSettings();
   function getPresets() {
-    return settings21.plain.presets ?? [];
+    return settings20.plain.presets ?? [];
   }
   function setPresets(presets) {
-    settings21.store.presets = presets;
+    settings20.store.presets = presets;
   }
   function getAssignments() {
-    return settings21.plain.assignments ?? {};
+    return settings20.plain.assignments ?? {};
   }
   function PresetCard({ preset, onEdit, onDelete }) {
     return /* @__PURE__ */ React.createElement("div", {
@@ -24805,7 +24416,7 @@ Neon rain in a quiet city`
     }, "Done")));
   }
   function PresetsEditor() {
-    const presets = settings21.use(["presets"]).presets ?? [];
+    const presets = settings20.use(["presets"]).presets ?? [];
     const [editingId, setEditingId] = useState(null);
     const updatePreset = useCallback((updated) => {
       setPresets(getPresets().map((p) => p.id === updated.id ? updated : p));
@@ -24817,7 +24428,7 @@ Neon rain in a quiet city`
         if (v === id)
           delete a[k];
       }
-      settings21.store.assignments = a;
+      settings20.store.assignments = a;
       setEditingId((prev) => prev === id ? null : prev);
     }, []);
     const addPreset = useCallback(() => {
@@ -24852,8 +24463,8 @@ Neon rain in a quiet city`
     }));
   }
   function InstructionsMenu({ conversationId: conversationId3 }) {
-    const presets = settings21.use(["presets"]).presets ?? [];
-    const assignments = settings21.use(["assignments"]).assignments ?? {};
+    const presets = settings20.use(["presets"]).presets ?? [];
+    const assignments = settings20.use(["assignments"]).assignments ?? {};
     const activePresetId = assignments[conversationId3];
     const assign = useCallback((presetId) => {
       const a = { ...getAssignments() };
@@ -24861,7 +24472,7 @@ Neon rain in a quiet city`
         a[conversationId3] = presetId;
       else
         delete a[conversationId3];
-      settings21.store.assignments = a;
+      settings20.store.assignments = a;
     }, [conversationId3]);
     if (!presets.length)
       return null;
@@ -24893,7 +24504,7 @@ Neon rain in a quiet city`
     description: "Create instruction presets and assign them to conversations.",
     authors: [Devs.Prism],
     tags: ["chats"],
-    settings: settings21,
+    settings: settings20,
     contextMenuItems: {
       conversation: {
         label: "Instructions",
@@ -25089,7 +24700,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var ZOOM_MAX = 4;
   var SIZE_VAR = "--void-csi-avatar-size";
   var cl26 = classNameFactory("void-csi-");
-  var settings22 = definePluginSettings({
+  var settings21 = definePluginSettings({
     displayName: {
       type: 0 /* STRING */,
       description: "Display name next to the sidebar avatar. Empty keeps the official name.",
@@ -25191,25 +24802,25 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return url;
   }
   function resetCrop() {
-    settings22.store.cropX = 0.5;
-    settings22.store.cropY = 0.5;
-    settings22.store.cropZoom = 1;
+    settings21.store.cropX = 0.5;
+    settings21.store.cropY = 0.5;
+    settings21.store.cropZoom = 1;
   }
   function clearAvatar() {
-    settings22.store.avatarUrl = "";
-    settings22.store.avatarSource = "";
+    settings21.store.avatarUrl = "";
+    settings21.store.avatarSource = "";
     resetCrop();
   }
   var adoptGen = 0;
   async function adoptSource(src) {
     const gen2 = ++adoptGen;
     resetCrop();
-    settings22.store.avatarSource = src;
+    settings21.store.avatarSource = src;
     const baked = await bake(src, 0.5, 0.5, 1);
     if (gen2 !== adoptGen)
       return false;
     if (baked)
-      settings22.store.avatarUrl = baked;
+      settings21.store.avatarUrl = baked;
     return !!baked;
   }
   function imageFile(data) {
@@ -25235,7 +24846,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     return adoptSource(src);
   }
   function CropStage({ src }) {
-    const { cropX, cropY, cropZoom } = settings22.use(["cropX", "cropY", "cropZoom"]);
+    const { cropX, cropY, cropZoom } = settings21.use(["cropX", "cropY", "cropZoom"]);
     const [nat, setNat] = useState(null);
     const [x, setX] = useState(() => num(cropX, 0.5));
     const [y, setY] = useState(() => num(cropY, 0.5));
@@ -25254,11 +24865,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           setNat({ w: img.naturalWidth, h: img.naturalHeight });
       };
       img.src = src;
-      setX(num(settings22.store.cropX, 0.5));
-      setY(num(settings22.store.cropY, 0.5));
-      setZoom(num(settings22.store.cropZoom, 1));
-      if (!settings22.store.avatarSource)
-        settings22.store.avatarSource = src;
+      setX(num(settings21.store.cropX, 0.5));
+      setY(num(settings21.store.cropY, 0.5));
+      setZoom(num(settings21.store.cropZoom, 1));
+      if (!settings21.store.avatarSource)
+        settings21.store.avatarSource = src;
       return () => {
         dead = true;
       };
@@ -25298,12 +24909,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     function commit(nx, ny, nz, immediate = false) {
       const next = applyPos(nx, ny, nz);
       const run = () => {
-        settings22.store.cropX = next.x;
-        settings22.store.cropY = next.y;
-        settings22.store.cropZoom = next.z;
+        settings21.store.cropX = next.x;
+        settings21.store.cropY = next.y;
+        settings21.store.cropZoom = next.z;
         bake(src, next.x, next.y, next.z).then((url) => {
           if (url)
-            settings22.store.avatarUrl = url;
+            settings21.store.avatarUrl = url;
         });
       };
       if (bakeTimer.current)
@@ -25384,7 +24995,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }, "Drag to pan · scroll to zoom. Circle matches the sidebar crop."));
   }
   function AvatarUrlField() {
-    const { avatarUrl, avatarSource } = settings22.use(["avatarUrl", "avatarSource"]);
+    const { avatarUrl, avatarSource } = settings21.use(["avatarUrl", "avatarSource"]);
     const raw = String(avatarUrl ?? "");
     const source = String(avatarSource ?? "");
     const cropSrc = source.startsWith("data:image/") ? source : raw.startsWith("data:image/") ? raw : "";
@@ -25397,12 +25008,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         clearTimeout(urlTimer.current);
     }, []);
     function onUrlChange(value) {
-      settings22.store.avatarUrl = value;
+      settings21.store.avatarUrl = value;
       const trimmed = value.trim();
       if (urlTimer.current)
         clearTimeout(urlTimer.current);
       if (!trimmed) {
-        settings22.store.avatarSource = "";
+        settings21.store.avatarSource = "";
         resetCrop();
         setRemoteFail(false);
         return;
@@ -25423,7 +25034,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       }
       if (/^https?:\/\//.test(trimmed)) {
         setRemoteFail(false);
-        settings22.store.avatarSource = "";
+        settings21.store.avatarSource = "";
         urlTimer.current = setTimeout(() => {
           bitmapFromUrl(trimmed).then((bmp) => {
             if (!bmp) {
@@ -25442,7 +25053,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       }
       setRemoteFail(false);
-      settings22.store.avatarSource = "";
+      settings21.store.avatarSource = "";
     }
     return /* @__PURE__ */ React.createElement(Flex, {
       flexDirection: "column",
@@ -25507,10 +25118,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var painting2 = false;
   var started5 = false;
   function trimName() {
-    return String(settings22.store.displayName ?? "").trim();
+    return String(settings21.store.displayName ?? "").trim();
   }
   function avatarSrc() {
-    const raw = String(settings22.store.avatarUrl ?? "").trim();
+    const raw = String(settings21.store.avatarUrl ?? "").trim();
     if (!raw || failed.has(raw))
       return null;
     if (raw.startsWith("data:image/"))
@@ -25656,7 +25267,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     for (const menu2 of document.querySelectorAll(MENU)) {
       if (!isAccountMenu(menu2))
         continue;
-      if (!settings22.store.applyToMenu) {
+      if (!settings21.store.applyToMenu) {
         dropNames(menu2);
         unhide(menu2);
         for (const img2 of menu2.querySelectorAll(`img[${MARK2}]`))
@@ -25689,7 +25300,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     unhide(document);
   }
   function applySize() {
-    const n = clamp(Math.round(num(settings22.store.avatarSize, SIZE_DEFAULT)), SIZE_MIN, SIZE_MAX);
+    const n = clamp(Math.round(num(settings21.store.avatarSize, SIZE_DEFAULT)), SIZE_MIN, SIZE_MAX);
     document.documentElement.style.setProperty(SIZE_VAR, `${n}px`);
   }
   function clearSize() {
@@ -25726,7 +25337,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const el = m.target;
       if (!(el instanceof HTMLImageElement))
         continue;
-      if (el.closest(FOOTER) || settings22.store.applyToMenu && el.closest(MENU)) {
+      if (el.closest(FOOTER) || settings21.store.applyToMenu && el.closest(MENU)) {
         schedule2();
         return;
       }
@@ -25749,7 +25360,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     authors: [Devs.p],
     tags: ["appearance"],
     enabledByDefault: false,
-    settings: settings22,
+    settings: settings21,
     managedStyle: "customSidebarIdentity",
     cleanupSelectors: [`.${NAME_CLASS}`],
     start() {
@@ -25783,7 +25394,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 
   // src/plugins/downloadTTS/index.tsx
   var cl27 = classNameFactory("void-download-tts-");
-  var logger34 = new Logger("DownloadTTS");
+  var logger33 = new Logger("DownloadTTS");
   async function fetchAndDownload() {
     const { currentStreamId } = TextToSpeechStore.useTextToSpeechStore.getState();
     if (!currentStreamId)
@@ -25803,7 +25414,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       try {
         await fetchAndDownload();
       } catch (e) {
-        logger34.error("Failed to download TTS audio:", e);
+        logger33.error("Failed to download TTS audio:", e);
       }
     });
     return /* @__PURE__ */ React.createElement(Button, {
@@ -25838,12 +25449,12 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   });
 
   // src/plugins/errorPageRetry/index.ts
-  var logger35 = new Logger("ErrorPageRetry");
+  var logger34 = new Logger("ErrorPageRetry");
   var STORE = "void-epr";
   var STALE_MS = 5 * 60 * 1000;
   var TITLE = /^(something went wrong|出错了|出了点问题)$/i;
   var RELOAD = /reload page|^reload$|重新加载页面|^重新加载$/i;
-  var settings23 = definePluginSettings({
+  var settings22 = definePluginSettings({
     maxRetries: {
       type: 1 /* NUMBER */,
       description: "Maximum reloads of the crash screen for this URL.",
@@ -25873,7 +25484,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return { n: 0, t: 0 };
       return parsed;
     } catch (e) {
-      logger35.warn(e);
+      logger34.warn(e);
       return { n: 0, t: 0 };
     }
   }
@@ -25881,14 +25492,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       sessionStorage.setItem(slotKey(), JSON.stringify(slot));
     } catch (e) {
-      logger35.warn(e);
+      logger34.warn(e);
     }
   }
   function clearSlot() {
     try {
       sessionStorage.removeItem(slotKey());
     } catch (e) {
-      logger35.warn(e);
+      logger34.warn(e);
     }
   }
   function isCrashScreen() {
@@ -25919,18 +25530,18 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function schedule3() {
     if (timer2 != null)
       return;
-    const max = settings23.store.maxRetries;
+    const max = settings22.store.maxRetries;
     const slot = readSlot();
     if (slot.n >= max) {
-      logger35.warn(`max retries (${max}) for ${location.pathname}`);
+      logger34.warn(`max retries (${max}) for ${location.pathname}`);
       return;
     }
-    const delaySec = settings23.store.delay;
-    logger35.info(`reload ${slot.n + 1}/${max} in ${delaySec}s`);
+    const delaySec = settings22.store.delay;
+    logger34.info(`reload ${slot.n + 1}/${max} in ${delaySec}s`);
     timer2 = setTimeout(() => {
       timer2 = null;
       const next = readSlot();
-      if (next.n >= settings23.store.maxRetries)
+      if (next.n >= settings22.store.maxRetries)
         return;
       writeSlot({ n: next.n + 1, t: Date.now() });
       location.reload();
@@ -25958,7 +25569,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     authors: [Devs.p],
     tags: ["navigation"],
     enabledByDefault: true,
-    settings: settings23,
+    settings: settings22,
     start() {
       observer3 = new MutationObserver(onMut2);
       observer3.observe(document.documentElement, { childList: true, subtree: true });
@@ -25992,7 +25603,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/exportChat/index.tsx
-  var logger36 = new Logger("ExportChat");
+  var logger35 = new Logger("ExportChat");
   function buildExportMessage(r) {
     return {
       id: r.responseId,
@@ -26167,7 +25778,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       className: "void-export-icon"
     }), "Export"), /* @__PURE__ */ React.createElement(MenuSubContent, null, FORMATS.map(({ fmt, label }) => /* @__PURE__ */ React.createElement(MenuItem, {
       key: fmt,
-      onSelect: () => exportChat(conversationId3, fmt).catch((e) => logger36.error("Failed to export chat", e))
+      onSelect: () => exportChat(conversationId3, fmt).catch((e) => logger35.error("Failed to export chat", e))
     }, label))));
   }
   var exportChat_default = definePlugin({
@@ -26434,7 +26045,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
 `);
 
   // src/plugins/inputHistory/index.tsx
-  var logger37 = new Logger("InputHistory");
+  var logger36 = new Logger("InputHistory");
   var cl28 = classNameFactory("void-ih-");
   var COMPOSER = ":is(.query-bar, form[data-composer])";
   var EDITOR_INNER = '.tiptap.ProseMirror[contenteditable="true"]';
@@ -26447,7 +26058,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var APPLY_QUIET_MS = 120;
   var CAPTURE_DEDUPE_MS = 2000;
   var HISTORY_MODAL_KEY = "void-ih-history";
-  var settings24 = definePluginSettings({
+  var settings23 = definePluginSettings({
     maxEntries: {
       type: 5 /* SLIDER */,
       description: "Maximum stored prompts.",
@@ -26494,23 +26105,23 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     }
   }
   function useImagineBucket() {
-    return !!settings24.store.separateImagine && isImaginePage3();
+    return !!settings23.store.separateImagine && isImaginePage3();
   }
   function listOf(raw) {
     return Array.isArray(raw) ? raw.filter((x) => typeof x === "string") : [];
   }
   function getEntries() {
-    return listOf(useImagineBucket() ? settings24.plain.imagineEntries : settings24.plain.entries);
+    return listOf(useImagineBucket() ? settings23.plain.imagineEntries : settings23.plain.entries);
   }
   function cap(entries) {
-    const max = clamp(settings24.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
+    const max = clamp(settings23.store.maxEntries ?? MAX_DEFAULT, MAX_MIN, MAX_MAX);
     return entries.length > max ? entries.slice(entries.length - max) : entries;
   }
   function setEntries(entries) {
     if (useImagineBucket())
-      settings24.store.imagineEntries = entries;
+      settings23.store.imagineEntries = entries;
     else
-      settings24.store.entries = entries;
+      settings23.store.entries = entries;
   }
   function normalize(text) {
     return text.replaceAll(ZWSP, "").replace(/\r\n?/g, `
@@ -26621,7 +26232,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return normalize(serializePmDoc(view.state.doc, br));
       }
     } catch (err) {
-      logger37.debug("editorText pm failed:", err);
+      logger36.debug("editorText pm failed:", err);
     }
     const blocks = el.querySelectorAll(":scope > *");
     const raw = blocks.length ? Array.from(blocks, blockText).join(`
@@ -26731,7 +26342,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       view.dispatch(view.state.tr.setSelection(pmSel).scrollIntoView());
     } catch (err) {
-      logger37.debug("syncPm failed:", err);
+      logger36.debug("syncPm failed:", err);
     }
   }
   function applyRange(el, range) {
@@ -27002,7 +26613,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return;
       }
     } catch (err) {
-      logger37.debug("placeCaret pm failed:", err);
+      logger36.debug("placeCaret pm failed:", err);
     }
     const native = window.getSelection();
     if (!native)
@@ -27082,7 +26693,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       view.dispatch(tr.scrollIntoView());
       return true;
     } catch (err) {
-      logger37.debug("insertLinesPm failed:", err);
+      logger36.debug("insertLinesPm failed:", err);
       return false;
     }
   }
@@ -27096,7 +26707,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       return document.execCommand("insertHTML", false, linesToHtml(text));
     } catch (err) {
-      logger37.debug("insertLinesHtml failed:", err);
+      logger36.debug("insertLinesHtml failed:", err);
       return false;
     }
   }
@@ -27141,7 +26752,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (text && !insertLinesPm(el, text) && !insertLinesHtml(text))
         insertLinesDom(text);
     } catch (err) {
-      logger37.debug("insertText failed:", err);
+      logger36.debug("insertText failed:", err);
     }
     placeCaret(el, atStart);
     requestAnimationFrame(() => {
@@ -27434,19 +27045,19 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       pushEntry(editorText(editor));
   }
   function removeEntry(index, imagine) {
-    const list = listOf(imagine ? settings24.plain.imagineEntries : settings24.plain.entries);
+    const list = listOf(imagine ? settings23.plain.imagineEntries : settings23.plain.entries);
     if (index < 0 || index >= list.length)
       return;
     const next = list.filter((_, i) => i !== index);
     if (imagine)
-      settings24.store.imagineEntries = next;
+      settings23.store.imagineEntries = next;
     else
-      settings24.store.entries = next;
+      settings23.store.entries = next;
     if (imagine === useImagineBucket())
       resetBrowse(next.length);
   }
   function HistoryPanel({ picker, onUse } = {}) {
-    const { entries, imagineEntries, separateImagine } = settings24.use(["entries", "imagineEntries", "separateImagine"]);
+    const { entries, imagineEntries, separateImagine } = settings23.use(["entries", "imagineEntries", "separateImagine"]);
     const [bucket, setBucket] = useState(useImagineBucket() ? "imagine" : "chat");
     const imagine = !!separateImagine && bucket === "imagine";
     const list = imagine ? imagineEntries ?? [] : entries ?? [];
@@ -27545,7 +27156,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         tooltipContent: "Copy",
         "aria-label": "Copy",
         onClick: () => {
-          copyToClipboard(row.text).catch((err) => logger37.error("copy failed:", err));
+          copyToClipboard(row.text).catch((err) => logger36.error("copy failed:", err));
         }
       }, /* @__PURE__ */ React.createElement(CopyIcon, {
         size: 16
@@ -27572,9 +27183,9 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       danger: true,
       onConfirm: () => {
         if (imagine)
-          settings24.store.imagineEntries = [];
+          settings23.store.imagineEntries = [];
         else
-          settings24.store.entries = [];
+          settings23.store.entries = [];
         if (imagine === useImagineBucket())
           resetBrowse(0);
         setOpenId(null);
@@ -27624,7 +27235,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
-    settings: settings24,
+    settings: settings23,
     managedStyle: "inputHistory",
     cleanupSelectors: [".void-ih-hud"],
     start() {
@@ -27669,10 +27280,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         cursor = next.length;
       if (lastShown >= next.length)
         lastShown = -1;
-      const imagine = listOf(settings24.plain.imagineEntries);
+      const imagine = listOf(settings23.plain.imagineEntries);
       const imagineNext = cap(imagine);
       if (imagineNext.length !== imagine.length)
-        settings24.store.imagineEntries = imagineNext;
+        settings23.store.imagineEntries = imagineNext;
     },
     zustand: {
       RoutingStore: {
@@ -28078,7 +27689,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
 
   // src/plugins/messageStars/store.ts
-  var logger38 = new Logger("MessageStars");
+  var logger37 = new Logger("MessageStars");
   var DB_KEY2 = "message-stars:v1";
   var LOCAL_ACCOUNT2 = "local";
   var CHANNEL = "voidpp.message-stars";
@@ -28129,10 +27740,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       try {
         bc?.postMessage({ tab: tabId, account });
       } catch (e) {
-        logger38.debug("star broadcast failed:", e);
+        logger37.debug("star broadcast failed:", e);
       }
     } catch (e) {
-      logger38.error("Failed to save stars:", e);
+      logger37.error("Failed to save stars:", e);
     }
   }
   async function readIntoMemory() {
@@ -28141,7 +27752,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       next = normalize2(await idbGet(DB_KEY2));
     } catch (e) {
-      logger38.error("Failed to read stars:", e);
+      logger37.error("Failed to read stars:", e);
     }
     if (!alive2 || mine !== gen2)
       return;
@@ -28218,7 +27829,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         readIntoMemory();
       };
     } catch (e) {
-      logger38.debug("BroadcastChannel unavailable:", e);
+      logger37.debug("BroadcastChannel unavailable:", e);
     }
     readIntoMemory();
   }
@@ -28246,7 +27857,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
 
   // src/plugins/messageStars/index.tsx
-  var logger39 = new Logger("MessageStars");
+  var logger38 = new Logger("MessageStars");
   var JUMP_SYM2 = Symbol.for("voidpp.betterNavigator.jump");
   var PENDING_MS2 = 8000;
   var NS2 = "http://www.w3.org/2000/svg";
@@ -28257,7 +27868,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   var LIKE_RE = /^(like|good response|thumbs[- ]?up|upvote|喜欢|点赞)\b/i;
   var NOT_LIKE_RE = /dislike|bad response|thumbs[- ]?down|downvote|不喜欢|点踩|^踩\b/i;
   var NOT_COPY_RE = /\b(code|link|table|source)\b|代码|表格|链接|来源/i;
-  var settings25 = definePluginSettings({
+  var settings24 = definePluginSettings({
     showInSidebar: {
       type: 3 /* BOOLEAN */,
       description: "Show this chat's starred list to the left of the chat More button. Hover the star to open it.",
@@ -28353,7 +27964,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       routeId = String(route?.conversationId ?? "");
       routePage = String(route?.page ?? "");
     } catch (e) {
-      logger39.debug("route unavailable:", e);
+      logger38.debug("route unavailable:", e);
     }
     let pageId = "";
     let optimisticId = "";
@@ -28362,13 +27973,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       pageId = page.conversationId || "";
       optimisticId = page.optimisticConversationId || "";
     } catch (e) {
-      logger39.debug("chat page unavailable:", e);
+      logger38.debug("chat page unavailable:", e);
     }
     let href = "";
     try {
       href = location.href;
     } catch (e) {
-      logger39.debug("location unavailable:", e);
+      logger38.debug("location unavailable:", e);
     }
     return resolveConversationId({ routeId, routePage, href, pageId, optimisticId });
   }
@@ -28377,7 +27988,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const { byId, byIdWithWorkspaces } = ConversationStore.useConversationStore.getState();
       return byId[cid] ?? byIdWithWorkspaces[cid];
     } catch (e) {
-      logger39.debug("conversation lookup failed:", e);
+      logger38.debug("conversation lookup failed:", e);
       return;
     }
   }
@@ -28438,7 +28049,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       out.reverse();
       return out;
     } catch (e) {
-      logger39.debug("leaf walk failed:", e);
+      logger38.debug("leaf walk failed:", e);
       return [];
     }
   }
@@ -28478,7 +28089,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       const rec = node?.content;
       fromNode = role === "user" ? rec?.query || rec?.message || "" : rec?.message || "";
     } catch (e) {
-      logger39.debug("node lookup failed:", e);
+      logger38.debug("node lookup failed:", e);
     }
     const snippet = clipSnippet(fromNode) || clipSnippet(hint?.snippet || "") || domSnippet(messageId) || "Starred";
     const title = titleOf2(cid) || hint?.conversationTitle || "";
@@ -28525,7 +28136,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   function jumpLocal(messageId) {
     return navigatorJump(messageId);
   }
-  function clearPending3() {
+  function clearPending2() {
     pending3 = null;
     if (pendingTimer2)
       window.clearInterval(pendingTimer2);
@@ -28535,13 +28146,13 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (!pending3)
       return;
     if (performance.now() > pending3.until) {
-      clearPending3();
+      clearPending2();
       return;
     }
     if (currentCid4() !== pending3.cid)
       return;
     if (jumpLocal(pending3.id))
-      clearPending3();
+      clearPending2();
   }
   function armPending(cid, messageId) {
     pending3 = { cid, id: messageId, until: performance.now() + PENDING_MS2 };
@@ -28562,11 +28173,11 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       chat.setConversationId(cid);
       chat.setProjectId(ws || undefined);
     } catch (e) {
-      logger39.error("Failed to open starred message:", e);
+      logger38.error("Failed to open starred message:", e);
       try {
         location.assign(ws ? `/project/${encodeURIComponent(ws)}?chat=${encodeURIComponent(cid)}` : `/c/${encodeURIComponent(cid)}`);
       } catch (navErr) {
-        logger39.error("Fallback navigation failed:", navErr);
+        logger38.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -29034,7 +28645,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     panel.style.top = `${Math.round(Math.max(8, top))}px`;
   }
   function paintRail() {
-    if (!settings25.store.showInSidebar) {
+    if (!settings24.store.showInSidebar) {
       hideList();
       removeToggle();
       toldRail = false;
@@ -29048,7 +28659,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       toldRail = false;
     } else if (list.length && rail2) {
       if (!toldRail)
-        logger39.debug("chat More missing; star stays on the navigator");
+        logger38.debug("chat More missing; star stays on the navigator");
       toldRail = true;
       floatToggle(rail2);
     } else {
@@ -29155,7 +28766,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     ac2 = null;
     mo?.disconnect();
     mo = null;
-    clearPending3();
+    clearPending2();
     closePanel();
     removeToggle();
     toldRail = false;
@@ -29171,14 +28782,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     tags: ["messages"],
     enabledByDefault: false,
     startAt: "DOMContentLoaded" /* DOMContentLoaded */,
-    settings: settings25,
+    settings: settings24,
     managedStyle: "messageStars",
     cleanupSelectors: [".void-stars-bubble", ".void-stars-toggle", ".void-stars-panel", ".void-stars-host", ".void-stars-pop"],
     start: start2,
     stop: stop2,
     onSettingsChange() {
       panelKey = "";
-      if (!settings25.store.showInSidebar)
+      if (!settings24.store.showInSidebar)
         hideList();
       schedule4();
     },
@@ -29499,10 +29110,10 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
   }
 
   // src/plugins/messageTimestamps/index.tsx
-  var logger40 = new Logger("MessageTimestamps");
+  var logger39 = new Logger("MessageTimestamps");
   var STAMP_MAX = 5000;
   var RESPONSE_URL = /\/(?:load-responses|share_links|response-node)(?:\/|\?|$)/i;
-  var settings26 = definePluginSettings({
+  var settings25 = definePluginSettings({
     showDate: {
       type: 3 /* BOOLEAN */,
       description: "Show the full date for messages older than today.",
@@ -29525,7 +29136,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     if (cache)
       return cache;
     cache = new Map;
-    const raw = settings26.plain.stamps;
+    const raw = settings25.plain.stamps;
     if (raw && typeof raw === "object") {
       for (const [id, ms] of Object.entries(raw)) {
         if (typeof ms === "number" && Number.isFinite(ms))
@@ -29538,7 +29149,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     const next = {};
     for (const [id, ms] of stamps())
       next[id] = ms;
-    settings26.store.stamps = next;
+    settings25.store.stamps = next;
   }
   var persist3 = debounce(persistNow, 400);
   function remember3(id, ms, sender2, state, force = false) {
@@ -29574,7 +29185,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           return cid;
       }
     } catch (e) {
-      logger40.debug("conversation id lookup failed", e);
+      logger39.debug("conversation id lookup failed", e);
     }
     return "";
   }
@@ -29614,7 +29225,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         }
       }
     } catch (e) {
-      logger40.debug("message store unavailable", e);
+      logger39.debug("message store unavailable", e);
     }
     return out;
   }
@@ -29624,7 +29235,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       return MessageStore.useMessageStore.getState().conversations?.[cid]?.nodes?.[id]?.status === "complete";
     } catch (e) {
-      logger40.debug("message store unavailable", e);
+      logger39.debug("message store unavailable", e);
       return false;
     }
   }
@@ -29645,7 +29256,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         break;
       }
     } catch (e) {
-      logger40.debug("stable key lookup failed", e);
+      logger39.debug("stable key lookup failed", e);
     }
     return keys3;
   }
@@ -29686,7 +29297,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       }
       return Object.values(byId ?? {});
     } catch (e) {
-      logger40.debug("response store unavailable", e);
+      logger39.debug("response store unavailable", e);
       return [];
     }
   }
@@ -29710,7 +29321,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       ];
       return neighborTime(id, records) ?? conversationCreateTime(id);
     } catch (e) {
-      logger40.debug("node neighbor lookup failed", e);
+      logger39.debug("node neighbor lookup failed", e);
     }
     return neighborTime(id, storeRecords(id)) ?? conversationCreateTime(id);
   }
@@ -29726,7 +29337,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         return ms != null && !isFresh(ms) ? ms : null;
       }
     } catch (e) {
-      logger40.debug("conversation time lookup failed", e);
+      logger39.debug("conversation time lookup failed", e);
     }
     return null;
   }
@@ -29738,7 +29349,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       if (hit)
         return { ...rec, ...hit };
     } catch (e) {
-      logger40.debug("byId lookup failed", e);
+      logger39.debug("byId lookup failed", e);
     }
     return rec;
   }
@@ -29805,7 +29416,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         try {
           res.clone().json().then(ingest, () => {});
         } catch (e) {
-          logger40.debug("fetch ingest failed", e);
+          logger39.debug("fetch ingest failed", e);
         }
         return res;
       });
@@ -29842,7 +29453,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       try {
         xhrMeta2.set(this, requestUrl2(url));
       } catch (e) {
-        logger40.debug("xhr open failed", e);
+        logger39.debug("xhr open failed", e);
       }
       return origXhrOpen2.call(this, method, url, ...rest);
     };
@@ -29853,7 +29464,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
           try {
             ingestXhr(this);
           } catch (e) {
-            logger40.debug("xhr ingest failed", e);
+            logger39.debug("xhr ingest failed", e);
           }
         }, { once: true });
       }
@@ -29883,7 +29494,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
       };
     } catch (e) {
       origList = null;
-      logger40.debug("chatListResponses wrap skipped", e);
+      logger39.debug("chatListResponses wrap skipped", e);
     }
   }
   function unhookListResponses() {
@@ -29892,7 +29503,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     try {
       ApiClients.chatApi.chatListResponses = origList;
     } catch (e) {
-      logger40.debug("chatListResponses unwrap skipped", e);
+      logger39.debug("chatListResponses unwrap skipped", e);
     }
     origList = null;
   }
@@ -29911,14 +29522,14 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     description: "Shows timestamps on chat messages.",
     authors: [Devs.Prism, Devs.p],
     tags: ["messages"],
-    settings: settings26,
+    settings: settings25,
     start() {
       try {
         hookFetch2();
         hookXhr2();
         hookListResponses();
       } catch (e) {
-        logger40.warn("Failed to hook network", e);
+        logger39.warn("Failed to hook network", e);
       }
     },
     stop() {
@@ -29943,7 +29554,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
               nodes: Object.values(nodesByConversationId ?? {}).flat()
             });
           } catch (e) {
-            logger40.debug("store ingest failed", e);
+            logger39.debug("store ingest failed", e);
           }
         }
       },
@@ -29962,7 +29573,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
     _renderTimestamp: ErrorBoundary.wrap(({ response, isUser }) => {
       useExternalStore(tick2);
       const human = isUser === true || isHumanSender(response.sender);
-      if (settings26.store.hideOwnMessages && human)
+      if (settings25.store.hideOwnMessages && human)
         return null;
       const ms = resolveMs(response, isUser);
       if (ms == null)
@@ -29972,7 +29583,7 @@ html.void-streamer-sidebar-name [data-sidebar="footer"] button[data-state]:hover
         size: "xs",
         color: "muted",
         className: "void-timestamp"
-      }, formatTimestamp(ms, settings26.store.showDate));
+      }, formatTimestamp(ms, settings25.store.showDate));
     }),
     patches: [
       {
@@ -30108,7 +29719,7 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
 }
 `;
   var REFINEMENT_CSS = `.${REFINEMENT_MARK}{display:none!important}`;
-  var settings27 = definePluginSettings({
+  var settings26 = definePluginSettings({
     hideDictationRefinement: {
       type: 3 /* BOOLEAN */,
       description: 'Hide "Dictation Refinement" in the Grok Settings dialog (Behavior tab).',
@@ -30117,7 +29728,7 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
   });
   function apply5() {
     const rules = [BUTTON_CSS];
-    if (settings27.store.hideDictationRefinement)
+    if (settings26.store.hideDictationRefinement)
       rules.push(REFINEMENT_CSS);
     registerStyle(STYLE_NAME5, rules.join(`
 `));
@@ -30129,7 +29740,7 @@ div[style*="filter: blur"]:has(> .h-10.w-10.rounded-full.shrink-0 button[aria-la
     authors: [Devs.p],
     tags: ["declutter"],
     enabledByDefault: true,
-    settings: settings27,
+    settings: settings26,
     patches: [
       {
         find: 'settings.behavior.dictation-refinement.description","How much Grok refines your speech-to-text transcriptions',
@@ -30226,7 +29837,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
 
   // src/plugins/noShareLink/index.ts
   var STYLE_NAME8 = "noShareLink";
-  var settings28 = definePluginSettings({
+  var settings27 = definePluginSettings({
     hideShareProject: {
       type: 3 /* BOOLEAN */,
       description: "Inside a project: hide the top-right Share Project button.",
@@ -30240,13 +29851,13 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   });
   function apply6() {
     const rules = [];
-    if (settings28.store.hideShareProject) {
+    if (settings27.store.hideShareProject) {
       rules.push('button[aria-label="Share Project"]{display:none!important}');
       rules.push('[role="menuitem"]:has(use[href="#icon-md-share"],use[href="#icon-sm-share"],use[href="#icon-xs-share"]){display:none!important}');
       rules.push('[role="menuitem"]:has(use[href="#icon-md-share"],use[href="#icon-sm-share"],use[href="#icon-xs-share"]) + [role="separator"]{display:none!important}');
       rules.push('[role="separator"]:has(+ [role="menuitem"]:has(use[href="#icon-md-share"],use[href="#icon-sm-share"],use[href="#icon-xs-share"])){display:none!important}');
     }
-    if (settings28.store.hideCreateShareLink) {
+    if (settings27.store.hideCreateShareLink) {
       rules.push('button[aria-label="Create share link"]{display:none!important}');
     }
     registerStyle(STYLE_NAME8, rules.join(`
@@ -30259,7 +29870,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     authors: [Devs.p],
     tags: ["declutter", "privacy"],
     enabledByDefault: true,
-    settings: settings28,
+    settings: settings27,
     start: apply6,
     onSettingsChange: apply6,
     stop() {
@@ -30282,7 +29893,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   var MENU_EMAIL_DESKTOP = `${MENU_IDENTITY_GROUP} span + span`;
   var MENU_NAME_DESKTOP = `${MENU_IDENTITY_GROUP} span > span:first-child`;
   var MENU_CSI_NAME = '[role="menu"] .void-csi-name';
-  var settings29 = definePluginSettings({
+  var settings28 = definePluginSettings({
     hideUsername: {
       type: 3 /* BOOLEAN */,
       description: "Hide the username next to the sidebar avatar and at the top of the account menu.",
@@ -30296,7 +29907,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   });
   function apply7() {
     const rules = [];
-    if (settings29.store.hideUsername) {
+    if (settings28.store.hideUsername) {
       rules.push(`${STACK}>:first-child{display:none!important}`);
       rules.push(`${ACCOUNT_NAME}{display:none!important}`);
       rules.push(`${FOOTER2} .void-sidebar-name,${MENU_NAME_DESKTOP},${MENU_CSI_NAME}{display:none!important}`);
@@ -30304,11 +29915,11 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
       rules.push(`${ACCOUNT_CLUSTER}{width:auto!important;flex:none!important;min-width:0!important}`);
       rules.push(`${ACCOUNT_BTN2} ~ button{margin-inline-start:auto!important}`);
     }
-    if (settings29.store.hideEmail) {
+    if (settings28.store.hideEmail) {
       rules.push(`${STACK}>:nth-child(2){display:none!important}`);
       rules.push(`${MENU_EMAIL},${MENU_EMAIL_LABEL},${MENU_EMAIL_ROW},${MENU_EMAIL_DESKTOP}{display:none!important}`);
     }
-    if (settings29.store.hideUsername && settings29.store.hideEmail) {
+    if (settings28.store.hideUsername && settings28.store.hideEmail) {
       rules.push(`${TEXT_WRAP}{display:none!important}`);
       rules.push(`${FOOTER2} .void-sidebar-info{display:none!important}`);
       rules.push(`${MENU_IDENTITY_GROUP}{display:none!important}`);
@@ -30324,7 +29935,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     authors: [Devs.p],
     tags: ["privacy"],
     enabledByDefault: true,
-    settings: settings29,
+    settings: settings28,
     patches: [
       {
         find: "max-w-[400px] truncate",
@@ -30734,7 +30345,7 @@ html.void-rt-open [data-sidebar="gap"] {
 `);
 
   // src/plugins/recentTopics/index.tsx
-  var logger41 = new Logger("RecentTopics");
+  var logger40 = new Logger("RecentTopics");
   var cl29 = classNameFactory("void-rt-");
   var HOME_KEY = "home";
   var HOME_SEP = "home:";
@@ -30765,7 +30376,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var HOVER_ARM_PX = 4;
   var EFFECT_GM_KEY = "VoidPP.rt.effect";
   var EFFECT_LS_KEY = "voidpp.rt.v1";
-  var settings30 = definePluginSettings({
+  var settings29 = definePluginSettings({
     maxRecent: {
       type: 4 /* SELECT */,
       description: "How many recently opened conversations to show.",
@@ -30833,13 +30444,13 @@ html.void-rt-open [data-sidebar="gap"] {
     return effect.visits;
   }
   function maxCount() {
-    const n = Number(settings30.store.maxRecent);
+    const n = Number(settings29.store.maxRecent);
     return Number.isFinite(n) && n > 0 ? n : 5;
   }
   function capVisits(ids) {
-    const allowHome = settings30.store.includeHome;
+    const allowHome = settings29.store.includeHome;
     const current = currentVisit();
-    const dirtyGlobalWs = asWorkspaceId2(settings30.plain.workspaceByConv?.[HOME_KEY]);
+    const dirtyGlobalWs = asWorkspaceId2(settings29.plain.workspaceByConv?.[HOME_KEY]);
     const seen = new Set;
     const out = [];
     for (const raw of ids) {
@@ -30886,9 +30497,9 @@ html.void-rt-open [data-sidebar="gap"] {
     return keys4.every((k) => src[k] === b[k]);
   }
   function assignRecord(key, next) {
-    if (sameRecord(settings30.plain[key], next))
+    if (sameRecord(settings29.plain[key], next))
       return false;
-    settings30.store[key] = next;
+    settings29.store[key] = next;
     return true;
   }
   function emptyEffect() {
@@ -31080,9 +30691,9 @@ html.void-rt-open [data-sidebar="gap"] {
       effect = disk2;
     } else {
       const fromSettings = {
-        visits: asStringList(settings30.plain.visits),
-        deniedIds: asStringList(settings30.plain.deniedIds),
-        deniedAt: asStringRecord(settings30.plain.deniedAt)
+        visits: asStringList(settings29.plain.visits),
+        deniedIds: asStringList(settings29.plain.deniedIds),
+        deniedAt: asStringRecord(settings29.plain.deniedAt)
       };
       effect = {
         v: 1,
@@ -31124,7 +30735,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function commitVisits(next) {
     const changedVisits = persistEffect(next);
     const visits = readVisits();
-    const rawWs = pruneRecord(settings30.plain.workspaceByConv, visits);
+    const rawWs = pruneRecord(settings29.plain.workspaceByConv, visits);
     const workspaceByConv = {};
     for (const [id, value] of Object.entries(rawWs)) {
       if (id === HOME_KEY)
@@ -31133,7 +30744,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (ws)
         workspaceByConv[id] = ws;
     }
-    const pages = pruneRecord(settings30.plain.pages, visits);
+    const pages = pruneRecord(settings29.plain.pages, visits);
     const usedWs = new Set(Object.values(workspaceByConv));
     for (const id of visits) {
       const ws = workspaceFromHomeId(id);
@@ -31145,7 +30756,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const keepProjects = {};
     const keepIcons = {};
     const idx = sidebarIndex();
-    for (const [id, name] of Object.entries(settings30.plain.projectNames ?? {})) {
+    for (const [id, name] of Object.entries(settings29.plain.projectNames ?? {})) {
       const n = usableName(name);
       if (!usedWs.has(id) || !n)
         continue;
@@ -31154,14 +30765,14 @@ html.void-rt-open [data-sidebar="gap"] {
         continue;
       keepProjects[id] = n;
     }
-    for (const [id, snap] of Object.entries(settings30.plain.projectIcons ?? {})) {
+    for (const [id, snap] of Object.entries(settings29.plain.projectIcons ?? {})) {
       if (!usedWs.has(id) || !snap || isChromeSnap(snap))
         continue;
       keepIcons[id] = snap;
     }
     let changed = changedVisits;
     const titles = {};
-    for (const [id, name] of Object.entries(pruneRecord(settings30.plain.titles, visits))) {
+    for (const [id, name] of Object.entries(pruneRecord(settings29.plain.titles, visits))) {
       const t = usableTitle(name);
       if (t)
         titles[id] = t;
@@ -31188,10 +30799,10 @@ html.void-rt-open [data-sidebar="gap"] {
       return;
     if (id === chatIdFromUrl() && isAccessDeniedPage())
       return;
-    const prev = settings30.plain.titles ?? {};
+    const prev = settings29.plain.titles ?? {};
     if (prev[id] === t)
       return;
-    settings30.store.titles = { ...prev, [id]: t };
+    settings29.store.titles = { ...prev, [id]: t };
   }
   function isHomeId(id) {
     return id === HOME_KEY || id.startsWith(HOME_SEP);
@@ -31292,7 +30903,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (fromRoute != null && isHomeId(fromRoute))
         return fromRoute;
     } catch (e) {
-      logger41.debug("RoutingStore unavailable:", e);
+      logger40.debug("RoutingStore unavailable:", e);
     }
     return null;
   }
@@ -31311,7 +30922,7 @@ html.void-rt-open [data-sidebar="gap"] {
         add(historyStack[i]);
       return unique(ids);
     } catch (e) {
-      logger41.debug("historyStack unavailable:", e);
+      logger40.debug("historyStack unavailable:", e);
       return [];
     }
   }
@@ -31387,7 +30998,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const { byId, byIdWithWorkspaces, list } = ConversationStore.useConversationStore.getState();
       return byId[id] ?? byIdWithWorkspaces[id] ?? list.find((c) => c.conversationId === id);
     } catch (e) {
-      logger41.debug("Conversation lookup failed:", e);
+      logger40.debug("Conversation lookup failed:", e);
       return;
     }
   }
@@ -31395,9 +31006,9 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!id || isHomeId(id))
       return "New chat";
     if (isDenied(id))
-      return usableTitle(settings30.plain.titles?.[id]) || "Untitled";
+      return usableTitle(settings29.plain.titles?.[id]) || "Untitled";
     const conv = lookup(id);
-    return usableTitle(conv?.title) || usableTitle(settings30.plain.titles?.[id]) || titleFromPage(id) || "Untitled";
+    return usableTitle(conv?.title) || usableTitle(settings29.plain.titles?.[id]) || titleFromPage(id) || "Untitled";
   }
   function liveWorkspaceId() {
     const fromUrl = asWorkspaceId2(projectIdFromUrl());
@@ -31445,7 +31056,7 @@ html.void-rt-open [data-sidebar="gap"] {
       const conv = byId[id] ?? byIdWithWorkspaces[id];
       return asWorkspaceId2(conv?.workspaceId) || asWorkspaceId2(conv?.workspaces);
     } catch (e) {
-      logger41.debug("convWorkspaceId failed:", e);
+      logger40.debug("convWorkspaceId failed:", e);
       return asWorkspaceId2(lookup(id)?.workspaceId) || asWorkspaceId2(lookup(id)?.workspaces);
     }
   }
@@ -31629,18 +31240,18 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!ws)
       return;
     const snap = liveIconSnap(ws);
-    const prev = settings30.plain.projectIcons ?? {};
+    const prev = settings29.plain.projectIcons ?? {};
     if (snap) {
       wsIcons[ws] = snap;
       if (prev[ws] !== snap)
-        settings30.store.projectIcons = { ...prev, [ws]: snap };
+        settings29.store.projectIcons = { ...prev, [ws]: snap };
       return;
     }
     if (prev[ws] && isChromeSnap(prev[ws])) {
       const next = { ...prev };
       delete next[ws];
       delete wsIcons[ws];
-      settings30.store.projectIcons = next;
+      settings29.store.projectIcons = next;
     }
   }
   function projectNameFromAncestors(el) {
@@ -31752,12 +31363,12 @@ html.void-rt-open [data-sidebar="gap"] {
     return "";
   }
   function dropWorkspace(id) {
-    const prev = settings30.plain.workspaceByConv ?? {};
+    const prev = settings29.plain.workspaceByConv ?? {};
     if (!prev[id])
       return;
     const next = { ...prev };
     delete next[id];
-    settings30.store.workspaceByConv = next;
+    settings29.store.workspaceByConv = next;
   }
   function workspaceOf3(id) {
     if (!id)
@@ -31772,7 +31383,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const fromSidebar = sidebarIndex().wsByConv[id] || workspaceFromDom(id);
     if (fromSidebar)
       return fromSidebar;
-    const cached = asWorkspaceId2(settings30.plain.workspaceByConv?.[id]);
+    const cached = asWorkspaceId2(settings29.plain.workspaceByConv?.[id]);
     if (cached)
       return cached;
     const fromHist = workspaceFromHistory(id);
@@ -31803,7 +31414,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (!ws)
       return "";
     const idx = sidebarIndex();
-    const named = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || wsNames[ws] || settings30.plain.projectNames?.[ws] || "");
+    const named = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || wsNames[ws] || settings29.plain.projectNames?.[ws] || "");
     if (!named)
       return "";
     const live2 = liveWorkspaceId();
@@ -31818,28 +31429,28 @@ html.void-rt-open [data-sidebar="gap"] {
     const ws = workspaceOf3(id);
     if (!ws)
       return;
-    const prevWs = settings30.plain.workspaceByConv ?? {};
+    const prevWs = settings29.plain.workspaceByConv ?? {};
     if (prevWs[id] !== ws)
-      settings30.store.workspaceByConv = { ...prevWs, [id]: ws };
+      settings29.store.workspaceByConv = { ...prevWs, [id]: ws };
     const idx = sidebarIndex();
     const sidebarName = usableName(idx.nameByConv[id] || idx.nameByWs[ws] || "");
     const liveName = ws === liveWorkspaceId() ? readOpenProjectName() : "";
-    const cached = usableName(wsNames[ws] || settings30.plain.projectNames?.[ws] || "");
+    const cached = usableName(wsNames[ws] || settings29.plain.projectNames?.[ws] || "");
     const fallback = !isBrandLabel(liveName) ? usableName(liveName) : "";
     const name = sidebarName || fallback || cached;
     rememberProjectIcon(ws);
     if (!name)
       return;
     wsNames[ws] = name;
-    const prevNames = settings30.plain.projectNames ?? {};
+    const prevNames = settings29.plain.projectNames ?? {};
     if (prevNames[ws] !== name)
-      settings30.store.projectNames = { ...prevNames, [ws]: name };
+      settings29.store.projectNames = { ...prevNames, [ws]: name };
   }
   function reconcileSidebarCache() {
     const idx = sidebarIndex();
-    const prevWs = { ...settings30.plain.workspaceByConv };
-    const prevNames = { ...settings30.plain.projectNames };
-    const prevIcons = { ...settings30.plain.projectIcons };
+    const prevWs = { ...settings29.plain.workspaceByConv };
+    const prevNames = { ...settings29.plain.projectNames };
+    const prevIcons = { ...settings29.plain.projectIcons };
     let wsChanged = false;
     let namesChanged = false;
     let iconsChanged = false;
@@ -31883,11 +31494,11 @@ html.void-rt-open [data-sidebar="gap"] {
       namesChanged = true;
     }
     if (wsChanged)
-      settings30.store.workspaceByConv = prevWs;
+      settings29.store.workspaceByConv = prevWs;
     if (namesChanged)
-      settings30.store.projectNames = prevNames;
+      settings29.store.projectNames = prevNames;
     if (iconsChanged)
-      settings30.store.projectIcons = prevIcons;
+      settings29.store.projectIcons = prevIcons;
   }
   function requestWorkspace(id) {
     if (!id || isHomeId(id) || pendingWs.has(id))
@@ -31915,20 +31526,20 @@ html.void-rt-open [data-sidebar="gap"] {
           maybePaint();
           return;
         }
-        const prev = settings30.plain.workspaceByConv ?? {};
+        const prev = settings29.plain.workspaceByConv ?? {};
         if (prev[id] !== ws)
-          settings30.store.workspaceByConv = { ...prev, [id]: ws };
+          settings29.store.workspaceByConv = { ...prev, [id]: ws };
         const live2 = liveWorkspaceId();
         const liveName = usableName(readOpenProjectName());
-        const names = settings30.plain.projectNames ?? {};
+        const names = settings29.plain.projectNames ?? {};
         if (live2 && ws !== live2 && liveName && names[ws] === liveName) {
           const next = { ...names };
           delete next[ws];
-          settings30.store.projectNames = next;
+          settings29.store.projectNames = next;
           delete wsNames[ws];
         }
         maybePaint();
-      }).catch((e) => logger41.debug("workspace fetch failed:", e)).finally(() => {
+      }).catch((e) => logger40.debug("workspace fetch failed:", e)).finally(() => {
         pendingWs.delete(id);
       });
     } catch {
@@ -32202,7 +31813,7 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       return responsesToLines(responsesOf(id));
     } catch (e) {
-      logger41.debug("ResponseStore snapshot failed:", e);
+      logger40.debug("ResponseStore snapshot failed:", e);
       return [];
     }
   }
@@ -32245,7 +31856,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function snapOf(id) {
     if (!id || isHomeId(id))
       return null;
-    const snap = thumbs.get(id) ?? parseSnap(settings30.plain.pages?.[id]);
+    const snap = thumbs.get(id) ?? parseSnap(settings29.plain.pages?.[id]);
     if (!snap)
       return null;
     const lines = lastRound(snap.lines);
@@ -32257,22 +31868,22 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function rememberPage(id, snap) {
     const json = JSON.stringify(snap);
-    const prev = settings30.plain.pages ?? {};
+    const prev = settings29.plain.pages ?? {};
     if (prev[id] === json)
       return;
-    settings30.store.pages = { ...prev, [id]: json };
+    settings29.store.pages = { ...prev, [id]: json };
   }
   function forgetPage(id) {
     thumbs.delete(id);
-    const prev = settings30.plain.pages ?? {};
+    const prev = settings29.plain.pages ?? {};
     if (!(id in prev))
       return;
     const next = { ...prev };
     delete next[id];
-    settings30.store.pages = next;
+    settings29.store.pages = next;
   }
   function prunePages() {
-    const prev = settings30.plain.pages ?? {};
+    const prev = settings29.plain.pages ?? {};
     const next = {};
     let changed = false;
     for (const [id, raw] of Object.entries(prev)) {
@@ -32284,7 +31895,7 @@ html.void-rt-open [data-sidebar="gap"] {
       next[id] = raw;
     }
     if (changed)
-      settings30.store.pages = next;
+      settings29.store.pages = next;
   }
   function applyLineStyle(el, role, theme) {
     el.style.display = "-webkit-box";
@@ -32344,7 +31955,7 @@ html.void-rt-open [data-sidebar="gap"] {
     const lines = lastRound(betterLines(fromStore, fromDom));
     if (!lines.length)
       return;
-    const prev = thumbs.get(id) ?? parseSnap(settings30.plain.pages?.[id]);
+    const prev = thumbs.get(id) ?? parseSnap(settings29.plain.pages?.[id]);
     const prevLines = prev ? lastRound(prev.lines) : [];
     const nextRank = linesRank(lines);
     const prevRank = linesRank(prevLines);
@@ -32374,7 +31985,7 @@ html.void-rt-open [data-sidebar="gap"] {
           captureId(id);
       }
     } catch (e) {
-      logger41.debug("snapshot failed:", e);
+      logger40.debug("snapshot failed:", e);
     } finally {
       capturing = false;
     }
@@ -32454,7 +32065,7 @@ html.void-rt-open [data-sidebar="gap"] {
   function bump(id) {
     if (!id)
       return;
-    if (isHomeId(id) && !settings30.store.includeHome)
+    if (isHomeId(id) && !settings29.store.includeHome)
       return;
     if (!isHomeId(id) && id === chatIdFromUrl() && isAccessDeniedPage()) {
       dropVisit(id);
@@ -32513,7 +32124,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (parsed?.page && parsed.page !== "unknown")
         return parsed;
     } catch (e) {
-      logger41.debug("urlToRoute failed:", e);
+      logger40.debug("urlToRoute failed:", e);
     }
     return null;
   }
@@ -32525,7 +32136,7 @@ html.void-rt-open [data-sidebar="gap"] {
         chat.setOptimisticConversationId(undefined);
       chat.setProjectId(asWorkspaceId2(workspaceId) || undefined);
     } catch (e) {
-      logger41.debug("ChatPageStore update failed:", e);
+      logger40.debug("ChatPageStore update failed:", e);
     }
   }
   function navigateTo2(id) {
@@ -32619,17 +32230,17 @@ html.void-rt-open [data-sidebar="gap"] {
             });
             applyChatPage2(id, ws);
             rememberProject(id);
-          }).catch((e) => logger41.debug("workspace resolve failed:", e));
+          }).catch((e) => logger40.debug("workspace resolve failed:", e));
         } catch (e) {
-          logger41.debug("workspace fetch skipped:", e);
+          logger40.debug("workspace fetch skipped:", e);
         }
       }
     } catch (e) {
-      logger41.error("Failed to navigate:", e);
+      logger40.error("Failed to navigate:", e);
       try {
         location.assign(hrefFor2(id, workspaceOf3(id) || undefined));
       } catch (navErr) {
-        logger41.error("Fallback navigation failed:", navErr);
+        logger40.error("Fallback navigation failed:", navErr);
       }
     }
   }
@@ -32658,7 +32269,7 @@ html.void-rt-open [data-sidebar="gap"] {
       if (topics().length > 1)
         selected = reverse ? topics().length - 1 : 1;
     } catch (e) {
-      logger41.error("Failed to open switcher:", e);
+      logger40.error("Failed to open switcher:", e);
     } finally {
       suspendPaint = false;
     }
@@ -32703,7 +32314,7 @@ html.void-rt-open [data-sidebar="gap"] {
         else
           begin(e.shiftKey, true);
       } catch (err) {
-        logger41.error("Hotkey failed:", err);
+        logger40.error("Hotkey failed:", err);
       }
       return;
     }
@@ -32908,7 +32519,7 @@ html.void-rt-open [data-sidebar="gap"] {
     return svg2;
   }
   function projectIconOf(ws) {
-    const raw = ws ? wsIcons[ws] || settings30.plain.projectIcons?.[ws] || liveIconSnap(ws) || "" : "";
+    const raw = ws ? wsIcons[ws] || settings29.plain.projectIcons?.[ws] || liveIconSnap(ws) || "" : "";
     const snap = raw && !isChromeSnap(raw) ? raw : "";
     if (snap) {
       wsIcons[ws] = snap;
@@ -33143,7 +32754,7 @@ html.void-rt-open [data-sidebar="gap"] {
     authors: [Devs.p],
     tags: ["navigation"],
     enabledByDefault: true,
-    settings: settings30,
+    settings: settings29,
     managedStyle: "recentTopics",
     _mark({ response }) {
       try {
@@ -33186,7 +32797,7 @@ html.void-rt-open [data-sidebar="gap"] {
           bump(current);
         scheduleCapture();
       } catch (e) {
-        logger41.error("Hydrate failed:", e);
+        logger40.error("Hydrate failed:", e);
       }
       if (!keys3) {
         keys3 = new AbortController;
@@ -33216,7 +32827,7 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         writeVisits(capVisits(readVisits()));
       } catch (e) {
-        logger41.error("Settings update failed:", e);
+        logger40.error("Settings update failed:", e);
       }
     },
     zustand: {
@@ -33269,7 +32880,7 @@ html.void-rt-open [data-sidebar="gap"] {
   var DEFAULT_CHIME = "data:audio/mpeg;base64,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";
 
   // src/plugins/responseNotification/index.ts
-  var logger42 = new Logger("ResponseNotification");
+  var logger41 = new Logger("ResponseNotification");
   var LIVE_STATES = new Set(["streaming", "optimistic", "reconnecting"]);
   var RETRY_MS3 = 80;
   var SAMPLE_VOLUME = 0.5;
@@ -33283,7 +32894,7 @@ html.void-rt-open [data-sidebar="gap"] {
       }
     }, "Play preview"));
   }
-  var settings31 = definePluginSettings({
+  var settings30 = definePluginSettings({
     sound: {
       type: 3 /* BOOLEAN */,
       description: "Play a notification sound.",
@@ -33329,14 +32940,14 @@ html.void-rt-open [data-sidebar="gap"] {
       audioCtx = new AudioContext;
       return audioCtx;
     } catch (e) {
-      logger42.debug("AudioContext unavailable:", e);
+      logger41.debug("AudioContext unavailable:", e);
       audioCtx = null;
       return null;
     }
   }
   function onUserGesture() {
     userGestured = true;
-    if (settings31.store.browserNotification && Notification.permission === "default")
+    if (settings30.store.browserNotification && Notification.permission === "default")
       Notification.requestPermission();
     const ctx = getCtx();
     if (!ctx)
@@ -33376,22 +32987,22 @@ html.void-rt-open [data-sidebar="gap"] {
   }
   function playUrl(ctx, url) {
     loadBuffer(ctx, url).then((buf) => playBuffer(ctx, buf), (err) => {
-      logger42.info("sample play failed:", err);
+      logger41.info("sample play failed:", err);
       if (url !== DEFAULT_CHIME)
-        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger42.info("default chime failed:", e));
+        loadBuffer(ctx, DEFAULT_CHIME).then((buf) => playBuffer(ctx, buf), (e) => logger41.info("default chime failed:", e));
     });
   }
   function playSound() {
     if (!userGestured) {
-      logger42.info("sound skipped, no user gesture yet");
+      logger41.info("sound skipped, no user gesture yet");
       return;
     }
     const ctx = getCtx();
     if (!ctx)
       return;
-    const url = settings31.store.soundUrl?.trim() || DEFAULT_CHIME;
+    const url = settings30.store.soundUrl?.trim() || DEFAULT_CHIME;
     if (ctx.state === "suspended")
-      ctx.resume().then(() => playUrl(ctx, url), () => logger42.info("AudioContext resume failed"));
+      ctx.resume().then(() => playUrl(ctx, url), () => logger41.info("AudioContext resume failed"));
     else
       playUrl(ctx, url);
   }
@@ -33405,12 +33016,12 @@ html.void-rt-open [data-sidebar="gap"] {
     return !isErrorResponse2(response) && !isLiveResponse2(response);
   }
   function notify(responseId, state) {
-    logger42.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
-    if (settings31.store.onlyWhenHidden && document.visibilityState === "visible")
+    logger41.info("notify", responseId, state ?? "unset", "permission", Notification.permission);
+    if (settings30.store.onlyWhenHidden && document.visibilityState === "visible")
       return;
-    if (settings31.store.sound)
+    if (settings30.store.sound)
       playSound();
-    if (settings31.store.browserNotification) {
+    if (settings30.store.browserNotification) {
       sendBrowserNotification("Grok", state === "imagine" ? "Imagine generation complete." : "Response complete.");
     }
   }
@@ -33433,7 +33044,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function onStreamEnd6({ responseId }) {
-    logger42.info("streamEnd", responseId);
+    logger41.info("streamEnd", responseId);
     if (retryTimer2)
       clearTimeout(retryTimer2);
     const attempt = (retried2) => {
@@ -33441,21 +33052,21 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         response = ResponseStore.useResponseStore.getState().byId[responseId];
       } catch (e) {
-        logger42.info("ResponseStore unavailable:", e);
+        logger41.info("ResponseStore unavailable:", e);
       }
       if (shouldNotify(response)) {
         notifyOnce(responseId, response?.state ?? "gateway");
         return;
       }
       if (isErrorResponse2(response)) {
-        logger42.info("skip error", responseId);
+        logger41.info("skip error", responseId);
         return;
       }
       if (!retried2) {
         retryTimer2 = setTimeout(() => attempt(true), RETRY_MS3);
         return;
       }
-      logger42.info("skip", responseId, response?.state ?? "unset");
+      logger41.info("skip", responseId, response?.state ?? "unset");
     };
     attempt(false);
   }
@@ -33505,7 +33116,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }
   }
   function syncImagine2(current, prev) {
-    if (!settings31.store.imagineGeneration || !prev)
+    if (!settings30.store.imagineGeneration || !prev)
       return;
     if (onImaginePage4())
       return;
@@ -33534,7 +33145,7 @@ html.void-rt-open [data-sidebar="gap"] {
     description: "Notify when Grok finishes responding. Optional Imagine generation notify is off by default.",
     authors: [Devs.Prism, Devs.p],
     tags: ["notifications"],
-    settings: settings31,
+    settings: settings30,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start() {
       if (gestureCtrl)
@@ -33667,7 +33278,7 @@ html.void-rt-open [data-sidebar="gap"] {
 
   // src/plugins/settingsFlyout/index.tsx
   var cl30 = classNameFactory("void-sf-");
-  var settings32 = definePluginSettings({
+  var settings31 = definePluginSettings({
     showOpenSettings: {
       type: 3 /* BOOLEAN */,
       description: 'Show "Open Settings" (last used tab).',
@@ -33790,7 +33401,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }, "Void++"), tabItems(tabs, menu2));
   }
   function SettingsMenu({ onOpen }) {
-    const cfg = settings32.use([
+    const cfg = settings31.use([
       "showOpenSettings",
       "voidppPosition",
       "plugins",
@@ -33840,7 +33451,7 @@ html.void-rt-open [data-sidebar="gap"] {
     tags: ["navigation"],
     enabledByDefault: true,
     requiresRestart: true,
-    settings: settings32,
+    settings: settings31,
     start() {
       migratePluginSetting("SettingsFlyout", "voidppPosition", "voidPosition");
     },
@@ -33872,8 +33483,8 @@ html.void-rt-open [data-sidebar="gap"] {
   var SKILLS_PATH = "/rest/user-skills";
   var MIN_POLL_SEC = 5;
   var MENU_ROOTS = '[role="dialog"], [role="menu"], [role="listbox"]';
-  var logger43 = new Logger("SkillBlocker");
-  var settings33 = definePluginSettings({
+  var logger42 = new Logger("SkillBlocker");
+  var settings32 = definePluginSettings({
     blockedSkills: {
       type: 0 /* STRING */,
       description: "Private skill names to hide. Separate names with commas or new lines.",
@@ -33905,13 +33516,13 @@ html.void-rt-open [data-sidebar="gap"] {
   var origXhrSend3 = null;
   var xhrMeta3 = new WeakMap;
   function blockedNames() {
-    return settings33.store.blockedSkills.split(/[\n,]/).map((name) => name.trim()).filter(Boolean);
+    return settings32.store.blockedSkills.split(/[\n,]/).map((name) => name.trim()).filter(Boolean);
   }
   function blockedSet() {
     return new Set(blockedNames());
   }
   function pollMs() {
-    const sec = settings33.store.pollInterval;
+    const sec = settings32.store.pollInterval;
     const n = typeof sec === "number" && Number.isFinite(sec) ? sec : MIN_POLL_SEC;
     return Math.max(MIN_POLL_SEC, n) * 1000;
   }
@@ -33980,13 +33591,13 @@ html.void-rt-open [data-sidebar="gap"] {
     try {
       data = await res.clone().json();
     } catch (e) {
-      logger43.warn("Skill list was not JSON", e);
+      logger42.warn("Skill list was not JSON", e);
       return res;
     }
     const stripped = stripSkills(data, blocked);
     if (!stripped)
       return res;
-    logger43.info(`Hid ${stripped.removed.join(", ")}`);
+    logger42.info(`Hid ${stripped.removed.join(", ")}`);
     const headers = new Headers(res.headers);
     headers.delete("content-length");
     headers.delete("content-encoding");
@@ -34005,16 +33616,16 @@ html.void-rt-open [data-sidebar="gap"] {
       credentials: "include"
     });
     if (!res.ok) {
-      logger43.warn(`Delete ${name} failed`, res.status);
+      logger42.warn(`Delete ${name} failed`, res.status);
       return;
     }
-    logger43.info(`Removed ${name}`);
-    if (settings33.store.notify)
+    logger42.info(`Removed ${name}`);
+    if (settings32.store.notify)
       showToast(`Removed skill ${name}.`, 1 /* SUCCESS */);
     scheduleScrub();
   }
   async function sweep() {
-    if (!active || sweeping || !origFetch3 || settings33.store.hideOnly)
+    if (!active || sweeping || !origFetch3 || settings32.store.hideOnly)
       return;
     const names = blockedNames();
     if (!names.length)
@@ -34028,7 +33639,7 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         data = await res.json();
       } catch (e) {
-        logger43.warn("Skill list was not JSON", e);
+        logger42.warn("Skill list was not JSON", e);
         return;
       }
       const blocked = new Set(names);
@@ -34040,7 +33651,7 @@ html.void-rt-open [data-sidebar="gap"] {
         return;
       await Promise.all(hits.map((name) => removeSkill(name)));
     } catch (e) {
-      logger43.error("Skill sweep failed", e);
+      logger42.error("Skill sweep failed", e);
     } finally {
       sweeping = false;
     }
@@ -34071,13 +33682,13 @@ html.void-rt-open [data-sidebar="gap"] {
       else
         return;
     } catch (e) {
-      logger43.warn("xhr skill list was not JSON", e);
+      logger42.warn("xhr skill list was not JSON", e);
       return;
     }
     const stripped = stripSkills(data, blocked);
     if (!stripped)
       return;
-    logger43.info(`Hid ${stripped.removed.join(", ")}`);
+    logger42.info(`Hid ${stripped.removed.join(", ")}`);
     const parsed = JSON.parse(stripped.body);
     try {
       Object.defineProperty(xhr, "responseText", { configurable: true, get: () => stripped.body });
@@ -34086,7 +33697,7 @@ html.void-rt-open [data-sidebar="gap"] {
         get: () => type === "json" ? parsed : stripped.body
       });
     } catch (e) {
-      logger43.warn("xhr skill list patch failed", e);
+      logger42.warn("xhr skill list patch failed", e);
     }
     scheduleScrub();
   }
@@ -34100,7 +33711,7 @@ html.void-rt-open [data-sidebar="gap"] {
       try {
         xhrMeta3.set(this, { method: String(method).toUpperCase(), url: requestUrl3(url) });
       } catch (e) {
-        logger43.debug("xhr open failed", e);
+        logger42.debug("xhr open failed", e);
       }
       return origXhrOpen3.call(this, method, url, ...rest);
     };
@@ -34204,7 +33815,7 @@ html.void-rt-open [data-sidebar="gap"] {
     if (timer3 != null)
       clearInterval(timer3);
     timer3 = null;
-    if (settings33.store.hideOnly)
+    if (settings32.store.hideOnly)
       return;
     timer3 = setInterval(() => {
       sweep();
@@ -34241,7 +33852,7 @@ html.void-rt-open [data-sidebar="gap"] {
     authors: [Devs.p],
     tags: ["privacy"],
     enabledByDefault: true,
-    settings: settings33,
+    settings: settings32,
     startAt: "TurbopackReady" /* TurbopackReady */,
     start: start3,
     stop: stop3,
@@ -34306,18 +33917,18 @@ html.void-rt-open [data-sidebar="gap"] {
     return [n >> 16 & 255, n >> 8 & 255, n & 255];
   }
   function ColorRow2() {
-    const { starColor } = settings34.use(["starColor"]);
+    const { starColor } = settings33.use(["starColor"]);
     return /* @__PURE__ */ React.createElement(ColorSettingRow, {
       value: starColor,
       onChange: (v) => {
-        settings34.store.starColor = v;
+        settings33.store.starColor = v;
       },
       title: "Star color",
       description: "Color of the twinkling stars."
     });
   }
   function StarryBackground() {
-    const { starColor } = settings34.use(["starColor"]);
+    const { starColor } = settings33.use(["starColor"]);
     return /* @__PURE__ */ React.createElement("div", {
       "aria-hidden": true,
       className: "fixed inset-0 -z-10 pointer-events-none"
@@ -34326,7 +33937,7 @@ html.void-rt-open [data-sidebar="gap"] {
     }));
   }
   var WrappedStarry = ErrorBoundary.wrap(StarryBackground);
-  var settings34 = definePluginSettings({
+  var settings33 = definePluginSettings({
     starColor: {
       type: 6 /* COMPONENT */,
       default: DEFAULT_COLOR,
@@ -34339,7 +33950,7 @@ html.void-rt-open [data-sidebar="gap"] {
     description: "Adds Grok's native twinkling starry background to the main page.",
     authors: [Devs.Prism],
     tags: ["appearance"],
-    settings: settings34,
+    settings: settings33,
     _StarryBg() {
       return /* @__PURE__ */ React.createElement(WrappedStarry, {
         key: "void-starry-bg"
@@ -34463,7 +34074,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     projects: "void-streamer-projects",
     conversations: "void-streamer-conversations"
   };
-  var settings35 = definePluginSettings({
+  var settings34 = definePluginSettings({
     sidebarAvatar: {
       type: 3 /* BOOLEAN */,
       description: "Blur your avatar in the sidebar.",
@@ -34508,7 +34119,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
   function syncClasses() {
     const { classList } = document.documentElement;
     for (const [key, cls] of Object.entries(CSS_CLASSES)) {
-      classList.toggle(cls, !!settings35.store[key]);
+      classList.toggle(cls, !!settings34.store[key]);
     }
   }
   var streamerMode_default = definePlugin({
@@ -34517,7 +34128,7 @@ html.void-streamer-projects [data-sidebar="content"] a[href*="/project/"]:hover>
     description: "Blurs personal information for privacy while streaming.",
     authors: [Devs.Prism],
     tags: ["privacy"],
-    settings: settings35,
+    settings: settings34,
     start: syncClasses,
     onSettingsChange: syncClasses,
     stop() {
@@ -35154,7 +34765,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   var CHART_SCALE_MIN = 20;
   var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   var DAY_MS2 = 86400000;
-  var logger44 = new Logger("UsageDisplay");
+  var logger43 = new Logger("UsageDisplay");
   function isRecord2(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
@@ -35210,7 +34821,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      logger44.debug("Failed to read usage stats", error);
+      logger43.debug("Failed to read usage stats", error);
       return memory3.get(key) ?? null;
     }
   }
@@ -35222,7 +34833,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      logger44.debug("Failed to persist usage stats", error);
+      logger43.debug("Failed to persist usage stats", error);
       memory3.set(key, value);
     }
   }
@@ -35234,7 +34845,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      logger44.debug("Failed to clear usage stats", error);
+      logger43.debug("Failed to clear usage stats", error);
       memory3.delete(key);
     }
   }
@@ -35254,7 +34865,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       }
       return { version: STATS_VERSION, userId, days };
     } catch (error) {
-      logger44.debug("Failed to read usage stats", error);
+      logger43.debug("Failed to read usage stats", error);
       return emptyStore(userId);
     }
   }
@@ -35438,9 +35049,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
 
   // src/plugins/usageDisplay/index.tsx
-  var logger45 = new Logger("UsageDisplay");
+  var logger44 = new Logger("UsageDisplay");
   var cl31 = classNameFactory("void-ud-");
-  var settings36 = definePluginSettings({
+  var settings35 = definePluginSettings({
     usageStats: {
       type: 3 /* BOOLEAN */,
       description: "Record daily usage. Hover shows today after a delay; click opens history.",
@@ -35541,7 +35152,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       await hook.getState().refreshUsage();
       return normalizeBotUsage(hook.getState().usage);
     } catch (error) {
-      logger45.warn("Failed to fetch Grok Bot usage", error);
+      logger44.warn("Failed to fetch Grok Bot usage", error);
       return null;
     }
   }
@@ -35555,12 +35166,12 @@ button:has(.void-ud-trigger > .void-ud-label) {
     SettingsStore3.markAsChanged();
   }
   function snapshotToday() {
-    if (!settings36.store.usageStats)
+    if (!settings35.store.usageStats)
       return;
     syncAccount();
     if (!state.userId)
       return;
-    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings36.store.retainDays));
+    recordSnapshot(state.userId, state.usage?.weekly.usedPercent ?? null, state.usage?.weekly.resetAt ?? null, retainDaysOf(settings35.store.retainDays));
   }
   async function refresh(reason = "manual") {
     if (refreshPromise)
@@ -35589,7 +35200,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
         }
         const pageUsage = readNativeUsage();
         const remote = await fetchOfficialUsage().then((usage) => ({ ok: true, usage })).catch((error) => {
-          logger45.warn("Failed to fetch official usage", error);
+          logger44.warn("Failed to fetch official usage", error);
           return { ok: false };
         });
         if (currentPoolId() !== poolId)
@@ -35675,7 +35286,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function ButtonIcon() {
     useExternalStore(store3);
-    const { showPercent } = settings36.use(["showPercent"]);
+    const { showPercent } = settings35.use(["showPercent"]);
     const weekly = state.usage?.weekly;
     const percent = weekly?.usedPercent ?? null;
     const tone = usageTone(percent);
@@ -35745,7 +35356,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function UsagePanel() {
     useExternalStore(store3);
-    const { usageStats, hoverStatsDelay } = settings36.use(["usageStats", "hoverStatsDelay"]);
+    const { usageStats, hoverStatsDelay } = settings35.use(["usageStats", "hoverStatsDelay"]);
     const delay = hoverDelayOf(hoverStatsDelay);
     const [showToday, setShowToday] = useState(usageStats && delay <= 0);
     const weekly = state.usage?.weekly;
@@ -35787,7 +35398,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }));
   }
   function StatsToggle() {
-    const { usageStats } = settings36.use(["usageStats"]);
+    const { usageStats } = settings35.use(["usageStats"]);
     return /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       justifyContent: "space-between",
@@ -35805,7 +35416,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }, "Record local daily usage on this device.")), /* @__PURE__ */ React.createElement(Switch, {
       checked: !!usageStats,
       onCheckedChange: (value) => {
-        settings36.store.usageStats = value;
+        settings35.store.usageStats = value;
         store3.notify();
         if (value)
           refresh("manual");
@@ -35914,7 +35525,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       onClick: () => {
         if (pre == null)
           return;
-        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings36.store.retainDays));
+        writeDay(userId, repairWipedReset(rec, dayStart, pre, Date.now()), retainDaysOf(settings35.store.retainDays));
         store3.notify();
       }
     }, "Repair")));
@@ -35940,7 +35551,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   }
   function StatsModal({ onClose }) {
     useExternalStore(store3);
-    const { usageStats } = settings36.use(["usageStats"]);
+    const { usageStats } = settings35.use(["usageStats"]);
     const days = usageStats && state.userId ? listDays(state.userId) : [];
     const todayKey = localDateKey(Date.now());
     const bars = days.length ? fillChartDays(days) : [];
@@ -36117,7 +35728,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["composer"],
     enabledByDefault: true,
-    settings: settings36,
+    settings: settings35,
     start() {
       migrateUsageStats();
       try {
@@ -36128,7 +35739,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
           refresh("route");
         });
       } catch (error) {
-        logger45.warn("RoutingStore subscribe failed", error);
+        logger44.warn("RoutingStore subscribe failed", error);
       }
     },
     stop() {
@@ -36140,7 +35751,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       streamEnd: onStreamEnd7
     },
     onSettingsChange() {
-      if (settings36.store.usageStats)
+      if (settings35.store.usageStats)
         refresh("manual");
     }
   });
@@ -36148,7 +35759,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   // src/plugins/userQuotes/index.ts
   var STYLE_NAME10 = "userQuotes";
   var SEL = '[data-testid="user-message"] blockquote:not(.twitter-tweet)';
-  var settings37 = definePluginSettings({
+  var settings36 = definePluginSettings({
     italic: {
       type: 3 /* BOOLEAN */,
       description: "Render quoted lines in italic.",
@@ -36165,9 +35776,9 @@ button:has(.void-ud-trigger > .void-ud-label) {
       `${SEL}{margin:0!important;border-inline-start-color:var(--fg-secondary)!important;border-inline-start-width:0.25rem!important;border-inline-start-style:solid!important;padding-inline-start:0.75rem!important}`,
       `${SEL}>*{margin-block:0!important}`
     ];
-    if (!settings37.store.italic)
+    if (!settings36.store.italic)
       rules.push(`${SEL}{font-style:inherit!important}`);
-    if (!settings37.store.quotes) {
+    if (!settings36.store.quotes) {
       rules.push(`${SEL}{quotes:none!important}`);
       rules.push(`${SEL}::before,${SEL}::after,${SEL} p::before,${SEL} p::after{content:none!important}`);
     }
@@ -36181,7 +35792,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     authors: [Devs.p],
     tags: ["messages"],
     enabledByDefault: true,
-    settings: settings37,
+    settings: settings36,
     patches: [
       {
         find: '["###### ",',
@@ -36200,7 +35811,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
 
   // src/plugins/widerChat/index.ts
   var STYLE_NAME11 = "widerChat";
-  var settings38 = definePluginSettings({
+  var settings37 = definePluginSettings({
     width: {
       type: 1 /* NUMBER */,
       description: "Maximum chat width in rem.",
@@ -36208,7 +35819,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     }
   });
   function applyWidth() {
-    const w = settings38.store.width;
+    const w = settings37.store.width;
     registerStyle(STYLE_NAME11, `.breakout{--content-max-width:${w}rem!important}` + `.max-w-breakout{max-width:${w}rem!important}` + '.max-w-breakout [class*="w-4/5"]{width:100%!important}');
   }
   var widerChat_default = definePlugin({
@@ -36217,7 +35828,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
     description: "Adjustable chat width for big monitors.",
     authors: [Devs.Prism],
     tags: ["appearance"],
-    settings: settings38,
+    settings: settings37,
     start: applyWidth,
     onSettingsChange: applyWidth,
     stop() {
@@ -36235,7 +35846,6 @@ button:has(.void-ud-trigger > .void-ud-label) {
   contextMenu_default.updatedAt = 1794560326000;
   autoCollapse_default.updatedAt = 1794557302000;
   autoRetry_default.updatedAt = 1789906500000;
-  avatarPluginsFlyout_default.updatedAt = 1794584397000;
   betterCanvas_default.updatedAt = 1794560326000;
   betterFiles_default.updatedAt = 1794560326000;
   betterImagine_default.updatedAt = 1794557302000;
@@ -36283,7 +35893,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   usageDisplay_default.updatedAt = 1793258018000;
   userQuotes_default.updatedAt = 1791226275000;
   widerChat_default.updatedAt = 1787870966000;
-  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [avatarPluginsFlyout_default.name]: avatarPluginsFlyout_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [errorPageRetry_default.name]: errorPageRetry_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noComposerSuggestions_default.name]: noComposerSuggestions_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noMergeSubscription_default.name]: noMergeSubscription_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [projectHubRecent_default.name]: projectHubRecent_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
+  var __plugins_default = { [fixChrome_default.name]: fixChrome_default, [noTelemetry_default.name]: noTelemetry_default, [settings_default.name]: settings_default, [chatBarButtons_default.name]: chatBarButtons_default, [contextMenu_default.name]: contextMenu_default, [autoCollapse_default.name]: autoCollapse_default, [autoRetry_default.name]: autoRetry_default, [betterCanvas_default.name]: betterCanvas_default, [betterFiles_default.name]: betterFiles_default, [betterImagine_default.name]: betterImagine_default, [betterLinks_default.name]: betterLinks_default, [betterModeSelect_default.name]: betterModeSelect_default, [betterNavigator_default.name]: betterNavigator_default, [betterQueue_default.name]: betterQueue_default, [betterQuotes_default.name]: betterQuotes_default, [betterSidebar_default.name]: betterSidebar_default, [chatStateFavicons_default.name]: chatStateFavicons_default, [cleaner_default.name]: cleaner_default, [cloneChats_default.name]: cloneChats_default, [collapseThoughts_default.name]: collapseThoughts_default, [completeToast_default.name]: completeToast_default, [composerOpacity_default.name]: composerOpacity_default, [consoleJanitor_default.name]: consoleJanitor_default, [customGreeting_default.name]: customGreeting_default, [customInstructions_default.name]: customInstructions_default, [customSidebarIdentity_default.name]: customSidebarIdentity_default, [downloadTTS_default.name]: downloadTTS_default, [errorPageRetry_default.name]: errorPageRetry_default, [experiments_default.name]: experiments_default, [exportChat_default.name]: exportChat_default, [incognito_default.name]: incognito_default, [inputHistory_default.name]: inputHistory_default, [messageStars_default.name]: messageStars_default, [messageTimestamps_default.name]: messageTimestamps_default, [noBuildStarters_default.name]: noBuildStarters_default, [noComposerSuggestions_default.name]: noComposerSuggestions_default, [noDictation_default.name]: noDictation_default, [noGrokBot_default.name]: noGrokBot_default, [noMergeSubscription_default.name]: noMergeSubscription_default, [noShareLink_default.name]: noShareLink_default, [noSidebarIdentity_default.name]: noSidebarIdentity_default, [oneko_default.name]: oneko_default, [pluginsFlyout_default.name]: pluginsFlyout_default, [projectHubRecent_default.name]: projectHubRecent_default, [recentTopics_default.name]: recentTopics_default, [responseNotification_default.name]: responseNotification_default, [settingsFlyout_default.name]: settingsFlyout_default, [skillBlocker_default.name]: skillBlocker_default, [stableComposer_default.name]: stableComposer_default, [starry_default.name]: starry_default, [streamerMode_default.name]: streamerMode_default, [usageDisplay_default.name]: usageDisplay_default, [userQuotes_default.name]: userQuotes_default, [widerChat_default.name]: widerChat_default };
   // voidpp-css:/Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/api/Notices.css
   registerStyle("Notices", `.void-notice-root {
     contain: content;
@@ -36562,14 +36172,14 @@ button:has(.void-ud-trigger > .void-ud-label) {
   });
 
   // src/VoidPP.ts
-  var logger46 = new Logger("TurbopackPatcher", "#e78284");
+  var logger45 = new Logger("TurbopackPatcher", "#e78284");
   var FALLBACK_MS = 15000;
   var ORPHAN_REPORT_DELAY_MS = 5000;
   function safely(name, fn) {
     try {
       fn();
     } catch (e) {
-      logger46.error(`${name} failed:`, e);
+      logger45.error(`${name} failed:`, e);
     }
   }
   function deferOrphanReport() {
@@ -36590,7 +36200,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
       safely("initStreamEvents", initStreamEvents);
       safely("_resolveReady", _resolveReady);
       safely("startAllPlugins", () => startAllPlugins("TurbopackReady" /* TurbopackReady */));
-      logger46.info(`${getModuleCache().size} modules loaded, ready`);
+      logger45.info(`${getModuleCache().size} modules loaded, ready`);
       safely("retryFailedPlugins", retryFailedPlugins);
       safely("deferOrphanReport", deferOrphanReport);
       safely("checkBuildFingerprint", checkBuildFingerprint);
@@ -36605,10 +36215,6 @@ button:has(.void-ud-trigger > .void-ud-label) {
       armBotsCollapse();
     else
       stopBotsCollapseGuard();
-    if (isPluginEnabled("AvatarPluginsFlyout"))
-      armSidebarPluginsHide();
-    else
-      stopSidebarPluginsHide();
   }
   function armRuntime() {
     if (_armed)

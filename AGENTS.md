@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.31]` Remove AvatarPluginsFlyout. Desktop grok.com already has Connect Apps / Skills / Bots in Settings; the sidebar Plugins / Skills and Connectors row is gone (`data-void-plugins-hide` hit 0). SettingsFlyout still jumps those tabs. Keep PluginsFlyout (Void++ → Plugins). Do not delete the grok-bot pack copy.
+
 `[20261114.30]` `findExportedComponent("Input")` now hits Combobox.Input (`useComboboxRootContext`). `renderInput` skips Combobox and uses `.void-native-input`. Same family as Select #22.
 
 `[20261114.29]` Desktop Void++ settings tabs: `_s` allowlist is not enough. Hosted Connect Apps keeps `shownTab` on `connectors` until `openTab` + local `B(id)`. Find must be `"DesktopSettingsDialog",0,function` (lazy import steals `DesktopSettingsDialog`). Grok Select is Combobox — `SelectTrigger` without Root throws Base UI #22 and ErrorBoundary blanks the pane. SearchFilterBar / SettingField use native `<select>`. `_tabLabel` is a string (aria-label was `[object Object]`). Account/Settings flyout `openTab` the same way.
@@ -237,16 +239,6 @@ Do not rename:
 - CSS / dataset prefix `void-`
 - AccountSwitcher crypto key `VoidCryptoRootHKDF`
 - `@name Void++`. `@namespace` is the channel URL above, not the repo root.
-
-## AvatarPluginsFlyout
-
-`NoSidebarPlugins` was renamed to `BetterAvatarPlugins`, then to `AvatarPluginsFlyout`. The settings bag, pin, star, known, and PluginsFlyout keys migrate 1:1. Do not fold this into BetterSidebar or PluginsFlyout.
-
-The plugin-card glyph is `GrokConnectorsIcon` with the `size` PluginCard passes and no class. Do not default `void-settings-menu-icon` on that icon: the class sets `margin-inline-end: 0.5rem` for avatar-menu rows and shifts the 14px glyph 4px left inside the 24px tile. Apply `void-settings-menu-icon` only on the menu row.
-
-The avatar Plugins row is a `DropdownMenuSub`, same chevron as Settings and Void++. Children are Connectors, Skills, and Bots (`connectors` / `skills` / `bots`). The parent glyph is the same filled puzzle as Connectors (`GrokConnectorsIcon`, `stroke="none"` — do not pass it through Grok's `Icon`, which strokes filled paths). Do not use the 1rem grid for Plugins. Children use Grok's own marks at 1rem: Connectors is that same puzzle, Skills is the stroke circle/triangle/square, Bots is the filled `AiAgentsIcon` (circle face plus crescent — not `CreateBotIcon`, not a rounded-square face).
-
-A click opens `PluginsSidebarDialog` on that tab. The dialog stores the tab in local `useState` (`localTabs: true`) and ignores the route. `_peekTab` seeds that state; `_applyTab` returns the pending id during render so the pill does not fall through to the first tab. React Compiler memoizes `PluginsDialogShell`'s page element on `localTabs` alone, so `_shellKey` folds the pending tab into that cache slot and the element `key`. `syncTabDom` clicks the pill whose text is Connectors, Skills, or Bots inside the tablist that contains all three — never by index, and never the Bots category row (All, Sales, …). `_clearPending` runs from that pill's `localTabs` handler so an in-dialog click is not forced back. Do not `replace({page:"skills-and-connectors"})` for this menu — that leaves the dialog. Do not add Marketplaces; that tab is behind `ENABLE_GROK_WEB_PLUGIN_MARKETPLACE` and was not in the three-tab row.
 
 ## CustomGreeting
 
