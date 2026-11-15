@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.23]` NoComposerSuggestions: hide home chips under the composer (`[data-slot=composer-suggestions]`, aria-label Suggested). Also hide the immediate wrapper (`div:has(> list)`, 180px) so the 156px list is not a leftover slot. Do not hide the incognito “This chat won't appear in your history” sibling. Do not hide BuildModeStarters (NoBuildStarters, above the input). Not Cleaner.
+
 `[20261114.22]` NoMergeSubscription: hide the bottom-right unified-subscription card (`[role=region][data-slot=card][aria-label*="ultimate AI subscription"]`, plus 合并订阅 / 终极 AI 订阅). Also hide the absolute wrapper (`div:has(> div > region)`) so the 234×144 slot does not remain. "See plans" / Dismiss live only in that card — do not hide those labels globally. Not Cleaner (user asked 新插件).
 
 `[20261114.21]` Compact New chat rest `box-shadow:none` is required — dropping it in 14.20 brought back the pill's `0 12px 32px` drop shadow on the 32px icon. Keep none at rest/hover; `:focus-visible` is a 1px `--fg-accent` ring only.
