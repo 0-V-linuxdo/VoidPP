@@ -1,3 +1,7 @@
+## 20261114.41
+
+- MessageStars is on by default so the header star survives a clean Userscript++ settings store.
+
 ## 20261114.40
 
 - Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).

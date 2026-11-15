@@ -957,7 +957,7 @@ export default definePlugin({
     description: "Star any message from its hover toolbar. Starred ticks turn orange, and hovering the star left of the chat More button opens this chat's list.",
     authors: [Devs.p],
     tags: ["messages"],
-    enabledByDefault: false,
+    enabledByDefault: true,
     startAt: StartAt.DOMContentLoaded,
     settings,
     managedStyle: "messageStars",
