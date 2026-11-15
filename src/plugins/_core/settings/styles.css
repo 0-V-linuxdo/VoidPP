@@ -107,3 +107,18 @@ button .void-info-hint {
 .void-native-input:focus-visible {
     border-color: var(--border-l2, var(--fg-secondary));
 }
+
+button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-settings-tab^="voidpp_"] {
+    position: relative;
+    margin-top: 8px;
+}
+
+button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-settings-tab^="voidpp_"]::before {
+    content: "";
+    position: absolute;
+    inset-inline: 12px;
+    top: -8px;
+    height: 1px;
+    pointer-events: none;
+    background: var(--border-l1, var(--grok-border-l1, rgb(255 255 255 / 8%)));
+}

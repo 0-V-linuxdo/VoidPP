@@ -198,6 +198,16 @@ export default definePlugin({
         return component;
     },
 
+    _navGlyph(id: string) {
+        switch (id) {
+            case "voidpp_plugins_tab": return "grid-plus";
+            case "voidpp_themes_tab": return "easel";
+            case "voidpp_css_tab": return "file-text";
+            case "voidpp_experiments_tab": return "wrench";
+            default: return;
+        }
+    },
+
     _tabEntries() {
         return getVisibleTabs().map(t => ({
             id: t.id,
@@ -285,6 +295,14 @@ export default definePlugin({
                     replace: "default:return $self._tabLabel($1)",
                 },
             ],
+        },
+        {
+            find: "desktop-shell.settings.search-label",
+            all: true,
+            replacement: {
+                match: /name:(\i)\.X\[(\i)\.id\]/g,
+                replace: "name:$1.X[$2.id]||$self._navGlyph($2.id)",
+            },
         },
         {
             find: '["general","grok","payments","data","other","team-management"]',

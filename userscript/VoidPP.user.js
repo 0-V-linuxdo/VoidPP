@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.24
+// @version      20261114.25
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.24] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.25] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -7540,6 +7540,21 @@ button .void-info-hint {
 .void-native-input:focus-visible {
     border-color: var(--border-l2, var(--fg-secondary));
 }
+
+button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-settings-tab^="voidpp_"] {
+    position: relative;
+    margin-top: 8px;
+}
+
+button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-settings-tab^="voidpp_"]::before {
+    content: "";
+    position: absolute;
+    inset-inline: 12px;
+    top: -8px;
+    height: 1px;
+    pointer-events: none;
+    background: var(--border-l1, var(--grok-border-l1, rgb(255 255 255 / 8%)));
+}
 `);
 
   // src/api/Themes.ts
@@ -9999,9 +10014,9 @@ button .void-info-hint {
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.24] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"f1dcb54"}`
-    }, `(${"f1dcb54"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.25] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"9c3fd03"}`
+    }, `(${"9c3fd03"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10082,6 +10097,20 @@ button .void-info-hint {
     _setPrimitive(name, component) {
       setSettingsPrimitive(name, component);
       return component;
+    },
+    _navGlyph(id) {
+      switch (id) {
+        case "voidpp_plugins_tab":
+          return "grid-plus";
+        case "voidpp_themes_tab":
+          return "easel";
+        case "voidpp_css_tab":
+          return "file-text";
+        case "voidpp_experiments_tab":
+          return "wrench";
+        default:
+          return;
+      }
     },
     _tabEntries() {
       return getVisibleTabs().map((t) => ({
@@ -10172,6 +10201,14 @@ button .void-info-hint {
             replace: "default:return $self._tabLabel($1)"
           }
         ]
+      },
+      {
+        find: "desktop-shell.settings.search-label",
+        all: true,
+        replacement: {
+          match: /name:(\i)\.X\[(\i)\.id\]/g,
+          replace: "name:$1.X[$2.id]||$self._navGlyph($2.id)"
+        }
       },
       {
         find: '["general","grok","payments","data","other","team-management"]',
@@ -36193,7 +36230,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   noSidebarIdentity_default.updatedAt = 1794678267000;
   oneko_default.updatedAt = 1787870966000;
   pluginsFlyout_default.updatedAt = 1791226275000;
-  projectHubRecent_default.updatedAt = 0;
+  projectHubRecent_default.updatedAt = 1794740506000;
   recentTopics_default.updatedAt = 1794681716000;
   responseNotification_default.updatedAt = 1790093417000;
   settingsFlyout_default.updatedAt = 1794669091000;
