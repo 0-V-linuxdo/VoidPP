@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.30]` `findExportedComponent("Input")` now hits Combobox.Input (`useComboboxRootContext`). `renderInput` skips Combobox and uses `.void-native-input`. Same family as Select #22.
+
 `[20261114.29]` Desktop Void++ settings tabs: `_s` allowlist is not enough. Hosted Connect Apps keeps `shownTab` on `connectors` until `openTab` + local `B(id)`. Find must be `"DesktopSettingsDialog",0,function` (lazy import steals `DesktopSettingsDialog`). Grok Select is Combobox — `SelectTrigger` without Root throws Base UI #22 and ErrorBoundary blanks the pane. SearchFilterBar / SettingField use native `<select>`. `_tabLabel` is a string (aria-label was `[object Object]`). Account/Settings flyout `openTab` the same way.
 
 `[20261114.28]` `desktop-shell.settings.title` / `team-plugin-marketplaces` hit the i18n module first (`noEffect`). Retarget `DesktopSettingsDialog` and `useSettingsDialogStore`.

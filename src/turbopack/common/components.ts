@@ -453,8 +453,10 @@ export const HoverCardTrigger = hoverCardLazy<HoverCardTriggerProps>("HoverCardT
 
 function renderInput(props: InputProps) {
     const Inner = findExportedComponent("Input");
+    const src = Inner ? componentSource(Inner) : "";
+    const combobox = /Combobox|useComboboxRootContext/.test(src);
     if (!createElement) return null;
-    if (Inner) return createElement(Inner, props);
+    if (Inner && !combobox) return createElement(Inner, props);
     const className = ["void-native-input", props.className].filter(Boolean).join(" ");
     return createElement("input", { ...props, className });
 }

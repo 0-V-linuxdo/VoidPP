@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.29
+// @version      20261114.30
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.29] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.30] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -4724,9 +4724,11 @@ ${root}::-webkit-scrollbar-thumb:hover {
   var HoverCardTrigger = hoverCardLazy("HoverCardTrigger");
   function renderInput(props) {
     const Inner = findExportedComponent("Input");
+    const src = Inner ? componentSource(Inner) : "";
+    const combobox = /Combobox|useComboboxRootContext/.test(src);
     if (!createElement)
       return null;
-    if (Inner)
+    if (Inner && !combobox)
       return createElement(Inner, props);
     const className = ["void-native-input", props.className].filter(Boolean).join(" ");
     return createElement("input", { ...props, className });
@@ -10019,9 +10021,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.29] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"d273cf7"}`
-    }, `(${"d273cf7"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.30] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"6dee770"}`
+    }, `(${"6dee770"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -36228,7 +36230,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794672837000;
-  settings_default.updatedAt = 1794743526000;
+  settings_default.updatedAt = 1794744374000;
   chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794560326000;
   autoCollapse_default.updatedAt = 1794557302000;
@@ -36273,7 +36275,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   projectHubRecent_default.updatedAt = 1794740506000;
   recentTopics_default.updatedAt = 1794681716000;
   responseNotification_default.updatedAt = 1790093417000;
-  settingsFlyout_default.updatedAt = 1794669091000;
+  settingsFlyout_default.updatedAt = 1794744374000;
   skillBlocker_default.updatedAt = 1791758395000;
   stableComposer_default.updatedAt = 1794672837000;
   starry_default.updatedAt = 1787870966000;
