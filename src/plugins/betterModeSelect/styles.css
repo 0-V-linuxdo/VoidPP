@@ -27,6 +27,16 @@ form[data-composer] .void-cms-on {
     background: color-mix(in srgb, #ff7a17 18%, transparent) !important;
 }
 
+.query-bar .void-cms-on:is(:hover, :focus-visible),
+form[data-composer] .void-cms-on:is(:hover, :focus-visible) {
+    background: color-mix(in srgb, #ff7a17 28%, transparent) !important;
+}
+
+.query-bar .void-cms-on:active,
+form[data-composer] .void-cms-on:active {
+    background: color-mix(in srgb, #ff7a17 36%, transparent) !important;
+}
+
 .query-bar .void-cms-on:not(:hover, :focus-visible) {
     box-shadow: none !important;
 }

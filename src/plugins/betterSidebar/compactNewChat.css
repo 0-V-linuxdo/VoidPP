@@ -21,7 +21,6 @@
     gap: 0 !important;
     border-radius: 8px;
     background: transparent !important;
-    box-shadow: none !important;
     color: var(--grok-text-secondary, var(--fg-secondary)) !important;
     transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);
 }
