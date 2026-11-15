@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.27
+// @version      20261114.28
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -34,7 +34,7 @@
 // ==/UserScript==
 
 /**
- * Void++ [20261114.27] v1.0.0 — A modification for grok.com
+ * Void++ [20261114.28] v1.0.0 — A modification for grok.com
  * (c) 2026 Prism & Void++ Contributors
  * Licensed under GPL-3.0-or-later
  * Source: https://github.com/0-V-linuxdo/VoidPP
@@ -10023,9 +10023,9 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
     }, "Void++"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(Text2, {
       as: "span",
       color: "secondary"
-    }, "[20261114.27] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
-      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"838980c"}`
-    }, `(${"838980c"})`)), /* @__PURE__ */ React.createElement(Flex, {
+    }, "[20261114.28] v1.0.0"), /* @__PURE__ */ React.createElement(Dot, null), /* @__PURE__ */ React.createElement(VersionLink, {
+      href: `${"https://github.com/0-V-linuxdo/VoidPP"}/commit/${"eb1640c"}`
+    }, `(${"eb1640c"})`)), /* @__PURE__ */ React.createElement(Flex, {
       alignItems: "center",
       gap: "0.25rem"
     }, /* @__PURE__ */ React.createElement(Text2, {
@@ -10236,7 +10236,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
         }
       },
       {
-        find: "desktop-shell.settings.title",
+        find: "DesktopSettingsDialog",
         replacement: [
           {
             match: /let (\i)=\(0,(\i)\.z\)\((\i)\);return (\i)&&\(0,(\i)\.K\)\(\1\)\?\1:\4\|\|null===(\i)\?(\i):\6/,
@@ -10249,7 +10249,7 @@ button[data-settings-tab]:not([data-settings-tab^="voidpp_"]) + button[data-sett
         ]
       },
       {
-        find: "team-plugin-marketplaces",
+        find: '"grok-bot","data","billing","dev","dev-flags"',
         replacement: {
           match: /(\["home","account","appearance","notifications","personality","grok-bot","data","billing","dev","dev-flags","behavior","usage")/,
           replace: '$1,"voidpp_plugins_tab","voidpp_themes_tab","voidpp_css_tab","voidpp_experiments_tab"'
@@ -36233,7 +36233,7 @@ button:has(.void-ud-trigger > .void-ud-label) {
   fixChrome_default.chrome = true;
   fixChrome_default.hidden = !window.chrome;
   noTelemetry_default.updatedAt = 1794672837000;
-  settings_default.updatedAt = 1794741474000;
+  settings_default.updatedAt = 1794743375000;
   chatBarButtons_default.updatedAt = 1794579915000;
   contextMenu_default.updatedAt = 1794560326000;
   autoCollapse_default.updatedAt = 1794557302000;

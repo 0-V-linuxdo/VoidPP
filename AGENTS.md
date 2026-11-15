@@ -145,6 +145,8 @@ The avatar Settings row is `DropdownMenuItem` with `onClick`, not `onSelect` (`[
 
 `[20261113.11]` Desktop composer has no `.query-bar`. The project placeholder is the full phrase on `form[data-composer] .tiptap p.is-empty`, and Grok's `text-overflow:ellipsis` cuts inside a word (`do f...`). Clamp that editor the same way as `.query-bar`, and set `text-overflow:clip` on the clamped `::before` so the glyph ellipsis does not run again. Active mode pins stay icon circles. Do not force the label when the pin is on.
 
+`[20261114.28]` `desktop-shell.settings.title` / `team-plugin-marketplaces` hit the i18n module first (`noEffect`). Retarget `DesktopSettingsDialog` and `useSettingsDialogStore`.
+
 `[20261114.27]` Desktop settings nav click on Void++ tabs called `setTab` while `restoredSection` stayed `connectors`, so `shownTab` never moved. `openTab(id)` + `B(id)` on the DesktopSettingsDialog click, `_resolveShownTab` prefers `store.tab` when it is `voidpp_*`, and the `_s` allowlist includes the four Void++ ids. `s9` then renders `entry.component`.
 
 `[20261114.26]` Settings nav icons must be the original lucide tabs (`UnplugIcon` / `PaletteIcon` / `BracesIcon` / `TestTubeIcon`), not Grok sprites (`grid-plus` / `easel` / `file-text`). Desktop `leading` is `Glyph name:sL.X[id]`; Void++ ids miss that map. `_navLeading(id)` returns the 18px lucide node, else the native Glyph. Keep the Usage→Plugins hairline.

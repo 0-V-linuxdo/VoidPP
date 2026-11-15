@@ -332,7 +332,7 @@ export default definePlugin({
             },
         },
         {
-            find: "desktop-shell.settings.title",
+            find: "DesktopSettingsDialog",
             replacement: [
                 {
                     match: /let (\i)=\(0,(\i)\.z\)\((\i)\);return (\i)&&\(0,(\i)\.K\)\(\1\)\?\1:\4\|\|null===(\i)\?(\i):\6/,
@@ -345,7 +345,7 @@ export default definePlugin({
             ],
         },
         {
-            find: "team-plugin-marketplaces",
+            find: '"grok-bot","data","billing","dev","dev-flags"',
             replacement: {
                 match: /(\["home","account","appearance","notifications","personality","grok-bot","data","billing","dev","dev-flags","behavior","usage")/,
                 replace: '$1,"voidpp_plugins_tab","voidpp_themes_tab","voidpp_css_tab","voidpp_experiments_tab"',
