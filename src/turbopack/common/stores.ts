@@ -45,12 +45,23 @@ function cacheSize() {
 
 function scanCached<T>(scan: () => T | null): () => T | null {
     let hit: T | null = null;
+    let scanned = -1;
     let n = -1;
+    let quietAt = 0;
+    let first = 0;
     return () => {
         if (hit) return hit;
         const next = cacheSize();
-        if (next === n) return null;
-        n = next;
+        const now = Date.now();
+        if (!first) first = now;
+        if (next !== n) {
+            n = next;
+            quietAt = now;
+            if (now - first < 2000) return null;
+        }
+        if (scanned === n) return null;
+        if (now - quietAt < 400 && now - first < 2000) return null;
+        scanned = n;
         hit = scan();
         return hit;
     };
@@ -160,7 +171,8 @@ function sessionModule(): SessionStoreModule | null {
     return null;
 }
 
-export const SessionStore: SessionStoreModule = proxyLazy(() => sessionModule(), Infinity);
+const scanSession = scanCached(() => sessionModule());
+export const SessionStore: SessionStoreModule = proxyLazy(() => scanSession(), Infinity);
 function isSettingsDialogHook(value: unknown): value is SettingsDialogStoreModule["useSettingsDialogStore"] {
     if (typeof value !== "function" || typeof (value as { getState?: unknown }).getState !== "function") return false;
     try {
@@ -186,10 +198,11 @@ function settingsDialogHook(): SettingsDialogStoreModule["useSettingsDialogStore
     return null;
 }
 
-export const SettingsDialogStore: SettingsDialogStoreModule = proxyLazy(() => {
+const scanSettingsDialog = scanCached(() => {
     const hook = settingsDialogHook();
     return hook ? { useSettingsDialogStore: hook } : null;
-}, Infinity);
+});
+export const SettingsDialogStore: SettingsDialogStoreModule = proxyLazy(() => scanSettingsDialog(), Infinity);
 
 interface PluginsDialogHook {
     getState(): { open: boolean; setOpen(open: boolean): void };
@@ -218,10 +231,11 @@ function pluginsDialogHook(): PluginsDialogHook | null {
     return legacy && isPluginsDialogHook(legacy.usePluginsDialogStore) ? legacy.usePluginsDialogStore : null;
 }
 
-export const PluginsDialogStore: { usePluginsDialogStore: PluginsDialogHook } = proxyLazy(() => {
+const scanPluginsDialog = scanCached(() => {
     const hook = pluginsDialogHook();
     return hook ? { usePluginsDialogStore: hook } : null;
-}, Infinity);
+});
+export const PluginsDialogStore: { usePluginsDialogStore: PluginsDialogHook } = proxyLazy(() => scanPluginsDialog(), Infinity);
 const scanSettings = scanCached(() => {
     const mod = findByProps("useSettingsStore", "modelConfigOverrideSchema")
         ?? findByProps("useSettingsStore");

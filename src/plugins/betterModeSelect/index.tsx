@@ -271,7 +271,7 @@ function inIncognito(): boolean {
 function privateBuild(): boolean {
     if (inIncognito()) return true;
     try {
-        const {route} = RoutingStore.useRoutingStore.getState();
+        const { route } = RoutingStore.useRoutingStore.getState();
         if (route?.temporary) return true;
         let cid = String(route?.conversationId || "");
         const chatHook = ChatPageStore.useChatPageStore;
@@ -312,6 +312,7 @@ function pinnedIds(): ModeId[] {
 let incognitoObs: MutationObserver | null = null;
 let offIncognitoWatch: (() => void) | null = null;
 let offRouteWatch: (() => void) | null = null;
+let storeWatchTimer = 0;
 
 function hideBuildMenuItems() {
     const hide = privateBuild();
@@ -774,23 +775,36 @@ export default definePlugin({
     startAt: StartAt.TurbopackReady,
 
     start() {
-        try {
-            const hook = ModesStore.useModesStore;
-            if (typeof hook === "function") void hook.getState().ensureLoaded();
-        } catch (e) {
-            logger.debug("modes not ready", e);
-        }
         bindModelHotkey();
         watchIncognitoMenu();
-        try {
-            offIncognitoWatch = GrokSettings.useSettingsStore.subscribe(() => watchIncognitoMenu());
-            offRouteWatch = RoutingStore.useRoutingStore.subscribe(() => watchIncognitoMenu());
-        } catch (e) {
-            logger.debug("incognito watch failed", e);
-        }
+        const bindWatches = () => {
+            try {
+                const hook = ModesStore.useModesStore;
+                if (typeof hook === "function") void hook.getState().ensureLoaded();
+            } catch (e) {
+                logger.debug("modes not ready", e);
+            }
+            try {
+                if (!offIncognitoWatch) offIncognitoWatch = GrokSettings.useSettingsStore.subscribe(() => watchIncognitoMenu());
+                if (!offRouteWatch) offRouteWatch = RoutingStore.useRoutingStore.subscribe(() => watchIncognitoMenu());
+            } catch (e) {
+                logger.debug("incognito watch failed", e);
+            }
+            return !!(offIncognitoWatch && offRouteWatch);
+        };
+        if (bindWatches()) return;
+        storeWatchTimer = window.setInterval(() => {
+            if (!bindWatches()) return;
+            window.clearInterval(storeWatchTimer);
+            storeWatchTimer = 0;
+        }, 400);
     },
 
     stop() {
+        if (storeWatchTimer) {
+            window.clearInterval(storeWatchTimer);
+            storeWatchTimer = 0;
+        }
         unbindModelHotkey();
         offIncognitoWatch?.();
         offIncognitoWatch = null;

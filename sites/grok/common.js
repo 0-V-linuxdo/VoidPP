@@ -223,16 +223,14 @@ export const getAllUi = () => Object.fromEntries(Object.keys(uiMap).map(k => [k,
 /** 等这些公共件都取得到再调用 fn(只调用一次);模块加载和定时重扫都会重试 */
 export function whenCommon(names, fn) {
     const ready = () => names.every(n => common[n] != null);
-    let done = false, timer = null, unsub = null;
+    let done = false, timer = null;
     const tryRun = () => {
         if (done || !ready()) return false;
         done = true;
-        unsub?.();
         if (timer) clearInterval(timer);
         fn(...names.map(n => common[n]));
         return true;
     };
     if (tryRun()) return;
-    unsub = U.onModuleLoad(() => { tryRun(); });
     timer = setInterval(tryRun, 1000);
 }
