@@ -425,7 +425,9 @@ function UserCard(props: { AvatarMenu: ComponentType<Record<string, unknown>> })
     const [, bump] = useState(0);
     useEffect(() => {
         if (ready) return;
-        return onModuleLoad(() => bump(n => n + 1));
+        return onModuleLoad(() => {
+            if (typeof SessionStore.useSession === "function") bump(n => n + 1);
+        });
     }, [ready]);
     if (!ready) {
         const { AvatarMenu, ...rest } = props;

@@ -4,8 +4,18 @@
  * Copyright (c) 2026 Void++ Contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+import { proxyLazy, setLazyCacheVersion } from "@utils/lazy";
+
 import { U } from "../../sites/grok/u.js";
-import { proxyLazy } from "@utils/lazy";
+import { searchFactories } from "./searchCache";
+
+setLazyCacheVersion(() => {
+    try {
+        return typeof U?.moduleCacheVersion === "function" ? U.moduleCacheVersion() : 0;
+    } catch {
+        return 0;
+    }
+});
 
 export { common } from "../../sites/grok/common.js";
 export { fnSourceCache, getFnSource } from "./fnSource";
@@ -26,7 +36,7 @@ function call(name, ...args) {
 // eval, before bindApi(U). A missing method threw TypeError and aborted the IIFE.
 export const filters = new Proxy({}, {
     get(_, key) {
-        if (typeof key === "symbol") return undefined;
+        if (typeof key === "symbol") return;
         return (...args) => {
             const impl = api()?.filters?.[key];
             if (typeof impl === "function") return impl(...args);
@@ -52,7 +62,9 @@ export const findModuleId = (...a) => call("findModuleId", ...a);
 export const findModuleFactory = (...a) => call("findModuleFactory", ...a);
 export const mapMangledModule = (...a) => call("mapMangledModule", ...a);
 export const requireModule = id => call("requireModule", id);
-export const search = (...a) => call("search", ...a) ?? {};
+export const search = (...a) => (a.length && a.every(x => typeof x === "string" || x instanceof RegExp)
+    ? searchFactories(...a)
+    : call("search", ...a) ?? {});
 export const findCssClasses = (...a) => call("findCssClasses", ...a) ?? {};
 export const findBulk = (...a) => call("findBulk", ...a) ?? [];
 export const extractAndLoadChunks = (...a) => call("extractAndLoadChunks", ...a);

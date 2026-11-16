@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.54
+// @version      20261114.55
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.54", date: null, notes: ["`.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.", "BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\\i`, never hit, and scanned every factory (~38s in the chunk bench)."] }, { version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.55", date: null, notes: ["CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS."] }, { version: "20261114.54", date: null, notes: ["`.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.", "BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\\i`, never hit, and scanned every factory (~38s in the chunk bench)."] }, { version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.54" : "0.0.0";
+  var VERSION = true ? "20261114.55" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -1481,19 +1481,29 @@ try {
   var ICON_SHAPE = { circle: "round", square: "square" };
   var LEGACY_VARIANT = { tertiary: "ghost", secondary: "muted", danger: "destructive", text: "ghost", textsecondary: "ghost" };
   var desktopKit = null;
-  var desktopVersion = -1;
+  var desktopSeen = /* @__PURE__ */ new Set();
   function desktopButtons() {
     if (desktopKit) return desktopKit;
-    const v3 = U3.moduleCacheVersion();
-    if (desktopVersion === v3) return null;
-    desktopVersion = v3;
-    for (const id of Object.keys(U3.search('"data-icon-button":""'))) {
+    const reg = typeof U3.getRuntimeFactoryRegistry === "function" ? U3.getRuntimeFactoryRegistry() : null;
+    if (!reg) return null;
+    const consider = (id, f3) => {
+      if (desktopKit || desktopSeen.has(id) || typeof f3 !== "function") return;
+      desktopSeen.add(id);
+      let src = "";
+      try {
+        src = Function.prototype.toString.call(f3);
+      } catch {
+        return;
+      }
+      if (!src.includes('"data-icon-button":""')) return;
       const exps = Object.values(U3.requireModule(Number(id)) ?? {}).filter((e3) => typeof e3 === "function");
       const IconButton2 = exps.find((e3) => String(e3).includes('"data-icon-button":""'));
       const Button3 = exps.find((e3) => e3 !== IconButton2 && String(e3).includes('"data-touch-target":""'));
-      if (IconButton2 && Button3) return desktopKit = { IconButton: IconButton2, Button: Button3 };
-    }
-    return null;
+      if (IconButton2 && Button3) desktopKit = { IconButton: IconButton2, Button: Button3 };
+    };
+    if (reg instanceof Map) for (const [id, f3] of reg) consider(id, f3);
+    else for (const id of Object.keys(reg)) consider(Number.isNaN(+id) ? id : +id, reg[id]);
+    return desktopKit;
   }
   var IconSlot = null;
   var SlotIcon = () => getReact2().useContext(IconSlot);
@@ -3059,6 +3069,10 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/utils/lazy.ts
   var logger5 = new Logger2("Lazy");
+  var cacheVer = () => 0;
+  function setLazyCacheVersion(fn2) {
+    cacheVer = fn2;
+  }
   var unconfigurable = ["arguments", "caller", "prototype"];
   var SYM_LAZY_GET = Symbol.for("void.lazy.get");
   var SYM_LAZY_CACHED = Symbol.for("void.lazy.cached");
@@ -3104,19 +3118,16 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
     let cache3;
     let resolved = false;
     let attempts = 0;
+    let lastVer = -1;
     return () => {
-      if (!resolved) {
-        if (attempts >= maxRetries) {
-          if (false) {
-            attempts++;
-            logger5.warn("proxyLazy: factory failed to resolve after", maxRetries, "attempts");
-          }
-          return cache3;
-        }
-        cache3 = factory();
-        attempts++;
-        if (cache3 != null) resolved = true;
-      }
+      if (resolved) return cache3;
+      const ver = cacheVer();
+      if (attempts > 0 && ver === lastVer) return cache3;
+      if (false) logger5.warn("proxyLazy: factory failed to resolve after", maxRetries, "attempts");
+      lastVer = ver;
+      cache3 = factory();
+      attempts++;
+      if (cache3 != null) resolved = true;
       return cache3;
     };
   }
@@ -3157,6 +3168,102 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
     });
   }
 
+  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/turbopack/match.ts
+  function matchesPattern(text, pattern) {
+    if (typeof pattern === "string") return text.includes(pattern);
+    pattern.lastIndex = 0;
+    return pattern.test(text);
+  }
+  function matchesAllPatterns(text, patterns) {
+    return patterns.every((p3) => matchesPattern(text, p3));
+  }
+
+  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/turbopack/patchTurbopack.ts
+  function api() {
+    return U3;
+  }
+  var patches = new Proxy([], {
+    get(_3, key) {
+      const list2 = api()?.patches;
+      if (!list2) return key === "length" ? 0 : void 0;
+      return list2[key];
+    }
+  });
+  function getModuleCache() {
+    return api()?.getModuleCache?.() ?? /* @__PURE__ */ new Map();
+  }
+  function getRuntimeModuleCache() {
+    return api()?.getRuntimeModuleCache?.() ?? null;
+  }
+  function getRuntimeFactoryRegistry() {
+    return api()?.getRuntimeFactoryRegistry?.() ?? null;
+  }
+  function syncLazyModules() {
+    api()?.syncLazyModules?.() || api()?.syncModuleCache?.();
+  }
+  function onModuleLoad(cb) {
+    return api()?.onModuleLoad(cb) ?? (() => {
+    });
+  }
+  var _resolveReady = () => {
+  };
+  var onceReady = new Promise((r3) => {
+    _resolveReady = r3;
+  });
+  queueMicrotask(function wait() {
+    const u3 = api();
+    if (!u3?.onceReady) {
+      setTimeout(wait, 0);
+      return;
+    }
+    Promise.resolve(u3.onceReady).then(() => _resolveReady());
+  });
+
+  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/turbopack/searchCache.ts
+  var META = Symbol.for("uspp.voidpp.factory");
+  var srcById = /* @__PURE__ */ new Map();
+  var hitsByKey = /* @__PURE__ */ new Map();
+  function factorySource(id, factory) {
+    const cached = srcById.get(id);
+    if (cached !== void 0) return cached;
+    const orig = factory?.[META]?.original ?? factory;
+    let src = "";
+    try {
+      src = typeof orig === "function" ? Function.prototype.toString.call(orig) : String(orig);
+    } catch {
+      src = "";
+    }
+    srcById.set(id, src);
+    return src;
+  }
+  function eachFactory(fn2) {
+    const reg = getRuntimeFactoryRegistry();
+    if (reg == null) return;
+    if (reg instanceof Map) {
+      for (const [id, factory] of reg) fn2(id, factory);
+      return;
+    }
+    if (typeof reg !== "object") return;
+    const obj = reg;
+    for (const id of Object.keys(obj)) fn2(Number.isNaN(+id) ? id : +id, obj[id]);
+  }
+  function searchFactories(...patterns) {
+    const key = patterns.map(String).join("\0");
+    let state4 = hitsByKey.get(key);
+    if (!state4) {
+      state4 = { out: {}, seen: /* @__PURE__ */ new Set() };
+      hitsByKey.set(key, state4);
+    }
+    eachFactory((id, factory) => {
+      if (state4.seen.has(id) || typeof factory !== "function") return;
+      state4.seen.add(id);
+      const src = factorySource(id, factory);
+      if (!src || !matchesAllPatterns(src, patterns)) return;
+      state4.out[id] = factory;
+    });
+    return state4.out;
+  }
+
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/turbopack/fnSource.ts
   var fnSourceCache = /* @__PURE__ */ new WeakMap();
   function getFnSource(fn2) {
@@ -3169,23 +3276,30 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   }
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/turbopack/turbopack.ts
-  function api() {
+  setLazyCacheVersion(() => {
+    try {
+      return typeof U3?.moduleCacheVersion === "function" ? U3.moduleCacheVersion() : 0;
+    } catch {
+      return 0;
+    }
+  });
+  function api2() {
     if (!U3) return null;
     return U3;
   }
   function call(name, ...args) {
-    const u3 = api();
+    const u3 = api2();
     if (!u3) return null;
     return u3[name](...args);
   }
   var filters = new Proxy({}, {
     get(_3, key) {
-      if (typeof key === "symbol") return void 0;
+      if (typeof key === "symbol") return;
       return (...args) => {
-        const impl = api()?.filters?.[key];
+        const impl = api2()?.filters?.[key];
         if (typeof impl === "function") return impl(...args);
         return (mod) => {
-          const impl2 = api()?.filters?.[key];
+          const impl2 = api2()?.filters?.[key];
           if (typeof impl2 !== "function") return false;
           const f3 = impl2(...args);
           return typeof f3 === "function" ? !!f3(mod) : !!f3;
@@ -3198,9 +3312,9 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   var findComponentByCode = (...code) => call("findComponentByCode", ...code);
   var findExportedComponent = (...names) => call("findExportedComponent", ...names);
   var requireModule = (id) => call("requireModule", id);
-  var search = (...a3) => call("search", ...a3) ?? {};
+  var search = (...a3) => a3.length && a3.every((x4) => typeof x4 === "string" || x4 instanceof RegExp) ? searchFactories(...a3) : call("search", ...a3) ?? {};
   var isZustandStore2 = (val2) => {
-    const u3 = api();
+    const u3 = api2();
     if (u3?.isZustandStore) return u3.isZustandStore(val2);
     return typeof val2 === "function" && typeof val2.getState === "function" && typeof val2.setState === "function" && typeof val2.subscribe === "function";
   };
@@ -3208,7 +3322,7 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
     let off = () => {
     };
     const start4 = () => {
-      const u3 = api();
+      const u3 = api2();
       if (!u3) {
         setTimeout(start4, 0);
         return;
@@ -3754,7 +3868,7 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   }
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/sites/grok/shims/api/Settings.ts
-  function api2() {
+  function api3() {
     return U3;
   }
   function definePluginSettings(def2, checks) {
@@ -3764,14 +3878,14 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
       pluginName: null,
       get store() {
         if (!this.pluginName) throw new Error("插件注册前不能访问 settings.store");
-        return api2().Settings.plugins[this.pluginName];
+        return api3().Settings.plugins[this.pluginName];
       },
       get plain() {
         if (!this.pluginName) throw new Error("插件注册前不能访问 settings.plain");
-        return api2().PlainSettings.plugins[this.pluginName] ??= {};
+        return api3().PlainSettings.plugins[this.pluginName] ??= {};
       },
       use(keys4) {
-        const React13 = api2().findReact?.() || api2().react;
+        const React13 = api3().findReact?.() || api3().react;
         const [, force] = React13.useReducer((x4) => x4 + 1, 0);
         const name = this.pluginName;
         React13.useEffect(() => {
@@ -3780,8 +3894,8 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
             const key = path2.slice(prefix.length).split(".")[0];
             if (!keys4 || keys4.includes(key)) force();
           };
-          api2().SettingsStore.addPrefixChangeListener(prefix, fn2);
-          return () => api2().SettingsStore.removePrefixChangeListener?.(prefix, fn2);
+          api3().SettingsStore.addPrefixChangeListener(prefix, fn2);
+          return () => api3().SettingsStore.removePrefixChangeListener?.(prefix, fn2);
         }, [name]);
         return this.store;
       },
@@ -3793,47 +3907,47 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   }
   var Settings = new Proxy({}, {
     get(_3, key) {
-      return api2().Settings[key];
+      return api3().Settings[key];
     },
     set(_3, key, value) {
-      api2().Settings[key] = value;
+      api3().Settings[key] = value;
       return true;
     },
     ownKeys() {
-      return Reflect.ownKeys(api2().Settings);
+      return Reflect.ownKeys(api3().Settings);
     },
     getOwnPropertyDescriptor(_3, key) {
-      return { configurable: true, enumerable: true, value: api2().Settings[key] };
+      return { configurable: true, enumerable: true, value: api3().Settings[key] };
     }
   });
   var PlainSettings = new Proxy({}, {
     get(_3, key) {
-      return api2().PlainSettings[key];
+      return api3().PlainSettings[key];
     },
     set(_3, key, value) {
-      api2().PlainSettings[key] = value;
+      api3().PlainSettings[key] = value;
       return true;
     },
     ownKeys() {
-      return Reflect.ownKeys(api2().PlainSettings);
+      return Reflect.ownKeys(api3().PlainSettings);
     },
     getOwnPropertyDescriptor(_3, key) {
-      return { configurable: true, enumerable: true, value: api2().PlainSettings[key] };
+      return { configurable: true, enumerable: true, value: api3().PlainSettings[key] };
     }
   });
   var SettingsStore = new Proxy({}, {
     get(_3, key) {
-      const s3 = api2().SettingsStore;
+      const s3 = api3().SettingsStore;
       if (key in s3) return s3[key].bind?.(s3) ?? s3[key];
-      if (key === "store") return api2().Settings;
-      if (key === "plain") return api2().PlainSettings;
+      if (key === "store") return api3().Settings;
+      if (key === "plain") return api3().PlainSettings;
       if (key === "markReady" || key === "flush") return () => {
       };
       return void 0;
     }
   });
   function migratePluginSetting(pluginName6, newKey, oldKey) {
-    return api2().migratePluginSetting(pluginName6, newKey, oldKey);
+    return api3().migratePluginSetting(pluginName6, newKey, oldKey);
   }
   function migrateSettingsToPlugin(targetPlugin, sourcePlugin, ...settingKeys) {
     const run2 = () => {
@@ -3856,65 +3970,46 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
     run2();
   }
   function mergePluginSettings(name, patch) {
-    Object.assign(api2().Settings.plugins[name] ??= {}, patch);
-    api2().SettingsStore.markAsChanged?.(`plugins.${name}`);
+    Object.assign(api3().Settings.plugins[name] ??= {}, patch);
+    api3().SettingsStore.markAsChanged?.(`plugins.${name}`);
   }
-
-  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/turbopack/patchTurbopack.ts
-  function api3() {
-    return U3;
-  }
-  var patches = new Proxy([], {
-    get(_3, key) {
-      const list2 = api3()?.patches;
-      if (!list2) return key === "length" ? 0 : void 0;
-      return list2[key];
-    }
-  });
-  function getModuleCache() {
-    return api3()?.getModuleCache?.() ?? /* @__PURE__ */ new Map();
-  }
-  function getRuntimeModuleCache() {
-    return api3()?.getRuntimeModuleCache?.() ?? null;
-  }
-  function syncLazyModules() {
-    api3()?.syncLazyModules?.() || api3()?.syncModuleCache?.();
-  }
-  function onModuleLoad(cb) {
-    return api3()?.onModuleLoad(cb) ?? (() => {
-    });
-  }
-  var _resolveReady = () => {
-  };
-  var onceReady = new Promise((r3) => {
-    _resolveReady = r3;
-  });
-  queueMicrotask(function wait() {
-    const u3 = api3();
-    if (!u3?.onceReady) {
-      setTimeout(wait, 0);
-      return;
-    }
-    Promise.resolve(u3.onceReady).then(() => _resolveReady());
-  });
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/turbopack/common/stores.ts
-  var ChatPageStore = findByPropsLazy("useChatPageStore");
-  var ConversationStore = findByPropsLazy("useConversationStore", "createOptimisticConversation");
-  var FeatureStore = findByPropsLazy("useFeatureStore");
-  var FilesPageStore = findByPropsLazy("useFilesPageStore", "useAssetsList");
-  var MediaStore = findByPropsLazy("useMediaStore", "useImagineModeStore");
-  function hookFromFactory(label, accept) {
-    const legacy = find2((mod) => accept(mod?.[label]));
-    if (legacy && accept(legacy[label])) return legacy[label];
+  var hookHit = /* @__PURE__ */ new Map();
+  var didLegacy = /* @__PURE__ */ new Set();
+  var inspected = /* @__PURE__ */ new Set();
+  function takeFromSearch(label, accept) {
     for (const id of Object.keys(search(label))) {
+      const key = `${label}\0${id}`;
+      if (inspected.has(key)) continue;
+      inspected.add(key);
       const mod = requireModule(Number(id));
       if (!mod || typeof mod !== "object") continue;
       for (const value of Object.values(mod)) {
         if (accept(value)) return value;
       }
     }
-    return find2(accept) ?? null;
+    return null;
+  }
+  var ChatPageStore = findByPropsLazy("useChatPageStore");
+  var ConversationStore = findByPropsLazy("useConversationStore", "createOptimisticConversation");
+  var FeatureStore = findByPropsLazy("useFeatureStore");
+  var FilesPageStore = findByPropsLazy("useFilesPageStore", "useAssetsList");
+  var MediaStore = findByPropsLazy("useMediaStore", "useImagineModeStore");
+  function hookFromFactory(label, accept) {
+    const cached = hookHit.get(label);
+    if (cached) return cached;
+    if (!didLegacy.has(label)) {
+      didLegacy.add(label);
+      const legacy = find2((mod) => accept(mod?.[label]));
+      if (legacy && accept(legacy[label])) {
+        hookHit.set(label, legacy[label]);
+        return legacy[label];
+      }
+    }
+    const hit = takeFromSearch(label, accept);
+    if (hit) hookHit.set(label, hit);
+    return hit;
   }
   function isModesHook(value) {
     if (!isZustandStore2(value)) return false;
@@ -3946,12 +4041,12 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   var ModesStore = proxyLazy(() => {
     const hook3 = hookFromFactory("useModesStore", isModesHook);
     return hook3 ? { useModesStore: hook3 } : null;
-  }, Infinity);
+  });
   var ResponseStore = findByPropsLazy("useResponseStore", "createOptimisticResponse");
   var RoutingStore = proxyLazy(() => {
     const hook3 = hookFromFactory("useRoutingStore", isRoutingHook);
     return hook3 ? { useRoutingStore: hook3 } : null;
-  }, Infinity);
+  });
   var SESSION_MARKER = "useSession must be used within SessionStoreProvider";
   function isSessionHook(value) {
     if (typeof value !== "function") return false;
@@ -3969,19 +4064,28 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
     }
     return null;
   }
+  var sessionHit = null;
+  var sessionLegacy = false;
   function sessionModule() {
-    const legacy = find2((mod) => typeof mod?.useSession === "function" && typeof mod?.SessionStoreProvider === "function");
-    if (legacy?.useSession) return legacy;
+    if (sessionHit) return sessionHit;
+    if (!sessionLegacy) {
+      sessionLegacy = true;
+      const legacy = find2((mod) => typeof mod?.useSession === "function" && typeof mod?.SessionStoreProvider === "function");
+      if (legacy?.useSession) return sessionHit = legacy;
+    }
     for (const id of Object.keys(search(SESSION_MARKER))) {
+      const key = `session\0${id}`;
+      if (inspected.has(key)) continue;
+      inspected.add(key);
       const num2 = Number(id);
       const required = requireModule(num2);
       const runtime2 = getRuntimeModuleCache()?.[num2];
       const hit = readSessionModule(required) ?? readSessionModule(runtime2?.namespaceObject) ?? (runtime2?.exports !== required ? readSessionModule(runtime2?.exports) : null);
-      if (hit) return hit;
+      if (hit) return sessionHit = hit;
     }
     return null;
   }
-  var SessionStore = proxyLazy(() => sessionModule(), Infinity);
+  var SessionStore = proxyLazy(() => sessionModule());
   function isSettingsDialogHook(value) {
     if (typeof value !== "function" || typeof value.getState !== "function") return false;
     try {
@@ -3991,22 +4095,10 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
       return false;
     }
   }
-  function settingsDialogHook2() {
-    const legacy = find2((mod) => isSettingsDialogHook(mod?.useSettingsDialogStore));
-    if (legacy && isSettingsDialogHook(legacy.useSettingsDialogStore)) return legacy.useSettingsDialogStore;
-    for (const id of Object.keys(search("useSettingsDialogStore"))) {
-      const mod = requireModule(Number(id));
-      if (!mod || typeof mod !== "object") continue;
-      for (const value of Object.values(mod)) {
-        if (isSettingsDialogHook(value)) return value;
-      }
-    }
-    return null;
-  }
   var SettingsDialogStore = proxyLazy(() => {
-    const hook3 = settingsDialogHook2();
+    const hook3 = hookFromFactory("useSettingsDialogStore", isSettingsDialogHook);
     return hook3 ? { useSettingsDialogStore: hook3 } : null;
-  }, Infinity);
+  });
   function isPluginsDialogHook(value) {
     if (typeof value !== "function" || typeof value.getState !== "function") return false;
     try {
@@ -4016,28 +4108,17 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
       return false;
     }
   }
-  function pluginsDialogHook() {
-    for (const id of Object.keys(search("usePluginsDialogStore"))) {
-      const mod = requireModule(Number(id));
-      if (!mod || typeof mod !== "object") continue;
-      for (const value of Object.values(mod)) {
-        if (isPluginsDialogHook(value)) return value;
-      }
-    }
-    const legacy = find2((mod) => isPluginsDialogHook(mod?.usePluginsDialogStore));
-    return legacy && isPluginsDialogHook(legacy.usePluginsDialogStore) ? legacy.usePluginsDialogStore : null;
-  }
   var PluginsDialogStore = proxyLazy(() => {
-    const hook3 = pluginsDialogHook();
+    const hook3 = hookFromFactory("usePluginsDialogStore", isPluginsDialogHook);
     return hook3 ? { usePluginsDialogStore: hook3 } : null;
-  }, Infinity);
+  });
   var SettingsStore2 = findByPropsLazy("useSettingsStore", "modelConfigOverrideSchema");
   var SubscriptionsStore = findByPropsLazy("useSubscriptionsStore");
   var TextToSpeechStore = findByPropsLazy("useTextToSpeechStore");
   var MessageStore = proxyLazy(() => {
     const hook3 = hookFromFactory("useMessageStore", isMessageHook);
     return hook3 ? { useMessageStore: hook3 } : null;
-  }, Infinity);
+  });
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/autoRetry/index.ts
   var logger6 = new Logger2("AutoRetry");
@@ -4727,7 +4808,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
       }
       if (src.includes("__scopeDropdownMenu") || src.includes("__scopeMenu")) continue;
       const fromCall = /name:"(DropdownMenu[A-Za-z]*)",Legacy:/.exec(src)?.[1];
-      const displayName = value.displayName;
+      const { displayName } = value;
       const fromName = typeof displayName === "string" && /^DropdownMenu[A-Za-z]*$/.test(displayName) && (src.includes("keepLegacy") || src.includes("menu:")) ? displayName : "";
       const name = fromCall || fromName;
       if (!name || mapped[name]) continue;
@@ -4761,7 +4842,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
       }
     }
     legacyDropdown = legacy;
-    const size = getModuleCache().size;
+    const { size } = getModuleCache();
     if (legacy && size === dropdownCacheSize) return legacy;
     dropdownCacheSize = size;
     return null;
@@ -6917,7 +6998,7 @@ html.void-cms-picked .void-cms-ghost {
   function privateBuild() {
     if (inIncognito()) return true;
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       if (route?.temporary) return true;
       let cid = String(route?.conversationId || "");
       const chatHook = ChatPageStore.useChatPageStore;
@@ -7692,12 +7773,12 @@ html.void-cms-picked .void-cms-ghost {
     clone3.querySelectorAll(STRIP_SEL).forEach((n2) => n2.remove());
     for (const n2 of [...clone3.querySelectorAll("span, div, a, p")]) {
       if (!n2.isConnected) continue;
-      const chip = (n2.textContent ?? "").replace(/\s+/g, " ").trim();
+      const chip = (n2.textContent ?? "").replaceAll(/\s+/g, " ").trim();
       if (chip && chip.length <= 24 && CHIP_RE.test(chip)) n2.remove();
     }
     const media = hasMedia(clone3);
     clone3.querySelectorAll(MEDIA_SEL).forEach((n2) => n2.remove());
-    const text = (clone3.textContent ?? "").replace(/\b\d+\s+sources?\b/gi, " ").replace(/\s+/g, " ").trim();
+    const text = (clone3.textContent ?? "").replaceAll(/\b\d+\s+sources?\b/gi, " ").replaceAll(/\s+/g, " ").trim();
     if (NOISE_TEXT.test(text)) return "";
     if (!text) {
       if (media === "image") return "图片";
@@ -7911,7 +7992,7 @@ html.void-cms-picked .void-cms-ghost {
     return null;
   }
   function plain(text) {
-    const t3 = text.replace(/\s+/g, " ").trim();
+    const t3 = text.replaceAll(/\s+/g, " ").trim();
     if (!t3 || NOISE_TEXT.test(t3)) return "";
     return t3.length > SUMMARY_MAX ? `${t3.slice(0, SUMMARY_MAX)}…` : t3;
   }
@@ -7957,7 +8038,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   function itemFromNode(cid, node2, liveId, liveEl) {
     if (node2.role !== "user" && node2.role !== "assistant") return null;
-    const role = node2.role;
+    const { role } = node2;
     if (!settings6.store.showAssistant && role === "assistant") return null;
     const rec = contentOf(cid, node2);
     if (rec?.isControl) return null;
@@ -8544,7 +8625,7 @@ html.void-cms-picked .void-cms-ghost {
   function uniqueLeader(scores, minLead) {
     const positive = scores.filter((s3) => s3 > 0);
     if (positive.length < 2) return -1;
-    const sorted = [...positive].sort((a3, b3) => a3 - b3);
+    const sorted = [...positive].toSorted((a3, b3) => a3 - b3);
     const median = sorted[Math.floor((sorted.length - 1) / 2)];
     let best = -1;
     let bestS = 0;
@@ -9070,7 +9151,7 @@ html.void-cms-picked .void-cms-ghost {
       const gen3 = gw.activeGeneration;
       const genNode = gen3?.assistantId ? gw.nodes?.[gen3.assistantId] : void 0;
       const phase = generationPhase(gw);
-      const lastAsst = [...path2].reverse().find((n2) => n2.role === "assistant");
+      const lastAsst = [...path2].toReversed().find((n2) => n2.role === "assistant");
       const lastKey2 = lastAsst ? `${lastAsst.id}:${lastAsst.status}:${lastAsst.content?.state ?? ""}` : "";
       const genKey = gen3 ? `${gen3.userId}:${gen3.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
       return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey2}|${path2.map((n2) => `${n2.id}:${n2.status}`).join(",")}`;
@@ -9165,6 +9246,43 @@ html.void-cms-picked .void-cms-ghost {
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/styles.css
   registerStyle("betterQueue", '.void-ms-qchip {\n    display: grid;\n    flex-shrink: 0;\n    place-items: center;\n    width: 1.5rem;\n    height: 1.5rem;\n    margin-block-start: 0.125rem;\n    padding: 0;\n    border: 0;\n    border-radius: 999px;\n    background: transparent;\n    color: var(--fg-secondary);\n    cursor: pointer;\n}\n\n.void-ms-qchip:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n    color: var(--fg-primary);\n}\n\n.void-ms-qchip:focus-visible {\n    outline: none;\n    box-shadow: 0 0 0 1px var(--fg-accent);\n}\n\n.void-ms-qchip svg {\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n}\n\n.void-ms-qmenu {\n    position: fixed;\n    z-index: 90;\n    min-width: 8.75rem;\n    padding: 0.25rem;\n    border-radius: 0.75rem;\n    background: var(--surface-l2);\n    box-shadow:\n        inset 0 0 0 1px var(--border-l2),\n        0 0.5rem 1.25rem rgb(0 0 0 / 24%);\n    color: var(--fg-primary);\n}\n\n.void-ms-qopt {\n    display: flex;\n    width: 100%;\n    align-items: center;\n    gap: 0.5rem;\n    height: 2rem;\n    padding: 0 0.5rem;\n    border: 0;\n    border-radius: 0.5rem;\n    background: transparent;\n    color: inherit;\n    font-size: 0.875rem;\n    line-height: 1;\n    cursor: pointer;\n}\n\n.void-ms-qopt:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n}\n\n.void-ms-qopt[aria-selected="true"],\n.void-ms-qopt.void-ms-qopt-on {\n    background: rgb(255 255 255 / 14%);\n    color: #fff;\n}\n\n.void-ms-qopt > span:first-of-type {\n    flex: 1;\n    text-align: start;\n}\n\n.void-ms-qcheck {\n    display: grid;\n    margin-inline-start: auto;\n    place-items: center;\n    width: 0.875rem;\n    height: 0.875rem;\n    color: #fff;\n}\n\n.void-ms-qcheck svg,\n.void-ms-qopt svg {\n    display: block;\n    width: 1rem;\n    height: 1rem;\n    flex-shrink: 0;\n}\n\n.void-ms-qcheck svg {\n    width: 0.875rem;\n    height: 0.875rem;\n}\n');
+
+  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/modeSend.ts
+  function modeSlug(s3) {
+    return s3.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
+  }
+  function gatewaySendMode(input) {
+    const selected2 = modeSlug(input.selected);
+    const model = modeSlug(input.modelMode);
+    if (input.incognito) return selected2 === "build" ? "auto" : selected2;
+    if (selected2 === "build") return "build";
+    const inflight3 = modeSlug(input.inflight);
+    if (inflight3 === "build") return "build";
+    const last2 = input.lastModel === void 0 ? void 0 : modeSlug(input.lastModel);
+    const adjusted = modeSlug(input.adjusted);
+    const userChanged = !!adjusted && adjusted !== (last2 ?? "");
+    if (userChanged) return selected2 || adjusted;
+    if (!input.conversationId) return selected2 || model;
+    if (last2 !== void 0) return last2 === "build" ? "build" : selected2 || model;
+    if (input.buildTurn || input.markedBuild) return "build";
+    return selected2 || model;
+  }
+  function keepBuildPreference(privateChat, substituted, settled2, stored) {
+    return privateChat && substituted && settled2 === "auto" && stored === "build";
+  }
+  function sessionModelMatches(acked, want) {
+    const need = modeSlug(want);
+    if (!need) return true;
+    const have = modeSlug(acked ?? "");
+    if (have === need) return true;
+    return need === "build" && have.includes("build");
+  }
+  function sessionNeedsUpdate(acked, chip, hasSession) {
+    void hasSession;
+    const want = modeSlug(chip);
+    if (!want) return false;
+    return !sessionModelMatches(acked, chip);
+  }
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/utils/idb.ts
   var logger13 = new Logger2("IDB");
@@ -9358,7 +9476,7 @@ html.void-cms-picked .void-cms-ghost {
     }
     const byId = new Map(bound2.saved.map((item) => [item.id, item]));
     const next = [];
-    const ordered = official.slice().sort((a3, b3) => a3.position - b3.position || a3.id.localeCompare(b3.id));
+    const ordered = official.slice().toSorted((a3, b3) => a3.position - b3.position || a3.id.localeCompare(b3.id));
     for (const off of ordered) {
       if (!off.id) continue;
       const prev = byId.get(off.id);
@@ -9758,7 +9876,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   async function replay(cid, saved2) {
     const placed = [];
-    const ordered = freshSnaps(saved2, Date.now()).slice().sort((a3, b3) => a3.position - b3.position);
+    const ordered = freshSnaps(saved2, Date.now()).slice().toSorted((a3, b3) => a3.position - b3.position);
     for (const item of ordered) {
       const before = idSet(cid);
       suppress = true;
@@ -9987,9 +10105,9 @@ html.void-cms-picked .void-cms-ghost {
   }
   function persistQueueKey(s3) {
     return Object.entries(s3.conversations ?? {}).map(([cid, conv]) => {
-      const items = [...conv.queue ?? []].sort((a3, b3) => a3.position - b3.position);
+      const items = [...conv.queue ?? []].toSorted((a3, b3) => a3.position - b3.position);
       return `${cid}=${items.map((item) => `${qid(item)}:${item.position}:${nodeFields(conv, qid(item)).text.length}`).join(",")}`;
-    }).sort().join("|");
+    }).toSorted().join("|");
   }
   var lastQueueKey = "";
   var lastNavKey = "";
@@ -10027,43 +10145,6 @@ html.void-cms-picked .void-cms-ghost {
     if (key === lastNavKey) return;
     lastNavKey = key;
     onPersistPage();
-  }
-
-  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/modeSend.ts
-  function modeSlug(s3) {
-    return s3.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
-  }
-  function gatewaySendMode(input) {
-    const selected2 = modeSlug(input.selected);
-    const model = modeSlug(input.modelMode);
-    if (input.incognito) return selected2 === "build" ? "auto" : selected2;
-    if (selected2 === "build") return "build";
-    const inflight3 = modeSlug(input.inflight);
-    if (inflight3 === "build") return "build";
-    const last2 = input.lastModel === void 0 ? void 0 : modeSlug(input.lastModel);
-    const adjusted = modeSlug(input.adjusted);
-    const userChanged = !!adjusted && adjusted !== (last2 ?? "");
-    if (userChanged) return selected2 || adjusted;
-    if (!input.conversationId) return selected2 || model;
-    if (last2 !== void 0) return last2 === "build" ? "build" : selected2 || model;
-    if (input.buildTurn || input.markedBuild) return "build";
-    return selected2 || model;
-  }
-  function keepBuildPreference(privateChat, substituted, settled2, stored) {
-    return privateChat && substituted && settled2 === "auto" && stored === "build";
-  }
-  function sessionModelMatches(acked, want) {
-    const need = modeSlug(want);
-    if (!need) return true;
-    const have = modeSlug(acked ?? "");
-    if (have === need) return true;
-    return need === "build" && have.includes("build");
-  }
-  function sessionNeedsUpdate(acked, chip, hasSession) {
-    void hasSession;
-    const want = modeSlug(chip);
-    if (!want) return false;
-    return !sessionModelMatches(acked, chip);
   }
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/settings.ts
@@ -10414,7 +10495,7 @@ html.void-cms-picked .void-cms-ghost {
   function privateBuild2() {
     if (inIncognito2()) return true;
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       if (route?.temporary) return true;
       const cid = String(route?.conversationId || currentCid3() || "");
       if (cid && conversation(cid)?.temporary) return true;
@@ -11965,7 +12046,7 @@ html.void-cms-picked .void-cms-ghost {
     return next.length === list2.length ? void 0 : next;
   }
   function migrateLegacy3() {
-    const plugins2 = PlainSettings.plugins;
+    const { plugins: plugins2 } = PlainSettings;
     const mode = plugins2.ModeSync;
     const persist5 = plugins2.QueuePersist;
     if (!mode && !persist5) return;
@@ -12102,7 +12183,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   function isToolbarPopup(popup) {
     if (!popup || typeof popup !== "object") return false;
-    const range = popup.range;
+    const { range } = popup;
     return !!range && typeof range.cloneRange === "function";
   }
   function cloneToolbarPopup(popup) {
@@ -12140,7 +12221,7 @@ html.void-cms-picked .void-cms-ghost {
     }
   }
   function pathData(svg4) {
-    return [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" ");
+    return [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replaceAll(/\s+/g, " ").trim()).filter(Boolean).join(" ");
   }
   function isCloseSvg(svg4) {
     const d3 = pathData(svg4);
@@ -12158,7 +12239,7 @@ html.void-cms-picked .void-cms-ghost {
       });
       if (horiz2.length >= 2) return true;
     }
-    const paths = [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replace(/\s+/g, " ").trim()).filter(Boolean);
+    const paths = [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replaceAll(/\s+/g, " ").trim()).filter(Boolean);
     const horiz = paths.filter((d3) => /^[Mm]\s*-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*[Hh]/.test(d3) && !/[VvAaCcQq]/.test(d3) && d3.length < 28);
     if (horiz.length >= 2) return true;
     const joined = paths.join(" ");
@@ -13036,7 +13117,7 @@ html.void-cms-picked .void-cms-ghost {
     const measure = () => {
       const shot = read2();
       if (!shot) return null;
-      let el = shot.el;
+      let { el } = shot;
       if (!el.isConnected && pin) {
         const fresh = messageById(pin);
         if (fresh?.isConnected) el = fresh;
@@ -14660,7 +14741,7 @@ html.void-cms-picked .void-cms-ghost {
     return next.length === list2.length ? void 0 : next;
   }
   function migrateLegacy4() {
-    const plugins2 = PlainSettings.plugins;
+    const { plugins: plugins2 } = PlainSettings;
     const jump3 = plugins2.QuoteJump;
     const sticky = plugins2.QuoteSticky;
     if (!jump3 && !sticky) return;
@@ -15259,7 +15340,9 @@ html.void-cms-picked .void-cms-ghost {
     const [, bump2] = useState3(0);
     useEffect3(() => {
       if (ready3) return;
-      return onModuleLoad(() => bump2((n2) => n2 + 1));
+      return onModuleLoad(() => {
+        if (typeof SessionStore.useSession === "function") bump2((n2) => n2 + 1);
+      });
     }, [ready3]);
     if (!ready3) {
       const { AvatarMenu, ...rest } = props;
@@ -19962,10 +20045,10 @@ html.void-cms-picked .void-cms-ghost {
     else settings21.store.entries = entries2;
   }
   function normalize(text) {
-    return text.replaceAll(ZWSP, "").replace(/\r\n?/g, "\n");
+    return text.replaceAll(ZWSP, "").replaceAll(/\r\n?/g, "\n");
   }
   function hasContent(text) {
-    return text.replace(/[\s\u00a0]/g, "") !== "";
+    return text.replaceAll(/[\s\u00a0]/g, "") !== "";
   }
   function imeEvent(e3) {
     if (composing) return true;
@@ -20131,7 +20214,7 @@ html.void-cms-picked .void-cms-ghost {
       if (!view?.posAtDOM) return;
       const pos = view.posAtDOM(range.startContainer, range.startOffset);
       if (typeof pos !== "number" || pos < 0) return;
-      const near = view.state.selection.constructor.near;
+      const { near } = view.state.selection.constructor;
       if (!near) return;
       const pmSel = near(view.state.doc.resolve(pos));
       if (!pmSel) return;
@@ -20404,7 +20487,7 @@ html.void-cms-picked .void-cms-ghost {
     return null;
   }
   function escapeHtml2(text) {
-    return text.replace(/[&<>"]/g, (ch) => {
+    return text.replaceAll(/[&<>"]/g, (ch) => {
       if (ch === "&") return "&amp;";
       if (ch === "<") return "&lt;";
       if (ch === ">") return "&gt;";
@@ -20980,7 +21063,7 @@ html.void-cms-picked .void-cms-ghost {
     return `${conversationId3}:${messageId}`;
   }
   function clipSnippet(raw2) {
-    const text = raw2.replace(/\s+/g, " ").trim();
+    const text = raw2.replaceAll(/\s+/g, " ").trim();
     if (!text) return "";
     return text.length > SNIPPET_MAX ? `${text.slice(0, SNIPPET_MAX)}…` : text;
   }
@@ -20997,7 +21080,7 @@ html.void-cms-picked .void-cms-ghost {
     const groups = [];
     for (const [cid, items] of byCid) {
       const current3 = !!currentCid5 && cid === currentCid5;
-      const sorted = items.slice().sort((a3, b3) => {
+      const sorted = items.slice().toSorted((a3, b3) => {
         if (current3) {
           const ai = leafIndex.get(a3.messageId);
           const bi = leafIndex.get(b3.messageId);
@@ -21314,7 +21397,7 @@ html.void-cms-picked .void-cms-ghost {
     let routeId = "";
     let routePage = "";
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       routeId = String(route?.conversationId ?? "");
       routePage = String(route?.page ?? "");
     } catch (e3) {
@@ -21619,7 +21702,7 @@ html.void-cms-picked .void-cms-ghost {
       const label = (btn.getAttribute("aria-label") || "").trim();
       if (PAGER_RE.test(label)) return true;
     }
-    const text = (el.textContent || "").replace(/\s+/g, "");
+    const text = (el.textContent || "").replaceAll(/\s+/g, "");
     return /^\d+\/\d+$/.test(text);
   }
   function starHost(row) {
@@ -21806,7 +21889,7 @@ html.void-cms-picked .void-cms-ghost {
     let panelTop = Infinity;
     for (const el of nodes) {
       if (headerSkipped(el) || !isRightPanelToggle(el)) continue;
-      const top = el.getBoundingClientRect().top;
+      const { top } = el.getBoundingClientRect();
       if (top > 160 || top >= panelTop) continue;
       panelNode = el;
       panelTop = top;
@@ -22006,7 +22089,7 @@ html.void-cms-picked .void-cms-ghost {
     settlePending();
   }
   function routeSlice(state4) {
-    const route = state4.route;
+    const { route } = state4;
     return `${route?.page ?? ""}|${route?.conversationId ?? ""}`;
   }
   var schedule4 = debounce(paintAll, 80);
@@ -28543,13 +28626,13 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
         const gmVer = v22.vers.get(part) || noVer;
         const base = m3.base.get(part);
         if (!base || cmpVer(ver, gmVer) <= 0 || cmpVer(base, gmVer) !== 0) continue;
-        if (part === META) Object.assign(chosen.data, metaContentOf(m3.doc));
+        if (part === META2) Object.assign(chosen.data, metaContentOf(m3.doc));
         else if (m3.doc.plugins[part] !== void 0) chosen.data.plugins[part] = m3.doc.plugins[part];
         else delete chosen.data.plugins[part];
         forceParts.add(part);
         lastBody.delete(part);
         restored = true;
-        logger39.info(`本页上次写入的 ${part === META ? "顶层设置" : part} 没落到脚本管理器存储里,已从本站镜像补回`);
+        logger39.info(`本页上次写入的 ${part === META2 ? "顶层设置" : part} 没落到脚本管理器存储里,已从本站镜像补回`);
       }
     } else if (legacy && stamped(legacy)) {
       chosen = { name: "GM", data: legacy };
@@ -28598,12 +28681,12 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   }
   var META_KEY = `${STORAGE_KEY2}:meta`;
   var PART_PREFIX = `${STORAGE_KEY2}:p:`;
-  var META = "$meta";
+  var META2 = "$meta";
   var FORMAT = 2;
-  var partKey = (part) => part === META ? META_KEY : PART_PREFIX + part;
+  var partKey = (part) => part === META2 ? META_KEY : PART_PREFIX + part;
   function partsOfPath(path2) {
     const parts = path2.split(".");
-    if (parts[0] !== "plugins") return [META];
+    if (parts[0] !== "plugins") return [META2];
     if (parts.length === 1) return Object.keys(PlainSettings2.plugins || {});
     return [parts[1]];
   }
@@ -28639,11 +28722,11 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   }
   var awaitMaybe = async (v3) => v3 && typeof v3.then === "function" ? await v3 : v3;
   function readV2() {
-    const meta = readPart(META);
+    const meta = readPart(META2);
     const build = async (metaV) => {
       if (!metaV) return null;
       const data2 = { ...metaV.content, plugins: {} };
-      const vers2 = /* @__PURE__ */ new Map([[META, metaV.ver]]);
+      const vers2 = /* @__PURE__ */ new Map([[META2, metaV.ver]]);
       const parts2 = new Set(metaV.parts);
       for (const name of parts2) {
         const p3 = await awaitMaybe(readPart(name));
@@ -28656,7 +28739,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     if (meta && typeof meta.then === "function") return meta.then(build);
     if (!meta) return null;
     const data = { ...meta.content, plugins: {} };
-    const vers = /* @__PURE__ */ new Map([[META, meta.ver]]);
+    const vers = /* @__PURE__ */ new Map([[META2, meta.ver]]);
     const parts = new Set(meta.parts);
     for (const name of parts) {
       const p3 = readPart(name);
@@ -28670,7 +28753,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     for (const [k4, v3] of v22.vers) partVer.set(k4, v3);
     for (const n2 of v22.parts) knownParts.add(n2);
     lastBody.clear();
-    lastBody.set(META, serialize(metaContentOf(v22.data)));
+    lastBody.set(META2, serialize(metaContentOf(v22.data)));
     for (const n2 of v22.parts) if (v22.data.plugins[n2]) lastBody.set(n2, serialize(v22.data.plugins[n2]));
   }
   var metaContentOf = (data) => {
@@ -28679,7 +28762,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     return out;
   };
   function persistablePart(part) {
-    if (part === META) return metaContentOf(PlainSettings2);
+    if (part === META2) return metaContentOf(PlainSettings2);
     const entry = PlainSettings2.plugins?.[part];
     if (entry === void 0) return void 0;
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
@@ -28688,13 +28771,13 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     return kept;
   }
   var sortedParts = () => [...knownParts].sort();
-  var bodyOf = (part, content) => part === META ? serialize({ ...content, $parts: sortedParts() }) : content === void 0 ? "$deleted" : serialize(content);
+  var bodyOf = (part, content) => part === META2 ? serialize({ ...content, $parts: sortedParts() }) : content === void 0 ? "$deleted" : serialize(content);
   var under = (set, path2) => {
     for (const d3 of set) if (d3 === path2 || d3.startsWith(path2 + ".") || path2.startsWith(d3 + ".")) return true;
     return false;
   };
   var getRel = (obj, rel) => rel === "" ? obj : getPath(obj, rel);
-  var prefixOf2 = (part) => part === META ? "" : `plugins.${part}`;
+  var prefixOf2 = (part) => part === META2 ? "" : `plugins.${part}`;
   var relOf = (part, p3) => {
     const pre = prefixOf2(part);
     return pre === "" ? p3 : p3 === pre ? "" : p3.slice(pre.length + 1);
@@ -28751,7 +28834,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
       return 0;
     }
     const discovered = [];
-    if (part === META && Array.isArray(extra.parts)) {
+    if (part === META2 && Array.isArray(extra.parts)) {
       for (const n2 of extra.parts) if (!knownParts.has(n2)) {
         knownParts.add(n2);
         discovered.push(n2);
@@ -28789,8 +28872,8 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     }
     const cur = partVer.get(part) || noVer;
     if (cmpVer(ver, cur) > 0) partVer.set(part, ver);
-    const deleted = !!extra.deleted || part !== META && content == null;
-    if (part === META) lastBody.set(META, serialize({ ...content, $parts: [...new Set(extra.parts || [])].sort() }));
+    const deleted = !!extra.deleted || part !== META2 && content == null;
+    if (part === META2) lastBody.set(META2, serialize({ ...content, $parts: [...new Set(extra.parts || [])].sort() }));
     else lastBody.set(part, deleted ? "$deleted" : serialize(content));
     const changedPaths = [];
     const removed2 = (full, gone) => {
@@ -28839,7 +28922,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
         removed2(full, gone);
       }
     };
-    if (part === META) walk(PlainSettings2, content || {}, "");
+    if (part === META2) walk(PlainSettings2, content || {}, "");
     else {
       const full = `plugins.${part}`;
       const plugins2 = PlainSettings2.plugins;
@@ -29013,7 +29096,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     if (!m3) return;
     for (const [part, ver] of m3.vers) {
       if (cmpVer(ver, partVer.get(part) || noVer) <= 0) continue;
-      if (part === META) applyRemotePart(META, metaContentOf(m3.doc), ver, { parts: m3.parts });
+      if (part === META2) applyRemotePart(META2, metaContentOf(m3.doc), ver, { parts: m3.parts });
       else applyRemotePart(part, m3.doc.plugins[part], ver, { deleted: m3.doc.plugins[part] === void 0 });
     }
   }
@@ -29032,22 +29115,22 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   function planWrites(wrote) {
     const touched = new Set(forceParts);
     if (migrate) {
-      touched.add(META);
+      touched.add(META2);
       for (const n2 of Object.keys(PlainSettings2.plugins || {})) touched.add(n2);
     }
     for (const p3 of wrote) for (const part of partsOfPath(p3)) touched.add(part);
     const out = [];
-    const order = [...touched].filter((p3) => p3 !== META).concat(touched.has(META) ? [META] : []);
+    const order = [...touched].filter((p3) => p3 !== META2).concat(touched.has(META2) ? [META2] : []);
     for (const part of order) {
       const content = persistablePart(part);
-      if (part !== META && !knownParts.has(part) && (content === void 0 || content && typeof content === "object" && !Array.isArray(content) && !Object.keys(content).length)) continue;
-      if (part !== META && !knownParts.has(part)) {
+      if (part !== META2 && !knownParts.has(part) && (content === void 0 || content && typeof content === "object" && !Array.isArray(content) && !Object.keys(content).length)) continue;
+      if (part !== META2 && !knownParts.has(part)) {
         knownParts.add(part);
         watchPart(part);
       }
       out.push({ part, content });
     }
-    if (!touched.has(META) && bodyOf(META, persistablePart(META)) !== lastBody.get(META)) out.push({ part: META, content: persistablePart(META) });
+    if (!touched.has(META2) && bodyOf(META2, persistablePart(META2)) !== lastBody.get(META2)) out.push({ part: META2, content: persistablePart(META2) });
     return out.filter((w4) => forceParts.has(w4.part) || bodyOf(w4.part, w4.content) !== lastBody.get(w4.part));
   }
   function writeOne(w4, wrote) {
@@ -29055,14 +29138,14 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     const ver = { rev: prev.rev + 1, writer: TAB_WRITER };
     const meta = { [REV]: ver.rev, [WRITER]: ver.writer };
     let value;
-    if (w4.part === META) value = { ...w4.content, ...meta, [SAVED_AT]: Date.now(), $v: FORMAT, $parts: sortedParts() };
+    if (w4.part === META2) value = { ...w4.content, ...meta, [SAVED_AT]: Date.now(), $v: FORMAT, $parts: sortedParts() };
     else if (w4.content === void 0) value = { ...meta, $deleted: true };
     else if (w4.content && typeof w4.content === "object" && !Array.isArray(w4.content)) value = { ...w4.content, ...meta };
     else value = { $value: w4.content, ...meta };
     const r3 = setPart(w4.part, value);
-    const base = w4.part === META ? (() => {
+    const base = w4.part === META2 ? (() => {
       try {
-        return JSON.parse(lastBody.get(META) || "null", reviver);
+        return JSON.parse(lastBody.get(META2) || "null", reviver);
       } catch {
         return null;
       }
@@ -29106,7 +29189,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   async function refreshFromStores() {
     applyMirror(readMirror());
     if (!GM2.get) return;
-    for (const part of [META, ...knownParts]) {
+    for (const part of [META2, ...knownParts]) {
       const r3 = await awaitMaybe(readPart(part));
       if (r3 && cmpVer(r3.ver, partVer.get(part) || noVer) > 0) applyRemotePart(part, r3.deleted ? void 0 : r3.content, r3.ver, { parts: r3.parts, deleted: r3.deleted });
     }
@@ -29194,7 +29277,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
           writeMirror(bases);
           post({ t: "done", parts: done.map((c3) => {
             const content = persistablePart(c3.part);
-            return { part: c3.part, ver: c3.ver, body: content === void 0 ? null : serialize(content), deleted: c3.part !== META && content === void 0, parts: c3.part === META ? sortedParts() : void 0 };
+            return { part: c3.part, ver: c3.ver, body: content === void 0 ? null : serialize(content), deleted: c3.part !== META2 && content === void 0, parts: c3.part === META2 ? sortedParts() : void 0 };
           }) });
           armVerify();
         } else if (locked2) post({ t: "done", parts: [] });
@@ -29236,7 +29319,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
       writeMirror(bases);
       post({ t: "done", parts: done.map((c3) => {
         const content = persistablePart(c3.part);
-        return { part: c3.part, ver: c3.ver, body: content === void 0 ? null : serialize(content), deleted: c3.part !== META && content === void 0, parts: c3.part === META ? sortedParts() : void 0 };
+        return { part: c3.part, ver: c3.ver, body: content === void 0 ? null : serialize(content), deleted: c3.part !== META2 && content === void 0, parts: c3.part === META2 ? sortedParts() : void 0 };
       }) });
     }
     noteSiteBackup();
@@ -29301,7 +29384,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     if (syncInstalled) return;
     syncInstalled = true;
     getChannel();
-    for (const part of [META, ...knownParts]) {
+    for (const part of [META2, ...knownParts]) {
       watchPart(part);
       catchUpPart(part);
     }
@@ -29744,7 +29827,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   // core/lib/turbopack.js
   var logger41 = new Logger("Turbopack", "#93c5fd");
   var fnToString = Function.prototype.toString;
-  var META2 = Symbol.for("uspp.voidpp.factory");
+  var META3 = Symbol.for("uspp.voidpp.factory");
   var patches2 = [];
   var patchResults = [];
   var patchStats = { applied: 0, bypassed: 0, noEffect: 0, errors: 0, runtimeFallbacks: 0, patchedModules: /* @__PURE__ */ new Set(), injectionFallbacks: /* @__PURE__ */ new Set() };
@@ -29917,7 +30000,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     const f3 = factories.get(id) ?? factories.get(+id) ?? runtime.registry?.get?.(id) ?? runtime.registry?.get?.(+id);
     if (typeof f3 !== "function") return null;
     try {
-      const o3 = f3[META2]?.original ?? f3;
+      const o3 = f3[META3]?.original ?? f3;
       return isForeignWrapper(o3) ? String(o3.toString()) : fnToString.call(o3);
     } catch {
       return null;
@@ -30151,7 +30234,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
       return source != null ? source : fnToString.call(original);
     }, configurable: true, writable: true });
     Object.defineProperty(wrapper, "name", { value: original.name, configurable: true });
-    Object.defineProperty(wrapper, META2, { value: meta });
+    Object.defineProperty(wrapper, META3, { value: meta });
     wrappers.add(wrapper);
     wrapperOf.set(original, wrapper);
     if (!metaById.has(id)) metaById.set(id, meta);
@@ -30374,7 +30457,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
       seen.add(id);
       let src;
       try {
-        const o3 = f3[META2]?.original ?? f3;
+        const o3 = f3[META3]?.original ?? f3;
         src = isForeignWrapper(o3) ? String(o3.toString()) : fnToString.call(o3);
       } catch {
         return;

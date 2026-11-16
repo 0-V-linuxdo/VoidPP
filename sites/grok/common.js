@@ -83,19 +83,25 @@ for (const [name, [mod, key]] of Object.entries(uiMap)) {
 const ICON_SHAPE = { circle: "round", square: "square" };
 const LEGACY_VARIANT = { tertiary: "ghost", secondary: "muted", danger: "destructive", text: "ghost", textsecondary: "ghost" };
 let desktopKit = null;
-let desktopVersion = -1;
+const desktopSeen = new Set();
 function desktopButtons() {
     if (desktopKit) return desktopKit;
-    const v = U.moduleCacheVersion();
-    if (desktopVersion === v) return null;
-    desktopVersion = v;
-    for (const id of Object.keys(U.search('"data-icon-button":""'))) {
+    const reg = typeof U.getRuntimeFactoryRegistry === "function" ? U.getRuntimeFactoryRegistry() : null;
+    if (!reg) return null;
+    const consider = (id, f) => {
+        if (desktopKit || desktopSeen.has(id) || typeof f !== "function") return;
+        desktopSeen.add(id);
+        let src = "";
+        try { src = Function.prototype.toString.call(f); } catch { return; }
+        if (!src.includes('"data-icon-button":""')) return;
         const exps = Object.values(U.requireModule(Number(id)) ?? {}).filter(e => typeof e === "function");
         const IconButton = exps.find(e => String(e).includes('"data-icon-button":""'));
         const Button = exps.find(e => e !== IconButton && String(e).includes('"data-touch-target":""'));
-        if (IconButton && Button) return (desktopKit = { IconButton, Button });
-    }
-    return null;
+        if (IconButton && Button) desktopKit = { IconButton, Button };
+    };
+    if (reg instanceof Map) for (const [id, f] of reg) consider(id, f);
+    else for (const id of Object.keys(reg)) consider(Number.isNaN(+id) ? id : +id, reg[id]);
+    return desktopKit;
 }
 let IconSlot = null;
 const SlotIcon = () => getReact().useContext(IconSlot);

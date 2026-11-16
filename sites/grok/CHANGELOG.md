@@ -1,3 +1,7 @@
+## 20261114.55
+
+- CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS.
+
 ## 20261114.54
 
 - `.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.

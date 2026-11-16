@@ -8,6 +8,12 @@ import { Logger } from "./Logger";
 
 const logger = new Logger("Lazy");
 
+let cacheVer: () => number = () => 0;
+
+export function setLazyCacheVersion(fn: () => number) {
+    cacheVer = fn;
+}
+
 const unconfigurable = ["arguments", "caller", "prototype"];
 
 export const SYM_LAZY_GET = Symbol.for("void.lazy.get");
@@ -64,19 +70,16 @@ export function makeLazy<T>(factory: () => T, maxRetries = MAX_RETRIES): () => T
     let cache: T;
     let resolved = false;
     let attempts = 0;
+    let lastVer = -1;
     return () => {
-        if (!resolved) {
-            if (attempts >= maxRetries) {
-                if (IS_DEV && attempts === maxRetries) {
-                    attempts++;
-                    logger.warn("proxyLazy: factory failed to resolve after", maxRetries, "attempts");
-                }
-                return cache;
-            }
-            cache = factory();
-            attempts++;
-            if (cache != null) resolved = true;
-        }
+        if (resolved) return cache;
+        const ver = cacheVer();
+        if (attempts > 0 && ver === lastVer) return cache;
+        if (IS_DEV && attempts === maxRetries) logger.warn("proxyLazy: factory failed to resolve after", maxRetries, "attempts");
+        lastVer = ver;
+        cache = factory();
+        attempts++;
+        if (cache != null) resolved = true;
         return cache;
     };
 }
