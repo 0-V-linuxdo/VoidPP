@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.44
+// @version      20261114.45
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.44" : "0.0.0";
+  var VERSION = true ? "20261114.45" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -1932,14 +1932,30 @@ try {
     return tab.defaultLabel || tab.i18nKey || p3?.label || tab.id;
   }
   function navLeading(id) {
-    const p3 = pageById(id) || pages().find((x4) => x4.key === id);
+    const p3 = pageById(id);
     if (!p3) return null;
     return h4(lucideFor(p3), { width: 18, height: 18, className: "void-settings-nav-icon" });
   }
+  var dialogHook = null;
+  var isDialogHook = (v3) => {
+    try {
+      return typeof v3?.getState === "function" && "setOpen" in v3.getState();
+    } catch {
+      return false;
+    }
+  };
+  function settingsDialogHook() {
+    if (dialogHook) return dialogHook;
+    for (const id of Object.keys(U3.search("useSettingsDialogStore"))) {
+      const mod = U3.requireModule(Number(id));
+      dialogHook = mod && typeof mod === "object" ? Object.values(mod).find(isDialogHook) : null;
+      if (dialogHook) return dialogHook;
+    }
+    return null;
+  }
   function openSettingsTab(tabId2) {
-    const store3 = common.SettingsDialogStore;
-    const hook3 = store3?.useSettingsDialogStore;
-    if (!hook3 || typeof hook3.getState !== "function") return false;
+    const hook3 = settingsDialogHook();
+    if (!hook3) return false;
     const st = hook3.getState();
     try {
       if (typeof st.openTab === "function") st.openTab(tabId2);
@@ -1970,8 +1986,7 @@ try {
   var isOpen = () => !!document.querySelector('[role="dialog"] [data-uspp-voidpp-page]');
   function selectNavTab(id, setTab) {
     if (String(id).startsWith("uspp_voidpp_")) {
-      const store3 = common.SettingsDialogStore?.useSettingsDialogStore;
-      const openTab2 = store3 && typeof store3.getState === "function" ? store3.getState().openTab : void 0;
+      const openTab2 = settingsDialogHook()?.getState().openTab;
       if (typeof openTab2 === "function") {
         openTab2(id);
         return;
@@ -1980,8 +1995,7 @@ try {
     setTab(id);
   }
   function resolveShownTab(opts) {
-    const hook3 = common.SettingsDialogStore?.useSettingsDialogStore;
-    const tab = hook3 && typeof hook3.getState === "function" ? hook3.getState().tab : void 0;
+    const tab = settingsDialogHook()?.getState().tab;
     if (String(tab || "").startsWith("uspp_voidpp_")) return tab;
     if (String(opts.requestedTab || "").startsWith("uspp_voidpp_")) return opts.requestedTab;
     if (opts.open && opts.isHosted(opts.normalized)) return opts.normalized;
@@ -2470,19 +2484,38 @@ try {
 .uspp-voidpp-chatbar-btn[data-active="true"] { color: var(--uspp-voidpp-fg-primary); background: var(--uspp-voidpp-button-ghost-hover); }
 .uspp-voidpp-chatbar-btn:disabled { opacity: .4; cursor: default; }
 .uspp-voidpp-popover { position: fixed; z-index: 2147483001; min-width: 160px; padding: 8px; border-radius: 14px; background: var(--uspp-voidpp-surface-l2); color: var(--uspp-voidpp-fg-primary); border: 1px solid var(--uspp-voidpp-border-l1); box-shadow: 0 8px 32px rgb(0 0 0 / .25); }
+.void-settings-menu-icon { width: var(--grok-icon-size, 16px); height: var(--grok-icon-size, 16px); color: var(--fg-secondary, var(--grok-text-secondary)); flex-shrink: 0; }
+[role="menu"] :is([role="menuitem"], [role="menuitemradio"]) > span:first-child svg, [role="menu"] :is([role="menuitem"], [role="menuitemradio"]) > svg { color: var(--fg-secondary, var(--grok-text-secondary)) !important; }
+.void-menu-glyph-gap { width: 1rem; height: 1rem; margin-inline-end: 0.5rem; }
+.void-settings-sep { height: 1px; width: 100%; margin: 0.25rem 0; border: 0; background: var(--border-l1, var(--grok-border-l1, var(--border))); }
+.void-native-input { box-sizing: border-box; height: 2rem; padding: 0 0.625rem; border-radius: 0.5rem; border: 1px solid var(--border-l1, var(--grok-border-l1, var(--border))); background: transparent; color: var(--fg-primary, var(--grok-text-primary)); font: inherit; outline: none; }
+.void-native-input:focus, .void-native-input:focus-visible { border-color: var(--border-l2, var(--fg-secondary)); }
+.void-settings-nav-icon { width: 18px; height: 18px; display: block; flex-shrink: 0; color: inherit; pointer-events: none; }
+button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data-settings-tab^="uspp_voidpp_"] { position: relative; margin-top: 8px; }
+button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data-settings-tab^="uspp_voidpp_"]::before { content: ""; position: absolute; inset-inline: 12px; top: -8px; height: 1px; pointer-events: none; background: var(--border-l1, var(--grok-border-l1, rgb(255 255 255 / 8%))); }
 `;
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/sites/grok/migrate.js
   var OLD_KEY = "VoidPPSettings";
   var LEGACY_KEY = "VoidSettings";
-  var FLAG = "voidppMigrated";
-  var ENABLE_FLAG = "voidppEnabledBackfill";
+  var FLAG = "voidppValuesBackfill";
   var RENAME = {
     AvatarPluginsFlyout: "ConnectorsFlyout",
     BetterAvatarPlugins: "ConnectorsFlyout",
     NoSidebarPlugins: "ConnectorsFlyout"
   };
-  var SKIP = /* @__PURE__ */ new Set(["ChatBarButtonAPI", "ContextMenuAPI", "Settings", "Plugins"]);
+  var SKIP = /* @__PURE__ */ new Set(["ChatBarButtonAPI", "ContextMenuAPI", "Settings", "Plugins", "PluginsFlyout"]);
+  var GLOBALS = [
+    ["showVoidPPMenu", "showSiteEntry"],
+    ["pinnedPlugins", "pinnedPlugins"],
+    ["starredPlugins", "starredPlugins"],
+    ["knownPlugins", "knownPlugins"],
+    ["themesEnabled", "themesEnabled"],
+    ["onlineThemesEnabled", "onlineThemesEnabled"],
+    ["themes", "sites.grok.themes"],
+    ["customCSS", "sites.grok.customCSS"],
+    ["customCSSEnabled", "sites.grok.customCSSEnabled"]
+  ];
   function parseBag(raw2) {
     try {
       let v3 = raw2;
@@ -2529,86 +2562,69 @@ try {
       }
     });
   }
-  function applyEnabled(oldPlugins) {
-    if (!oldPlugins || !U3?.PlainSettings?.plugins) return 0;
-    let n2 = 0;
-    for (const [name, bag] of Object.entries(oldPlugins)) {
-      if (!bag || typeof bag !== "object" || bag.enabled !== true) continue;
+  var getIn = (obj, path2) => path2.split(".").reduce((o3, k4) => o3?.[k4], obj);
+  function setIn(obj, path2, value) {
+    const keys4 = path2.split(".");
+    const last2 = keys4.pop();
+    let o3 = obj;
+    for (const k4 of keys4) o3 = o3[k4] && typeof o3[k4] === "object" ? o3[k4] : o3[k4] = {};
+    o3[last2] = value;
+  }
+  function fill(bag, had, touched) {
+    if (!bag?.plugins) return;
+    const { plugins: plugins2 } = U3.PlainSettings;
+    for (const [name, entry] of Object.entries(bag.plugins)) {
       const dest = RENAME[name] || name;
-      if (SKIP.has(dest) || dest === "Settings") continue;
-      const cur = U3.PlainSettings.plugins[dest] ??= {};
-      if (cur.enabled === false || cur.enabled === true) continue;
-      cur.enabled = true;
-      n2++;
-      U3.SettingsStore.markAsChanged?.(`plugins.${dest}`);
-      try {
-        U3.setPluginEnabled?.(dest, true);
-      } catch {
+      if (SKIP.has(dest) || !entry || typeof entry !== "object") continue;
+      for (const [key, value] of Object.entries(entry)) {
+        const path2 = `${dest}.${key}`;
+        if (key === "enabled" && value !== true || had.has(path2) || touched.has(path2)) continue;
+        (plugins2[dest] ??= {})[key] = value;
+        touched.add(path2);
       }
     }
-    return n2;
+    const oldSys = bag.plugins.Settings ?? {};
+    for (const [from, to] of GLOBALS) {
+      const path2 = `Settings.${to}`;
+      if (oldSys[from] == null || had.has(path2) || touched.has(path2)) continue;
+      setIn(plugins2.Settings ??= {}, to, oldSys[from]);
+      touched.add(path2);
+    }
   }
-  function backfillEnabled() {
-    const sys4 = U3.PlainSettings.plugins.Settings ??= {};
-    if (sys4[ENABLE_FLAG]) return;
-    const mark = () => {
-      sys4[ENABLE_FLAG] = true;
-      U3.SettingsStore.markAsChanged?.("plugins.Settings");
-    };
-    const fromSync = parseBag(readLocal(OLD_KEY)) || parseBag(readLocal(LEGACY_KEY));
-    if (fromSync) applyEnabled(fromSync.plugins);
-    const gm = readGm(OLD_KEY) || readGm(LEGACY_KEY);
-    const gmWait = gm && typeof gm.then === "function" ? gm.then((bag) => {
-      if (bag) applyEnabled(bag.plugins);
-    }) : (gm && applyEnabled(gm.plugins), Promise.resolve());
-    Promise.all([
-      gmWait,
-      idbGet("VoidPP", OLD_KEY).then(parseBag).then((bag) => {
-        if (bag) applyEnabled(bag.plugins);
-      }),
-      idbGet("Void", LEGACY_KEY).then(parseBag).then((bag) => {
-        if (bag) applyEnabled(bag.plugins);
-      })
-    ]).then(mark).catch(mark);
+  function isDefault(path2) {
+    const [name, key] = path2.split(".");
+    const s3 = U3.plugins[name]?.settings?.def?.[key];
+    const def2 = s3?.type === U3.OptionType.SELECT ? s3.options?.find((o3) => o3.default)?.value : s3?.default;
+    return def2 !== void 0 && JSON.stringify(def2) === JSON.stringify(getIn(U3.PlainSettings.plugins, path2));
+  }
+  function persist(touched) {
+    for (const path2 of touched) {
+      if (!U3.plugins[path2.split(".")[0]] || isDefault(path2)) continue;
+      U3.SettingsStore.markAsChanged(`plugins.${path2}`);
+    }
+    (U3.PlainSettings.plugins.Settings ??= {})[FLAG] = true;
+    U3.SettingsStore.markAsChanged(`plugins.Settings.${FLAG}`);
   }
   function migrateVoidSettings() {
-    if (!U3 || !U3.PlainSettings || typeof U3.PlainSettings !== "object" || !U3.PlainSettings.plugins) return;
-    const sys4 = U3.PlainSettings.plugins.Settings ??= {};
-    if (!sys4[FLAG]) {
-      const current3 = U3.PlainSettings.plugins;
-      const already = Object.keys(current3).some((k4) => k4 !== "Settings" && current3[k4] && typeof current3[k4] === "object");
-      const old = (() => {
-        const g5 = readGm(OLD_KEY) || readGm(LEGACY_KEY);
-        if (g5 && typeof g5.then === "function") return null;
-        return g5 || readLocal(OLD_KEY) || readLocal(LEGACY_KEY);
-      })();
-      if (old) {
-        const oldPlugins = old.plugins || {};
-        if (!already) {
-          for (const [name, bag] of Object.entries(oldPlugins)) {
-            if (name === "Settings" || !bag || typeof bag !== "object") continue;
-            U3.PlainSettings.plugins[name] ??= { ...bag };
-            U3.SettingsStore.markAsChanged?.(`plugins.${name}`);
-          }
-        }
-        const oldSys = oldPlugins.Settings || {};
-        if (typeof oldSys.showVoidPPMenu === "boolean" && sys4.showSiteEntry == null) {
-          sys4.showSiteEntry = oldSys.showVoidPPMenu;
-        }
-        for (const key of ["pinnedPlugins", "starredPlugins", "knownPlugins"]) {
-          if (sys4[key] == null && oldSys[key] != null) sys4[key] = oldSys[key];
-        }
-        const sites = sys4.sites && typeof sys4.sites === "object" ? sys4.sites : sys4.sites = {};
-        const grok = sites.grok && typeof sites.grok === "object" ? sites.grok : sites.grok = {};
-        if (!Array.isArray(grok.themes) && Array.isArray(oldSys.themes)) grok.themes = oldSys.themes;
-        if (grok.quickCss == null && typeof oldSys.customCSS === "string") grok.quickCss = oldSys.customCSS;
-        if (grok.quickCssEnabled == null && typeof oldSys.customCSSEnabled === "boolean") grok.quickCssEnabled = oldSys.customCSSEnabled;
-        if (sys4.themesEnabled == null && typeof oldSys.themesEnabled === "boolean") sys4.themesEnabled = oldSys.themesEnabled;
-      }
-      sys4[FLAG] = true;
-      U3.SettingsStore.markAsChanged?.("plugins.Settings");
+    const plugins2 = U3.PlainSettings?.plugins;
+    if (!plugins2 || plugins2.Settings?.[FLAG]) return;
+    const had = /* @__PURE__ */ new Set();
+    for (const [name, entry] of Object.entries(plugins2)) {
+      if (entry && typeof entry === "object") for (const key of Object.keys(entry)) had.add(`${name}.${key}`);
     }
-    backfillEnabled();
+    for (const [, to] of GLOBALS) if (getIn(plugins2.Settings, to) != null) had.add(`Settings.${to}`);
+    const touched = /* @__PURE__ */ new Set();
+    const gm = [readGm(OLD_KEY), readGm(LEGACY_KEY)];
+    for (const bag of [...gm, readLocal(OLD_KEY), readLocal(LEGACY_KEY)]) fill(bag, had, touched);
+    Promise.all([
+      ...gm,
+      idbGet("VoidPP", OLD_KEY).then(parseBag),
+      idbGet("Void", LEGACY_KEY).then(parseBag),
+      U3.onceReady
+    ]).then((bags) => {
+      for (const bag of bags) fill(bag, had, touched);
+      persist(touched);
+    });
   }
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/sites/grok/index.js
@@ -3942,7 +3958,7 @@ try {
       return false;
     }
   }
-  function settingsDialogHook() {
+  function settingsDialogHook2() {
     const legacy = find2((mod) => isSettingsDialogHook(mod?.useSettingsDialogStore));
     if (legacy && isSettingsDialogHook(legacy.useSettingsDialogStore)) return legacy.useSettingsDialogStore;
     for (const id of Object.keys(search("useSettingsDialogStore"))) {
@@ -3955,7 +3971,7 @@ try {
     return null;
   }
   var SettingsDialogStore = proxyLazy(() => {
-    const hook3 = settingsDialogHook();
+    const hook3 = settingsDialogHook2();
     return hook3 ? { useSettingsDialogStore: hook3 } : null;
   }, Infinity);
   function isPluginsDialogHook(value) {
@@ -5857,7 +5873,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
   var currentSort = initial.sort;
   var randomSeed = Date.now();
   var filterStore = createExternalStore();
-  function persist() {
+  function persist2() {
     if (!settings3.store.persistFilters) return;
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ filter: currentFilter, search: currentSearch, date: currentDate, sort: currentSort }));
@@ -5867,23 +5883,23 @@ ${root2}::-webkit-scrollbar-thumb:hover {
   function setFilter(f3) {
     currentFilter = f3;
     filterStore.notify();
-    persist();
+    persist2();
   }
   var setSearch = debounce((s3) => {
     currentSearch = s3;
     filterStore.notify();
-    persist();
+    persist2();
   }, 200);
   function setDate(d3) {
     currentDate = d3;
     filterStore.notify();
-    persist();
+    persist2();
   }
   function setSort(s3) {
     if (s3 === "random" && currentSort === "random") randomSeed = Date.now();
     currentSort = s3;
     filterStore.notify();
-    persist();
+    persist2();
   }
   function resetFilters() {
     currentFilter = "all";
@@ -5891,7 +5907,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
     currentDate = "all";
     currentSort = "newest";
     filterStore.notify();
-    persist();
+    persist2();
   }
   function hasActiveFilters() {
     return currentFilter !== "all" || currentSearch.length > 0 || currentDate !== "all";
@@ -9761,10 +9777,10 @@ html.void-cms-picked .void-cms-ghost {
     if (saveTimer) return;
     saveTimer = setTimeout(() => {
       saveTimer = null;
-      void persist2();
+      void persist3();
     }, 80);
   }
-  async function persist2() {
+  async function persist3() {
     if (!alive) return;
     const account2 = accountId();
     doc.buckets[account2] = recordBuckets();
@@ -12029,15 +12045,15 @@ html.void-cms-picked .void-cms-ghost {
   function migrateLegacy3() {
     const plugins2 = PlainSettings.plugins;
     const mode = plugins2.ModeSync;
-    const persist4 = plugins2.QueuePersist;
-    if (!mode && !persist4) return;
+    const persist5 = plugins2.QueuePersist;
+    if (!mode && !persist5) return;
     const target2 = plugins2.BetterQueue ??= {};
     if (mode?.enabled === false) {
       if (!("showQueueMode" in target2)) target2.showQueueMode = false;
       if (!("stickyOnNavigate" in target2)) target2.stickyOnNavigate = false;
     }
-    if (persist4?.enabled === false && !("persistAcrossRefresh" in target2)) target2.persistAcrossRefresh = false;
-    if (mode?.enabled === false && persist4?.enabled === false && typeof target2.enabled !== "boolean") target2.enabled = false;
+    if (persist5?.enabled === false && !("persistAcrossRefresh" in target2)) target2.persistAcrossRefresh = false;
+    if (mode?.enabled === false && persist5?.enabled === false && typeof target2.enabled !== "boolean") target2.enabled = false;
     delete plugins2.ModeSync;
     delete plugins2.QueuePersist;
     const meta = plugins2.Settings;
@@ -21167,9 +21183,9 @@ html.void-cms-picked .void-cms-ghost {
     if (memory2.has(key)) return true;
     return disk.some((item) => item.conversationId === conversationId3 && item.messageId === messageId);
   }
-  function putStar(item, persist4) {
+  function putStar(item, persist5) {
     const key = starKey(item.conversationId, item.messageId);
-    if (!persist4) {
+    if (!persist5) {
       memory2.set(key, item);
       emit();
       return;
@@ -22381,7 +22397,7 @@ html.void-cms-picked .void-cms-ghost {
     for (const [id, ms] of stamps()) next[id] = ms;
     settings23.store.stamps = next;
   }
-  var persist3 = debounce(persistNow, 400);
+  var persist4 = debounce(persistNow, 400);
   function remember3(id, ms, sender2, state4, force = false) {
     if (!id) return false;
     const map = stamps();
@@ -22394,7 +22410,7 @@ html.void-cms-picked .void-cms-ghost {
       if (oldest == null) break;
       map.delete(oldest);
     }
-    persist3();
+    persist4();
     return prev !== ms;
   }
   function conversationIdOf(id, rec) {
@@ -28323,7 +28339,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     const def2 = defaultResolver(plugin, key);
     return def2 !== null && typeof def2 === "object" ? JSON.parse(serialize(def2), reviver) : def2;
   }
-  var isDefault = (plugin, key, value) => {
+  var isDefault2 = (plugin, key, value) => {
     const def2 = defaultResolver(plugin, key);
     return def2 !== void 0 && serialize(def2) === serialize(value);
   };
@@ -28338,7 +28354,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
           continue;
         }
         const kept = {};
-        for (const [k4, v3] of Object.entries(entry)) if (explicit.has(`plugins.${name}.${k4}`) || !isDefault(name, k4, v3)) kept[k4] = v3;
+        for (const [k4, v3] of Object.entries(entry)) if (explicit.has(`plugins.${name}.${k4}`) || !isDefault2(name, k4, v3)) kept[k4] = v3;
         out.plugins[name] = kept;
       }
     }
@@ -28692,7 +28708,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     if (entry === void 0) return void 0;
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
     const kept = {};
-    for (const [k4, v3] of Object.entries(entry)) if (explicit.has(`plugins.${part}.${k4}`) || !isDefault(part, k4, v3)) kept[k4] = v3;
+    for (const [k4, v3] of Object.entries(entry)) if (explicit.has(`plugins.${part}.${k4}`) || !isDefault2(part, k4, v3)) kept[k4] = v3;
     return kept;
   }
   var sortedParts = () => [...knownParts].sort();
@@ -34855,14 +34871,14 @@ ${orphaned.join("\n")}`);
     WarningIcon: () => WarningIcon,
     WrenchIcon: () => WrenchIcon
   });
-  function svg3(paths, { viewBox = "0 0 24 24", fill = "none" } = {}) {
+  function svg3(paths, { viewBox = "0 0 24 24", fill: fill2 = "none" } = {}) {
     const Icon = ({ size = 4, className, color, style }) => h("svg", {
       width: size * 4,
       height: size * 4,
       viewBox,
-      fill,
+      fill: fill2,
       className,
-      stroke: fill === "none" ? color || "currentColor" : void 0,
+      stroke: fill2 === "none" ? color || "currentColor" : void 0,
       strokeWidth: 2,
       strokeLinecap: "round",
       strokeLinejoin: "round",

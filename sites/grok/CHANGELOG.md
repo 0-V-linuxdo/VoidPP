@@ -1,3 +1,10 @@
+## 20261114.45
+
+- Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.
+- Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.
+- Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.
+- Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again.
+
 ## 20261114.44
 
 - Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale.

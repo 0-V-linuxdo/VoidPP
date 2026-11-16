@@ -3,14 +3,24 @@ import { U } from "./u.js";
 
 const OLD_KEY = "VoidPPSettings";
 const LEGACY_KEY = "VoidSettings";
-const FLAG = "voidppMigrated";
-const ENABLE_FLAG = "voidppEnabledBackfill";
+const FLAG = "voidppValuesBackfill";
 const RENAME = {
     AvatarPluginsFlyout: "ConnectorsFlyout",
     BetterAvatarPlugins: "ConnectorsFlyout",
     NoSidebarPlugins: "ConnectorsFlyout",
 };
-const SKIP = new Set(["ChatBarButtonAPI", "ContextMenuAPI", "Settings", "Plugins"]);
+const SKIP = new Set(["ChatBarButtonAPI", "ContextMenuAPI", "Settings", "Plugins", "PluginsFlyout"]);
+const GLOBALS = [
+    ["showVoidPPMenu", "showSiteEntry"],
+    ["pinnedPlugins", "pinnedPlugins"],
+    ["starredPlugins", "starredPlugins"],
+    ["knownPlugins", "knownPlugins"],
+    ["themesEnabled", "themesEnabled"],
+    ["onlineThemesEnabled", "onlineThemesEnabled"],
+    ["themes", "sites.grok.themes"],
+    ["customCSS", "sites.grok.customCSS"],
+    ["customCSSEnabled", "sites.grok.customCSSEnabled"],
+];
 
 function parseBag(raw) {
     try {
@@ -52,79 +62,72 @@ function idbGet(dbName, key) {
     });
 }
 
-function applyEnabled(oldPlugins) {
-    if (!oldPlugins || !U?.PlainSettings?.plugins) return 0;
-    let n = 0;
-    for (const [name, bag] of Object.entries(oldPlugins)) {
-        if (!bag || typeof bag !== "object" || bag.enabled !== true) continue;
-        const dest = RENAME[name] || name;
-        if (SKIP.has(dest) || dest === "Settings") continue;
-        const cur = U.PlainSettings.plugins[dest] ??= {};
-        if (cur.enabled === false || cur.enabled === true) continue;
-        cur.enabled = true;
-        n++;
-        U.SettingsStore.markAsChanged?.(`plugins.${dest}`);
-        try { U.setPluginEnabled?.(dest, true); } catch { /* plugins may not be registered yet */ }
-    }
-    return n;
+const getIn = (obj, path) => path.split(".").reduce((o, k) => o?.[k], obj);
+
+function setIn(obj, path, value) {
+    const keys = path.split(".");
+    const last = keys.pop();
+    let o = obj;
+    for (const k of keys) o = o[k] && typeof o[k] === "object" ? o[k] : (o[k] = {});
+    o[last] = value;
 }
 
-function backfillEnabled() {
-    const sys = U.PlainSettings.plugins.Settings ??= {};
-    if (sys[ENABLE_FLAG]) return;
-    const mark = () => {
-        sys[ENABLE_FLAG] = true;
-        U.SettingsStore.markAsChanged?.("plugins.Settings");
-    };
-    const fromSync = parseBag(readLocal(OLD_KEY)) || parseBag(readLocal(LEGACY_KEY));
-    if (fromSync) applyEnabled(fromSync.plugins);
-    const gm = readGm(OLD_KEY) || readGm(LEGACY_KEY);
-    const gmWait = gm && typeof gm.then === "function"
-        ? gm.then(bag => { if (bag) applyEnabled(bag.plugins); })
-        : (gm && applyEnabled(gm.plugins), Promise.resolve());
-    Promise.all([
-        gmWait,
-        idbGet("VoidPP", OLD_KEY).then(parseBag).then(bag => { if (bag) applyEnabled(bag.plugins); }),
-        idbGet("Void", LEGACY_KEY).then(parseBag).then(bag => { if (bag) applyEnabled(bag.plugins); }),
-    ]).then(mark).catch(mark);
+function fill(bag, had, touched) {
+    if (!bag?.plugins) return;
+    const { plugins } = U.PlainSettings;
+    for (const [name, entry] of Object.entries(bag.plugins)) {
+        const dest = RENAME[name] || name;
+        if (SKIP.has(dest) || !entry || typeof entry !== "object") continue;
+        for (const [key, value] of Object.entries(entry)) {
+            const path = `${dest}.${key}`;
+            if ((key === "enabled" && value !== true) || had.has(path) || touched.has(path)) continue;
+            (plugins[dest] ??= {})[key] = value;
+            touched.add(path);
+        }
+    }
+    const oldSys = bag.plugins.Settings ?? {};
+    for (const [from, to] of GLOBALS) {
+        const path = `Settings.${to}`;
+        if (oldSys[from] == null || had.has(path) || touched.has(path)) continue;
+        setIn(plugins.Settings ??= {}, to, oldSys[from]);
+        touched.add(path);
+    }
+}
+
+function isDefault(path) {
+    const [name, key] = path.split(".");
+    const s = U.plugins[name]?.settings?.def?.[key];
+    const def = s?.type === U.OptionType.SELECT ? s.options?.find(o => o.default)?.value : s?.default;
+    return def !== undefined && JSON.stringify(def) === JSON.stringify(getIn(U.PlainSettings.plugins, path));
+}
+
+function persist(touched) {
+    for (const path of touched) {
+        if (!U.plugins[path.split(".")[0]] || isDefault(path)) continue;
+        U.SettingsStore.markAsChanged(`plugins.${path}`);
+    }
+    (U.PlainSettings.plugins.Settings ??= {})[FLAG] = true;
+    U.SettingsStore.markAsChanged(`plugins.Settings.${FLAG}`);
 }
 
 export function migrateVoidSettings() {
-    if (!U || !U.PlainSettings || typeof U.PlainSettings !== "object" || !U.PlainSettings.plugins) return;
-    const sys = U.PlainSettings.plugins.Settings ??= {};
-    if (!sys[FLAG]) {
-        const current = U.PlainSettings.plugins;
-        const already = Object.keys(current).some(k => k !== "Settings" && current[k] && typeof current[k] === "object");
-        const old = (() => {
-            const g = readGm(OLD_KEY) || readGm(LEGACY_KEY);
-            if (g && typeof g.then === "function") return null;
-            return g || readLocal(OLD_KEY) || readLocal(LEGACY_KEY);
-        })();
-        if (old) {
-            const oldPlugins = old.plugins || {};
-            if (!already) {
-                for (const [name, bag] of Object.entries(oldPlugins)) {
-                    if (name === "Settings" || !bag || typeof bag !== "object") continue;
-                    U.PlainSettings.plugins[name] ??= { ...bag };
-                    U.SettingsStore.markAsChanged?.(`plugins.${name}`);
-                }
-            }
-            const oldSys = oldPlugins.Settings || {};
-            if (typeof oldSys.showVoidPPMenu === "boolean" && sys.showSiteEntry == null) {
-                sys.showSiteEntry = oldSys.showVoidPPMenu;
-            }
-            for (const key of ["pinnedPlugins", "starredPlugins", "knownPlugins"]) {
-                if (sys[key] == null && oldSys[key] != null) sys[key] = oldSys[key];
-            }
-            const sites = sys.sites && typeof sys.sites === "object" ? sys.sites : (sys.sites = {});
-            const grok = sites.grok && typeof sites.grok === "object" ? sites.grok : (sites.grok = {});
-            if (!Array.isArray(grok.themes) && Array.isArray(oldSys.themes)) grok.themes = oldSys.themes;
-            if (grok.quickCss == null && typeof oldSys.customCSS === "string") grok.quickCss = oldSys.customCSS;
-            if (grok.quickCssEnabled == null && typeof oldSys.customCSSEnabled === "boolean") grok.quickCssEnabled = oldSys.customCSSEnabled;
-            if (sys.themesEnabled == null && typeof oldSys.themesEnabled === "boolean") sys.themesEnabled = oldSys.themesEnabled;
-        }
-        sys[FLAG] = true;
-        U.SettingsStore.markAsChanged?.("plugins.Settings");
+    const plugins = U.PlainSettings?.plugins;
+    if (!plugins || plugins.Settings?.[FLAG]) return;
+    const had = new Set();
+    for (const [name, entry] of Object.entries(plugins)) {
+        if (entry && typeof entry === "object") for (const key of Object.keys(entry)) had.add(`${name}.${key}`);
     }
-    backfillEnabled();
+    for (const [, to] of GLOBALS) if (getIn(plugins.Settings, to) != null) had.add(`Settings.${to}`);
+    const touched = new Set();
+    const gm = [readGm(OLD_KEY), readGm(LEGACY_KEY)];
+    for (const bag of [...gm, readLocal(OLD_KEY), readLocal(LEGACY_KEY)]) fill(bag, had, touched);
+    Promise.all([
+        ...gm,
+        idbGet("VoidPP", OLD_KEY).then(parseBag),
+        idbGet("Void", LEGACY_KEY).then(parseBag),
+        U.onceReady,
+    ]).then(bags => {
+        for (const bag of bags) fill(bag, had, touched);
+        persist(touched);
+    });
 }

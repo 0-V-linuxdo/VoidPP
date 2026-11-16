@@ -67,15 +67,28 @@ function tabLabel(tab) {
 }
 
 function navLeading(id) {
-    const p = pageById(id) || pages().find(x => x.key === id);
+    const p = pageById(id);
     if (!p) return null;
     return h(lucideFor(p), { width: 18, height: 18, className: "void-settings-nav-icon" });
 }
 
+let dialogHook = null;
+const isDialogHook = v => {
+    try { return typeof v?.getState === "function" && "setOpen" in v.getState(); } catch { return false; }
+};
+function settingsDialogHook() {
+    if (dialogHook) return dialogHook;
+    for (const id of Object.keys(U.search("useSettingsDialogStore"))) {
+        const mod = U.requireModule(Number(id));
+        dialogHook = mod && typeof mod === "object" ? Object.values(mod).find(isDialogHook) : null;
+        if (dialogHook) return dialogHook;
+    }
+    return null;
+}
+
 function openSettingsTab(tabId) {
-    const store = common.SettingsDialogStore;
-    const hook = store?.useSettingsDialogStore;
-    if (!hook || typeof hook.getState !== "function") return false;
+    const hook = settingsDialogHook();
+    if (!hook) return false;
     const st = hook.getState();
     try {
         if (typeof st.openTab === "function") st.openTab(tabId);
@@ -109,8 +122,7 @@ const isOpen = () => !!document.querySelector("[role=\"dialog\"] [data-uspp-page
 
 function selectNavTab(id, setTab) {
     if (String(id).startsWith("uspp_")) {
-        const store = common.SettingsDialogStore?.useSettingsDialogStore;
-        const openTab = store && typeof store.getState === "function" ? store.getState().openTab : undefined;
+        const openTab = settingsDialogHook()?.getState().openTab;
         if (typeof openTab === "function") {
             openTab(id);
             return;
@@ -120,8 +132,7 @@ function selectNavTab(id, setTab) {
 }
 
 function resolveShownTab(opts) {
-    const hook = common.SettingsDialogStore?.useSettingsDialogStore;
-    const tab = hook && typeof hook.getState === "function" ? hook.getState().tab : undefined;
+    const tab = settingsDialogHook()?.getState().tab;
     if (String(tab || "").startsWith("uspp_")) return tab;
     if (String(opts.requestedTab || "").startsWith("uspp_")) return opts.requestedTab;
     if (opts.open && opts.isHosted(opts.normalized)) return opts.normalized;

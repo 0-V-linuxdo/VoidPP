@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.44
+// @version      20261114.45
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
