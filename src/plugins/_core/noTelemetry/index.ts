@@ -76,10 +76,12 @@ export default definePlugin({
                 {
                     match: /\i\("\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)\)/g,
                     replace: "false",
+                    noWarn: true,
                 },
                 {
                     match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/g,
                     replace: "void 0",
+                    noWarn: true,
                 },
             ],
         },

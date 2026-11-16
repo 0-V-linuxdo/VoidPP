@@ -187,7 +187,7 @@ function botsHeader(): HTMLElement | null {
 function onBotsPointerDown(event: PointerEvent) {
     if (!event.isTrusted) return;
     const header = botsHeader();
-    const {target} = event;
+    const { target } = event;
     if (!header || !(target instanceof Node) || !header.contains(target)) return;
     botsUserOverride = true;
     stopBotsCollapse();
@@ -578,6 +578,7 @@ export default definePlugin({
     patches: [
         {
             find: "avatarSize:\"md\",accountInfoSlot:",
+            noWarn: true,
             replacement: {
                 match: /\(0,(\i)\.jsx\)\((\i)\.Z,\{expanded:!0,/,
                 replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.Z,expanded:!0,",
@@ -609,6 +610,7 @@ export default definePlugin({
         {
             find: "\"Editing actions\",\"Editing actions\"",
             all: true,
+            noWarn: true,
             replacement: [
                 {
                     match: /=(\(0,\i\.jsx\)\(\i,\{title:\i,editing:\i,[^}]{0,80}?validationErrorMessage:\i[^}]{0,40}?\}\))/,
@@ -636,6 +638,7 @@ export default definePlugin({
         },
         {
             find: "\"sidebar-expand\",\"Expand\"",
+            noWarn: true,
             replacement: [
                 {
                     match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
@@ -652,18 +655,25 @@ export default definePlugin({
             find: "\"sidebar.new-bot-btn.aria-label\",\"New bot\"",
             replacement: [
                 {
+                    match: /(\(0,\i\.jsx\)\(\i\._,\{icon:\i(?:\.\i)?,label:\i,onClick:\i,size:"sm",tooltip:\i)/,
+                    replace: '$&,"data-void-bots-plus":""',
+                },
+                {
                     match: /\(0,(\i)\.(\i)\)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","(hover:bg-button-ghost-hover hover:text-(?:fg-)?primary)","(focus:outline-none focus-visible:bg-button-ghost-hover)"\)/,
                     replace: '(0,$1.$2)("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","$3","$4")',
+                    noWarn: true,
                 },
                 {
                     match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
                     replace: "$&,\"data-void-bots-plus\":\"\"",
+                    noWarn: true,
                 },
             ],
         },
         {
             find: "\"sidebar-chats\",\"Chats\"",
             all: true,
+            noWarn: true,
             replacement: [
                 {
                     match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
@@ -679,6 +689,7 @@ export default definePlugin({
         {
             find: "\"sidebar.section-title\",\"Bots\"",
             all: true,
+            noWarn: true,
             replacement: {
                 match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,(?:\i\.useLocalStorage|\i\.\i)\)\("sidebar-bots-unassigned-collapsed")/,
                 replace: "$self._useBotsCollapsed()",
@@ -686,6 +697,7 @@ export default definePlugin({
         },
         {
             find: "sidebar-history-collapsed",
+            noWarn: true,
             replacement: {
                 match: /((?:useLocalStorage\)|\(0,\i\.\i\)))\("sidebar-history-collapsed",!1,!1\)/,
                 replace: '$1("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)',
@@ -693,6 +705,7 @@ export default definePlugin({
         },
         {
             find: "sidebar-projects-collapsed",
+            noWarn: true,
             group: true,
             replacement: [
                 {
@@ -734,6 +747,7 @@ export default definePlugin({
             // `if(!(0,a2.G)({hasBots,…,teamSeatEntitled}))return null`.
             find: "teamSeatEntitled:",
             all: true,
+            noWarn: true,
             replacement: {
                 match: /if\(!\(0,\i(?:\.\i)?\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
                 replace: "",

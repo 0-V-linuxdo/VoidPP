@@ -21,6 +21,7 @@ export default definePlugin({
             find: ["desktop-shell.project-hub.suggested", "data-project-hub"],
             group: true,
             all: true,
+            noWarn: true,
             replacement: {
                 match: /\(0,(\i)\.useState\)\("suggested"\)/,
                 replace: '(0,$1.useState)("recent")',

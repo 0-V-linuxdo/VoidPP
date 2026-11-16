@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.52
+// @version      20261114.53
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.52" : "0.0.0";
+  var VERSION = true ? "20261114.53" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -2233,7 +2233,7 @@ try {
         ]
       },
       {
-        find: "desktop-shell.settings.search-label",
+        find: '"data-settings-tab"',
         all: true,
         replacement: {
           match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.X\[(\i)\.id\]\}\)/g,
@@ -2262,6 +2262,7 @@ try {
       },
       {
         find: '["general","grok","payments","data","other","team-management"]',
+        noWarn: true,
         replacement: {
           match: /(\["general","grok","payments","data","other"),("team-management"\])/,
           replace: '$1,"voidpp",$2'
@@ -2437,9 +2438,8 @@ try {
         all: true,
         replacement: [
           {
-            match: /(?=\(0,\i\.jsxs?\)\(\i\.r,\{on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i(?:\.\i)?,\{size:4\}\)\}\),\i\("user-dropdown\.sign-out","Sign Out"\)\))/,
-            replace: "$self.renderUserItems(),",
-            noWarn: true
+            match: /(?=\(0,\i\.jsxs?\)\(\i\.r,\{on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i(?:\.\i)?,\{size:4\}\)\}\),\i\("user-dropdown\.sign-out","Sign Out"\)\]\}\))/,
+            replace: "$self.renderUserItems(),"
           },
           {
             match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,
@@ -2854,9 +2854,6 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
         all: true,
         replacement: [
           {
-            // Desktop inline row: trailing cell is dictate+send. Same module as
-            // BetterModeSelect. The old `"data-query-bar-mode-select":!0` find is gone
-            // (`:""` + compiler temps); a comma after mode-select is discarded.
             match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\(\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
             replace: '$1[$self.renderChatBar("chat"),$2]$3'
           },
@@ -3183,7 +3180,7 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   }
   var filters = new Proxy({}, {
     get(_3, key) {
-      if (typeof key === "symbol") return void 0;
+      if (typeof key === "symbol") return;
       return (...args) => {
         const impl = api()?.filters?.[key];
         if (typeof impl === "function") return impl(...args);
@@ -4570,10 +4567,17 @@ ${root2}::-webkit-scrollbar-thumb:hover {
       {
         find: 'source:"auto"',
         all: true,
-        replacement: {
-          match: /&&(\i)\((\i\?\{source:"auto",view:"browser"\}:\{source:"auto"\}|\{source:"auto"\})\)/,
-          replace: "&&!$self.settings.store.hideRightPanel&&$1($2)"
-        }
+        replacement: [
+          {
+            match: /&&(\i)\(\{source:"auto",view:"browser"\}\)/,
+            replace: '&&!$self.settings.store.hideRightPanel&&$1({source:"auto",view:"browser"})'
+          },
+          {
+            match: /&&(\i)\((\i\?\{source:"auto",view:"browser"\}:\{source:"auto"\}|\{source:"auto"\})\)/,
+            replace: "&&!$self.settings.store.hideRightPanel&&$1($2)",
+            noWarn: true
+          }
+        ]
       }
     ]
   });
@@ -4723,7 +4727,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
       }
       if (src.includes("__scopeDropdownMenu") || src.includes("__scopeMenu")) continue;
       const fromCall = /name:"(DropdownMenu[A-Za-z]*)",Legacy:/.exec(src)?.[1];
-      const displayName = value.displayName;
+      const { displayName } = value;
       const fromName = typeof displayName === "string" && /^DropdownMenu[A-Za-z]*$/.test(displayName) && (src.includes("keepLegacy") || src.includes("menu:")) ? displayName : "";
       const name = fromCall || fromName;
       if (!name || mapped[name]) continue;
@@ -4757,7 +4761,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
       }
     }
     legacyDropdown = legacy;
-    const size = getModuleCache().size;
+    const { size } = getModuleCache();
     if (legacy && size === dropdownCacheSize) return legacy;
     dropdownCacheSize = size;
     return null;
@@ -5639,6 +5643,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
     patches: [
       {
         find: '"library-page.title","Library"',
+        noWarn: true,
         replacement: [
           {
             // LibraryRow: ctrl/meta-click. Source: item:c,leading:w,onOpen:x,title:k
@@ -6537,7 +6542,8 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :n
 form[data-composer][data-composer-layout="inline"] {
     grid-template-columns: auto minmax(0, 1fr) auto auto !important;
     grid-template-areas: "leading field mode actions" !important;
-    overflow-clip-margin: 0px !important;
+    overflow-clip-margin: 0 !important;
+
     /* Pins live in the mode column; Grok still sets --composer-chip-reserve for overlay. */
     --composer-chip-reserve: 0px !important;
 }
@@ -6545,8 +6551,7 @@ form[data-composer][data-composer-layout="inline"] {
 form[data-composer][data-composer-layout="inline"] [data-query-bar-mode-select] {
     grid-column: mode !important;
     grid-row: field !important;
-    justify-self: end !important;
-    align-self: center !important;
+    place-self: center end !important;
     position: static !important;
     width: auto !important;
     height: auto !important;
@@ -6556,7 +6561,7 @@ form[data-composer][data-composer-layout="inline"] [data-query-bar-mode-select] 
 }
 
 form[data-composer][data-composer-layout="stacked"] {
-    overflow-clip-margin: 0px !important;
+    overflow-clip-margin: 0 !important;
 }
 
 /* Dictate is Shift+Space (aria-label "Dictate"). Voice chat is Shift+O or data-composer-action="voice". */
@@ -6912,7 +6917,7 @@ html.void-cms-picked .void-cms-ghost {
   function privateBuild() {
     if (inIncognito()) return true;
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       if (route?.temporary) return true;
       let cid = String(route?.conversationId || "");
       const chatHook = ChatPageStore.useChatPageStore;
@@ -7374,7 +7379,8 @@ html.void-cms-picked .void-cms-ghost {
         replacement: [
           {
             match: /\{compact:\i\|\|\i,(?=selectedModeId:)/,
-            replace: "{compact:!0,"
+            replace: "{compact:!0,",
+            noWarn: true
           },
           {
             match: /\{compact:\i\|\|\i,(?=onOpenChange:)/,
@@ -7391,7 +7397,8 @@ html.void-cms-picked .void-cms-ghost {
             // and renders `children:[t3,…]`. A comma after `},"mode-select"),` is discarded.
             // Wrap the jsx so the cached value flattens to [chips, control] in that row.
             match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
-            replace: "[$self.renderPinned(),$&]"
+            replace: "[$self.renderPinned(),$&]",
+            noWarn: true
           },
           {
             // Desktop shell: the mode div is one grid cell on the inline row
@@ -7685,12 +7692,12 @@ html.void-cms-picked .void-cms-ghost {
     clone3.querySelectorAll(STRIP_SEL).forEach((n2) => n2.remove());
     for (const n2 of [...clone3.querySelectorAll("span, div, a, p")]) {
       if (!n2.isConnected) continue;
-      const chip = (n2.textContent ?? "").replace(/\s+/g, " ").trim();
+      const chip = (n2.textContent ?? "").replaceAll(/\s+/g, " ").trim();
       if (chip && chip.length <= 24 && CHIP_RE.test(chip)) n2.remove();
     }
     const media = hasMedia(clone3);
     clone3.querySelectorAll(MEDIA_SEL).forEach((n2) => n2.remove());
-    const text = (clone3.textContent ?? "").replace(/\b\d+\s+sources?\b/gi, " ").replace(/\s+/g, " ").trim();
+    const text = (clone3.textContent ?? "").replaceAll(/\b\d+\s+sources?\b/gi, " ").replaceAll(/\s+/g, " ").trim();
     if (NOISE_TEXT.test(text)) return "";
     if (!text) {
       if (media === "image") return "图片";
@@ -7904,7 +7911,7 @@ html.void-cms-picked .void-cms-ghost {
     return null;
   }
   function plain(text) {
-    const t3 = text.replace(/\s+/g, " ").trim();
+    const t3 = text.replaceAll(/\s+/g, " ").trim();
     if (!t3 || NOISE_TEXT.test(t3)) return "";
     return t3.length > SUMMARY_MAX ? `${t3.slice(0, SUMMARY_MAX)}…` : t3;
   }
@@ -7950,7 +7957,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   function itemFromNode(cid, node2, liveId, liveEl) {
     if (node2.role !== "user" && node2.role !== "assistant") return null;
-    const role = node2.role;
+    const { role } = node2;
     if (!settings6.store.showAssistant && role === "assistant") return null;
     const rec = contentOf(cid, node2);
     if (rec?.isControl) return null;
@@ -8537,7 +8544,7 @@ html.void-cms-picked .void-cms-ghost {
   function uniqueLeader(scores, minLead) {
     const positive = scores.filter((s3) => s3 > 0);
     if (positive.length < 2) return -1;
-    const sorted = [...positive].sort((a3, b3) => a3 - b3);
+    const sorted = [...positive].toSorted((a3, b3) => a3 - b3);
     const median = sorted[Math.floor((sorted.length - 1) / 2)];
     let best = -1;
     let bestS = 0;
@@ -9063,7 +9070,7 @@ html.void-cms-picked .void-cms-ghost {
       const gen3 = gw.activeGeneration;
       const genNode = gen3?.assistantId ? gw.nodes?.[gen3.assistantId] : void 0;
       const phase = generationPhase(gw);
-      const lastAsst = [...path2].reverse().find((n2) => n2.role === "assistant");
+      const lastAsst = [...path2].toReversed().find((n2) => n2.role === "assistant");
       const lastKey2 = lastAsst ? `${lastAsst.id}:${lastAsst.status}:${lastAsst.content?.state ?? ""}` : "";
       const genKey = gen3 ? `${gen3.userId}:${gen3.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
       return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey2}|${path2.map((n2) => `${n2.id}:${n2.status}`).join(",")}`;
@@ -9158,6 +9165,43 @@ html.void-cms-picked .void-cms-ghost {
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/styles.css
   registerStyle("betterQueue", '.void-ms-qchip {\n    display: grid;\n    flex-shrink: 0;\n    place-items: center;\n    width: 1.5rem;\n    height: 1.5rem;\n    margin-block-start: 0.125rem;\n    padding: 0;\n    border: 0;\n    border-radius: 999px;\n    background: transparent;\n    color: var(--fg-secondary);\n    cursor: pointer;\n}\n\n.void-ms-qchip:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n    color: var(--fg-primary);\n}\n\n.void-ms-qchip:focus-visible {\n    outline: none;\n    box-shadow: 0 0 0 1px var(--fg-accent);\n}\n\n.void-ms-qchip svg {\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n}\n\n.void-ms-qmenu {\n    position: fixed;\n    z-index: 90;\n    min-width: 8.75rem;\n    padding: 0.25rem;\n    border-radius: 0.75rem;\n    background: var(--surface-l2);\n    box-shadow:\n        inset 0 0 0 1px var(--border-l2),\n        0 0.5rem 1.25rem rgb(0 0 0 / 24%);\n    color: var(--fg-primary);\n}\n\n.void-ms-qopt {\n    display: flex;\n    width: 100%;\n    align-items: center;\n    gap: 0.5rem;\n    height: 2rem;\n    padding: 0 0.5rem;\n    border: 0;\n    border-radius: 0.5rem;\n    background: transparent;\n    color: inherit;\n    font-size: 0.875rem;\n    line-height: 1;\n    cursor: pointer;\n}\n\n.void-ms-qopt:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n}\n\n.void-ms-qopt[aria-selected="true"],\n.void-ms-qopt.void-ms-qopt-on {\n    background: rgb(255 255 255 / 14%);\n    color: #fff;\n}\n\n.void-ms-qopt > span:first-of-type {\n    flex: 1;\n    text-align: start;\n}\n\n.void-ms-qcheck {\n    display: grid;\n    margin-inline-start: auto;\n    place-items: center;\n    width: 0.875rem;\n    height: 0.875rem;\n    color: #fff;\n}\n\n.void-ms-qcheck svg,\n.void-ms-qopt svg {\n    display: block;\n    width: 1rem;\n    height: 1rem;\n    flex-shrink: 0;\n}\n\n.void-ms-qcheck svg {\n    width: 0.875rem;\n    height: 0.875rem;\n}\n');
+
+  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/modeSend.ts
+  function modeSlug(s3) {
+    return s3.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
+  }
+  function gatewaySendMode(input) {
+    const selected2 = modeSlug(input.selected);
+    const model = modeSlug(input.modelMode);
+    if (input.incognito) return selected2 === "build" ? "auto" : selected2;
+    if (selected2 === "build") return "build";
+    const inflight3 = modeSlug(input.inflight);
+    if (inflight3 === "build") return "build";
+    const last2 = input.lastModel === void 0 ? void 0 : modeSlug(input.lastModel);
+    const adjusted = modeSlug(input.adjusted);
+    const userChanged = !!adjusted && adjusted !== (last2 ?? "");
+    if (userChanged) return selected2 || adjusted;
+    if (!input.conversationId) return selected2 || model;
+    if (last2 !== void 0) return last2 === "build" ? "build" : selected2 || model;
+    if (input.buildTurn || input.markedBuild) return "build";
+    return selected2 || model;
+  }
+  function keepBuildPreference(privateChat, substituted, settled2, stored) {
+    return privateChat && substituted && settled2 === "auto" && stored === "build";
+  }
+  function sessionModelMatches(acked, want) {
+    const need = modeSlug(want);
+    if (!need) return true;
+    const have = modeSlug(acked ?? "");
+    if (have === need) return true;
+    return need === "build" && have.includes("build");
+  }
+  function sessionNeedsUpdate(acked, chip, hasSession) {
+    void hasSession;
+    const want = modeSlug(chip);
+    if (!want) return false;
+    return !sessionModelMatches(acked, chip);
+  }
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/utils/idb.ts
   var logger13 = new Logger2("IDB");
@@ -9351,7 +9395,7 @@ html.void-cms-picked .void-cms-ghost {
     }
     const byId = new Map(bound2.saved.map((item) => [item.id, item]));
     const next = [];
-    const ordered = official.slice().sort((a3, b3) => a3.position - b3.position || a3.id.localeCompare(b3.id));
+    const ordered = official.slice().toSorted((a3, b3) => a3.position - b3.position || a3.id.localeCompare(b3.id));
     for (const off of ordered) {
       if (!off.id) continue;
       const prev = byId.get(off.id);
@@ -9751,7 +9795,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   async function replay(cid, saved2) {
     const placed = [];
-    const ordered = freshSnaps(saved2, Date.now()).slice().sort((a3, b3) => a3.position - b3.position);
+    const ordered = freshSnaps(saved2, Date.now()).slice().toSorted((a3, b3) => a3.position - b3.position);
     for (const item of ordered) {
       const before = idSet(cid);
       suppress = true;
@@ -9980,9 +10024,9 @@ html.void-cms-picked .void-cms-ghost {
   }
   function persistQueueKey(s3) {
     return Object.entries(s3.conversations ?? {}).map(([cid, conv]) => {
-      const items = [...conv.queue ?? []].sort((a3, b3) => a3.position - b3.position);
+      const items = [...conv.queue ?? []].toSorted((a3, b3) => a3.position - b3.position);
       return `${cid}=${items.map((item) => `${qid(item)}:${item.position}:${nodeFields(conv, qid(item)).text.length}`).join(",")}`;
-    }).sort().join("|");
+    }).toSorted().join("|");
   }
   var lastQueueKey = "";
   var lastNavKey = "";
@@ -10020,43 +10064,6 @@ html.void-cms-picked .void-cms-ghost {
     if (key === lastNavKey) return;
     lastNavKey = key;
     onPersistPage();
-  }
-
-  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/modeSend.ts
-  function modeSlug(s3) {
-    return s3.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
-  }
-  function gatewaySendMode(input) {
-    const selected2 = modeSlug(input.selected);
-    const model = modeSlug(input.modelMode);
-    if (input.incognito) return selected2 === "build" ? "auto" : selected2;
-    if (selected2 === "build") return "build";
-    const inflight3 = modeSlug(input.inflight);
-    if (inflight3 === "build") return "build";
-    const last2 = input.lastModel === void 0 ? void 0 : modeSlug(input.lastModel);
-    const adjusted = modeSlug(input.adjusted);
-    const userChanged = !!adjusted && adjusted !== (last2 ?? "");
-    if (userChanged) return selected2 || adjusted;
-    if (!input.conversationId) return selected2 || model;
-    if (last2 !== void 0) return last2 === "build" ? "build" : selected2 || model;
-    if (input.buildTurn || input.markedBuild) return "build";
-    return selected2 || model;
-  }
-  function keepBuildPreference(privateChat, substituted, settled2, stored) {
-    return privateChat && substituted && settled2 === "auto" && stored === "build";
-  }
-  function sessionModelMatches(acked, want) {
-    const need = modeSlug(want);
-    if (!need) return true;
-    const have = modeSlug(acked ?? "");
-    if (have === need) return true;
-    return need === "build" && have.includes("build");
-  }
-  function sessionNeedsUpdate(acked, chip, hasSession) {
-    void hasSession;
-    const want = modeSlug(chip);
-    if (!want) return false;
-    return !sessionModelMatches(acked, chip);
   }
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/settings.ts
@@ -10407,7 +10414,7 @@ html.void-cms-picked .void-cms-ghost {
   function privateBuild2() {
     if (inIncognito2()) return true;
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       if (route?.temporary) return true;
       const cid = String(route?.conversationId || currentCid3() || "");
       if (cid && conversation(cid)?.temporary) return true;
@@ -11958,7 +11965,7 @@ html.void-cms-picked .void-cms-ghost {
     return next.length === list2.length ? void 0 : next;
   }
   function migrateLegacy3() {
-    const plugins2 = PlainSettings.plugins;
+    const { plugins: plugins2 } = PlainSettings;
     const mode = plugins2.ModeSync;
     const persist5 = plugins2.QueuePersist;
     if (!mode && !persist5) return;
@@ -12065,7 +12072,7 @@ html.void-cms-picked .void-cms-ghost {
   });
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQuotes/styles.css
-  registerStyle("betterQuotes", ".void-qj-hit {\n    border-radius: 0.25rem;\n    outline: 2px solid var(--fg-primary);\n    outline-offset: 2px;\n    background: hsl(from var(--fg-primary) h s l / 12%);\n}\n\n::highlight(void-qj) {\n    background-color: hsl(from var(--fg-primary) h s l / 18%);\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .void-qj-hit {\n        outline: none;\n        background: var(--button-ghost-hover);\n    }\n}\n\n.void-qs-chip {\n    position: fixed;\n    z-index: 40;\n    display: flex;\n    align-items: center;\n    gap: 0.5rem;\n    box-sizing: border-box;\n    max-width: calc(100vw - 24px);\n    min-height: 2rem;\n    margin: 0;\n    padding: 0.25rem 0.25rem 0.25rem 0.5rem;\n    border-radius: 0.75rem;\n    background: var(--surface-base, hsl(0 0% 8%));\n    color: var(--fg-secondary);\n    cursor: pointer;\n    pointer-events: auto;\n}\n\n.void-qs-mark {\n    flex: none;\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n    align-self: center;\n    color: inherit;\n}\n\n.void-qs-mark svg {\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n}\n\n.void-qs-text {\n    flex: 1;\n    min-width: 0;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n    font-size: 0.875rem;\n    line-height: 1.25;\n}\n\n.void-qs-x {\n    display: grid;\n    flex: none;\n    place-items: center;\n    width: 1.5rem;\n    height: 1.5rem;\n    padding: 0;\n    border: 0;\n    border-radius: 999px;\n    background: transparent;\n    color: inherit;\n    cursor: pointer;\n}\n\n.void-qs-x:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n    color: var(--fg-primary);\n}\n\n.void-qs-x:focus-visible {\n    outline: none;\n    box-shadow: 0 0 0 1px var(--fg-accent);\n}\n\n.void-qs-x svg {\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n}\n\n[data-void-qj-preview],\n[data-void-qj-preview] * {\n    cursor: pointer;\n}\n\n.void-qj-back {\n    position: absolute;\n    z-index: 30;\n    display: grid;\n    place-items: center;\n    width: 1.5rem;\n    height: 1.5rem;\n    padding: 0;\n    border: 0;\n    border-radius: 999px;\n    background: transparent;\n    color: var(--fg-secondary);\n    cursor: pointer;\n}\n\n.void-qj-back:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n    color: var(--fg-primary);\n}\n\n.void-qj-back:focus-visible {\n    outline: none;\n    box-shadow: 0 0 0 1px var(--fg-accent);\n}\n\n.void-qj-mark,\n.void-qj-mark svg {\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n    pointer-events: none;\n}\n\n.void-qj-count {\n    position: absolute;\n    top: -0.1875rem;\n    right: -0.1875rem;\n    min-width: 0.75rem;\n    height: 0.75rem;\n    padding: 0 0.125rem;\n    border-radius: 999px;\n    background: var(--fg-primary);\n    color: var(--surface-l1);\n    font-size: 0.5625rem;\n    font-weight: 650;\n    line-height: 0.75rem;\n    text-align: center;\n    pointer-events: none;\n}\n\n.void-qj-menu {\n    position: fixed;\n    z-index: 31;\n    display: flex;\n    flex-direction: column;\n    gap: 0.125rem;\n    width: max-content;\n    max-width: 16rem;\n    padding: 0.25rem;\n    border-radius: 0.75rem;\n    background: var(--surface-l2);\n    color: var(--fg-primary);\n    box-shadow:\n        inset 0 0 0 1px var(--border-l2),\n        0 0.5rem 1.25rem rgb(0 0 0 / 24%);\n}\n\n.void-qj-item {\n    max-width: 16rem;\n    padding: 0.35rem 0.5rem;\n    border: 0;\n    border-radius: 0.5rem;\n    background: transparent;\n    color: inherit;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n    text-align: start;\n    font-size: 0.75rem;\n    line-height: 1.3;\n    cursor: pointer;\n}\n\n.void-qj-item:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n    color: var(--fg-primary);\n}\n");
+  registerStyle("betterQuotes", ".void-qj-hit {\n    border-radius: 0.25rem;\n    outline: 2px solid var(--fg-primary);\n    outline-offset: 2px;\n    background: hsl(from var(--fg-primary) h s l / 12%);\n}\n\n::highlight(void-qj) {\n    background-color: hsl(from var(--fg-primary) h s l / 18%);\n}\n\n@media (prefers-reduced-motion: reduce) {\n    .void-qj-hit {\n        outline: none;\n        background: var(--button-ghost-hover);\n    }\n}\n\n.void-qs-chip {\n    position: fixed;\n    z-index: 40;\n    display: flex;\n    align-items: center;\n    gap: 0.5rem;\n    box-sizing: border-box;\n    max-width: calc(100vw - 24px);\n    min-height: 2rem;\n    margin: 0;\n    padding: 0.25rem 0.25rem 0.25rem 0.5rem;\n    border-radius: 0.75rem;\n    background: var(--surface-base, hsl(0deg 0% 8%));\n    color: var(--fg-secondary);\n    cursor: pointer;\n    pointer-events: auto;\n}\n\n.void-qs-mark {\n    flex: none;\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n    align-self: center;\n    color: inherit;\n}\n\n.void-qs-mark svg {\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n}\n\n.void-qs-text {\n    flex: 1;\n    min-width: 0;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n    font-size: 0.875rem;\n    line-height: 1.25;\n}\n\n.void-qs-x {\n    display: grid;\n    flex: none;\n    place-items: center;\n    width: 1.5rem;\n    height: 1.5rem;\n    padding: 0;\n    border: 0;\n    border-radius: 999px;\n    background: transparent;\n    color: inherit;\n    cursor: pointer;\n}\n\n.void-qs-x:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n    color: var(--fg-primary);\n}\n\n.void-qs-x:focus-visible {\n    outline: none;\n    box-shadow: 0 0 0 1px var(--fg-accent);\n}\n\n.void-qs-x svg {\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n}\n\n[data-void-qj-preview],\n[data-void-qj-preview] * {\n    cursor: pointer;\n}\n\n.void-qj-back {\n    position: absolute;\n    z-index: 30;\n    display: grid;\n    place-items: center;\n    width: 1.5rem;\n    height: 1.5rem;\n    padding: 0;\n    border: 0;\n    border-radius: 999px;\n    background: transparent;\n    color: var(--fg-secondary);\n    cursor: pointer;\n}\n\n.void-qj-back:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n    color: var(--fg-primary);\n}\n\n.void-qj-back:focus-visible {\n    outline: none;\n    box-shadow: 0 0 0 1px var(--fg-accent);\n}\n\n.void-qj-mark,\n.void-qj-mark svg {\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n    pointer-events: none;\n}\n\n.void-qj-count {\n    position: absolute;\n    top: -0.1875rem;\n    right: -0.1875rem;\n    min-width: 0.75rem;\n    height: 0.75rem;\n    padding: 0 0.125rem;\n    border-radius: 999px;\n    background: var(--fg-primary);\n    color: var(--surface-l1);\n    font-size: 0.5625rem;\n    font-weight: 650;\n    line-height: 0.75rem;\n    text-align: center;\n    pointer-events: none;\n}\n\n.void-qj-menu {\n    position: fixed;\n    z-index: 31;\n    display: flex;\n    flex-direction: column;\n    gap: 0.125rem;\n    width: max-content;\n    max-width: 16rem;\n    padding: 0.25rem;\n    border-radius: 0.75rem;\n    background: var(--surface-l2);\n    color: var(--fg-primary);\n    box-shadow:\n        inset 0 0 0 1px var(--border-l2),\n        0 0.5rem 1.25rem rgb(0 0 0 / 24%);\n}\n\n.void-qj-item {\n    max-width: 16rem;\n    padding: 0.35rem 0.5rem;\n    border: 0;\n    border-radius: 0.5rem;\n    background: transparent;\n    color: inherit;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n    text-align: start;\n    font-size: 0.75rem;\n    line-height: 1.3;\n    cursor: pointer;\n}\n\n.void-qj-item:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n    color: var(--fg-primary);\n}\n");
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQuotes/shared.ts
   var QUERY = ":is(.query-bar, form[data-composer])";
@@ -12095,7 +12102,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   function isToolbarPopup(popup) {
     if (!popup || typeof popup !== "object") return false;
-    const range = popup.range;
+    const { range } = popup;
     return !!range && typeof range.cloneRange === "function";
   }
   function cloneToolbarPopup(popup) {
@@ -12133,7 +12140,7 @@ html.void-cms-picked .void-cms-ghost {
     }
   }
   function pathData(svg4) {
-    return [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" ");
+    return [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replaceAll(/\s+/g, " ").trim()).filter(Boolean).join(" ");
   }
   function isCloseSvg(svg4) {
     const d3 = pathData(svg4);
@@ -12151,7 +12158,7 @@ html.void-cms-picked .void-cms-ghost {
       });
       if (horiz2.length >= 2) return true;
     }
-    const paths = [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replace(/\s+/g, " ").trim()).filter(Boolean);
+    const paths = [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replaceAll(/\s+/g, " ").trim()).filter(Boolean);
     const horiz = paths.filter((d3) => /^[Mm]\s*-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*[Hh]/.test(d3) && !/[VvAaCcQq]/.test(d3) && d3.length < 28);
     if (horiz.length >= 2) return true;
     const joined = paths.join(" ");
@@ -13029,7 +13036,7 @@ html.void-cms-picked .void-cms-ghost {
     const measure = () => {
       const shot = read2();
       if (!shot) return null;
-      let el = shot.el;
+      let { el } = shot;
       if (!el.isConnected && pin) {
         const fresh = messageById(pin);
         if (fresh?.isConnected) el = fresh;
@@ -14653,7 +14660,7 @@ html.void-cms-picked .void-cms-ghost {
     return next.length === list2.length ? void 0 : next;
   }
   function migrateLegacy4() {
-    const plugins2 = PlainSettings.plugins;
+    const { plugins: plugins2 } = PlainSettings;
     const jump3 = plugins2.QuoteJump;
     const sticky = plugins2.QuoteSticky;
     if (!jump3 && !sticky) return;
@@ -14736,7 +14743,7 @@ html.void-cms-picked .void-cms-ghost {
   });
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/compactLibrary.css
-  registerStyle("compactLibrary", '/*\n * Void++, a modification for grok.com\n * Copyright (c) 2026 Void++ Contributors\n * SPDX-License-Identifier: GPL-3.0-or-later\n */\n\n/* stylelint-disable number-max-precision, property-no-deprecated */\n\nhtml.void-sb-clib #app-sidebar {\n    anchor-name: --void-sb;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n    position: absolute;\n    top: 12px;\n    inset-inline-start: 48px;\n    z-index: 4;\n    box-sizing: border-box;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    max-width: 32px;\n    padding: 0 !important;\n    margin: 0 !important;\n    justify-content: center !important;\n    gap: 0 !important;\n    overflow: hidden;\n    border-radius: 8px;\n    color: var(--grok-text-secondary, var(--fg-secondary)) !important;\n    box-shadow: none !important;\n    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n        position: fixed;\n        position-anchor: --void-sb;\n        inset: calc(anchor(top) + 12px) auto auto calc(anchor(left) + 48px);\n    }\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;\n    color: var(--grok-text-primary, var(--fg-primary)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):focus-visible {\n    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):active {\n    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) svg {\n    width: 20px !important;\n    height: 20px !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-sidebar-item-label],\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-slot="sidebar-item-shortcut"] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {\n    position: absolute !important;\n    top: 12px !important;\n    inset-inline: auto !important;\n    left: calc(254px - 44px) !important;\n}\n\nhtml.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {\n    left: calc(254px - 80px) !important;\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {\n        position-anchor: --void-sb;\n        left: calc(anchor(right) - 44px) !important;\n        right: auto !important;\n    }\n\n    html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {\n        left: calc(anchor(right) - 80px) !important;\n    }\n}\n');
+  registerStyle("compactLibrary", '/*\n * Void++, a modification for grok.com\n * Copyright (c) 2026 Void++ Contributors\n * SPDX-License-Identifier: GPL-3.0-or-later\n */\n\n/* stylelint-disable number-max-precision, property-no-deprecated, no-descending-specificity */\n\nhtml.void-sb-clib #app-sidebar {\n    anchor-name: --void-sb;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n    position: absolute;\n    top: 12px;\n    inset-inline-start: 48px;\n    z-index: 4;\n    box-sizing: border-box;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    max-width: 32px;\n    padding: 0 !important;\n    margin: 0 !important;\n    justify-content: center !important;\n    gap: 0 !important;\n    overflow: hidden;\n    border-radius: 8px;\n    color: var(--grok-text-secondary, var(--fg-secondary)) !important;\n    box-shadow: none !important;\n    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n        position: fixed;\n        position-anchor: --void-sb;\n        inset: calc(anchor(top) + 12px) auto auto calc(anchor(left) + 48px);\n    }\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;\n    color: var(--grok-text-primary, var(--fg-primary)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):focus-visible {\n    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):active {\n    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) svg {\n    width: 20px !important;\n    height: 20px !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-sidebar-item-label],\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-slot="sidebar-item-shortcut"] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n\nhtml.void-sb-clib #app-sidebar *:has(> :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]):only-child) {\n    height: 0 !important;\n    min-height: 0 !important;\n    margin: 0 !important;\n    padding: 0 !important;\n    overflow: visible !important;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {\n    position: fixed !important;\n    top: 12px !important;\n    inset-inline: auto !important;\n    left: calc(254px - 44px) !important;\n    right: auto !important;\n    z-index: 6;\n    box-sizing: border-box;\n    display: inline-flex !important;\n    align-items: center;\n    justify-content: center !important;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    max-width: 32px;\n    padding: 0 !important;\n    margin: 0 !important;\n    gap: 0 !important;\n    overflow: hidden;\n    border-radius: 8px;\n    color: var(--grok-text-secondary, var(--fg-secondary)) !important;\n    background: transparent !important;\n    box-shadow: none !important;\n    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;\n    color: var(--grok-text-primary, var(--fg-primary)) !important;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):focus-visible {\n    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):active {\n    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) svg {\n    width: 20px !important;\n    height: 20px !important;\n}\n\nhtml.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {\n    left: calc(254px - 80px) !important;\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {\n        position: fixed !important;\n        position-anchor: --void-sb;\n        top: calc(anchor(top) + 12px) !important;\n        left: calc(anchor(right) - 44px) !important;\n        right: auto !important;\n    }\n\n    html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {\n        left: calc(anchor(right) - 80px) !important;\n    }\n}\n');
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/compactNewChat.css
   registerStyle("compactNewChat", `/*
@@ -14773,7 +14780,7 @@ html.void-cms-picked .void-cms-ghost {
 }
 
 #app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]):focus-visible {
-    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 0.8)) !important;
+    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;
 }
 
 #app-sidebar button:is([aria-keyshortcuts="Meta+J"], [aria-keyshortcuts="Control+J"]):active {
@@ -14794,8 +14801,8 @@ html.void-cms-picked .void-cms-ghost {
     height: 20px;
     margin: auto;
     pointer-events: none;
-    background-color: currentColor;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' d='M10 3.5C10.2 3.5 10.3 3.6 10.5 3.7C10.6 3.9 10.6 3.9 10.6 4.1V9.4H15.9C16.1 9.4 16.1 9.4 16.3 9.5C16.4 9.7 16.5 9.8 16.5 10C16.5 10.2 16.4 10.3 16.3 10.5C16.1 10.6 16.1 10.6 15.9 10.6H10.6V15.8C10.6 16 10.6 16.1 10.5 16.3C10.3 16.4 10.2 16.5 10 16.5C9.8 16.5 9.7 16.4 9.5 16.3C9.4 16.1 9.4 16 9.4 15.8V10.6H4.2C4 10.6 3.9 10.6 3.7 10.5C3.6 10.3 3.5 10.2 3.5 10C3.5 9.8 3.6 9.7 3.7 9.5C3.9 9.4 4 9.4 4.2 9.4H9.4V4.1C9.4 3.9 9.4 3.9 9.5 3.7C9.7 3.6 9.8 3.5 10 3.5Z'/%3E%3C/svg%3E") center / 20px 20px no-repeat;
+    background-color: currentcolor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' d='M10 3.5C10.2 3.5 10.3 3.6 10.5 3.7C10.6 3.9 10.6 3.9 10.6 4.1V9.4H15.9C16.1 9.4 16.1 9.4 16.3 9.5C16.4 9.7 16.5 9.8 16.5 10C16.5 10.2 16.4 10.3 16.3 10.5C16.1 10.6 16.1 10.6 15.9 10.6H10.6V15.8C10.6 16 10.6 16.1 10.5 16.3C10.3 16.4 10.2 16.5 10 16.5C9.8 16.5 9.7 16.4 9.5 16.3C9.4 16.1 9.4 16 9.4 15.8V10.6H4.2C4 10.6 3.9 10.6 3.7 10.5C3.6 10.3 3.5 10.2 3.5 10C3.5 9.8 3.6 9.7 3.7 9.5C3.9 9.4 4 9.4 4.2 9.4H9.4V4.1C9.4 3.9 9.4 3.9 9.5 3.7C9.7 3.6 9.8 3.5 10 3.5Z'/%3E%3C/svg%3E") center / 20px 20px no-repeat;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='black' d='M10 3.5C10.2 3.5 10.3 3.6 10.5 3.7C10.6 3.9 10.6 3.9 10.6 4.1V9.4H15.9C16.1 9.4 16.1 9.4 16.3 9.5C16.4 9.7 16.5 9.8 16.5 10C16.5 10.2 16.4 10.3 16.3 10.5C16.1 10.6 16.1 10.6 15.9 10.6H10.6V15.8C10.6 16 10.6 16.1 10.5 16.3C10.3 16.4 10.2 16.5 10 16.5C9.8 16.5 9.7 16.4 9.5 16.3C9.4 16.1 9.4 16 9.4 15.8V10.6H4.2C4 10.6 3.9 10.6 3.7 10.5C3.6 10.3 3.5 10.2 3.5 10C3.5 9.8 3.6 9.7 3.7 9.5C3.9 9.4 4 9.4 4.2 9.4H9.4V4.1C9.4 3.9 9.4 3.9 9.5 3.7C9.7 3.6 9.8 3.5 10 3.5Z'/%3E%3C/svg%3E") center / 20px 20px no-repeat;
 }
 
@@ -15364,6 +15371,7 @@ html.void-cms-picked .void-cms-ghost {
     patches: [
       {
         find: 'avatarSize:"md",accountInfoSlot:',
+        noWarn: true,
         replacement: {
           match: /\(0,(\i)\.jsx\)\((\i)\.Z,\{expanded:!0,/,
           replace: "(0,$1.jsx)($self._UserCard,{AvatarMenu:$2.Z,expanded:!0,"
@@ -15395,6 +15403,7 @@ html.void-cms-picked .void-cms-ghost {
       {
         find: '"Editing actions","Editing actions"',
         all: true,
+        noWarn: true,
         replacement: [
           {
             match: /=(\(0,\i\.jsx\)\(\i,\{title:\i,editing:\i,[^}]{0,80}?validationErrorMessage:\i[^}]{0,40}?\}\))/,
@@ -15422,6 +15431,7 @@ html.void-cms-picked .void-cms-ghost {
       },
       {
         find: '"sidebar-expand","Expand"',
+        noWarn: true,
         replacement: [
           {
             match: /\(0,\i\.jsx\)\(\i\.SidebarSectionTitle,\{title:\i\("sidebar-history"/,
@@ -15438,18 +15448,25 @@ html.void-cms-picked .void-cms-ghost {
         find: '"sidebar.new-bot-btn.aria-label","New bot"',
         replacement: [
           {
+            match: /(\(0,\i\.jsx\)\(\i\._,\{icon:\i(?:\.\i)?,label:\i,onClick:\i,size:"sm",tooltip:\i)/,
+            replace: '$&,"data-void-bots-plus":""'
+          },
+          {
             match: /\(0,(\i)\.(\i)\)\("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary","(hover:bg-button-ghost-hover hover:text-(?:fg-)?primary)","(focus:outline-none focus-visible:bg-button-ghost-hover)"\)/,
-            replace: '(0,$1.$2)("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","$3","$4")'
+            replace: '(0,$1.$2)("flex size-5 shrink-0 items-center justify-center rounded-md text-tertiary void-bots-plus","$3","$4")',
+            noWarn: true
           },
           {
             match: /("button",\{type:"button","aria-label":\i,className:\i,onClick:\i)/,
-            replace: '$&,"data-void-bots-plus":""'
+            replace: '$&,"data-void-bots-plus":""',
+            noWarn: true
           }
         ]
       },
       {
         find: '"sidebar-chats","Chats"',
         all: true,
+        noWarn: true,
         replacement: [
           {
             match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
@@ -15465,6 +15482,7 @@ html.void-cms-picked .void-cms-ghost {
       {
         find: '"sidebar.section-title","Bots"',
         all: true,
+        noWarn: true,
         replacement: {
           match: /\(0,\i\.useState\)\(!1\)(?=,\[\i,\i\]=\(0,\i\.useState\)\(!1\),\[\i,\i\]=\(0,(?:\i\.useLocalStorage|\i\.\i)\)\("sidebar-bots-unassigned-collapsed")/,
           replace: "$self._useBotsCollapsed()"
@@ -15472,6 +15490,7 @@ html.void-cms-picked .void-cms-ghost {
       },
       {
         find: "sidebar-history-collapsed",
+        noWarn: true,
         replacement: {
           match: /((?:useLocalStorage\)|\(0,\i\.\i\)))\("sidebar-history-collapsed",!1,!1\)/,
           replace: '$1("sidebar-history-collapsed",$self._chatsCollapsedInit(),!1)'
@@ -15479,6 +15498,7 @@ html.void-cms-picked .void-cms-ghost {
       },
       {
         find: "sidebar-projects-collapsed",
+        noWarn: true,
         group: true,
         replacement: [
           {
@@ -15520,6 +15540,7 @@ html.void-cms-picked .void-cms-ghost {
         // `if(!(0,a2.G)({hasBots,…,teamSeatEntitled}))return null`.
         find: "teamSeatEntitled:",
         all: true,
+        noWarn: true,
         replacement: {
           match: /if\(!\(0,\i(?:\.\i)?\)\(\{hasBots:\i,rosterConfirmed:\i,showPlanChrome:\i,rosterAnswered:\i,teamSeatEntitled:\i\}\)\)return null;/,
           replace: ""
@@ -16640,7 +16661,8 @@ html.void-cms-picked .void-cms-ghost {
           {
             // Side panel: `[open,set]=(0,x.useState)(!0),text=notes[0]?.text??"",many=notes.length>1`.
             match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(!0\),(\i)=(\i)\[0\]\?\.text\?\?\"\",(\i)=\5\.length>1/,
-            replace: '[$1,$2]=(0,$3.useState)(!1),$4=$5[0]?.text??"",$6=$5.length>($self.settings.store.collapseSingle?0:1)'
+            replace: '[$1,$2]=(0,$3.useState)(!1),$4=$5[0]?.text??"",$6=$5.length>($self.settings.store.collapseSingle?0:1)',
+            noWarn: true
           }
         ]
       }
@@ -17779,6 +17801,7 @@ html.void-cms-picked .void-cms-ghost {
     patches: [
       {
         find: '"skills-and-connectors"!==',
+        noWarn: true,
         replacement: {
           match: /(\(0,\i\.jsx\)\(\i(?:\.\i)?,\{icon:.{0,180}?onClick:\(\)=>\{"skills-and-connectors")/,
           replace: "false&&$1"
@@ -17846,6 +17869,7 @@ html.void-cms-picked .void-cms-ghost {
         // Desktop account menu: insert Connect Apps before the Help submenu in the item list.
         find: '"user-dropdown.help","Help"',
         all: true,
+        noWarn: true,
         replacement: {
           match: /(children:\[)(\i,\i,\i,\i,)(\i,\i,\i,\i\])([\s\S]{0,220}?function \i\(e\)\{return e\.toggleOpen\})/,
           replace: "$1$2$self._renderItem(),$3$4"
@@ -18411,7 +18435,8 @@ html.void-cms-picked .void-cms-ghost {
           },
           {
             match: /(\{placeholder:)(\i)(?=,newChatPlaceholder:)/,
-            replace: "$1$self._inputPlaceholder($2)"
+            replace: "$1$self._inputPlaceholder($2)",
+            noWarn: true
           },
           {
             match: /(\)\)\}\):)(\i)(?=,placeholderClassName:)/,
@@ -18425,6 +18450,14 @@ html.void-cms-picked .void-cms-ghost {
             noWarn: true
           }
         ]
+      },
+      {
+        find: ["placeholderClassName", "disableAutoFocus"],
+        all: true,
+        replacement: {
+          match: /(placeholder:)(\i)(?=,placeholderClassName:)/,
+          replace: "$1$self._inputPlaceholder($2)"
+        }
       },
       {
         find: "desktop-shell.home.greeting-explore",
@@ -19929,10 +19962,10 @@ html.void-cms-picked .void-cms-ghost {
     else settings21.store.entries = entries2;
   }
   function normalize(text) {
-    return text.replaceAll(ZWSP, "").replace(/\r\n?/g, "\n");
+    return text.replaceAll(ZWSP, "").replaceAll(/\r\n?/g, "\n");
   }
   function hasContent(text) {
-    return text.replace(/[\s\u00a0]/g, "") !== "";
+    return text.replaceAll(/[\s\u00a0]/g, "") !== "";
   }
   function imeEvent(e3) {
     if (composing) return true;
@@ -20098,7 +20131,7 @@ html.void-cms-picked .void-cms-ghost {
       if (!view?.posAtDOM) return;
       const pos = view.posAtDOM(range.startContainer, range.startOffset);
       if (typeof pos !== "number" || pos < 0) return;
-      const near = view.state.selection.constructor.near;
+      const { near } = view.state.selection.constructor;
       if (!near) return;
       const pmSel = near(view.state.doc.resolve(pos));
       if (!pmSel) return;
@@ -20371,7 +20404,7 @@ html.void-cms-picked .void-cms-ghost {
     return null;
   }
   function escapeHtml2(text) {
-    return text.replace(/[&<>"]/g, (ch) => {
+    return text.replaceAll(/[&<>"]/g, (ch) => {
       if (ch === "&") return "&amp;";
       if (ch === "<") return "&lt;";
       if (ch === ">") return "&gt;";
@@ -20947,7 +20980,7 @@ html.void-cms-picked .void-cms-ghost {
     return `${conversationId3}:${messageId}`;
   }
   function clipSnippet(raw2) {
-    const text = raw2.replace(/\s+/g, " ").trim();
+    const text = raw2.replaceAll(/\s+/g, " ").trim();
     if (!text) return "";
     return text.length > SNIPPET_MAX ? `${text.slice(0, SNIPPET_MAX)}…` : text;
   }
@@ -20964,7 +20997,7 @@ html.void-cms-picked .void-cms-ghost {
     const groups = [];
     for (const [cid, items] of byCid) {
       const current3 = !!currentCid5 && cid === currentCid5;
-      const sorted = items.slice().sort((a3, b3) => {
+      const sorted = items.slice().toSorted((a3, b3) => {
         if (current3) {
           const ai = leafIndex.get(a3.messageId);
           const bi = leafIndex.get(b3.messageId);
@@ -21281,7 +21314,7 @@ html.void-cms-picked .void-cms-ghost {
     let routeId = "";
     let routePage = "";
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       routeId = String(route?.conversationId ?? "");
       routePage = String(route?.page ?? "");
     } catch (e3) {
@@ -21586,7 +21619,7 @@ html.void-cms-picked .void-cms-ghost {
       const label = (btn.getAttribute("aria-label") || "").trim();
       if (PAGER_RE.test(label)) return true;
     }
-    const text = (el.textContent || "").replace(/\s+/g, "");
+    const text = (el.textContent || "").replaceAll(/\s+/g, "");
     return /^\d+\/\d+$/.test(text);
   }
   function starHost(row) {
@@ -21773,7 +21806,7 @@ html.void-cms-picked .void-cms-ghost {
     let panelTop = Infinity;
     for (const el of nodes) {
       if (headerSkipped(el) || !isRightPanelToggle(el)) continue;
-      const top = el.getBoundingClientRect().top;
+      const { top } = el.getBoundingClientRect();
       if (top > 160 || top >= panelTop) continue;
       panelNode = el;
       panelTop = top;
@@ -21973,7 +22006,7 @@ html.void-cms-picked .void-cms-ghost {
     settlePending();
   }
   function routeSlice(state4) {
-    const route = state4.route;
+    const { route } = state4;
     return `${route?.page ?? ""}|${route?.conversationId ?? ""}`;
   }
   var schedule4 = debounce(paintAll, 80);
@@ -22779,10 +22812,17 @@ html.void-cms-picked .void-cms-ghost {
       {
         find: "build-mode-starters.more",
         all: true,
-        replacement: {
-          match: /(?=\(0,\i\.jsx\)\(\i\.f\.div,\{className:"flex w-full flex-col items-center pt-1 pb-2)/,
-          replace: "true?null:"
-        }
+        replacement: [
+          {
+            match: /BuildStarters:function\((\i)\)\{/,
+            replace: "BuildStarters:function($1){return null;"
+          },
+          {
+            match: /(?=\(0,\i\.jsx\)\(\i\.f\.div,\{className:"flex w-full flex-col items-center pt-1 pb-2)/,
+            replace: "true?null:",
+            noWarn: true
+          }
+        ]
       },
       {
         find: '"BuildModeStarters",0,',
@@ -23152,11 +23192,13 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
           },
           {
             match: /\i\("\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)\)/g,
-            replace: "false"
+            replace: "false",
+            noWarn: true
           },
           {
             match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/g,
-            replace: "void 0"
+            replace: "void 0",
+            noWarn: true
           }
         ]
       },
@@ -23205,6 +23247,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
         find: ["desktop-shell.project-hub.suggested", "data-project-hub"],
         group: true,
         all: true,
+        noWarn: true,
         replacement: {
           match: /\(0,(\i)\.useState\)\("suggested"\)/,
           replace: '(0,$1.useState)("recent")'
@@ -23214,7 +23257,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   });
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/recentTopics/styles.css
-  registerStyle("recentTopics", '.void-rt-root,\n.void-rt-root:popover-open {\n    isolation: isolate;\n    position: fixed !important;\n    inset: 0 !important;\n    z-index: 2147483647 !important;\n    display: block !important;\n    width: 100vw !important;\n    height: 100dvh !important;\n    max-width: none !important;\n    max-height: none !important;\n    margin: 0 !important;\n    padding: 0 !important;\n    overflow: hidden !important;\n    border: none !important;\n    background: transparent !important;\n    color: inherit;\n    pointer-events: auto !important;\n}\n\n.void-rt-root::backdrop {\n    background: transparent;\n}\n\nhtml.void-rt-open [data-sidebar="sidebar"],\nhtml.void-rt-open [data-sidebar="gap"] {\n    z-index: 0 !important;\n}\n\n.void-rt-panel,\n.void-rt-card,\n.void-rt-meta,\n.void-rt-name,\n.void-rt-host,\n.void-rt-empty {\n    font-family: inherit;\n    letter-spacing: inherit;\n}\n\n.void-rt-panel,\n.void-rt-panel * {\n    box-sizing: border-box;\n}\n\n.void-rt-panel {\n    --void-rt-accent: var(--fg-primary);\n    --void-rt-card-width: clamp(136px, calc((100vw - 68px) / 5), 204px);\n    --void-rt-gap: 8px;\n    --void-rt-padding-panel: 12px;\n    --void-rt-padding-card: 8px;\n    --void-rt-border-card: 1px;\n    --void-rt-radius-panel: 16px;\n    --void-rt-radius-card: calc(var(--void-rt-radius-panel) - var(--void-rt-padding-panel));\n    --void-rt-radius-thumb: calc(var(--void-rt-radius-card) - var(--void-rt-padding-card) - var(--void-rt-border-card));\n    --void-rt-radius-icon: 8px;\n    --void-rt-radius-title-icon: 8px;\n    --void-rt-meta-inline-padding: 4px;\n    --void-rt-motion-card: 180ms cubic-bezier(0.22, 1, 0.36, 1);\n    --void-rt-motion-cover: 220ms cubic-bezier(0.22, 1, 0.36, 1);\n    --void-rt-thumb-stroke-inset: -0.5px;\n    --void-rt-thumb-stroke-radius-offset: 0.5px;\n    --void-rt-thumb-stroke-color: var(--border-l2);\n    --void-rt-title-icon-size: 16px;\n    --void-rt-title-icon-gap: 4px;\n\n    all: unset;\n    color-scheme: inherit;\n    position: absolute;\n    left: 50%;\n    top: 50%;\n    transform: translate3d(-50%, -50%, 0);\n    transform-origin: center center;\n    z-index: 1;\n    display: block;\n    width: fit-content;\n    max-width: calc(100vw - 24px);\n    overflow: auto hidden;\n    scrollbar-width: none;\n    color: var(--fg-primary);\n    background: var(--surface-l2);\n    border: 1px solid var(--border-l1);\n    border-radius: var(--void-rt-radius-panel);\n    box-shadow: 0 4px 16px hsl(var(--black) / 12%);\n    padding: var(--void-rt-padding-panel);\n    pointer-events: auto;\n    opacity: 0;\n    transition: opacity 90ms ease;\n    will-change: opacity;\n}\n\n.void-rt-panel::-webkit-scrollbar {\n    display: none;\n}\n\n.void-rt-panel[data-visible="true"] {\n    opacity: 1;\n}\n\n.void-rt-list {\n    display: grid;\n    grid-template-columns: repeat(var(--void-rt-count, 5), var(--void-rt-card-width));\n    gap: var(--void-rt-gap);\n    width: max-content;\n    max-width: 100%;\n    padding: 2px;\n}\n\n.void-rt-card {\n    all: unset;\n    box-sizing: border-box;\n    width: var(--void-rt-card-width);\n    min-width: var(--void-rt-card-width);\n    max-width: var(--void-rt-card-width);\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    border-radius: var(--void-rt-radius-card);\n    border: var(--void-rt-border-card) solid transparent;\n    outline: 0;\n    background: transparent;\n    padding: var(--void-rt-padding-card);\n    color: var(--fg-primary);\n    cursor: pointer;\n    box-shadow: none;\n    transition:\n        border-color 140ms ease,\n        box-shadow var(--void-rt-motion-card);\n}\n\n.void-rt-card[data-active="true"] {\n    z-index: 1;\n    border-color: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 82%, var(--border-l2));\n    background: transparent;\n    box-shadow:\n        0 0 0 1px color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 55%, transparent);\n}\n\n.void-rt-card:focus-visible {\n    border-color: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 88%, var(--border-l2));\n    box-shadow:\n        0 0 0 1px color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 60%, transparent);\n}\n\n.void-rt-thumb {\n    position: relative;\n    width: 100%;\n    aspect-ratio: 16 / 9;\n    overflow: hidden;\n    border-radius: var(--void-rt-radius-thumb);\n    background: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 14%, var(--surface-l1));\n}\n\n.void-rt-thumb::after {\n    content: "";\n    position: absolute;\n    inset: var(--void-rt-thumb-stroke-inset);\n    z-index: 2;\n    border-radius: calc(var(--void-rt-radius-thumb) + var(--void-rt-thumb-stroke-radius-offset));\n    box-sizing: border-box;\n    border: 1px solid var(--void-rt-thumb-stroke-color);\n    box-shadow: none;\n    pointer-events: none;\n}\n\n.void-rt-shot {\n    position: absolute;\n    inset: 0;\n    z-index: 1;\n    overflow: hidden;\n    pointer-events: none;\n    user-select: none;\n}\n\n.void-rt-shot,\n.void-rt-shot * {\n    pointer-events: none !important;\n    scrollbar-width: none;\n}\n\n.void-rt-thumb:has(.void-rt-shot) .void-rt-fallback {\n    display: none;\n}\n\n.void-rt-cover {\n    position: absolute;\n    inset: 0;\n    z-index: 1;\n    width: 100%;\n    height: 100%;\n    display: block;\n    object-fit: cover;\n    object-position: top center;\n}\n\n.void-rt-mark {\n    display: none !important;\n}\n\n.void-rt-page {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n    justify-content: flex-start;\n    gap: 8px;\n    overflow: hidden;\n    padding: 8px 12px 12px;\n    background: var(--surface-l1);\n    color: var(--fg-primary);\n    font-family: inherit;\n}\n\n.void-rt-page-line {\n    display: -webkit-box;\n    align-self: flex-start;\n    width: fit-content;\n    max-width: 94%;\n    overflow: hidden;\n    color: var(--fg-secondary);\n    font-size: 11px;\n    font-weight: 400;\n    line-height: 1.35;\n    overflow-wrap: anywhere;\n    /* stylelint-disable-next-line property-no-vendor-prefix */\n    -webkit-box-orient: vertical;\n    -webkit-line-clamp: 4;\n    line-clamp: 4;\n}\n\n.void-rt-page-line-user,\n.void-rt-page-line[data-role="user"] {\n    align-self: flex-end;\n    width: fit-content;\n    max-width: 78%;\n    padding: 6px 8px;\n    border-radius: 12px 12px 4px 12px;\n    background: var(--surface-l2);\n    color: var(--fg-primary);\n    -webkit-line-clamp: 2;\n    line-clamp: 2;\n}\n\n.void-rt-page-line[data-role="assistant"] {\n    align-self: flex-start;\n    padding: 0;\n    border-radius: 0;\n    background: none;\n    color: var(--fg-secondary);\n}\n\n.void-rt-fallback {\n    position: absolute;\n    inset: 0;\n    z-index: 1;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.void-rt-favicon {\n    width: 38px;\n    height: 38px;\n    border-radius: var(--void-rt-radius-icon);\n    object-fit: cover;\n    display: block;\n}\n\n.void-rt-favicon[data-broken="true"],\n.void-rt-title-favicon[data-broken="true"] {\n    visibility: hidden;\n}\n\n.void-rt-meta {\n    min-width: 0;\n    display: grid;\n    gap: 4px;\n    padding: 0 var(--void-rt-meta-inline-padding);\n}\n\n.void-rt-name-row {\n    min-width: 0;\n}\n\n.void-rt-title-favicon {\n    display: none;\n}\n\n.void-rt-name {\n    min-width: 0;\n    display: block;\n    overflow: hidden;\n    color: var(--fg-primary);\n    font-size: 12px;\n    font-weight: 500;\n    line-height: 1.16;\n    letter-spacing: inherit;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.void-rt-host {\n    min-width: 0;\n    display: flex;\n    align-items: center;\n    gap: 4px;\n    overflow: hidden;\n    color: var(--fg-secondary);\n    font-size: 11px;\n    font-weight: 500;\n    line-height: 1.18;\n}\n\n.void-rt-folder {\n    width: 12px;\n    height: 12px;\n    flex: 0 0 12px;\n    display: block;\n}\n\n.void-rt-host-name {\n    min-width: 0;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.void-rt-empty {\n    min-width: min(22rem, calc(100vw - 3rem));\n    padding: 16px 20px;\n    color: var(--fg-primary);\n    font-size: 13px;\n    font-weight: 500;\n    line-height: 1.4;\n}\n\n.void-rt-panel[data-theme="dark"] {\n    color-scheme: dark;\n}\n');
+  registerStyle("recentTopics", '.void-rt-root,\n.void-rt-root:popover-open {\n    isolation: isolate;\n    position: fixed !important;\n    inset: 0 !important;\n    z-index: 2147483647 !important;\n    display: block !important;\n    width: 100vw !important;\n    height: 100dvh !important;\n    max-width: none !important;\n    max-height: none !important;\n    margin: 0 !important;\n    padding: 0 !important;\n    overflow: hidden !important;\n    border: none !important;\n    background: transparent !important;\n    color: inherit;\n    pointer-events: auto !important;\n}\n\n.void-rt-root::backdrop {\n    background: transparent;\n}\n\nhtml.void-rt-open [data-sidebar="sidebar"],\nhtml.void-rt-open [data-sidebar="gap"] {\n    z-index: 0 !important;\n}\n\n.void-rt-panel,\n.void-rt-card,\n.void-rt-meta,\n.void-rt-name,\n.void-rt-host,\n.void-rt-empty {\n    font-family: inherit;\n    letter-spacing: inherit;\n}\n\n.void-rt-panel,\n.void-rt-panel * {\n    box-sizing: border-box;\n}\n\n.void-rt-panel {\n    --void-rt-accent: var(--fg-primary);\n    --void-rt-card-width: clamp(136px, calc((100vw - 68px) / 5), 204px);\n    --void-rt-gap: 8px;\n    --void-rt-padding-panel: 12px;\n    --void-rt-padding-card: 8px;\n    --void-rt-border-card: 1px;\n    --void-rt-radius-panel: 16px;\n    --void-rt-radius-card: calc(var(--void-rt-radius-panel) - var(--void-rt-padding-panel));\n    --void-rt-radius-thumb: calc(var(--void-rt-radius-card) - var(--void-rt-padding-card) - var(--void-rt-border-card));\n    --void-rt-radius-icon: 8px;\n    --void-rt-radius-title-icon: 8px;\n    --void-rt-meta-inline-padding: 4px;\n    --void-rt-motion-card: 180ms cubic-bezier(0.22, 1, 0.36, 1);\n    --void-rt-motion-cover: 220ms cubic-bezier(0.22, 1, 0.36, 1);\n    --void-rt-thumb-stroke-inset: -0.5px;\n    --void-rt-thumb-stroke-radius-offset: 0.5px;\n    --void-rt-thumb-stroke-color: var(--border-l2);\n    --void-rt-title-icon-size: 16px;\n    --void-rt-title-icon-gap: 4px;\n\n    all: unset;\n    color-scheme: inherit;\n    position: absolute;\n    left: 50%;\n    top: 50%;\n    transform: translate3d(-50%, -50%, 0);\n    transform-origin: center center;\n    z-index: 1;\n    display: block;\n    width: fit-content;\n    max-width: calc(100vw - 24px);\n    overflow: auto hidden;\n    scrollbar-width: none;\n    color: var(--fg-primary);\n    background: var(--surface-l2);\n    border: 1px solid var(--border-l1);\n    border-radius: var(--void-rt-radius-panel);\n    box-shadow: 0 4px 16px hsl(var(--black) / 12%);\n    padding: var(--void-rt-padding-panel);\n    pointer-events: auto;\n    opacity: 0;\n    transition: opacity 90ms ease;\n    will-change: opacity;\n}\n\n.void-rt-panel::-webkit-scrollbar {\n    display: none;\n}\n\n.void-rt-panel[data-visible="true"] {\n    opacity: 1;\n}\n\n.void-rt-list {\n    display: grid;\n    grid-template-columns: repeat(var(--void-rt-count, 5), var(--void-rt-card-width));\n    gap: var(--void-rt-gap);\n    width: max-content;\n    max-width: 100%;\n    padding: 2px;\n}\n\n.void-rt-card {\n    all: unset;\n    box-sizing: border-box;\n    width: var(--void-rt-card-width);\n    min-width: var(--void-rt-card-width);\n    max-width: var(--void-rt-card-width);\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    border-radius: var(--void-rt-radius-card);\n    border: var(--void-rt-border-card) solid transparent;\n    outline: 0;\n    background: transparent;\n    padding: var(--void-rt-padding-card);\n    color: var(--fg-primary);\n    cursor: pointer;\n    box-shadow: none;\n    transition:\n        border-color 140ms ease,\n        box-shadow var(--void-rt-motion-card);\n}\n\n.void-rt-card[data-active="true"] {\n    z-index: 1;\n    border-color: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 82%, var(--border-l2));\n    background: transparent;\n    box-shadow:\n        0 0 0 1px color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 55%, transparent);\n}\n\n.void-rt-card:focus-visible {\n    border-color: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 88%, var(--border-l2));\n    box-shadow:\n        0 0 0 1px color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 60%, transparent);\n}\n\n.void-rt-thumb {\n    position: relative;\n    width: 100%;\n    aspect-ratio: 16 / 9;\n    overflow: hidden;\n    border-radius: var(--void-rt-radius-thumb);\n    background: color-mix(in srgb, var(--void-rt-card-accent, var(--void-rt-accent)) 14%, var(--surface-l1));\n}\n\n.void-rt-thumb::after {\n    content: "";\n    position: absolute;\n    inset: var(--void-rt-thumb-stroke-inset);\n    z-index: 2;\n    border-radius: calc(var(--void-rt-radius-thumb) + var(--void-rt-thumb-stroke-radius-offset));\n    box-sizing: border-box;\n    border: 1px solid var(--void-rt-thumb-stroke-color);\n    box-shadow: none;\n    pointer-events: none;\n}\n\n.void-rt-shot {\n    position: absolute;\n    inset: 0;\n    z-index: 1;\n    overflow: hidden;\n    pointer-events: none;\n    user-select: none;\n}\n\n.void-rt-shot,\n.void-rt-shot * {\n    pointer-events: none !important;\n    scrollbar-width: none;\n}\n\n.void-rt-thumb:has(.void-rt-shot) .void-rt-fallback {\n    display: none;\n}\n\n.void-rt-cover {\n    position: absolute;\n    inset: 0;\n    z-index: 1;\n    width: 100%;\n    height: 100%;\n    display: block;\n    object-fit: cover;\n    object-position: top center;\n}\n\n.void-rt-mark {\n    display: none !important;\n}\n\n.void-rt-page {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n    justify-content: flex-start;\n    gap: 8px;\n    overflow: hidden;\n    padding: 8px 12px 12px;\n    background: var(--surface-l1);\n    color: var(--fg-primary);\n    font-family: inherit;\n}\n\n.void-rt-page-line {\n    display: -webkit-box;\n    align-self: flex-start;\n    width: fit-content;\n    max-width: 94%;\n    overflow: hidden;\n    color: var(--fg-secondary);\n    font-size: 11px;\n    font-weight: 400;\n    line-height: 1.35;\n    overflow-wrap: anywhere;\n    /* stylelint-disable-next-line property-no-vendor-prefix */\n    -webkit-box-orient: vertical;\n    -webkit-line-clamp: 4;\n    line-clamp: 4;\n}\n\n.void-rt-page-line-user,\n.void-rt-page-line[data-role="user"] {\n    align-self: flex-end;\n    width: fit-content;\n    max-width: 78%;\n    padding: 6px 8px;\n    border-radius: 12px 12px 4px;\n    background: var(--surface-l2);\n    color: var(--fg-primary);\n    -webkit-line-clamp: 2;\n    line-clamp: 2;\n}\n\n.void-rt-page-line[data-role="assistant"] {\n    align-self: flex-start;\n    padding: 0;\n    border-radius: 0;\n    background: none;\n    color: var(--fg-secondary);\n}\n\n.void-rt-fallback {\n    position: absolute;\n    inset: 0;\n    z-index: 1;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.void-rt-favicon {\n    width: 38px;\n    height: 38px;\n    border-radius: var(--void-rt-radius-icon);\n    object-fit: cover;\n    display: block;\n}\n\n.void-rt-favicon[data-broken="true"],\n.void-rt-title-favicon[data-broken="true"] {\n    visibility: hidden;\n}\n\n.void-rt-meta {\n    min-width: 0;\n    display: grid;\n    gap: 4px;\n    padding: 0 var(--void-rt-meta-inline-padding);\n}\n\n.void-rt-name-row {\n    min-width: 0;\n}\n\n.void-rt-title-favicon {\n    display: none;\n}\n\n.void-rt-name {\n    min-width: 0;\n    display: block;\n    overflow: hidden;\n    color: var(--fg-primary);\n    font-size: 12px;\n    font-weight: 500;\n    line-height: 1.16;\n    letter-spacing: inherit;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.void-rt-host {\n    min-width: 0;\n    display: flex;\n    align-items: center;\n    gap: 4px;\n    overflow: hidden;\n    color: var(--fg-secondary);\n    font-size: 11px;\n    font-weight: 500;\n    line-height: 1.18;\n}\n\n.void-rt-folder {\n    width: 12px;\n    height: 12px;\n    flex: 0 0 12px;\n    display: block;\n}\n\n.void-rt-host-name {\n    min-width: 0;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.void-rt-empty {\n    min-width: min(22rem, calc(100vw - 3rem));\n    padding: 16px 20px;\n    color: var(--fg-primary);\n    font-size: 13px;\n    font-weight: 500;\n    line-height: 1.4;\n}\n\n.void-rt-panel[data-theme="dark"] {\n    color-scheme: dark;\n}\n');
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/recentTopics/index.tsx
   var logger33 = new Logger2("RecentTopics");
@@ -25841,7 +25884,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     const store3 = hook3 && typeof hook3.getState === "function" ? hook3.getState() : null;
     if (!store3) return;
     if (tab) {
-      const openTab2 = store3.openTab;
+      const { openTab: openTab2 } = store3;
       if (typeof openTab2 === "function") {
         openTab2(tab);
         return;
@@ -25916,7 +25959,8 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
           {
             // Desktop account menu: `Item,{onClick,children:[icon,label]}` after the settings string.
             match: /("user-dropdown\.settings","Settings"\)[\s\S]{0,160}?)(\(0,\i\.jsxs?\)\(\i(?:\.\i)?\.Item,\{onClick:(\i),children:\[[^\]]{0,30}\]\}\))/,
-            replace: "$1$self._renderSettingsMenu($3)"
+            replace: "$1$self._renderSettingsMenu($3)",
+            noWarn: true
           }
         ]
       }

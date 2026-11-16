@@ -9,7 +9,7 @@ import "./styles.css";
 import { definePluginSettings, migratePluginSetting } from "@api/Settings";
 import { ErrorBoundary, Text } from "@components";
 import { BracesIcon, grokSprite, PaletteIcon, Settings2Icon, UnplugIcon } from "@components/icons";
-import { accountMenuParts, accountMenuSelect, MenuGlyphIcon, type AccountMenuParts } from "@turbopack/common/components";
+import { type AccountMenuParts,accountMenuParts, accountMenuSelect, MenuGlyphIcon } from "@turbopack/common/components";
 import { createElement, React } from "@turbopack/common/react";
 import { SettingsDialogStore } from "@turbopack/common/stores";
 import { Devs } from "@utils/constants";
@@ -128,7 +128,7 @@ function openTab(tab: string | undefined, onOpen?: (event?: Event) => void, even
     const store = hook && typeof hook.getState === "function" ? hook.getState() : null;
     if (!store) return;
     if (tab) {
-        const openTab = (store as { openTab?: (id: string) => void }).openTab;
+        const {openTab} = (store as { openTab?: (id: string) => void });
         if (typeof openTab === "function") {
             openTab(tab);
             return;
@@ -245,6 +245,7 @@ export default definePlugin({
                     // Desktop account menu: `Item,{onClick,children:[icon,label]}` after the settings string.
                     match: /("user-dropdown\.settings","Settings"\)[\s\S]{0,160}?)(\(0,\i\.jsxs?\)\(\i(?:\.\i)?\.Item,\{onClick:(\i),children:\[[^\]]{0,30}\]\}\))/,
                     replace: "$1$self._renderSettingsMenu($3)",
+                    noWarn: true,
                 },
             ],
         },

@@ -320,7 +320,7 @@ export const settingsHost = {
             ],
         },
         {
-            find: "desktop-shell.settings.search-label",
+            find: '"data-settings-tab"',
             all: true,
             replacement: {
                 match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.X\[(\i)\.id\]\}\)/g,
@@ -349,6 +349,7 @@ export const settingsHost = {
         },
         {
             find: '["general","grok","payments","data","other","team-management"]',
+            noWarn: true,
             replacement: {
                 match: /(\["general","grok","payments","data","other"),("team-management"\])/,
                 replace: '$1,"voidpp",$2',

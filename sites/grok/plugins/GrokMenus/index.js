@@ -164,9 +164,8 @@ export default () => U.definePlugin({
             all: true,
             replacement: [
                 {
-                    match: /(?=\(0,\i\.jsxs?\)\(\i\.r,\{on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i(?:\.\i)?,\{size:4\}\)\}\),\i\("user-dropdown\.sign-out","Sign Out"\)\))/,
+                    match: /(?=\(0,\i\.jsxs?\)\(\i\.r,\{on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i(?:\.\i)?,\{size:4\}\)\}\),\i\("user-dropdown\.sign-out","Sign Out"\)\]\}\))/,
                     replace: "$self.renderUserItems(),",
-                    noWarn: true,
                 },
                 {
                     match: /(\(0,\i\.jsxs?\)\(\i\.DropdownMenuItem,\{)(?=on(?:Select|Click):\i,children:\[\(0,\i\.jsx\)\("span",\{className:"inline-flex me-2 text-fg-secondary",children:\(0,\i\.jsx\)\(\i\.SignoutIcon)/,

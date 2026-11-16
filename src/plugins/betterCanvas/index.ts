@@ -560,10 +560,17 @@ export default definePlugin({
         {
             find: 'source:"auto"',
             all: true,
-            replacement: {
-                match: /&&(\i)\((\i\?\{source:"auto",view:"browser"\}:\{source:"auto"\}|\{source:"auto"\})\)/,
-                replace: "&&!$self.settings.store.hideRightPanel&&$1($2)",
-            },
+            replacement: [
+                {
+                    match: /&&(\i)\(\{source:"auto",view:"browser"\}\)/,
+                    replace: '&&!$self.settings.store.hideRightPanel&&$1({source:"auto",view:"browser"})',
+                },
+                {
+                    match: /&&(\i)\((\i\?\{source:"auto",view:"browser"\}:\{source:"auto"\}|\{source:"auto"\})\)/,
+                    replace: "&&!$self.settings.store.hideRightPanel&&$1($2)",
+                    noWarn: true,
+                },
+            ],
         },
     ],
 });

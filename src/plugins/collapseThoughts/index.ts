@@ -39,6 +39,7 @@ export default definePlugin({
                     // Side panel: `[open,set]=(0,x.useState)(!0),text=notes[0]?.text??"",many=notes.length>1`.
                     match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(!0\),(\i)=(\i)\[0\]\?\.text\?\?\"\",(\i)=\5\.length>1/,
                     replace: "[$1,$2]=(0,$3.useState)(!1),$4=$5[0]?.text??\"\",$6=$5.length>($self.settings.store.collapseSingle?0:1)",
+                    noWarn: true,
                 },
             ],
         },

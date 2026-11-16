@@ -100,6 +100,7 @@ export default definePlugin({
     patches: [
         {
             find: '"library-page.title","Library"',
+            noWarn: true,
             replacement: [
                 {
                     // LibraryRow: ctrl/meta-click. Source: item:c,leading:w,onOpen:x,title:k

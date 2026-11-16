@@ -611,6 +611,7 @@ export default definePlugin({
                 {
                     match: /(\{placeholder:)(\i)(?=,newChatPlaceholder:)/,
                     replace: "$1$self._inputPlaceholder($2)",
+                    noWarn: true,
                 },
                 {
                     match: /(\)\)\}\):)(\i)(?=,placeholderClassName:)/,
@@ -624,6 +625,14 @@ export default definePlugin({
                     noWarn: true,
                 },
             ],
+        },
+        {
+            find: ["placeholderClassName", "disableAutoFocus"],
+            all: true,
+            replacement: {
+                match: /(placeholder:)(\i)(?=,placeholderClassName:)/,
+                replace: "$1$self._inputPlaceholder($2)",
+            },
         },
         {
             find: "desktop-shell.home.greeting-explore",

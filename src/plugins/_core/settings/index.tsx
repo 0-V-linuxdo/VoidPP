@@ -10,7 +10,7 @@ import { isPluginEnabled, plugins } from "@api/PluginManager";
 import { definePluginSettings, migratePluginSetting } from "@api/Settings";
 import { loadSavedThemes } from "@api/Themes";
 import { ErrorBoundary, Flex, Text } from "@components";
-import { BracesIcon, PaletteIcon, SettingsIcon, TestTubeIcon, UnplugIcon, VoidPPIcon, type IconProps } from "@components/icons";
+import { BracesIcon, type IconProps,PaletteIcon, SettingsIcon, TestTubeIcon, UnplugIcon, VoidPPIcon } from "@components/icons";
 import { CustomCSSTab, loadSavedCSS, PluginsTab, setPendingPluginDialog, ThemesTab } from "@components/settings/tabs";
 import { Tab as ExperimentsTab } from "@plugins/experiments";
 import { usePluginMenu } from "@plugins/pluginsFlyout";
@@ -286,7 +286,7 @@ export default definePlugin({
             all: true,
             replacement: {
                 match: /(\(0,(\i)\.jsx\)\(\i,\{onOpenChangelog:\i\}\))/,
-                replace: '(0,$2.jsx)($2.Fragment,{children:[$self._renderVoidPPMenu(),$1]})',
+                replace: "(0,$2.jsx)($2.Fragment,{children:[$self._renderVoidPPMenu(),$1]})",
             },
         },
         {
@@ -317,7 +317,7 @@ export default definePlugin({
             ],
         },
         {
-            find: "desktop-shell.settings.search-label",
+            find: '"data-settings-tab"',
             all: true,
             replacement: {
                 match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.X\[(\i)\.id\]\}\)/g,
@@ -346,6 +346,7 @@ export default definePlugin({
         },
         {
             find: '["general","grok","payments","data","other","team-management"]',
+            noWarn: true,
             replacement: {
                 match: /(\["general","grok","payments","data","other"),("team-management"\])/,
                 replace: '$1,"voidpp",$2',

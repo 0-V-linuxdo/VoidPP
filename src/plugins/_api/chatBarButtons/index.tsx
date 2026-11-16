@@ -40,16 +40,16 @@ export default definePlugin({
             all: true,
             replacement: [
                 {
-                    // Same compiler temp as BetterModeSelect. Nesting `[jsx, buttons]` inside
-                    // `[pins, jsx]` still flattens to pins, control, buttons.
-                    match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
-                    replace: "[$&,$self.renderButtons()]",
+                    match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\(\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
+                    replace: "$1[$self.renderButtons(),$2]$3",
                 },
                 {
-                    // Actions are [dictate, send]. Buttons must sit before that,
-                    // or usage lands to the right of Send. A sibling of this div
-                    // is an unplaced grid item and the one-row pill clips it.
-                    match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\(\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
+                    match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
+                    replace: "[$&,$self.renderButtons()]",
+                    noWarn: true,
+                },
+                {
+                    match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
                     replace: "$1[$self.renderButtons(),$2]$3",
                     noWarn: true,
                 },

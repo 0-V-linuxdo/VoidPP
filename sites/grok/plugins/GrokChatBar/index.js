@@ -100,9 +100,6 @@ export default () => U.definePlugin({
             all: true,
             replacement: [
                 {
-                    // Desktop inline row: trailing cell is dictate+send. Same module as
-                    // BetterModeSelect. The old `"data-query-bar-mode-select":!0` find is gone
-                    // (`:""` + compiler temps); a comma after mode-select is discarded.
                     match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\(\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
                     replace: "$1[$self.renderChatBar(\"chat\"),$2]$3",
                 },

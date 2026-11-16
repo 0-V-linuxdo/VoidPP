@@ -29,6 +29,7 @@ export default definePlugin({
         {
             find: '"Editing actions","Editing actions"',
             all: true,
+            noWarn: true,
             replacement: [
                 {
                     match: /\(0,(\i)\.jsx\)\((\i),\{editing:/,

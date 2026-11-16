@@ -20,10 +20,17 @@ export default definePlugin({
         {
             find: "build-mode-starters.more",
             all: true,
-            replacement: {
-                match: /(?=\(0,\i\.jsx\)\(\i\.f\.div,\{className:"flex w-full flex-col items-center pt-1 pb-2)/,
-                replace: "true?null:",
-            },
+            replacement: [
+                {
+                    match: /BuildStarters:function\((\i)\)\{/,
+                    replace: "BuildStarters:function($1){return null;",
+                },
+                {
+                    match: /(?=\(0,\i\.jsx\)\(\i\.f\.div,\{className:"flex w-full flex-col items-center pt-1 pb-2)/,
+                    replace: "true?null:",
+                    noWarn: true,
+                },
+            ],
         },
         {
             find: '"BuildModeStarters",0,',

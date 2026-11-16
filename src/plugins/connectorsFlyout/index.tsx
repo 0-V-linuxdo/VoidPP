@@ -289,6 +289,7 @@ export default definePlugin({
     patches: [
         {
             find: '"skills-and-connectors"!==',
+            noWarn: true,
             replacement: {
                 match: /(\(0,\i\.jsx\)\(\i(?:\.\i)?,\{icon:.{0,180}?onClick:\(\)=>\{"skills-and-connectors")/,
                 replace: "false&&$1",
@@ -356,6 +357,7 @@ export default definePlugin({
             // Desktop account menu: insert Connect Apps before the Help submenu in the item list.
             find: '"user-dropdown.help","Help"',
             all: true,
+            noWarn: true,
             replacement: {
                 match: /(children:\[)(\i,\i,\i,\i,)(\i,\i,\i,\i\])([\s\S]{0,220}?function \i\(e\)\{return e\.toggleOpen\})/,
                 replace: "$1$2$self._renderItem(),$3$4",

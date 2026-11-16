@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/* stylelint-disable number-max-precision, property-no-deprecated */
+/* stylelint-disable number-max-precision, property-no-deprecated, no-descending-specificity */
 
 html.void-sb-clib #app-sidebar {
     anchor-name: --void-sb;
@@ -71,11 +71,57 @@ html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], butt
     border: 0;
 }
 
+html.void-sb-clib #app-sidebar *:has(> :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]):only-child) {
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+}
+
 html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {
-    position: absolute !important;
+    position: fixed !important;
     top: 12px !important;
     inset-inline: auto !important;
     left: calc(254px - 44px) !important;
+    right: auto !important;
+    z-index: 6;
+    box-sizing: border-box;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center !important;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    max-width: 32px;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    overflow: hidden;
+    border-radius: 8px;
+    color: var(--grok-text-secondary, var(--fg-secondary)) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);
+}
+
+html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):is(:hover, :focus-visible) {
+    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;
+    color: var(--grok-text-primary, var(--fg-primary)) !important;
+}
+
+html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):focus-visible {
+    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;
+}
+
+html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):active {
+    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;
+}
+
+html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) svg {
+    width: 20px !important;
+    height: 20px !important;
 }
 
 html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {
@@ -84,7 +130,9 @@ html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {
 
 @supports (anchor-name: --void-sb) {
     html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {
+        position: fixed !important;
         position-anchor: --void-sb;
+        top: calc(anchor(top) + 12px) !important;
         left: calc(anchor(right) - 44px) !important;
         right: auto !important;
     }
