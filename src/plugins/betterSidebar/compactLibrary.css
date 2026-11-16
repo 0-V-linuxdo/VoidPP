@@ -71,16 +71,8 @@ html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], butt
     border: 0;
 }
 
-html.void-sb-clib #app-sidebar *:has(> :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]):only-child) {
-    height: 0 !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-}
-
 html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {
-    position: fixed !important;
+    position: absolute !important;
     top: 12px !important;
     inset-inline: auto !important;
     left: calc(254px - 44px) !important;
@@ -130,9 +122,7 @@ html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {
 
 @supports (anchor-name: --void-sb) {
     html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {
-        position: fixed !important;
         position-anchor: --void-sb;
-        top: calc(anchor(top) + 12px) !important;
         left: calc(anchor(right) - 44px) !important;
         right: auto !important;
     }

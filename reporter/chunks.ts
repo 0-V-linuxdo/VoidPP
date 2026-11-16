@@ -101,7 +101,7 @@ async function tryFetchManifests(origin: string, buildId: string): Promise<strin
     return [...out];
 }
 
-function parseModulesFromChunk(src: string): Array<{ id: number; offset: number; length: number }> {
+export function parseModulesFromChunk(src: string): Array<{ id: number; offset: number; length: number }> {
     const out: Array<{ id: number; offset: number; length: number }> = [];
     const pushIdx = src.indexOf(".push([");
     if (pushIdx === -1) return out;

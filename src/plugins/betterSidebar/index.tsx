@@ -754,7 +754,7 @@ export default definePlugin({
             },
         },
         {
-            find: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+            find: "ENABLE_GROK_BOT_RELAY_CLIENT",
             noWarn: true,
             replacement: {
                 match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,

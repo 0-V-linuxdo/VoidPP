@@ -1,3 +1,8 @@
+## 20261114.54
+
+- `.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.
+- BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\i`, never hit, and scanned every factory (~38s in the chunk bench).
+
 ## 20261114.53
 
 - Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.

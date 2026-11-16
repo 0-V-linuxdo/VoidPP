@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +9,7 @@ import { canonicalizeMatch } from "../src/utils/patches.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, ".voidpp-cache/grok-chunks");
+const SLOW_MS = 50;
 
 function moduleMatchesFind(factory, finds) {
     for (const f of finds) {
@@ -23,9 +24,13 @@ function moduleMatchesFind(factory, finds) {
     return true;
 }
 
+function now() {
+    return performance.now();
+}
+
 function main() {
     mkdirSync(OUT, { recursive: true });
-    const files = readdirSync(OUT).filter(n => n.endsWith(".js"));
+    const files = readdirSync(OUT).filter(n => n.endsWith(".js") && !n.startsWith("_"));
     const modules = new Map();
     const fileOf = new Map();
     for (const name of files) {
@@ -52,12 +57,22 @@ function main() {
         ...extractPatches(join(ROOT, "sites/grok/settings-host.js")),
     ];
 
+    const slow = [];
     const rows = [];
     for (const p of patches) {
+        const findLabel = p.find.map(f => f.value ?? f.raw).join(" | ").slice(0, 90);
+        const tFind = now();
         const matched = [];
         for (const mod of modules.values()) {
             if (moduleMatchesFind(mod.factory, p.find)) matched.push(mod);
         }
+        const findMs = now() - tFind;
+        if (findMs >= SLOW_MS) {
+            const line = `SLOW FIND ${findMs.toFixed(1)}ms  ${p.plugin}  ${findLabel}  modules=${matched.length}`;
+            console.log(line);
+            slow.push({ kind: "find", ms: findMs, plugin: p.plugin, find: findLabel, matched: matched.length });
+        }
+
         const reps = [];
         for (let i = 0; i < p.replacement.length; i++) {
             const r = p.replacement[i];
@@ -65,12 +80,15 @@ function main() {
             if (r.match.kind === "regex") {
                 try { compiled = canonicalizeMatch(r.match.regex); }
                 catch (e) {
-                    reps.push({ i, noWarn: r.noWarn, error: String(e), hits: 0, modules: [] });
+                    reps.push({ i, noWarn: r.noWarn, error: String(e), hits: 0, modules: [], testMs: 0, replaceMs: 0 });
                     continue;
                 }
             }
             const hitMods = [];
+            let testMs = 0;
+            let replaceMs = 0;
             for (const mod of matched) {
+                const tTest = now();
                 let ok = false;
                 if (compiled) {
                     compiled.lastIndex = 0;
@@ -78,17 +96,41 @@ function main() {
                 } else {
                     ok = mod.factory.includes(r.match.value);
                 }
-                if (ok) hitMods.push({ id: mod.id, file: fileOf.get(mod.id) });
+                testMs += now() - tTest;
+                if (!ok) continue;
+                hitMods.push({ id: mod.id, file: fileOf.get(mod.id), bytes: mod.factory.length });
+                const tRep = now();
+                if (compiled) {
+                    compiled.lastIndex = 0;
+                    mod.factory.replace(compiled, "$&");
+                }
+                replaceMs += now() - tRep;
+            }
+            const matchLabel = (r.match.value ?? r.match.raw).slice(0, 120);
+            if (testMs >= SLOW_MS || replaceMs >= SLOW_MS) {
+                const line = `SLOW MATCH test=${testMs.toFixed(1)}ms replace=${replaceMs.toFixed(1)}ms hits=${hitMods.length}  ${p.plugin}  ${matchLabel}`;
+                console.log(line);
+                slow.push({
+                    kind: "match",
+                    testMs,
+                    replaceMs,
+                    plugin: p.plugin,
+                    match: matchLabel,
+                    hits: hitMods.length,
+                    files: [...new Set(hitMods.map(m => m.file))],
+                    bytes: hitMods.map(m => m.bytes),
+                });
             }
             reps.push({
                 i,
                 noWarn: r.noWarn,
-                match: (r.match.value ?? r.match.raw).slice(0, 120),
+                match: matchLabel,
                 hits: hitMods.length,
                 modules: hitMods.slice(0, 6),
+                testMs,
+                replaceMs,
             });
         }
-        const find = p.find.map(f => f.value ?? f.raw).join(" | ").slice(0, 90);
         const anyHit = reps.some(r => r.hits > 0);
         const liveMiss = reps.filter(r => r.hits === 0 && !r.noWarn && !p.noWarn);
         const legacyMiss = reps.filter(r => r.hits === 0 && (r.noWarn || p.noWarn));
@@ -96,7 +138,8 @@ function main() {
             plugin: p.plugin,
             file: p.file.replace(ROOT + "/", ""),
             noWarn: p.noWarn,
-            find,
+            find: findLabel,
+            findMs,
             matched: matched.length,
             matchedFiles: [...new Set(matched.slice(0, 8).map(m => fileOf.get(m.id)))],
             anyHit,
@@ -106,10 +149,10 @@ function main() {
         });
     }
 
-    writeFileSync(join(OUT, "_patch-report.json"), JSON.stringify(rows, null, 2));
+    writeFileSync(join(OUT, "_patch-report.json"), JSON.stringify({ slow, rows }, null, 2));
     const real = rows.filter(r => r.liveMiss.length);
     const fullyApplied = rows.filter(r => r.matched && r.reps.every(x => x.hits > 0 || x.noWarn || r.noWarn));
-    console.log(`patches ${rows.length}  fully-ok ${fullyApplied.length}  live-miss-patches ${real.length}`);
+    console.log(`patches ${rows.length}  fully-ok ${fullyApplied.length}  live-miss-patches ${real.length}  slow ${slow.length}`);
     for (const r of real) {
         console.log(`REAL ${r.plugin}  find=${r.find}  modules=${r.matched}  miss=${r.liveMiss.length}`);
         for (const m of r.liveMiss) console.log(`    ${m}`);
