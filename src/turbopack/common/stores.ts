@@ -20,7 +20,6 @@ import type {
     SubscriptionsStoreModule,
     TextToSpeechStoreModule,
 } from "@grok-types/stores";
-
 import { proxyLazy } from "@utils/lazy";
 
 import { getFnSource } from "../fnSource";
@@ -32,6 +31,30 @@ export const ConversationStore: ConversationStoreModule = findByPropsLazy("useCo
 export const FeatureStore: FeatureStoreModule = findByPropsLazy("useFeatureStore");
 export const FilesPageStore: FilesPageStoreModule = findByPropsLazy("useFilesPageStore", "useAssetsList");
 export const MediaStore: MediaStoreModule = findByPropsLazy("useMediaStore", "useImagineModeStore");
+
+function cacheSize() {
+    const cache = getRuntimeModuleCache();
+    if (cache == null) return 0;
+    if (typeof (cache as { size?: number }).size === "number") return (cache as { size: number }).size;
+    try {
+        return Object.keys(cache).length;
+    } catch {
+        return 0;
+    }
+}
+
+function scanCached<T>(scan: () => T | null): () => T | null {
+    let hit: T | null = null;
+    let n = -1;
+    return () => {
+        if (hit) return hit;
+        const next = cacheSize();
+        if (next === n) return null;
+        n = next;
+        hit = scan();
+        return hit;
+    };
+}
 
 function hookFromFactory<T>(label: string, accept: (value: unknown) => value is T): T | null {
     const legacy = find((mod: Record<string, unknown>) => accept(mod?.[label])) as Record<string, T> | null;
@@ -82,17 +105,21 @@ function isMessageHook(value: unknown): value is MessageStoreModule["useMessageS
 }
 
 // The live bundle exports these hooks as short keys. The zustand name survives only inside the factory.
+const scanModes = scanCached(() => hookFromFactory("useModesStore", isModesHook));
 export const ModesStore: ModesStoreModule = proxyLazy(() => {
-    const hook = hookFromFactory("useModesStore", isModesHook);
+    const hook = scanModes();
     return hook ? { useModesStore: hook } : null;
 }, Infinity);
 export const ResponseStore: ResponseStoreModule = findByPropsLazy("useResponseStore", "createOptimisticResponse");
-export const RoutingStore: RoutingStoreModule = proxyLazy(() => {
+const scanRouting = scanCached(() => {
     const named = findStore("Routing");
-    if (isRoutingHook(named)) return { useRoutingStore: named };
+    if (isRoutingHook(named)) return named;
     const labeled = find((mod: Record<string, unknown>) => typeof mod?.useRoutingStore === "function") as { useRoutingStore?: RoutingStoreModule["useRoutingStore"] } | null;
-    if (typeof labeled?.useRoutingStore === "function") return { useRoutingStore: labeled.useRoutingStore };
-    const hook = hookFromFactory("useRoutingStore", isRoutingHook);
+    if (typeof labeled?.useRoutingStore === "function") return labeled.useRoutingStore;
+    return hookFromFactory("useRoutingStore", isRoutingHook);
+});
+export const RoutingStore: RoutingStoreModule = proxyLazy(() => {
+    const hook = scanRouting();
     return hook ? { useRoutingStore: hook } : null;
 }, Infinity);
 
@@ -195,16 +222,20 @@ export const PluginsDialogStore: { usePluginsDialogStore: PluginsDialogHook } = 
     const hook = pluginsDialogHook();
     return hook ? { usePluginsDialogStore: hook } : null;
 }, Infinity);
-export const SettingsStore: SettingsStoreModule = proxyLazy(() => {
+const scanSettings = scanCached(() => {
     const mod = findByProps("useSettingsStore", "modelConfigOverrideSchema")
         ?? findByProps("useSettingsStore");
     return typeof mod?.useSettingsStore === "function" ? mod : null;
-}, Infinity);
+});
+export const SettingsStore: SettingsStoreModule = proxyLazy(() => scanSettings(), Infinity);
 export const SubscriptionsStore: SubscriptionsStoreModule = findByPropsLazy("useSubscriptionsStore");
 export const TextToSpeechStore: TextToSpeechStoreModule = findByPropsLazy("useTextToSpeechStore");
-export const MessageStore: MessageStoreModule = proxyLazy(() => {
+const scanMessage = scanCached(() => {
     const named = findStore("Message");
-    const hook = (isMessageHook(named) ? named : null)
+    return (isMessageHook(named) ? named : null)
         ?? hookFromFactory("useMessageStore", isMessageHook);
+});
+export const MessageStore: MessageStoreModule = proxyLazy(() => {
+    const hook = scanMessage();
     return hook ? { useMessageStore: hook } : null;
 }, Infinity);

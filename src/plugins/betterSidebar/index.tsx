@@ -20,7 +20,6 @@ import { getPlanName } from "@turbopack/common/plan";
 import { createElement, Fragment, React, useEffect, useRef, useState } from "@turbopack/common/react";
 import { ChatPageStore, ConversationStore, RoutingStore, SessionStore } from "@turbopack/common/stores";
 import { subscriptionIsCommerce, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
-import { onModuleLoad } from "@turbopack/patchTurbopack";
 import { findByProps } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classNameFactory, disableStyle, enableStyle } from "@utils/css";
@@ -140,6 +139,79 @@ function releaseRosterGate() {
     }
 }
 
+const SEARCH_HREFS = ["#icon-xs-search", "#icon-sm-search", "#icon-md-search", "#icon-lg-search"] as const;
+const SEARCH_CLASS = "void-sb-search";
+
+function searchButton(): HTMLElement | null {
+    const labeled = document.querySelector<HTMLElement>('button[aria-label="Search"]');
+    if (labeled && !labeled.closest("#app-sidebar")) return labeled;
+    for (const href of SEARCH_HREFS) {
+        const use = document.querySelector(`use[href="${href}"]`);
+        const btn = use?.closest("button");
+        if (btn instanceof HTMLElement && !btn.closest("#app-sidebar")) return btn;
+    }
+    return null;
+}
+
+function clearSearchPlace(btn: HTMLElement) {
+    btn.classList.remove(SEARCH_CLASS);
+    btn.style.removeProperty("left");
+    btn.style.removeProperty("top");
+}
+
+function placeSearch() {
+    const btn = searchButton();
+    if (!btn) return;
+    if (!settings.store.compactLibrary) {
+        clearSearchPlace(btn);
+        return;
+    }
+    const sb = document.getElementById("app-sidebar");
+    if (!sb) return;
+    const r = sb.getBoundingClientRect();
+    const plus = settings.store.compactNewChat ? 32 : 0;
+    const gap = plus ? 4 : 0;
+    btn.classList.add(SEARCH_CLASS);
+    btn.style.setProperty("left", `${Math.round(r.right - 12 - plus - gap - 32)}px`, "important");
+    btn.style.setProperty("top", `${Math.round(r.top + 12)}px`, "important");
+}
+
+let searchObs: ResizeObserver | null = null;
+let searchMo: MutationObserver | null = null;
+let searchRaf = 0;
+
+function scheduleSearch() {
+    if (searchRaf) return;
+    searchRaf = requestAnimationFrame(() => {
+        searchRaf = 0;
+        placeSearch();
+    });
+}
+
+function startSearchPlace() {
+    stopSearchPlace();
+    placeSearch();
+    searchObs = new ResizeObserver(scheduleSearch);
+    const sb = document.getElementById("app-sidebar");
+    if (sb) searchObs.observe(sb);
+    searchObs.observe(document.documentElement);
+    searchMo = new MutationObserver(scheduleSearch);
+    searchMo.observe(document.documentElement, { childList: true, subtree: true });
+    window.addEventListener("resize", scheduleSearch, { passive: true });
+}
+
+function stopSearchPlace() {
+    searchObs?.disconnect();
+    searchObs = null;
+    searchMo?.disconnect();
+    searchMo = null;
+    if (searchRaf) cancelAnimationFrame(searchRaf);
+    searchRaf = 0;
+    window.removeEventListener("resize", scheduleSearch);
+    const btn = document.querySelector<HTMLElement>(`.${SEARCH_CLASS}`) ?? searchButton();
+    if (btn) clearSearchPlace(btn);
+}
+
 function applyHeaderHover() {
     const root = document.documentElement;
     const compactNew = !!settings.store.compactNewChat;
@@ -152,6 +224,8 @@ function applyHeaderHover() {
     else disableStyle("compactNewChat");
     if (compactLib) enableStyle("compactLibrary");
     else disableStyle("compactLibrary");
+    if (compactLib) startSearchPlace();
+    else stopSearchPlace();
 }
 
 let botsUserOverride = false;
@@ -187,7 +261,7 @@ function botsHeader(): HTMLElement | null {
 function onBotsPointerDown(event: PointerEvent) {
     if (!event.isTrusted) return;
     const header = botsHeader();
-    const {target} = event;
+    const { target } = event;
     if (!header || !(target instanceof Node) || !header.contains(target)) return;
     botsUserOverride = true;
     stopBotsCollapse();
@@ -425,7 +499,10 @@ function UserCard(props: { AvatarMenu: ComponentType<Record<string, unknown>> })
     const [, bump] = useState(0);
     useEffect(() => {
         if (ready) return;
-        return onModuleLoad(() => bump(n => n + 1));
+        const id = window.setInterval(() => {
+            if (typeof SessionStore.useSession === "function") bump(n => n + 1);
+        }, 250);
+        return () => window.clearInterval(id);
     }, [ready]);
     if (!ready) {
         const { AvatarMenu, ...rest } = props;
@@ -570,6 +647,7 @@ export default definePlugin({
         disableStyle("headerHover");
         disableStyle("compactNewChat");
         disableStyle("compactLibrary");
+        stopSearchPlace();
         stopBotsCollapse();
         stopChatsExpand();
         stopProjectsCollapse();

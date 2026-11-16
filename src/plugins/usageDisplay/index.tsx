@@ -17,7 +17,6 @@ import { getPlanName } from "@turbopack/common/plan";
 import { React, useCallback, useEffect, useRef, useState } from "@turbopack/common/react";
 import { RoutingStore, SessionStore } from "@turbopack/common/stores";
 import { subscriptionIsCommerce, subscriptionIsPaid, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
-import { onModuleLoad } from "@turbopack/patchTurbopack";
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
@@ -779,14 +778,18 @@ export default definePlugin({
         } catch (error) {
             logger.warn("RoutingStore subscribe failed", error);
         }
-        unlistenRoute = onModuleLoad(() => {
-            if (unsubRoute) return;
+        const timer = window.setInterval(() => {
+            if (unsubRoute) {
+                window.clearInterval(timer);
+                return;
+            }
             try {
-                bindRoute();
+                if (bindRoute()) window.clearInterval(timer);
             } catch (error) {
                 logger.warn("RoutingStore subscribe failed", error);
             }
-        });
+        }, 250);
+        unlistenRoute = () => window.clearInterval(timer);
     },
 
     stop() {
