@@ -323,8 +323,8 @@ export const settingsHost = {
             find: "desktop-shell.settings.search-label",
             all: true,
             replacement: {
-                match: /leading:\(0,(\i)\.jsx\)\((\i(?:\.\i)?),\{name:(\i(?:\.\i)?)\[(\i)\.id\]\}/g,
-                replace: "leading:$self._navLeading($4.id)||(0,$1.jsx)($2,{name:$3[$4.id]}",
+                match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.X\[(\i)\.id\]\}\)/g,
+                replace: "leading:$self._navLeading($4.id)||(0,$1.jsx)($2.f,{name:$3.X[$4.id]})",
             },
         },
         {

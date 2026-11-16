@@ -14,6 +14,7 @@ import type { ModesStoreState } from "@grok-types/stores/ModesStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React } from "@turbopack/common/react";
 import { ChatPageStore, MessageStore, ModesStore, RoutingStore, SettingsStore as GrokSettings } from "@turbopack/common/stores";
+import { onModuleLoad } from "@turbopack/patchTurbopack";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -271,7 +272,7 @@ function inIncognito(): boolean {
 function privateBuild(): boolean {
     if (inIncognito()) return true;
     try {
-        const { route } = RoutingStore.useRoutingStore.getState();
+        const route = RoutingStore.useRoutingStore.getState().route;
         if (route?.temporary) return true;
         let cid = String(route?.conversationId || "");
         const chatHook = ChatPageStore.useChatPageStore;
@@ -312,7 +313,6 @@ function pinnedIds(): ModeId[] {
 let incognitoObs: MutationObserver | null = null;
 let offIncognitoWatch: (() => void) | null = null;
 let offRouteWatch: (() => void) | null = null;
-let storeWatchTimer = 0;
 
 function hideBuildMenuItems() {
     const hide = privateBuild();
@@ -754,10 +754,9 @@ function PinnedHost() {
     const [, bump] = React.useState(0);
     React.useEffect(() => {
         if (ready) return;
-        const id = window.setInterval(() => {
+        return onModuleLoad(() => {
             if (storesReady()) bump(n => n + 1);
-        }, 250);
-        return () => window.clearInterval(id);
+        });
     }, [ready]);
     if (!ready) return null;
     return <PinnedModes />;
@@ -775,36 +774,23 @@ export default definePlugin({
     startAt: StartAt.TurbopackReady,
 
     start() {
+        try {
+            const hook = ModesStore.useModesStore;
+            if (typeof hook === "function") void hook.getState().ensureLoaded();
+        } catch (e) {
+            logger.debug("modes not ready", e);
+        }
         bindModelHotkey();
         watchIncognitoMenu();
-        const bindWatches = () => {
-            try {
-                const hook = ModesStore.useModesStore;
-                if (typeof hook === "function") void hook.getState().ensureLoaded();
-            } catch (e) {
-                logger.debug("modes not ready", e);
-            }
-            try {
-                if (!offIncognitoWatch) offIncognitoWatch = GrokSettings.useSettingsStore.subscribe(() => watchIncognitoMenu());
-                if (!offRouteWatch) offRouteWatch = RoutingStore.useRoutingStore.subscribe(() => watchIncognitoMenu());
-            } catch (e) {
-                logger.debug("incognito watch failed", e);
-            }
-            return !!(offIncognitoWatch && offRouteWatch);
-        };
-        if (bindWatches()) return;
-        storeWatchTimer = window.setInterval(() => {
-            if (!bindWatches()) return;
-            window.clearInterval(storeWatchTimer);
-            storeWatchTimer = 0;
-        }, 400);
+        try {
+            offIncognitoWatch = GrokSettings.useSettingsStore.subscribe(() => watchIncognitoMenu());
+            offRouteWatch = RoutingStore.useRoutingStore.subscribe(() => watchIncognitoMenu());
+        } catch (e) {
+            logger.debug("incognito watch failed", e);
+        }
     },
 
     stop() {
-        if (storeWatchTimer) {
-            window.clearInterval(storeWatchTimer);
-            storeWatchTimer = 0;
-        }
         unbindModelHotkey();
         offIncognitoWatch?.();
         offIncognitoWatch = null;
@@ -855,19 +841,13 @@ export default definePlugin({
                     // Desktop shell: the mode div is one grid cell on the inline row
                     // (`display:contents` on the controls row). A sibling array becomes
                     // another row and the fixed-height pill clips the field above the border.
-                    match: /("data-query-bar-mode-select":"",[\s\S]{0,2500}?children:)(\i)(\})/,
-                    replace: "$1[$self.renderPinned(),$2]$3",
-                },
-                {
                     match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:)(\i)(\}\):null)/,
                     replace: "$1[$self.renderPinned(),$2]$3",
-                    noWarn: true,
                 },
             ],
         },
         {
             find: "dictation_button_click",
-            noWarn: true,
             replacement: [
                 {
                     // Idle/acquiring dictate control. Recording cancel/finish returns earlier.

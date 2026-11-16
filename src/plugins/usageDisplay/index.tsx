@@ -14,9 +14,9 @@ import { ErrorBoundary } from "@components/ErrorBoundary";
 import { CircleGaugeIcon } from "@components/icons";
 import { VoidPPDialogShell } from "@components/settings/tabs/VoidPPDialogShell";
 import { getPlanName } from "@turbopack/common/plan";
+import { subscriptionIsCommerce, subscriptionIsPaid, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
 import { React, useCallback, useEffect, useRef, useState } from "@turbopack/common/react";
 import { RoutingStore, SessionStore } from "@turbopack/common/stores";
-import { subscriptionIsCommerce, subscriptionIsPaid, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
@@ -131,7 +131,6 @@ const state: UsageState = {
 
 let refreshPromise: Promise<boolean> | null = null;
 let unsubRoute: (() => void) | null = null;
-let unlistenRoute: (() => void) | null = null;
 
 function isBotPage(): boolean {
     try {
@@ -763,40 +762,20 @@ export default definePlugin({
 
     start() {
         migrateUsageStats();
-        const bindRoute = () => {
-            const hook = RoutingStore.useRoutingStore;
-            if (typeof hook?.subscribe !== "function") return false;
-            unsubRoute = hook.subscribe(s => s.route.page, (page, prev) => {
+        try {
+            unsubRoute = RoutingStore.useRoutingStore.subscribe(s => s.route.page, (page, prev) => {
                 if (page === prev) return;
                 syncAccount();
                 void refresh("route");
             });
-            return true;
-        };
-        try {
-            if (bindRoute()) return;
         } catch (error) {
             logger.warn("RoutingStore subscribe failed", error);
         }
-        const timer = window.setInterval(() => {
-            if (unsubRoute) {
-                window.clearInterval(timer);
-                return;
-            }
-            try {
-                if (bindRoute()) window.clearInterval(timer);
-            } catch (error) {
-                logger.warn("RoutingStore subscribe failed", error);
-            }
-        }, 250);
-        unlistenRoute = () => window.clearInterval(timer);
     },
 
     stop() {
         unsubRoute?.();
         unsubRoute = null;
-        unlistenRoute?.();
-        unlistenRoute = null;
     },
 
     chatBarButton: { ...BUTTON_BASE, tooltip: () => <SafeUsagePanel /> },

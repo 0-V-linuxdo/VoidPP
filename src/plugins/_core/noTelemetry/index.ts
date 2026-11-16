@@ -78,23 +78,7 @@ export default definePlugin({
                     replace: "false",
                 },
                 {
-                    match: /\(0,\i(?:\.\i)?\)\("\/api\/log_metric",\i\)/g,
-                    replace: "false",
-                },
-                {
-                    match: /\(0,\i(?:\.\i)?\)\("\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)\)/g,
-                    replace: "false",
-                },
-                {
                     match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/g,
-                    replace: "void 0",
-                },
-                {
-                    match: /(?:navigator|\i)\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\](?:,\{[^}]*\})?\)\)/g,
-                    replace: "void 0",
-                },
-                {
-                    match: /(?:navigator|\i)\.sendBeacon\("\/api\/log_metric",\i\)/g,
                     replace: "void 0",
                 },
             ],
