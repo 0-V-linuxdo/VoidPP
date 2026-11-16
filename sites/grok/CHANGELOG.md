@@ -1,3 +1,7 @@
+## 20261114.47
+
+- BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on.
+
 ## 20261114.46
 
 - Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.

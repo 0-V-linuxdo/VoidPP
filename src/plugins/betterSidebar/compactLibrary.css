@@ -1,0 +1,95 @@
+/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/* stylelint-disable number-max-precision, property-no-deprecated */
+
+html.void-sb-clib #app-sidebar {
+    anchor-name: --void-sb;
+}
+
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]) {
+    position: absolute;
+    top: 12px;
+    inset-inline-start: 48px;
+    z-index: 4;
+    box-sizing: border-box;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    max-width: 32px;
+    padding: 0 !important;
+    margin: 0 !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    overflow: hidden;
+    border-radius: 8px;
+    color: var(--grok-text-secondary, var(--fg-secondary)) !important;
+    box-shadow: none !important;
+    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@supports (anchor-name: --void-sb) {
+    html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]) {
+        position: fixed;
+        position-anchor: --void-sb;
+        inset: calc(anchor(top) + 12px) auto auto calc(anchor(left) + 48px);
+    }
+}
+
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]):is(:hover, :focus-visible) {
+    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;
+    color: var(--grok-text-primary, var(--fg-primary)) !important;
+}
+
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]):focus-visible {
+    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;
+}
+
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]):active {
+    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;
+}
+
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]) svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]) [data-sidebar-item-label],
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"]) [data-slot="sidebar-item-shortcut"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+html.void-sb-clib #app-sidebar ~ button[aria-label="Search"] {
+    position: absolute !important;
+    top: 12px !important;
+    inset-inline: auto !important;
+    left: calc(254px - 44px) !important;
+}
+
+html.void-sb-clib.void-sb-cnc #app-sidebar ~ button[aria-label="Search"] {
+    left: calc(254px - 80px) !important;
+}
+
+@supports (anchor-name: --void-sb) {
+    html.void-sb-clib #app-sidebar ~ button[aria-label="Search"] {
+        position-anchor: --void-sb;
+        left: calc(anchor(right) - 44px) !important;
+        right: auto !important;
+    }
+
+    html.void-sb-clib.void-sb-cnc #app-sidebar ~ button[aria-label="Search"] {
+        left: calc(anchor(right) - 80px) !important;
+    }
+}

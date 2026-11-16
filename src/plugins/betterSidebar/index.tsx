@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import "./compactLibrary.css";
 import "./compactNewChat.css";
 import "./headerHover.css";
 import "./styles.css";
@@ -16,9 +17,9 @@ import { PanelLeftIcon, PlusIcon } from "@components/icons";
 import { Text } from "@components/Text";
 import { SidebarComponents } from "@turbopack/common/components";
 import { getPlanName } from "@turbopack/common/plan";
-import { subscriptionIsCommerce, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
 import { createElement, Fragment, React, useEffect, useRef, useState } from "@turbopack/common/react";
 import { ChatPageStore, ConversationStore, RoutingStore, SessionStore } from "@turbopack/common/stores";
+import { subscriptionIsCommerce, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
 import { onModuleLoad } from "@turbopack/patchTurbopack";
 import { findByProps } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
@@ -75,6 +76,11 @@ const settings = definePluginSettings({
     compactNewChat: {
         type: OptionType.BOOLEAN,
         description: "Shrink the New chat pill to an icon in the top-right of the sidebar header.",
+        default: true,
+    },
+    compactLibrary: {
+        type: OptionType.BOOLEAN,
+        description: "Put Library in the Search slot and move Search next to New chat.",
         default: true,
     },
 });
@@ -135,10 +141,17 @@ function releaseRosterGate() {
 }
 
 function applyHeaderHover() {
+    const root = document.documentElement;
+    const compactNew = !!settings.store.compactNewChat;
+    const compactLib = !!settings.store.compactLibrary;
+    root.classList.toggle("void-sb-cnc", compactNew);
+    root.classList.toggle("void-sb-clib", compactLib);
     if (settings.store.titleRowHover) enableStyle("headerHover");
     else disableStyle("headerHover");
-    if (settings.store.compactNewChat) enableStyle("compactNewChat");
+    if (compactNew) enableStyle("compactNewChat");
     else disableStyle("compactNewChat");
+    if (compactLib) enableStyle("compactLibrary");
+    else disableStyle("compactLibrary");
 }
 
 let botsUserOverride = false;
@@ -174,7 +187,7 @@ function botsHeader(): HTMLElement | null {
 function onBotsPointerDown(event: PointerEvent) {
     if (!event.isTrusted) return;
     const header = botsHeader();
-    const target = event.target;
+    const {target} = event;
     if (!header || !(target instanceof Node) || !header.contains(target)) return;
     botsUserOverride = true;
     stopBotsCollapse();
@@ -553,8 +566,10 @@ export default definePlugin({
 
     stop() {
         selection.clear();
+        document.documentElement.classList.remove("void-sb-cnc", "void-sb-clib");
         disableStyle("headerHover");
         disableStyle("compactNewChat");
+        disableStyle("compactLibrary");
         stopBotsCollapse();
         stopChatsExpand();
         stopProjectsCollapse();
