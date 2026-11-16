@@ -1,5 +1,5 @@
 // Grok 公共件的懒解析引用:模块未加载时为空,不抛错
-import { U } from "./u.js";
+import { U, h } from "./u.js";
 
 const find = f => U.find(f);
 const findStore = n => U.findStore(n);
@@ -79,6 +79,35 @@ const uiMap = {
 for (const [name, [mod, key]] of Object.entries(uiMap)) {
     def(name, () => { const m = resolveModule(mod); try { return m ? m[key] ?? null : null; } catch { return null; } });
 }
+
+const ICON_SHAPE = { circle: "round", square: "square" };
+const LEGACY_VARIANT = { tertiary: "ghost", secondary: "muted", danger: "destructive", text: "ghost", textsecondary: "ghost" };
+let desktopKit = null;
+let desktopVersion = -1;
+function desktopButtons() {
+    if (desktopKit) return desktopKit;
+    const v = U.moduleCacheVersion();
+    if (desktopVersion === v) return null;
+    desktopVersion = v;
+    for (const id of Object.keys(U.search('"data-icon-button":""'))) {
+        const exps = Object.values(U.requireModule(Number(id)) ?? {}).filter(e => typeof e === "function");
+        const IconButton = exps.find(e => String(e).includes('"data-icon-button":""'));
+        const Button = exps.find(e => e !== IconButton && String(e).includes('"data-touch-target":""'));
+        if (IconButton && Button) return (desktopKit = { IconButton, Button });
+    }
+    return null;
+}
+let IconSlot = null;
+const SlotIcon = () => getReact().useContext(IconSlot);
+function DesktopButton({ variant, size, shape, className, tooltip, children, ...rest }) {
+    const kit = desktopButtons();
+    if (!kit) return null;
+    IconSlot ??= getReact().createContext(null);
+    const props = { ...rest, variant: LEGACY_VARIANT[variant] ?? variant, tooltip: tooltip?.content, style: className ? { voidppClassName: className, $$css: true } : undefined };
+    if (!ICON_SHAPE[shape]) return h(kit.Button, props, children);
+    return h(IconSlot.Provider, { value: children }, h(kit.IconButton, { ...props, size, shape: ICON_SHAPE[shape], icon: SlotIcon }));
+}
+def("DesktopButton", () => desktopButtons() && DesktopButton);
 
 for (const s of STORE_NAMES) def(`${s}Store`, () => resolveStore(s));
 def("Toaster", () => resolveModule("toast"));

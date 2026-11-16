@@ -7,6 +7,7 @@ export const GROK_CSS = `
 .uspp-chatbar-btn[data-active="true"] { color: var(--uspp-fg-primary); background: var(--uspp-button-ghost-hover); }
 .uspp-chatbar-btn:disabled { opacity: .4; cursor: default; }
 .uspp-popover { position: fixed; z-index: 2147483001; min-width: 160px; padding: 8px; border-radius: 14px; background: var(--uspp-surface-l2); color: var(--uspp-fg-primary); border: 1px solid var(--uspp-border-l1); box-shadow: 0 8px 32px rgb(0 0 0 / .25); }
+[data-sonner-toast] [data-title] { font-weight: 400; }
 .void-settings-menu-icon { width: var(--grok-icon-size, 16px); height: var(--grok-icon-size, 16px); color: var(--fg-secondary, var(--grok-text-secondary)); flex-shrink: 0; }
 [role="menu"] :is([role="menuitem"], [role="menuitemradio"]) > span:first-child svg, [role="menu"] :is([role="menuitem"], [role="menuitemradio"]) > svg { color: var(--fg-secondary, var(--grok-text-secondary)) !important; }
 .void-menu-glyph-gap { width: 1rem; height: 1rem; margin-inline-end: 0.5rem; }

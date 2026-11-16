@@ -115,9 +115,9 @@ const GROK_TABS: GrokFlyoutTab[] = [
 ];
 
 const VOIDPP_TABS: VoidPPFlyoutTab[] = [
-    { id: "voidpp_plugins_tab", name: "Plugins", setting: "plugins", icon: UnplugIcon },
-    { id: "voidpp_themes_tab", name: "Themes", setting: "themes", icon: PaletteIcon },
-    { id: "voidpp_css_tab", name: "Quick CSS", setting: "css", icon: BracesIcon },
+    { id: "uspp_voidpp_plugins_tab", name: "Plugins", setting: "plugins", icon: UnplugIcon },
+    { id: "uspp_voidpp_themes_tab", name: "Themes", setting: "themes", icon: PaletteIcon },
+    { id: "uspp_voidpp_quickcss_tab", name: "Quick CSS", setting: "css", icon: BracesIcon },
 ];
 
 function openTab(tab: string | undefined, onOpen?: (event?: Event) => void, event?: Event) {

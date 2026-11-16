@@ -7,6 +7,7 @@
 import { U } from "../../sites/grok/u.js";
 import { proxyLazy } from "@utils/lazy";
 
+export { common } from "../../sites/grok/common.js";
 export { fnSourceCache, getFnSource } from "./fnSource";
 export { matchesAllPatterns, matchesPattern } from "./match";
 

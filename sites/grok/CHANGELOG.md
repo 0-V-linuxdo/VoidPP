@@ -1,3 +1,12 @@
+## 20261114.46
+
+- Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.
+- Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.
+- The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.
+- Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.
+- Toast titles are regular weight again (the rule left with the core Settings plugin).
+- `Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130).
+
 ## 20261114.45
 
 - Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.45
+// @version      20261114.46
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.45" : "0.0.0";
+  var VERSION = true ? "20261114.46" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -1201,7 +1201,7 @@ try {
     name: "preact",
     site: false,
     React: compat_module_exports,
-    createRoot: (container3) => ({ render: (v3) => nn(v3, container3), unmount: () => nn(null, container3) }),
+    createRoot: (container2) => ({ render: (v3) => nn(v3, container2), unmount: () => nn(null, container2) }),
     createPortal: $2,
     flushSync: bn ?? ((fn2) => fn2())
   });
@@ -1478,6 +1478,34 @@ try {
       }
     });
   }
+  var ICON_SHAPE = { circle: "round", square: "square" };
+  var LEGACY_VARIANT = { tertiary: "ghost", secondary: "muted", danger: "destructive", text: "ghost", textsecondary: "ghost" };
+  var desktopKit = null;
+  var desktopVersion = -1;
+  function desktopButtons() {
+    if (desktopKit) return desktopKit;
+    const v3 = U3.moduleCacheVersion();
+    if (desktopVersion === v3) return null;
+    desktopVersion = v3;
+    for (const id of Object.keys(U3.search('"data-icon-button":""'))) {
+      const exps = Object.values(U3.requireModule(Number(id)) ?? {}).filter((e3) => typeof e3 === "function");
+      const IconButton2 = exps.find((e3) => String(e3).includes('"data-icon-button":""'));
+      const Button3 = exps.find((e3) => e3 !== IconButton2 && String(e3).includes('"data-touch-target":""'));
+      if (IconButton2 && Button3) return desktopKit = { IconButton: IconButton2, Button: Button3 };
+    }
+    return null;
+  }
+  var IconSlot = null;
+  var SlotIcon = () => getReact2().useContext(IconSlot);
+  function DesktopButton({ variant, size, shape, className, tooltip, children, ...rest }) {
+    const kit = desktopButtons();
+    if (!kit) return null;
+    IconSlot ??= getReact2().createContext(null);
+    const props = { ...rest, variant: LEGACY_VARIANT[variant] ?? variant, tooltip: tooltip?.content, style: className ? { voidppClassName: className, $$css: true } : void 0 };
+    if (!ICON_SHAPE[shape]) return h4(kit.Button, props, children);
+    return h4(IconSlot.Provider, { value: children }, h4(kit.IconButton, { ...props, size, shape: ICON_SHAPE[shape], icon: SlotIcon }));
+  }
+  def("DesktopButton", () => desktopButtons() && DesktopButton);
   for (const s3 of STORE_NAMES) def(`${s3}Store`, () => resolveStore(s3));
   def("Toaster", () => resolveModule("toast"));
   var once = (filter) => {
@@ -1847,8 +1875,8 @@ try {
   );
   var BellIcon = (props = {}) => svg(
     props,
-    path("M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"),
-    path("M10.3 21a1.94 1.94 0 0 0 3.4 0")
+    path("M10.268 21a2 2 0 0 0 3.464 0"),
+    path("M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326")
   );
   var Settings2Icon = (props = {}) => svg(
     props,
@@ -1871,7 +1899,14 @@ try {
   );
   var VoidPPIcon = (props = {}) => svg(
     { ...props, strokeWidth: props.strokeWidth ?? 2.15 },
-    path("M2.2 7.4 L8.4 20.2 L13.03 11.30")
+    path("M2.2 7.4 L8.4 20.2 L13.03 11.30"),
+    h4("path", { fill: "currentColor", stroke: "none", d: "M13.985 11.792 L14.045 11.678 L14.104 11.567 L14.163 11.458 L14.222 11.352 L14.280 11.249 L14.338 11.148 L14.395 11.049 L14.452 10.953 L14.508 10.859 L14.563 10.768 L14.618 10.679 L14.673 10.592 L14.727 10.508 L14.781 10.426 L14.834 10.347 L14.887 10.270 L14.939 10.195 L14.992 10.122 L15.044 10.052 L15.095 9.984 L15.147 9.918 L15.198 9.855 L15.249 9.794 L15.300 9.735 L15.351 9.678 L15.402 9.623 L15.452 9.571 L15.503 9.521 L15.554 9.473 L15.606 9.427 L15.657 9.384 L15.709 9.342 L15.760 9.303 L15.813 9.267 L15.865 9.232 L15.918 9.200 L15.972 9.170 L16.026 9.142 L16.081 9.117 L16.136 9.094 L16.191 9.074 L16.248 9.056 L16.305 9.041 L16.363 9.028 L16.421 9.018 L16.480 9.011 L16.540 9.006 L16.600 9.005 L23.700 9.005 L23.700 7.555 L16.600 7.555 L16.494 7.556 L16.388 7.560 L16.282 7.566 L16.177 7.574 L16.071 7.585 L15.966 7.598 L15.860 7.615 L15.755 7.634 L15.650 7.655 L15.545 7.680 L15.440 7.707 L15.336 7.737 L15.231 7.771 L15.127 7.807 L15.024 7.846 L14.921 7.888 L14.818 7.933 L14.716 7.981 L14.614 8.032 L14.513 8.086 L14.413 8.144 L14.313 8.204 L14.214 8.267 L14.116 8.334 L14.018 8.403 L13.922 8.475 L13.826 8.550 L13.731 8.629 L13.638 8.710 L13.545 8.794 L13.453 8.882 L13.363 8.972 L13.273 9.065 L13.185 9.161 L13.098 9.260 L13.012 9.361 L12.927 9.466 L12.844 9.573 L12.762 9.684 L12.681 9.797 L12.601 9.913 L12.522 10.031 L12.445 10.153 L12.369 10.277 L12.294 10.404 L12.221 10.533 L12.149 10.666 L12.077 10.800 Z" }),
+    h4(
+      "g",
+      { fill: "currentColor", stroke: "none" },
+      h4("rect", { x: "16.775", y: "5.78", width: "1.45", height: "5.0" }),
+      h4("rect", { x: "20.475", y: "5.78", width: "1.45", height: "5.0" })
+    )
   );
   UnplugIcon.displayName = "UnplugIcon";
   PaletteIcon.displayName = "PaletteIcon";
@@ -2262,7 +2297,7 @@ try {
     return () => offs.forEach((o3) => o3());
   };
   var getContextMenuVersion = () => U3.getSlotVersion();
-  var iconNode = (icon) => icon == null ? null : typeof icon === "function" ? h4(icon, { size: 4 }) : icon;
+  var iconNode = (icon) => icon == null ? null : typeof icon === "function" ? h4(icon, { size: 4, width: 16, height: 16 }) : icon;
   function run(def2, ctx) {
     try {
       (def2.onSelect ?? def2.onClick)?.(ctx);
@@ -2484,6 +2519,7 @@ try {
 .uspp-voidpp-chatbar-btn[data-active="true"] { color: var(--uspp-voidpp-fg-primary); background: var(--uspp-voidpp-button-ghost-hover); }
 .uspp-voidpp-chatbar-btn:disabled { opacity: .4; cursor: default; }
 .uspp-voidpp-popover { position: fixed; z-index: 2147483001; min-width: 160px; padding: 8px; border-radius: 14px; background: var(--uspp-voidpp-surface-l2); color: var(--uspp-voidpp-fg-primary); border: 1px solid var(--uspp-voidpp-border-l1); box-shadow: 0 8px 32px rgb(0 0 0 / .25); }
+[data-sonner-toast] [data-title] { font-weight: 400; }
 .void-settings-menu-icon { width: var(--grok-icon-size, 16px); height: var(--grok-icon-size, 16px); color: var(--fg-secondary, var(--grok-text-secondary)); flex-shrink: 0; }
 [role="menu"] :is([role="menuitem"], [role="menuitemradio"]) > span:first-child svg, [role="menu"] :is([role="menuitem"], [role="menuitemradio"]) > svg { color: var(--fg-secondary, var(--grok-text-secondary)) !important; }
 .void-menu-glyph-gap { width: 1rem; height: 1rem; margin-inline-end: 0.5rem; }
@@ -2745,7 +2781,7 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
       }
       if (def2.popover) setOpen2((o3) => !o3);
     };
-    const IB = common.IconButton;
+    const IB = common.DesktopButton;
     const fallback = h4("button", {
       ref,
       type: "button",
@@ -4123,99 +4159,6 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/utils/css.ts
   var logger7 = new Logger2("Styles", "#a6d189");
-  var styleRegistry = /* @__PURE__ */ new Map();
-  var activeStyles = /* @__PURE__ */ new Map();
-  var container = null;
-  var pendingStyles = [];
-  function getContainer() {
-    if (container?.isConnected) return container;
-    if (!document.head) return null;
-    const wasDisconnected = container != null;
-    container = document.createElement("void-styles");
-    document.head.appendChild(container);
-    if (wasDisconnected) {
-      for (const [name, el] of activeStyles) {
-        if (!el.isConnected) {
-          const css = styleRegistry.get(name);
-          if (css) {
-            const fresh = document.createElement("style");
-            fresh.dataset.void = name;
-            fresh.textContent = css;
-            fresh.disabled = el.disabled;
-            container.appendChild(fresh);
-            activeStyles.set(name, fresh);
-          }
-        }
-      }
-    }
-    return container;
-  }
-  function flushPending() {
-    const root2 = getContainer();
-    if (!root2) return;
-    for (const [name, css] of pendingStyles) {
-      inject(root2, name, css);
-    }
-    pendingStyles = [];
-  }
-  function inject(root2, name, css) {
-    const existing = activeStyles.get(name);
-    if (existing) {
-      if (existing.textContent !== css) existing.textContent = css;
-      return;
-    }
-    const el = document.createElement("style");
-    el.dataset.void = name;
-    el.textContent = css;
-    root2.appendChild(el);
-    activeStyles.set(name, el);
-  }
-  function registerStyle(name, css) {
-    styleRegistry.set(name, css);
-    const root2 = getContainer();
-    if (root2) {
-      inject(root2, name, css);
-    } else {
-      pendingStyles.push([name, css]);
-      if (pendingStyles.length === 1) {
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", flushPending, { once: true });
-        } else {
-          flushPending();
-        }
-      }
-    }
-  }
-  function enableStyle(name) {
-    const existing = activeStyles.get(name);
-    if (existing) {
-      if (existing.disabled) {
-        existing.disabled = false;
-        return true;
-      }
-      return false;
-    }
-    const css = styleRegistry.get(name);
-    if (!css) {
-      logger7.warn(`Style "${name}" not registered.`);
-      return false;
-    }
-    const root2 = getContainer();
-    if (!root2) return false;
-    inject(root2, name, css);
-    return true;
-  }
-  function disableStyle(name) {
-    const el = activeStyles.get(name);
-    if (!el) return false;
-    el.disabled = true;
-    return true;
-  }
-  function unregisterStyle(name) {
-    activeStyles.get(name)?.remove();
-    activeStyles.delete(name);
-    styleRegistry.delete(name);
-  }
   var classNameFactory = (prefix = "") => (...args) => {
     if (args.length === 1 && typeof args[0] === "string") return prefix + args[0];
     const classNames = /* @__PURE__ */ new Set();
@@ -4234,6 +4177,16 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   function classes(...names) {
     return names.filter(Boolean).join(" ");
   }
+
+  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/sites/grok/shims/utils/css.ts
+  function registerStyle(name, css) {
+    whenApi((u3) => u3.registerStyle(name, css));
+  }
+  function unregisterStyle(name) {
+    whenApi((u3) => u3.unregisterStyle(name));
+  }
+  var enableStyle = (name) => U3?.enableStyle(name) ?? false;
+  var disableStyle = (name) => U3?.disableStyle(name) ?? false;
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterCanvas/index.ts
   var logger8 = new Logger2("BetterCanvas");
@@ -4882,52 +4835,10 @@ ${root2}::-webkit-scrollbar-thumb:hover {
     });
   }
   MenuGlyphIcon.displayName = "MenuGlyphIcon";
-  var LEGACY_BUTTON_VARIANT = {
-    tertiary: "ghost",
-    secondary: "muted",
-    danger: "destructive",
-    text: "ghost",
-    textsecondary: "ghost"
-  };
-  function buttonExportSource(value) {
-    try {
-      if (typeof value === "function") return getFnSource(value);
-      const render = value && typeof value === "object" ? value.render : null;
-      if (typeof render === "function") return getFnSource(render);
-    } catch {
-    }
-    return "";
-  }
-  function isStyledButtonExport(value) {
-    const src = buttonExportSource(value);
-    return src.includes(".Button") && src.includes('"chrome"===');
-  }
-  var styledButton = null;
-  function styledButtonExport() {
-    if (styledButton) return styledButton;
-    syncLazyModules();
-    const consider = (exp) => {
-      if (styledButton || exp == null || typeof exp !== "object") return;
-      for (const value of Object.values(exp)) {
-        if (isStyledButtonExport(value)) {
-          styledButton = value;
-          return;
-        }
-      }
-    };
-    for (const [, exp] of getModuleCache()) consider(exp);
-    if (styledButton) return styledButton;
-    for (const id of Object.keys(search('"chrome"==='))) {
-      consider(requireModule(Number(id)));
-      if (styledButton) return styledButton;
-    }
-    return null;
-  }
   function renderButton(props) {
-    const Inner = styledButtonExport() ?? findExportedComponent("Button");
+    const Inner = common.DesktopButton ?? findExportedComponent("Button");
     if (!Inner || !createElement) return null;
-    const variant = typeof props.variant === "string" ? LEGACY_BUTTON_VARIANT[props.variant] ?? props.variant : props.variant;
-    return createElement(Inner, variant === props.variant ? props : { ...props, variant });
+    return createElement(Inner, props);
   }
   var Button = renderButton;
   function buttonWithTooltip(props) {
@@ -5152,7 +5063,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
     }
     return null;
   }
-  var Switch = LazyComponent("Switch", () => styledSwitchExport() ?? findExportedComponent("Switch"));
+  var Switch = LazyComponent("Switch", styledSwitchExport);
   var tableLazy = createModuleLazy("Table", "TableBody", "TableCell");
   var Table = tableLazy("Table");
   var TableBody = tableLazy("TableBody");
@@ -6588,6 +6499,10 @@ form[data-composer] .void-cms-on:active {
     pointer-events: none;
 }
 
+form[data-composer] [data-query-bar-mode-select]:has(.void-cms-pins) {
+    gap: 0.25rem !important;
+}
+
 /* Desktop shell: pins are children of this cell, so hide the native trigger only.
    Absolute 0-size still painted "Default" under the pill via overflow-clip-margin. */
 form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(.void-cms-pins) {
@@ -6636,7 +6551,7 @@ form[data-composer][data-composer-layout="inline"] [data-query-bar-mode-select] 
     width: auto !important;
     height: auto !important;
     max-height: none !important;
-    margin-inline: 0 !important;
+    margin-inline: 0 0.25rem !important;
     overflow: visible !important;
 }
 
@@ -21763,7 +21678,7 @@ html.void-cms-picked .void-cms-ghost {
     document.querySelectorAll(".void-stars-bar").forEach((node2) => node2.classList.remove("void-stars-bar"));
     document.querySelectorAll(".void-stars-rel").forEach((node2) => node2.classList.remove("void-stars-rel"));
   }
-  function appendList(container3, groups) {
+  function appendList(container2, groups) {
     const head = document.createElement("div");
     head.className = "void-stars-head";
     const mark = document.createElement("span");
@@ -21819,7 +21734,7 @@ html.void-cms-picked .void-cms-ghost {
       empty.textContent = "No starred messages in this chat";
       body.appendChild(empty);
     }
-    container3.append(head, body);
+    container2.append(head, body);
   }
   function signature(groups) {
     return groups.map((group) => `${group.conversationId}:${group.missing ? 1 : 0}:${group.title}:${group.items.map((item) => `${item.messageId}:${item.snippet}`).join(",")}`).join(";");
@@ -25894,9 +25809,9 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     { id: "data", name: "Data Controls", setting: "data", icon: grokSprite("shield") }
   ];
   var VOIDPP_TABS = [
-    { id: "voidpp_plugins_tab", name: "Plugins", setting: "plugins", icon: UnplugIcon2 },
-    { id: "voidpp_themes_tab", name: "Themes", setting: "themes", icon: PaletteIcon2 },
-    { id: "voidpp_css_tab", name: "Quick CSS", setting: "css", icon: BracesIcon2 }
+    { id: "uspp_voidpp_plugins_tab", name: "Plugins", setting: "plugins", icon: UnplugIcon2 },
+    { id: "uspp_voidpp_themes_tab", name: "Themes", setting: "themes", icon: PaletteIcon2 },
+    { id: "uspp_voidpp_quickcss_tab", name: "Quick CSS", setting: "css", icon: BracesIcon2 }
   ];
   function openTab(tab, onOpen, event) {
     if (!tab) {
@@ -30575,7 +30490,7 @@ ${orphaned.join("\n")}`);
   // core/lib/styles.js
   var logger42 = new Logger("Styles", "#f9a8d4");
   var styles = /* @__PURE__ */ new Map();
-  var container2 = null;
+  var container = null;
   var pendingDom = false;
   var useSheets = /* @__PURE__ */ (() => {
     let v3 = null;
@@ -30632,11 +30547,11 @@ ${orphaned.join("\n")}`);
       }
       return null;
     }
-    if (container2 && container2.isConnected) return container2;
-    container2 = document.createElement("uspp-voidpp-styles");
-    container2.style.display = "none";
-    document.head.appendChild(container2);
-    return container2;
+    if (container && container.isConnected) return container;
+    container = document.createElement("uspp-voidpp-styles");
+    container.style.display = "none";
+    document.head.appendChild(container);
+    return container;
   }
   function rebuild() {
     const c3 = ensureContainer();
@@ -30660,7 +30575,7 @@ ${orphaned.join("\n")}`);
     if (!s3) return;
     const c3 = ensureContainer();
     if (!c3) return;
-    if (!container2.isConnected) return rebuild();
+    if (!container.isConnected) return rebuild();
     if (!s3.enabled) {
       s3.el?.remove();
       return;
@@ -30714,8 +30629,8 @@ ${orphaned.join("\n")}`);
       s3.css = css;
       if (enabled) s3.enabled = true;
     } else styles.set(name, { css, enabled, el: null });
-    if (!useSheets() && container2 && !container2.isConnected) {
-      container2 = null;
+    if (!useSheets() && container && !container.isConnected) {
+      container = null;
       rebuild();
     } else sync(name);
     syncShadows();
@@ -37349,8 +37264,8 @@ uspp-voidpp-root > *, .uspp-voidpp-shadow-mount > * { pointer-events: auto; }
     });
     mo3.observe(document.documentElement, { childList: true, subtree: true });
   }
-  function renderSlot(slot, container3, ctx = {}) {
-    const x4 = { slot, container: container3, ctx, root: null, dead: false };
+  function renderSlot(slot, container2, ctx = {}) {
+    const x4 = { slot, container: container2, ctx, root: null, dead: false };
     const draw = () => {
       if (x4.dead) return;
       const R4 = getRenderer();
@@ -37359,7 +37274,7 @@ uspp-voidpp-root > *, .uspp-voidpp-shadow-mount > * { pointer-events: auto; }
         return;
       }
       try {
-        x4.root ??= R4.createRoot(container3);
+        x4.root ??= R4.createRoot(container2);
         x4.root.render(h(SlotOutlet, { slot, ctx: x4.ctx }));
       } catch (e3) {
         logger64.error(`渲染注入点 ${slot} 失败`, e3);

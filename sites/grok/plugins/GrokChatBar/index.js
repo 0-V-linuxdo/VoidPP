@@ -37,7 +37,7 @@ function ChatBarButton({ def }) {
         try { (def.onClick ?? def.onSelect)?.(e); } catch (err) { console.error(`[${U.scriptName}] 聊天栏按钮 onClick 出错`, err); }
         if (def.popover) setOpen(o => !o);
     };
-    const IB = common.IconButton;
+    const IB = common.DesktopButton;
     const fallback = h("button", {
         ref, type: "button", className: U.classes("uspp-chatbar-btn", def.className), "data-active": String(active),
         "aria-label": label, title: typeof tooltip === "string" ? tooltip : undefined, disabled, onClick,

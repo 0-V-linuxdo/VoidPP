@@ -5,6 +5,7 @@ export function voidppPlugins(srcRoot) {
     const site = join(srcRoot, "sites/grok");
     const ALIASES = {
         "@utils/types": join(site, "shims/utils/types.ts"),
+        "@utils/css": join(site, "shims/utils/css.ts"),
         "@api/Settings": join(site, "shims/api/Settings.ts"),
         "@api/PluginManager": join(site, "shims/api/PluginManager.ts"),
         "@api/Events": join(site, "shims/api/Events.ts"),
@@ -55,7 +56,7 @@ export function voidppPlugins(srcRoot) {
                     const dir = basename(dirname(args.path));
                     const name = file === "styles" ? dir : file;
                     return {
-                        contents: `import {registerStyle} from ${JSON.stringify(join(srcRoot, "src/utils/css.ts"))};registerStyle(${JSON.stringify(name)},${JSON.stringify(css)});`,
+                        contents: `import {registerStyle} from ${JSON.stringify(ALIASES["@utils/css"])};registerStyle(${JSON.stringify(name)},${JSON.stringify(css)});`,
                         loader: "js",
                     };
                 });

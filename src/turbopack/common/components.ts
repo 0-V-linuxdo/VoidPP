@@ -29,7 +29,7 @@ import type { ComponentType } from "react";
 
 import { getFnSource } from "../fnSource";
 import { getModuleCache, syncLazyModules } from "../patchTurbopack";
-import { filters, findByProps, findByPropsLazy, findExportedComponent, requireModule, search, waitFor } from "../turbopack";
+import { common, filters, findByProps, findByPropsLazy, findExportedComponent, requireModule, search, waitFor } from "../turbopack";
 import { type AnyComponent, createElement, LazyComponent } from "./react";
 import { SettingsDescription, SettingsRow, SettingsSwitch, SettingsTitle } from "./settingsPrimitives";
 
@@ -207,57 +207,10 @@ export function MenuGlyphIcon(props: { icon: ComponentType<{ className?: string;
 }
 MenuGlyphIcon.displayName = "MenuGlyphIcon";
 
-const LEGACY_BUTTON_VARIANT: Record<string, string> = {
-    tertiary: "ghost",
-    secondary: "muted",
-    danger: "destructive",
-    text: "ghost",
-    textsecondary: "ghost",
-};
-
-function buttonExportSource(value: unknown): string {
-    try {
-        if (typeof value === "function") return getFnSource(value);
-        const render = value && typeof value === "object" ? (value as { render?: unknown }).render : null;
-        if (typeof render === "function") return getFnSource(render);
-    } catch {}
-    return "";
-}
-
-/** Styled query-bar button. Names `Button` / `IconButton` are the headless primitive, which drops variant classes. */
-function isStyledButtonExport(value: unknown): value is AnyComponent {
-    const src = buttonExportSource(value);
-    return src.includes(".Button") && src.includes('"chrome"===');
-}
-
-let styledButton: AnyComponent | null = null;
-
-function styledButtonExport(): AnyComponent | null {
-    if (styledButton) return styledButton;
-    syncLazyModules();
-    const consider = (exp: unknown) => {
-        if (styledButton || exp == null || typeof exp !== "object") return;
-        for (const value of Object.values(exp as Record<string, unknown>)) {
-            if (isStyledButtonExport(value)) {
-                styledButton = value;
-                return;
-            }
-        }
-    };
-    for (const [, exp] of getModuleCache()) consider(exp);
-    if (styledButton) return styledButton;
-    for (const id of Object.keys(search('"chrome"==='))) {
-        consider(requireModule(Number(id)));
-        if (styledButton) return styledButton;
-    }
-    return null;
-}
-
 function renderButton(props: ButtonProps) {
-    const Inner = styledButtonExport() ?? findExportedComponent("Button");
+    const Inner = common.DesktopButton ?? findExportedComponent("Button");
     if (!Inner || !createElement) return null;
-    const variant = typeof props.variant === "string" ? LEGACY_BUTTON_VARIANT[props.variant] ?? props.variant : props.variant;
-    return createElement(Inner, variant === props.variant ? props : { ...props, variant });
+    return createElement(Inner, props);
 }
 
 export const Button = renderButton as ComponentType<ButtonProps>;
@@ -566,7 +519,7 @@ function styledSwitchExport(): AnyComponent | null {
     return null;
 }
 
-export const Switch = LazyComponent("Switch", () => styledSwitchExport() ?? findExportedComponent("Switch")) as unknown as ComponentType<SwitchProps>;
+export const Switch = LazyComponent("Switch", styledSwitchExport) as unknown as ComponentType<SwitchProps>;
 
 const tableLazy = createModuleLazy("Table", "TableBody", "TableCell");
 export const Table = tableLazy<TableProps>("Table");

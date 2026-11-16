@@ -13,7 +13,7 @@ const subscribeContextMenu = fn => {
     return () => offs.forEach(o => o());
 };
 const getContextMenuVersion = () => U.getSlotVersion();
-const iconNode = icon => icon == null ? null : typeof icon === "function" ? h(icon, { size: 4 }) : icon;
+const iconNode = icon => icon == null ? null : typeof icon === "function" ? h(icon, { size: 4, width: 16, height: 16 }) : icon;
 
 function run(def, ctx) {
     try { (def.onSelect ?? def.onClick)?.(ctx); } catch (e) { log().error(`菜单项 ${def.id} 出错`, e); }
