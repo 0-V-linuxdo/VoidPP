@@ -14,9 +14,10 @@ import { ErrorBoundary } from "@components/ErrorBoundary";
 import { CircleGaugeIcon } from "@components/icons";
 import { VoidPPDialogShell } from "@components/settings/tabs/VoidPPDialogShell";
 import { getPlanName } from "@turbopack/common/plan";
-import { subscriptionIsCommerce, subscriptionIsPaid, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
 import { React, useCallback, useEffect, useRef, useState } from "@turbopack/common/react";
 import { RoutingStore, SessionStore } from "@turbopack/common/stores";
+import { subscriptionIsCommerce, subscriptionIsPaid, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
+import { onModuleLoad } from "@turbopack/patchTurbopack";
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
@@ -131,6 +132,7 @@ const state: UsageState = {
 
 let refreshPromise: Promise<boolean> | null = null;
 let unsubRoute: (() => void) | null = null;
+let unlistenRoute: (() => void) | null = null;
 
 function isBotPage(): boolean {
     try {
@@ -762,20 +764,36 @@ export default definePlugin({
 
     start() {
         migrateUsageStats();
-        try {
-            unsubRoute = RoutingStore.useRoutingStore.subscribe(s => s.route.page, (page, prev) => {
+        const bindRoute = () => {
+            const hook = RoutingStore.useRoutingStore;
+            if (typeof hook?.subscribe !== "function") return false;
+            unsubRoute = hook.subscribe(s => s.route.page, (page, prev) => {
                 if (page === prev) return;
                 syncAccount();
                 void refresh("route");
             });
+            return true;
+        };
+        try {
+            if (bindRoute()) return;
         } catch (error) {
             logger.warn("RoutingStore subscribe failed", error);
         }
+        unlistenRoute = onModuleLoad(() => {
+            if (unsubRoute) return;
+            try {
+                bindRoute();
+            } catch (error) {
+                logger.warn("RoutingStore subscribe failed", error);
+            }
+        });
     },
 
     stop() {
         unsubRoute?.();
         unsubRoute = null;
+        unlistenRoute?.();
+        unlistenRoute = null;
     },
 
     chatBarButton: { ...BUTTON_BASE, tooltip: () => <SafeUsagePanel /> },

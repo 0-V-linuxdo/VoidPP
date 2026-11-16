@@ -25,7 +25,7 @@ import { proxyLazy } from "@utils/lazy";
 
 import { getFnSource } from "../fnSource";
 import { getRuntimeModuleCache } from "../patchTurbopack";
-import { find, findByPropsLazy, isZustandStore, requireModule, search } from "../turbopack";
+import { find, findByProps, findByPropsLazy, findStore, isZustandStore, requireModule, search } from "../turbopack";
 
 export const ChatPageStore: ChatPageStoreModule = findByPropsLazy("useChatPageStore");
 export const ConversationStore: ConversationStoreModule = findByPropsLazy("useConversationStore", "createOptimisticConversation");
@@ -64,8 +64,8 @@ function isModesHook(value: unknown): value is ModesStoreModule["useModesStore"]
 function isRoutingHook(value: unknown): value is RoutingStoreModule["useRoutingStore"] {
     if (!isZustandStore(value)) return false;
     try {
-        const state = value.getState() as { route?: { page?: unknown }; push?: unknown };
-        return !!state?.route && typeof state.route === "object" && "page" in state.route && typeof state.push === "function";
+        const state = value.getState() as { route?: unknown };
+        return !!state && typeof state.route === "object" && state.route !== null;
     } catch {
         return false;
     }
@@ -88,6 +88,10 @@ export const ModesStore: ModesStoreModule = proxyLazy(() => {
 }, Infinity);
 export const ResponseStore: ResponseStoreModule = findByPropsLazy("useResponseStore", "createOptimisticResponse");
 export const RoutingStore: RoutingStoreModule = proxyLazy(() => {
+    const named = findStore("Routing");
+    if (isRoutingHook(named)) return { useRoutingStore: named };
+    const labeled = find((mod: Record<string, unknown>) => typeof mod?.useRoutingStore === "function") as { useRoutingStore?: RoutingStoreModule["useRoutingStore"] } | null;
+    if (typeof labeled?.useRoutingStore === "function") return { useRoutingStore: labeled.useRoutingStore };
     const hook = hookFromFactory("useRoutingStore", isRoutingHook);
     return hook ? { useRoutingStore: hook } : null;
 }, Infinity);
@@ -191,10 +195,16 @@ export const PluginsDialogStore: { usePluginsDialogStore: PluginsDialogHook } = 
     const hook = pluginsDialogHook();
     return hook ? { usePluginsDialogStore: hook } : null;
 }, Infinity);
-export const SettingsStore: SettingsStoreModule = findByPropsLazy("useSettingsStore", "modelConfigOverrideSchema");
+export const SettingsStore: SettingsStoreModule = proxyLazy(() => {
+    const mod = findByProps("useSettingsStore", "modelConfigOverrideSchema")
+        ?? findByProps("useSettingsStore");
+    return typeof mod?.useSettingsStore === "function" ? mod : null;
+}, Infinity);
 export const SubscriptionsStore: SubscriptionsStoreModule = findByPropsLazy("useSubscriptionsStore");
 export const TextToSpeechStore: TextToSpeechStoreModule = findByPropsLazy("useTextToSpeechStore");
 export const MessageStore: MessageStoreModule = proxyLazy(() => {
-    const hook = hookFromFactory("useMessageStore", isMessageHook);
+    const named = findStore("Message");
+    const hook = (isMessageHook(named) ? named : null)
+        ?? hookFromFactory("useMessageStore", isMessageHook);
     return hook ? { useMessageStore: hook } : null;
 }, Infinity);

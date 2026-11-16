@@ -841,13 +841,19 @@ export default definePlugin({
                     // Desktop shell: the mode div is one grid cell on the inline row
                     // (`display:contents` on the controls row). A sibling array becomes
                     // another row and the fixed-height pill clips the field above the border.
+                    match: /("data-query-bar-mode-select":"",[\s\S]{0,500}?children:)(\i)(\})/,
+                    replace: "$1[$self.renderPinned(),$2]$3",
+                },
+                {
                     match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:)(\i)(\}\):null)/,
                     replace: "$1[$self.renderPinned(),$2]$3",
+                    noWarn: true,
                 },
             ],
         },
         {
             find: "dictation_button_click",
+            noWarn: true,
             replacement: [
                 {
                     // Idle/acquiring dictate control. Recording cancel/finish returns earlier.

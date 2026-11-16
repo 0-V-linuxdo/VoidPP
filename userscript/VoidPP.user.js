@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.48
+// @version      20261114.49
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.48" : "0.0.0";
+  var VERSION = true ? "20261114.49" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -2236,8 +2236,8 @@ try {
         find: "desktop-shell.settings.search-label",
         all: true,
         replacement: {
-          match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.X\[(\i)\.id\]\}\)/g,
-          replace: "leading:$self._navLeading($4.id)||(0,$1.jsx)($2.f,{name:$3.X[$4.id]})"
+          match: /leading:\(0,(\i)\.jsx\)\((\i(?:\.\i)?),\{name:(\i(?:\.\i)?)\[(\i)\.id\]\}/g,
+          replace: "leading:$self._navLeading($4.id)||(0,$1.jsx)($2,{name:$3[$4.id]}"
         }
       },
       {
@@ -3200,6 +3200,7 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   var findByProps = (...keys4) => call("findByProps", ...keys4);
   var findComponentByCode = (...code) => call("findComponentByCode", ...code);
   var findExportedComponent = (...names) => call("findExportedComponent", ...names);
+  var findStore2 = (name) => call("findStore", name);
   var requireModule = (id) => call("requireModule", id);
   var search = (...a3) => call("search", ...a3) ?? {};
   var isZustandStore2 = (val2) => {
@@ -3932,7 +3933,7 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
     if (!isZustandStore2(value)) return false;
     try {
       const state4 = value.getState();
-      return !!state4?.route && typeof state4.route === "object" && "page" in state4.route && typeof state4.push === "function";
+      return !!state4 && typeof state4.route === "object" && state4.route !== null;
     } catch {
       return false;
     }
@@ -3952,6 +3953,10 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   }, Infinity);
   var ResponseStore = findByPropsLazy("useResponseStore", "createOptimisticResponse");
   var RoutingStore = proxyLazy(() => {
+    const named = findStore2("Routing");
+    if (isRoutingHook(named)) return { useRoutingStore: named };
+    const labeled = find2((mod) => typeof mod?.useRoutingStore === "function");
+    if (typeof labeled?.useRoutingStore === "function") return { useRoutingStore: labeled.useRoutingStore };
     const hook3 = hookFromFactory("useRoutingStore", isRoutingHook);
     return hook3 ? { useRoutingStore: hook3 } : null;
   }, Infinity);
@@ -4034,11 +4039,15 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
     const hook3 = pluginsDialogHook();
     return hook3 ? { usePluginsDialogStore: hook3 } : null;
   }, Infinity);
-  var SettingsStore2 = findByPropsLazy("useSettingsStore", "modelConfigOverrideSchema");
+  var SettingsStore2 = proxyLazy(() => {
+    const mod = findByProps("useSettingsStore", "modelConfigOverrideSchema") ?? findByProps("useSettingsStore");
+    return typeof mod?.useSettingsStore === "function" ? mod : null;
+  }, Infinity);
   var SubscriptionsStore = findByPropsLazy("useSubscriptionsStore");
   var TextToSpeechStore = findByPropsLazy("useTextToSpeechStore");
   var MessageStore = proxyLazy(() => {
-    const hook3 = hookFromFactory("useMessageStore", isMessageHook);
+    const named = findStore2("Message");
+    const hook3 = (isMessageHook(named) ? named : null) ?? hookFromFactory("useMessageStore", isMessageHook);
     return hook3 ? { useMessageStore: hook3 } : null;
   }, Infinity);
 
@@ -7397,13 +7406,19 @@ html.void-cms-picked .void-cms-ghost {
             // Desktop shell: the mode div is one grid cell on the inline row
             // (`display:contents` on the controls row). A sibling array becomes
             // another row and the fixed-height pill clips the field above the border.
-            match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:)(\i)(\}\):null)/,
+            match: /("data-query-bar-mode-select":"",[\s\S]{0,500}?children:)(\i)(\})/,
             replace: "$1[$self.renderPinned(),$2]$3"
+          },
+          {
+            match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:)(\i)(\}\):null)/,
+            replace: "$1[$self.renderPinned(),$2]$3",
+            noWarn: true
           }
         ]
       },
       {
         find: "dictation_button_click",
+        noWarn: true,
         replacement: [
           {
             // Idle/acquiring dictate control. Recording cancel/finish returns earlier.
@@ -14736,7 +14751,7 @@ html.void-cms-picked .void-cms-ghost {
   });
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/compactLibrary.css
-  registerStyle("compactLibrary", '/*\n * Void++, a modification for grok.com\n * Copyright (c) 2026 Void++ Contributors\n * SPDX-License-Identifier: GPL-3.0-or-later\n */\n\n/* stylelint-disable number-max-precision, property-no-deprecated */\n\nhtml.void-sb-clib #app-sidebar {\n    anchor-name: --void-sb;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n    position: absolute;\n    top: 12px;\n    inset-inline-start: 48px;\n    z-index: 4;\n    box-sizing: border-box;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    max-width: 32px;\n    padding: 0 !important;\n    margin: 0 !important;\n    justify-content: center !important;\n    gap: 0 !important;\n    overflow: hidden;\n    border-radius: 8px;\n    color: var(--grok-text-secondary, var(--fg-secondary)) !important;\n    box-shadow: none !important;\n    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n        position: fixed;\n        position-anchor: --void-sb;\n        inset: calc(anchor(top) + 12px) auto auto calc(anchor(left) + 48px);\n    }\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;\n    color: var(--grok-text-primary, var(--fg-primary)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):focus-visible {\n    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):active {\n    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) svg {\n    width: 20px !important;\n    height: 20px !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-sidebar-item-label],\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-slot="sidebar-item-shortcut"] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {\n    position: absolute !important;\n    top: 12px !important;\n    inset-inline: auto !important;\n    left: calc(254px - 44px) !important;\n}\n\nhtml.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {\n    left: calc(254px - 80px) !important;\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {\n        position-anchor: --void-sb;\n        left: calc(anchor(right) - 44px) !important;\n        right: auto !important;\n    }\n\n    html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {\n        left: calc(anchor(right) - 80px) !important;\n    }\n}\n');
+  registerStyle("compactLibrary", '/*\n * Void++, a modification for grok.com\n * Copyright (c) 2026 Void++ Contributors\n * SPDX-License-Identifier: GPL-3.0-or-later\n */\n\n/* stylelint-disable number-max-precision, property-no-deprecated, no-descending-specificity */\n\nhtml.void-sb-clib #app-sidebar {\n    anchor-name: --void-sb;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n    position: absolute;\n    top: 12px;\n    inset-inline-start: 48px;\n    z-index: 4;\n    box-sizing: border-box;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    max-width: 32px;\n    padding: 0 !important;\n    margin: 0 !important;\n    justify-content: center !important;\n    gap: 0 !important;\n    overflow: hidden;\n    border-radius: 8px;\n    color: var(--grok-text-secondary, var(--fg-secondary)) !important;\n    box-shadow: none !important;\n    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n        position: fixed;\n        position-anchor: --void-sb;\n        inset: calc(anchor(top) + 12px) auto auto calc(anchor(left) + 48px);\n    }\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;\n    color: var(--grok-text-primary, var(--fg-primary)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):focus-visible {\n    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):active {\n    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) svg {\n    width: 20px !important;\n    height: 20px !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-sidebar-item-label],\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-slot="sidebar-item-shortcut"] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {\n    position: fixed !important;\n    top: 12px !important;\n    inset-inline: auto !important;\n    left: calc(254px - 44px) !important;\n    right: auto !important;\n    z-index: 5;\n    box-sizing: border-box;\n    display: inline-flex !important;\n    align-items: center;\n    justify-content: center;\n    width: 32px !important;\n    height: 32px !important;\n    min-width: 32px !important;\n    min-height: 32px !important;\n    max-width: 32px !important;\n    margin: 0 !important;\n    padding: 0 !important;\n    overflow: hidden;\n    visibility: visible !important;\n    opacity: 1 !important;\n    pointer-events: auto !important;\n    gap: 0 !important;\n    border-radius: 8px;\n    background: transparent !important;\n    box-shadow: none !important;\n    color: var(--grok-text-secondary, var(--fg-secondary)) !important;\n    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;\n    color: var(--grok-text-primary, var(--fg-primary)) !important;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):focus-visible {\n    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):active {\n    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;\n}\n\nhtml.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {\n    left: calc(254px - 80px) !important;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) svg {\n    width: 16px !important;\n    height: 16px !important;\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {\n        position: fixed !important;\n        position-anchor: --void-sb;\n        top: calc(anchor(top) + 12px) !important;\n        left: calc(anchor(right) - 44px) !important;\n        right: auto !important;\n        z-index: 5;\n    }\n\n    html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {\n        left: calc(anchor(right) - 80px) !important;\n        right: auto !important;\n    }\n}\n');
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/compactNewChat.css
   registerStyle("compactNewChat", `/*
@@ -23155,7 +23170,23 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
             replace: "false"
           },
           {
+            match: /\(0,\i(?:\.\i)?\)\("\/api\/log_metric",\i\)/g,
+            replace: "false"
+          },
+          {
+            match: /\(0,\i(?:\.\i)?\)\("\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)\)/g,
+            replace: "false"
+          },
+          {
             match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/g,
+            replace: "void 0"
+          },
+          {
+            match: /(?:navigator|\i)\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\](?:,\{[^}]*\})?\)\)/g,
+            replace: "void 0"
+          },
+          {
+            match: /(?:navigator|\i)\.sendBeacon\("\/api\/log_metric",\i\)/g,
             replace: "void 0"
           }
         ]
@@ -27118,6 +27149,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   };
   var refreshPromise = null;
   var unsubRoute2 = null;
+  var unlistenRoute = null;
   function isBotPage() {
     try {
       return RoutingStore.useRoutingStore.getState().route?.page === "bot";
@@ -27604,19 +27636,35 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     settings: settings33,
     start() {
       migrateUsageStats();
-      try {
-        unsubRoute2 = RoutingStore.useRoutingStore.subscribe((s3) => s3.route.page, (page2, prev) => {
+      const bindRoute = () => {
+        const hook3 = RoutingStore.useRoutingStore;
+        if (typeof hook3?.subscribe !== "function") return false;
+        unsubRoute2 = hook3.subscribe((s3) => s3.route.page, (page2, prev) => {
           if (page2 === prev) return;
           syncAccount();
           void refresh("route");
         });
+        return true;
+      };
+      try {
+        if (bindRoute()) return;
       } catch (error) {
         logger37.warn("RoutingStore subscribe failed", error);
       }
+      unlistenRoute = onModuleLoad(() => {
+        if (unsubRoute2) return;
+        try {
+          bindRoute();
+        } catch (error) {
+          logger37.warn("RoutingStore subscribe failed", error);
+        }
+      });
     },
     stop() {
       unsubRoute2?.();
       unsubRoute2 = null;
+      unlistenRoute?.();
+      unlistenRoute = null;
     },
     chatBarButton: { ...BUTTON_BASE, tooltip: () => /* @__PURE__ */ h(SafeUsagePanel, null) },
     events: {
@@ -30841,7 +30889,7 @@ ${orphaned.join("\n")}`);
     const m3 = find3(exportedComponentFilter(names));
     return m3 ? pickExported(names)(m3) : null;
   }
-  function findStore2(name) {
+  function findStore3(name) {
     const key = storeKey(name);
     const m3 = find3((v3) => isZustandStore3(v3[key]));
     return m3 ? m3[key] : null;
@@ -33181,7 +33229,7 @@ ${orphaned.join("\n")}`);
           unsub2 = store4.subscribe(handler2);
         }
       };
-      const store3 = findStore2(storeName);
+      const store3 = findStore3(storeName);
       let cancelWait = null;
       if (store3) attach2(store3);
       else cancelWait = waitFor2(filters2.byStoreName(storeName), (m3) => {
@@ -37852,7 +37900,7 @@ uspp-voidpp-root > *, .uspp-voidpp-shadow-mount > * { pointer-events: auto; }
       findByDisplayName,
       findComponentByCode: findComponentByCode2,
       findExportedComponent: findExportedComponent2,
-      findStore: findStore2,
+      findStore: findStore3,
       findLazy,
       findByPropsLazy: findByPropsLazy2,
       findByCodeLazy,
