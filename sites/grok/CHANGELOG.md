@@ -1,3 +1,7 @@
+## 20261114.48
+
+- BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`.
+
 ## 20261114.47
 
 - BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on.
