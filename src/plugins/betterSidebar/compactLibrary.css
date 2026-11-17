@@ -11,11 +11,13 @@ html.void-sb-clib #app-sidebar {
     anchor-name: --void-sb;
 }
 
-html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {
-    position: absolute;
-    top: 12px;
-    inset-inline-start: 48px;
-    z-index: 4;
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href^="#icon-"][href$="-library"])) {
+    position: fixed !important;
+    top: 12px !important;
+    left: 48px !important;
+    right: auto !important;
+    inset-inline-start: 48px !important;
+    z-index: 6;
     box-sizing: border-box;
     width: 32px;
     height: 32px;
@@ -33,26 +35,26 @@ html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], butt
     transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);
 }
 
-html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):is(:hover, :focus-visible) {
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href^="#icon-"][href$="-library"])):is(:hover, :focus-visible) {
     background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;
     color: var(--grok-text-primary, var(--fg-primary)) !important;
 }
 
-html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):focus-visible {
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href^="#icon-"][href$="-library"])):focus-visible {
     box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;
 }
 
-html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):active {
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href^="#icon-"][href$="-library"])):active {
     background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;
 }
 
-html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) svg {
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href^="#icon-"][href$="-library"])) svg {
     width: 20px !important;
     height: 20px !important;
 }
 
-html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-sidebar-item-label],
-html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-slot="sidebar-item-shortcut"] {
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href^="#icon-"][href$="-library"])) [data-sidebar-item-label],
+html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href^="#icon-"][href$="-library"])) [data-slot="sidebar-item-shortcut"] {
     position: absolute;
     width: 1px;
     height: 1px;

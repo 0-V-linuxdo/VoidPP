@@ -44,7 +44,7 @@ function ChatBarButton({ def }) {
         if (def.popover) setOpen(o => !o);
     };
     const IB = common.DesktopButton;
-    const hoverBind = tooltipNode ? { onPointerEnter: holdHover, onPointerLeave: releaseHover } : {};
+    const hoverBind = tooltipNode ? { onPointerEnter: holdHover, onPointerLeave: releaseHover, onMouseEnter: holdHover, onMouseLeave: releaseHover } : {};
     const fallback = h("button", {
         ref, type: "button", className: U.classes("uspp-chatbar-btn", def.className), "data-active": String(active),
         "aria-label": label, title: typeof tooltip === "string" ? tooltip : undefined, disabled, onClick, ...hoverBind,

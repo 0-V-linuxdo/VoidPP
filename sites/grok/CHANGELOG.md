@@ -1,3 +1,9 @@
+## 20261114.58
+
+- Mode pins: paint Heavy/Build even when Modes/Routing hooks are still unresolved. Drop `ensureLoaded` from the Modes shape check. Wrap desktop `"data-query-bar-mode-select"` children from that literal.
+- Overlay Library is `position:fixed` at 48px with no `position-anchor` (in-sidebar `absolute` sat in a nav containing block and never reached the header).
+- Usage hover panel also opens on `mouseenter` so a real mouse move shows it.
+
 ## 20261114.57
 
 - Guard regex `find`s that start with `\i` or a character class in `grok-chunk-bench` and the build. Warn `\i`-start `match`es; start log_metric and settings-tab filter on a literal.

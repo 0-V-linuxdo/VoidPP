@@ -89,12 +89,11 @@ function hookFromFactory<T>(label: string, accept: (value: unknown) => value is 
 function isModesHook(value: unknown): value is ModesStoreModule["useModesStore"] {
     if (!isZustandStore(value)) return false;
     try {
-        const state = value.getState() as { selectedModeId?: unknown; setSelectedModeId?: unknown; ensureLoaded?: unknown };
+        const state = value.getState() as { selectedModeId?: unknown; setSelectedModeId?: unknown };
         return !!state
             && typeof state === "object"
             && "selectedModeId" in state
-            && typeof state.setSelectedModeId === "function"
-            && typeof state.ensureLoaded === "function";
+            && typeof state.setSelectedModeId === "function";
     } catch {
         return false;
     }
@@ -104,7 +103,7 @@ function isRoutingHook(value: unknown): value is RoutingStoreModule["useRoutingS
     if (!isZustandStore(value)) return false;
     try {
         const state = value.getState() as { route?: { page?: unknown }; push?: unknown };
-        return !!state?.route && typeof state.route === "object" && "page" in state.route && typeof state.push === "function";
+        return !!state?.route && typeof state.route === "object" && "page" in state.route;
     } catch {
         return false;
     }

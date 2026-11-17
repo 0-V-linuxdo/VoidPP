@@ -14,7 +14,6 @@ import type { ModesStoreState } from "@grok-types/stores/ModesStore";
 import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
 import { React } from "@turbopack/common/react";
 import { ChatPageStore, MessageStore, ModesStore, RoutingStore, SettingsStore as GrokSettings } from "@turbopack/common/stores";
-import { onModuleLoad } from "@turbopack/patchTurbopack";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
 import { Logger } from "@utils/Logger";
@@ -272,7 +271,7 @@ function inIncognito(): boolean {
 function privateBuild(): boolean {
     if (inIncognito()) return true;
     try {
-        const {route} = RoutingStore.useRoutingStore.getState();
+        const { route } = RoutingStore.useRoutingStore.getState();
         if (route?.temporary) return true;
         let cid = String(route?.conversationId || "");
         const chatHook = ChatPageStore.useChatPageStore;
@@ -717,7 +716,7 @@ function useStoreSlice<T>(hook: unknown, sel: (state: any) => T, fallback: T): T
 }
 
 function storesReady() {
-    return isStoreHook(ModesStore.useModesStore) && isStoreHook(RoutingStore.useRoutingStore);
+    return isStoreHook(ModesStore.useModesStore);
 }
 
 function PinnedModes() {
@@ -762,15 +761,21 @@ function PinnedModes() {
 }
 
 function PinnedHost() {
-    const ready = storesReady();
     const [, bump] = React.useState(0);
     React.useEffect(() => {
-        if (ready) return;
-        return onModuleLoad(() => {
-            if (storesReady()) bump(n => n + 1);
-        });
-    }, [ready]);
-    if (!ready) return null;
+        if (storesReady()) return;
+        const t = setInterval(() => {
+            if (storesReady()) {
+                clearInterval(t);
+                bump(n => n + 1);
+            }
+        }, 400);
+        const stop = setTimeout(() => clearInterval(t), 8000);
+        return () => {
+            clearInterval(t);
+            clearTimeout(stop);
+        };
+    }, []);
     return <PinnedModes />;
 }
 
@@ -788,7 +793,10 @@ export default definePlugin({
     start() {
         try {
             const hook = ModesStore.useModesStore;
-            if (typeof hook === "function") void hook.getState().ensureLoaded();
+            if (typeof hook === "function") {
+                const load = hook.getState()?.ensureLoaded;
+                if (typeof load === "function") void load();
+            }
         } catch (e) {
             logger.debug("modes not ready", e);
         }
@@ -844,10 +852,12 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
-                    // Desktop shell: the mode div is one grid cell on the inline row
-                    // (`display:contents` on the controls row). A sibling array becomes
-                    // another row and the fixed-height pill clips the field above the border.
                     match: /(em\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:)(\i)(\}\):null)/,
+                    replace: "$1[$self.renderPinned(),$2]$3",
+                    noWarn: true,
+                },
+                {
+                    match: /("data-query-bar-mode-select":"",.{0,500}?children:)(\i)(}\):null)/,
                     replace: "$1[$self.renderPinned(),$2]$3",
                 },
             ],
