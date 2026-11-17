@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.56
+// @version      20261114.57
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.56", date: null, notes: ["Patch ReDoS: Method A logged 123 StableComposer regex finds (`\\i)=[` on every prefiltered factory); Method B timed those plus TurnTail / ENABLE / sidebar-chats / unbounded `[\\s\\S]*?` out at 3s on 100k+ factories. Drop the `\\i` find, start remaining matches on a literal, bound `[\\s\\S]*?` / `[^]*?`, and delete the tempered-greedy `mode-select` wrap."] }, { version: "20261114.55", date: null, notes: ["CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS."] }, { version: "20261114.54", date: null, notes: ["`.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.", "BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\\i`, never hit, and scanned every factory (~38s in the chunk bench)."] }, { version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.57", date: null, notes: ["Guard regex `find`s that start with `\\i` or a character class in `grok-chunk-bench` and the build. Warn `\\i`-start `match`es; start log_metric and settings-tab filter on a literal.", "Mode pins: stop gating `PinnedHost` on `SettingsStore` (`modelConfigOverrideSchema` lives on another module). Read Modes/Routing via `getState`. Hide native Heavy.", "Usage hover: Grok `IconButton` tooltip is a string; node panels open from GrokChatBar pointerenter.", "Overlay Search is a 32px ghost 4px left of compact + (`position:fixed` + sidebar anchor). Library stays `absolute` so that pair cannot hang layout. Dead Cleaner/ConnectorsFlyout/UserQuotes finds are `noWarn`. Desktop settings `shownTab` follows the live inline resolver."] }, { version: "20261114.56", date: null, notes: ["Patch ReDoS: Method A logged 123 StableComposer regex finds (`\\i)=[` on every prefiltered factory); Method B timed those plus TurnTail / ENABLE / sidebar-chats / unbounded `[\\s\\S]*?` out at 3s on 100k+ factories. Drop the `\\i` find, start remaining matches on a literal, bound `[\\s\\S]*?` / `[^]*?`, and delete the tempered-greedy `mode-select` wrap."] }, { version: "20261114.55", date: null, notes: ["CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS."] }, { version: "20261114.54", date: null, notes: ["`.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.", "BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\\i`, never hit, and scanned every factory (~38s in the chunk bench)."] }, { version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.56" : "0.0.0";
+  var VERSION = true ? "20261114.57" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -2219,13 +2219,13 @@ try {
         find: "registryTabs",
         replacement: [
           {
-            match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
-            replace: "[...$&,...$self._tabEntries()]",
+            match: /\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
+            replace: "$&.concat($self._tabEntries())",
             noWarn: true
           },
           {
-            match: /\i(?:\.\i)?\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
-            replace: "[...$&,...$self._tabEntries()]"
+            match: /\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
+            replace: "$&.concat($self._tabEntries())"
           },
           {
             match: /(\["general","grok","payments","data","other"),("team-management"\])/,
@@ -2254,8 +2254,13 @@ try {
         find: '"DesktopSettingsDialog",0,function',
         replacement: [
           {
+            match: /function\(\{activeTab:\i,open:\i,requestedTab:\i,hostedSection:\i\}\)\{let \i=\(0,(\i)\.(\i)\)\(\i\);return \i&&\(0,(\i)\.(\i)\)\(\i\)\?\i:\i\|\|null===\i\?\i:\i\}\(\{activeTab:(\i),open:(\i),requestedTab:(\i),hostedSection:(\i)\?\?(\i)\?\?null\}\)/,
+            replace: "$self._resolveShownTab({activeTab:$5,open:$6,requestedTab:$7,hostedSection:$8??$9??null,normalized:(0,$1.$2)($7),isHosted:e=>(0,$3.$4)(e)})"
+          },
+          {
             match: /let (\i)=\(0,(\i)\.z\)\((\i)\);return (\i)&&\(0,(\i)\.K\)\(\1\)\?\1:\4\|\|null===(\i)\?(\i):\6/,
-            replace: "let $1=(0,$2.z)($3);return $self._resolveShownTab({activeTab:$7,open:$4,requestedTab:$3,hostedSection:$6,normalized:$1,isHosted:$5.K})"
+            replace: "let $1=(0,$2.z)($3);return $self._resolveShownTab({activeTab:$7,open:$4,requestedTab:$3,hostedSection:$6,normalized:$1,isHosted:$5.K})",
+            noWarn: true
           },
           {
             match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\((\i)\);(\i)&&\1!==\4&&\2\(\4\)([\s\S]{0,1200}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\8\)\),(\i)\[34\]=\9,(\i)\[35\]=\10,(\i)\[36\]=\7/,
@@ -2752,12 +2757,12 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   var SLOT = "chatBar";
   var val = (v3) => typeof v3 === "function" ? v3() : v3;
   var nodeOf = (v3) => v3 == null ? null : typeof v3 === "function" ? v3() : v3;
-  function Popover({ anchor, content, onClose }) {
+  function Popover({ anchor, content, onClose, onPointerEnter, onPointerLeave }) {
     const ref = useRef2(null);
     const [pos, setPos] = useState2(null);
     useEffect2(() => {
       const r3 = anchor.getBoundingClientRect();
-      setPos({ left: Math.max(8, Math.min(r3.left, innerWidth - 260)), bottom: innerHeight - r3.top + 8 });
+      setPos({ left: Math.max(8, Math.min(r3.left, innerWidth - 320)), bottom: innerHeight - r3.top + 8 });
       const onDown = (e3) => {
         if (!ref.current?.contains(e3.target) && !anchor.contains(e3.target)) onClose();
       };
@@ -2772,17 +2777,28 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
       };
     }, []);
     const RD = common.ReactDOM;
-    const el = h4("div", { ref, className: "uspp-voidpp-popover", style: pos ? { left: pos.left, bottom: pos.bottom } : { visibility: "hidden" } }, content);
+    const el = h4("div", { ref, className: "uspp-voidpp-popover", style: pos ? { left: pos.left, bottom: pos.bottom } : { visibility: "hidden" }, onPointerEnter, onPointerLeave }, content);
     return RD?.createPortal ? RD.createPortal(el, document.body) : el;
   }
   function ChatBarButton({ def: def2 }) {
     const [open4, setOpen2] = useState2(false);
+    const [hover, setHover] = useState2(false);
     const ref = useRef2(null);
+    const hoverTimer2 = useRef2(0);
     const disabled = !!val(def2.disabled);
     const active3 = !!val(def2.active);
     const icon = nodeOf(def2.icon);
     const tooltip = nodeOf(def2.tooltip);
+    const tooltipNode = tooltip != null && typeof tooltip !== "string";
     const label = def2["aria-label"] ?? (typeof tooltip === "string" ? tooltip : def2.id);
+    const holdHover = () => {
+      clearTimeout(hoverTimer2.current);
+      setHover(true);
+    };
+    const releaseHover = () => {
+      hoverTimer2.current = setTimeout(() => setHover(false), 160);
+    };
+    useEffect2(() => () => clearTimeout(hoverTimer2.current), []);
     const onClick3 = (e3) => {
       try {
         (def2.onClick ?? def2.onSelect)?.(e3);
@@ -2792,6 +2808,7 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
       if (def2.popover) setOpen2((o3) => !o3);
     };
     const IB = common.DesktopButton;
+    const hoverBind = tooltipNode ? { onPointerEnter: holdHover, onPointerLeave: releaseHover } : {};
     const fallback = h4("button", {
       ref,
       type: "button",
@@ -2800,21 +2817,28 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
       "aria-label": label,
       title: typeof tooltip === "string" ? tooltip : void 0,
       disabled,
-      onClick: onClick3
+      onClick: onClick3,
+      ...hoverBind
     }, icon ?? def2.label);
-    const btn = IB ? h4("span", { ref, style: { display: "inline-flex" } }, h4(ErrorBoundary2, { fallback }, h4(IB, {
+    const btn = IB ? h4("span", { ref, style: { display: "inline-flex" }, ...hoverBind }, h4(ErrorBoundary2, { fallback }, h4(IB, {
       variant: def2.variant ?? "ghost",
       size: def2.size ?? "lg",
       shape: def2.shape ?? "circle",
       "aria-label": label,
-      tooltip: tooltip ? { content: tooltip } : void 0,
+      tooltip: typeof tooltip === "string" ? { content: tooltip } : void 0,
       disabled,
       onClick: onClick3,
       "aria-pressed": active3 || void 0,
       className: def2.className,
       "data-uspp-voidpp-chatbar-button": def2.id
     }, icon ?? def2.label))) : fallback;
-    return h4(Fragment2, null, btn, open4 && ref.current && h4(Popover, { anchor: ref.current, content: nodeOf(def2.popover), onClose: () => setOpen2(false) }));
+    return h4(
+      Fragment2,
+      null,
+      btn,
+      open4 && ref.current && h4(Popover, { anchor: ref.current, content: nodeOf(def2.popover), onClose: () => setOpen2(false) }),
+      hover && tooltipNode && ref.current && h4(Popover, { anchor: ref.current, content: tooltip, onClose: () => setHover(false), onPointerEnter: holdHover, onPointerLeave: releaseHover })
+    );
   }
   var subscribeChatBar = slotSubscriber(SLOT);
   var buttonsAt = (location2) => U3.getSlotItems(SLOT).filter((b3) => (b3.locations && b3.locations.length ? b3.locations : ["chat"]).includes(location2));
@@ -3306,6 +3330,7 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   var findByProps = (...keys4) => call("findByProps", ...keys4);
   var findComponentByCode = (...code) => call("findComponentByCode", ...code);
   var findExportedComponent = (...names) => call("findExportedComponent", ...names);
+  var findStore2 = (name) => call("findStore", name);
   var requireModule = (id) => call("requireModule", id);
   var search = (...a3) => a3.length && a3.every((x4) => typeof x4 === "string" || x4 instanceof RegExp) ? searchFactories(...a3) : call("search", ...a3) ?? {};
   var isZustandStore2 = (val2) => {
@@ -3973,16 +3998,35 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
   var hookHit = /* @__PURE__ */ new Map();
   var didLegacy = /* @__PURE__ */ new Set();
   var inspected = /* @__PURE__ */ new Set();
+  function moduleValues(id) {
+    const num2 = Number(id);
+    const required = requireModule(num2);
+    const runtime2 = getRuntimeModuleCache()?.[num2];
+    const bags = [required, runtime2?.namespaceObject, runtime2?.exports];
+    const out = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const bag of bags) {
+      if (!bag || typeof bag !== "object") continue;
+      for (const value of Object.values(bag)) {
+        if (seen.has(value)) continue;
+        seen.add(value);
+        out.push(value);
+      }
+    }
+    return out;
+  }
   function takeFromSearch(label, accept) {
     for (const id of Object.keys(search(label))) {
       const key = `${label}\0${id}`;
-      if (inspected.has(key)) continue;
-      inspected.add(key);
-      const mod = requireModule(Number(id));
-      if (!mod || typeof mod !== "object") continue;
-      for (const value of Object.values(mod)) {
-        if (accept(value)) return value;
+      const values = moduleValues(id);
+      if (!values.length) continue;
+      for (const value of values) {
+        if (accept(value)) {
+          inspected.add(key);
+          return value;
+        }
       }
+      inspected.add(key);
     }
     return null;
   }
@@ -4033,13 +4077,19 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
       return false;
     }
   }
+  function namedOrStore(label, storeName, accept) {
+    const hook3 = hookFromFactory(label, accept);
+    if (hook3) return hook3;
+    const store3 = findStore2(storeName);
+    return accept(store3) ? store3 : null;
+  }
   var ModesStore = proxyLazy(() => {
-    const hook3 = hookFromFactory("useModesStore", isModesHook);
+    const hook3 = namedOrStore("useModesStore", "Modes", isModesHook);
     return hook3 ? { useModesStore: hook3 } : null;
   });
   var ResponseStore = findByPropsLazy("useResponseStore", "createOptimisticResponse");
   var RoutingStore = proxyLazy(() => {
-    const hook3 = hookFromFactory("useRoutingStore", isRoutingHook);
+    const hook3 = namedOrStore("useRoutingStore", "Routing", isRoutingHook);
     return hook3 ? { useRoutingStore: hook3 } : null;
   });
   var SESSION_MARKER = "useSession must be used within SessionStoreProvider";
@@ -4107,11 +4157,25 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
     const hook3 = hookFromFactory("usePluginsDialogStore", isPluginsDialogHook);
     return hook3 ? { usePluginsDialogStore: hook3 } : null;
   });
-  var SettingsStore2 = findByPropsLazy("useSettingsStore", "modelConfigOverrideSchema");
+  function isSettingsHook(value) {
+    if (!isZustandStore2(value)) return false;
+    try {
+      const state4 = value.getState();
+      return !!state4 && typeof state4 === "object" && "isIncognito" in state4;
+    } catch {
+      return false;
+    }
+  }
+  var SettingsStore2 = proxyLazy(() => {
+    const named = findByProps("useSettingsStore");
+    if (named && isSettingsHook(named.useSettingsStore)) return named;
+    const hook3 = namedOrStore("useSettingsStore", "Settings", isSettingsHook);
+    return hook3 ? { useSettingsStore: hook3 } : null;
+  });
   var SubscriptionsStore = findByPropsLazy("useSubscriptionsStore");
   var TextToSpeechStore = findByPropsLazy("useTextToSpeechStore");
   var MessageStore = proxyLazy(() => {
-    const hook3 = hookFromFactory("useMessageStore", isMessageHook);
+    const hook3 = namedOrStore("useMessageStore", "Message", isMessageHook);
     return hook3 ? { useMessageStore: hook3 } : null;
   });
 
@@ -6993,7 +7057,7 @@ html.void-cms-picked .void-cms-ghost {
   function privateBuild() {
     if (inIncognito()) return true;
     try {
-      const route = RoutingStore.useRoutingStore.getState().route;
+      const { route } = RoutingStore.useRoutingStore.getState();
       if (route?.temporary) return true;
       let cid = String(route?.conversationId || "");
       const chatHook = ChatPageStore.useChatPageStore;
@@ -7350,21 +7414,33 @@ html.void-cms-picked .void-cms-ghost {
     if (cur === id) return true;
     return id === "build" && cur.includes("build");
   }
+  function isStoreHook(hook3) {
+    return typeof hook3 === "function" && typeof hook3.getState === "function" && typeof hook3.subscribe === "function";
+  }
+  function useStoreSlice(hook3, sel, fallback) {
+    const store3 = isStoreHook(hook3) ? hook3 : null;
+    const subscribe7 = store3?.subscribe ?? (() => () => {
+    });
+    const get = () => {
+      try {
+        if (!store3) return fallback;
+        return sel(store3.getState());
+      } catch {
+        return fallback;
+      }
+    };
+    return React.useSyncExternalStore(subscribe7, get, () => fallback);
+  }
   function storesReady() {
-    return typeof ModesStore.useModesStore === "function" && typeof RoutingStore.useRoutingStore === "function" && typeof MessageStore.useMessageStore === "function" && typeof SettingsStore2.useSettingsStore === "function";
+    return isStoreHook(ModesStore.useModesStore) && isStoreHook(RoutingStore.useRoutingStore);
   }
   function PinnedModes() {
     const cfg2 = settings5.use([...SETTING_KEYS]);
-    const page2 = RoutingStore.useRoutingStore((s3) => s3.route?.page);
-    const selectedModeId = String(ModesStore.useModesStore((s3) => s3.selectedModeId) || "");
-    const listed = ModesStore.useModesStore((s3) => s3.modes);
+    const page2 = useStoreSlice(RoutingStore.useRoutingStore, (s3) => s3.route?.page, "");
+    const selectedModeId = String(useStoreSlice(ModesStore.useModesStore, (s3) => s3.selectedModeId, "") || "");
+    const listed = useStoreSlice(ModesStore.useModesStore, (s3) => s3.modes, []);
     const catalog = Array.isArray(listed) ? listed : [];
-    const incognito = SettingsStore2.useSettingsStore((s3) => s3.isIncognito);
-    const routeTemporary = RoutingStore.useRoutingStore((s3) => !!s3.route?.temporary);
-    const routeCid2 = RoutingStore.useRoutingStore((s3) => s3.route?.conversationId ?? "");
-    const cid = String(routeCid2 || "");
-    const convTemporary = MessageStore.useMessageStore((s3) => !!(cid && s3.conversations[cid]?.temporary));
-    const hideBuild = !!(incognito || routeTemporary || convTemporary);
+    const hideBuild = privateBuild();
     const knownCatalog = catalog.filter((c3) => KNOWN_IDS.has(c3.id));
     const items = withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg2.pinOrder, cfg2, catalog), hideBuild), hideBuild).map((id) => MODE_BY_ID[id]);
     if (page2 === "bot" || !items.length) return null;
@@ -14811,7 +14887,7 @@ html.void-cms-picked .void-cms-ghost {
   });
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/compactLibrary.css
-  registerStyle("compactLibrary", '/*\n * Void++, a modification for grok.com\n * Copyright (c) 2026 Void++ Contributors\n * SPDX-License-Identifier: GPL-3.0-or-later\n */\n\n/* stylelint-disable number-max-precision, property-no-deprecated, no-descending-specificity */\n\nhtml.void-sb-clib #app-sidebar {\n    anchor-name: --void-sb;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n    position: absolute;\n    top: 12px;\n    inset-inline-start: 48px;\n    z-index: 4;\n    box-sizing: border-box;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    max-width: 32px;\n    padding: 0 !important;\n    margin: 0 !important;\n    justify-content: center !important;\n    gap: 0 !important;\n    overflow: hidden;\n    border-radius: 8px;\n    color: var(--grok-text-secondary, var(--fg-secondary)) !important;\n    box-shadow: none !important;\n    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n        position: fixed;\n        position-anchor: --void-sb;\n        inset: calc(anchor(top) + 12px) auto auto calc(anchor(left) + 48px);\n    }\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;\n    color: var(--grok-text-primary, var(--fg-primary)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):focus-visible {\n    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):active {\n    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) svg {\n    width: 20px !important;\n    height: 20px !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-sidebar-item-label],\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-slot="sidebar-item-shortcut"] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {\n    position: absolute !important;\n    top: 12px !important;\n    inset-inline: auto !important;\n    left: calc(254px - 44px) !important;\n    right: auto !important;\n    z-index: 6;\n    box-sizing: border-box;\n    display: inline-flex !important;\n    align-items: center;\n    justify-content: center !important;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    max-width: 32px;\n    padding: 0 !important;\n    margin: 0 !important;\n    gap: 0 !important;\n    overflow: hidden;\n    border-radius: 8px;\n    color: var(--grok-text-secondary, var(--fg-secondary)) !important;\n    background: transparent !important;\n    box-shadow: none !important;\n    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;\n    color: var(--grok-text-primary, var(--fg-primary)) !important;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):focus-visible {\n    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *):active {\n    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) svg {\n    width: 20px !important;\n    height: 20px !important;\n}\n\nhtml.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {\n    left: calc(254px - 80px) !important;\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *) {\n        position-anchor: --void-sb;\n        left: calc(anchor(right) - 44px) !important;\n        right: auto !important;\n    }\n\n    html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *) {\n        left: calc(anchor(right) - 80px) !important;\n    }\n}\n');
+  registerStyle("compactLibrary", '/*\n * Void++, a modification for grok.com\n * Copyright (c) 2026 Void++ Contributors\n * SPDX-License-Identifier: GPL-3.0-or-later\n */\n\n/* stylelint-disable number-max-precision, property-no-deprecated, no-descending-specificity */\n\nhtml.void-sb-clib #app-sidebar {\n    position: relative;\n    anchor-name: --void-sb;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) {\n    position: absolute;\n    top: 12px;\n    inset-inline-start: 48px;\n    z-index: 4;\n    box-sizing: border-box;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    max-width: 32px;\n    padding: 0 !important;\n    margin: 0 !important;\n    justify-content: center !important;\n    gap: 0 !important;\n    overflow: hidden;\n    border-radius: 8px;\n    color: var(--grok-text-secondary, var(--fg-secondary)) !important;\n    box-shadow: none !important;\n    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;\n    color: var(--grok-text-primary, var(--fg-primary)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):focus-visible {\n    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])):active {\n    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) svg {\n    width: 20px !important;\n    height: 20px !important;\n}\n\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-sidebar-item-label],\nhtml.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href="#icon-xs-library"])) [data-slot="sidebar-item-shortcut"] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n\nhtml.void-sb-clib :is(\n    button[aria-label="Search"]:not(#app-sidebar *),\n    #app-sidebar button[aria-label="Search"],\n    button[aria-label="搜索"]:not(#app-sidebar *),\n    #app-sidebar button:has(use[href="#icon-xs-search"]),\n    #app-sidebar button:has(use[href="#icon-sm-search"])\n) {\n    box-sizing: border-box;\n    display: inline-flex !important;\n    align-items: center;\n    justify-content: center !important;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    max-width: 32px;\n    padding: 0 !important;\n    margin: 0 !important;\n    gap: 0 !important;\n    overflow: hidden;\n    border-radius: 8px;\n    color: var(--grok-text-secondary, var(--fg-secondary)) !important;\n    background: transparent !important;\n    box-shadow: none !important;\n    transition: background-color 0.12s cubic-bezier(0.2, 0, 0, 1), color 0.12s cubic-bezier(0.2, 0, 0, 1);\n}\n\nhtml.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *),\nhtml.void-sb-clib button[aria-label="搜索"]:not(#app-sidebar *) {\n    position: fixed !important;\n    top: 12px !important;\n    left: 176px !important;\n    right: auto !important;\n    z-index: 6;\n}\n\nhtml.void-sb-clib #app-sidebar :is(button[aria-label="Search"], button:has(use[href="#icon-xs-search"]), button:has(use[href="#icon-sm-search"])) {\n    position: absolute;\n    top: 12px;\n    inset-inline-end: 48px;\n    z-index: 4;\n}\n\nhtml.void-sb-clib :is(\n    button[aria-label="Search"]:not(#app-sidebar *),\n    #app-sidebar button[aria-label="Search"],\n    button[aria-label="搜索"]:not(#app-sidebar *),\n    #app-sidebar button:has(use[href="#icon-xs-search"]),\n    #app-sidebar button:has(use[href="#icon-sm-search"])\n):is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover, var(--grok-bg-hover, rgb(255 255 255 / 8%))) !important;\n    color: var(--grok-text-primary, var(--fg-primary)) !important;\n}\n\nhtml.void-sb-clib :is(\n    button[aria-label="Search"]:not(#app-sidebar *),\n    #app-sidebar button[aria-label="Search"],\n    button[aria-label="搜索"]:not(#app-sidebar *),\n    #app-sidebar button:has(use[href="#icon-xs-search"]),\n    #app-sidebar button:has(use[href="#icon-sm-search"])\n):focus-visible {\n    box-shadow: 0 0 0 1px var(--fg-accent, color(srgb 0.0615042 0.517638 0.996113 / 80%)) !important;\n}\n\nhtml.void-sb-clib :is(\n    button[aria-label="Search"]:not(#app-sidebar *),\n    #app-sidebar button[aria-label="Search"],\n    button[aria-label="搜索"]:not(#app-sidebar *),\n    #app-sidebar button:has(use[href="#icon-xs-search"]),\n    #app-sidebar button:has(use[href="#icon-sm-search"])\n):active {\n    background: var(--button-ghost-active, var(--button-ghost-hover, rgb(255 255 255 / 10%))) !important;\n}\n\nhtml.void-sb-clib :is(\n    button[aria-label="Search"]:not(#app-sidebar *),\n    #app-sidebar button[aria-label="Search"],\n    button[aria-label="搜索"]:not(#app-sidebar *),\n    #app-sidebar button:has(use[href="#icon-xs-search"]),\n    #app-sidebar button:has(use[href="#icon-sm-search"])\n) svg {\n    width: 20px !important;\n    height: 20px !important;\n}\n\nhtml.void-sb-clib :is(\n    button[aria-label="Search"]:not(#app-sidebar *),\n    #app-sidebar button[aria-label="Search"],\n    button[aria-label="搜索"]:not(#app-sidebar *),\n    #app-sidebar button:has(use[href="#icon-xs-search"]),\n    #app-sidebar button:has(use[href="#icon-sm-search"])\n) :is([data-sidebar-item-label], [data-slot="sidebar-item-shortcut"]) {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0, 0, 0, 0);\n    white-space: nowrap;\n    border: 0;\n}\n\nhtml.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *),\nhtml.void-sb-clib.void-sb-cnc button[aria-label="搜索"]:not(#app-sidebar *) {\n    left: 176px !important;\n}\n\n@supports (anchor-name: --void-sb) {\n    html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *),\n    html.void-sb-clib button[aria-label="搜索"]:not(#app-sidebar *) {\n        position-anchor: --void-sb;\n        top: calc(anchor(top) + 12px) !important;\n        left: calc(anchor(right) - 44px) !important;\n        right: auto !important;\n    }\n\n    html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *),\n    html.void-sb-clib.void-sb-cnc button[aria-label="搜索"]:not(#app-sidebar *) {\n        left: calc(anchor(right) - 80px) !important;\n    }\n}\n');
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterSidebar/compactNewChat.css
   registerStyle("compactNewChat", `/*
@@ -16593,7 +16669,14 @@ html.void-cms-picked .void-cms-ghost {
         }
       },
       hideComponentPatch("UpsellSuperGrokSmall", "hideUpsellSmall"),
-      hideComponentPatch("UpsellButton", "hideUpsellSmall", false),
+      {
+        find: '"UpsellButton",0,',
+        noWarn: true,
+        replacement: {
+          match: /"UpsellButton",0,/,
+          replace: '"UpsellButton",0,$self.settings.store.hideUpsellSmall?()=>null:'
+        }
+      },
       {
         find: "connect-x-upsell-dismissed",
         noWarn: true,
@@ -16603,7 +16686,8 @@ html.void-cms-picked .void-cms-ghost {
         }
       },
       {
-        find: "x-connector-ready-dismissed",
+        find: "SHOW_X_CONNECTOR_READY_BANNER",
+        noWarn: true,
         replacement: {
           match: /\.SHOW_X_CONNECTOR_READY_BANNER&&/,
           replace: ".SHOW_X_CONNECTOR_READY_BANNER&&!$self.settings.store.hideConnectX&&"
@@ -17910,6 +17994,7 @@ html.void-cms-picked .void-cms-ghost {
       },
       {
         find: "SkillsAndConnectorsPage:handleTabChange",
+        noWarn: true,
         replacement: [
           {
             match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(null\),(\i)=(\i)\?\1:"skills-and-connectors"===(\i)\.page\?\6\.tab:null/,
@@ -23257,18 +23342,26 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
         all: true,
         replacement: [
           {
-            match: /\i\("\/api\/log_metric",\i\)/g,
+            match: /\(0,\i\)\("\/api\/log_metric",\i\)/g,
             replace: "false"
           },
           {
-            match: /\i\("\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)\)/g,
+            match: /[A-Za-z_$][\w$]*\("\/api\/log_metric",\i\)/g,
+            replace: "false"
+          },
+          {
+            match: /\(0,\i\)\("\/api\/log_metric",JSON\.stringify\([^)]*\)\)/g,
             replace: "false",
             noWarn: true
           },
           {
-            match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/g,
-            replace: "void 0",
+            match: /[A-Za-z_$][\w$]*\("\/api\/log_metric",JSON\.stringify\([^)]*\)\)/g,
+            replace: "false",
             noWarn: true
+          },
+          {
+            match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\([^)]*\)\)/g,
+            replace: "void 0"
           }
         ]
       },
@@ -27776,9 +27869,10 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     patches: [
       {
         find: '["###### ",',
+        noWarn: true,
         replacement: {
-          match: /blockquote:(\(\{children:\i\}\)=>\(0,\i\.jsxs?\)\()"p"/,
-          replace: 'blockquote:$1"blockquote"'
+          match: /(blockquote:\(\{children:\i\}\)=>\(0,\i\.jsx\)\()"p"/,
+          replace: '$1"blockquote"'
         }
       }
     ],
@@ -30952,7 +31046,7 @@ ${orphaned.join("\n")}`);
     const m3 = find3(exportedComponentFilter(names));
     return m3 ? pickExported(names)(m3) : null;
   }
-  function findStore2(name) {
+  function findStore3(name) {
     const key = storeKey(name);
     const m3 = find3((v3) => isZustandStore3(v3[key]));
     return m3 ? m3[key] : null;
@@ -33292,7 +33386,7 @@ ${orphaned.join("\n")}`);
           unsub2 = store4.subscribe(handler2);
         }
       };
-      const store3 = findStore2(storeName);
+      const store3 = findStore3(storeName);
       let cancelWait = null;
       if (store3) attach2(store3);
       else cancelWait = waitFor2(filters2.byStoreName(storeName), (m3) => {
@@ -37963,7 +38057,7 @@ uspp-voidpp-root > *, .uspp-voidpp-shadow-mount > * { pointer-events: auto; }
       findByDisplayName,
       findComponentByCode: findComponentByCode2,
       findExportedComponent: findExportedComponent2,
-      findStore: findStore2,
+      findStore: findStore3,
       findLazy,
       findByPropsLazy: findByPropsLazy2,
       findByCodeLazy,

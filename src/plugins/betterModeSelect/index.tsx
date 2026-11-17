@@ -272,7 +272,7 @@ function inIncognito(): boolean {
 function privateBuild(): boolean {
     if (inIncognito()) return true;
     try {
-        const route = RoutingStore.useRoutingStore.getState().route;
+        const {route} = RoutingStore.useRoutingStore.getState();
         if (route?.temporary) return true;
         let cid = String(route?.conversationId || "");
         const chatHook = ChatPageStore.useChatPageStore;
@@ -696,25 +696,37 @@ function chipOn(selected: string, id: string): boolean {
     return id === "build" && cur.includes("build");
 }
 
+function isStoreHook(hook: unknown): hook is { getState: () => unknown; subscribe: (fn: () => void) => () => void } {
+    return typeof hook === "function"
+        && typeof (hook as { getState?: unknown }).getState === "function"
+        && typeof (hook as { subscribe?: unknown }).subscribe === "function";
+}
+
+function useStoreSlice<T>(hook: unknown, sel: (state: any) => T, fallback: T): T {
+    const store = isStoreHook(hook) ? hook : null;
+    const subscribe = store?.subscribe ?? (() => () => {});
+    const get = () => {
+        try {
+            if (!store) return fallback;
+            return sel(store.getState());
+        } catch {
+            return fallback;
+        }
+    };
+    return React.useSyncExternalStore(subscribe, get, () => fallback);
+}
+
 function storesReady() {
-    return typeof ModesStore.useModesStore === "function"
-        && typeof RoutingStore.useRoutingStore === "function"
-        && typeof MessageStore.useMessageStore === "function"
-        && typeof GrokSettings.useSettingsStore === "function";
+    return isStoreHook(ModesStore.useModesStore) && isStoreHook(RoutingStore.useRoutingStore);
 }
 
 function PinnedModes() {
     const cfg = settings.use([...SETTING_KEYS]);
-    const page = RoutingStore.useRoutingStore((s: RoutingStoreState) => s.route?.page);
-    const selectedModeId = String(ModesStore.useModesStore((s: ModesStoreState) => s.selectedModeId) || "");
-    const listed = ModesStore.useModesStore((s: ModesStoreState) => s.modes);
+    const page = useStoreSlice(RoutingStore.useRoutingStore, (s: RoutingStoreState) => s.route?.page, "");
+    const selectedModeId = String(useStoreSlice(ModesStore.useModesStore, (s: ModesStoreState) => s.selectedModeId, "") || "");
+    const listed = useStoreSlice(ModesStore.useModesStore, (s: ModesStoreState) => s.modes, [] as ModesStoreState["modes"]);
     const catalog = Array.isArray(listed) ? listed : [];
-    const incognito = GrokSettings.useSettingsStore(s => s.isIncognito);
-    const routeTemporary = RoutingStore.useRoutingStore(s => !!s.route?.temporary);
-    const routeCid = RoutingStore.useRoutingStore(s => s.route?.conversationId ?? "");
-    const cid = String(routeCid || "");
-    const convTemporary = MessageStore.useMessageStore(s => !!(cid && (s.conversations[cid] as { temporary?: boolean } | undefined)?.temporary));
-    const hideBuild = !!(incognito || routeTemporary || convTemporary);
+    const hideBuild = privateBuild();
     const knownCatalog = catalog.filter(c => KNOWN_IDS.has(c.id));
     const items = withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, catalog), hideBuild), hideBuild).map(id => MODE_BY_ID[id]);
     if (page === "bot" || !items.length) return null;

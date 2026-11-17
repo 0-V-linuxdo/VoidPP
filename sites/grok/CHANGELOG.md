@@ -1,3 +1,10 @@
+## 20261114.57
+
+- Guard regex `find`s that start with `\i` or a character class in `grok-chunk-bench` and the build. Warn `\i`-start `match`es; start log_metric and settings-tab filter on a literal.
+- Mode pins: stop gating `PinnedHost` on `SettingsStore` (`modelConfigOverrideSchema` lives on another module). Read Modes/Routing via `getState`. Hide native Heavy.
+- Usage hover: Grok `IconButton` tooltip is a string; node panels open from GrokChatBar pointerenter.
+- Overlay Search is a 32px ghost 4px left of compact + (`position:fixed` + sidebar anchor). Library stays `absolute` so that pair cannot hang layout. Dead Cleaner/ConnectorsFlyout/UserQuotes finds are `noWarn`. Desktop settings `shownTab` follows the live inline resolver.
+
 ## 20261114.56
 
 - Patch ReDoS: Method A logged 123 StableComposer regex finds (`\i)=[` on every prefiltered factory); Method B timed those plus TurnTail / ENABLE / sidebar-chats / unbounded `[\s\S]*?` out at 3s on 100k+ factories. Drop the `\i` find, start remaining matches on a literal, bound `[\s\S]*?` / `[^]*?`, and delete the tempered-greedy `mode-select` wrap.

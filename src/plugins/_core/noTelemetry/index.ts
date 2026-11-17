@@ -70,18 +70,26 @@ export default definePlugin({
             all: true,
             replacement: [
                 {
-                    match: /\i\("\/api\/log_metric",\i\)/g,
+                    match: /\(0,\i\)\("\/api\/log_metric",\i\)/g,
                     replace: "false",
                 },
                 {
-                    match: /\i\("\/api\/log_metric",JSON\.stringify\(\[[^\]]*\]\)\)/g,
+                    match: /[A-Za-z_$][\w$]*\("\/api\/log_metric",\i\)/g,
+                    replace: "false",
+                },
+                {
+                    match: /\(0,\i\)\("\/api\/log_metric",JSON\.stringify\([^)]*\)\)/g,
                     replace: "false",
                     noWarn: true,
                 },
                 {
-                    match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\(\[[^\]]*\],\{type:"application\/json"\}\)\)/g,
+                    match: /[A-Za-z_$][\w$]*\("\/api\/log_metric",JSON\.stringify\([^)]*\)\)/g,
+                    replace: "false",
+                    noWarn: true,
+                },
+                {
+                    match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\([^)]*\)\)/g,
                     replace: "void 0",
-                    noWarn: true,
                 },
             ],
         },

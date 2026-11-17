@@ -8,12 +8,12 @@ const val = v => typeof v === "function" ? v() : v;
 // 节点或返回节点的函数;在渲染期间调用
 const nodeOf = v => v == null ? null : typeof v === "function" ? v() : v;
 
-function Popover({ anchor, content, onClose }) {
+function Popover({ anchor, content, onClose, onPointerEnter, onPointerLeave }) {
     const ref = useRef(null);
     const [pos, setPos] = useState(null);
     useEffect(() => {
         const r = anchor.getBoundingClientRect();
-        setPos({ left: Math.max(8, Math.min(r.left, innerWidth - 260)), bottom: innerHeight - r.top + 8 });
+        setPos({ left: Math.max(8, Math.min(r.left, innerWidth - 320)), bottom: innerHeight - r.top + 8 });
         const onDown = e => { if (!ref.current?.contains(e.target) && !anchor.contains(e.target)) onClose(); };
         const onKey = e => { if (e.key === "Escape") onClose(); };
         document.addEventListener("pointerdown", onDown, true);
@@ -21,33 +21,42 @@ function Popover({ anchor, content, onClose }) {
         return () => { document.removeEventListener("pointerdown", onDown, true); document.removeEventListener("keydown", onKey, true); };
     }, []);
     const RD = common.ReactDOM;
-    const el = h("div", { ref, className: "uspp-popover", style: pos ? { left: pos.left, bottom: pos.bottom } : { visibility: "hidden" } }, content);
+    const el = h("div", { ref, className: "uspp-popover", style: pos ? { left: pos.left, bottom: pos.bottom } : { visibility: "hidden" }, onPointerEnter, onPointerLeave }, content);
     return RD?.createPortal ? RD.createPortal(el, document.body) : el;
 }
 
 function ChatBarButton({ def }) {
     const [open, setOpen] = useState(false);
+    const [hover, setHover] = useState(false);
     const ref = useRef(null);
+    const hoverTimer = useRef(0);
     const disabled = !!val(def.disabled);
     const active = !!val(def.active);
     const icon = nodeOf(def.icon);
     const tooltip = nodeOf(def.tooltip);
+    const tooltipNode = tooltip != null && typeof tooltip !== "string";
     const label = def["aria-label"] ?? (typeof tooltip === "string" ? tooltip : def.id);
+    const holdHover = () => { clearTimeout(hoverTimer.current); setHover(true); };
+    const releaseHover = () => { hoverTimer.current = setTimeout(() => setHover(false), 160); };
+    useEffect(() => () => clearTimeout(hoverTimer.current), []);
     const onClick = e => {
         try { (def.onClick ?? def.onSelect)?.(e); } catch (err) { console.error(`[${U.scriptName}] 聊天栏按钮 onClick 出错`, err); }
         if (def.popover) setOpen(o => !o);
     };
     const IB = common.DesktopButton;
+    const hoverBind = tooltipNode ? { onPointerEnter: holdHover, onPointerLeave: releaseHover } : {};
     const fallback = h("button", {
         ref, type: "button", className: U.classes("uspp-chatbar-btn", def.className), "data-active": String(active),
-        "aria-label": label, title: typeof tooltip === "string" ? tooltip : undefined, disabled, onClick,
+        "aria-label": label, title: typeof tooltip === "string" ? tooltip : undefined, disabled, onClick, ...hoverBind,
     }, icon ?? def.label);
-    const btn = IB ? h("span", { ref, style: { display: "inline-flex" } }, h(ErrorBoundary, { fallback }, h(IB, {
+    const btn = IB ? h("span", { ref, style: { display: "inline-flex" }, ...hoverBind }, h(ErrorBoundary, { fallback }, h(IB, {
         variant: def.variant ?? "ghost", size: def.size ?? "lg", shape: def.shape ?? "circle",
-        "aria-label": label, tooltip: tooltip ? { content: tooltip } : undefined, disabled, onClick,
+        "aria-label": label, tooltip: typeof tooltip === "string" ? { content: tooltip } : undefined, disabled, onClick,
         "aria-pressed": active || undefined, className: def.className, "data-uspp-chatbar-button": def.id,
     }, icon ?? def.label))) : fallback;
-    return h(Fragment, null, btn, open && ref.current && h(Popover, { anchor: ref.current, content: nodeOf(def.popover), onClose: () => setOpen(false) }));
+    return h(Fragment, null, btn,
+        open && ref.current && h(Popover, { anchor: ref.current, content: nodeOf(def.popover), onClose: () => setOpen(false) }),
+        hover && tooltipNode && ref.current && h(Popover, { anchor: ref.current, content: tooltip, onClose: () => setHover(false), onPointerEnter: holdHover, onPointerLeave: releaseHover }));
 }
 
 const subscribeChatBar = slotSubscriber(SLOT);

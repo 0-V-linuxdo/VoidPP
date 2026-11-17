@@ -216,6 +216,11 @@ function main() {
     }
     const stamp = stagePlugins();
     console.log(`staged ${stamp.length} dated plugins + live symlinks in ${PLUGIN_DST}`);
+    const guard = spawnSync("bun", [join(root, "scripts/grok-chunk-bench.mjs"), "--check-finds"], {
+        cwd: root,
+        stdio: "inherit",
+    });
+    if (guard.status !== 0) process.exit(guard.status ?? 1);
 
     const tmp = mkdtempSync(join(tmpdir(), "voidpp-uspp-"));
     try {

@@ -296,13 +296,13 @@ export const settingsHost = {
             find: "registryTabs",
             replacement: [
                 {
-                    match: /\i\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
-                    replace: "[...$&,...$self._tabEntries()]",
+                    match: /\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
+                    replace: "$&.concat($self._tabEntries())",
                     noWarn: true,
                 },
                 {
-                    match: /\i(?:\.\i)?\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
-                    replace: "[...$&,...$self._tabEntries()]",
+                    match: /\.filter\(\i=>\i\.visible\(\i\)\)(?=[\s\S]{0,1200}registryTabs)/,
+                    replace: "$&.concat($self._tabEntries())",
                 },
                 {
                     match: /(\["general","grok","payments","data","other"),("team-management"\])/,
@@ -331,8 +331,13 @@ export const settingsHost = {
             find: '"DesktopSettingsDialog",0,function',
             replacement: [
                 {
+                    match: /function\(\{activeTab:\i,open:\i,requestedTab:\i,hostedSection:\i\}\)\{let \i=\(0,(\i)\.(\i)\)\(\i\);return \i&&\(0,(\i)\.(\i)\)\(\i\)\?\i:\i\|\|null===\i\?\i:\i\}\(\{activeTab:(\i),open:(\i),requestedTab:(\i),hostedSection:(\i)\?\?(\i)\?\?null\}\)/,
+                    replace: "$self._resolveShownTab({activeTab:$5,open:$6,requestedTab:$7,hostedSection:$8??$9??null,normalized:(0,$1.$2)($7),isHosted:e=>(0,$3.$4)(e)})",
+                },
+                {
                     match: /let (\i)=\(0,(\i)\.z\)\((\i)\);return (\i)&&\(0,(\i)\.K\)\(\1\)\?\1:\4\|\|null===(\i)\?(\i):\6/,
                     replace: "let $1=(0,$2.z)($3);return $self._resolveShownTab({activeTab:$7,open:$4,requestedTab:$3,hostedSection:$6,normalized:$1,isHosted:$5.K})",
+                    noWarn: true,
                 },
                 {
                     match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\((\i)\);(\i)&&\1!==\4&&\2\(\4\)([\s\S]{0,1200}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\8\)\),(\i)\[34\]=\9,(\i)\[35\]=\10,(\i)\[36\]=\7/,

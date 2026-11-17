@@ -11,6 +11,58 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, ".voidpp-cache/grok-chunks");
 const SLOW_MS = 50;
 
+function loadPatches() {
+    return [
+        ...collectAllPatches(),
+        ...extractPatches(join(ROOT, "sites/grok/plugins/GrokMenus/index.js")),
+        ...extractPatches(join(ROOT, "sites/grok/plugins/GrokChatBar/index.js")),
+        ...extractPatches(join(ROOT, "sites/grok/settings-host.js")),
+    ];
+}
+
+function regexLead(source) {
+    let i = 0;
+    if (source[i] === "^") i++;
+    for (;;) {
+        if (source.startsWith("(?:", i)) {
+            i += 3;
+            continue;
+        }
+        if (source[i] === "(" && source[i + 1] !== "?") {
+            i += 1;
+            continue;
+        }
+        break;
+    }
+    if (source.startsWith("\\i", i)) return "\\i";
+    if (source[i] === "[") return "character-class";
+    return null;
+}
+
+function checkRegexFinds(patches) {
+    const fails = [];
+    const matchWarns = [];
+    for (const p of patches) {
+        for (const f of p.find) {
+            if (f.kind !== "regex" || !f.regex) continue;
+            const kind = regexLead(f.regex.source);
+            if (kind) fails.push({ plugin: p.plugin, file: p.file, kind, raw: f.raw });
+        }
+        for (const r of p.replacement) {
+            if (r.match.kind !== "regex" || !r.match.regex) continue;
+            if (regexLead(r.match.regex.source) === "\\i") {
+                matchWarns.push({ plugin: p.plugin, raw: r.match.raw });
+            }
+        }
+    }
+    for (const w of matchWarns) console.warn(`WARN match starts with \\i  ${w.plugin}  ${w.raw}`);
+    if (fails.length) {
+        for (const f of fails) console.error(`FAIL find starts with ${f.kind}  ${f.plugin}  ${f.raw}`);
+        throw new Error(`${fails.length} regex find(s) start with \\i or a character class`);
+    }
+    console.log(`find-guard ok  patches ${patches.length}  match-\\i-warn ${matchWarns.length}`);
+}
+
 function moduleMatchesFind(factory, finds) {
     for (const f of finds) {
         if (f.kind === "string") {
@@ -29,6 +81,10 @@ function now() {
 }
 
 function main() {
+    const patches = loadPatches();
+    checkRegexFinds(patches);
+    if (process.argv.includes("--check-finds")) return;
+
     mkdirSync(OUT, { recursive: true });
     const files = readdirSync(OUT).filter(n => n.endsWith(".js") && !n.startsWith("_"));
     const modules = new Map();
@@ -49,13 +105,6 @@ function main() {
         }
     }
     console.log(`files ${files.length}  modules ${modules.size}`);
-
-    const patches = [
-        ...collectAllPatches(),
-        ...extractPatches(join(ROOT, "sites/grok/plugins/GrokMenus/index.js")),
-        ...extractPatches(join(ROOT, "sites/grok/plugins/GrokChatBar/index.js")),
-        ...extractPatches(join(ROOT, "sites/grok/settings-host.js")),
-    ];
 
     const slow = [];
     const rows = [];

@@ -87,7 +87,7 @@ export default definePlugin({
 
     patches: [
         {
-            find: 'overflow-hidden rounded-full bg-surface border border-border-l1',
+            find: "overflow-hidden rounded-full bg-surface border border-border-l1",
             all: true,
             replacement: {
                 match: /!\i&&"overflow-hidden rounded-full bg-surface border border-border-l1"/,
@@ -149,7 +149,14 @@ export default definePlugin({
             },
         },
         hideComponentPatch("UpsellSuperGrokSmall", "hideUpsellSmall"),
-        hideComponentPatch("UpsellButton", "hideUpsellSmall", false),
+        {
+            find: '"UpsellButton",0,',
+            noWarn: true,
+            replacement: {
+                match: /"UpsellButton",0,/,
+                replace: '"UpsellButton",0,$self.settings.store.hideUpsellSmall?()=>null:',
+            },
+        },
         {
             find: "connect-x-upsell-dismissed",
             noWarn: true,
@@ -159,7 +166,8 @@ export default definePlugin({
             },
         },
         {
-            find: "x-connector-ready-dismissed",
+            find: "SHOW_X_CONNECTOR_READY_BANNER",
+            noWarn: true,
             replacement: {
                 match: /\.SHOW_X_CONNECTOR_READY_BANNER&&/,
                 replace: ".SHOW_X_CONNECTOR_READY_BANNER&&!$self.settings.store.hideConnectX&&",

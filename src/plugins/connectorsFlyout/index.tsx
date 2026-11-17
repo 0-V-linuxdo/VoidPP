@@ -328,6 +328,7 @@ export default definePlugin({
         },
         {
             find: "SkillsAndConnectorsPage:handleTabChange",
+            noWarn: true,
             replacement: [
                 {
                     match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\(null\),(\i)=(\i)\?\1:"skills-and-connectors"===(\i)\.page\?\6\.tab:null/,

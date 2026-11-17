@@ -51,9 +51,10 @@ export default definePlugin({
     patches: [
         {
             find: '["###### ",',
+            noWarn: true,
             replacement: {
-                match: /blockquote:(\(\{children:\i\}\)=>\(0,\i\.jsxs?\)\()"p"/,
-                replace: 'blockquote:$1"blockquote"',
+                match: /(blockquote:\(\{children:\i\}\)=>\(0,\i\.jsx\)\()"p"/,
+                replace: '$1"blockquote"',
             },
         },
     ],
