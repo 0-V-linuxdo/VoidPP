@@ -104,11 +104,6 @@ export default () => U.definePlugin({
                     replace: "$1[$self.renderChatBar(\"chat\"),$2]$3",
                 },
                 {
-                    match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
-                    replace: "[$&,$self.renderChatBar(\"chat\")]",
-                    noWarn: true,
-                },
-                {
                     match: /style:\i(?:\|\|\i)*\?void 0:(\{paddingInlineEnd:\i\})/,
                     replace: "style:$1",
                     noWarn: true,

@@ -1,3 +1,7 @@
+## 20261114.56
+
+- Patch ReDoS: Method A logged 123 StableComposer regex finds (`\i)=[` on every prefiltered factory); Method B timed those plus TurnTail / ENABLE / sidebar-chats / unbounded `[\s\S]*?` out at 3s on 100k+ factories. Drop the `\i` find, start remaining matches on a literal, bound `[\s\S]*?` / `[^]*?`, and delete the tempered-greedy `mode-select` wrap.
+
 ## 20261114.55
 
 - CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS.

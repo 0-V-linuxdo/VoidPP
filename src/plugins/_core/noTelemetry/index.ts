@@ -37,11 +37,11 @@ export default definePlugin({
             noWarn: true,
             replacement: [
                 {
-                    match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]*?\}(?=,"stopRecordingImagineSession")/,
+                    match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]{0,400}?\}(?=,"stopRecordingImagineSession")/,
                     replace: '"startRecordingImagineSession",0,function(){}',
                 },
                 {
-                    match: /"stopRecordingImagineSession",0,function\(\)\{[\s\S]*?\}(?=\])/,
+                    match: /"stopRecordingImagineSession",0,function\(\)\{[\s\S]{0,400}?\}(?=\])/,
                     replace: '"stopRecordingImagineSession",0,function(){}',
                 },
                 {

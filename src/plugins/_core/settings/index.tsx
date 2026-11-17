@@ -363,7 +363,7 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
-                    match: /("SettingsTitle",0,)(function\(\i\)\{[\s\S]*?\})(?=\]\))/,
+                    match: /("SettingsTitle",0,)(function\(\i\)\{[\s\S]{0,800}?\})(?=\]\))/,
                     replace: '$1$self._setPrimitive("SettingsTitle",$2)',
                 },
                 {
@@ -372,7 +372,7 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
-                    match: /("SettingsDescription",0,)(function\(\i\)\{[\s\S]*?\})(?=,"Settings)/,
+                    match: /("SettingsDescription",0,)(function\(\i\)\{[\s\S]{0,800}?\})(?=,"Settings)/,
                     replace: '$1$self._setPrimitive("SettingsDescription",$2)',
                 },
                 {
@@ -381,7 +381,7 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
-                    match: /("SettingsRow",0,)(function\(\i\)\{[\s\S]*?\})(?=,"Settings)/,
+                    match: /("SettingsRow",0,)(function\(\i\)\{[\s\S]{0,800}?\})(?=,"Settings)/,
                     replace: '$1$self._setPrimitive("SettingsRow",$2)',
                 },
             ],

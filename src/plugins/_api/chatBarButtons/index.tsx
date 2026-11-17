@@ -44,11 +44,6 @@ export default definePlugin({
                     replace: "$1[$self.renderButtons(),$2]$3",
                 },
                 {
-                    match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
-                    replace: "[$&,$self.renderButtons()]",
-                    noWarn: true,
-                },
-                {
                     match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
                     replace: "$1[$self.renderButtons(),$2]$3",
                     noWarn: true,

@@ -366,7 +366,7 @@ export const settingsHost = {
                     noWarn: true,
                 },
                 {
-                    match: /("SettingsTitle",0,)(function\(\i\)\{[\s\S]*?\})(?=\]\))/,
+                    match: /("SettingsTitle",0,)(function\(\i\)\{[\s\S]{0,800}?\})(?=\]\))/,
                     replace: '$1$self._setPrimitive("SettingsTitle",$2)',
                 },
             ],

@@ -517,8 +517,8 @@ export default definePlugin({
             all: true,
             replacement: [
                 {
-                    match: /(\i)=`response-\$\{(\i)\.responseId\}`([\s\S]{0,3500}?)(\(0,\i\.jsxs?\)\("div",\{ref:\i,id:\1,className:"[^"]*",children:)\[(\i),(\i),(\i),(\i),(\i),(\i)\]/g,
-                    replace: "$1=`response-${$2.responseId}`$3$4[$self._renderTimestamp({response:$2,isUser:!1}),$5,$6,$7,$8,$9,$10]",
+                    match: /`response-\$\{(\i)\.responseId\}`([\s\S]{0,3500}?)(\(0,\i\.jsxs?\)\("div",\{ref:\i,id:\i,className:"[^"]*",children:)\[(\i),(\i),(\i),(\i),(\i),(\i)\]/g,
+                    replace: "`response-${$1.responseId}`$2$3[$self._renderTimestamp({response:$1,isUser:!1}),$4,$5,$6,$7,$8,$9]",
                 },
                 {
                     match: /let (\i)=(\i)\.responseId\?\?"";return ([\s\S]{0,500}?)(\(0,\i\.jsxs?\)\("div",\{className:"[^"]*",children:)\[(\i),(\i),(\i)\]/g,

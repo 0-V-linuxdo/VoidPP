@@ -678,13 +678,13 @@ export default definePlugin({
             noWarn: true,
             replacement: [
                 {
-                    match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-                    replace: "$1,action:$self._ChatsPlus()",
+                    match: /"sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\)/,
+                    replace: "$&,action:$self._ChatsPlus()",
                     noWarn: true,
                 },
                 {
-                    match: /(\i\("sidebar-chats","Chats"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-                    replace: "$1,action:$self._ChatsPlus()",
+                    match: /"sidebar-chats","Chats"\),collapsed:\i,onToggle:\(\)=>\i\(\i\)/,
+                    replace: "$&,action:$self._ChatsPlus()",
                 },
             ],
         },
@@ -759,8 +759,8 @@ export default definePlugin({
             find: "ENABLE_GROK_BOT_RELAY_CLIENT",
             noWarn: true,
             replacement: {
-                match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
-                replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null",
+                match: /&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+                replace: "&&$2.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$3.jsx)($4,{}):null",
             },
         },
         {

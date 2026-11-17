@@ -161,8 +161,8 @@ export default definePlugin({
         {
             find: "x-connector-ready-dismissed",
             replacement: {
-                match: /(\i)\.SHOW_X_CONNECTOR_READY_BANNER&&/,
-                replace: "$1.SHOW_X_CONNECTOR_READY_BANNER&&!$self.settings.store.hideConnectX&&",
+                match: /\.SHOW_X_CONNECTOR_READY_BANNER&&/,
+                replace: ".SHOW_X_CONNECTOR_READY_BANNER&&!$self.settings.store.hideConnectX&&",
             },
         },
         hideComponentPatch("BrowserNotificationBanner", "hideNotificationBanner"),

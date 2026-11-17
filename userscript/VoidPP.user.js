@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.55
+// @version      20261114.56
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.55", date: null, notes: ["CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS."] }, { version: "20261114.54", date: null, notes: ["`.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.", "BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\\i`, never hit, and scanned every factory (~38s in the chunk bench)."] }, { version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.56", date: null, notes: ["Patch ReDoS: Method A logged 123 StableComposer regex finds (`\\i)=[` on every prefiltered factory); Method B timed those plus TurnTail / ENABLE / sidebar-chats / unbounded `[\\s\\S]*?` out at 3s on 100k+ factories. Drop the `\\i` find, start remaining matches on a literal, bound `[\\s\\S]*?` / `[^]*?`, and delete the tempered-greedy `mode-select` wrap."] }, { version: "20261114.55", date: null, notes: ["CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS."] }, { version: "20261114.54", date: null, notes: ["`.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.", "BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\\i`, never hit, and scanned every factory (~38s in the chunk bench)."] }, { version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.55" : "0.0.0";
+  var VERSION = true ? "20261114.56" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -2289,7 +2289,7 @@ try {
             noWarn: true
           },
           {
-            match: /("SettingsTitle",0,)(function\(\i\)\{[\s\S]*?\})(?=\]\))/,
+            match: /("SettingsTitle",0,)(function\(\i\)\{[\s\S]{0,800}?\})(?=\]\))/,
             replace: '$1$self._setPrimitive("SettingsTitle",$2)'
           }
         ]
@@ -2490,7 +2490,7 @@ try {
         find: ['"response-action.more-actions"', "openReportDialog"],
         noWarn: true,
         replacement: {
-          match: /(\(0,\i\.jsx\)\(\i\.DropdownMenuContent,\{align:"end",children:)(\(0,\i\.jsx\)\(\i\.DropdownMenuItem,\{onClick:\(\)=>\{\i\.useReportStore\.getState\(\)\.openReportDialog\(\{responseId:(\i)\.responseId[^]*?\("response-action\.report","Report"\)\}\))\}\)/,
+          match: /(\(0,\i\.jsx\)\(\i\.DropdownMenuContent,\{align:"end",children:)(\(0,\i\.jsx\)\(\i\.DropdownMenuItem,\{onClick:\(\)=>\{\i\.useReportStore\.getState\(\)\.openReportDialog\(\{responseId:(\i)\.responseId.{0,400}?\("response-action\.report","Report"\)\}\))\}\)/,
           replace: "$1$self.messageMenuChildren($2,$3)})"
         }
       }
@@ -2866,11 +2866,6 @@ button[data-settings-tab]:not([data-settings-tab^="uspp_voidpp_"]) + button[data
           {
             match: /(\[!!\(\i&&!\i\)\|!!\i<<1\];return \i\[\d+\]!==\i\|\|\i\[\d+\]!==\i\?\(\i=\(0,\i\.jsx\)\("div",\{\.\.\.\i,\.\.\.\i,children:)(\i)(\}\))/,
             replace: '$1[$self.renderChatBar("chat"),$2]$3'
-          },
-          {
-            match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
-            replace: '[$&,$self.renderChatBar("chat")]',
-            noWarn: true
           },
           {
             match: /style:\i(?:\|\|\i)*\?void 0:(\{paddingInlineEnd:\i\})/,
@@ -4808,7 +4803,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
       }
       if (src.includes("__scopeDropdownMenu") || src.includes("__scopeMenu")) continue;
       const fromCall = /name:"(DropdownMenu[A-Za-z]*)",Legacy:/.exec(src)?.[1];
-      const { displayName } = value;
+      const displayName = value.displayName;
       const fromName = typeof displayName === "string" && /^DropdownMenu[A-Za-z]*$/.test(displayName) && (src.includes("keepLegacy") || src.includes("menu:")) ? displayName : "";
       const name = fromCall || fromName;
       if (!name || mapped[name]) continue;
@@ -4842,7 +4837,7 @@ ${root2}::-webkit-scrollbar-thumb:hover {
       }
     }
     legacyDropdown = legacy;
-    const { size } = getModuleCache();
+    const size = getModuleCache().size;
     if (legacy && size === dropdownCacheSize) return legacy;
     dropdownCacheSize = size;
     return null;
@@ -6998,7 +6993,7 @@ html.void-cms-picked .void-cms-ghost {
   function privateBuild() {
     if (inIncognito()) return true;
     try {
-      const { route } = RoutingStore.useRoutingStore.getState();
+      const route = RoutingStore.useRoutingStore.getState().route;
       if (route?.temporary) return true;
       let cid = String(route?.conversationId || "");
       const chatHook = ChatPageStore.useChatPageStore;
@@ -7474,14 +7469,6 @@ html.void-cms-picked .void-cms-ghost {
             noWarn: true
           },
           {
-            // React Compiler stores the control as `t3=cond&&jsx(...,"mode-select"),cache=t3`
-            // and renders `children:[t3,…]`. A comma after `},"mode-select"),` is discarded.
-            // Wrap the jsx so the cached value flattens to [chips, control] in that row.
-            match: /(\(0,\i\.jsxs?\)\(\i(?:\.\i){0,4},\{(?:(?!\(0,\i\.jsxs?\)\()[\s\S]){0,1600}?"data-query-bar-mode-select":!0,[\s\S]{0,3500}?\},"mode-select"\))/,
-            replace: "[$self.renderPinned(),$&]",
-            noWarn: true
-          },
-          {
             // Desktop shell: the mode div is one grid cell on the inline row
             // (`display:contents` on the controls row). A sibling array becomes
             // another row and the fixed-height pill clips the field above the border.
@@ -7773,12 +7760,12 @@ html.void-cms-picked .void-cms-ghost {
     clone3.querySelectorAll(STRIP_SEL).forEach((n2) => n2.remove());
     for (const n2 of [...clone3.querySelectorAll("span, div, a, p")]) {
       if (!n2.isConnected) continue;
-      const chip = (n2.textContent ?? "").replaceAll(/\s+/g, " ").trim();
+      const chip = (n2.textContent ?? "").replace(/\s+/g, " ").trim();
       if (chip && chip.length <= 24 && CHIP_RE.test(chip)) n2.remove();
     }
     const media = hasMedia(clone3);
     clone3.querySelectorAll(MEDIA_SEL).forEach((n2) => n2.remove());
-    const text = (clone3.textContent ?? "").replaceAll(/\b\d+\s+sources?\b/gi, " ").replaceAll(/\s+/g, " ").trim();
+    const text = (clone3.textContent ?? "").replace(/\b\d+\s+sources?\b/gi, " ").replace(/\s+/g, " ").trim();
     if (NOISE_TEXT.test(text)) return "";
     if (!text) {
       if (media === "image") return "图片";
@@ -7992,7 +7979,7 @@ html.void-cms-picked .void-cms-ghost {
     return null;
   }
   function plain(text) {
-    const t3 = text.replaceAll(/\s+/g, " ").trim();
+    const t3 = text.replace(/\s+/g, " ").trim();
     if (!t3 || NOISE_TEXT.test(t3)) return "";
     return t3.length > SUMMARY_MAX ? `${t3.slice(0, SUMMARY_MAX)}…` : t3;
   }
@@ -8038,7 +8025,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   function itemFromNode(cid, node2, liveId, liveEl) {
     if (node2.role !== "user" && node2.role !== "assistant") return null;
-    const { role } = node2;
+    const role = node2.role;
     if (!settings6.store.showAssistant && role === "assistant") return null;
     const rec = contentOf(cid, node2);
     if (rec?.isControl) return null;
@@ -8625,7 +8612,7 @@ html.void-cms-picked .void-cms-ghost {
   function uniqueLeader(scores, minLead) {
     const positive = scores.filter((s3) => s3 > 0);
     if (positive.length < 2) return -1;
-    const sorted = [...positive].toSorted((a3, b3) => a3 - b3);
+    const sorted = [...positive].sort((a3, b3) => a3 - b3);
     const median = sorted[Math.floor((sorted.length - 1) / 2)];
     let best = -1;
     let bestS = 0;
@@ -9151,7 +9138,7 @@ html.void-cms-picked .void-cms-ghost {
       const gen3 = gw.activeGeneration;
       const genNode = gen3?.assistantId ? gw.nodes?.[gen3.assistantId] : void 0;
       const phase = generationPhase(gw);
-      const lastAsst = [...path2].toReversed().find((n2) => n2.role === "assistant");
+      const lastAsst = [...path2].reverse().find((n2) => n2.role === "assistant");
       const lastKey2 = lastAsst ? `${lastAsst.id}:${lastAsst.status}:${lastAsst.content?.state ?? ""}` : "";
       const genKey = gen3 ? `${gen3.userId}:${gen3.assistantId}:${genNode?.status ?? ""}:${phase}` : "";
       return `${cid}|${gw.defaultLeafId ?? ""}|${genKey}|${lastKey2}|${path2.map((n2) => `${n2.id}:${n2.status}`).join(",")}`;
@@ -9246,43 +9233,6 @@ html.void-cms-picked .void-cms-ghost {
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/styles.css
   registerStyle("betterQueue", '.void-ms-qchip {\n    display: grid;\n    flex-shrink: 0;\n    place-items: center;\n    width: 1.5rem;\n    height: 1.5rem;\n    margin-block-start: 0.125rem;\n    padding: 0;\n    border: 0;\n    border-radius: 999px;\n    background: transparent;\n    color: var(--fg-secondary);\n    cursor: pointer;\n}\n\n.void-ms-qchip:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n    color: var(--fg-primary);\n}\n\n.void-ms-qchip:focus-visible {\n    outline: none;\n    box-shadow: 0 0 0 1px var(--fg-accent);\n}\n\n.void-ms-qchip svg {\n    display: block;\n    width: 0.875rem;\n    height: 0.875rem;\n}\n\n.void-ms-qmenu {\n    position: fixed;\n    z-index: 90;\n    min-width: 8.75rem;\n    padding: 0.25rem;\n    border-radius: 0.75rem;\n    background: var(--surface-l2);\n    box-shadow:\n        inset 0 0 0 1px var(--border-l2),\n        0 0.5rem 1.25rem rgb(0 0 0 / 24%);\n    color: var(--fg-primary);\n}\n\n.void-ms-qopt {\n    display: flex;\n    width: 100%;\n    align-items: center;\n    gap: 0.5rem;\n    height: 2rem;\n    padding: 0 0.5rem;\n    border: 0;\n    border-radius: 0.5rem;\n    background: transparent;\n    color: inherit;\n    font-size: 0.875rem;\n    line-height: 1;\n    cursor: pointer;\n}\n\n.void-ms-qopt:is(:hover, :focus-visible) {\n    background: var(--button-ghost-hover);\n}\n\n.void-ms-qopt[aria-selected="true"],\n.void-ms-qopt.void-ms-qopt-on {\n    background: rgb(255 255 255 / 14%);\n    color: #fff;\n}\n\n.void-ms-qopt > span:first-of-type {\n    flex: 1;\n    text-align: start;\n}\n\n.void-ms-qcheck {\n    display: grid;\n    margin-inline-start: auto;\n    place-items: center;\n    width: 0.875rem;\n    height: 0.875rem;\n    color: #fff;\n}\n\n.void-ms-qcheck svg,\n.void-ms-qopt svg {\n    display: block;\n    width: 1rem;\n    height: 1rem;\n    flex-shrink: 0;\n}\n\n.void-ms-qcheck svg {\n    width: 0.875rem;\n    height: 0.875rem;\n}\n');
-
-  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/modeSend.ts
-  function modeSlug(s3) {
-    return s3.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
-  }
-  function gatewaySendMode(input) {
-    const selected2 = modeSlug(input.selected);
-    const model = modeSlug(input.modelMode);
-    if (input.incognito) return selected2 === "build" ? "auto" : selected2;
-    if (selected2 === "build") return "build";
-    const inflight3 = modeSlug(input.inflight);
-    if (inflight3 === "build") return "build";
-    const last2 = input.lastModel === void 0 ? void 0 : modeSlug(input.lastModel);
-    const adjusted = modeSlug(input.adjusted);
-    const userChanged = !!adjusted && adjusted !== (last2 ?? "");
-    if (userChanged) return selected2 || adjusted;
-    if (!input.conversationId) return selected2 || model;
-    if (last2 !== void 0) return last2 === "build" ? "build" : selected2 || model;
-    if (input.buildTurn || input.markedBuild) return "build";
-    return selected2 || model;
-  }
-  function keepBuildPreference(privateChat, substituted, settled2, stored) {
-    return privateChat && substituted && settled2 === "auto" && stored === "build";
-  }
-  function sessionModelMatches(acked, want) {
-    const need = modeSlug(want);
-    if (!need) return true;
-    const have = modeSlug(acked ?? "");
-    if (have === need) return true;
-    return need === "build" && have.includes("build");
-  }
-  function sessionNeedsUpdate(acked, chip, hasSession) {
-    void hasSession;
-    const want = modeSlug(chip);
-    if (!want) return false;
-    return !sessionModelMatches(acked, chip);
-  }
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/utils/idb.ts
   var logger13 = new Logger2("IDB");
@@ -9476,7 +9426,7 @@ html.void-cms-picked .void-cms-ghost {
     }
     const byId = new Map(bound2.saved.map((item) => [item.id, item]));
     const next = [];
-    const ordered = official.slice().toSorted((a3, b3) => a3.position - b3.position || a3.id.localeCompare(b3.id));
+    const ordered = official.slice().sort((a3, b3) => a3.position - b3.position || a3.id.localeCompare(b3.id));
     for (const off of ordered) {
       if (!off.id) continue;
       const prev = byId.get(off.id);
@@ -9876,7 +9826,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   async function replay(cid, saved2) {
     const placed = [];
-    const ordered = freshSnaps(saved2, Date.now()).slice().toSorted((a3, b3) => a3.position - b3.position);
+    const ordered = freshSnaps(saved2, Date.now()).slice().sort((a3, b3) => a3.position - b3.position);
     for (const item of ordered) {
       const before = idSet(cid);
       suppress = true;
@@ -10105,9 +10055,9 @@ html.void-cms-picked .void-cms-ghost {
   }
   function persistQueueKey(s3) {
     return Object.entries(s3.conversations ?? {}).map(([cid, conv]) => {
-      const items = [...conv.queue ?? []].toSorted((a3, b3) => a3.position - b3.position);
+      const items = [...conv.queue ?? []].sort((a3, b3) => a3.position - b3.position);
       return `${cid}=${items.map((item) => `${qid(item)}:${item.position}:${nodeFields(conv, qid(item)).text.length}`).join(",")}`;
-    }).toSorted().join("|");
+    }).sort().join("|");
   }
   var lastQueueKey = "";
   var lastNavKey = "";
@@ -10145,6 +10095,43 @@ html.void-cms-picked .void-cms-ghost {
     if (key === lastNavKey) return;
     lastNavKey = key;
     onPersistPage();
+  }
+
+  // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/modeSend.ts
+  function modeSlug(s3) {
+    return s3.replace(/^MODEL_MODE_/, "").replaceAll("_", "-").toLowerCase();
+  }
+  function gatewaySendMode(input) {
+    const selected2 = modeSlug(input.selected);
+    const model = modeSlug(input.modelMode);
+    if (input.incognito) return selected2 === "build" ? "auto" : selected2;
+    if (selected2 === "build") return "build";
+    const inflight3 = modeSlug(input.inflight);
+    if (inflight3 === "build") return "build";
+    const last2 = input.lastModel === void 0 ? void 0 : modeSlug(input.lastModel);
+    const adjusted = modeSlug(input.adjusted);
+    const userChanged = !!adjusted && adjusted !== (last2 ?? "");
+    if (userChanged) return selected2 || adjusted;
+    if (!input.conversationId) return selected2 || model;
+    if (last2 !== void 0) return last2 === "build" ? "build" : selected2 || model;
+    if (input.buildTurn || input.markedBuild) return "build";
+    return selected2 || model;
+  }
+  function keepBuildPreference(privateChat, substituted, settled2, stored) {
+    return privateChat && substituted && settled2 === "auto" && stored === "build";
+  }
+  function sessionModelMatches(acked, want) {
+    const need = modeSlug(want);
+    if (!need) return true;
+    const have = modeSlug(acked ?? "");
+    if (have === need) return true;
+    return need === "build" && have.includes("build");
+  }
+  function sessionNeedsUpdate(acked, chip, hasSession) {
+    void hasSession;
+    const want = modeSlug(chip);
+    if (!want) return false;
+    return !sessionModelMatches(acked, chip);
   }
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/Void Fork/src/plugins/betterQueue/settings.ts
@@ -10495,7 +10482,7 @@ html.void-cms-picked .void-cms-ghost {
   function privateBuild2() {
     if (inIncognito2()) return true;
     try {
-      const { route } = RoutingStore.useRoutingStore.getState();
+      const route = RoutingStore.useRoutingStore.getState().route;
       if (route?.temporary) return true;
       const cid = String(route?.conversationId || currentCid3() || "");
       if (cid && conversation(cid)?.temporary) return true;
@@ -12046,7 +12033,7 @@ html.void-cms-picked .void-cms-ghost {
     return next.length === list2.length ? void 0 : next;
   }
   function migrateLegacy3() {
-    const { plugins: plugins2 } = PlainSettings;
+    const plugins2 = PlainSettings.plugins;
     const mode = plugins2.ModeSync;
     const persist5 = plugins2.QueuePersist;
     if (!mode && !persist5) return;
@@ -12183,7 +12170,7 @@ html.void-cms-picked .void-cms-ghost {
   }
   function isToolbarPopup(popup) {
     if (!popup || typeof popup !== "object") return false;
-    const { range } = popup;
+    const range = popup.range;
     return !!range && typeof range.cloneRange === "function";
   }
   function cloneToolbarPopup(popup) {
@@ -12221,7 +12208,7 @@ html.void-cms-picked .void-cms-ghost {
     }
   }
   function pathData(svg4) {
-    return [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replaceAll(/\s+/g, " ").trim()).filter(Boolean).join(" ");
+    return [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" ");
   }
   function isCloseSvg(svg4) {
     const d3 = pathData(svg4);
@@ -12239,7 +12226,7 @@ html.void-cms-picked .void-cms-ghost {
       });
       if (horiz2.length >= 2) return true;
     }
-    const paths = [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replaceAll(/\s+/g, " ").trim()).filter(Boolean);
+    const paths = [...svg4.querySelectorAll("path")].map((p3) => (p3.getAttribute("d") || "").replace(/\s+/g, " ").trim()).filter(Boolean);
     const horiz = paths.filter((d3) => /^[Mm]\s*-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*[Hh]/.test(d3) && !/[VvAaCcQq]/.test(d3) && d3.length < 28);
     if (horiz.length >= 2) return true;
     const joined = paths.join(" ");
@@ -13117,7 +13104,7 @@ html.void-cms-picked .void-cms-ghost {
     const measure = () => {
       const shot = read2();
       if (!shot) return null;
-      let { el } = shot;
+      let el = shot.el;
       if (!el.isConnected && pin) {
         const fresh = messageById(pin);
         if (fresh?.isConnected) el = fresh;
@@ -14741,7 +14728,7 @@ html.void-cms-picked .void-cms-ghost {
     return next.length === list2.length ? void 0 : next;
   }
   function migrateLegacy4() {
-    const { plugins: plugins2 } = PlainSettings;
+    const plugins2 = PlainSettings.plugins;
     const jump3 = plugins2.QuoteJump;
     const sticky = plugins2.QuoteSticky;
     if (!jump3 && !sticky) return;
@@ -15552,13 +15539,13 @@ html.void-cms-picked .void-cms-ghost {
         noWarn: true,
         replacement: [
           {
-            match: /(\i\("sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-            replace: "$1,action:$self._ChatsPlus()",
+            match: /"sidebar-chats","Chats"\):\i\("sidebar-history","History"\),collapsed:\i,onToggle:\(\)=>\i\(\i\)/,
+            replace: "$&,action:$self._ChatsPlus()",
             noWarn: true
           },
           {
-            match: /(\i\("sidebar-chats","Chats"\),collapsed:\i,onToggle:\(\)=>\i\(\i\))/,
-            replace: "$1,action:$self._ChatsPlus()"
+            match: /"sidebar-chats","Chats"\),collapsed:\i,onToggle:\(\)=>\i\(\i\)/,
+            replace: "$&,action:$self._ChatsPlus()"
           }
         ]
       },
@@ -15633,8 +15620,8 @@ html.void-cms-picked .void-cms-ghost {
         find: "ENABLE_GROK_BOT_RELAY_CLIENT",
         noWarn: true,
         replacement: {
-          match: /(\i)&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
-          replace: "$1&&$3.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$4.jsx)($5,{}):null"
+          match: /&&(\i)&&(\i)\.ENABLE_GROK_BOT_RELAY_CLIENT\?\(0,(\i)\.jsx\)\((\i),\{\}\):null/,
+          replace: "&&$2.ENABLE_GROK_BOT_RELAY_CLIENT?(0,$3.jsx)($4,{}):null"
         }
       },
       {
@@ -16618,8 +16605,8 @@ html.void-cms-picked .void-cms-ghost {
       {
         find: "x-connector-ready-dismissed",
         replacement: {
-          match: /(\i)\.SHOW_X_CONNECTOR_READY_BANNER&&/,
-          replace: "$1.SHOW_X_CONNECTOR_READY_BANNER&&!$self.settings.store.hideConnectX&&"
+          match: /\.SHOW_X_CONNECTOR_READY_BANNER&&/,
+          replace: ".SHOW_X_CONNECTOR_READY_BANNER&&!$self.settings.store.hideConnectX&&"
         }
       },
       hideComponentPatch("BrowserNotificationBanner", "hideNotificationBanner"),
@@ -20045,10 +20032,10 @@ html.void-cms-picked .void-cms-ghost {
     else settings21.store.entries = entries2;
   }
   function normalize(text) {
-    return text.replaceAll(ZWSP, "").replaceAll(/\r\n?/g, "\n");
+    return text.replaceAll(ZWSP, "").replace(/\r\n?/g, "\n");
   }
   function hasContent(text) {
-    return text.replaceAll(/[\s\u00a0]/g, "") !== "";
+    return text.replace(/[\s\u00a0]/g, "") !== "";
   }
   function imeEvent(e3) {
     if (composing) return true;
@@ -20214,7 +20201,7 @@ html.void-cms-picked .void-cms-ghost {
       if (!view?.posAtDOM) return;
       const pos = view.posAtDOM(range.startContainer, range.startOffset);
       if (typeof pos !== "number" || pos < 0) return;
-      const { near } = view.state.selection.constructor;
+      const near = view.state.selection.constructor.near;
       if (!near) return;
       const pmSel = near(view.state.doc.resolve(pos));
       if (!pmSel) return;
@@ -20487,7 +20474,7 @@ html.void-cms-picked .void-cms-ghost {
     return null;
   }
   function escapeHtml2(text) {
-    return text.replaceAll(/[&<>"]/g, (ch) => {
+    return text.replace(/[&<>"]/g, (ch) => {
       if (ch === "&") return "&amp;";
       if (ch === "<") return "&lt;";
       if (ch === ">") return "&gt;";
@@ -21063,7 +21050,7 @@ html.void-cms-picked .void-cms-ghost {
     return `${conversationId3}:${messageId}`;
   }
   function clipSnippet(raw2) {
-    const text = raw2.replaceAll(/\s+/g, " ").trim();
+    const text = raw2.replace(/\s+/g, " ").trim();
     if (!text) return "";
     return text.length > SNIPPET_MAX ? `${text.slice(0, SNIPPET_MAX)}…` : text;
   }
@@ -21080,7 +21067,7 @@ html.void-cms-picked .void-cms-ghost {
     const groups = [];
     for (const [cid, items] of byCid) {
       const current3 = !!currentCid5 && cid === currentCid5;
-      const sorted = items.slice().toSorted((a3, b3) => {
+      const sorted = items.slice().sort((a3, b3) => {
         if (current3) {
           const ai = leafIndex.get(a3.messageId);
           const bi = leafIndex.get(b3.messageId);
@@ -21397,7 +21384,7 @@ html.void-cms-picked .void-cms-ghost {
     let routeId = "";
     let routePage = "";
     try {
-      const { route } = RoutingStore.useRoutingStore.getState();
+      const route = RoutingStore.useRoutingStore.getState().route;
       routeId = String(route?.conversationId ?? "");
       routePage = String(route?.page ?? "");
     } catch (e3) {
@@ -21702,7 +21689,7 @@ html.void-cms-picked .void-cms-ghost {
       const label = (btn.getAttribute("aria-label") || "").trim();
       if (PAGER_RE.test(label)) return true;
     }
-    const text = (el.textContent || "").replaceAll(/\s+/g, "");
+    const text = (el.textContent || "").replace(/\s+/g, "");
     return /^\d+\/\d+$/.test(text);
   }
   function starHost(row) {
@@ -21889,7 +21876,7 @@ html.void-cms-picked .void-cms-ghost {
     let panelTop = Infinity;
     for (const el of nodes) {
       if (headerSkipped(el) || !isRightPanelToggle(el)) continue;
-      const { top } = el.getBoundingClientRect();
+      const top = el.getBoundingClientRect().top;
       if (top > 160 || top >= panelTop) continue;
       panelNode = el;
       panelTop = top;
@@ -22089,7 +22076,7 @@ html.void-cms-picked .void-cms-ghost {
     settlePending();
   }
   function routeSlice(state4) {
-    const { route } = state4;
+    const route = state4.route;
     return `${route?.page ?? ""}|${route?.conversationId ?? ""}`;
   }
   var schedule4 = debounce(paintAll, 80);
@@ -22844,8 +22831,8 @@ html.void-cms-picked .void-cms-ghost {
         all: true,
         replacement: [
           {
-            match: /(\i)=`response-\$\{(\i)\.responseId\}`([\s\S]{0,3500}?)(\(0,\i\.jsxs?\)\("div",\{ref:\i,id:\1,className:"[^"]*",children:)\[(\i),(\i),(\i),(\i),(\i),(\i)\]/g,
-            replace: "$1=`response-${$2.responseId}`$3$4[$self._renderTimestamp({response:$2,isUser:!1}),$5,$6,$7,$8,$9,$10]"
+            match: /`response-\$\{(\i)\.responseId\}`([\s\S]{0,3500}?)(\(0,\i\.jsxs?\)\("div",\{ref:\i,id:\i,className:"[^"]*",children:)\[(\i),(\i),(\i),(\i),(\i),(\i)\]/g,
+            replace: "`response-${$1.responseId}`$2$3[$self._renderTimestamp({response:$1,isUser:!1}),$4,$5,$6,$7,$8,$9]"
           },
           {
             match: /let (\i)=(\i)\.responseId\?\?"";return ([\s\S]{0,500}?)(\(0,\i\.jsxs?\)\("div",\{className:"[^"]*",children:)\[(\i),(\i),(\i)\]/g,
@@ -23237,11 +23224,11 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
         noWarn: true,
         replacement: [
           {
-            match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]*?\}(?=,"stopRecordingImagineSession")/,
+            match: /"startRecordingImagineSession",0,function\(\)\{[\s\S]{0,400}?\}(?=,"stopRecordingImagineSession")/,
             replace: '"startRecordingImagineSession",0,function(){}'
           },
           {
-            match: /"stopRecordingImagineSession",0,function\(\)\{[\s\S]*?\}(?=\])/,
+            match: /"stopRecordingImagineSession",0,function\(\)\{[\s\S]{0,400}?\}(?=\])/,
             replace: '"stopRecordingImagineSession",0,function(){}'
           },
           {
@@ -26412,10 +26399,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     },
     patches: [
       {
-        find: [
-          "transformPastedHTML:",
-          /(\i)=\[(\i),(\i)\](?=,\i\[\d+\]=\2,\i\[\d+\]=\3,\i\[\d+\]=\1\))/
-        ],
+        find: "transformPastedHTML:",
         all: true,
         replacement: [
           {
@@ -26425,8 +26409,8 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
           },
           {
             // `et=[extensions,mention]` then `useEditor(props, et)`.
-            match: /(\i)=\[(\i),(\i)\](?=,\i\[\d+\]=\2,\i\[\d+\]=\3,\i\[\d+\]=\1\):\1=\i\[\d+\];let \i=\(0,\i\.\i\)\(\i,\1\))/,
-            replace: "$1=$self._deps($2,$3)"
+            match: /(transformPastedHTML:\i\}\}[\s\S]{0,400}?)(\i)=\[(\i),(\i)\](?=,\i\[\d+\]=\3,\i\[\d+\]=\4,\i\[\d+\]=\2\):\2=\i\[\d+\];let \i=\(0,\i\.\i\)\(\i,\2\))/,
+            replace: "$1$2=$self._deps($3,$4)"
           }
         ]
       }

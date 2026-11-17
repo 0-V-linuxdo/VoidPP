@@ -206,7 +206,7 @@ export default () => U.definePlugin({
             find: ['"response-action.more-actions"', "openReportDialog"],
             noWarn: true,
             replacement: {
-                match: /(\(0,\i\.jsx\)\(\i\.DropdownMenuContent,\{align:"end",children:)(\(0,\i\.jsx\)\(\i\.DropdownMenuItem,\{onClick:\(\)=>\{\i\.useReportStore\.getState\(\)\.openReportDialog\(\{responseId:(\i)\.responseId[^]*?\("response-action\.report","Report"\)\}\))\}\)/,
+                match: /(\(0,\i\.jsx\)\(\i\.DropdownMenuContent,\{align:"end",children:)(\(0,\i\.jsx\)\(\i\.DropdownMenuItem,\{onClick:\(\)=>\{\i\.useReportStore\.getState\(\)\.openReportDialog\(\{responseId:(\i)\.responseId.{0,400}?\("response-action\.report","Report"\)\}\))\}\)/,
                 replace: "$1$self.messageMenuChildren($2,$3)})",
             },
         },
