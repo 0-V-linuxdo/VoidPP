@@ -20,12 +20,49 @@ import type {
     SubscriptionsStoreModule,
     TextToSpeechStoreModule,
 } from "@grok-types/stores";
-
 import { proxyLazy } from "@utils/lazy";
 
 import { getFnSource } from "../fnSource";
 import { getRuntimeModuleCache } from "../patchTurbopack";
-import { find, findByPropsLazy, isZustandStore, requireModule, search } from "../turbopack";
+import { find, findByProps, findByPropsLazy, findStore, isZustandStore, requireModule, search } from "../turbopack";
+
+const hookHit = new Map<string, unknown>();
+const didLegacy = new Set<string>();
+const inspected = new Set<string>();
+
+function moduleValues(id: string | number): unknown[] {
+    const num = Number(id);
+    const required = requireModule<Record<string, unknown>>(num);
+    const runtime = getRuntimeModuleCache()?.[num];
+    const bags = [required, runtime?.namespaceObject, runtime?.exports];
+    const out: unknown[] = [];
+    const seen = new Set<unknown>();
+    for (const bag of bags) {
+        if (!bag || typeof bag !== "object") continue;
+        for (const value of Object.values(bag as Record<string, unknown>)) {
+            if (seen.has(value)) continue;
+            seen.add(value);
+            out.push(value);
+        }
+    }
+    return out;
+}
+
+function takeFromSearch<T>(label: string, accept: (value: unknown) => value is T): T | null {
+    for (const id of Object.keys(search(label))) {
+        const key = `${label}\0${id}`;
+        const values = moduleValues(id);
+        if (!values.length) continue;
+        for (const value of values) {
+            if (accept(value)) {
+                inspected.add(key);
+                return value;
+            }
+        }
+        inspected.add(key);
+    }
+    return null;
+}
 
 export const ChatPageStore: ChatPageStoreModule = findByPropsLazy("useChatPageStore");
 export const ConversationStore: ConversationStoreModule = findByPropsLazy("useConversationStore", "createOptimisticConversation");
@@ -34,28 +71,29 @@ export const FilesPageStore: FilesPageStoreModule = findByPropsLazy("useFilesPag
 export const MediaStore: MediaStoreModule = findByPropsLazy("useMediaStore", "useImagineModeStore");
 
 function hookFromFactory<T>(label: string, accept: (value: unknown) => value is T): T | null {
-    const legacy = find((mod: Record<string, unknown>) => accept(mod?.[label])) as Record<string, T> | null;
-    if (legacy && accept(legacy[label])) return legacy[label];
-
-    for (const id of Object.keys(search(label))) {
-        const mod = requireModule<Record<string, unknown>>(Number(id));
-        if (!mod || typeof mod !== "object") continue;
-        for (const value of Object.values(mod)) {
-            if (accept(value)) return value;
+    const cached = hookHit.get(label);
+    if (cached) return cached as T;
+    if (!didLegacy.has(label)) {
+        didLegacy.add(label);
+        const legacy = find((mod: Record<string, unknown>) => accept(mod?.[label])) as Record<string, T> | null;
+        if (legacy && accept(legacy[label])) {
+            hookHit.set(label, legacy[label]);
+            return legacy[label];
         }
     }
-    return find(accept) ?? null;
+    const hit = takeFromSearch(label, accept);
+    if (hit) hookHit.set(label, hit);
+    return hit;
 }
 
 function isModesHook(value: unknown): value is ModesStoreModule["useModesStore"] {
     if (!isZustandStore(value)) return false;
     try {
-        const state = value.getState() as { selectedModeId?: unknown; setSelectedModeId?: unknown; ensureLoaded?: unknown };
+        const state = value.getState() as { selectedModeId?: unknown; setSelectedModeId?: unknown };
         return !!state
             && typeof state === "object"
             && "selectedModeId" in state
-            && typeof state.setSelectedModeId === "function"
-            && typeof state.ensureLoaded === "function";
+            && typeof state.setSelectedModeId === "function";
     } catch {
         return false;
     }
@@ -65,7 +103,7 @@ function isRoutingHook(value: unknown): value is RoutingStoreModule["useRoutingS
     if (!isZustandStore(value)) return false;
     try {
         const state = value.getState() as { route?: { page?: unknown }; push?: unknown };
-        return !!state?.route && typeof state.route === "object" && "page" in state.route && typeof state.push === "function";
+        return !!state?.route && typeof state.route === "object" && "page" in state.route;
     } catch {
         return false;
     }
@@ -81,16 +119,22 @@ function isMessageHook(value: unknown): value is MessageStoreModule["useMessageS
     }
 }
 
-// The live bundle exports these hooks as short keys. The zustand name survives only inside the factory.
+function namedOrStore<T>(label: string, storeName: string, accept: (value: unknown) => value is T): T | null {
+    const hook = hookFromFactory(label, accept);
+    if (hook) return hook;
+    const store = findStore(storeName);
+    return accept(store) ? store : null;
+}
+
 export const ModesStore: ModesStoreModule = proxyLazy(() => {
-    const hook = hookFromFactory("useModesStore", isModesHook);
+    const hook = namedOrStore("useModesStore", "Modes", isModesHook);
     return hook ? { useModesStore: hook } : null;
-}, Infinity);
+});
 export const ResponseStore: ResponseStoreModule = findByPropsLazy("useResponseStore", "createOptimisticResponse");
 export const RoutingStore: RoutingStoreModule = proxyLazy(() => {
-    const hook = hookFromFactory("useRoutingStore", isRoutingHook);
+    const hook = namedOrStore("useRoutingStore", "Routing", isRoutingHook);
     return hook ? { useRoutingStore: hook } : null;
-}, Infinity);
+});
 
 const SESSION_MARKER = "useSession must be used within SessionStoreProvider";
 
@@ -113,23 +157,32 @@ function readSessionModule(mod: Record<string, unknown> | null | undefined): Ses
 }
 
 /** Named exports exist, but this module is not in the finder cache. `requireModule` of the factory still returns them. */
-function sessionModule(): SessionStoreModule | null {
-    const legacy = find((mod: Record<string, unknown>) => typeof mod?.useSession === "function" && typeof mod?.SessionStoreProvider === "function") as SessionStoreModule | null;
-    if (legacy?.useSession) return legacy;
+let sessionHit: SessionStoreModule | null = null;
+let sessionLegacy = false;
 
+function sessionModule(): SessionStoreModule | null {
+    if (sessionHit) return sessionHit;
+    if (!sessionLegacy) {
+        sessionLegacy = true;
+        const legacy = find((mod: Record<string, unknown>) => typeof mod?.useSession === "function" && typeof mod?.SessionStoreProvider === "function") as SessionStoreModule | null;
+        if (legacy?.useSession) return (sessionHit = legacy);
+    }
     for (const id of Object.keys(search(SESSION_MARKER))) {
+        const key = `session\0${id}`;
+        if (inspected.has(key)) continue;
+        inspected.add(key);
         const num = Number(id);
         const required = requireModule<Record<string, unknown>>(num);
         const runtime = getRuntimeModuleCache()?.[num];
         const hit = readSessionModule(required)
             ?? readSessionModule(runtime?.namespaceObject)
             ?? (runtime?.exports !== required ? readSessionModule(runtime?.exports) : null);
-        if (hit) return hit;
+        if (hit) return (sessionHit = hit);
     }
     return null;
 }
 
-export const SessionStore: SessionStoreModule = proxyLazy(() => sessionModule(), Infinity);
+export const SessionStore: SessionStoreModule = proxyLazy(() => sessionModule());
 function isSettingsDialogHook(value: unknown): value is SettingsDialogStoreModule["useSettingsDialogStore"] {
     if (typeof value !== "function" || typeof (value as { getState?: unknown }).getState !== "function") return false;
     try {
@@ -141,24 +194,10 @@ function isSettingsDialogHook(value: unknown): value is SettingsDialogStoreModul
 }
 
 /** Named export is gone. The hook is a short key on the factory that still contains `useSettingsDialogStore`. */
-function settingsDialogHook(): SettingsDialogStoreModule["useSettingsDialogStore"] | null {
-    const legacy = find((mod: Record<string, unknown>) => isSettingsDialogHook(mod?.useSettingsDialogStore)) as Record<string, SettingsDialogStoreModule["useSettingsDialogStore"]> | null;
-    if (legacy && isSettingsDialogHook(legacy.useSettingsDialogStore)) return legacy.useSettingsDialogStore;
-
-    for (const id of Object.keys(search("useSettingsDialogStore"))) {
-        const mod = requireModule<Record<string, unknown>>(Number(id));
-        if (!mod || typeof mod !== "object") continue;
-        for (const value of Object.values(mod)) {
-            if (isSettingsDialogHook(value)) return value;
-        }
-    }
-    return null;
-}
-
 export const SettingsDialogStore: SettingsDialogStoreModule = proxyLazy(() => {
-    const hook = settingsDialogHook();
+    const hook = hookFromFactory("useSettingsDialogStore", isSettingsDialogHook);
     return hook ? { useSettingsDialogStore: hook } : null;
-}, Infinity);
+});
 
 interface PluginsDialogHook {
     getState(): { open: boolean; setOpen(open: boolean): void };
@@ -175,26 +214,29 @@ function isPluginsDialogHook(value: unknown): value is PluginsDialogHook {
 }
 
 /** Named export is gone. The hook is a short key on the factory that still contains `usePluginsDialogStore`. */
-function pluginsDialogHook(): PluginsDialogHook | null {
-    for (const id of Object.keys(search("usePluginsDialogStore"))) {
-        const mod = requireModule<Record<string, unknown>>(Number(id));
-        if (!mod || typeof mod !== "object") continue;
-        for (const value of Object.values(mod)) {
-            if (isPluginsDialogHook(value)) return value;
-        }
+export const PluginsDialogStore: { usePluginsDialogStore: PluginsDialogHook } = proxyLazy(() => {
+    const hook = hookFromFactory("usePluginsDialogStore", isPluginsDialogHook);
+    return hook ? { usePluginsDialogStore: hook } : null;
+});
+function isSettingsHook(value: unknown): value is SettingsStoreModule["useSettingsStore"] {
+    if (!isZustandStore(value)) return false;
+    try {
+        const state = value.getState() as { isIncognito?: unknown };
+        return !!state && typeof state === "object" && "isIncognito" in state;
+    } catch {
+        return false;
     }
-    const legacy = find((mod: Record<string, unknown>) => isPluginsDialogHook(mod?.usePluginsDialogStore)) as { usePluginsDialogStore?: PluginsDialogHook } | null;
-    return legacy && isPluginsDialogHook(legacy.usePluginsDialogStore) ? legacy.usePluginsDialogStore : null;
 }
 
-export const PluginsDialogStore: { usePluginsDialogStore: PluginsDialogHook } = proxyLazy(() => {
-    const hook = pluginsDialogHook();
-    return hook ? { usePluginsDialogStore: hook } : null;
-}, Infinity);
-export const SettingsStore: SettingsStoreModule = findByPropsLazy("useSettingsStore", "modelConfigOverrideSchema");
+export const SettingsStore: SettingsStoreModule = proxyLazy(() => {
+    const named = findByProps("useSettingsStore") as SettingsStoreModule | null;
+    if (named && isSettingsHook(named.useSettingsStore)) return named;
+    const hook = namedOrStore("useSettingsStore", "Settings", isSettingsHook);
+    return hook ? { useSettingsStore: hook } as SettingsStoreModule : null;
+});
 export const SubscriptionsStore: SubscriptionsStoreModule = findByPropsLazy("useSubscriptionsStore");
 export const TextToSpeechStore: TextToSpeechStoreModule = findByPropsLazy("useTextToSpeechStore");
 export const MessageStore: MessageStoreModule = proxyLazy(() => {
-    const hook = hookFromFactory("useMessageStore", isMessageHook);
+    const hook = namedOrStore("useMessageStore", "Message", isMessageHook);
     return hook ? { useMessageStore: hook } : null;
-}, Infinity);
+});

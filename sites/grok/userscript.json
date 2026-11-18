@@ -1,0 +1,36 @@
+{
+    "id": "voidpp",
+    "name": "Void++",
+    "namespace": "https://github.com/0-V-linuxdo/VoidPP/dev",
+    "description": "A modification for grok.com",
+    "author": "Prism & Void++ Contributors",
+    "version": "20261114.59",
+    "license": "GPL-3.0-or-later",
+    "homepage": "https://github.com/0-V-linuxdo/VoidPP",
+    "supportURL": "https://github.com/0-V-linuxdo/VoidPP/issues",
+    "icon": "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/assets/logos/app-icon/voidpp-icon.svg",
+    "fileName": "VoidPP",
+    "updateBase": "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/uspp-from-1436/userscript",
+    "global": "VoidPP",
+    "globalInProduction": true,
+    "match": [
+        "*://grok.com/*",
+        "*://*.grok-sandbox.com/*",
+        "*://artifacts.grokusercontent.com/*",
+        "*://*.grokusercontent.com/*"
+    ],
+    "connect": ["raw.githubusercontent.com", "cdn.jsdelivr.net", "*"],
+    "themeHosts": ["raw.githubusercontent.com", "cdn.jsdelivr.net"],
+    "channels": {
+        "voidpp-beta": {
+            "namespace": "https://github.com/0-V-linuxdo/VoidPP/voidpp-beta",
+            "updateBase": "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/userscript",
+            "icon": "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-beta/assets/logos/app-icon/voidpp-icon.svg"
+        },
+        "voidpp-stable": {
+            "namespace": "https://github.com/0-V-linuxdo/VoidPP/voidpp-stable",
+            "updateBase": "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-stable/userscript",
+            "icon": "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/voidpp-stable/assets/logos/app-icon/voidpp-icon.svg"
+        }
+    }
+}

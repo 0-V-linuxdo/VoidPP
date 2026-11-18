@@ -28,7 +28,7 @@
                 "./src/components/*"
             ],
             "@plugins/*": [
-                "./src/plugins/*"
+                "./sites/grok/plugins/*"
             ],
             "@turbopack/*": [
                 "./src/turbopack/*"

@@ -135,7 +135,7 @@
     },
     "overrides": [
         {
-            "files": ["src/plugins/**/index.{ts,tsx}"],
+            "files": ["sites/grok/plugins/**/index.{ts,tsx}"],
             "rules": {
                 "no-useless-escape": "off"
             }

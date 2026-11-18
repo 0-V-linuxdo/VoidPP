@@ -48,7 +48,7 @@ export interface FinderSpec {
     args: Array<{ kind: "string" | "regex" | "identifier" | "unknown"; value?: string; regex?: RegExp; raw: string }>;
 }
 
-const PLUGIN_DIR = resolve("src/plugins");
+const PLUGIN_DIR = resolve("sites/grok/plugins");
 const SRC_DIR = resolve("src");
 
 const FINDER_CALLS: Record<string, FinderKind> = {
@@ -111,7 +111,7 @@ export function scanPluginIndexFiles(): string[] {
 }
 
 function pushIndex(dir: string, out: string[]): void {
-    for (const ext of [".tsx", ".ts"]) {
+    for (const ext of [".tsx", ".ts", ".js"]) {
         const p = resolve(dir, `index${ext}`);
         if (existsSync(p)) { out.push(p); return; }
     }

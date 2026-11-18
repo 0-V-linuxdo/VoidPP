@@ -1,0 +1,656 @@
+/*
+ * Void++, a modification for grok.com
+ * Copyright (c) 2026 Void++ Contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+import "./styles.css";
+
+import { definePluginSettings, PlainSettings, SettingsStore } from "@api/Settings";
+import { Flex, Textarea, Tooltip, TooltipContent, TooltipTrigger } from "@components";
+import { InfoIcon, MessageCircleIcon } from "@components/icons";
+import type { RoutingStoreState } from "@grok-types/stores/RoutingStore";
+import { React, useState } from "@turbopack/common/react";
+import { RoutingStore } from "@turbopack/common/stores";
+import { Devs } from "@utils/constants";
+import { classNameFactory, registerStyle, unregisterStyle } from "@utils/css";
+import { Logger } from "@utils/Logger";
+import { clamp } from "@utils/misc";
+import definePlugin, { OptionType } from "@utils/types";
+
+import { clampToWidth } from "./clamp";
+
+const logger = new Logger("CustomGreeting");
+
+const cl = classNameFactory("void-ph-");
+const HERO_STYLE = "placeholderHero";
+const INPUT_STYLE = "placeholderInput";
+const HERO_SEL = "h1[data-void-ph-hero]";
+const EDITORS = [".query-bar .tiptap", "form[data-composer] .tiptap"];
+const EDITOR_SEL = EDITORS.join(", ");
+const EMPTY_SEL = EDITORS.map(s => `${s} p.is-editor-empty, ${s} p.is-empty:only-child`).join(", ");
+const ROOT_BEFORE = EDITORS.map(s => `${s}::before`).join(", ");
+const EMPTY_BEFORE = EDITORS.map(s => `${s} p.is-editor-empty:first-child::before, ${s} p.is-empty:only-child::before`).join(", ");
+const INPUT_HOST = ".query-bar, form[data-composer]";
+const CYCLING_SEL = ".query-bar div.absolute.inset-0.pointer-events-none[aria-hidden=\"true\"]";
+const WIDTH_PAD = 8;
+
+const DEFAULT_PHRASES = [
+    "Ask not what your country can do for you — ask what you can do for your country.",
+    "It always seems impossible until it is done.",
+    "The best way to predict the future is to create it.",
+].join("\n");
+
+function parsePhrases(raw: unknown): string[] {
+    return String(raw ?? "").split("\n").map(s => s.trim()).filter(Boolean);
+}
+
+function escapeForCssContent(text: string): string {
+    return text.replaceAll("\\", "\\\\").replaceAll('"', "\\\"").replaceAll("\n", "\\A ");
+}
+
+const settings = definePluginSettings({
+    mode: {
+        type: OptionType.SELECT,
+        description: "When to rotate the home greeting.",
+        options: [
+            { label: "Each visit to home", value: "refresh", default: true },
+            { label: "Timer while on home", value: "interval" },
+            { label: "Click the title", value: "manual" },
+        ],
+    },
+    order: {
+        type: OptionType.SELECT,
+        description: "Order of the greeting list.",
+        options: [
+            { label: "Sequential", value: "sequential", default: true },
+            { label: "Random", value: "random" },
+        ],
+    },
+    intervalSec: {
+        type: OptionType.SLIDER,
+        description: "Seconds between rotations (timer mode).",
+        min: 1,
+        max: 3600,
+        default: 10,
+    },
+    heroOnlyOutsideProject: {
+        type: OptionType.BOOLEAN,
+        description: "Outside projects, only replace the home greeting. The input keeps Grok's placeholder.",
+        default: true,
+    },
+    phrases: {
+        type: OptionType.COMPONENT,
+        default: DEFAULT_PHRASES,
+        component: PhraseListsEditor,
+    },
+    imaginePhrases: {
+        type: OptionType.COMPONENT,
+        default: "",
+        component: () => null,
+    },
+}).withPrivateSettings<{ phrases: string; imaginePhrases: string; greetIndex: number; lastRandom: number }>();
+
+const OLD_NAME = "Placeholder";
+const NEW_NAME = "CustomGreeting";
+
+function renameList(list: unknown): string[] | undefined {
+    if (!Array.isArray(list) || !list.includes(OLD_NAME)) return undefined;
+    const seen = new Set<string>();
+    const next: string[] = [];
+    for (const item of list) {
+        if (typeof item !== "string") continue;
+        const name = item === OLD_NAME ? NEW_NAME : item;
+        if (seen.has(name)) continue;
+        seen.add(name);
+        next.push(name);
+    }
+    return next;
+}
+
+function migrateLegacy() {
+    const bag = PlainSettings.plugins;
+    const old = bag[OLD_NAME];
+    const meta = bag.Settings;
+    const menu = bag.PluginsFlyout?.menuPlugins;
+    const known = meta?.knownPlugins;
+    const pinned = renameList(meta?.pinnedPlugins);
+    const starred = renameList(meta?.starredPlugins);
+    const menuRec = menu && typeof menu === "object" && !Array.isArray(menu) ? menu as Record<string, unknown> : undefined;
+    const knownRec = known && typeof known === "object" && !Array.isArray(known) ? known as Record<string, unknown> : undefined;
+    const menuHas = !!menuRec && OLD_NAME in menuRec;
+    const knownHas = !!knownRec && OLD_NAME in knownRec;
+    if (!old && !menuHas && !knownHas && !pinned && !starred) return;
+
+    if (old) {
+        const target = bag[NEW_NAME] ??= {};
+        const keys = Object.keys(target);
+        const stub = keys.length === 0 || (keys.length === 1 && keys[0] === "enabled");
+        for (const key of Object.keys(old)) {
+            if (stub || !(key in target)) target[key] = old[key];
+        }
+        delete bag[OLD_NAME];
+    }
+
+    if (meta) {
+        if (pinned) meta.pinnedPlugins = pinned;
+        if (starred) meta.starredPlugins = starred;
+        if (knownHas && knownRec) {
+            if (!(NEW_NAME in knownRec)) knownRec[NEW_NAME] = knownRec[OLD_NAME];
+            delete knownRec[OLD_NAME];
+        }
+    }
+
+    if (menuHas && menuRec) {
+        if (!(NEW_NAME in menuRec)) menuRec[NEW_NAME] = menuRec[OLD_NAME];
+        delete menuRec[OLD_NAME];
+    }
+
+    SettingsStore.markAsChanged();
+    logger.info("Migrated Placeholder into CustomGreeting");
+}
+
+const pluginName = Object.getOwnPropertyDescriptor(settings, "pluginName");
+if (pluginName?.set && pluginName.get) {
+    Object.defineProperty(settings, "pluginName", {
+        configurable: true,
+        enumerable: true,
+        get: pluginName.get,
+        set(name: string) {
+            if (name === NEW_NAME) migrateLegacy();
+            pluginName.set!.call(settings, name);
+        },
+    });
+}
+
+function PhraseTabHint({ children }: { children: string }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <span className="void-info-hint" aria-label={children}>
+                    <InfoIcon size={16} />
+                </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="end" sideOffset={6} className={cl("hint-pop")}>
+                {children}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
+
+function PhraseListsEditor() {
+    const [tab, setTab] = useState<"phrases" | "imagine">("phrases");
+    const { phrases, imaginePhrases } = settings.use(["phrases", "imaginePhrases"]);
+    const home = tab === "phrases";
+    const hint = home
+        ? "One phrase per line. The non-project home greeting uses these and may wrap. Outside projects the input keeps Grok's placeholder unless the option above is off. Project chat input uses the first phrase on one line. Empty list uses Grok's defaults."
+        : "One short phrase per line. The Imagine query bar uses the first phrase on one line. Empty list keeps Grok's \"Type to imagine\".";
+    return (
+        <Flex flexDirection="column" gap="0.5rem" className={cl("root")}>
+            <div className={cl("tabrow")}>
+                <div className={cl("tabs")} role="tablist">
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={home}
+                        className={cl("tab", home && "tab-active")}
+                        onClick={() => setTab("phrases")}
+                    >
+                        Phrases
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={!home}
+                        className={cl("tab", !home && "tab-active")}
+                        onClick={() => setTab("imagine")}
+                    >
+                        Imagine
+                    </button>
+                </div>
+                <PhraseTabHint>{hint}</PhraseTabHint>
+            </div>
+            <div className={cl("textarea-wrap")} role="tabpanel">
+                {home ? (
+                    <Textarea
+                        className={cl("textarea")}
+                        value={phrases ?? DEFAULT_PHRASES}
+                        onChange={e => { settings.store.phrases = e.target.value; }}
+                        placeholder={DEFAULT_PHRASES}
+                    />
+                ) : (
+                    <Textarea
+                        className={cl("textarea")}
+                        value={imaginePhrases ?? ""}
+                        onChange={e => { settings.store.imaginePhrases = e.target.value; }}
+                        placeholder={"A cat astronaut on the moon\nNeon rain in a quiet city"}
+                    />
+                )}
+            </div>
+        </Flex>
+    );
+}
+
+function isNonProjectHome(): boolean {
+    try {
+        const { page, workspaceId } = RoutingStore.useRoutingStore.getState().route;
+        return page === "main" && !workspaceId;
+    } catch {
+        const path = location.pathname.replace(/\/+$/, "") || "/";
+        return path === "/";
+    }
+}
+
+function isProjectChat(): boolean {
+    try {
+        return Boolean(RoutingStore.useRoutingStore.getState().route.workspaceId);
+    } catch {
+        return false;
+    }
+}
+
+function replaceChatInput(): boolean {
+    if (isProjectChat()) return true;
+    return settings.store.heroOnlyOutsideProject === false;
+}
+
+function isImaginePage(): boolean {
+    try {
+        const page = String(RoutingStore.useRoutingStore.getState().route?.page ?? "");
+        if (page.startsWith("imagine")) return true;
+    } catch { /* route not ready */ }
+    try {
+        return (location.pathname.replace(/\/+$/, "") || "/").startsWith("/imagine");
+    } catch {
+        return false;
+    }
+}
+
+function phrases(): string[] | null {
+    try {
+        const lines = parsePhrases(settings.store.phrases ?? DEFAULT_PHRASES);
+        return lines.length ? lines : null;
+    } catch {
+        return null;
+    }
+}
+
+function imaginePhrases(): string[] | null {
+    try {
+        const lines = parsePhrases(settings.store.imaginePhrases);
+        return lines.length ? lines : null;
+    } catch {
+        return null;
+    }
+}
+
+function rotateMode(): "refresh" | "interval" | "manual" {
+    const value = String(settings.store.mode ?? "refresh");
+    if (value === "interval" || value === "manual") return value;
+    return "refresh";
+}
+
+function rotateOrder(): "sequential" | "random" {
+    return settings.store.order === "random" ? "random" : "sequential";
+}
+
+function intervalMs(): number {
+    return clamp(Number(settings.store.intervalSec ?? 10), 1, 3600) * 1000;
+}
+
+function routeKey(s: RoutingStoreState): string {
+    return `${s.route.page ?? ""}|${s.route.workspaceId ?? ""}`;
+}
+
+let started = false;
+let wasHome = false;
+let timerId: ReturnType<typeof setInterval> | undefined;
+let clicks: AbortController | null = null;
+let treeObs: MutationObserver | null = null;
+let sizeObs: ResizeObserver | null = null;
+let observed: Element | null = null;
+let raf = 0;
+let probe: HTMLSpanElement | null = null;
+let lastInputCss = "";
+
+function pickNextIndex(listLen: number, advance: boolean): number {
+    if (listLen <= 0) return 0;
+    const current = Number(settings.store.greetIndex ?? -1);
+    const last = Number(settings.store.lastRandom ?? -1);
+    if (listLen === 1) {
+        if (current !== 0) settings.store.greetIndex = 0;
+        if (last !== 0) settings.store.lastRandom = 0;
+        return 0;
+    }
+    if (!advance) return current >= 0 && current < listLen ? current : 0;
+    if (rotateOrder() === "random") {
+        const prev = current >= 0 && current < listLen ? current : last;
+        let next = Math.floor(Math.random() * listLen);
+        let guard = 0;
+        while (next === prev && guard++ < 10) next = Math.floor(Math.random() * listLen);
+        settings.store.greetIndex = next;
+        settings.store.lastRandom = next;
+        return next;
+    }
+    const prev = current >= -1 && current < listLen ? current : -1;
+    const next = (prev + 1) % listLen;
+    settings.store.greetIndex = next;
+    return next;
+}
+
+function paintHero(advance: boolean) {
+    if (!started || !isNonProjectHome()) {
+        unregisterStyle(HERO_STYLE);
+        return;
+    }
+    const list = phrases();
+    if (!list) {
+        unregisterStyle(HERO_STYLE);
+        return;
+    }
+    const index = pickNextIndex(list.length, advance);
+    const content = escapeForCssContent(list[index] ?? list[0] ?? "");
+    const clickable = rotateMode() === "manual" && list.length > 1;
+    registerStyle(
+        HERO_STYLE,
+        `${HERO_SEL}{font-size:0!important;line-height:0!important;color:transparent!important}`
+        + `${HERO_SEL}>*{display:none!important}`
+        + `${HERO_SEL}::before{content:"${content}";display:block!important;`
+        + "font-size:1.5rem!important;line-height:1.35!important;font-weight:600!important;"
+        + "letter-spacing:-0.48px!important;color:var(--fg-primary)!important;"
+        + "white-space:pre-wrap!important;text-align:center!important;width:100%!important;margin:0 auto!important}"
+        + (clickable ? `${HERO_SEL}{cursor:pointer!important;user-select:none!important}` : ""),
+    );
+}
+
+function stopTimer() {
+    if (timerId === undefined) return;
+    clearInterval(timerId);
+    timerId = undefined;
+}
+
+function startTimerIfNeeded() {
+    stopTimer();
+    if (!started || !isNonProjectHome()) return;
+    if (rotateMode() !== "interval") return;
+    const list = phrases();
+    if (!list || list.length <= 1) return;
+    timerId = setInterval(() => paintHero(true), intervalMs());
+}
+
+function enterHome() {
+    const first = !wasHome;
+    wasHome = true;
+    paintHero(first && rotateMode() === "refresh");
+    startTimerIfNeeded();
+}
+
+function leaveHome() {
+    wasHome = false;
+    stopTimer();
+    unregisterStyle(HERO_STYLE);
+}
+
+function syncHero(fromRoute: boolean) {
+    if (!started) return;
+    if (!isNonProjectHome()) {
+        leaveHome();
+        return;
+    }
+    if (fromRoute) enterHome();
+    else {
+        paintHero(false);
+        startTimerIfNeeded();
+    }
+}
+
+function onManualClick(e: Event) {
+    if (!started || !isNonProjectHome()) return;
+    if (rotateMode() !== "manual") return;
+    const list = phrases();
+    if (!list || list.length <= 1) return;
+    const el = e.target instanceof Element ? e.target : null;
+    if (!el?.closest(HERO_SEL)) return;
+    const sel = window.getSelection?.();
+    if (sel && String(sel).trim()) return;
+    paintHero(true);
+}
+
+function ensureProbe(): HTMLSpanElement {
+    if (probe?.isConnected) return probe;
+    probe = document.createElement("span");
+    probe.dataset.voidPhProbe = "";
+    probe.style.cssText = "position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;white-space:nowrap;";
+    document.documentElement.appendChild(probe);
+    return probe;
+}
+
+function measureFor(el: HTMLElement, text: string): number {
+    const before = getComputedStyle(el, "::before");
+    const base = getComputedStyle(el);
+    const fontSize = before.fontSize && before.fontSize !== "0px" ? before.fontSize : base.fontSize;
+    const node = ensureProbe();
+    node.style.font = before.font && before.font !== "0px" ? before.font : base.font;
+    node.style.fontSize = fontSize;
+    node.style.fontFamily = before.fontFamily || base.fontFamily;
+    node.style.fontWeight = before.fontWeight || base.fontWeight;
+    node.style.fontStyle = before.fontStyle || base.fontStyle;
+    node.style.letterSpacing = before.letterSpacing || base.letterSpacing;
+    node.style.wordSpacing = before.wordSpacing || base.wordSpacing;
+    node.style.fontFeatureSettings = before.fontFeatureSettings || base.fontFeatureSettings;
+    node.style.textTransform = before.textTransform || base.textTransform;
+    node.textContent = text;
+    return node.getBoundingClientRect().width;
+}
+
+function clearInputOverlay() {
+    if (!lastInputCss) return;
+    lastInputCss = "";
+    unregisterStyle(INPUT_STYLE);
+}
+
+function bindSize(p: HTMLElement | null) {
+    const editor = p?.closest(EDITOR_SEL) ?? p;
+    if (editor === observed) return;
+    sizeObs?.disconnect();
+    observed = editor;
+    if (!editor) return;
+    sizeObs ??= new ResizeObserver(scheduleInput);
+    sizeObs.observe(editor);
+    if (p && p !== editor) sizeObs.observe(p);
+}
+
+function paintInput() {
+    if (!started) {
+        bindSize(null);
+        clearInputOverlay();
+        return;
+    }
+    const imagine = isImaginePage();
+    const cycling = !imagine && !isProjectChat() && !!document.querySelector(CYCLING_SEL);
+    if ((!imagine && !replaceChatInput()) || cycling) {
+        bindSize(null);
+        clearInputOverlay();
+        return;
+    }
+    const list = imagine ? imaginePhrases() : phrases();
+    const p = document.querySelector(EMPTY_SEL);
+    if (!(p instanceof HTMLElement) || !list) {
+        bindSize(p instanceof HTMLElement ? p : null);
+        clearInputOverlay();
+        return;
+    }
+    bindSize(p);
+    const full = list[0] || "";
+    if (!full) {
+        clearInputOverlay();
+        return;
+    }
+    const shown = clampToWidth(full, Math.max(0, p.clientWidth - WIDTH_PAD), t => measureFor(p, t));
+    const css = `${ROOT_BEFORE}{content:none!important}${EMPTY_BEFORE}{content:"${escapeForCssContent(shown)}"!important;text-overflow:clip!important}`;
+    if (css === lastInputCss) return;
+    lastInputCss = css;
+    registerStyle(INPUT_STYLE, css);
+}
+
+function scheduleInput() {
+    if (!started || raf) return;
+    raf = requestAnimationFrame(() => {
+        raf = 0;
+        paintInput();
+    });
+}
+
+export default definePlugin({
+    name: "CustomGreeting",
+    icon: MessageCircleIcon,
+    description: "Replace the non-project home greeting and the project chat input. Outside projects, keep Grok's input placeholder unless that option is off.",
+    authors: [Devs.p],
+    tags: ["appearance"],
+    settings,
+
+    _phrases() {
+        if (isImaginePage() || !replaceChatInput()) return null;
+        return phrases();
+    },
+
+    _inputPlaceholder(value: unknown) {
+        if (isImaginePage()) return value;
+        const list = this._phrases();
+        if (!list?.length) return value;
+        if (typeof value === "string") return list[0];
+        if (Array.isArray(value)) return list;
+        return value;
+    },
+
+    start() {
+        started = true;
+        wasHome = false;
+        clicks = new AbortController();
+        document.addEventListener("click", onManualClick, { signal: clicks.signal });
+        treeObs = new MutationObserver(muts => {
+            for (const m of muts) {
+                const t = m.target;
+                if (t instanceof Element && t.closest(INPUT_HOST)) {
+                    scheduleInput();
+                    return;
+                }
+                if (m.type !== "childList") continue;
+                for (const n of m.addedNodes) {
+                    if (n instanceof Element && (n.matches(INPUT_HOST) || n.querySelector(INPUT_HOST))) {
+                        scheduleInput();
+                        return;
+                    }
+                }
+            }
+        });
+        treeObs.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["data-placeholder", "class"],
+        });
+        syncHero(true);
+        scheduleInput();
+    },
+
+    stop() {
+        started = false;
+        clicks?.abort();
+        clicks = null;
+        treeObs?.disconnect();
+        treeObs = null;
+        sizeObs?.disconnect();
+        sizeObs = null;
+        observed = null;
+        if (raf) cancelAnimationFrame(raf);
+        raf = 0;
+        probe?.remove();
+        probe = null;
+        lastInputCss = "";
+        stopTimer();
+        wasHome = false;
+        unregisterStyle(INPUT_STYLE);
+        unregisterStyle(HERO_STYLE);
+    },
+
+    onSettingsChange() {
+        syncHero(false);
+        scheduleInput();
+    },
+
+    zustand: {
+        RoutingStore: {
+            selector: routeKey,
+            handler() {
+                syncHero(true);
+                scheduleInput();
+            },
+        },
+    },
+
+    patches: [
+        {
+            find: '"LoggedOutHomeComposer",0,',
+            noWarn: true,
+            replacement: {
+                match: /(placeholder:)(\i)(,"aria-label":)/,
+                replace: "$1$self._inputPlaceholder($2)$3",
+            },
+        },
+        {
+            find: "data-query-bar-mode-select",
+            all: true,
+            replacement: [
+                {
+                    match: /("query-bar\.voice-connecting-placeholder","Connecting…"\):)(\i)(?=,isLoading)/,
+                    replace: "$1$self._inputPlaceholder($2)",
+                    noWarn: true,
+                },
+                {
+                    match: /(\{placeholder:)(\i)(?=,newChatPlaceholder:)/,
+                    replace: "$1$self._inputPlaceholder($2)",
+                    noWarn: true,
+                },
+                {
+                    match: /(\)\)\}\):)(\i)(?=,placeholderClassName:)/,
+                    replace: "$1$self._inputPlaceholder($2)",
+                    noWarn: true,
+                },
+                {
+                    // Desktop object, then the non-desktop placeholder: `}):ident`.
+                    match: /(newChatPlaceholder:\i\}\):)(\i)/,
+                    replace: "$1$self._inputPlaceholder($2)",
+                    noWarn: true,
+                },
+            ],
+        },
+        {
+            find: ["placeholderClassName", "disableAutoFocus"],
+            all: true,
+            replacement: {
+                // Call sites only. The editor itself destructures `{draft,draftKey,placeholder,placeholderClassName,…}=props`;
+                // rewriting that pattern is a SyntaxError and drops every patch on the module (StableComposer too).
+                match: /(handleDraftChange:\i,placeholder:|\.\.\.\i,placeholder:)(\i)(?=,placeholderClassName:)/,
+                replace: "$1$self._inputPlaceholder($2)",
+            },
+        },
+        {
+            find: "desktop-shell.home.greeting-explore",
+            all: true,
+            replacement: {
+                match: /\(0,(\i)\.jsx\)\((\i),\{alternate:(\i),current:(\i),showingAlternate:(\i)\}\)/,
+                replace: '(0,$1.jsx)("h1",{"data-void-ph-hero":"",style:{display:"contents"},children:(0,$1.jsx)($2,{alternate:$3,current:$4,showingAlternate:$5})})',
+            },
+        },
+        {
+            find: '"HeroHeading",0,',
+            all: true,
+            noWarn: true,
+            replacement: {
+                match: /("h1",\{className:(?:"[^"]*"|\i)),children:/,
+                replace: '$1,"data-void-ph-hero":"",children:',
+            },
+        },
+    ],
+});
