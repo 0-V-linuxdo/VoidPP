@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261114.59
+// @version      20261114.60
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -9,8 +9,8 @@
 // @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/assets/logos/app-icon/voidpp-icon.svg
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP/issues
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/uspp-from-1436/userscript/VoidPP.user.js
-// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/uspp-from-1436/userscript/VoidPP.user.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
+// @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
 // @match        *://artifacts.grokusercontent.com/*
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261114.59", date: null, notes: ["Rebuilt from 20261114.36 on Userscript++: `sites/grok` site factory, every plugin under `sites/grok/plugins/<name>` exports a `U =>` factory, metadata in `userscript.json`, plugin CSS through `U.registerStyle`.", "Same plugins, defaults and settings as 20261114.36 (PluginsFlyout kept; settings tab ids stay `voidpp_*_tab`). Patches retargeted to the current Grok bundle."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261114.60", date: null, notes: ["`dev` now carries the Userscript++ rebuild from 20261114.36; update URL points back to the `dev` branch."] }, { version: "20261114.59", date: null, notes: ["Rebuilt from 20261114.36 on Userscript++: `sites/grok` site factory, every plugin under `sites/grok/plugins/<name>` exports a `U =>` factory, metadata in `userscript.json`, plugin CSS through `U.registerStyle`.", "Same plugins, defaults and settings as 20261114.36 (PluginsFlyout kept; settings tab ids stay `voidpp_*_tab`). Patches retargeted to the current Grok bundle."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -92,7 +92,7 @@ try {
   var define_USPP_SITES_default = ["grok"];
 
   // <define:__USPP_UPDATE__>
-  var define_USPP_UPDATE_default = { meta: "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/uspp-from-1436/userscript/VoidPP.meta.js", download: "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/uspp-from-1436/userscript/VoidPP.user.js" };
+  var define_USPP_UPDATE_default = { meta: "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.meta.js", download: "https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js" };
 
   // ../../../../../../../Users/zhutaiyu/Downloads/Cursor Workspace/uspp-publish/repo/node_modules/preact/compat/dist/compat.module.js
   var compat_module_exports = {};
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261114.59" : "0.0.0";
+  var VERSION = true ? "20261114.60" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
