@@ -777,9 +777,23 @@ export default definePlugin({
         {
             find: 'sectionId:"recent"',
             all: true,
+            replacement: [
+                {
+                    match: /sectionId:"recent",children:\[/,
+                    replace: 'sectionId:"recent",children:[$self._renderActionBar(),',
+                    noWarn: true,
+                },
+                {
+                    match: /(sectionId:"recent",children:)(\i)(?=[,}\]])/,
+                    replace: "$1[$self._renderActionBar(),$2]",
+                },
+            ],
+        },
+        {
+            find: '"sidebar-library-nav","Library"',
             replacement: {
-                match: /sectionId:"recent",children:\[/,
-                replace: 'sectionId:"recent",children:[$self._renderActionBar(),',
+                match: /(selected:"library"===\i\.page,)/,
+                replace: '"aria-label":"Library",$1',
             },
         },
     ],

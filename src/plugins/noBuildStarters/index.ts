@@ -22,8 +22,13 @@ export default definePlugin({
             all: true,
             replacement: [
                 {
+                    match: /(\i)=(\i)\?\(0,\i\.jsx\)\(\i,\{chips:\i,page:\i,spins:\i,onSelect:\i,onMore:\i\}\):null/,
+                    replace: "$1=null",
+                },
+                {
                     match: /BuildStarters:function\((\i)\)\{/,
                     replace: "BuildStarters:function($1){return null;",
+                    noWarn: true,
                 },
                 {
                     match: /(?=\(0,\i\.jsx\)\(\i\.f\.div,\{className:"flex w-full flex-col items-center pt-1 pb-2)/,

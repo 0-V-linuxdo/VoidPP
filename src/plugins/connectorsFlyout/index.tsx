@@ -356,11 +356,9 @@ export default definePlugin({
         },
         {
             // Desktop account menu: insert Connect Apps before the Help submenu in the item list.
-            find: '"user-dropdown.help","Help"',
-            all: true,
-            noWarn: true,
+            find: "onOpenChangelog",
             replacement: {
-                match: /(children:\[)(\i,\i,\i,\i,)(\i,\i,\i,\i\])([\s\S]{0,220}?function \i\(e\)\{return e\.toggleOpen\})/,
+                match: /(children:\[)(\i,\i,\i,\i,)(\i,\i,\i,\i,\i\])([\s\S]{0,250}?function \i\(e\)\{return e\.toggleOpen\})/,
                 replace: "$1$2$self._renderItem(),$3$4",
             },
         },

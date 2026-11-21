@@ -8,7 +8,6 @@
 
 html.void-sb-clib #app-sidebar {
     position: relative;
-    anchor-name: --void-sb;
 }
 
 html.void-sb-clib #app-sidebar :is(a[href="/library"], a[href="/library/"], button[aria-label="Library"], button:has(use[href^="#icon-"][href$="-library"])) {
@@ -100,6 +99,13 @@ html.void-sb-clib button[aria-label="搜索"]:not(#app-sidebar *) {
     left: 176px !important;
     right: auto !important;
     z-index: 6;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    overflow: hidden !important;
 }
 
 html.void-sb-clib #app-sidebar :is(button[aria-label="Search"], button:has(use[href="#icon-xs-search"]), button:has(use[href="#icon-sm-search"])) {
@@ -172,19 +178,4 @@ html.void-sb-clib :is(
 html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *),
 html.void-sb-clib.void-sb-cnc button[aria-label="搜索"]:not(#app-sidebar *) {
     left: 176px !important;
-}
-
-@supports (anchor-name: --void-sb) {
-    html.void-sb-clib button[aria-label="Search"]:not(#app-sidebar *),
-    html.void-sb-clib button[aria-label="搜索"]:not(#app-sidebar *) {
-        position-anchor: --void-sb;
-        top: calc(anchor(top) + 12px) !important;
-        left: calc(anchor(right) - 44px) !important;
-        right: auto !important;
-    }
-
-    html.void-sb-clib.void-sb-cnc button[aria-label="Search"]:not(#app-sidebar *),
-    html.void-sb-clib.void-sb-cnc button[aria-label="搜索"]:not(#app-sidebar *) {
-        left: calc(anchor(right) - 80px) !important;
-    }
 }

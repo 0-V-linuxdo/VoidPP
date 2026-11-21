@@ -291,6 +291,7 @@ export default definePlugin({
         },
         {
             find: "registryTabs",
+            noWarn: true,
             replacement: [
                 {
                     match: /\.filter\(\i=>\i\.visible\(\i\)&&!\(\i&&"team-overview"===\i\.id\)\)/,
@@ -320,8 +321,8 @@ export default definePlugin({
             find: '"data-settings-tab"',
             all: true,
             replacement: {
-                match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.X\[(\i)\.id\]\}\)/g,
-                replace: "leading:$self._navLeading($4.id)||(0,$1.jsx)($2.f,{name:$3.X[$4.id]})",
+                match: /leading:\(0,(\i)\.jsx\)\((\i)\.f,\{name:(\i)\.(\i)\[(\i)\.id\]\}\)/g,
+                replace: "leading:$self._navLeading($5.id)||(0,$1.jsx)($2.f,{name:$3.$4[$5.id]})",
             },
         },
         {
@@ -339,6 +340,10 @@ export default definePlugin({
                 {
                     match: /\[(\i),(\i)\]=\(0,(\i)\.useState\)\((\i)\);(\i)&&\1!==\4&&\2\(\4\)([\s\S]{0,1200}?)(\i)=(\i)=>(\i)\(\(\)=>(\i)\(\8\)\),(\i)\[34\]=\9,(\i)\[35\]=\10,(\i)\[36\]=\7/,
                     replace: "[$1,$2]=(0,$3.useState)($4);$5&&$1!==$4&&$2($4)$6$7=$8=>$9(()=>{$self._selectNavTab($8,$10);$2($8);}),$11[34]=$9,$12[35]=$10,$13[36]=$7",
+                },
+                {
+                    match: /\{hosted:(\i),tabs:(\i)\.flatMap\((\i)\)\}/,
+                    replace: "{hosted:$1,tabs:$2.flatMap($3).concat($self._tabEntries())}",
                 },
             ],
         },

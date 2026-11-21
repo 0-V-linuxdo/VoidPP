@@ -72,6 +72,7 @@ export default definePlugin({
                 {
                     match: /\(0,\i\)\("\/api\/log_metric",\i\)/g,
                     replace: "false",
+                    noWarn: true,
                 },
                 {
                     match: /[A-Za-z_$][\w$]*\("\/api\/log_metric",\i\)/g,

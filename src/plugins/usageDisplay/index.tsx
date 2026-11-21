@@ -14,9 +14,9 @@ import { ErrorBoundary } from "@components/ErrorBoundary";
 import { CircleGaugeIcon } from "@components/icons";
 import { VoidPPDialogShell } from "@components/settings/tabs/VoidPPDialogShell";
 import { getPlanName } from "@turbopack/common/plan";
-import { subscriptionIsCommerce, subscriptionIsPaid, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
 import { React, useCallback, useEffect, useRef, useState } from "@turbopack/common/react";
 import { RoutingStore, SessionStore } from "@turbopack/common/stores";
+import { subscriptionIsCommerce, subscriptionIsPaid, useSubscriptionSnapshot } from "@turbopack/common/subscriptions";
 import { findByPropsLazy } from "@turbopack/turbopack";
 import { Devs } from "@utils/constants";
 import { classes, classNameFactory } from "@utils/css";
@@ -763,7 +763,7 @@ export default definePlugin({
     start() {
         migrateUsageStats();
         try {
-            unsubRoute = RoutingStore.useRoutingStore.subscribe(s => s.route.page, (page, prev) => {
+            unsubRoute = RoutingStore.useRoutingStore?.subscribe(s => s.route.page, (page, prev) => {
                 if (page === prev) return;
                 syncAccount();
                 void refresh("route");

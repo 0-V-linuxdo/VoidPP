@@ -35,18 +35,27 @@ export default definePlugin({
 
     patches: [
         {
+            find: "immediatelyRender:!0",
+            noWarn: true,
+            replacement: {
+                match: /(immediatelyRender:!0,extensions:\i[\s\S]{0,200}?)(\i)=\[(\i),(\i)\](?=,\i\[\d+\]=\3,\i\[\d+\]=\4,\i\[\d+\]=\2\):\2=\i\[\d+\];let \i=\(0,\i\.\i\)\(\i,\2\))/,
+                replace: "$1$2=$self._deps($3,$4)",
+            },
+        },
+        {
             find: "transformPastedHTML:",
             all: true,
+            noWarn: true,
             replacement: [
                 {
-                    match: /(transformPastedHTML:\i\}\},)\[(\i),(\i)\]\)/,
+                    match: /(transformPastedHTML:\i(?:\.\i)?\}?,)\[(\i),(\i)\]\)/,
                     replace: "$1$self._deps($2,$3))",
                     noWarn: true,
                 },
                 {
-                    // `et=[extensions,mention]` then `useEditor(props, et)`.
-                    match: /(transformPastedHTML:\i\}\}[\s\S]{0,400}?)(\i)=\[(\i),(\i)\](?=,\i\[\d+\]=\3,\i\[\d+\]=\4,\i\[\d+\]=\2\):\2=\i\[\d+\];let \i=\(0,\i\.\i\)\(\i,\2\))/,
+                    match: /(transformPastedHTML:\i(?:\.\i)?\}[\s\S]{0,500}?)(\i)=\[(\i),(\i)\](?=,\i\[\d+\]=\3,\i\[\d+\]=\4,\i\[\d+\]=\2\):\2=\i\[\d+\];let \i=\(0,\i\.\i\)\(\i,\2\))/,
                     replace: "$1$2=$self._deps($3,$4)",
+                    noWarn: true,
                 },
             ],
         },

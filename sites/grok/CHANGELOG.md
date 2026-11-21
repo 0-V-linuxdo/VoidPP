@@ -1,3 +1,11 @@
+## 20261121.1
+
+- Compact Library stays a 32px header button. Overlay Search is 32px with overflow clipped, and `position-anchor` is gone so Library-fixed plus Search-fixed cannot hang a project chat.
+- Library `Item` gets `aria-label="Library"` so the compact CSS hits without depending on the sprite href.
+- StableComposer caches the editor deps from `immediatelyRender:!0,extensions:`.
+- Hide Build idea chips via the live `{chips,onMore}` render. Insert Connect Apps before Help in the 9-item desktop account menu.
+- Settings nav lucide reads `name:map.ident[id]`. Void++ tabs concat onto the hosted desktop tab list. Recent sidebar children wrap when they are a single node.
+
 ## 20261114.58
 
 - Mode pins: paint Heavy/Build even when Modes/Routing hooks are still unresolved. Drop `ensureLoaded` from the Modes shape check. Wrap desktop `"data-query-bar-mode-select"` children from that literal.
