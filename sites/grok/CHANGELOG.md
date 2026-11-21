@@ -1,3 +1,8 @@
+## 20261122.4
+
+- Blank grok.com after `.3`: metrics factory 603814 still required eight more modules from the same lazy helper chunk. Stub those imports too (keep `el("/api/log_metric")` → `false`, do not group sendBeacon, do not stub same-chunk debounce). Stub leftover homepage `e.i(5156912)` so a late inject cannot white the page.
+- Plus unwrap and circle→round chips are unchanged; they already match live grok. The dead plus and square model chip were the blank / safe-mode native trigger.
+
 ## 20261122.3
 
 - Blank grok.com after `.2`: the metrics factory still requires a helper module that is not registered yet. Stub that import and turn `el("/api/log_metric",…)` into `false` without grouping, so a miss cannot fall back to the original factory.

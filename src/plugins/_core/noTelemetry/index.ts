@@ -9,6 +9,7 @@ import { Devs } from "@utils/constants";
 import definePlugin, { StartAt } from "@utils/types";
 
 const METRIC = "/api/log_metric";
+const LAZY_SESSION_STUB = "({K:()=>({}),g(){},V:()=>()=>{},default:{track(){},people:{set(){}},get_config:()=>\"\"},o:e=>e,f(){},X(){},y(){},logXaiEvent(){},trackLegacy(){},B(){}})";
 
 export default definePlugin({
     name: "NoTelemetry",
@@ -96,6 +97,10 @@ export default definePlugin({
                     replace: "$1$2={K:()=>({}),g(){},V:()=>()=>{}}",
                 },
                 {
+                    match: /e\.i\((?:5156912|3551093|6785890|2735394|3427294|8289378|1254211|127418|2274141)\)/g,
+                    replace: LAZY_SESSION_STUB,
+                },
+                {
                     match: /\i\("\/api\/log_metric",\i\)/g,
                     replace: "false",
                 },
@@ -104,6 +109,15 @@ export default definePlugin({
                     replace: "false",
                 },
             ],
+        },
+        {
+            find: "e.i(5156912)",
+            all: true,
+            noWarn: true,
+            replacement: {
+                match: /e\.i\(5156912\)/g,
+                replace: "({K:()=>({}),g(){},V:()=>()=>{}})",
+            },
         },
         {
             find: '"/api/log_metric"',
