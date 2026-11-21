@@ -6,7 +6,9 @@
 
 import { ShieldOffIcon } from "@components/icons";
 import { Devs } from "@utils/constants";
-import definePlugin from "@utils/types";
+import definePlugin, { StartAt } from "@utils/types";
+
+const METRIC = "/api/log_metric";
 
 export default definePlugin({
     name: "NoTelemetry",
@@ -15,6 +17,26 @@ export default definePlugin({
     authors: [Devs.Prism],
     tags: ["privacy"],
     required: true,
+    startAt: StartAt.Init,
+    start() {
+        const beacon = navigator.sendBeacon.bind(navigator);
+        navigator.sendBeacon = (url, data) => {
+            if (String(url).includes(METRIC)) return true;
+            return beacon(url, data);
+        };
+        const fetchFn = window.fetch.bind(window);
+        window.fetch = (input, init) => {
+            const url = typeof input === "string"
+                ? input
+                : input instanceof URL
+                    ? input.href
+                    : input instanceof Request
+                        ? input.url
+                        : String(input);
+            if (url.includes(METRIC)) return Promise.resolve(new Response(null, { status: 204 }));
+            return fetchFn(input, init);
+        };
+    },
 
     patches: [
         {
@@ -68,6 +90,7 @@ export default definePlugin({
         {
             find: '"/api/log_metric"',
             all: true,
+            noWarn: true,
             replacement: [
                 {
                     match: /\(0,\i\)\("\/api\/log_metric",\i\)/g,
@@ -75,22 +98,9 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
-                    match: /[A-Za-z_$][\w$]*\("\/api\/log_metric",\i\)/g,
-                    replace: "false",
-                },
-                {
-                    match: /\(0,\i\)\("\/api\/log_metric",JSON\.stringify\([^)]*\)\)/g,
-                    replace: "false",
-                    noWarn: true,
-                },
-                {
-                    match: /[A-Za-z_$][\w$]*\("\/api\/log_metric",JSON\.stringify\([^)]*\)\)/g,
-                    replace: "false",
-                    noWarn: true,
-                },
-                {
                     match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\([^)]*\)\)/g,
                     replace: "void 0",
+                    noWarn: true,
                 },
             ],
         },

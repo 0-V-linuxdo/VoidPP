@@ -1,3 +1,8 @@
+## 20261122.1
+
+- Composer plus, project chip, pins, usage, and send: the field is a click surface (`onPointerDown` preventDefault). Stop stealing those hits; host `z-index` is a no-op on the `display:contents` toolbar. Keep in-field chips and quote buttons clickable.
+- NoTelemetry no longer rewrites the core metrics factory. Stub `/api/log_metric` on `sendBeacon` / `fetch` so a failed patch cannot blank grok.com.
+
 ## 20261121.3
 
 - Raise the inline composer plus, project chip, mode pins, usage, and send above Grok's absolute field overlay so those clicks stop focusing the editor.

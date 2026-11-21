@@ -132,24 +132,64 @@ form[data-composer][data-composer-layout="inline"] [data-query-bar-mode-select] 
     overflow: visible !important;
 }
 
-/* Grok's [data-composer-field] is an absolute overlay. Native
-   --composer-chip-reserve keeps it off the trailing chip; we zero that
-   and park pins in a 4th column, so the overlay also covers leading
-   (plus + project chip) and trailing (usage + send). Raise those cells.
-   :has() matches the leading/actions hosts, not only the control, because
-   attach is a fragment sibling of the project chip. */
-form[data-composer][data-composer-layout="inline"] [data-composer-surface]:has([data-testid="attach-button"]),
-form[data-composer][data-composer-layout="inline"] [data-composer-surface]:has([data-composer-action]) {
-    position: relative !important;
-    z-index: 2;
+/* Live Grok field is a grid/flex sibling, not position:absolute. Native
+   --composer-chip-reserve only padded the trailing chip. We zero that and
+   add a mode column, so the field paints over plus / project chip / pins /
+   usage / send. Form onPointerDown focuses the editor when the hit target
+   has data-composer-surface (field and empty hosts do).
+   Inline toolbar wrapper is display:contents: z-index on that node is a
+   no-op. Punch holes in the inline field only (stacked still scrolls).
+   Raise the real leading/actions boxes and the controls on both layouts. */
+form[data-composer][data-composer-layout="inline"] [data-composer-field] {
+    pointer-events: none;
 }
 
-form[data-composer][data-composer-layout="inline"] :is(
-    [data-testid="attach-button"],
-    [data-composer-action],
-    .void-cms-pin
+form[data-composer][data-composer-layout="inline"] [data-composer-field] :is(
+    textarea,
+    [contenteditable="true"],
+    .tiptap,
+    .ProseMirror,
+    [data-composer-compact-input],
+    [data-composer-chip],
+    [data-slot="removable-chip-remove"],
+    button,
+    [role="button"],
+    a,
+    .void-qs-chip
 ) {
     pointer-events: auto;
+}
+
+form[data-composer] [data-composer-field] {
+    position: relative;
+    z-index: 0;
+}
+
+form[data-composer] [data-composer-surface]:has(> :is(
+    [data-testid="attach-button"],
+    [data-composer-chip],
+    [data-composer-action],
+    [data-query-bar-mode-select],
+    .void-cms-pin
+)) {
+    position: relative !important;
+    z-index: 2 !important;
+}
+
+form[data-composer] [data-composer-surface]:has([data-testid="attach-button"]) > *,
+form[data-composer] [data-composer-surface]:has([data-composer-action]) > *,
+form[data-composer] :is(
+    [data-testid="attach-button"],
+    [data-composer-chip],
+    [data-query-bar-mode-select],
+    [data-composer-action],
+    .void-cms-pin,
+    .uspp-chatbar,
+    button:has(.void-ud-trigger)
+) {
+    position: relative !important;
+    z-index: 3 !important;
+    pointer-events: auto !important;
 }
 
 form[data-composer][data-composer-layout="stacked"] {
