@@ -852,13 +852,13 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
+                    match: /("data-query-bar-mode-select":"",[\s\S]{0,800}?children:)(\i)(\}\):null)/,
+                    replace: "$1[$self.renderPinned(),$2]$3",
+                },
+                {
                     match: /(\i\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:)(\i)(\}\):null)/,
                     replace: "$1[$self.renderPinned(),$2]$3",
                     noWarn: true,
-                },
-                {
-                    match: /("data-query-bar-mode-select":"",.{0,800}?children:)(\i)(\}\):null)/,
-                    replace: "$1[$self.renderPinned(),$2]$3",
                 },
             ],
         },

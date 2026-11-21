@@ -1,3 +1,8 @@
+## 20261121.2
+
+- CustomGreeting only rewrites jsx `placeholder:` so the composer destructure cannot become invalid syntax (module 7440253 compile fail / dead clicks after the homepage rebuild).
+- Mode pins wrap `"data-query-bar-mode-select"` children first; the specific jsx wrap stays as a noWarn fallback.
+
 ## 20261121.1
 
 - Compact Library stays a 32px header button. Overlay Search is 32px with overflow clipped, and `position-anchor` is gone so Library-fixed plus Search-fixed cannot hang a project chat.

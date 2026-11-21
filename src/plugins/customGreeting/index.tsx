@@ -609,7 +609,7 @@ export default definePlugin({
                     noWarn: true,
                 },
                 {
-                    match: /(\{placeholder:)(\i)(?=,newChatPlaceholder:)/,
+                    match: /(?<!function\()(\{placeholder:)(\i)(?=,newChatPlaceholder:)/,
                     replace: "$1$self._inputPlaceholder($2)",
                     noWarn: true,
                 },
@@ -630,8 +630,9 @@ export default definePlugin({
             find: ["placeholderClassName", "disableAutoFocus"],
             all: true,
             replacement: {
-                match: /(placeholder:)(\i)(?=,placeholderClassName:)/,
+                match: /(\.jsxs?\)\(\i(?:\.\i)?,\{[^}]{0,400}?placeholder:)(\i)(?=,placeholderClassName:)/,
                 replace: "$1$self._inputPlaceholder($2)",
+                noWarn: true,
             },
         },
         {
