@@ -1,3 +1,9 @@
+## 20261122.3
+
+- Blank grok.com after `.2`: the metrics factory still requires a helper module that is not registered yet. Stub that import and turn `el("/api/log_metric",…)` into `false` without grouping, so a miss cannot fall back to the original factory.
+- Plus: skip the closed project-start popover wrap; if the trigger has no `render` prop, keep the trigger node so the module cannot throw.
+- Model chips: Grok IconButton only rounds `shape:"round"`, but compact `#model-select-trigger` and other icon buttons pass `"circle"` (default square). Treat circle as round. Clip the native trigger even when it is not nested. Round pin hosts via `[data-void-mode-id]` because Grok drops `className`.
+
 ## 20261122.2
 
 - Plus menu: Grok wraps attach in a closed popover while the project-start guide is off, so the plus button never opens Files / Skills / Connectors. Skip that wrap when the guide is not shown.

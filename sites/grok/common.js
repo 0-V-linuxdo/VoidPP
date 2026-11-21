@@ -80,7 +80,7 @@ for (const [name, [mod, key]] of Object.entries(uiMap)) {
     def(name, () => { const m = resolveModule(mod); try { return m ? m[key] ?? null : null; } catch { return null; } });
 }
 
-const ICON_SHAPE = { circle: "round", square: "square" };
+const ICON_SHAPE = { circle: "round", round: "round", square: "square" };
 const LEGACY_VARIANT = { tertiary: "ghost", secondary: "muted", danger: "destructive", text: "ghost", textsecondary: "ghost" };
 let desktopKit = null;
 const desktopSeen = new Set();

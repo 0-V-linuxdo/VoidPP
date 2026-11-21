@@ -88,6 +88,36 @@ export default definePlugin({
             ],
         },
         {
+            find: ["new TextEncoder;var", '"/api/log_metric"'],
+            all: true,
+            replacement: [
+                {
+                    match: /(let \i=new TextEncoder;var )(\i)=e\.i\(\d+\)/,
+                    replace: "$1$2={K:()=>({}),g(){},V:()=>()=>{}}",
+                },
+                {
+                    match: /\i\("\/api\/log_metric",\i\)/g,
+                    replace: "false",
+                },
+                {
+                    match: /\i\("\/api\/log_metric",JSON\.stringify\([\s\S]{0,180}?\)\)/g,
+                    replace: "false",
+                },
+            ],
+        },
+        {
+            find: '"/api/log_metric"',
+            all: true,
+            noWarn: true,
+            replacement: [
+                {
+                    match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\([^)]*\)\)/g,
+                    replace: "void 0",
+                    noWarn: true,
+                },
+            ],
+        },
+        {
             find: "isEnvVarsSet(){return void 0!=",
             replacement: {
                 match: /isEnvVarsSet\(\)\{return void 0!=\i&&""!=\i\|\|!!this\.customEndpoint\}/,

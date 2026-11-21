@@ -112,7 +112,8 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] butt
     flex: 0 0 0 !important;
 }
 
-form[data-composer] .void-cms-pin {
+form[data-composer] .void-cms-pin,
+form[data-composer] [data-void-mode-id] :is(button, [role="button"]) {
     border-radius: 999px !important;
 }
 
@@ -208,7 +209,9 @@ form[data-composer][data-composer-layout="stacked"] {
     overflow-clip-margin: 0px !important;
 }
 
-/* After the raise rules so native Model cannot be un-clipped to a square. */
+/* After the raise rules so native Model cannot be un-clipped to a square.
+   Trigger is not always nested in [data-query-bar-mode-select]. */
+form[data-composer]:has(.void-cms-hide-native) #model-select-trigger,
 form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] #model-select-trigger,
 form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] button:not(.void-cms-pin) {
     position: absolute !important;
@@ -222,6 +225,10 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] butt
     pointer-events: none !important;
     overflow: hidden !important;
     clip-path: inset(50%) !important;
+}
+
+form[data-composer]:not(:has(.void-cms-hide-native)) #model-select-trigger {
+    border-radius: 999px !important;
 }
 
 /* Dictate is Shift+Space (aria-label "Dictate"). Voice chat is Shift+O or data-composer-action="voice". */
