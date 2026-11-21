@@ -79,7 +79,8 @@ form[data-composer] [data-query-bar-mode-select]:has(.void-cms-pins) {
 /* Desktop shell: pins are children of this cell, so hide the native trigger only.
    Absolute 0-size still painted "Default" under the pill via overflow-clip-margin. */
 form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(.void-cms-pins) {
-    position: static !important;
+    position: relative !important;
+    z-index: 2;
     width: auto !important;
     height: auto !important;
     min-width: 0 !important;
@@ -120,12 +121,35 @@ form[data-composer][data-composer-layout="inline"] [data-query-bar-mode-select] 
     grid-row: field !important;
     justify-self: end !important;
     align-self: center !important;
-    position: static !important;
+    /* relative keeps the cell in-flow (Grok inline chip is absolute) and
+       stacks it above the field overlay. static cannot paint a z-index. */
+    position: relative !important;
+    z-index: 2;
     width: auto !important;
     height: auto !important;
     max-height: none !important;
     margin-inline: 0 0.25rem !important;
     overflow: visible !important;
+}
+
+/* Grok's [data-composer-field] is an absolute overlay. Native
+   --composer-chip-reserve keeps it off the trailing chip; we zero that
+   and park pins in a 4th column, so the overlay also covers leading
+   (plus + project chip) and trailing (usage + send). Raise those cells.
+   :has() matches the leading/actions hosts, not only the control, because
+   attach is a fragment sibling of the project chip. */
+form[data-composer][data-composer-layout="inline"] [data-composer-surface]:has([data-testid="attach-button"]),
+form[data-composer][data-composer-layout="inline"] [data-composer-surface]:has([data-composer-action]) {
+    position: relative !important;
+    z-index: 2;
+}
+
+form[data-composer][data-composer-layout="inline"] :is(
+    [data-testid="attach-button"],
+    [data-composer-action],
+    .void-cms-pin
+) {
+    pointer-events: auto;
 }
 
 form[data-composer][data-composer-layout="stacked"] {

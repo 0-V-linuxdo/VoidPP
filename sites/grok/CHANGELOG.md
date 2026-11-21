@@ -1,3 +1,7 @@
+## 20261121.3
+
+- Raise the inline composer plus, project chip, mode pins, usage, and send above Grok's absolute field overlay so those clicks stop focusing the editor.
+
 ## 20261121.2
 
 - CustomGreeting only rewrites jsx `placeholder:` so the composer destructure cannot become invalid syntax (module 7440253 compile fail / dead clicks after the homepage rebuild).
