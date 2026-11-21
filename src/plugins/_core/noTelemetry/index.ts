@@ -88,23 +88,6 @@ export default definePlugin({
             ],
         },
         {
-            find: '"/api/log_metric"',
-            all: true,
-            noWarn: true,
-            replacement: [
-                {
-                    match: /\(0,\i\)\("\/api\/log_metric",\i\)/g,
-                    replace: "false",
-                    noWarn: true,
-                },
-                {
-                    match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\([^)]*\)\)/g,
-                    replace: "void 0",
-                    noWarn: true,
-                },
-            ],
-        },
-        {
             find: "isEnvVarsSet(){return void 0!=",
             replacement: {
                 match: /isEnvVarsSet\(\)\{return void 0!=\i&&""!=\i\|\|!!this\.customEndpoint\}/,

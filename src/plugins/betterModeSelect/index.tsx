@@ -863,6 +863,18 @@ export default definePlugin({
             ],
         },
         {
+            find: '"showStartingWorkspaceConversationInputGuide"',
+            all: true,
+            replacement: [
+                {
+                    // Guide-off still wraps AttachDropdown in Popover.Trigger +
+                    // Root open:false. That controlled root eats plus mousedown.
+                    match: /(padding:"none",children:\i\}\))([\s\S]{0,220}?)(\i)=\(0,(\i)\.jsxs\)\((\i)\.V,\{open:(\i),children:\[(\i),(\i)\]\}\)/,
+                    replace: "$1$2$3=$6?$4.jsxs($5.V,{open:$6,children:[$7,$8]}):$7.props.render",
+                },
+            ],
+        },
+        {
             find: "dictation_button_click",
             replacement: [
                 {

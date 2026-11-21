@@ -1,3 +1,10 @@
+## 20261122.2
+
+- Plus menu: Grok wraps attach in a closed popover while the project-start guide is off, so the plus button never opens Files / Skills / Connectors. Skip that wrap when the guide is not shown.
+- Native model trigger was sitting next to Heavy/Build as a compact square. Clip it even when nested; keep pins round.
+- RecentTopics: do not crash hydrate when a project name is missing.
+- NoTelemetry: stop selecting metrics factory 603814 (that rewrite blanked grok.com). Keep sendBeacon / fetch stubs.
+
 ## 20261122.1
 
 - Composer plus, project chip, pins, usage, and send: the field is a click surface (`onPointerDown` preventDefault). Stop stealing those hits; host `z-index` is a no-op on the `display:contents` toolbar. Keep in-field chips and quote buttons clickable.

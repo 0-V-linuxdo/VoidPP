@@ -92,10 +92,16 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(
     align-items: center !important;
 }
 
-form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins) {
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins),
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] #model-select-trigger,
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] button:not(.void-cms-pin) {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 1px !important;
+    max-height: 1px !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
@@ -103,6 +109,11 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :n
     opacity: 0 !important;
     pointer-events: none !important;
     border: 0 !important;
+    flex: 0 0 0 !important;
+}
+
+form[data-composer] .void-cms-pin {
+    border-radius: 999px !important;
 }
 
 /* Inline is one row: leading | field | mode | actions. Mode used to share the
@@ -174,6 +185,7 @@ form[data-composer] [data-composer-surface]:has(> :is(
 )) {
     position: relative !important;
     z-index: 2 !important;
+    pointer-events: none;
 }
 
 form[data-composer] [data-composer-surface]:has([data-testid="attach-button"]) > *,
@@ -194,6 +206,22 @@ form[data-composer] :is(
 
 form[data-composer][data-composer-layout="stacked"] {
     overflow-clip-margin: 0px !important;
+}
+
+/* After the raise rules so native Model cannot be un-clipped to a square. */
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] #model-select-trigger,
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] button:not(.void-cms-pin) {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 1px !important;
+    max-height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
 }
 
 /* Dictate is Shift+Space (aria-label "Dictate"). Voice chat is Shift+O or data-composer-action="voice". */
@@ -232,6 +260,22 @@ button[aria-label="Voice mode"],
 
 html.void-cms-picking .query-bar [data-query-bar-mode-select] {
     pointer-events: auto !important;
+}
+
+html.void-cms-picking form[data-composer] [data-query-bar-mode-select] #model-select-trigger,
+html.void-cms-picking form[data-composer] [data-query-bar-mode-select] button:not(.void-cms-pin) {
+    position: relative !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    clip-path: none !important;
+    overflow: visible !important;
+    flex: none !important;
 }
 
 html.void-cms-picking .query-bar [data-query-bar-mode-select] [role="tooltip"],
@@ -297,7 +341,8 @@ html.void-cms-picked .void-cms-ghost {
 }
 
 @media (width >= 48rem) {
-    .query-bar .void-cms-labeled {
+    .query-bar .void-cms-labeled,
+    form[data-composer] .void-cms-labeled {
         width: auto;
         min-width: 2.5rem;
         height: 2.5rem;

@@ -127,8 +127,8 @@ let suspendPaint = false;
 let sidebarSnap: { key: string; index: SidebarIndex; } | null = null;
 const pendingWs = new Set<string>();
 
-function isSkipLabel(name: string): boolean {
-    const t = name.replaceAll(/\s+/g, " ").trim();
+function isSkipLabel(name: string | null | undefined): boolean {
+    const t = (name ?? "").replaceAll(/\s+/g, " ").trim();
     if (!t) return false;
     SKIP_LABEL.lastIndex = 0;
     if (SKIP_LABEL.test(t)) return true;
@@ -140,8 +140,8 @@ function isBrandLabel(name: string): boolean {
     return /^grok$/i.test(name) || /^void\+\+$/i.test(name);
 }
 
-function usableName(name: string): string {
-    const t = name.replaceAll(/\s+/g, " ").trim();
+function usableName(name: string | null | undefined): string {
+    const t = (name ?? "").replaceAll(/\s+/g, " ").trim();
     return t && !isSkipLabel(t) ? t : "";
 }
 

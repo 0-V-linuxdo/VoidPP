@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261122.1
+// @version      20261122.2
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
 // @environment  Development
@@ -80,7 +80,7 @@ try {
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261122.1", date: null, notes: ["Composer plus, project chip, pins, usage, and send: the field is a click surface (`onPointerDown` preventDefault). Stop stealing those hits; host `z-index` is a no-op on the `display:contents` toolbar.", "NoTelemetry no longer rewrites the core metrics factory. Stub `/api/log_metric` on `sendBeacon` / `fetch` so a failed patch cannot blank grok.com."] }, { version: "20261121.3", date: null, notes: ["Raise the inline composer plus, project chip, mode pins, usage, and send above Grok's absolute field overlay so those clicks stop focusing the editor."] }, { version: "20261121.2", date: null, notes: ["CustomGreeting only rewrites jsx `placeholder:` so the composer destructure cannot become invalid syntax (module 7440253 compile fail / dead clicks after the homepage rebuild).", 'Mode pins wrap `"data-query-bar-mode-select"` children first; the specific jsx wrap stays as a noWarn fallback.'] }, { version: "20261121.1", date: null, notes: ["Compact Library stays a 32px header button. Overlay Search is 32px with overflow clipped, and `position-anchor` is gone so Library-fixed plus Search-fixed cannot hang a project chat.", 'Library `Item` gets `aria-label="Library"` so the compact CSS hits without depending on the sprite href.', "StableComposer caches the editor deps from `immediatelyRender:!0,extensions:`.", "Hide Build idea chips via the live `{chips,onMore}` render. Insert Connect Apps before Help in the 9-item desktop account menu.", "Settings nav lucide reads `name:map.ident[id]`. Void++ tabs concat onto the hosted desktop tab list. Recent sidebar children wrap when they are a single node."] }, { version: "20261114.58", date: null, notes: ['Mode pins: paint Heavy/Build even when Modes/Routing hooks are still unresolved. Drop `ensureLoaded` from the Modes shape check. Wrap desktop `"data-query-bar-mode-select"` children from that literal.', "Overlay Library is `position:fixed` at 48px with no `position-anchor` (in-sidebar `absolute` sat in a nav containing block and never reached the header).", "Usage hover panel also opens on `mouseenter` so a real mouse move shows it."] }, { version: "20261114.57", date: null, notes: ["Guard regex `find`s that start with `\\i` or a character class in `grok-chunk-bench` and the build. Warn `\\i`-start `match`es; start log_metric and settings-tab filter on a literal.", "Mode pins: stop gating `PinnedHost` on `SettingsStore` (`modelConfigOverrideSchema` lives on another module). Read Modes/Routing via `getState`. Hide native Heavy.", "Usage hover: Grok `IconButton` tooltip is a string; node panels open from GrokChatBar pointerenter.", "Overlay Search is a 32px ghost 4px left of compact + (`position:fixed` + sidebar anchor). Library stays `absolute` so that pair cannot hang layout. Dead Cleaner/ConnectorsFlyout/UserQuotes finds are `noWarn`. Desktop settings `shownTab` follows the live inline resolver."] }, { version: "20261114.56", date: null, notes: ["Patch ReDoS: Method A logged 123 StableComposer regex finds (`\\i)=[` on every prefiltered factory); Method B timed those plus TurnTail / ENABLE / sidebar-chats / unbounded `[\\s\\S]*?` out at 3s on 100k+ factories. Drop the `\\i` find, start remaining matches on a literal, bound `[\\s\\S]*?` / `[^]*?`, and delete the tempered-greedy `mode-select` wrap."] }, { version: "20261114.55", date: null, notes: ["CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS."] }, { version: "20261114.54", date: null, notes: ["`.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.", "BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\\i`, never hit, and scanned every factory (~38s in the chunk bench)."] }, { version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261122.2", date: null, notes: ["Plus menu: Grok wraps attach in a closed popover while the project-start guide is off, so the plus button never opens Files / Skills / Connectors. Skip that wrap when the guide is not shown.", "Native model trigger was sitting next to Heavy/Build as a compact square. Clip it even when nested; keep pins round.", "RecentTopics: do not crash hydrate when a project name is missing.", "NoTelemetry: stop selecting metrics factory 603814 (that rewrite blanked grok.com). Keep sendBeacon / fetch stubs."] }, { version: "20261122.1", date: null, notes: ["Composer plus, project chip, pins, usage, and send: the field is a click surface (`onPointerDown` preventDefault). Stop stealing those hits; host `z-index` is a no-op on the `display:contents` toolbar. Keep in-field chips and quote buttons clickable.", "NoTelemetry no longer rewrites the core metrics factory. Stub `/api/log_metric` on `sendBeacon` / `fetch` so a failed patch cannot blank grok.com."] }, { version: "20261121.3", date: null, notes: ["Raise the inline composer plus, project chip, mode pins, usage, and send above Grok's absolute field overlay so those clicks stop focusing the editor."] }, { version: "20261121.2", date: null, notes: ["CustomGreeting only rewrites jsx `placeholder:` so the composer destructure cannot become invalid syntax (module 7440253 compile fail / dead clicks after the homepage rebuild).", 'Mode pins wrap `"data-query-bar-mode-select"` children first; the specific jsx wrap stays as a noWarn fallback.'] }, { version: "20261121.1", date: null, notes: ["Compact Library stays a 32px header button. Overlay Search is 32px with overflow clipped, and `position-anchor` is gone so Library-fixed plus Search-fixed cannot hang a project chat.", 'Library `Item` gets `aria-label="Library"` so the compact CSS hits without depending on the sprite href.', "StableComposer caches the editor deps from `immediatelyRender:!0,extensions:`.", "Hide Build idea chips via the live `{chips,onMore}` render. Insert Connect Apps before Help in the 9-item desktop account menu.", "Settings nav lucide reads `name:map.ident[id]`. Void++ tabs concat onto the hosted desktop tab list. Recent sidebar children wrap when they are a single node."] }, { version: "20261114.58", date: null, notes: ['Mode pins: paint Heavy/Build even when Modes/Routing hooks are still unresolved. Drop `ensureLoaded` from the Modes shape check. Wrap desktop `"data-query-bar-mode-select"` children from that literal.', "Overlay Library is `position:fixed` at 48px with no `position-anchor` (in-sidebar `absolute` sat in a nav containing block and never reached the header).", "Usage hover panel also opens on `mouseenter` so a real mouse move shows it."] }, { version: "20261114.57", date: null, notes: ["Guard regex `find`s that start with `\\i` or a character class in `grok-chunk-bench` and the build. Warn `\\i`-start `match`es; start log_metric and settings-tab filter on a literal.", "Mode pins: stop gating `PinnedHost` on `SettingsStore` (`modelConfigOverrideSchema` lives on another module). Read Modes/Routing via `getState`. Hide native Heavy.", "Usage hover: Grok `IconButton` tooltip is a string; node panels open from GrokChatBar pointerenter.", "Overlay Search is a 32px ghost 4px left of compact + (`position:fixed` + sidebar anchor). Library stays `absolute` so that pair cannot hang layout. Dead Cleaner/ConnectorsFlyout/UserQuotes finds are `noWarn`. Desktop settings `shownTab` follows the live inline resolver."] }, { version: "20261114.56", date: null, notes: ["Patch ReDoS: Method A logged 123 StableComposer regex finds (`\\i)=[` on every prefiltered factory); Method B timed those plus TurnTail / ENABLE / sidebar-chats / unbounded `[\\s\\S]*?` out at 3s on 100k+ factories. Drop the `\\i` find, start remaining matches on a literal, bound `[\\s\\S]*?` / `[^]*?`, and delete the tempered-greedy `mode-select` wrap."] }, { version: "20261114.55", date: null, notes: ["CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS."] }, { version: "20261114.54", date: null, notes: ["`.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.", "BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\\i`, never hit, and scanned every factory (~38s in the chunk bench)."] }, { version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -979,7 +979,7 @@ try {
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261122.1" : "0.0.0";
+  var VERSION = true ? "20261122.2" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -6669,10 +6669,16 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(
     align-items: center !important;
 }
 
-form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins) {
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins),
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] #model-select-trigger,
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] button:not(.void-cms-pin) {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 1px !important;
+    max-height: 1px !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
@@ -6680,6 +6686,11 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :n
     opacity: 0 !important;
     pointer-events: none !important;
     border: 0 !important;
+    flex: 0 0 0 !important;
+}
+
+form[data-composer] .void-cms-pin {
+    border-radius: 999px !important;
 }
 
 /* Inline is one row: leading | field | mode | actions. Mode used to share the
@@ -6751,6 +6762,7 @@ form[data-composer] [data-composer-surface]:has(> :is(
 )) {
     position: relative !important;
     z-index: 2 !important;
+    pointer-events: none;
 }
 
 form[data-composer] [data-composer-surface]:has([data-testid="attach-button"]) > *,
@@ -6771,6 +6783,22 @@ form[data-composer] :is(
 
 form[data-composer][data-composer-layout="stacked"] {
     overflow-clip-margin: 0px !important;
+}
+
+/* After the raise rules so native Model cannot be un-clipped to a square. */
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] #model-select-trigger,
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] button:not(.void-cms-pin) {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 1px !important;
+    max-height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
 }
 
 /* Dictate is Shift+Space (aria-label "Dictate"). Voice chat is Shift+O or data-composer-action="voice". */
@@ -6809,6 +6837,22 @@ button[aria-label="Voice mode"],
 
 html.void-cms-picking .query-bar [data-query-bar-mode-select] {
     pointer-events: auto !important;
+}
+
+html.void-cms-picking form[data-composer] [data-query-bar-mode-select] #model-select-trigger,
+html.void-cms-picking form[data-composer] [data-query-bar-mode-select] button:not(.void-cms-pin) {
+    position: relative !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    clip-path: none !important;
+    overflow: visible !important;
+    flex: none !important;
 }
 
 html.void-cms-picking .query-bar [data-query-bar-mode-select] [role="tooltip"],
@@ -6874,7 +6918,8 @@ html.void-cms-picked .void-cms-ghost {
 }
 
 @media (width >= 48rem) {
-    .query-bar .void-cms-labeled {
+    .query-bar .void-cms-labeled,
+    form[data-composer] .void-cms-labeled {
         width: auto;
         min-width: 2.5rem;
         height: 2.5rem;
@@ -7630,6 +7675,18 @@ html.void-cms-picked .void-cms-ghost {
             match: /(\i\?\(0,\i\.jsx\)\("div",\{ref:\i,\.\.\.\i,"data-query-bar-mode-select":"",\.\.\.\{0:\{className:"[^"]+"\},1:\{className:"[^"]+"\}\}\[0\|!!\i\],children:)(\i)(\}\):null)/,
             replace: "$1[$self.renderPinned(),$2]$3",
             noWarn: true
+          }
+        ]
+      },
+      {
+        find: '"showStartingWorkspaceConversationInputGuide"',
+        all: true,
+        replacement: [
+          {
+            // Guide-off still wraps AttachDropdown in Popover.Trigger +
+            // Root open:false. That controlled root eats plus mousedown.
+            match: /(padding:"none",children:\i\}\))([\s\S]{0,220}?)(\i)=\(0,(\i)\.jsxs\)\((\i)\.V,\{open:(\i),children:\[(\i),(\i)\]\}\)/,
+            replace: "$1$2$3=$6?$4.jsxs($5.V,{open:$6,children:[$7,$8]}):$7.props.render"
           }
         ]
       },
@@ -23451,23 +23508,6 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
         ]
       },
       {
-        find: '"/api/log_metric"',
-        all: true,
-        noWarn: true,
-        replacement: [
-          {
-            match: /\(0,\i\)\("\/api\/log_metric",\i\)/g,
-            replace: "false",
-            noWarn: true
-          },
-          {
-            match: /navigator\.sendBeacon\("\/api\/log_metric",new Blob\([^)]*\)\)/g,
-            replace: "void 0",
-            noWarn: true
-          }
-        ]
-      },
-      {
         find: "isEnvVarsSet(){return void 0!=",
         replacement: {
           match: /isEnvVarsSet\(\)\{return void 0!=\i&&""!=\i\|\|!!this\.customEndpoint\}/,
@@ -23587,7 +23627,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
   var sidebarSnap = null;
   var pendingWs = /* @__PURE__ */ new Set();
   function isSkipLabel(name) {
-    const t3 = name.replaceAll(/\s+/g, " ").trim();
+    const t3 = (name ?? "").replaceAll(/\s+/g, " ").trim();
     if (!t3) return false;
     SKIP_LABEL.lastIndex = 0;
     if (SKIP_LABEL.test(t3)) return true;
@@ -23598,7 +23638,7 @@ div:has(> div > [role="region"][data-slot="card"][aria-label*="终极AI订阅"])
     return /^grok$/i.test(name) || /^void\+\+$/i.test(name);
   }
   function usableName(name) {
-    const t3 = name.replaceAll(/\s+/g, " ").trim();
+    const t3 = (name ?? "").replaceAll(/\s+/g, " ").trim();
     return t3 && !isSkipLabel(t3) ? t3 : "";
   }
   function usableTitle(name) {
