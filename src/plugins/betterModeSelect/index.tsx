@@ -867,10 +867,12 @@ export default definePlugin({
             all: true,
             replacement: [
                 {
-                    // Guide-off still wraps AttachDropdown in Popover.Trigger +
-                    // Root open:false. That controlled root eats plus mousedown.
+                    // Guide-off still wraps AttachDropdown in Popover.Root
+                    // open:false. That controlled root eats plus mousedown.
+                    // Keep AttachDropdown ($7). Its `render` is only the muted
+                    // IconButton; Files/Skills/Connectors live on $7 itself.
                     match: /(padding:"none",children:\i\}\))([\s\S]{0,220}?)(\i)=\(0,(\i)\.jsxs\)\((\i)\.V,\{open:(\i),children:\[(\i),(\i)\]\}\)/,
-                    replace: "$1$2$3=$6?$4.jsxs($5.V,{open:$6,children:[$7,$8]}):$7&&$7.props&&$7.props.render||$7",
+                    replace: "$1$2$3=$6?$4.jsxs($5.V,{open:$6,children:[$7,$8]}):$7",
                 },
             ],
         },

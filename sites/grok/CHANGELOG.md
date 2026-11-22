@@ -1,3 +1,7 @@
+## 20261122.6
+
+- Plus stayed a mute circle after `.3`: guide-off unwrapped AttachDropdown all the way to `props.render`, which is only the IconButton. Keep AttachDropdown so Files / Skills / Connectors still open; skip only the closed project-start Root.
+
 ## 20261122.5
 
 - Selected Heavy/Build pin used an 18% orange wash on the dark composer, so the well looked muddy brown. Keep the orange glyph; fill with Grok muted `--grok-bg-secondary` like plus.
