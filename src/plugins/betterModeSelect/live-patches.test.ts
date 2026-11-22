@@ -119,6 +119,9 @@ describe("attach menu open fallback", () => {
         expect(src).not.toContain("querySelector(ATTACH_SEL)");
         expect(src).not.toContain("ATTACH_WRAPPER_MAX_PX");
         expect(src).not.toContain("viaChild");
+        expect(src).toContain("closeAttachIfOpen");
+        expect(src).toContain("open(false)");
+        expect(src).toContain("querySelectorAll(ATTACH_SEL)");
     });
 
     test("isPointOnAttach keeps 8px slop and rejects far clicks", () => {

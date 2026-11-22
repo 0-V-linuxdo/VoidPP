@@ -1,3 +1,7 @@
+## 20261122.17
+
+- Composer plus: `.16` stopped the field from *opening* Files / Skills / Connectors, but a field/editor click still could not *close* it. Grok's form `onPointerDown` swallows bubbling, so native outside-press never runs. Capture pointerdown that is not on the plus and not in the menu now calls `onOpenChange(false)`.
+
 ## 20261122.16
 
 - Composer plus: `.14` still treated any click whose target *contains* the plus as "open Files / Skills / Connectors", so the field opened the menu and an outside click could not keep it closed. Only `closest(attach-button)` on a still-collapsed plus may force-open; a later pointerdown elsewhere cancels a pending open. Leading/actions no longer set `pointer-events:auto` on every direct child. Inline field children (and `role=textbox`) keep the editor clickable.

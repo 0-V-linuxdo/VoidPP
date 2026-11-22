@@ -78,6 +78,17 @@ function isInAttachMenu(t: EventTarget | null): boolean {
     return t instanceof Element && !!t.closest(MENU_SEL);
 }
 
+export function closeAttachIfOpen() {
+    const nodes = document.querySelectorAll(ATTACH_SEL);
+    for (const node of nodes) {
+        if (!(node instanceof HTMLElement) || node.getAttribute("aria-expanded") !== "true") continue;
+        const open = attachMenuOpen(node);
+        if (!open) continue;
+        bumpOpenGen();
+        open(false);
+    }
+}
+
 export function onAttachPointerDown(e: PointerEvent) {
     if (e.button !== 0) {
         collapsedPlusAtPointerDown = null;
@@ -95,6 +106,7 @@ export function onAttachPointerDown(e: PointerEvent) {
     }
     collapsedPlusAtPointerDown = null;
     bumpOpenGen();
+    if (!btn) closeAttachIfOpen();
 }
 
 export function onAttachPointerUp(e: PointerEvent) {
