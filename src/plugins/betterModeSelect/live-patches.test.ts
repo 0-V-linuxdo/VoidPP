@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 
 import { canonicalizeMatch } from "../../utils/patches";
-import { isAttachMenuProps } from "./attachOpen";
+import { ATTACH_WRAPPER_MAX_PX, isAttachMenuProps, isPointOnAttach } from "./attachOpen";
 
 const PLUS = canonicalizeMatch(/(padding:"none",children:\i\}\))([\s\S]{0,220}?)(\i)=\(0,(\i)\.jsxs\)\((\i)\.V,\{open:(\i),children:\[(\i),(\i)\]\}\)/);
 const PLUS_REPLACE = "$1$2$3=$6?$4.jsxs($5.V,{open:$6,children:[$7,$8]}):$7&&$7.props&&$7.props.render||null";
@@ -107,6 +107,26 @@ describe("attach menu open fallback", () => {
         expect(isAttachMenuProps({ open: false, onOpenChange: open, actionsRef: {} })).toBe(false);
         expect(isAttachMenuProps({ onOpenChange: open })).toBe(false);
         expect(isAttachMenuProps({ open: false })).toBe(false);
+    });
+
+    test("plus fallback only searches a tiny button wrapper, not the field", () => {
+        const src = readFileSync(new URL("./attachOpen.ts", import.meta.url), "utf8");
+        expect(src).toContain("pointerdown");
+        expect(src).toContain("pointercancel");
+        expect(src).toContain("data-composer-field");
+        expect(src).toContain("ATTACH_WRAPPER_MAX_PX");
+        expect(src).toContain("collapsedPlusAtPointerDown");
+        expect(src).not.toMatch(/const viaChild = t instanceof HTMLElement \? t\.querySelector\(ATTACH_SEL\) : null;\s*return viaChild/);
+    });
+
+    test("isPointOnAttach keeps 8px slop and rejects far clicks", () => {
+        const btn = {
+            getBoundingClientRect: () => ({ left: 100, top: 100, right: 132, bottom: 132 }),
+        } as HTMLElement;
+        expect(isPointOnAttach({ clientX: 116, clientY: 116 }, btn)).toBe(true);
+        expect(isPointOnAttach({ clientX: 96, clientY: 116 }, btn)).toBe(true);
+        expect(isPointOnAttach({ clientX: 80, clientY: 116 }, btn)).toBe(false);
+        expect(ATTACH_WRAPPER_MAX_PX).toBe(48);
     });
 
 });

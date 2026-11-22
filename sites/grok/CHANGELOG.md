@@ -1,3 +1,7 @@
+## 20261122.15
+
+- Composer plus: pointerup treated any click on a container that contains the plus as "open the menu", so the field opened Files / Skills / Connectors and outside clicks could not keep it closed. Only a real plus hit on a still-collapsed button opens; skip wide wrappers.
+
 ## 20261122.14
 
 - Composer send: empty Heavy unmounted the trailing Voice/Send slot, so switching Heavy/Build made Send appear and disappear. Coerce Voice and Voice-call to inactive Send so that slot stays.
