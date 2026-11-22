@@ -1,3 +1,8 @@
+## 20261122.11
+
+- Model pins: DesktopButton mapped `circle` → `round` before IconButton. Grok 2777665 maps `circle`→round and any other shape (including `round`)→square, so the selected well sat off the glyph. Pass `circle` through, and map `round`→`circle`. Inner pin button fills the 32px host with no leftover padding.
+- Composer plus/send: keep hit slop, but do not force `position: relative` on every descendant — that uncenters Grok's own well.
+
 ## 20261122.10
 
 - Composer plus: `.9` pointerup walked into Grok's inner tooltip Root (`open`/`onOpenChange` without `delayDuration`) and called tooltip open instead of Files / Skills / Connectors. Skip `disableHoverablePopup` / `actionsRef` too, and still find attach-button when a tooltip `<button>` wraps it.

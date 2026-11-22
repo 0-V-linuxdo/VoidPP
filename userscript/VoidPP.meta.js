@@ -1,21 +1,23 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261122.10
+// @version      20261122.11
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
-// @environment  Development
 // @license      GPL-3.0-or-later
 // @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/assets/logos/app-icon/voidpp-icon.svg
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP/issues
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.meta.js
 // @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
 // @match        *://artifacts.grokusercontent.com/*
 // @match        *://*.grokusercontent.com/*
 // @run-at       document-start
+// @inject-into  auto
+// @sandbox      JavaScript
+// @noframes
 // @grant        unsafeWindow
 // @grant        GM_addValueChangeListener
 // @grant        GM_deleteValue
@@ -28,5 +30,7 @@
 // @grant        GM_setValue
 // @grant        GM_unregisterMenuCommand
 // @grant        GM_xmlhttpRequest
+// @grant        GM.setClipboard
+// @grant        GM.notification
 // @connect      *
 // ==/UserScript==

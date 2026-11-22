@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 
 import { canonicalizeMatch } from "../../utils/patches";
@@ -40,6 +41,13 @@ describe("BetterModeSelect live patches", () => {
         // 2777665 maps circle→round and any other shape (including round)→square.
         expect(LIVE_TRIGGER).toContain('shape:"circle",id:"model-select-trigger"');
         expect(LIVE_TRIGGER).not.toContain('shape:"round",id:"model-select-trigger"');
+    });
+
+    test("DesktopButton passes circle through to IconButton", () => {
+        const src = readFileSync(new URL("../../../sites/grok/common.js", import.meta.url), "utf8");
+        expect(src).toContain('circle: "circle"');
+        expect(src).toContain('round: "circle"');
+        expect(src).not.toMatch(/circle:\s*"round"/);
     });
 });
 

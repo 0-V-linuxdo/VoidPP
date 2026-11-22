@@ -14,13 +14,13 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
 }
 
 .void-cms-pin-host {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: inline-grid;
+    place-items: center;
     box-sizing: border-box;
     width: var(--grok-control-height-xl, 36px);
     height: var(--grok-control-height-xl, 36px);
     flex: 0 0 auto;
+    padding: 0;
     border-radius: 999px;
     overflow: hidden;
     color: inherit;
@@ -158,12 +158,19 @@ html:has(.void-cms-hide-native) #model-select-trigger {
     z-index: 0 !important;
 }
 
-form[data-composer] .void-cms-pin-host :is(button, [role="button"], [data-icon-button]),
-.query-bar .void-cms-pin-host :is(button, [role="button"], [data-icon-button]) {
-    width: var(--grok-control-height-xl, 36px) !important;
-    height: var(--grok-control-height-xl, 36px) !important;
-    min-width: var(--grok-control-height-xl, 36px) !important;
-    min-height: var(--grok-control-height-xl, 36px) !important;
+form[data-composer] .void-cms-pin-host :is(button, [role="button"]),
+.query-bar .void-cms-pin-host :is(button, [role="button"]) {
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    display: grid !important;
+    place-items: center !important;
     border-radius: 999px !important;
     background: transparent !important;
     background-color: transparent !important;
@@ -172,10 +179,10 @@ form[data-composer] .void-cms-pin-host :is(button, [role="button"], [data-icon-b
     color: inherit !important;
 }
 
-form[data-composer] .void-cms-pin-host :is(button, [role="button"], [data-icon-button])::before,
-form[data-composer] .void-cms-pin-host :is(button, [role="button"], [data-icon-button])::after,
-.query-bar .void-cms-pin-host :is(button, [role="button"], [data-icon-button])::before,
-.query-bar .void-cms-pin-host :is(button, [role="button"], [data-icon-button])::after {
+form[data-composer] .void-cms-pin-host :is(button, [role="button"])::before,
+form[data-composer] .void-cms-pin-host :is(button, [role="button"])::after,
+.query-bar .void-cms-pin-host :is(button, [role="button"])::before,
+.query-bar .void-cms-pin-host :is(button, [role="button"])::after {
     background: transparent !important;
     background-image: none !important;
     box-shadow: none !important;
@@ -187,11 +194,13 @@ form[data-composer] .void-cms-pin-host:not(.void-cms-labeled) {
     height: var(--grok-control-height-lg, 32px);
 }
 
-form[data-composer] .void-cms-pin-host:not(.void-cms-labeled) :is(button, [role="button"], [data-icon-button]) {
-    width: var(--grok-control-height-lg, 32px) !important;
-    height: var(--grok-control-height-lg, 32px) !important;
-    min-width: var(--grok-control-height-lg, 32px) !important;
-    min-height: var(--grok-control-height-lg, 32px) !important;
+form[data-composer] .void-cms-pin-host:not(.void-cms-labeled) > * {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    place-items: center;
 }
 
 form[data-composer] .void-cms-pin,
@@ -283,12 +292,15 @@ form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data
 }
 
 form[data-composer] [data-testid="attach-button"],
-form[data-composer] [data-testid="attach-button"] *,
-form[data-composer] [data-composer-action],
-form[data-composer] [data-composer-action] * {
+form[data-composer] [data-composer-action] {
     pointer-events: auto !important;
     position: relative;
     z-index: 3;
+}
+
+form[data-composer] [data-testid="attach-button"] *,
+form[data-composer] [data-composer-action] * {
+    pointer-events: auto !important;
 }
 
 /* Hit slop only: the field editor is pe:auto under the leading cell, so a
