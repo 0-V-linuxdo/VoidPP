@@ -18,6 +18,13 @@ const LIVE_PLUS = 'padding:"none",children:g}),m[43]=U,m[44]=g,m[45]=f):f=m[45],
 const LIVE_ICON = 'W=e.f({"grok--default-marker":"grok--default-marker",$$css:!0},h,v,b[P],f[L],p(c[L]),("round"===V||"overlay"===P)&&y,"overlay"===P&&d,x)';
 const LIVE_TRIGGER = 'tn?(0,t.jsx)(eu._,{variant:"ghost",size:"xl",shape:"circle",id:"model-select-trigger","aria-label":ia,children:is&&(0,t.jsx)(ek,{mode:is,icon:ir,compact:!0})})';
 const COMBOBOX = 'Y=(0,t.jsx)("div",{ref:X,children:(0,t.jsxs)(s.V,{open:eu,children:[$,B]})})';
+const VOICE_CALL_FALL = canonicalizeMatch(/case"voice-call":\{let \i;return \i\[\d+\]!==\i\.onPress\?\(\i=\(0,\i\.jsx\)\(\i,\{onPress:\i\.onPress\}\),\i\[\d+\]=\i\.onPress,\i\[\d+\]=\i\):\i=\i\[\d+\],\i\}/);
+const SEND_VOICE_ACTION = canonicalizeMatch(/(case"send":case"voice":\{let \i;return \i\[\d+\]!==)(\i)(\?\(\i=\(0,\i\.jsx\)\(\i,\{action:)\2(\})/);
+const VOICE_LOCALS = canonicalizeMatch(/(\i)="voice"===(\i)\.kind\?\2:null,(\i)="send"===\2\.kind\?\2:null;/);
+const SEND_VOICE_REPLACE = '$1$2$3"send"===$2.kind?$2:{kind:"send",active:!1,enabled:!1}$4';
+const VOICE_LOCALS_REPLACE = '$1="voice"===$2.kind?$2:null,$3="send"===$2.kind?$2:null;if("voice"===$2.kind){$1=null;$3={kind:"send",active:!1,enabled:!1};$2={kind:"send",active:!1,enabled:!1};}';
+const LIVE_TRAILING = 'case"voice-call":{let e;return r[2]!==o.onPress?(e=(0,t.jsx)(m,{onPress:o.onPress}),r[2]=o.onPress,r[3]=e):e=r[3],e}case"send":case"voice":{let e;return r[4]!==o?(e=(0,t.jsx)(y,{action:o}),r[4]=o,r[5]=e):e=r[5],e}';
+const LIVE_VOICE_LOCALS = 'I="voice"===b.kind?b:null,w="send"===b.kind?b:null;';
 
 describe("BetterModeSelect live patches", () => {
     test("unwraps Attach from a closed project-start popover", () => {
@@ -102,4 +109,33 @@ describe("attach menu open fallback", () => {
         expect(isAttachMenuProps({ open: false })).toBe(false);
     });
 
+});
+
+describe("trailing send slot", () => {
+    test("falls voice-call through and coerces voice to inactive send", () => {
+        const next = LIVE_TRAILING
+            .replace(VOICE_CALL_FALL, 'case"voice-call":')
+            .replace(SEND_VOICE_ACTION, SEND_VOICE_REPLACE);
+        expect(next).toContain('case"voice-call":case"send":case"voice":');
+        expect(next).toContain('{action:"send"===o.kind?o:{kind:"send",active:!1,enabled:!1}}');
+        expect(next).not.toContain("return null");
+        expect(next).not.toContain("jsx)(m,{onPress:");
+    });
+
+    test("voice locals force send kind without unmounting the slot", () => {
+        const next = LIVE_VOICE_LOCALS.replace(VOICE_LOCALS, VOICE_LOCALS_REPLACE);
+        expect(next).toContain('kind:"send"');
+        expect(next).toContain("active:!1");
+        expect(next).not.toContain("return null");
+        expect(next).toContain('b={kind:"send",active:!1,enabled:!1}');
+    });
+
+    test("plugin source keeps the trailing send slot", () => {
+        const src = readFileSync(new URL("./index.tsx", import.meta.url), "utf8");
+        const block = src.split("find: '\"data-composer-action\":\"voice\"'")[1]?.split("find:")[0] ?? "";
+        expect(block).toContain('kind:"send"');
+        expect(block).not.toContain("return null");
+        expect(block).not.toMatch(/replace:\s*"null"/);
+        expect(block).toContain('case"voice-call":');
+    });
 });

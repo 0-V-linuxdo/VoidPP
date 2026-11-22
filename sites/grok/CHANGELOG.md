@@ -1,3 +1,7 @@
+## 20261122.14
+
+- Composer send: empty Heavy unmounted the trailing Voice/Send slot, so switching Heavy/Build made Send appear and disappear. Coerce Voice and Voice-call to inactive Send so that slot stays.
+
 ## 20261122.13
 
 - Model pins: leftover tooltip wrappers still boxed the well on query-bar and labeled chips; host padding sat outside the inner fill. Flatten those wrappers, move labeled padding onto the inner button, and lock unlabeled composer hosts to 32px min/max. Kill leftover `::before/::after` paint via `[data-icon-button]` too.

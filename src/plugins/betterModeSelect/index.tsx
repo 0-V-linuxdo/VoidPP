@@ -921,13 +921,20 @@ export default definePlugin({
             find: '"data-composer-action":"voice"',
             replacement: [
                 {
-                    // Trailing slot is voice or send. Bail before the voice button is built.
-                    match: /"voice"===(\i)\.kind\?\1:null,(\i)="send"===\1\.kind\?\1:null;/,
-                    replace: '"voice"===$1.kind?$1:null,$2="send"===$1.kind?$1:null;if("voice"===$1.kind)return null;',
+                    // One trailing slot is Voice XOR Send XOR Voice-call.
+                    // Returning null unmounted the slot on empty Heavy, so
+                    // Heavy/Build toggled Send. Fall Voice-call through and
+                    // coerce Voice to inactive Send so the button stays.
+                    match: /case"voice-call":\{let \i;return \i\[\d+\]!==\i\.onPress\?\(\i=\(0,\i\.jsx\)\(\i,\{onPress:\i\.onPress\}\),\i\[\d+\]=\i\.onPress,\i\[\d+\]=\i\):\i=\i\[\d+\],\i\}/,
+                    replace: 'case"voice-call":',
                 },
                 {
-                    match: /\(0,\i\.jsx\)\(\i\._,\{"data-composer-action":"voice","data-testid":"bot-voice-call-start"[^}]*\}\)/,
-                    replace: "null",
+                    match: /(case"send":case"voice":\{let \i;return \i\[\d+\]!==)(\i)(\?\(\i=\(0,\i\.jsx\)\(\i,\{action:)\2(\})/,
+                    replace: '$1$2$3"send"===$2.kind?$2:{kind:"send",active:!1,enabled:!1}$4',
+                },
+                {
+                    match: /(\i)="voice"===(\i)\.kind\?\2:null,(\i)="send"===\2\.kind\?\2:null;/,
+                    replace: '$1="voice"===$2.kind?$2:null,$3="send"===$2.kind?$2:null;if("voice"===$2.kind){$1=null;$3={kind:"send",active:!1,enabled:!1};$2={kind:"send",active:!1,enabled:!1};}',
                 },
             ],
         },
