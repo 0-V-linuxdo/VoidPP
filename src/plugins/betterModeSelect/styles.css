@@ -22,7 +22,7 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
     flex: 0 0 auto;
     padding: 0;
     border-radius: 999px;
-    overflow: hidden;
+    background: transparent;
     color: inherit;
 }
 
@@ -31,26 +31,11 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
 }
 
 .query-bar .void-cms-pin-host.void-cms-on,
-form[data-composer] .void-cms-pin-host.void-cms-on,
-.query-bar .void-cms-on,
-form[data-composer] .void-cms-on {
+form[data-composer] .void-cms-pin-host.void-cms-on {
     color: #ff7a17 !important;
-    background-color: var(--button-ghost-hover, var(--grok-bg-secondary, rgb(255 255 255 / 8%))) !important;
+    background: transparent !important;
+    background-color: transparent !important;
     background-image: none !important;
-}
-
-.query-bar .void-cms-pin-host.void-cms-on:is(:hover, :focus-visible, :focus-within),
-form[data-composer] .void-cms-pin-host.void-cms-on:is(:hover, :focus-visible, :focus-within),
-.query-bar .void-cms-on:is(:hover, :focus-visible),
-form[data-composer] .void-cms-on:is(:hover, :focus-visible) {
-    background-color: var(--button-ghost-active, var(--grok-bg-secondary-hover, rgb(255 255 255 / 12%))) !important;
-}
-
-.query-bar .void-cms-pin-host.void-cms-on:active,
-form[data-composer] .void-cms-pin-host.void-cms-on:active,
-.query-bar .void-cms-on:active,
-form[data-composer] .void-cms-on:active {
-    background-color: var(--grok-bg-secondary-active, rgb(255 255 255 / 16%)) !important;
 }
 
 .query-bar .void-cms-on:not(:hover, :focus-visible),
@@ -183,24 +168,37 @@ form[data-composer] .void-cms-pin-host :is(button, [role="button"])::before,
 form[data-composer] .void-cms-pin-host :is(button, [role="button"])::after,
 .query-bar .void-cms-pin-host :is(button, [role="button"])::before,
 .query-bar .void-cms-pin-host :is(button, [role="button"])::after {
+    content: none !important;
     background: transparent !important;
     background-image: none !important;
     box-shadow: none !important;
 }
 
-/* Plus/send are lg 32px. An xl 36px selected well looks like a muddy disc. */
-form[data-composer] .void-cms-pin-host:not(.void-cms-labeled) {
-    width: var(--grok-control-height-lg, 32px);
-    height: var(--grok-control-height-lg, 32px);
+.query-bar .void-cms-pin-host.void-cms-on :is(button, [role="button"]),
+form[data-composer] .void-cms-pin-host.void-cms-on :is(button, [role="button"]) {
+    background-color: var(--grok-bg-secondary, rgb(255 255 255 / 8%)) !important;
+    background-image: none !important;
 }
 
-form[data-composer] .void-cms-pin-host:not(.void-cms-labeled) > * {
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    display: grid;
-    place-items: center;
+.query-bar .void-cms-pin-host.void-cms-on:is(:hover, :focus-visible, :focus-within) :is(button, [role="button"]),
+form[data-composer] .void-cms-pin-host.void-cms-on:is(:hover, :focus-visible, :focus-within) :is(button, [role="button"]) {
+    background-color: var(--grok-bg-secondary-hover, rgb(255 255 255 / 12%)) !important;
+}
+
+.query-bar .void-cms-pin-host.void-cms-on:active :is(button, [role="button"]),
+form[data-composer] .void-cms-pin-host.void-cms-on:active :is(button, [role="button"]) {
+    background-color: var(--grok-bg-secondary-active, rgb(255 255 255 / 16%)) !important;
+}
+
+/* Plus/send are lg 32px. An xl 36px selected well looks like a muddy disc. */
+form[data-composer] .void-cms-pin-host:not(.void-cms-labeled) {
+    width: var(--grok-control-height-lg, 32px) !important;
+    height: var(--grok-control-height-lg, 32px) !important;
+}
+
+form[data-composer] .void-cms-pin-host:not(.void-cms-labeled) > :not(button):not([role="button"]),
+form[data-composer] .void-cms-pin-host:not(.void-cms-labeled) > :not(button):not([role="button"]) > :not(button):not([role="button"]) {
+    display: contents;
 }
 
 form[data-composer] .void-cms-pin,

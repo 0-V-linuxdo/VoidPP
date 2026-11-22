@@ -1,3 +1,7 @@
+## 20261122.12
+
+- Model pins: selected fill was still on the 32px host while the glyph lived on a nested IconButton (and tooltip wrappers). Chromium clipped the inner 36px box to the start, so the well sat off-center. Paint `--grok-bg-secondary` on the inner button, drop host fill/`overflow:hidden`, force the unlabeled host to 32px, unwrap tooltip boxes with `display:contents`, and kill pin `::before/::after` so they cannot draw a second disc.
+
 ## 20261122.11
 
 - Model pins: DesktopButton mapped `circle` → `round` before IconButton. Grok 2777665 maps `circle`→round and any other shape (including `round`)→square, so the selected well sat off the glyph. Pass `circle` through, and map `round`→`circle`. Inner pin button fills the 32px host with no leftover padding.

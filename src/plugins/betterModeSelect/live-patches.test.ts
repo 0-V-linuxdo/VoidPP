@@ -49,6 +49,18 @@ describe("BetterModeSelect live patches", () => {
         expect(src).toContain('round: "circle"');
         expect(src).not.toMatch(/circle:\s*"round"/);
     });
+
+    test("selected pin well paints on the inner 32px button", () => {
+        const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+        const host = css.match(/\.void-cms-pin-host \{[^}]+\}/)?.[0] ?? "";
+        expect(host).toContain("display: inline-grid");
+        expect(host).not.toContain("overflow: hidden");
+        expect(css).toMatch(/form\[data-composer\] \.void-cms-pin-host:not\(\.void-cms-labeled\) \{[\s\S]*?height: var\(--grok-control-height-lg, 32px\) !important;/);
+        expect(css).toMatch(/form\[data-composer\] \.void-cms-pin-host\.void-cms-on :is\(button, \[role="button"\]\) \{[\s\S]*?background-color: var\(--grok-bg-secondary/);
+        expect(css).toContain("content: none !important");
+        expect(css).toContain("display: contents");
+        expect(css).not.toMatch(/form\[data-composer\] \.void-cms-pin-host\.void-cms-on,[\s\S]{0,180}background-color: var\(--button-ghost-hover/);
+    });
 });
 
 describe("attach menu open fallback", () => {
