@@ -9,7 +9,7 @@ import { describe, expect, test } from "bun:test";
 import { canonicalizeMatch } from "../../utils/patches";
 
 const PLUS = canonicalizeMatch(/(padding:"none",children:\i\}\))([\s\S]{0,220}?)(\i)=\(0,(\i)\.jsxs\)\((\i)\.V,\{open:(\i),children:\[(\i),(\i)\]\}\)/);
-const PLUS_REPLACE = "$1$2$3=$6?$4.jsxs($5.V,{open:$6,children:[$7,$8]}):$7";
+const PLUS_REPLACE = "$1$2$3=$6?$4.jsxs($5.V,{open:$6,children:[$7,$8]}):$7&&$7.props&&$7.props.render||null";
 const ICON_ROUND = canonicalizeMatch(/\("round"===(\i)\|\|"overlay"===(\i)\)&&(\i)/);
 const TRIGGER = canonicalizeMatch(/shape:"circle",id:"model-select-trigger"/g);
 
@@ -21,8 +21,8 @@ const COMBOBOX = 'Y=(0,t.jsx)("div",{ref:X,children:(0,t.jsxs)(s.V,{open:eu,chil
 describe("BetterModeSelect live patches", () => {
     test("unwraps Attach from a closed project-start popover", () => {
         const next = LIVE_PLUS.replace(PLUS, PLUS_REPLACE);
-        expect(next).toContain("k=B?t.jsxs(rA.V,{open:B,children:[d,f]}):d");
-        expect(next).not.toContain("props.render");
+        expect(next).toContain("k=B?t.jsxs(rA.V,{open:B,children:[d,f]}):d&&d.props&&d.props.render||null");
+        expect(next).not.toContain("k=B?t.jsxs(rA.V,{open:B,children:[d,f]}):d,");
         expect(next).not.toContain("k=(0,t.jsxs)(rA.V,{open:B,children:[d,f]})");
     });
 

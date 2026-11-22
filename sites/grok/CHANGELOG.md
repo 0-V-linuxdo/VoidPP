@@ -1,3 +1,7 @@
+## 20261122.7
+
+- `.6` rendered the project-start `Popover.Trigger` without its Root when the guide was off. That is Base UI #74 / React #130 and blanks the chat. Keep AttachDropdown (`trigger.props.render`) so Files / Skills / Connectors still open; never emit the naked Trigger.
+
 ## 20261122.6
 
 - Plus stayed a mute circle after `.3`: guide-off unwrapped AttachDropdown all the way to `props.render`, which is only the IconButton. Keep AttachDropdown so Files / Skills / Connectors still open; skip only the closed project-start Root.
