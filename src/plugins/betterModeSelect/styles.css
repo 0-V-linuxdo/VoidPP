@@ -22,6 +22,7 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
     height: var(--grok-control-height-xl, 36px);
     flex: 0 0 auto;
     border-radius: 999px;
+    overflow: hidden;
     color: inherit;
 }
 
@@ -34,7 +35,7 @@ form[data-composer] .void-cms-pin-host.void-cms-on,
 .query-bar .void-cms-on,
 form[data-composer] .void-cms-on {
     color: #ff7a17 !important;
-    background-color: var(--grok-bg-secondary, rgb(255 255 255 / 8%)) !important;
+    background-color: var(--button-ghost-hover, var(--grok-bg-secondary, rgb(255 255 255 / 8%))) !important;
     background-image: none !important;
 }
 
@@ -42,7 +43,7 @@ form[data-composer] .void-cms-on {
 form[data-composer] .void-cms-pin-host.void-cms-on:is(:hover, :focus-visible, :focus-within),
 .query-bar .void-cms-on:is(:hover, :focus-visible),
 form[data-composer] .void-cms-on:is(:hover, :focus-visible) {
-    background-color: var(--grok-bg-secondary-hover, rgb(255 255 255 / 12%)) !important;
+    background-color: var(--button-ghost-active, var(--grok-bg-secondary-hover, rgb(255 255 255 / 12%))) !important;
 }
 
 .query-bar .void-cms-pin-host.void-cms-on:active,
@@ -133,7 +134,8 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] #mod
     z-index: 0 !important;
 }
 
-html.void-cms-hide-native #model-select-trigger {
+html.void-cms-hide-native #model-select-trigger,
+html:has(.void-cms-hide-native) #model-select-trigger {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -156,17 +158,40 @@ html.void-cms-hide-native #model-select-trigger {
     z-index: 0 !important;
 }
 
-form[data-composer] .void-cms-pin-host :is(button, [role="button"]),
-.query-bar .void-cms-pin-host :is(button, [role="button"]) {
+form[data-composer] .void-cms-pin-host :is(button, [role="button"], [data-icon-button]),
+.query-bar .void-cms-pin-host :is(button, [role="button"], [data-icon-button]) {
     width: var(--grok-control-height-xl, 36px) !important;
     height: var(--grok-control-height-xl, 36px) !important;
     min-width: var(--grok-control-height-xl, 36px) !important;
     min-height: var(--grok-control-height-xl, 36px) !important;
     border-radius: 999px !important;
+    background: transparent !important;
     background-color: transparent !important;
     background-image: none !important;
     box-shadow: none !important;
     color: inherit !important;
+}
+
+form[data-composer] .void-cms-pin-host :is(button, [role="button"], [data-icon-button])::before,
+form[data-composer] .void-cms-pin-host :is(button, [role="button"], [data-icon-button])::after,
+.query-bar .void-cms-pin-host :is(button, [role="button"], [data-icon-button])::before,
+.query-bar .void-cms-pin-host :is(button, [role="button"], [data-icon-button])::after {
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+/* Plus/send are lg 32px. An xl 36px selected well looks like a muddy disc. */
+form[data-composer] .void-cms-pin-host:not(.void-cms-labeled) {
+    width: var(--grok-control-height-lg, 32px);
+    height: var(--grok-control-height-lg, 32px);
+}
+
+form[data-composer] .void-cms-pin-host:not(.void-cms-labeled) :is(button, [role="button"], [data-icon-button]) {
+    width: var(--grok-control-height-lg, 32px) !important;
+    height: var(--grok-control-height-lg, 32px) !important;
+    min-width: var(--grok-control-height-lg, 32px) !important;
+    min-height: var(--grok-control-height-lg, 32px) !important;
 }
 
 form[data-composer] .void-cms-pin,

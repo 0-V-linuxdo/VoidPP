@@ -1,3 +1,9 @@
+## 20261122.10
+
+- Composer plus: `.9` pointerup walked into Grok's inner tooltip Root (`open`/`onOpenChange` without `delayDuration`) and called tooltip open instead of Files / Skills / Connectors. Skip `disableHoverablePopup` / `actionsRef` too, and still find attach-button when a tooltip `<button>` wraps it.
+- Native Model chip: `shape:"circle"` → `"round"` on `#model-select-trigger` squares the 2777665 IconButton (`circle`→round, anything else→square). Leave Grok's `circle`; kit-level circle-as-round stays.
+- Model pins: selected well was xl 36px `--grok-bg-secondary` next to 32px plus/send, so Heavy looked like a muddy disc. Composer pins are lg 32px; selected fill is `--button-ghost-hover` like plus; clip inner square paint. Hide-native clip also matches `html:has(.void-cms-hide-native)` so the compact trigger cannot flash a square well before the html class lands.
+
 ## 20261122.9
 
 - Composer plus: Grok opens Files / Skills / Connectors on mousedown. If that event is swallowed after pointerdown (focus, no menu), open on pointerup when the plus is still collapsed. Skip the tooltip fiber. Same 32px paint; 8px hit slop on plus and send so the field editor under the leading cell cannot steal the click.

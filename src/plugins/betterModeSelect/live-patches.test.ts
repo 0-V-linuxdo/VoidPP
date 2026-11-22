@@ -12,7 +12,6 @@ import { isAttachMenuProps } from "./attachOpen";
 const PLUS = canonicalizeMatch(/(padding:"none",children:\i\}\))([\s\S]{0,220}?)(\i)=\(0,(\i)\.jsxs\)\((\i)\.V,\{open:(\i),children:\[(\i),(\i)\]\}\)/);
 const PLUS_REPLACE = "$1$2$3=$6?$4.jsxs($5.V,{open:$6,children:[$7,$8]}):$7&&$7.props&&$7.props.render||null";
 const ICON_ROUND = canonicalizeMatch(/\("round"===(\i)\|\|"overlay"===(\i)\)&&(\i)/);
-const TRIGGER = canonicalizeMatch(/shape:"circle",id:"model-select-trigger"/g);
 
 const LIVE_PLUS = 'padding:"none",children:g}),m[43]=U,m[44]=g,m[45]=f):f=m[45],m[46]!==d||m[47]!==f||m[48]!==B?(k=(0,t.jsxs)(rA.V,{open:B,children:[d,f]}),m[46]=d,m[47]=f,m[48]=B,m[49]=k):k=m[49],k}';
 const LIVE_ICON = 'W=e.f({"grok--default-marker":"grok--default-marker",$$css:!0},h,v,b[P],f[L],p(c[L]),("round"===V||"overlay"===P)&&y,"overlay"===P&&d,x)';
@@ -37,10 +36,10 @@ describe("BetterModeSelect live patches", () => {
         expect(next).toContain('"overlay"===P&&d');
     });
 
-    test("rounds the compact model-select trigger", () => {
-        const next = LIVE_TRIGGER.replace(TRIGGER, 'shape:"round",id:"model-select-trigger"');
-        expect(next).toContain('shape:"round",id:"model-select-trigger"');
-        expect(next).not.toContain('shape:"circle",id:"model-select-trigger"');
+    test("leaves compact model-select trigger as circle", () => {
+        // 2777665 maps circle→round and any other shape (including round)→square.
+        expect(LIVE_TRIGGER).toContain('shape:"circle",id:"model-select-trigger"');
+        expect(LIVE_TRIGGER).not.toContain('shape:"round",id:"model-select-trigger"');
     });
 });
 
@@ -48,9 +47,13 @@ describe("attach menu open fallback", () => {
     test("picks DropdownMenu open/onOpenChange and skips tooltip", () => {
         const open = (_v: boolean) => {};
         expect(isAttachMenuProps({ open: false, onOpenChange: open })).toBe(true);
+        expect(isAttachMenuProps({ open: false, onOpenChange: open, modal: undefined })).toBe(true);
         expect(isAttachMenuProps({ open: false, onOpenChange: open, delayDuration: 600 })).toBe(false);
         expect(isAttachMenuProps({ open: false, onOpenChange: open, disableHoverableContent: true })).toBe(false);
+        expect(isAttachMenuProps({ open: false, onOpenChange: open, disableHoverablePopup: true })).toBe(false);
+        expect(isAttachMenuProps({ open: false, onOpenChange: open, actionsRef: {} })).toBe(false);
         expect(isAttachMenuProps({ onOpenChange: open })).toBe(false);
         expect(isAttachMenuProps({ open: false })).toBe(false);
     });
+
 });

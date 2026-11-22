@@ -10,8 +10,22 @@ export const ATTACH_SEL = '[data-testid="attach-button"]';
 
 export function isAttachMenuProps(p: Record<string, unknown> | null | undefined): boolean {
     if (!p || typeof p.onOpenChange !== "function" || !("open" in p)) return false;
-    if ("delayDuration" in p || "disableHoverableContent" in p) return false;
+    if (
+        "delayDuration" in p
+        || "disableHoverableContent" in p
+        || "disableHoverablePopup" in p
+        || "actionsRef" in p
+    ) return false;
     return true;
+}
+
+export function attachButtonFromEvent(e: Event): HTMLElement | null {
+    const t = e.target;
+    if (!(t instanceof Element)) return null;
+    const viaClosest = t.closest(ATTACH_SEL);
+    if (viaClosest instanceof HTMLElement) return viaClosest;
+    const viaChild = t instanceof HTMLElement ? t.querySelector(ATTACH_SEL) : null;
+    return viaChild instanceof HTMLElement ? viaChild : null;
 }
 
 export function attachMenuOpen(el: Element): ((open: boolean) => void) | null {
@@ -40,10 +54,8 @@ export function openAttachIfClosed(btn: HTMLElement) {
 
 export function onAttachPointerUp(e: PointerEvent) {
     if (e.button !== 0) return;
-    const t = e.target;
-    if (!(t instanceof Element)) return;
-    const btn = t.closest(ATTACH_SEL);
-    if (!(btn instanceof HTMLElement)) return;
+    const btn = attachButtonFromEvent(e);
+    if (!btn) return;
     openAttachIfClosed(btn);
 }
 

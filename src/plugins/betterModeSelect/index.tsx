@@ -759,7 +759,7 @@ function PinnedModes() {
                         data-void-mode-id={m.id}
                     >
                         <ChatBarButton
-                            size="xl"
+                            size="lg"
                             shape="circle"
                             icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels} />}
                             tooltip={m.label}
@@ -904,16 +904,6 @@ export default definePlugin({
                 {
                     match: /\("round"===(\i)\|\|"overlay"===(\i)\)&&(\i)/,
                     replace: '("round"===$1||"circle"===$1||"overlay"===$2)&&$3',
-                },
-            ],
-        },
-        {
-            find: 'id:"model-select-trigger"',
-            all: true,
-            replacement: [
-                {
-                    match: /shape:"circle",id:"model-select-trigger"/g,
-                    replace: 'shape:"round",id:"model-select-trigger"',
                 },
             ],
         },
