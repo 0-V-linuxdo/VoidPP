@@ -21,21 +21,21 @@
 }
 
 button:has(.void-ud-trigger) {
-    height: 2.5rem;
-    min-height: 2.5rem;
-    border-radius: 999px;
+    height: 2.5rem !important;
+    min-height: 2.5rem !important;
+    border-radius: 999px !important;
 }
 
 button:has(.void-ud-icon-only) {
-    width: 2.5rem;
-    min-width: 2.5rem;
-    padding-inline: 0;
+    width: 2.5rem !important;
+    min-width: 2.5rem !important;
+    padding-inline: 0 !important;
 }
 
 button:has(.void-ud-trigger > .void-ud-label) {
-    width: auto;
-    border-radius: 999px;
-    padding-inline: 0.5rem;
+    width: auto !important;
+    border-radius: 999px !important;
+    padding-inline: 0.5rem !important;
 }
 
 .void-ud-ring {

@@ -1,3 +1,9 @@
+## 20261122.5
+
+- Selected Heavy/Build pin used an 18% orange wash on the dark composer, so the well looked muddy brown. Keep the orange glyph; fill with Grok muted `--grok-bg-secondary` like plus.
+- Harvest (`html.void-cms-picking`) unclipped the native Model trigger, which flashed as a compact square over the pins. Keep hide-native clipped; programmatic click does not need paint.
+- Labeled pins and usage labeled chips: `width: auto` lost to Grok xl 36px. Force auto width and round clip so they stay pills.
+
 ## 20261122.4
 
 - Blank grok.com after `.3`: metrics factory 603814 still required eight more modules from the same lazy helper chunk. Stub those imports too (keep `el("/api/log_metric")` → `false`, do not group sendBeacon, do not stub same-chunk debounce). Stub leftover homepage `e.i(5156912)` so a late inject cannot white the page.
