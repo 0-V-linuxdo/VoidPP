@@ -1,3 +1,7 @@
+## 20261122.16
+
+- Composer plus: `.14` still treated any click whose target *contains* the plus as "open Files / Skills / Connectors", so the field opened the menu and an outside click could not keep it closed. Only `closest(attach-button)` on a still-collapsed plus may force-open; a later pointerdown elsewhere cancels a pending open. Leading/actions no longer set `pointer-events:auto` on every direct child. Inline field children (and `role=textbox`) keep the editor clickable.
+
 ## 20261122.15
 
 - Composer plus: pointerup treated any click on a container that contains the plus as "open the menu", so the field opened Files / Skills / Connectors and outside clicks could not keep it closed. Only a real plus hit on a still-collapsed button opens; skip wide wrappers.

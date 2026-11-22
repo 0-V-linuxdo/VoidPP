@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 
 import { canonicalizeMatch } from "../../utils/patches";
-import { ATTACH_WRAPPER_MAX_PX, isAttachMenuProps, isPointOnAttach } from "./attachOpen";
+import { isAttachMenuProps, isPointOnAttach } from "./attachOpen";
 
 const PLUS = canonicalizeMatch(/(padding:"none",children:\i\}\))([\s\S]{0,220}?)(\i)=\(0,(\i)\.jsxs\)\((\i)\.V,\{open:(\i),children:\[(\i),(\i)\]\}\)/);
 const PLUS_REPLACE = "$1$2$3=$6?$4.jsxs($5.V,{open:$6,children:[$7,$8]}):$7&&$7.props&&$7.props.render||null";
@@ -109,14 +109,16 @@ describe("attach menu open fallback", () => {
         expect(isAttachMenuProps({ open: false })).toBe(false);
     });
 
-    test("plus fallback only searches a tiny button wrapper, not the field", () => {
+    test("plus fallback only force-opens from closest(attach-button), not descendants", () => {
         const src = readFileSync(new URL("./attachOpen.ts", import.meta.url), "utf8");
         expect(src).toContain("pointerdown");
         expect(src).toContain("pointercancel");
-        expect(src).toContain("data-composer-field");
-        expect(src).toContain("ATTACH_WRAPPER_MAX_PX");
         expect(src).toContain("collapsedPlusAtPointerDown");
-        expect(src).not.toMatch(/const viaChild = t instanceof HTMLElement \? t\.querySelector\(ATTACH_SEL\) : null;\s*return viaChild/);
+        expect(src).toContain("openGen");
+        expect(src).toContain("closest(ATTACH_SEL)");
+        expect(src).not.toContain("querySelector(ATTACH_SEL)");
+        expect(src).not.toContain("ATTACH_WRAPPER_MAX_PX");
+        expect(src).not.toContain("viaChild");
     });
 
     test("isPointOnAttach keeps 8px slop and rejects far clicks", () => {
@@ -126,7 +128,15 @@ describe("attach menu open fallback", () => {
         expect(isPointOnAttach({ clientX: 116, clientY: 116 }, btn)).toBe(true);
         expect(isPointOnAttach({ clientX: 96, clientY: 116 }, btn)).toBe(true);
         expect(isPointOnAttach({ clientX: 80, clientY: 116 }, btn)).toBe(false);
-        expect(ATTACH_WRAPPER_MAX_PX).toBe(48);
+    });
+
+    test("inline field children catch clicks; plus/send hosts do not pe:auto every child", () => {
+        const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+        expect(css).toContain('[data-composer-field] > *');
+        expect(css).toContain('[role="textbox"]');
+        expect(css).toContain('[data-base-ui-tooltip-trigger]');
+        expect(css).not.toMatch(/has\(\[data-testid="attach-button"\]\) > \*,/);
+        expect(css).not.toMatch(/has\(\[data-composer-action\]\) > \*,/);
     });
 
 });

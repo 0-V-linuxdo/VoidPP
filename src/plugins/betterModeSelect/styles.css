@@ -253,9 +253,14 @@ form[data-composer][data-composer-layout="inline"] [data-composer-field] {
     pointer-events: none;
 }
 
+form[data-composer][data-composer-layout="inline"] [data-composer-field] > * {
+    pointer-events: auto;
+}
+
 form[data-composer][data-composer-layout="inline"] [data-composer-field] :is(
     textarea,
     [contenteditable="true"],
+    [role="textbox"],
     .tiptap,
     .ProseMirror,
     [data-composer-compact-input],
@@ -318,8 +323,18 @@ form[data-composer] [data-composer-action]::after {
     box-shadow: none;
 }
 
-form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data-testid="attach-button"]) > *,
-form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data-composer-action]) > *,
+form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data-testid="attach-button"]) > :is(
+    button,
+    [role="button"],
+    [data-testid="attach-button"],
+    [data-base-ui-tooltip-trigger]
+),
+form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data-composer-action]) > :is(
+    button,
+    [role="button"],
+    [data-composer-action],
+    [data-base-ui-tooltip-trigger]
+),
 form[data-composer] :is(
     [data-testid="attach-button"],
     [data-composer-chip],
