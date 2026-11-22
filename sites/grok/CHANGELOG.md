@@ -1,3 +1,10 @@
+## 20261122.13
+
+- Model pins: leftover tooltip wrappers still boxed the well on query-bar and labeled chips; host padding sat outside the inner fill. Flatten those wrappers, move labeled padding onto the inner button, and lock unlabeled composer hosts to 32px min/max. Kill leftover `::before/::after` paint via `[data-icon-button]` too.
+- Usage chip: xl/`2.5rem` sat next to 32px plus/send as a bigger disc. Use lg 32px like plus; keep the percent pill `width:auto`. Kill leftover `::before/::after` paint on the usage button.
+- Fallback chat-bar button is 32px, same as plus.
+- Plus/send: keep the 8px hit slop, but lock `::after` paint so it cannot become a second disc.
+
 ## 20261122.12
 
 - Model pins: selected fill was still on the 32px host while the glyph lived on a nested IconButton (and tooltip wrappers). Chromium clipped the inner 36px box to the start, so the well sat off-center. Paint `--grok-bg-secondary` on the inner button, drop host fill/`overflow:hidden`, force the unlabeled host to 32px, unwrap tooltip boxes with `display:contents`, and kill pin `::before/::after` so they cannot draw a second disc.

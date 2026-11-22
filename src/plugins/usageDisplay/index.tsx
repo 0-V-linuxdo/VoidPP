@@ -744,7 +744,7 @@ const BUTTON_BASE = {
     onClick: () => openHistory(),
     order: 1,
     variant: "ghost",
-    size: "xl",
+    size: "lg",
     shape: "pill",
     className: "text-fg-primary",
     "aria-label": "Grok usage",

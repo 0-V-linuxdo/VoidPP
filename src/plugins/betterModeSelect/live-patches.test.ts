@@ -56,10 +56,36 @@ describe("BetterModeSelect live patches", () => {
         expect(host).toContain("display: inline-grid");
         expect(host).not.toContain("overflow: hidden");
         expect(css).toMatch(/form\[data-composer\] \.void-cms-pin-host:not\(\.void-cms-labeled\) \{[\s\S]*?height: var\(--grok-control-height-lg, 32px\) !important;/);
-        expect(css).toMatch(/form\[data-composer\] \.void-cms-pin-host\.void-cms-on :is\(button, \[role="button"\]\) \{[\s\S]*?background-color: var\(--grok-bg-secondary/);
+        expect(css).toMatch(/form\[data-composer\] \.void-cms-pin-host\.void-cms-on :is\(button, \[role="button"\], \[data-icon-button\]\) \{[\s\S]*?background-color: var\(--grok-bg-secondary/);
         expect(css).toContain("content: none !important");
         expect(css).toContain("display: contents");
         expect(css).not.toMatch(/form\[data-composer\] \.void-cms-pin-host\.void-cms-on,[\s\S]{0,180}background-color: var\(--button-ghost-hover/);
+    });
+
+    test("cousin wells keep fill on the inner control", () => {
+        const css = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+        expect(css).toMatch(/\.void-cms-pin-host > :not\(button\):not\(\[role="button"\]\):not\(\[data-icon-button\]\)/);
+        expect(css).toMatch(/\.void-cms-pin-host\.void-cms-labeled :is\(button, \[role="button"\], \[data-icon-button\]\) \{[^}]*padding-inline: 0\.5rem !important;/);
+        const labeledHost = css.match(/\.void-cms-pin-host\.void-cms-labeled \{[^}]+\}/)?.[0] ?? "";
+        expect(labeledHost).toContain("padding-inline: 0");
+        expect(labeledHost).not.toContain("padding-inline: 0.5rem");
+        const slop = css.match(/\[data-testid="attach-button"\]::after,[\s\S]*?\[data-composer-action\]::after \{[^}]+\}/)?.[0] ?? "";
+        expect(slop).toContain("inset: -8px");
+        expect(slop).toContain("background: transparent");
+        expect(slop).not.toMatch(/background-color:\s*var\(/);
+    });
+
+    test("usage chip matches plus/send at 32px", () => {
+        const css = readFileSync(new URL("../usageDisplay/styles.css", import.meta.url), "utf8");
+        const src = readFileSync(new URL("../usageDisplay/index.tsx", import.meta.url), "utf8");
+        const grok = readFileSync(new URL("../../../sites/grok/styles.js", import.meta.url), "utf8");
+        expect(src).toMatch(/size:\s*"lg"/);
+        expect(src).not.toMatch(/size:\s*"xl"/);
+        expect(css).toMatch(/button:has\(\.void-ud-trigger\) \{[\s\S]*?height: var\(--grok-control-height-lg, 32px\) !important;/);
+        expect(css).toMatch(/button:has\(\.void-ud-icon-only\) \{[\s\S]*?width: var\(--grok-control-height-lg, 32px\) !important;/);
+        expect(css).toMatch(/button:has\(\.void-ud-trigger\)::before/);
+        expect(grok).toMatch(/\.uspp-chatbar-btn \{[^}]*min-width: 32px; height: 32px;/);
+        expect(grok).not.toMatch(/\.uspp-chatbar-btn \{[^}]*min-width: 36px; height: 36px;/);
     });
 });
 

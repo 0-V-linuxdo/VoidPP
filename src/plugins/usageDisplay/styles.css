@@ -21,21 +21,33 @@
 }
 
 button:has(.void-ud-trigger) {
-    height: 2.5rem !important;
-    min-height: 2.5rem !important;
+    height: var(--grok-control-height-lg, 32px) !important;
+    min-height: var(--grok-control-height-lg, 32px) !important;
+    max-height: var(--grok-control-height-lg, 32px) !important;
     border-radius: 999px !important;
+    overflow: visible !important;
 }
 
 button:has(.void-ud-icon-only) {
-    width: 2.5rem !important;
-    min-width: 2.5rem !important;
+    width: var(--grok-control-height-lg, 32px) !important;
+    min-width: var(--grok-control-height-lg, 32px) !important;
+    max-width: var(--grok-control-height-lg, 32px) !important;
     padding-inline: 0 !important;
 }
 
 button:has(.void-ud-trigger > .void-ud-label) {
     width: auto !important;
+    max-width: none !important;
     border-radius: 999px !important;
     padding-inline: 0.5rem !important;
+}
+
+button:has(.void-ud-trigger)::before,
+button:has(.void-ud-trigger)::after {
+    content: none !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
 }
 
 .void-ud-ring {
