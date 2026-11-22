@@ -7,6 +7,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { canonicalizeMatch } from "../../utils/patches";
+import { isAttachMenuProps } from "./attachOpen";
 
 const PLUS = canonicalizeMatch(/(padding:"none",children:\i\}\))([\s\S]{0,220}?)(\i)=\(0,(\i)\.jsxs\)\((\i)\.V,\{open:(\i),children:\[(\i),(\i)\]\}\)/);
 const PLUS_REPLACE = "$1$2$3=$6?$4.jsxs($5.V,{open:$6,children:[$7,$8]}):$7&&$7.props&&$7.props.render||null";
@@ -40,5 +41,16 @@ describe("BetterModeSelect live patches", () => {
         const next = LIVE_TRIGGER.replace(TRIGGER, 'shape:"round",id:"model-select-trigger"');
         expect(next).toContain('shape:"round",id:"model-select-trigger"');
         expect(next).not.toContain('shape:"circle",id:"model-select-trigger"');
+    });
+});
+
+describe("attach menu open fallback", () => {
+    test("picks DropdownMenu open/onOpenChange and skips tooltip", () => {
+        const open = (_v: boolean) => {};
+        expect(isAttachMenuProps({ open: false, onOpenChange: open })).toBe(true);
+        expect(isAttachMenuProps({ open: false, onOpenChange: open, delayDuration: 600 })).toBe(false);
+        expect(isAttachMenuProps({ open: false, onOpenChange: open, disableHoverableContent: true })).toBe(false);
+        expect(isAttachMenuProps({ onOpenChange: open })).toBe(false);
+        expect(isAttachMenuProps({ open: false })).toBe(false);
     });
 });

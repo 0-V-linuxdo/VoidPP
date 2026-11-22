@@ -20,6 +20,7 @@ import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, StartAt } from "@utils/types";
 import type { DragEvent, MouseEvent } from "react";
 
+import { bindAttachOpen } from "./attachOpen";
 import { keepHarvestedGlyph } from "./glyphs";
 
 const logger = new Logger("BetterModeSelect");
@@ -56,6 +57,7 @@ const TRIGGER_SEL = "#model-select-trigger, form[data-composer] [data-query-bar-
 const PICK_MS = 900;
 const POINTER: PointerEventInit = { bubbles: true, cancelable: true, pointerId: 1, pointerType: "mouse", button: 0 };
 const GHOST_STYLE = { opacity: "0", visibility: "hidden" } as const;
+let attachOpenAbort: AbortController | null = null;
 
 const settings = definePluginSettings({
     pinList: {
@@ -819,9 +821,14 @@ export default definePlugin({
         } catch (e) {
             logger.debug("incognito watch failed", e);
         }
+        attachOpenAbort?.abort();
+        attachOpenAbort = new AbortController();
+        bindAttachOpen(attachOpenAbort.signal);
     },
 
     stop() {
+        attachOpenAbort?.abort();
+        attachOpenAbort = null;
         document.documentElement.classList.remove("void-cms-hide-native");
         unbindModelHotkey();
         offIncognitoWatch?.();

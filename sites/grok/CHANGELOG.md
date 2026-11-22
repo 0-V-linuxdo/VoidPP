@@ -1,3 +1,7 @@
+## 20261122.9
+
+- Composer plus: Grok opens Files / Skills / Connectors on mousedown. If that event is swallowed after pointerdown (focus, no menu), open on pointerup when the plus is still collapsed. Skip the tooltip fiber. Same 32px paint; 8px hit slop on plus and send so the field editor under the leading cell cannot steal the click.
+
 ## 20261122.8
 
 - Model pins shrank to the 18px glyph: Grok IconButton treats Void++ className as a stylex replacement and drops the 36px round chip. Keep factory size; paint the selected well on the pin host (orange glyph, muted fill).

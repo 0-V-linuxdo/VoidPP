@@ -266,6 +266,16 @@ form[data-composer] [data-composer-action] * {
     z-index: 3;
 }
 
+/* Hit slop only: the field editor is pe:auto under the leading cell, so a
+   32px glyph is easy to miss. Do not change the visible plus/send paint. */
+form[data-composer] [data-testid="attach-button"]::after,
+form[data-composer] [data-composer-action]::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    pointer-events: auto;
+}
+
 form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data-testid="attach-button"]) > *,
 form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data-composer-action]) > *,
 form[data-composer] :is(
