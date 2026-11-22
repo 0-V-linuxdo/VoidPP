@@ -1,23 +1,21 @@
 // ==UserScript==
 // @name         Void++
 // @namespace    https://github.com/0-V-linuxdo/VoidPP/dev
-// @version      20261122.7
+// @version      20261122.8
 // @description  A modification for grok.com
 // @author       Prism & Void++ Contributors
+// @environment  Development
 // @license      GPL-3.0-or-later
 // @icon         https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/assets/logos/app-icon/voidpp-icon.svg
 // @homepageURL  https://github.com/0-V-linuxdo/VoidPP
 // @supportURL   https://github.com/0-V-linuxdo/VoidPP/issues
-// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.meta.js
+// @updateURL    https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
 // @downloadURL  https://raw.githubusercontent.com/0-V-linuxdo/VoidPP/dev/userscript/VoidPP.user.js
 // @match        *://grok.com/*
 // @match        *://*.grok-sandbox.com/*
 // @match        *://artifacts.grokusercontent.com/*
 // @match        *://*.grokusercontent.com/*
 // @run-at       document-start
-// @inject-into  auto
-// @sandbox      JavaScript
-// @noframes
 // @grant        unsafeWindow
 // @grant        GM_addValueChangeListener
 // @grant        GM_deleteValue
@@ -30,10 +28,49 @@
 // @grant        GM_setValue
 // @grant        GM_unregisterMenuCommand
 // @grant        GM_xmlhttpRequest
-// @grant        GM.setClipboard
-// @grant        GM.notification
 // @connect      *
 // ==/UserScript==
+(function(){
+  var h = location.hostname;
+  if (!(h === "grok-sandbox.com" || /\.grok-sandbox\.com$/.test(h) || h === "artifacts.grokusercontent.com" || /\.grokusercontent\.com$/.test(h))) return;
+  var ID = "void-better-canvas";
+  function dark() {
+    try { if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) return true; } catch (e) {}
+    return document.documentElement.classList.contains("dark");
+  }
+  function css(d) {
+    var thumb = d ? "#4a4a52" : "#c4c4cc", track = d ? "#141416" : "#f4f4f5", hover = d ? "#9a9aa3" : "#8a8a94", scheme = d ? "dark" : "light";
+    return "html,body,:root{color-scheme:"+scheme+"!important}*{scrollbar-width:thin!important;scrollbar-color:"+thumb+" "+track+"!important}*::-webkit-scrollbar{width:.5rem!important;height:.5rem!important}*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:"+track+"!important}*::-webkit-scrollbar-thumb{background-color:"+thumb+"!important;background-clip:padding-box!important;border:.125rem solid transparent!important;border-radius:999px!important}*::-webkit-scrollbar-thumb:hover{background-color:"+hover+"!important}";
+  }
+  function paint(doc, d) {
+    var el = doc.getElementById(ID);
+    if (!el) { el = doc.createElement("style"); el.id = ID; (doc.head || doc.documentElement).appendChild(el); }
+    el.textContent = css(d);
+  }
+  function tree(d) {
+    (function visit(doc) {
+      try { paint(doc, d); } catch (e) {}
+      try {
+        doc.querySelectorAll("iframe").forEach(function(frame) {
+          var src = "";
+          try { src = frame.getAttribute("srcdoc") || frame.srcdoc || ""; } catch (e) { return; }
+          if (src) {
+            var scheme = d ? "dark" : "light";
+            if (!(src.indexOf('id="'+ID+'"') >= 0 && src.indexOf("color-scheme:"+scheme) >= 0)) {
+              var inject = '<meta name="color-scheme" content="'+scheme+'"><style id="'+ID+'">'+css(d)+"</style>";
+              try { frame.srcdoc = inject + src.replace(/<meta\s+name=["']color-scheme["'][^>]*>/gi, "").replace(/<style\s+id=["']void-better-canvas["']>[\s\S]*?<\/style>/gi, ""); } catch (e) {}
+            }
+          }
+          try { if (frame.contentDocument) visit(frame.contentDocument); } catch (e) {}
+        });
+      } catch (e) {}
+    })(document);
+  }
+  tree(dark());
+  try { new MutationObserver(function(){ tree(dark()); }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["srcdoc"] }); } catch (e) {}
+})();
+
+try {
 
 (() => {
   var __defProp = Object.defineProperty;
@@ -43,7 +80,7 @@
   };
 
   // <define:__USPP_CHANGELOG__>
-  var define_USPP_CHANGELOG_default = [{ version: "20261122.7", date: null, notes: ["`.6` rendered the project-start `Popover.Trigger` without its Root when the guide was off. That is Base UI #74 / React #130 and blanks the chat. Keep AttachDropdown (`trigger.props.render`) so Files / Skills / Connectors still open; never emit the naked Trigger."] }, { version: "20261122.6", date: null, notes: ["Plus stayed a mute circle after `.3`: guide-off unwrapped AttachDropdown all the way to `props.render`, which is only the IconButton. Keep AttachDropdown so Files / Skills / Connectors still open; skip only the closed project-start Root."] }, { version: "20261122.5", date: null, notes: ["Selected Heavy/Build pin used an 18% orange wash on the dark composer, so the well looked muddy brown. Keep the orange glyph; fill with Grok muted `--grok-bg-secondary` like plus.", "Harvest (`html.void-cms-picking`) unclipped the native Model trigger, which flashed as a compact square over the pins. Keep hide-native clipped; programmatic click does not need paint.", "Labeled pins and usage labeled chips: `width: auto` lost to Grok xl 36px. Force auto width and round clip so they stay pills."] }, { version: "20261122.4", date: null, notes: ['Blank grok.com after `.3`: metrics factory 603814 still required eight more modules from the same lazy helper chunk. Stub those imports too (keep `el("/api/log_metric")` → `false`, do not group sendBeacon, do not stub same-chunk debounce). Stub leftover homepage `e.i(5156912)` so a late inject cannot white the page.', "Plus unwrap and circle→round chips are unchanged; they already match live grok. The dead plus and square model chip were the blank / safe-mode native trigger."] }, { version: "20261122.3", date: null, notes: ['Blank grok.com after `.2`: the metrics factory still requires a helper module that is not registered yet. Stub that import and turn `el("/api/log_metric",…)` into `false` without grouping, so a miss cannot fall back to the original factory.', "Plus: skip the closed project-start popover wrap; if the trigger has no `render` prop, keep the trigger node so the module cannot throw.", 'Model chips: Grok IconButton only rounds `shape:"round"`, but compact `#model-select-trigger` and other icon buttons pass `"circle"` (default square). Treat circle as round. Clip the native trigger even when it is not nested. Round pin hosts via `[data-void-mode-id]` because Grok drops `className`.'] }, { version: "20261122.2", date: null, notes: ["Plus menu: Grok wraps attach in a closed popover while the project-start guide is off, so the plus button never opens Files / Skills / Connectors. Skip that wrap when the guide is not shown.", "Native model trigger was sitting next to Heavy/Build as a compact square. Clip it even when nested; keep pins round.", "RecentTopics: do not crash hydrate when a project name is missing.", "NoTelemetry: stop selecting metrics factory 603814 (that rewrite blanked grok.com). Keep sendBeacon / fetch stubs."] }, { version: "20261122.1", date: null, notes: ["Composer plus, project chip, pins, usage, and send: the field is a click surface (`onPointerDown` preventDefault). Stop stealing those hits; host `z-index` is a no-op on the `display:contents` toolbar. Keep in-field chips and quote buttons clickable.", "NoTelemetry no longer rewrites the core metrics factory. Stub `/api/log_metric` on `sendBeacon` / `fetch` so a failed patch cannot blank grok.com."] }, { version: "20261121.3", date: null, notes: ["Raise the inline composer plus, project chip, mode pins, usage, and send above Grok's absolute field overlay so those clicks stop focusing the editor."] }, { version: "20261121.2", date: null, notes: ["CustomGreeting only rewrites jsx `placeholder:` so the composer destructure cannot become invalid syntax (module 7440253 compile fail / dead clicks after the homepage rebuild).", 'Mode pins wrap `"data-query-bar-mode-select"` children first; the specific jsx wrap stays as a noWarn fallback.'] }, { version: "20261121.1", date: null, notes: ["Compact Library stays a 32px header button. Overlay Search is 32px with overflow clipped, and `position-anchor` is gone so Library-fixed plus Search-fixed cannot hang a project chat.", 'Library `Item` gets `aria-label="Library"` so the compact CSS hits without depending on the sprite href.', "StableComposer caches the editor deps from `immediatelyRender:!0,extensions:`.", "Hide Build idea chips via the live `{chips,onMore}` render. Insert Connect Apps before Help in the 9-item desktop account menu.", "Settings nav lucide reads `name:map.ident[id]`. Void++ tabs concat onto the hosted desktop tab list. Recent sidebar children wrap when they are a single node."] }, { version: "20261114.58", date: null, notes: ['Mode pins: paint Heavy/Build even when Modes/Routing hooks are still unresolved. Drop `ensureLoaded` from the Modes shape check. Wrap desktop `"data-query-bar-mode-select"` children from that literal.', "Overlay Library is `position:fixed` at 48px with no `position-anchor` (in-sidebar `absolute` sat in a nav containing block and never reached the header).", "Usage hover panel also opens on `mouseenter` so a real mouse move shows it."] }, { version: "20261114.57", date: null, notes: ["Guard regex `find`s that start with `\\i` or a character class in `grok-chunk-bench` and the build. Warn `\\i`-start `match`es; start log_metric and settings-tab filter on a literal.", "Mode pins: stop gating `PinnedHost` on `SettingsStore` (`modelConfigOverrideSchema` lives on another module). Read Modes/Routing via `getState`. Hide native Heavy.", "Usage hover: Grok `IconButton` tooltip is a string; node panels open from GrokChatBar pointerenter.", "Overlay Search is a 32px ghost 4px left of compact + (`position:fixed` + sidebar anchor). Library stays `absolute` so that pair cannot hang layout. Dead Cleaner/ConnectorsFlyout/UserQuotes finds are `noWarn`. Desktop settings `shownTab` follows the live inline resolver."] }, { version: "20261114.56", date: null, notes: ["Patch ReDoS: Method A logged 123 StableComposer regex finds (`\\i)=[` on every prefiltered factory); Method B timed those plus TurnTail / ENABLE / sidebar-chats / unbounded `[\\s\\S]*?` out at 3s on 100k+ factories. Drop the `\\i` find, start remaining matches on a literal, bound `[\\s\\S]*?` / `[^]*?`, and delete the tempered-greedy `mode-select` wrap."] }, { version: "20261114.55", date: null, notes: ["CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS."] }, { version: "20261114.54", date: null, notes: ["`.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.", "BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\\i`, never hit, and scanned every factory (~38s in the chunk bench)."] }, { version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
+  var define_USPP_CHANGELOG_default = [{ version: "20261122.8", date: null, notes: ["Model pins shrank to the 18px glyph: Grok IconButton treats Void++ className as a stylex replacement and drops the 36px round chip. Keep factory size; paint the selected well on the pin host (orange glyph, muted fill).", "Hide-native clip must not target flattened pin hosts once the host is a real 36px box. Clip `#model-select-trigger` via `html.void-cms-hide-native` as well, and never hide the native trigger when no pins are shown.", "Labeled pins: the 36px host rule beat `width: auto`. Keep labeled chips as pills.", "Composer plus: raise any surface that contains attach-button, not only a direct child, so Files / Skills / Connectors still receive the click. Same raise for send/actions; do not lift the field overlay itself."] }, { version: "20261122.7", date: null, notes: ["`.6` rendered the project-start `Popover.Trigger` without its Root when the guide was off. That is Base UI #74 / React #130 and blanks the chat. Keep AttachDropdown (`trigger.props.render`) so Files / Skills / Connectors still open; never emit the naked Trigger."] }, { version: "20261122.6", date: null, notes: ["Plus stayed a mute circle after `.3`: guide-off unwrapped AttachDropdown all the way to `props.render`, which is only the IconButton. Keep AttachDropdown so Files / Skills / Connectors still open; skip only the closed project-start Root."] }, { version: "20261122.5", date: null, notes: ["Selected Heavy/Build pin used an 18% orange wash on the dark composer, so the well looked muddy brown. Keep the orange glyph; fill with Grok muted `--grok-bg-secondary` like plus.", "Harvest (`html.void-cms-picking`) unclipped the native Model trigger, which flashed as a compact square over the pins. Keep hide-native clipped; programmatic click does not need paint.", "Labeled pins and usage labeled chips: `width: auto` lost to Grok xl 36px. Force auto width and round clip so they stay pills."] }, { version: "20261122.4", date: null, notes: ['Blank grok.com after `.3`: metrics factory 603814 still required eight more modules from the same lazy helper chunk. Stub those imports too (keep `el("/api/log_metric")` → `false`, do not group sendBeacon, do not stub same-chunk debounce). Stub leftover homepage `e.i(5156912)` so a late inject cannot white the page.', "Plus unwrap and circle→round chips are unchanged; they already match live grok. The dead plus and square model chip were the blank / safe-mode native trigger."] }, { version: "20261122.3", date: null, notes: ['Blank grok.com after `.2`: the metrics factory still requires a helper module that is not registered yet. Stub that import and turn `el("/api/log_metric",…)` into `false` without grouping, so a miss cannot fall back to the original factory.', "Plus: skip the closed project-start popover wrap; if the trigger has no `render` prop, keep the trigger node so the module cannot throw.", 'Model chips: Grok IconButton only rounds `shape:"round"`, but compact `#model-select-trigger` and other icon buttons pass `"circle"` (default square). Treat circle as round. Clip the native trigger even when it is not nested. Round pin hosts via `[data-void-mode-id]` because Grok drops `className`.'] }, { version: "20261122.2", date: null, notes: ["Plus menu: Grok wraps attach in a closed popover while the project-start guide is off, so the plus button never opens Files / Skills / Connectors. Skip that wrap when the guide is not shown.", "Native model trigger was sitting next to Heavy/Build as a compact square. Clip it even when nested; keep pins round.", "RecentTopics: do not crash hydrate when a project name is missing.", "NoTelemetry: stop selecting metrics factory 603814 (that rewrite blanked grok.com). Keep sendBeacon / fetch stubs."] }, { version: "20261122.1", date: null, notes: ["Composer plus, project chip, pins, usage, and send: the field is a click surface (`onPointerDown` preventDefault). Stop stealing those hits; host `z-index` is a no-op on the `display:contents` toolbar. Keep in-field chips and quote buttons clickable.", "NoTelemetry no longer rewrites the core metrics factory. Stub `/api/log_metric` on `sendBeacon` / `fetch` so a failed patch cannot blank grok.com."] }, { version: "20261121.3", date: null, notes: ["Raise the inline composer plus, project chip, mode pins, usage, and send above Grok's absolute field overlay so those clicks stop focusing the editor."] }, { version: "20261121.2", date: null, notes: ["CustomGreeting only rewrites jsx `placeholder:` so the composer destructure cannot become invalid syntax (module 7440253 compile fail / dead clicks after the homepage rebuild).", 'Mode pins wrap `"data-query-bar-mode-select"` children first; the specific jsx wrap stays as a noWarn fallback.'] }, { version: "20261121.1", date: null, notes: ["Compact Library stays a 32px header button. Overlay Search is 32px with overflow clipped, and `position-anchor` is gone so Library-fixed plus Search-fixed cannot hang a project chat.", 'Library `Item` gets `aria-label="Library"` so the compact CSS hits without depending on the sprite href.', "StableComposer caches the editor deps from `immediatelyRender:!0,extensions:`.", "Hide Build idea chips via the live `{chips,onMore}` render. Insert Connect Apps before Help in the 9-item desktop account menu.", "Settings nav lucide reads `name:map.ident[id]`. Void++ tabs concat onto the hosted desktop tab list. Recent sidebar children wrap when they are a single node."] }, { version: "20261114.58", date: null, notes: ['Mode pins: paint Heavy/Build even when Modes/Routing hooks are still unresolved. Drop `ensureLoaded` from the Modes shape check. Wrap desktop `"data-query-bar-mode-select"` children from that literal.', "Overlay Library is `position:fixed` at 48px with no `position-anchor` (in-sidebar `absolute` sat in a nav containing block and never reached the header).", "Usage hover panel also opens on `mouseenter` so a real mouse move shows it."] }, { version: "20261114.57", date: null, notes: ["Guard regex `find`s that start with `\\i` or a character class in `grok-chunk-bench` and the build. Warn `\\i`-start `match`es; start log_metric and settings-tab filter on a literal.", "Mode pins: stop gating `PinnedHost` on `SettingsStore` (`modelConfigOverrideSchema` lives on another module). Read Modes/Routing via `getState`. Hide native Heavy.", "Usage hover: Grok `IconButton` tooltip is a string; node panels open from GrokChatBar pointerenter.", "Overlay Search is a 32px ghost 4px left of compact + (`position:fixed` + sidebar anchor). Library stays `absolute` so that pair cannot hang layout. Dead Cleaner/ConnectorsFlyout/UserQuotes finds are `noWarn`. Desktop settings `shownTab` follows the live inline resolver."] }, { version: "20261114.56", date: null, notes: ["Patch ReDoS: Method A logged 123 StableComposer regex finds (`\\i)=[` on every prefiltered factory); Method B timed those plus TurnTail / ENABLE / sidebar-chats / unbounded `[\\s\\S]*?` out at 3s on 100k+ factories. Drop the `\\i` find, start remaining matches on a literal, bound `[\\s\\S]*?` / `[^]*?`, and delete the tempered-greedy `mode-select` wrap."] }, { version: "20261114.55", date: null, notes: ["CDP pause of the live grok.com tab showed a JS busy loop, not CSS layout: `CustomGreeting.isNonProjectHome` → `RoutingStore.useRoutingStore` (`proxyLazy` + `Infinity`) → `hookFromFactory` → `search` → `findInRegistry` stringifying every factory on each access. Cache lazy misses per module-cache version, search only new factories, and drop `Infinity`. Keep `.54` Search CSS."] }, { version: "20261114.54", date: null, notes: ["`.53` froze the Grok project chat after first paint (white pane, main thread busy). Overlay Search was `position:fixed` plus `position-anchor` to `#app-sidebar` while Library was already a fixed descendant of that same anchor; drop the Library-only `:only-child` collapse and keep Search `position:absolute` like `.52`.", "BetterSidebar: find `ENABLE_GROK_BOT_RELAY_CLIENT` as a string. The old regex find started with `\\i`, never hit, and scanned every factory (~38s in the chunk bench)."] }, { version: "20261114.53", date: null, notes: ['Re-target live desktop patches after `.52`: settings nav lucide on `"data-settings-tab"`, CustomGreeting `placeholderClassName`, BetterCanvas `source:"auto",view:"browser"`, New bot IconButton `data-void-bots-plus`, NoBuildStarters `BuildStarters` return null.', 'Mark dead `.48` alternates `noWarn` (collapsed-storage keys, nav group array, skills-and-connectors hide, UserCard `avatarSize:"md"`).', "BetterSidebar: overlay Search is `position:fixed` with `position-anchor` (32px ghost, 4px left of compact +). Collapse the empty Library-only row. Setting off restores Grok's header. CSS only — no document `MutationObserver`."] }, { version: "20261114.52", date: null, notes: ["Restore `.48` plugin and store sources. `.49`–`.51` hung the project chat (`RESULT_CODE_HUNG`); those Search-placement, store-scan, pin-wrap, and NoTelemetry edits are reverted until the cause is isolated."] }, { version: "20261114.51", date: null, notes: ["Store `search()` waits until the module cache is quiet (or 2s). `.50` still scanned factory source on every cache-size change from 250ms intervals and MessageStars paint, which froze the project chat again.", "`whenCommon` no longer walks modules on every `onModuleLoad`. BetterModeSelect retries store watches on an interval. Overlay Search glyph is 20px like Toggle / +."] }, { version: "20261114.50", date: null, notes: ["BetterSidebar: place overlay Search with the sidebar's bounding rect (Helium's tab strip made `left: 254px` sit off the Grok header). 32px ghost, 4px left of compact +.", "BetterModeSelect / UsageDisplay: do not scan Routing/Settings stores on every module load (`onModuleLoad` + Infinity `proxyLazy` froze the project chat: `RESULT_CODE_HUNG`). Retry on an interval; cache store finds by module-cache size.", 'BetterModeSelect: wrap desktop `"data-query-bar-mode-select":""` children with a 2500-char gap so project `form[data-composer]` gets pins.'] }, { version: "20261114.49", date: null, notes: ["BetterSidebar: overlay Search is a 32px ghost left of compact New chat. `position:fixed` plus z-index so it is not clipped behind the sidebar; `@supports (anchor-name)` still sets `position:fixed`.", 'BetterModeSelect: pins mount once Routing/Settings/Message stores resolve (`findStore`, named `useRoutingStore`, SettingsStore no longer dies after 50 `findByPropsLazy` retries). Desktop wrap is `"data-query-bar-mode-select":""` children.', "NoTelemetry: `/api/log_metric` also matches `(0,ident)(...)` and sendBeacon without a json Blob type.", "Settings nav leading lucide: `jsx(ident,{name:map[id]})`, not only `ident.f` + `map.X`."] }, { version: "20261114.48", date: null, notes: ["BetterSidebar: compact Library matches the live desktop button (`#icon-xs-library`, no aria-label) and moves overlay Search without requiring it to be a sibling of `#app-sidebar`."] }, { version: "20261114.47", date: null, notes: ["BetterSidebar: compact Library into the Search slot and move overlay Search left of the compact New chat plus. Default on."] }, { version: "20261114.46", date: null, notes: ["Mode pins and the usage button are Grok buttons again. Grok's buttons moved to stylex and the old wrapper is gone, so pins fell back to a bare 16×18 headless button and usage to a plain fallback with no hover panel. Pins are 36px ghost circles with a 0.25rem gap; usage is a ghost pill with its panel.", 'Void++ plugin CSS goes through the Userscript++ style registry. Turning a `managedStyle` plugin off removes its CSS again, and the "样式 X 未注册" warnings are gone.', "The Void++ mark has its arc and two bars back. The bell uses the current lucide paths.", "Settings → Void++ rows (Plugins, Themes, Quick CSS) open those tabs instead of Account.", "Toast titles are regular weight again (the rule left with the core Settings plugin).", "`Switch` no longer falls back to Base UI's `{Root, Thumb}` namespace, which crashed Void++ setting components (React #130)."] }, { version: "20261114.45", date: null, notes: ["Restore plugin option values from the Void++ store (GM / IndexedDB). The first migrate copied them before Userscript++ settings were ready, so only `enabled` was ever saved. Values the Userscript++ store already has are kept.", "Quick CSS migrates to `customCSS` / `customCSSEnabled`, the keys Userscript++ reads.", "Account-menu leading icons are muted again, and the Settings nav has the Usage → Void++ hairline. Grok's own Notifications tab keeps its icon.", "Void++ submenu rows (plugins, Themes, Quick CSS, Backup) open Grok Settings again."] }, { version: "20261114.44", date: null, notes: ["Account-menu Void++ row and GrokMenus slots use desktop kit (`accountMenuParts`) instead of Radix `DropdownMenuSub` / `SignoutIcon`. Same class as UsageDisplay: host patched in, factory/renderer stale."] }, { version: "20261114.43", date: null, notes: ['GrokChatBar desktop inject: live composer uses `"data-query-bar-mode-select":""` and compiler temps, not `:!0`. Put UsageDisplay (and other chat-bar buttons) in the dictate/send cell so they sit left of Send.'] }, { version: "20261114.42", date: null, notes: ["Backfill `enabled: true` from Void++ IndexedDB/GM so plugins the user already had on (CustomGreeting, CustomSidebarIdentity, ResponseNotification, MessageStars) stay on after the Userscript++ migrate.", "CustomGreeting and ResponseNotification are on by default. CustomSidebarIdentity stays opt-in; the backfill restores this profile's previous on-state."] }, { version: "20261114.41", date: null, notes: ["MessageStars is on by default so the header star survives a clean Userscript++ settings store."] }, { version: "20261114.40", date: null, notes: ["Rebuild Void++ on the Userscript++ framework (plugin lifecycle, settings, Themes / Quick CSS, slots).", "Keep live grok.com desktop settings injection (DesktopSettingsDialog / lucide nav icons).", "Migrate VoidPPSettings into the Userscript++ store.", "Drop USPP `@noframes` / `@sandbox` / `@inject-into` so Violentmonkey still injects into grok.com.", "`filters` proxy is callable before `bindApi(U)` so top-level `waitFor(filters.byProps(...))` no longer aborts the IIFE."] }];
 
   // <define:__USPP_CONNECT__>
   var define_USPP_CONNECT_default = ["*"];
@@ -942,7 +979,7 @@
     ["unsafeWindow", typeof unsafeWindow !== "undefined"]
   ].filter(([, ok]) => !ok).map(([k4]) => k4);
   var FRAMEWORK_VERSION = true ? "0.1.0" : "0.0.0";
-  var VERSION = true ? "20261122.7" : "0.0.0";
+  var VERSION = true ? "20261122.8" : "0.0.0";
   var IS_DEV2 = true ? false : false;
   var BUILD_TYPE = IS_DEV2 ? "development" : "production";
   var isChromium = () => !!W3.chrome;
@@ -1474,9 +1511,9 @@
     const kit = desktopButtons();
     if (!kit) return null;
     IconSlot ??= getReact2().createContext(null);
-    const props = { ...rest, variant: LEGACY_VARIANT[variant] ?? variant, tooltip: tooltip?.content, style: className ? { voidppClassName: className, $$css: true } : void 0 };
-    if (!ICON_SHAPE[shape]) return h4(kit.Button, props, children);
-    return h4(IconSlot.Provider, { value: children }, h4(kit.IconButton, { ...props, size, shape: ICON_SHAPE[shape], icon: SlotIcon }));
+    const props = { ...rest, variant: LEGACY_VARIANT[variant] ?? variant, tooltip: tooltip?.content };
+    const node2 = !ICON_SHAPE[shape] ? h4(kit.Button, props, children) : h4(IconSlot.Provider, { value: children }, h4(kit.IconButton, { ...props, size, shape: ICON_SHAPE[shape], icon: SlotIcon }));
+    return className ? h4("span", { className, style: { display: "contents" } }, node2) : node2;
   }
   def("DesktopButton", () => desktopButtons() && DesktopButton);
   for (const s3 of STORE_NAMES) def(`${s3}Store`, () => resolveStore(s3));
@@ -6554,27 +6591,42 @@ html[data-void-cms-incognito] [data-void-mode-id="build"],
 }
 
 .void-cms-pin-host {
-    display: contents;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: var(--grok-control-height-xl, 36px);
+    height: var(--grok-control-height-xl, 36px);
+    flex: 0 0 auto;
+    border-radius: 999px;
+    color: inherit;
 }
 
 .void-cms-pin {
     box-sizing: border-box;
 }
 
+.query-bar .void-cms-pin-host.void-cms-on,
+form[data-composer] .void-cms-pin-host.void-cms-on,
 .query-bar .void-cms-on,
 form[data-composer] .void-cms-on {
     color: #ff7a17 !important;
-    background: var(--grok-bg-secondary, rgb(255 255 255 / 8%)) !important;
+    background-color: var(--grok-bg-secondary, rgb(255 255 255 / 8%)) !important;
+    background-image: none !important;
 }
 
+.query-bar .void-cms-pin-host.void-cms-on:is(:hover, :focus-visible, :focus-within),
+form[data-composer] .void-cms-pin-host.void-cms-on:is(:hover, :focus-visible, :focus-within),
 .query-bar .void-cms-on:is(:hover, :focus-visible),
 form[data-composer] .void-cms-on:is(:hover, :focus-visible) {
-    background: var(--grok-bg-secondary-hover, rgb(255 255 255 / 12%)) !important;
+    background-color: var(--grok-bg-secondary-hover, rgb(255 255 255 / 12%)) !important;
 }
 
+.query-bar .void-cms-pin-host.void-cms-on:active,
+form[data-composer] .void-cms-pin-host.void-cms-on:active,
 .query-bar .void-cms-on:active,
 form[data-composer] .void-cms-on:active {
-    background: var(--grok-bg-secondary-active, rgb(255 255 255 / 16%)) !important;
+    background-color: var(--grok-bg-secondary-active, rgb(255 255 255 / 16%)) !important;
 }
 
 .query-bar .void-cms-on:not(:hover, :focus-visible),
@@ -6633,9 +6685,9 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select]:has(
     align-items: center !important;
 }
 
-form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins),
-form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] #model-select-trigger,
-form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] button:not(.void-cms-pin) {
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] > :not(.void-cms-pins):not(.void-cms-pin-host):not([data-void-mode-id]),
+html.void-cms-hide-native form[data-composer] [data-query-bar-mode-select] > :not(.void-cms-pins):not(.void-cms-pin-host):not([data-void-mode-id]),
+form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] #model-select-trigger {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -6656,6 +6708,42 @@ form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] butt
     background: transparent !important;
     box-shadow: none !important;
     z-index: 0 !important;
+}
+
+html.void-cms-hide-native #model-select-trigger {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 1px !important;
+    max-height: 1px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    flex: 0 0 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    z-index: 0 !important;
+}
+
+form[data-composer] .void-cms-pin-host :is(button, [role="button"]),
+.query-bar .void-cms-pin-host :is(button, [role="button"]) {
+    width: var(--grok-control-height-xl, 36px) !important;
+    height: var(--grok-control-height-xl, 36px) !important;
+    min-width: var(--grok-control-height-xl, 36px) !important;
+    min-height: var(--grok-control-height-xl, 36px) !important;
+    border-radius: 999px !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    color: inherit !important;
 }
 
 form[data-composer] .void-cms-pin,
@@ -6724,29 +6812,46 @@ form[data-composer][data-composer-layout="inline"] [data-composer-field] :is(
 
 form[data-composer] [data-composer-field] {
     position: relative;
-    z-index: 0;
+    z-index: 0 !important;
 }
 
-form[data-composer] [data-composer-surface]:has(> :is(
-    [data-testid="attach-button"],
+form[data-composer] [data-composer-surface]:not([data-composer-field]):has(> :is(
     [data-composer-chip],
     [data-composer-action],
     [data-query-bar-mode-select],
-    .void-cms-pin
+    .void-cms-pin,
+    .void-cms-pin-host
 )) {
     position: relative !important;
     z-index: 2 !important;
     pointer-events: none;
 }
 
-form[data-composer] [data-composer-surface]:has([data-testid="attach-button"]) > *,
-form[data-composer] [data-composer-surface]:has([data-composer-action]) > *,
+form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data-testid="attach-button"]),
+form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data-composer-action]) {
+    position: relative !important;
+    z-index: 3 !important;
+    pointer-events: none;
+}
+
+form[data-composer] [data-testid="attach-button"],
+form[data-composer] [data-testid="attach-button"] *,
+form[data-composer] [data-composer-action],
+form[data-composer] [data-composer-action] * {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 3;
+}
+
+form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data-testid="attach-button"]) > *,
+form[data-composer] [data-composer-surface]:not([data-composer-field]):has([data-composer-action]) > *,
 form[data-composer] :is(
     [data-testid="attach-button"],
     [data-composer-chip],
     [data-query-bar-mode-select],
     [data-composer-action],
     .void-cms-pin,
+    .void-cms-pin-host,
     .uspp-chatbar,
     button:has(.void-ud-trigger)
 ) {
@@ -6763,7 +6868,7 @@ form[data-composer][data-composer-layout="stacked"] {
    Trigger is not always nested in [data-query-bar-mode-select]. */
 form[data-composer]:has(.void-cms-hide-native) #model-select-trigger,
 form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] #model-select-trigger,
-form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] button:not(.void-cms-pin) {
+html.void-cms-hide-native form[data-composer] #model-select-trigger {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -6800,7 +6905,7 @@ button[aria-label="Voice mode"],
     display: none !important;
 }
 
-.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button {
+html:not(.void-cms-hide-native) .query-bar:has(.void-cms-pins) [data-query-bar-mode-select] #model-select-trigger {
     width: 2.5rem;
     height: 2.5rem;
     min-width: 2.5rem;
@@ -6812,11 +6917,11 @@ button[aria-label="Voice mode"],
     place-items: center;
 }
 
-.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button > * {
+html:not(.void-cms-hide-native) .query-bar:has(.void-cms-pins) [data-query-bar-mode-select] #model-select-trigger > * {
     display: none !important;
 }
 
-.query-bar:has(.void-cms-pins):not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button::after {
+html:not(.void-cms-hide-native) .query-bar:has(.void-cms-pins) [data-query-bar-mode-select] #model-select-trigger::after {
     content: "";
     width: 18px;
     height: 18px;
@@ -6828,8 +6933,8 @@ html.void-cms-picking .query-bar [data-query-bar-mode-select] {
     pointer-events: auto !important;
 }
 
-html.void-cms-picking form[data-composer]:has(.void-cms-hide-native) #model-select-trigger,
-html.void-cms-picking form[data-composer]:has(.void-cms-hide-native) [data-query-bar-mode-select] button:not(.void-cms-pin) {
+html.void-cms-picking.void-cms-hide-native #model-select-trigger,
+html.void-cms-picking form[data-composer]:has(.void-cms-hide-native) #model-select-trigger {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -6848,8 +6953,7 @@ html.void-cms-picking form[data-composer]:has(.void-cms-hide-native) [data-query
     border-radius: 999px !important;
 }
 
-html.void-cms-picking form[data-composer]:not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] #model-select-trigger,
-html.void-cms-picking form[data-composer]:not(:has(.void-cms-hide-native)) [data-query-bar-mode-select] button:not(.void-cms-pin) {
+html.void-cms-picking:not(.void-cms-hide-native) form[data-composer] [data-query-bar-mode-select] #model-select-trigger {
     position: relative !important;
     width: auto !important;
     height: auto !important;
@@ -6930,6 +7034,20 @@ html.void-cms-picked .void-cms-ghost {
 }
 
 @media (width >= 48rem) {
+    .void-cms-pin-host.void-cms-labeled {
+        width: auto;
+        height: 2.5rem;
+        padding-inline: 0.5rem;
+    }
+
+    form[data-composer] .void-cms-pin-host.void-cms-labeled :is(button, [role="button"]),
+    .query-bar .void-cms-pin-host.void-cms-labeled :is(button, [role="button"]) {
+        width: auto !important;
+        min-width: 2.5rem !important;
+        height: 2.5rem !important;
+        min-height: 2.5rem !important;
+    }
+
     .query-bar .void-cms-labeled,
     form[data-composer] .void-cms-labeled {
         width: auto !important;
@@ -7569,10 +7687,15 @@ html.void-cms-picked .void-cms-ghost {
     const hideBuild = privateBuild();
     const knownCatalog = catalog.filter((c3) => KNOWN_IDS.has(c3.id));
     const items = withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg2.pinOrder, cfg2, catalog), hideBuild), hideBuild).map((id) => MODE_BY_ID[id]);
-    if (page2 === "bot" || !items.length) return null;
     const { showLabels } = cfg2;
     const allCovered = knownCatalog.length > 0 && knownCatalog.every((c3) => cfg2[PIN_BY_ID[c3.id]]);
-    const hideNative = cfg2.hideNativeTrigger || allCovered;
+    const showPins = page2 !== "bot" && items.length > 0;
+    const hideNative = showPins && (cfg2.hideNativeTrigger || allCovered);
+    React.useEffect(() => {
+      document.documentElement.classList.toggle("void-cms-hide-native", hideNative);
+      return () => document.documentElement.classList.remove("void-cms-hide-native");
+    }, [hideNative]);
+    if (!showPins) return null;
     const onPin = (id) => (e3) => {
       e3.preventDefault();
       e3.stopPropagation();
@@ -7580,18 +7703,25 @@ html.void-cms-picked .void-cms-ghost {
     };
     return /* @__PURE__ */ h("div", { className: classes(cl6("pins"), hideNative && cl6("hide-native")) }, items.map((m3) => {
       const on2 = chipOn(selectedModeId, m3.id);
-      return /* @__PURE__ */ h("span", { key: m3.id, className: cl6("pin-host"), "data-void-mode-id": m3.id }, /* @__PURE__ */ h(
-        ChatBarButton2,
+      return /* @__PURE__ */ h(
+        "span",
         {
-          size: "xl",
-          shape: "circle",
-          icon: /* @__PURE__ */ h(PinGlyph, { id: m3.id, Icon: m3.Icon, label: m3.label, showLabels }),
-          tooltip: m3.label,
-          onClick: onPin(m3.id),
-          className: classes(cl6("pin"), on2 && cl6("on"), showLabels && cl6("labeled")),
-          "aria-label": m3.label
-        }
-      ));
+          key: m3.id,
+          className: classes(cl6("pin-host"), cl6("pin"), on2 && cl6("on"), showLabels && cl6("labeled")),
+          "data-void-mode-id": m3.id
+        },
+        /* @__PURE__ */ h(
+          ChatBarButton2,
+          {
+            size: "xl",
+            shape: "circle",
+            icon: /* @__PURE__ */ h(PinGlyph, { id: m3.id, Icon: m3.Icon, label: m3.label, showLabels }),
+            tooltip: m3.label,
+            onClick: onPin(m3.id),
+            "aria-label": m3.label
+          }
+        )
+      );
     }));
   }
   function PinnedHost() {
@@ -7642,6 +7772,7 @@ html.void-cms-picked .void-cms-ghost {
       }
     },
     stop() {
+      document.documentElement.classList.remove("void-cms-hide-native");
       unbindModelHotkey();
       offIncognitoWatch?.();
       offIncognitoWatch = null;
@@ -38741,3 +38872,5 @@ uspp-voidpp-root > *, .uspp-voidpp-shadow-mount > * { pointer-events: auto; }
     console.error(`[${SCRIPT_NAME}] 启动失败`, e3);
   }
 })();
+
+} catch (__voidppE) { try { (typeof unsafeWindow !== "undefined" && unsafeWindow ? unsafeWindow : window).__VOIDPP_ERR = String(__voidppE && __voidppE.stack || __voidppE); } catch (e2) {} throw __voidppE; }

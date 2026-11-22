@@ -728,11 +728,17 @@ function PinnedModes() {
     const hideBuild = privateBuild();
     const knownCatalog = catalog.filter(c => KNOWN_IDS.has(c.id));
     const items = withIncognitoAuto(withoutIncognitoBuild(pinnedIdsFrom(cfg.pinOrder, cfg, catalog), hideBuild), hideBuild).map(id => MODE_BY_ID[id]);
-    if (page === "bot" || !items.length) return null;
-
     const { showLabels } = cfg;
     const allCovered = knownCatalog.length > 0 && knownCatalog.every(c => cfg[PIN_BY_ID[c.id]]);
-    const hideNative = cfg.hideNativeTrigger || allCovered;
+    const showPins = page !== "bot" && items.length > 0;
+    const hideNative = showPins && (cfg.hideNativeTrigger || allCovered);
+
+    React.useEffect(() => {
+        document.documentElement.classList.toggle("void-cms-hide-native", hideNative);
+        return () => document.documentElement.classList.remove("void-cms-hide-native");
+    }, [hideNative]);
+
+    if (!showPins) return null;
 
     const onPin = (id: string) => (e: MouseEvent) => {
         e.preventDefault();
@@ -745,15 +751,20 @@ function PinnedModes() {
             {items.map(m => {
                 const on = chipOn(selectedModeId, m.id);
                 return (
-                    <span key={m.id} className={cl("pin-host")} data-void-mode-id={m.id}><ChatBarButton
-                        size="xl"
-                        shape="circle"
-                        icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels} />}
-                        tooltip={m.label}
-                        onClick={onPin(m.id)}
-                        className={classes(cl("pin"), on && cl("on"), showLabels && cl("labeled"))}
-                        aria-label={m.label}
-                    /></span>
+                    <span
+                        key={m.id}
+                        className={classes(cl("pin-host"), cl("pin"), on && cl("on"), showLabels && cl("labeled"))}
+                        data-void-mode-id={m.id}
+                    >
+                        <ChatBarButton
+                            size="xl"
+                            shape="circle"
+                            icon={<PinGlyph id={m.id} Icon={m.Icon} label={m.label} showLabels={showLabels} />}
+                            tooltip={m.label}
+                            onClick={onPin(m.id)}
+                            aria-label={m.label}
+                        />
+                    </span>
                 );
             })}
         </div>
@@ -811,6 +822,7 @@ export default definePlugin({
     },
 
     stop() {
+        document.documentElement.classList.remove("void-cms-hide-native");
         unbindModelHotkey();
         offIncognitoWatch?.();
         offIncognitoWatch = null;

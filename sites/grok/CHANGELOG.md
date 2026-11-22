@@ -1,3 +1,10 @@
+## 20261122.8
+
+- Model pins shrank to the 18px glyph: Grok IconButton treats Void++ className as a stylex replacement and drops the 36px round chip. Keep factory size; paint the selected well on the pin host (orange glyph, muted fill).
+- Hide-native clip must not target flattened pin hosts once the host is a real 36px box. Clip `#model-select-trigger` via `html.void-cms-hide-native` as well, and never hide the native trigger when no pins are shown.
+- Labeled pins: the 36px host rule beat `width: auto`. Keep labeled chips as pills.
+- Composer plus: raise any surface that contains attach-button, not only a direct child, so Files / Skills / Connectors still receive the click. Same raise for send/actions; do not lift the field overlay itself.
+
 ## 20261122.7
 
 - `.6` rendered the project-start `Popover.Trigger` without its Root when the guide was off. That is Base UI #74 / React #130 and blanks the chat. Keep AttachDropdown (`trigger.props.render`) so Files / Skills / Connectors still open; never emit the naked Trigger.

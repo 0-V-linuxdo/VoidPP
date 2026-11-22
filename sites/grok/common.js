@@ -109,9 +109,11 @@ function DesktopButton({ variant, size, shape, className, tooltip, children, ...
     const kit = desktopButtons();
     if (!kit) return null;
     IconSlot ??= getReact().createContext(null);
-    const props = { ...rest, variant: LEGACY_VARIANT[variant] ?? variant, tooltip: tooltip?.content, style: className ? { voidppClassName: className, $$css: true } : undefined };
-    if (!ICON_SHAPE[shape]) return h(kit.Button, props, children);
-    return h(IconSlot.Provider, { value: children }, h(kit.IconButton, { ...props, size, shape: ICON_SHAPE[shape], icon: SlotIcon }));
+    const props = { ...rest, variant: LEGACY_VARIANT[variant] ?? variant, tooltip: tooltip?.content };
+    const node = !ICON_SHAPE[shape]
+        ? h(kit.Button, props, children)
+        : h(IconSlot.Provider, { value: children }, h(kit.IconButton, { ...props, size, shape: ICON_SHAPE[shape], icon: SlotIcon }));
+    return className ? h("span", { className, style: { display: "contents" } }, node) : node;
 }
 def("DesktopButton", () => desktopButtons() && DesktopButton);
 
